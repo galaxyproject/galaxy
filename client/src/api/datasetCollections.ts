@@ -153,7 +153,7 @@ export async function createWorkbook(payload: CreateWorkbookPayload): Promise<Bl
 
 export async function createWorkbookForCollection(
     hdca_id: string,
-    payload: CreateWorkbookForCollectionPayload
+    payload: CreateWorkbookForCollectionPayload,
 ): Promise<Blob> {
     const { data, error } = await GalaxyApi().POST("/api/dataset_collections/{hdca_id}/sample_sheet_workbook", {
         params: { path: { hdca_id: hdca_id } },

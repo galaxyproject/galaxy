@@ -28,7 +28,7 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json({});
-        })
+        }),
     );
 
     server.use(
@@ -36,7 +36,7 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
             return response(200).json({
                 total_disk_usage: 0,
             });
-        })
+        }),
     );
 
     const wrapper = mount(SelectPreferredStore as object, {
@@ -83,7 +83,7 @@ describe("SelectPreferredStore.vue", () => {
         const els = wrapper.findAll(PREFERENCES.object_store_selection.option_cards.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
-            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "__null__" }).selector
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "__null__" }).selector,
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
         axiosMock
@@ -108,13 +108,13 @@ describe("SelectPreferredStore.vue", () => {
         const els = wrapper.findAll(PREFERENCES.object_store_selection.option_cards.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
-            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "object_store_2" }).selector
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "object_store_2" }).selector,
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
         axiosMock
             .onPut(
                 `/api/histories/${TEST_HISTORY_ID}`,
-                expect.objectContaining({ preferred_object_store_id: "object_store_2" })
+                expect.objectContaining({ preferred_object_store_id: "object_store_2" }),
             )
             .reply(202);
         await galaxyDefaultOption.trigger("click");

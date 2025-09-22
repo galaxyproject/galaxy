@@ -11,7 +11,7 @@ function LoadingIndicator($where, options) {
         {
             cover: false,
         },
-        options || {}
+        options || {},
     );
 
     function render() {
@@ -29,7 +29,7 @@ function LoadingIndicator($where, options) {
             .css(
                 options.css || {
                     position: "fixed",
-                }
+                },
             );
 
         var $text = $indicator.children(".loading-indicator-text");

@@ -57,7 +57,7 @@ export async function buildRuleCollectionModal(
     selectedContent: HistoryItemSummary[],
     historyId: string,
     fromRulesInput = false,
-    defaultHideSourceItems = true
+    defaultHideSourceItems = true,
 ) {
     // select legacy function
     const createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
@@ -82,7 +82,7 @@ const createBackboneContent = (historyId: string, selection: HistoryItemSummary[
             collection_type: CollectionType,
             name: string,
             hide_source_items: boolean,
-            options = {}
+            options = {},
         ) {
             const def = jQuery.Deferred();
             return def.resolve(null, {

@@ -54,7 +54,7 @@ class MockApp:
 
 class MockToolbox:
 
-    def get_tool(self, tool_id, tool_uuid, tool_version):
+    def get_tool(self, tool_id, tool_uuid, tool_version, user):
         return MockTool()
 
 

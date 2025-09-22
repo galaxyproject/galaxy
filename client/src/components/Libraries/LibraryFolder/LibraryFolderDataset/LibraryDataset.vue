@@ -217,7 +217,7 @@ export default {
                     this.populateDatasetDetailsTable(response);
                     Toast.success("Changes to library dataset saved.");
                 },
-                (error) => Toast.error(error)
+                (error) => Toast.error(error),
             );
         },
         updateDataset() {
@@ -229,7 +229,7 @@ export default {
                         this.populateDatasetDetailsTable(response);
                         Toast.success("Changes to library dataset saved.");
                     },
-                    (error) => Toast.error(error)
+                    (error) => Toast.error(error),
                 );
             }
             this.isEditMode = false;

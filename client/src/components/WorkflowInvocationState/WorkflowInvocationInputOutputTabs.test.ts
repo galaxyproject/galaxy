@@ -72,7 +72,7 @@ jest.mock("@/stores/workflowStore", () => {
 async function mountWorkflowInvocationInputOutputTabs(
     invocation: WorkflowInvocationElementView,
     tab: "inputs" | "outputs" = "inputs",
-    terminal = true
+    terminal = true,
 ) {
     server.use(
         http.get("/api/datasets/{dataset_id}", ({ response, params }) => {
@@ -81,7 +81,7 @@ async function mountWorkflowInvocationInputOutputTabs(
             return response.untyped(
                 HttpResponse.json({
                     id: params.dataset_id,
-                })
+                }),
             );
         }),
         http.get("/api/dataset_collections/{hdca_id}", ({ response, params }) => {
@@ -90,9 +90,9 @@ async function mountWorkflowInvocationInputOutputTabs(
             return response.untyped(
                 HttpResponse.json({
                     id: params.hdca_id,
-                })
+                }),
             );
-        })
+        }),
     );
 
     const wrapper = mount(WorkflowInvocationInputOutputTabs as object, {
@@ -149,7 +149,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
     it("shows invocation outputs when invocation is terminal", async () => {
         const wrapper = await mountWorkflowInvocationInputOutputTabs(
             invocationData as WorkflowInvocationElementView,
-            "outputs"
+            "outputs",
         );
 
         testOutputsDisplayed(wrapper);
@@ -174,7 +174,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
 
         // Test that the invocation outputs are displayed
         const invocationOutputs = wrapper.findAll(
-            terminal ? selectors.terminalInvocationOutput : selectors.nonTerminalInvocationOutput
+            terminal ? selectors.terminalInvocationOutput : selectors.nonTerminalInvocationOutput,
         );
         expect(invocationOutputs.length).toEqual(expectedLabels.length);
 

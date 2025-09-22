@@ -146,7 +146,7 @@ function isStepDone(currentIndex: number): boolean {
  */
 const stepsGridColumnsTemplate = computed(() => {
     const numVisibleSteps = Array.from(Object.values(props.use.steps.value)).filter(
-        (step) => !(step as WizardStep).isSkippable()
+        (step) => !(step as WizardStep).isSkippable(),
     ).length;
     return (
         Array(numVisibleSteps - 1)

@@ -21,7 +21,7 @@ const currentOffset = ref(0);
 
 watch(
     () => currentOffset.value,
-    (offset) => emit("scroll", offset)
+    (offset) => emit("scroll", offset),
 );
 
 watch(
@@ -30,7 +30,7 @@ watch(
         root.value?.scrollTo({
             top: 0,
         });
-    }
+    },
 );
 
 watch(
@@ -41,7 +41,7 @@ watch(
             scrollToOffset(offset);
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function scrollToOffset(offset: number) {
@@ -55,7 +55,7 @@ const observer = new IntersectionObserver(
         const indices = intersecting.map((item) => parseInt(item.target.getAttribute("data-index") ?? "0"));
         currentOffset.value = indices.length > 0 ? Math.min(...indices) : 0;
     },
-    { root: root.value }
+    { root: root.value },
 );
 
 function getKey(item: unknown, index: number) {
@@ -83,7 +83,7 @@ watch(
         // leading to incorrect fetching ranges of items.
         await forceItemsRefresh();
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

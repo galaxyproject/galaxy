@@ -32,14 +32,14 @@ describe("test utils", () => {
 
     it("test linkify", async () => {
         expect(Utils.linkify("https://galaxyproject.org")).toBe(
-            '<a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a>'
+            '<a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a>',
         );
         expect(Utils.linkify("Welcome to https://galaxyproject.org today")).toBe(
-            'Welcome to <a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a> today'
+            'Welcome to <a href="https://galaxyproject.org" target="_blank">https://galaxyproject.org</a> today',
         );
         expect(Utils.linkify("Check out galaxyproject.org")).toBe("Check out galaxyproject.org");
         expect(Utils.linkify("Email info@galaxyproject.org")).toBe(
-            'Email <a href="mailto:info@galaxyproject.org">info@galaxyproject.org</a>'
+            'Email <a href="mailto:info@galaxyproject.org">info@galaxyproject.org</a>',
         );
     });
 

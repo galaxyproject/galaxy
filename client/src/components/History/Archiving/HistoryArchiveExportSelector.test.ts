@@ -52,9 +52,9 @@ function mockGetExportsApiResponse(taskExportResponse: ObjectExportTaskResponse[
                 HttpResponse.json(taskExportResponse, {
                     status: 200,
                     headers: { "Content-Type": "application/vnd.galaxy.task.export+json" },
-                })
+                }),
             );
-        })
+        }),
     );
 }
 
@@ -100,7 +100,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
         server.use(
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
                 return response(200).json("PENDING");
-            })
+            }),
         );
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);

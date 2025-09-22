@@ -127,7 +127,7 @@ watchImmediate(
         resetWorkflows();
         fetchKey = filterText.value;
         load();
-    }
+    },
 );
 
 watch(
@@ -136,7 +136,7 @@ watch(
         if (arrived.bottom) {
             load();
         }
-    }
+    },
 );
 
 function scrollToTop() {

@@ -88,14 +88,14 @@ const exportButtonLabel = computed(() => {
 });
 
 const needsFileName = computed(
-    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository"
+    () => exportData.destination === "remote-source" || exportData.destination === "rdm-repository",
 );
 
 const canIncludeData = computed(() => exportData.exportPluginFormat !== "bco");
 
 const exportDestinationSummary = computed(() => {
     const exportDestination = exportDestinationTargets.value.find(
-        (target) => target.destination === exportData.destination
+        (target) => target.destination === exportData.destination,
     );
     return exportDestination?.label ?? "Unknown Destination";
 });
@@ -157,7 +157,7 @@ const wizard = useWizard({
                 exportData.bcoDatabase.serverBaseUrl &&
                     exportData.bcoDatabase.authorization &&
                     exportData.bcoDatabase.table &&
-                    exportData.bcoDatabase.ownerGroup
+                    exportData.bcoDatabase.ownerGroup,
             ),
         isSkippable: () => exportData.destination !== "bco-database" || exportData.exportPluginFormat !== "bco",
     },
@@ -179,7 +179,7 @@ watch(
         if (exportData.destination === "bco-database" && exportData.exportPluginFormat !== "bco") {
             exportData.destination = "download";
         }
-    }
+    },
 );
 
 watch(
@@ -188,7 +188,7 @@ watch(
         if (oldValue && !newValue) {
             resetWizard();
         }
-    }
+    },
 );
 
 function onRecordSelected(recordUri: string) {

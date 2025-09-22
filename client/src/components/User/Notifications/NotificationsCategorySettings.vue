@@ -36,7 +36,7 @@ watch(
     () => isCategoryEnabled.value,
     (newValue) => {
         emit("onCategoryEnabledChange", props.category, newValue);
-    }
+    },
 );
 
 function onChannelChange(category: NotificationCategory, channel: NotificationChannel, value: boolean) {

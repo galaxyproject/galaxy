@@ -58,7 +58,7 @@ watch(
     () => recordUri.value,
     (value) => {
         emit("onRecordSelected", value);
-    }
+    },
 );
 
 async function onCreateRecord() {

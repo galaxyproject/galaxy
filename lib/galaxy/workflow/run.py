@@ -503,14 +503,18 @@ class WorkflowProgress:
                     # If we are not waiting for elements, there was some
                     # problem creating the collection. Collection will never
                     # be populated.
-                    raise modules.FailWorkflowEvaluation(
-                        why=InvocationFailureCollectionFailed(
-                            reason=FailureReason.collection_failed,
-                            hdca_id=replacement.id,
-                            workflow_step_id=connection.input_step_id,
-                            dependent_workflow_step_id=output_step_id,
+                    # We want to be certain of this however, so refresh attribute ...
+                    replacement.collection.expire_populated_state()
+                    # ... and repeat check to avoid race condition
+                    if not replacement.collection.populated:
+                        raise modules.FailWorkflowEvaluation(
+                            why=InvocationFailureCollectionFailed(
+                                reason=FailureReason.collection_failed,
+                                hdca_id=replacement.id,
+                                workflow_step_id=connection.input_step_id,
+                                dependent_workflow_step_id=output_step_id,
+                            )
                         )
-                    )
 
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)

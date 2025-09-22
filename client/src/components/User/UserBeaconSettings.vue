@@ -153,7 +153,7 @@ export default {
                     beaconHistory.contents.length,
                     ...beaconHistory.contents.filter((dataset) => {
                         return !dataset.deleted;
-                    })
+                    }),
                 );
             });
             return beaconHistories;
@@ -169,7 +169,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    this.errorMessages.push(error.response.data.err_msg), console.log(error.response);
+                    (this.errorMessages.push(error.response.data.err_msg), console.log(error.response));
                 });
         },
         optIn() {

@@ -27,7 +27,7 @@ const props = defineProps<Props>();
 const userStore = useUserStore();
 
 const gravatarSource = computed(
-    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`
+    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`,
 );
 
 const publishedByUser = computed(() => `/workflows/list_published?owner=${props.workflowInfo?.owner}`);

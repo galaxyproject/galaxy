@@ -333,6 +333,9 @@ class ConditionalDependencies:
 
         return celery_enabled and is_redis_url(celery_result_backend) or is_redis_url(celery_broker_url)
 
+    def check_huggingface_hub(self):
+        return "huggingface" in self.file_sources
+
 
 def optional(config_file=None):
     if not config_file:

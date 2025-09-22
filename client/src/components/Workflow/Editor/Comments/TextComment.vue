@@ -44,7 +44,7 @@ useResizable(
     ([width, height]) => {
         emit("resize", [width, height]);
         saveText();
-    }
+    },
 );
 
 function escapeAndSanitize(text: string) {
@@ -101,7 +101,7 @@ function increaseFontSize() {
 }
 
 const increaseFontSizeTitle = computed(() =>
-    canIncreaseFontSize.value ? `Increase font size to ${fontSize.value + 1}` : "Maximum font size"
+    canIncreaseFontSize.value ? `Increase font size to ${fontSize.value + 1}` : "Maximum font size",
 );
 
 function decreaseFontSize() {
@@ -111,7 +111,7 @@ function decreaseFontSize() {
 }
 
 const decreaseFontSizeTitle = computed(() =>
-    canDecreaseFontSize.value ? `Decrease font size to ${fontSize.value - 1}` : "Minimum font size"
+    canDecreaseFontSize.value ? `Decrease font size to ${fontSize.value - 1}` : "Minimum font size",
 );
 
 function onRootClick() {
@@ -141,7 +141,7 @@ watch(
                 saveText();
             }
         }
-    }
+    },
 );
 
 function onSetColor(color: WorkflowCommentColor) {
@@ -359,7 +359,9 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
     }
 
     &.multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

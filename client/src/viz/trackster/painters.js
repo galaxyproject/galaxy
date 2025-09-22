@@ -475,7 +475,7 @@ class FeaturePainter extends Painter {
                     this.view_end,
                     w_scale,
                     y_scale,
-                    width
+                    width,
                 );
                 feature_mapper.map_feature_data(feature, slot, x_draw_coords[0], x_draw_coords[1]);
 
@@ -685,7 +685,7 @@ class LinkedFeaturePainter extends FeaturePainter {
                         block_start,
                         y_start + (thick_height - thin_height) / 2 + 1,
                         block_end - block_start,
-                        thin_height
+                        thin_height,
                     );
 
                     // If block intersects with thick region, draw block as thick.
@@ -716,7 +716,7 @@ class LinkedFeaturePainter extends FeaturePainter {
                                 block_thick_start,
                                 y_start + 1,
                                 block_thick_end - block_thick_start,
-                                thick_height
+                                thick_height,
                             );
                         }
                     }
@@ -866,7 +866,7 @@ class ReadPainter extends FeaturePainter {
 
         var // Gets drawing coordinate for a sequence coordinate. Assumes closure variables w_scale and tile_low.
             get_draw_coord = (
-                sequence_coord // -0.5 to offset sequence between bases.
+                sequence_coord, // -0.5 to offset sequence between bases.
             ) => Math.floor(Math.max(0, (sequence_coord - tile_low - 0.5) * w_scale));
 
         ctx.textAlign = "center";
@@ -973,7 +973,7 @@ class ReadPainter extends FeaturePainter {
                             // If read starts after tile start, slice at read start.
                             Math.max(0, seq_start - tile_low),
                             // If read ends before tile end, slice at read end.
-                            Math.min(seq_start - tile_low + cig_len, tile_high - tile_low)
+                            Math.min(seq_start - tile_low + cig_len, tile_high - tile_low),
                         );
                     }
 
@@ -1069,7 +1069,7 @@ class ReadPainter extends FeaturePainter {
                                     x_center,
                                     y_start + (this.mode !== "Dense" ? 2 : 5),
                                     s_end - s_start,
-                                    mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT
+                                    mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT,
                                 );
                             }
                         } else {
@@ -1152,7 +1152,7 @@ class ReadPainter extends FeaturePainter {
                     feature[4][0],
                     feature[4][2],
                     feature[4][3],
-                    feature[4][4]
+                    feature[4][4],
                 );
             } else {
                 connector = false;
@@ -1170,7 +1170,7 @@ class ReadPainter extends FeaturePainter {
                     feature[5][0],
                     feature[5][2],
                     feature[5][3],
-                    feature[5][4]
+                    feature[5][4],
                 );
             } else {
                 connector = false;
@@ -1182,7 +1182,7 @@ class ReadPainter extends FeaturePainter {
             // make it possible to put together more easily.
             // -0.5 to position connector correctly between reads.
             var b1_end = Math.ceil(
-                Math.min(width, Math.max(-0.5 * w_scale, (feature[4][1] - tile_low - 0.5) * w_scale))
+                Math.min(width, Math.max(-0.5 * w_scale, (feature[4][1] - tile_low - 0.5) * w_scale)),
             );
 
             var b2_start = Math.floor(Math.max(-0.5 * w_scale, (feature[5][0] - tile_low - 0.5) * w_scale));
@@ -1204,7 +1204,7 @@ class ReadPainter extends FeaturePainter {
                 feature_start,
                 feature[4],
                 feature[5],
-                feature[6]
+                feature[6],
             );
         }
         if (mode === "Pack" && feature_start >= tile_low && feature_name !== ".") {

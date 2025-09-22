@@ -57,7 +57,7 @@ jobs:
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
@@ -84,7 +84,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           flags: selenium
           working-directory: 'galaxy root'

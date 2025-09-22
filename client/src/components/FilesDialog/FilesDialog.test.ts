@@ -113,7 +113,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
         http.get("/api/file_source_templates", ({ response }) => {
             const fileSourceTemplates = hasTemplates ? [{ id: "test_template" } as FileSourceTemplateSummary] : [];
             return response(200).json(fileSourceTemplates);
-        })
+        }),
     );
 
     const testingPinia = createTestingPinia({ stubActions: false });

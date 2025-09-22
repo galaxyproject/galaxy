@@ -33,7 +33,7 @@ describe("InteractiveToolsPanel component", () => {
         // Reset mocks
         jest.clearAllMocks();
         (filterLatestToolVersions as jest.MockedFunction<typeof filterLatestToolVersions>).mockImplementation(
-            (tools) => tools
+            (tools) => tools,
         );
     });
 
@@ -89,7 +89,7 @@ describe("InteractiveToolsPanel component", () => {
             { id: "jupyter/2.0", version: "2.0", name: "Jupyter", model_class: "InteractiveTool" },
         ];
         (filterLatestToolVersions as jest.MockedFunction<typeof filterLatestToolVersions>).mockReturnValue(
-            filteredTools as Tool[]
+            filteredTools as Tool[],
         );
 
         await mountComponent();
@@ -114,7 +114,7 @@ describe("InteractiveToolsPanel component", () => {
             },
         ];
         (filterLatestToolVersions as jest.MockedFunction<typeof filterLatestToolVersions>).mockReturnValue(
-            searchableTools as Tool[]
+            searchableTools as Tool[],
         );
 
         await mountComponent();

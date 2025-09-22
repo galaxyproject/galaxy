@@ -15,7 +15,7 @@ export function drawBoxComments(
     comments: FrameWorkflowComment[] | TextWorkflowComment[] | MarkdownWorkflowComment[],
     lineWidth: number,
     defaultColor: string,
-    colorFill = false
+    colorFill = false,
 ) {
     ctx.lineWidth = lineWidth;
 
@@ -56,7 +56,7 @@ export function drawSteps(
     ctx: CanvasRenderingContext2D,
     steps: Step[],
     color: string,
-    stateStore: ReturnType<typeof useWorkflowStateStore>
+    stateStore: ReturnType<typeof useWorkflowStateStore>,
 ) {
     ctx.beginPath();
     ctx.fillStyle = color;
@@ -73,7 +73,7 @@ export function drawSteps(
 export function drawFreehandComments(
     ctx: CanvasRenderingContext2D,
     comments: FreehandWorkflowComment[],
-    defaultColor: string
+    defaultColor: string,
 ) {
     const catmullRom = line().curve(curveCatmullRom).context(ctx);
 
@@ -87,7 +87,7 @@ export function drawFreehandComments(
         ctx.lineWidth = comment.data.thickness;
 
         const line = comment.data.line.map(
-            (vec) => [vec[0] + comment.position[0], vec[1] + comment.position[1]] as [number, number]
+            (vec) => [vec[0] + comment.position[0], vec[1] + comment.position[1]] as [number, number],
         );
 
         ctx.beginPath();

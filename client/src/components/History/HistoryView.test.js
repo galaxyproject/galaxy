@@ -7,6 +7,7 @@ import { setupMockConfig } from "tests/jest/mockConfig";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
@@ -18,6 +19,8 @@ const localVue = getLocalVue();
 localVue.use(VueRouter);
 
 jest.mock("stores/services/history.services");
+
+setupSelectableMock();
 
 const { server, http } = useServerMock();
 
@@ -73,7 +76,7 @@ async function createWrapper(localVue, currentUserId, history) {
     server.use(
         http.get("/api/histories/{history_id}/contents", ({ response }) => {
             return response(200).json(history_contents_result);
-        })
+        }),
     );
 
     const router = new VueRouter();
@@ -203,7 +206,7 @@ describe("History center panel View", () => {
 
         // instead we have an alert
         expect(wrapper.find("[data-description='history messages']").text()).toBe(
-            "History has been permanently deleted"
+            "History has been permanently deleted",
         );
     });
 

@@ -46,7 +46,7 @@ jobs:
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
@@ -68,7 +68,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage --skip_flakey_fails -cwl lib/galaxy_test/api/cwl -- -m "${{ matrix.marker }} and ${{ matrix.conformance-version }}"
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           flags: cwl-conformance
           working-directory: 'galaxy root'

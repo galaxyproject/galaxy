@@ -47,7 +47,7 @@ export class Services {
                 if (Array.isArray(x.tools)) {
                     x.profile = x.tools.reduce(
                         (value, current) => (current.profile > value ? current.profile : value),
-                        null
+                        null,
                     );
                 }
             });

@@ -7580,6 +7580,8 @@ export interface components {
             device?: string | null;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
@@ -11147,6 +11149,11 @@ export interface components {
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey";
+            /**
+             * Sort Reverse
+             * @default false
+             */
+            sort_reverse: boolean;
             /** Visible */
             visible: boolean;
         };
@@ -11184,7 +11191,8 @@ export interface components {
                 | "inveniordm"
                 | "zenodo"
                 | "rspace"
-                | "dataverse";
+                | "dataverse"
+                | "huggingface";
             /** Variables */
             variables?:
                 | (
@@ -12002,6 +12010,11 @@ export interface components {
              */
             name?: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Peek
              * @description A few lines of contents from the start of the file.
              */
@@ -12259,6 +12272,11 @@ export interface components {
              * @description The name of the item.
              */
             name: string | null;
+            /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
             /**
              * Peek
              * @description A few lines of contents from the start of the file.
@@ -12527,6 +12545,11 @@ export interface components {
              */
             name: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Purged
              * @description Whether this dataset has been removed from disk.
              */
@@ -12684,6 +12707,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
              * Type
@@ -12838,6 +12866,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -12973,6 +13006,11 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -14066,6 +14104,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -14108,6 +14151,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -14149,6 +14197,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -14305,7 +14358,10 @@ export interface components {
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
-            /** Optional */
+            /**
+             * Optional
+             * @default false
+             */
             optional: boolean;
             /**
              * Parameter Type
@@ -17373,6 +17429,23 @@ export interface components {
              */
             version: number;
         };
+        /**
+         * OldestCreateTimeByObjectStoreId
+         * @description Represents the oldest creation time of a set of datasets stored in a specific object store.
+         */
+        OldestCreateTimeByObjectStoreId: {
+            /**
+             * Object Store ID
+             * @description The ID of the object store.
+             */
+            object_store_id: string;
+            /**
+             * Oldest Create Time
+             * Format: date-time
+             * @description The oldest creation time of a set of datasets stored in this object store.
+             */
+            oldest_create_time: string;
+        };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -18103,6 +18176,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -18608,6 +18686,11 @@ export interface components {
              */
             ctime: string;
             /**
+             * Hashes
+             * @description List of precomputed hashes for the file, if available.
+             */
+            hashes?: components["schemas"]["RemoteFileHash"][] | null;
+            /**
              * Name
              * @description The name of the entry.
              */
@@ -18627,6 +18710,16 @@ export interface components {
              * @description The URI of the entry.
              */
             uri: string;
+        };
+        /** RemoteFileHash */
+        RemoteFileHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
         };
         /**
          * RemoteFilesDisableMode
@@ -20200,6 +20293,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -20728,6 +20826,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -21480,6 +21583,8 @@ export interface components {
             hidden: boolean;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
@@ -21585,7 +21690,8 @@ export interface components {
                 | "inveniordm"
                 | "zenodo"
                 | "rspace"
-                | "dataverse";
+                | "dataverse"
+                | "huggingface";
             /** Uri Root */
             uri_root: string;
             /**
@@ -21799,6 +21905,11 @@ export interface components {
              */
             class: "GalaxyUserTool";
             /**
+             * Configfiles
+             * @description A list of config files for this tool.
+             */
+            configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
+            /**
              * Container
              * @description Container image to use for this tool.
              */
@@ -21880,6 +21991,11 @@ export interface components {
              * @constant
              */
             class: "GalaxyUserTool";
+            /**
+             * Configfiles
+             * @description A list of config files for this tool.
+             */
+            configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
             /**
              * Container
              * @description Container image to use for this tool.
@@ -22794,6 +22910,21 @@ export interface components {
              * @description External resource vendor prefix
              */
             namespace: string;
+        };
+        /** YamlTemplateConfigFile */
+        YamlTemplateConfigFile: {
+            /** Content */
+            content: string;
+            /**
+             * Eval Engine
+             * @default ecmascript
+             * @constant
+             */
+            eval_engine: "ecmascript";
+            /** Filename */
+            filename?: string | null;
+            /** Name */
+            name?: string | null;
         };
         /** Organization */
         galaxy__schema__drs__Organization: {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
 import { nextTick, onUnmounted, ref, watch } from "vue";
@@ -35,7 +37,7 @@ watch(
             });
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 onUnmounted(() => {
@@ -75,7 +77,9 @@ if (props.toolUuid) {
         })
         .then(({ data, error }) => {
             if (!error) {
-                yamlRepresentation.value = stringify(data.representation);
+                yamlRepresentation.value = stringify(data.representation, {
+                    blockQuote: "literal",
+                });
             }
         });
 }
@@ -104,9 +108,19 @@ async function saveTool() {
 
 <template>
     <div>
+        <b-alert v-if="errorMsg" variant="danger" show dismissible>
+            {{ errorMsg }}
+        </b-alert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
-            <b-button variant="primary" size="m" @click="saveTool">Save</b-button>
+            <b-button
+                variant="primary"
+                size="m"
+                title="Save Custom Tool"
+                data-description="save custom tool"
+                @click="saveTool"
+                ><FontAwesomeIcon :icon="faSave"
+            /></b-button>
         </div>
         <VueMonacoEditor
             v-model="yamlRepresentation"

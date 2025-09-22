@@ -71,7 +71,7 @@ const props = withDefaults(
         objectName: "",
         objectQuery: undefined,
         objectTitle: undefined,
-    }
+    },
 );
 
 const emit = defineEmits<{
@@ -110,7 +110,7 @@ const droppable = computed(() => ["history_dataset_id", "history_dataset_collect
 
 const title = computed(
     () =>
-        props.objectTitle || `Select a ${props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`
+        props.objectTitle || `Select a ${props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`,
 );
 
 // Unified search behavior
@@ -195,7 +195,7 @@ function isValidContent(historyContentType: string) {
 watch(
     () => [props.objectType, currentHistoryId.value, lastUpdateTime.value],
     () => search(),
-    { immediate: true }
+    { immediate: true },
 );
 
 defineExpose({ currentValue });

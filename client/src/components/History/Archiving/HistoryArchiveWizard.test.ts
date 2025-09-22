@@ -58,7 +58,7 @@ describe("HistoryArchiveWizard.vue", () => {
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json([]);
-            })
+            }),
         );
     });
 
@@ -88,7 +88,7 @@ describe("HistoryArchiveWizard.vue", () => {
                         },
                     },
                 ]);
-            })
+            }),
         );
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { onBeforeRouteLeave } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 
@@ -16,20 +17,23 @@ export interface Props {
 const props = defineProps<Props>();
 
 const isLoading = ref(true);
+const hasUnsavedChanges = ref(false);
+const iframeRef = ref<HTMLIFrameElement | null>(null);
 
 const srcWithRoot = computed(() => {
     let url = "";
     if (props.visualization === "trackster") {
-        if (props.datasetId) {
-            url = `/visualization/trackster?dataset_id=${props.datasetId}`;
-        } else {
+        if (props.visualizationId) {
             url = `/visualization/trackster?id=${props.visualizationId}`;
+        } else {
+            url = `/visualization/trackster?dataset_id=${props.datasetId}`;
         }
     } else {
-        if (props.datasetId) {
-            url = `/plugins/visualizations/${props.visualization}/show?dataset_id=${props.datasetId}`;
-        } else {
+        if (props.visualizationId) {
             url = `/plugins/visualizations/${props.visualization}/saved?id=${props.visualizationId}`;
+        } else {
+            const query = props.datasetId ? `?dataset_id=${props.datasetId}` : "";
+            url = `/plugins/visualizations/${props.visualization}/show${query}`;
         }
     }
 
@@ -39,7 +43,64 @@ const srcWithRoot = computed(() => {
 function handleLoad() {
     isLoading.value = false;
     emit("load");
+    setupChangeDetection();
 }
+
+function setupChangeDetection() {
+    const iframe = iframeRef.value;
+    if (!iframe?.contentWindow) {
+        return;
+    }
+
+    setTimeout(() => {
+        try {
+            const iframeDoc = iframe.contentDocument;
+            if (!iframeDoc) {
+                return;
+            }
+
+            const markAsChanged = () => {
+                if (!hasUnsavedChanges.value) {
+                    hasUnsavedChanges.value = true;
+                }
+            };
+
+            // Monitor DOM changes (skip initial load)
+            setTimeout(() => {
+                const observer = new MutationObserver(() => markAsChanged());
+                observer.observe(iframeDoc.body, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true,
+                });
+            }, 2000);
+
+            // Monitor user input
+            ["input", "change", "keyup", "paste"].forEach((type) => {
+                iframeDoc.addEventListener(type, markAsChanged, true);
+            });
+        } catch (e) {
+            console.warn("Cannot monitor iframe for changes:", e);
+        }
+    }, 1000);
+}
+
+onBeforeRouteLeave((to, from, next) => {
+    if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
+        next(false);
+    } else {
+        next();
+    }
+});
+
+onMounted(() => {
+    window.addEventListener("beforeunload", (e) => {
+        if (hasUnsavedChanges.value) {
+            e.preventDefault();
+            e.returnValue = "";
+        }
+    });
+});
 </script>
 
 <template>
@@ -49,6 +110,7 @@ function handleLoad() {
         </div>
         <iframe
             id="galaxy_visualization"
+            ref="iframeRef"
             :src="srcWithRoot"
             class="center-frame"
             frameborder="0"

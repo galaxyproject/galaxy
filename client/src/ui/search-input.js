@@ -109,8 +109,8 @@ function searchInput(parentNode, options) {
     function $clearBtn() {
         return $(
             ['<span class="search-clear fa fa-times-circle" ', 'title="', _l("clear search (esc)"), '"></span>'].join(
-                ""
-            )
+                "",
+            ),
         )
             .tooltip({ placement: "bottom" })
             .click(function (event) {
@@ -128,11 +128,11 @@ function searchInput(parentNode, options) {
                 'data-placement="bottom" ',
                 'data-content="',
                 _l(
-                    "<p>You can use advanced searches here using keywords and syntax like <em>name=mydataset</em> or <em>state=error</em>."
+                    "<p>You can use advanced searches here using keywords and syntax like <em>name=mydataset</em> or <em>state=error</em>.",
                 ),
                 "<br/>",
                 _l(
-                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, state, and history_content_type</em>."
+                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, state, and history_content_type</em>.",
                 ),
                 "<br/>",
                 _l("To learn more visit "),
@@ -141,7 +141,7 @@ function searchInput(parentNode, options) {
                 '.</a></p>" title="',
                 _l("Search tips"),
                 '"></a>',
-            ].join("")
+            ].join(""),
         )
             .tooltip({ placement: "top", trigger: "hover" })
             .click(function () {
@@ -170,7 +170,7 @@ function searchInput(parentNode, options) {
     // a button for clearing the search bar, placed on the right hand side
     function $loadingIndicator() {
         return $(
-            ['<span class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("loading..."), '"></span>'].join("")
+            ['<span class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("loading..."), '"></span>'].join(""),
         )
             .hide()
             .tooltip({ placement: "bottom" });

@@ -74,7 +74,7 @@ watchImmediate(
     () => props.inputLicense,
     () => {
         setCurrentLicense();
-    }
+    },
 );
 </script>
 

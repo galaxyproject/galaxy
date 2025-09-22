@@ -383,6 +383,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
         with (
             mock.patch.object(HDCASerializer, "url_for", return_value="http://google.com"),
             mock.patch.object(HDCASerializer, "serialize_to_view", return_value=mock_hdca_view),
+            mock.patch.object(HDCASerializer, "serialize_store_times_summary", return_value=[]),
         ):
             export, extra_data = self._ready_export(example)
         assert "history_dataset_collections" in extra_data

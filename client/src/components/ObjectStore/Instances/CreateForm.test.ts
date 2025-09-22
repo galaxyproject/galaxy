@@ -115,7 +115,7 @@ describe("CreateForm", () => {
             }),
             http.post("/api/object_store_instances/test", ({ response }) => {
                 return response(200).json(OK_PLUGIN_STATUS);
-            })
+            }),
         );
 
         const nameForElement = wrapper.find("#form-element-_meta_name");
@@ -141,7 +141,7 @@ describe("CreateForm", () => {
             }),
             http.post("/api/object_store_instances/test", ({ response }) => {
                 return response(200).json(OK_PLUGIN_STATUS);
-            })
+            }),
         );
 
         await flushPromises();

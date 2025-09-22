@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { computed, type Ref, ref, set } from "vue";
 
-import { fetchCollectionDetails } from "@/api/datasetCollections";
+import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
 import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
@@ -78,7 +78,7 @@ export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
     stepsJobsSummary: Ref<StepJobSummary[]>,
     workflowId: string | undefined,
-    workflowVersion: number | undefined
+    workflowVersion: number | undefined,
 ) {
     library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
 
@@ -208,7 +208,7 @@ export function useInvocationGraph(
     function updateStep(
         graphStep: GraphStep,
         invocationStep: InvocationStep | undefined,
-        invocationStepSummary: StepJobSummary | undefined
+        invocationStepSummary: StepJobSummary | undefined,
     ) {
         /** The new state for the graph step */
         let newState = graphStep.state;
@@ -323,7 +323,7 @@ export function useInvocationGraph(
                 set(graphStep, "state", getContentItemState(hda));
                 set(graphStep, "nodeText", `${hda.hid}: <b>${hda.name}</b>`);
             } else {
-                const hdca = await fetchCollectionDetails({ hdca_id: inputItem.id });
+                const hdca = await fetchCollectionSummary({ hdca_id: inputItem.id });
                 // TODO: Same type mismatch as above
                 set(graphStep, "state", getContentItemState(hdca));
                 set(graphStep, "nodeText", `${hdca.hid}: <b>${hdca.name}</b>`);
@@ -340,7 +340,7 @@ export function useInvocationGraph(
 
     function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
         return Object.values(invocation.input_step_parameters).find(
-            (param) => param.workflow_step_id === invocationStep.workflow_step_id
+            (param) => param.workflow_step_id === invocationStep.workflow_step_id,
         );
     }
 

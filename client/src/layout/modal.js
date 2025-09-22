@@ -46,7 +46,7 @@ $.extend(Modal.prototype, {
         let body = options.body;
         if (body == "progress") {
             body = $(
-                "<div class='progress progress-striped active'><div class='progress-bar' style='width: 100%'></div></div>"
+                "<div class='progress progress-striped active'><div class='progress-bar' style='width: 100%'></div></div>",
             );
         }
         this.$body.html(body);
@@ -130,7 +130,7 @@ export function show_in_overlay(options) {
         closeButton: true,
         title: "&nbsp;",
         body: $(
-            `<div style='margin: -5px;'><iframe style='margin: 0; padding: 0;' src='${options.url}' width='${width}' height='${height}' scrolling='${scroll}' frameborder='0'></iframe></div>`
+            `<div style='margin: -5px;'><iframe style='margin: 0; padding: 0;' src='${options.url}' width='${width}' height='${height}' scrolling='${scroll}' frameborder='0'></iframe></div>`,
         ),
     });
     modal.show({ backdrop: true });

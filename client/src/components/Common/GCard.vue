@@ -415,7 +415,7 @@ function onKeyDown(event: KeyboardEvent) {
                                         :id="
                                             getElementId(
                                                 props.id,
-                                                props.bookmarked ? 'bookmark-remove' : 'bookmark-add'
+                                                props.bookmarked ? 'bookmark-remove' : 'bookmark-add',
                                             )
                                         "
                                         v-b-tooltip.hover.noninteractive

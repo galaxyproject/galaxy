@@ -173,8 +173,9 @@ export default {
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
         ...mapActions(useToolStore, ["fetchToolForId"]),
         fetchTool() {
-            if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
-                this.fetchToolForId(this.workflowStep.tool_id);
+            const toolId = this.workflowStep.tool_uuid || this.workflowStep.tool_id;
+            if (toolId && !this.getToolForId(toolId)) {
+                this.fetchToolForId(toolId);
             }
         },
         fetchSubworkflow() {
@@ -184,7 +185,7 @@ export default {
         },
         getParamInput(stepDetails) {
             return Object.values(this.invocation.input_step_parameters).find(
-                (param) => param.workflow_step_id === stepDetails.workflow_step_id
+                (param) => param.workflow_step_id === stepDetails.workflow_step_id,
             );
         },
         jobStepHeading(stepDetails) {
@@ -206,6 +207,7 @@ export default {
                 stepLabel: invocationStep && invocationStep.workflow_step_label,
                 stepType: this.workflowStep.type,
                 stepToolId: this.workflowStep.tool_id,
+                stepToolUuid: this.workflowStep.tool_uuid,
                 stepSubworkflowId: this.workflowStep.workflow_id,
             };
             return rval;

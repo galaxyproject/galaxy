@@ -200,7 +200,7 @@ watch(
         if (invocations.value.length === 0) {
             loadRun();
         }
-    }
+    },
 );
 
 defineExpose({

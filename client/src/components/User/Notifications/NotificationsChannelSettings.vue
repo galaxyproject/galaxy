@@ -28,7 +28,7 @@ watch(
     () => value.value,
     (newValue) => {
         emit("onChange", props.category, props.channel, newValue);
-    }
+    },
 );
 </script>
 

@@ -38,7 +38,7 @@ describe("JobInformation/JobInformation.vue", () => {
                     stdout: "stdout",
                     stderr: "stderr",
                 });
-            })
+            }),
         );
     });
 

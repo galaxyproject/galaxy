@@ -215,7 +215,7 @@ function onRuleCreate() {
 
 const dropWorkbookTitle = computed(() => {
     return localize(
-        "If you have a completed data import workbook just drop it here or click this icon to upload your local file and skip ahead to the end of the data import wizard."
+        "If you have a completed data import workbook just drop it here or click this icon to upload your local file and skip ahead to the end of the data import wizard.",
     );
 });
 

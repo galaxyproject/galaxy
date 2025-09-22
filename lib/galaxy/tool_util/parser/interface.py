@@ -12,6 +12,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     TYPE_CHECKING,
     Union,
@@ -32,7 +33,9 @@ from galaxy.tool_util_models.tool_source import (
     Citation,
     DrillDownOptionsDict,
     FieldDict,
+    FileSourceConfigFile,
     HelpContent,
+    InputConfigFile,
     JavascriptRequirement,
     JsonTestCollectionDefCollectionElementDict,
     JsonTestCollectionDefDatasetElementDict,
@@ -40,6 +43,7 @@ from galaxy.tool_util_models.tool_source import (
     JsonTestCollectionDefElementDict,
     JsonTestDatasetDefDict,
     OutputCompareType,
+    TemplateConfigFile,
     XrefDict,
 )
 from galaxy.util import Element
@@ -152,6 +156,10 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_version(self) -> Optional[str]:
         """Parse a version describing the abstract tool."""
+
+    def parse_class(self) -> Optional[str]:
+        """Parse the class of the tool."""
+        return None
 
     def parse_tool_module(self) -> Optional[Tuple[str, str]]:
         """Load Tool class from a custom module. (Optional).
@@ -397,6 +405,15 @@ class ToolSource(metaclass=ABCMeta):
 
         Result should be list of schema.org data model Person or Organization objects.
         """
+        return []
+
+    def parse_template_configfiles(self) -> Sequence[TemplateConfigFile]:
+        return []
+
+    def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
+        return []
+
+    def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
         return []
 
     @property

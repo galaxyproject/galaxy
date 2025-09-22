@@ -32,7 +32,7 @@ export const useBroadcastsStore = defineStore("broadcastsStore", () => {
 
     function updateBroadcasts(broadcastList: BroadcastNotification[]) {
         broadcasts.value = mergeObjectListsById(broadcasts.value, broadcastList, "create_time", "desc").filter(
-            (b) => !hasExpired(b.expiration_time)
+            (b) => !hasExpired(b.expiration_time),
         );
     }
 

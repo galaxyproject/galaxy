@@ -58,7 +58,7 @@ let redraw = true;
 watch(
     () => [props.transform, props.viewportBounds],
     () => (redraw = true),
-    { deep: true }
+    { deep: true },
 );
 
 useAnimationFrame(() => {
@@ -118,7 +118,7 @@ function traceGrid(
     ctx: CanvasRenderingContext2D,
     gap: number,
     pan: { x: number; y: number },
-    bounds: AxisAlignedBoundingBox
+    bounds: AxisAlignedBoundingBox,
 ) {
     const startOffset = {
         x: (pan.x % gap) - gap,

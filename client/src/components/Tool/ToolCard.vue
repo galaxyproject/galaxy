@@ -84,7 +84,7 @@ watch(
     () => props.id,
     () => {
         errorText.value = null;
-    }
+    },
 );
 
 function onSetError(e) {

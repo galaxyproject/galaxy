@@ -74,7 +74,7 @@ export function isDataUri(item: object): item is DataUri {
 }
 
 export function isDataUriCollectionElementCollection(
-    item: DataUriCollectionElement
+    item: DataUriCollectionElement,
 ): item is DataUriCollectionElementCollection {
     return item.class === "Collection";
 }

@@ -126,7 +126,7 @@ const PopupMenu = Backbone.View.extend({
             } catch (err) {
                 if (err instanceof DOMException) {
                     console.debug(
-                        "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic."
+                        "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic.",
                     );
                 } else {
                     console.debug(err);
@@ -145,7 +145,7 @@ const PopupMenu = Backbone.View.extend({
         } catch (err) {
             if (err instanceof DOMException) {
                 console.debug(
-                    "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic."
+                    "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic.",
                 );
             } else {
                 console.debug(err);

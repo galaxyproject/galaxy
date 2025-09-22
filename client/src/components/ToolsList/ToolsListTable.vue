@@ -121,7 +121,7 @@ export default {
             const matches = [];
             xpaths.forEach((xpath) => {
                 matches.push(
-                    helpDoc.evaluate(xpath, helpDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+                    helpDoc.evaluate(xpath, helpDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue,
                 );
             });
             matches.forEach((match) => {

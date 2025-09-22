@@ -48,7 +48,7 @@ async function fetchMetrics() {
 watch(
     () => props.invocationId,
     () => fetchMetrics(),
-    { immediate: true }
+    { immediate: true },
 );
 
 function itemToX(item: components["schemas"]["WorkflowJobMetric"]) {
@@ -93,7 +93,7 @@ interface DerivedMetric {
 type AnyMetric = components["schemas"]["WorkflowJobMetric"] & DerivedMetric;
 
 function computeAllocatedCoreTime(
-    jobMetrics: components["schemas"]["WorkflowJobMetric"][] | undefined
+    jobMetrics: components["schemas"]["WorkflowJobMetric"][] | undefined,
 ): DerivedMetric[] {
     const walltimePerJob: Record<string, number> = {};
     const coresPerJob: Record<string, number> = {};
@@ -135,7 +135,7 @@ function metricToSpecData(
     metricName: string,
     yTitle: string,
     helpTerm?: string,
-    transform?: (param: number) => number
+    transform?: (param: number) => number,
 ): boxplotData {
     const thisMetric = jobMetrics?.filter((jobMetric) => jobMetric.name == metricName);
     const values = thisMetric?.map((item) => {
@@ -164,7 +164,7 @@ function metricToAggregateData(
     metricName: string,
     yTitle: string,
     helpTerm?: string,
-    transform?: (param: number) => number
+    transform?: (param: number) => number,
 ): barChartData {
     const thisMetric = jobMetrics?.filter((jobMetric) => jobMetric.name == metricName);
     const aggregateByX: Record<string, number> = {};
@@ -223,7 +223,7 @@ const wallclockAggregate: ComputedRef<barChartData> = computed(() => {
         "runtime_seconds",
         title,
         "galaxy.jobs.metrics.walltime",
-        transformTime
+        transformTime,
     );
 });
 
@@ -234,7 +234,7 @@ const allocatedCoreTimeSpec: ComputedRef<boxplotData> = computed(() => {
         "allocated_core_time",
         title,
         "galaxy.jobs.metrics.allocated_core_time",
-        transformTime
+        transformTime,
     );
 });
 
@@ -245,7 +245,7 @@ const allocatedCoreTimeAggregate: ComputedRef<barChartData> = computed(() => {
         "allocated_core_time",
         title,
         "galaxy.jobs.metrics.allocated_core_time",
-        transformTime
+        transformTime,
     );
 });
 
@@ -263,7 +263,7 @@ const peakMemory: ComputedRef<boxplotData> = computed(() => {
         "memory.peak",
         "Max memory usage recorded (in MB)",
         undefined,
-        (v) => v / 1024 ** 2
+        (v) => v / 1024 ** 2,
     );
 });
 

@@ -20,7 +20,7 @@ export function useHighlight(options: Ref<SelectOption[]>) {
 
     watch(
         () => options.value,
-        () => reset()
+        () => reset(),
     );
 
     let highlightIndexStart = -1;

@@ -18,15 +18,15 @@ describe("Workflow License", () => {
             http.get("/api/workflows/{workflow_id}", ({ response }) =>
                 response(200).json({
                     license: "MIT",
-                })
+                }),
             ),
             http.get("/api/licenses/MIT", ({ response }) =>
                 response(200).json({
                     licenseId: "MIT",
                     name: "MIT License",
                     url: "https://opensource.org/licenses/MIT",
-                })
-            )
+                }),
+            ),
         );
         return mount(WorkflowLicense, {
             localVue,

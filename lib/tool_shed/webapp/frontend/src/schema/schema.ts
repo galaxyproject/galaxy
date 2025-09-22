@@ -1649,6 +1649,11 @@ export interface components {
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey"
+            /**
+             * Sort Reverse
+             * @default false
+             */
+            sort_reverse: boolean
             /** Visible */
             visible: boolean
         }
@@ -1954,7 +1959,10 @@ export interface components {
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
-            /** Optional */
+            /**
+             * Optional
+             * @default false
+             */
             optional: boolean
             /**
              * Parameter Type

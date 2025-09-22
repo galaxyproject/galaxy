@@ -116,6 +116,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "tags": self.config.get("tags"),
             "title": self.config.get("title"),
             "target": self.config.get("render_target", "galaxy_main"),
+            "params": self.config.get("params"),
             "embeddable": self.config.get("embeddable"),
             "entry_point": self.config.get("entry_point"),
             "settings": self.config.get("settings"),

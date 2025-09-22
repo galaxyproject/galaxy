@@ -42,7 +42,7 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
                 },
             }).$mount(vm);
             return promise;
-        }
+        },
     );
 }
 function createCollectionViaRules(selection, defaultHideSourceItems = true) {

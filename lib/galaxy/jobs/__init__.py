@@ -123,7 +123,7 @@ DEFAULT_JOB_SHELL = "/bin/bash"
 DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
-VALID_TOOL_CLASSES = ["local", "requires_galaxy"]
+VALID_TOOL_CLASSES = ["local", "requires_galaxy", "user_defined"]
 
 
 class JobDestination(Bunch):
@@ -2582,8 +2582,8 @@ class MinimalJobWrapper(HasResourceParameters):
                     command = f"{dependency_shell_commands}; {command}"
         return command
 
-    def check_for_entry_points(self, check_already_configured=True):
-        if not self.tool.produces_entry_points:
+    def check_for_entry_points(self, check_already_configured: bool = True) -> bool:
+        if self.tool and not self.tool.produces_entry_points:
             return True
 
         job = self.get_job()
@@ -2611,6 +2611,7 @@ class MinimalJobWrapper(HasResourceParameters):
             self.fail(error_message)
             # local job runner uses return value to determine if we're done polling
             return True
+        return False
 
     def container_monitor_command(self, container, **kwds):
         if (

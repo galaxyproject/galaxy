@@ -45,6 +45,7 @@ FileSourceTemplateType = Literal[
     "zenodo",
     "rspace",
     "dataverse",
+    "huggingface",
 ]
 
 
@@ -296,6 +297,20 @@ class DataverseFileSourceConfiguration(StrictModel):
     writable: bool = True
 
 
+class HuggingFaceFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["huggingface"]
+    token: Union[str, TemplateExpansion, None] = None
+    endpoint: Union[str, TemplateExpansion, None] = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class HuggingFaceFileSourceConfiguration(StrictModel):
+    type: Literal["huggingface"]
+    token: Optional[str] = None
+    endpoint: Optional[str] = None
+
+
 FileSourceTemplateConfiguration = Annotated[
     Union[
         PosixFileSourceTemplateConfiguration,
@@ -311,6 +326,7 @@ FileSourceTemplateConfiguration = Annotated[
         ZenodoFileSourceTemplateConfiguration,
         RSpaceFileSourceTemplateConfiguration,
         DataverseFileSourceTemplateConfiguration,
+        HuggingFaceFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -330,6 +346,7 @@ FileSourceConfiguration = Annotated[
         ZenodoFileSourceConfiguration,
         RSpaceFileSourceConfiguration,
         DataverseFileSourceConfiguration,
+        HuggingFaceFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -407,6 +424,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "zenodo": ZenodoFileSourceConfiguration,
     "rspace": RSpaceFileSourceConfiguration,
     "dataverse": DataverseFileSourceConfiguration,
+    "huggingface": HuggingFaceFileSourceConfiguration,
 }
 
 

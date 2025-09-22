@@ -35,7 +35,7 @@ const { steps, loading, loadWorkflowOntoGraph } = useWorkflowRunGraph(
     props.version,
     toRef(props, "inputs"),
     toRef(props, "formInputs"),
-    toRef(props, "stepValidation")
+    toRef(props, "stepValidation"),
 );
 
 try {

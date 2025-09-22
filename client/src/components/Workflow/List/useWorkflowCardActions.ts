@@ -36,7 +36,7 @@ export function useWorkflowCardActions(
     editorView: boolean,
     refreshCallback: () => void,
     insertSteps: () => void,
-    insert: () => void
+    insert: () => void,
 ) {
     const userStore = useUserStore();
     const { isAnonymous } = storeToRefs(userStore);

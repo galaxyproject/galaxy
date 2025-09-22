@@ -201,7 +201,7 @@ async function selectAllItems() {
             limit: totalRows.value,
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,
-        })
+        }),
     );
     items.value = allItems;
     selectedItems.value = allItems;

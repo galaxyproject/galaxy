@@ -15,7 +15,7 @@ const props = withDefaults(
         description: undefined,
         state: null,
         invalidFeedback: undefined,
-    }
+    },
 );
 
 const stateClasses = computed(() => {

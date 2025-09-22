@@ -46,7 +46,7 @@ export function useHashedUserId(user: Ref<AnyUser>) {
         },
         {
             immediate: true,
-        }
+        },
     );
 
     async function hashUserId(id: string) {

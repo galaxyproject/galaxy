@@ -148,7 +148,7 @@ export default {
                 url = encodeURI(
                     `${this.url.protocol}//${this.pathChunks
                         .map(({ pathChunk }) => decodeURIComponent(pathChunk))
-                        .join("/")}`
+                        .join("/")}`,
                 );
                 url = decodeURI(url);
             }

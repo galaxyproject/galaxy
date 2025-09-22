@@ -49,7 +49,7 @@ const props = withDefaults(
     }>(),
     {
         hasChanged: undefined,
-    }
+    },
 );
 
 const emit = defineEmits<{

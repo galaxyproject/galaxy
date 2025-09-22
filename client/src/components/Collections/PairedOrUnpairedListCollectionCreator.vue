@@ -294,7 +294,7 @@ function initialize() {
             activeElements.value,
             currentForwardFilter.value,
             currentReverseFilter.value || "",
-            removeExtensions.value
+            removeExtensions.value,
         );
     }
     syncRowDataToRowPairing();
@@ -331,7 +331,7 @@ function addUploadedFiles(files: HDASummary[]) {
             files,
             currentForwardFilter.value || "",
             currentReverseFilter.value || "",
-            removeExtensions.value
+            removeExtensions.value,
         );
         syncPairingToRowData(summary, rowData.value);
     }
@@ -347,7 +347,7 @@ function updatePairNames() {
                 v.datasets.reverse,
                 currentForwardFilter.value || "",
                 currentReverseFilter.value || "",
-                previousRemoveExtensions
+                previousRemoveExtensions,
             );
             if (v.identifier == previousUnchangedIdentifier) {
                 v.identifier = guessNameForPair(
@@ -355,7 +355,7 @@ function updatePairNames() {
                     v.datasets.reverse,
                     currentForwardFilter.value || "",
                     currentReverseFilter.value || "",
-                    removeExtensions.value
+                    removeExtensions.value,
                 );
             }
         } else {
@@ -414,7 +414,7 @@ function pairedListIdentifiers(): CollectionElementIdentifier[] {
         const isPaired = "forward" in v.datasets;
         function toElementIdentifierObject(
             collectionType: "paired" | "paired_or_unpaired",
-            identifiers: CollectionElementIdentifier[]
+            identifiers: CollectionElementIdentifier[],
         ) {
             return {
                 collection_type: collectionType,
@@ -439,7 +439,7 @@ function pairedListIdentifiers(): CollectionElementIdentifier[] {
             ];
             return toElementIdentifierObject(
                 props.collectionType == "list:paired" ? "paired" : "paired_or_unpaired",
-                identifiers
+                identifiers,
             );
         } else {
             const unpaired = unpairedDataset(v);
@@ -552,7 +552,7 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
             reverse,
             currentForwardFilter.value || "",
             currentReverseFilter.value || "",
-            removeExtensions.value
+            removeExtensions.value,
         );
         const pair = { forward, reverse, name: nameForPair };
         const insertPairAt = insertPairAtIndexType[pairBy];

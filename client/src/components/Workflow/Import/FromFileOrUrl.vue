@@ -23,8 +23,8 @@ const importTooltip = computed(() => {
     return isImportDisabled.value
         ? "You must provide a workflow archive URL or file."
         : sourceURL.value
-        ? "Import workflow from URL"
-        : "Import workflow from File";
+          ? "Import workflow from URL"
+          : "Import workflow from File";
 });
 
 const hasErrorMessage = computed(() => {

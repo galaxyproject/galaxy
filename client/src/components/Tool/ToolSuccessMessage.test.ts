@@ -47,10 +47,10 @@ describe("ToolSuccessMessage", () => {
 
     it("shows both dataset and collection outputs correctly", async () => {
         expect(wrapper.find(SELECTORS.OUTPUTS_LIST).text()).toContain(
-            `${TEST_JOB_RESPONSE.outputs[0]?.hid}: ${TEST_JOB_RESPONSE.outputs[0]?.name}`
+            `${TEST_JOB_RESPONSE.outputs[0]?.hid}: ${TEST_JOB_RESPONSE.outputs[0]?.name}`,
         );
         expect(wrapper.find(SELECTORS.OUTPUTS_LIST).text()).toContain(
-            `${TEST_JOB_RESPONSE.output_collections[0]?.hid}: ${TEST_JOB_RESPONSE.output_collections[0]?.name}`
+            `${TEST_JOB_RESPONSE.output_collections[0]?.hid}: ${TEST_JOB_RESPONSE.output_collections[0]?.name}`,
         );
     });
 

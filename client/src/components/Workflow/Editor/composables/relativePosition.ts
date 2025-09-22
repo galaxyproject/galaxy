@@ -62,7 +62,7 @@ export function useRelativePosition(child: Ref<HTMLElement | null>, root: Ref<HT
         },
         {
             immediate: true,
-        }
+        },
     );
 
     onScopeDispose(() => {

@@ -128,7 +128,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
 
         http.put("/api/histories/{history_id}/enable_link_access", ({ response }) => {
             return response(200).json(TEST_HISTORY_POST_SHARE);
-        })
+        }),
     );
 
     const wrapper = mount(WorkflowInvocationShare as object, {

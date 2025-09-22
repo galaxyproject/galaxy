@@ -119,7 +119,7 @@ export default {
                     this.compatibleTools = getCompatibleRecommendations(
                         predictedDataChildren,
                         outputDatatypes,
-                        this.datatypesMapper
+                        this.datatypesMapper,
                     );
                 }
                 this.showLoading = false;

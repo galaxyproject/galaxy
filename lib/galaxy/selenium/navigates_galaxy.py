@@ -1953,6 +1953,17 @@ class NavigatesGalaxy(HasDriver):
             selection_component.confirm_button.wait_for_and_click()
         selection_component.option_cards.wait_for_absent_or_hidden()
 
+    def select_history_storage(self, storage_id: str) -> None:
+        self.components.history_panel.storage_location_button.wait_for_and_click()
+        selection_component = self.components.history_panel.object_store_selection
+        selection_component.option_cards.wait_for_present()
+        button = selection_component.option_card_select(object_store_id=storage_id)
+        if not button.is_absent:
+            button.wait_for_and_click()
+        if not selection_component.confirm_button.is_absent:
+            selection_component.confirm_button.wait_for_and_click()
+        selection_component.option_cards.wait_for_absent_or_hidden()
+
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
         self.components.pages.editor.markdown_editor.wait_for_visible()

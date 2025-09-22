@@ -74,7 +74,7 @@ const localToolsById = computed(() => {
         return getValidToolsInCurrentView(
             toolStore.toolsById,
             props.workflow,
-            !props.workflow ? SECTION_IDS_TO_EXCLUDE : []
+            !props.workflow ? SECTION_IDS_TO_EXCLUDE : [],
         );
     }
     return {};
@@ -91,7 +91,7 @@ const localSectionsById = computed(() => {
     return getValidPanelItems(
         sectionEntries,
         validToolIdsInCurrentView,
-        !props.workflow ? SECTION_IDS_TO_EXCLUDE : []
+        !props.workflow ? SECTION_IDS_TO_EXCLUDE : [],
     ) as Record<string, Tool | ToolSectionType>;
 });
 
@@ -137,7 +137,7 @@ function onToolClick(tool: Tool, evt: Event) {
 function onResults(
     idResults: string[] | null,
     sectioned: Record<string, Tool | ToolSectionType> | null,
-    closestMatch: string | null = null
+    closestMatch: string | null = null,
 ) {
     if (idResults !== null && idResults.length > 0) {
         results.value = idResults;

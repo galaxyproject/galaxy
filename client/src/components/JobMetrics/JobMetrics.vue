@@ -67,7 +67,7 @@ watch(
     () => {
         getJobMetrics();
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const ec2Instances = ref<EC2[]>();

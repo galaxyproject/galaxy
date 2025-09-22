@@ -15,7 +15,7 @@ const { datasetPathDestination } = useDatasetPathDestination();
 const props = defineProps<Props>();
 
 const pathDestination = computedAsync<PathDestination | null>(() =>
-    datasetPathDestination.value(props.historyDatasetId, props.path)
+    datasetPathDestination.value(props.historyDatasetId, props.path),
 );
 
 const directoryContent = computed(() => {

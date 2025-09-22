@@ -33,7 +33,7 @@ const emit = defineEmits<{
 
 const title = localize("You have unsaved changes. Do you want to save them before proceeding?");
 const body = localize(
-    "Click 'Save' to save your changes and proceed, 'Don't Save' to discard them and proceed, or 'Cancel' to return to the editor."
+    "Click 'Save' to save your changes and proceed, 'Don't Save' to discard them and proceed, or 'Cancel' to return to the editor.",
 );
 
 const buttonTitles = {

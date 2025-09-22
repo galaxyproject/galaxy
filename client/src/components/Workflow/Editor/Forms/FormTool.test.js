@@ -30,7 +30,7 @@ describe("FormTool", () => {
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response(200).json({});
-            })
+            }),
         );
     });
 

@@ -90,12 +90,12 @@ function processInvocation() {
 watch(
     () => props.content,
     () => processContent(),
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
     () => invocation.value,
-    () => processInvocation()
+    () => processInvocation(),
 );
 </script>
 

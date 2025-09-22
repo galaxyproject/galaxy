@@ -31,6 +31,6 @@ export function globalInits() {
         init_refresh_on_change,
         () => replace_big_select_inputs(20, 1500),
         make_popup_menus,
-        onloadWebhooks
+        onloadWebhooks,
     );
 }

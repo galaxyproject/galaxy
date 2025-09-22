@@ -16,6 +16,11 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 interface HistoryRecord extends SelectionItem {
     size: number;
+    update_time: string;
+}
+
+interface DatasetRecord extends SelectionItem {
+    update_time: string | null;
 }
 
 interface Props {
@@ -89,7 +94,7 @@ const selectAllIcon = computed(() => {
 });
 
 function historyEntryToRecord(entry: HistorySummary): HistoryRecord {
-    const result = {
+    const result: HistoryRecord = {
         id: entry.id,
         label: entry.name,
         details: entry.annotation || "",
@@ -97,19 +102,21 @@ function historyEntryToRecord(entry: HistorySummary): HistoryRecord {
         url: entry.url,
         size: entry.count,
         update_time: entry.update_time,
+        entry: entry,
     };
 
     return result;
 }
 
-function datasetEntryToRecord(entry: HDASummary): SelectionItem {
-    const result = {
+function datasetEntryToRecord(entry: HDASummary): DatasetRecord {
+    const result: DatasetRecord = {
         id: entry.id,
         label: entry.name || "",
         details: "",
         isLeaf: true,
         url: entry.url,
         update_time: entry.update_time,
+        entry: entry,
     };
 
     return result;
@@ -137,7 +144,7 @@ function checkIfAllSelected(): boolean {
         items.value.length &&
             items.value.every((item) => {
                 return selected.value.findIndex((i) => i.id === item.id) !== -1;
-            })
+            }),
     );
 }
 

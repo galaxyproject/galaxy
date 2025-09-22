@@ -23,7 +23,7 @@ export function useExtendedHistory(historyId: string) {
     });
 
     const history = computed<HistorySummaryExtended>(
-        () => historyStore.getHistoryById(historyId) as HistorySummaryExtended
+        () => historyStore.getHistoryById(historyId) as HistorySummaryExtended,
     );
 
     return {

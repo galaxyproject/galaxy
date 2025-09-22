@@ -44,7 +44,7 @@ const notificationsPreferences = ref<UserNotificationPreferences>({});
 const supportedChannels = ref<NotificationChannel[]>([]);
 
 const categories = computed<NotificationCategory[]>(
-    () => Object.keys(notificationsPreferences.value) as NotificationCategory[]
+    () => Object.keys(notificationsPreferences.value) as NotificationCategory[],
 );
 const showPreferences = computed(() => {
     return !loading.value && config.value.enable_notification_system && notificationsPreferences.value;
@@ -95,7 +95,7 @@ watch(
             getNotificationsPreferences();
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function onCategoryEnabledChange(category: NotificationCategory, value: boolean) {

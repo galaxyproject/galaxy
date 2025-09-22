@@ -8,7 +8,7 @@ jest.mock(
         job_id: ["tool_d"],
         none: ["tool_x", "tool_y"],
     }),
-    { virtual: true }
+    { virtual: true },
 );
 
 describe("requirements utils", () => {

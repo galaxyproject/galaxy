@@ -78,7 +78,7 @@ export function useWorkflowStores(workflowId?: Ref<string> | string) {
 
     if (typeof id !== "string") {
         throw new Error(
-            "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component."
+            "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component.",
         );
     }
 

@@ -86,14 +86,14 @@ const { workflowCardExtraActions, workflowCardSecondaryActions, workflowCardPrim
         props.editorView,
         () => emit("refreshList", true),
         () => emit("insertSteps"),
-        () => emit("insert")
+        () => emit("insert"),
     );
 
 const { workflowCardIndicators } = useWorkflowCardIndicators(
     computed(() => props.workflow),
     props.publishedView,
     props.filterable,
-    (key, value) => emit("updateFilter", key, value)
+    (key, value) => emit("updateFilter", key, value),
 );
 
 const { workflowCardBadges, workflowCardTitleBadges } = useWorkflowCardBadges(
@@ -101,7 +101,7 @@ const { workflowCardBadges, workflowCardTitleBadges } = useWorkflowCardBadges(
     props.publishedView,
     props.filterable,
     props.hideRuns,
-    (key, value) => emit("updateFilter", key, value)
+    (key, value) => emit("updateFilter", key, value),
 );
 
 const workflowCardTitle = computed(() => {

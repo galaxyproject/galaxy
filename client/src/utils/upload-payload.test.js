@@ -5,7 +5,7 @@ describe("uploadPayload", () => {
         expect(() => uploadPayload([], "historyId")).toThrow("No valid items provided.");
         expect(() => uploadPayload([{}], "historyId")).toThrow("Content not available.");
         expect(() => uploadPayload([{ fileContent: "fileContent" }], "historyId")).toThrow(
-            "Unknown file mode: undefined."
+            "Unknown file mode: undefined.",
         );
         expect(() =>
             uploadPayload(
@@ -21,8 +21,8 @@ describe("uploadPayload", () => {
                         toPosixLines: false,
                     },
                 ],
-                "historyId"
-            )
+                "historyId",
+            ),
         ).toThrow("Invalid url: xyz://test.me.1");
     });
 
@@ -69,7 +69,7 @@ describe("uploadPayload", () => {
                     toPosixLines: true,
                 },
             ],
-            "historyId"
+            "historyId",
         );
         expect(p).toEqual({
             auto_decompress: true,
@@ -166,7 +166,7 @@ describe("uploadPayload", () => {
                 },
             ],
             "historyId",
-            true
+            true,
         );
         expect(p).toEqual({
             auto_decompress: true,

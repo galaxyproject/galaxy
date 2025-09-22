@@ -1,7 +1,15 @@
-import { getFilename, getTestUrls } from "./utilities";
+import { getFilename, getRequiresDataset, getTestUrls } from "./utilities";
 
 describe("Utility Functions", () => {
-    describe("getTestUrls", () => {
+    describe("getRequiresDataset and getTestUrls", () => {
+        it("return wether the visualization requires a dataset or not", () => {
+            expect(getRequiresDataset({})).toEqual(false);
+            const plugin = {
+                params: { dataset_id: { required: true } },
+            };
+            expect(getRequiresDataset(plugin)).toEqual(true);
+        });
+
         it("returns empty array when plugin is undefined", () => {
             expect(getTestUrls()).toEqual([]);
         });

@@ -84,7 +84,7 @@ const testLoader = jest.fn(
             items: newItems,
             total: TOTAL_ITEMS,
         });
-    }
+    },
 );
 
 describe("ScrollList with local loader and data", () => {

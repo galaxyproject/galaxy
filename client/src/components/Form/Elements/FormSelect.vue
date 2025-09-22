@@ -150,7 +150,7 @@ const currentValue = computed({
                         isSelected(opt.value) &&
                         (isDataOptionObject(val)
                             ? isDataOptionObject(opt.value) && itemUniqueKey(opt.value) === itemUniqueKey(val)
-                            : opt.value === val)
+                            : opt.value === val),
                 );
                 return option ? getSelectOption(option) : undefined;
             })
@@ -196,7 +196,7 @@ watch(
     () => props.options,
     () => {
         setInitialValue();
-    }
+    },
 );
 
 /**

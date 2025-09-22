@@ -28,7 +28,7 @@ const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
 
 const optionalActivities = computed(() => {
     return activityStore.activities.filter(
-        (a) => (a.optional && a.id !== "user-defined-tools") || canUseUnprivilegedTools.value
+        (a) => (a.optional && a.id !== "user-defined-tools") || canUseUnprivilegedTools.value,
     );
 });
 

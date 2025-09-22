@@ -105,13 +105,13 @@ function handleAttributes() {
 watch(
     () => props.content,
     () => handleAttributes(),
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
     () => invocation.value,
     () => fetchWorkflow(),
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

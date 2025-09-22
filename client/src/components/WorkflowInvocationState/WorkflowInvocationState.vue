@@ -69,7 +69,7 @@ const tabsDisabled = computed(
     () =>
         !invocationStateSuccess.value ||
         !invocation.value ||
-        !workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id)
+        !workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id),
 );
 
 /** Tooltip message for the a tab when it is disabled */
@@ -129,7 +129,8 @@ const invocationStateSuccess = computed(() => {
 
 const canSubmitFeedback = computed(
     () =>
-        invocationAndJobTerminal.value && (invocationState.value === "failed" || Boolean(stateCounts.value?.errorCount))
+        invocationAndJobTerminal.value &&
+        (invocationState.value === "failed" || Boolean(stateCounts.value?.errorCount)),
 );
 
 type StepStateType = { [state: string]: number };
@@ -216,7 +217,7 @@ watch(
             errorMessage.value = errorMessageAsString(e);
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
@@ -226,7 +227,7 @@ watch(
             // If the invocation was terminal and now is not, start polling again
             await pollStepStatesUntilTerminal();
         }
-    }
+    },
 );
 
 onUnmounted(() => {

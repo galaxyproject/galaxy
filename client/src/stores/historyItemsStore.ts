@@ -34,7 +34,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         return (historyId: string, filterText: string) => {
             const itemArray = items.value[historyId] || [];
             const filters = HistoryFilters.getFiltersForText(filterText).filter(
-                (filter: [string, string]) => !filter[0].includes("related")
+                (filter: [string, string]) => !filter[0].includes("related"),
             );
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
             const filtered = itemArray.filter((item: ExtendedHistoryItem) => {

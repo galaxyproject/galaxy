@@ -17,10 +17,7 @@ import pwd
 import random
 import string
 from collections import defaultdict
-from collections.abc import (
-    Callable,
-    Iterable,
-)
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import (
     datetime,
@@ -131,7 +128,6 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.orm.session import Session
-from sqlalchemy.sql import exists
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     Literal,
@@ -2766,7 +2762,13 @@ class ImplicitCollectionJobs(Base, Serializable):
 
     @property
     def job_list(self):
-        return [icjja.job for icjja in self.jobs]
+        return (
+            required_object_session(self)
+            .query(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+            .all()
+        )
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
@@ -3042,7 +3044,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TEXT)
-    token: Mapped[Optional[str]] = mapped_column(TEXT)
+    token: Mapped[str] = mapped_column(TEXT)
     tool_port: Mapped[Optional[int]]
     host: Mapped[Optional[str]] = mapped_column(TEXT)
     port: Mapped[Optional[int]]
@@ -3051,7 +3053,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     requires_domain: Mapped[Optional[bool]] = mapped_column(default=True)
     requires_path_in_url: Mapped[Optional[bool]] = mapped_column(default=False)
     requires_path_in_header_named: Mapped[Optional[str]] = mapped_column(TEXT)
-    info: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    info: Mapped[Optional[dict]] = mapped_column(MutableJSONType)
     configured: Mapped[Optional[bool]] = mapped_column(default=False)
     deleted: Mapped[Optional[bool]] = mapped_column(default=False)
     created_time: Mapped[Optional[datetime]] = mapped_column(default=now)
@@ -3086,6 +3088,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
         requires_path_in_url=False,
         configured=False,
         deleted=False,
+        token: Union[str, None] = None,
         **kwd,
     ):
         super().__init__(**kwd)
@@ -3093,7 +3096,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
         self.requires_path_in_url = requires_path_in_url
         self.configured = configured
         self.deleted = deleted
-        self.token = self.token or hex_to_lowercase_alphanum(token_hex(8))
+        self.token = token or hex_to_lowercase_alphanum(token_hex(8))
         self.info = self.info or {}
 
     @property
@@ -6442,6 +6445,11 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         self.library_dataset = library_dataset
         self.user = user
 
+    @property
+    def purged(self):
+        # For uniformity with HistoryDatasetAssociation
+        return self.dataset and self.dataset.purged
+
     def to_history_dataset_association(
         self, target_history, parent_id=None, add_to_history=False, visible=None, commit=True
     ):
@@ -6830,15 +6838,6 @@ class ImplicitlyConvertedDatasetAssociation(Base, Serializable):
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 
 
-class InnerCollectionFilter(NamedTuple):
-    column: str
-    operator_function: Callable
-    expected_value: Union[str, int, float, bool]
-
-    def produce_filter(self, table):
-        return self.operator_function(getattr(table, self.column), self.expected_value)
-
-
 class CollectionStateSummary(NamedTuple):
     dbkeys: list[Union[str, None]]
     extensions: list[str]
@@ -6913,7 +6912,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 ]
             ]
         ] = None,
-        inner_filter: Optional[InnerCollectionFilter] = None,
     ):
         collection_attributes = collection_attributes or ()
         element_attributes = element_attributes or ()
@@ -6949,7 +6947,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             order_by_columns.append(inner_dce.c.element_index)
             q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
             if collection_attributes:
-                q = q.join(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
+                q = q.outerjoin(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
                 q = q.add_columns(
                     *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
                 )
@@ -6957,8 +6955,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             dce = inner_dce
             dc = inner_dc
             depth_collection_type = depth_collection_type.split(":", 1)[1]
-        if inner_filter:
-            q = q.filter(inner_filter.produce_filter(dc.c))
 
         if (
             hda_attributes
@@ -7087,18 +7083,18 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             else:
                 stmt = self._build_nested_collection_attributes_stmt(
                     collection_attributes=("populated_state",),
-                    inner_filter=InnerCollectionFilter(
-                        "populated_state", operator.__ne__, DatasetCollection.populated_states.OK
-                    ),
                 )
-                stmt = stmt.subquery()
-                stmt = select(~exists(stmt))
                 session = required_object_session(self)
-                _populated_optimized = session.scalar(stmt)
-
+                for row in session.execute(stmt):
+                    if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
+                        _populated_optimized = False
+                        break
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
+
+    def expire_populated_state(self):
+        required_object_session(self).expire(self, ("populated_state",))
 
     @property
     def allow_implicit_mapping(self):
@@ -7108,7 +7104,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def populated(self):
         top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
         if top_level_populated and self.has_subcollections:
-            return all(e.child_collection and e.child_collection.populated for e in self.elements)
+            if self.id:
+                return self.populated_optimized
+            else:
+                return all(e.child_collection and e.child_collection.populated for e in self.elements)
         return top_level_populated
 
     @property
@@ -7584,7 +7583,8 @@ class HistoryDatasetCollectionAssociation(
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
             stmt = self.collection._build_nested_collection_attributes_stmt(
-                hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
+                hda_attributes=("_metadata", "extension", "deleted"),
+                dataset_attributes=("state", "object_store_id", "create_time"),
             )
             tuples = required_object_session(self).execute(stmt)
 
@@ -7592,6 +7592,7 @@ class HistoryDatasetCollectionAssociation(
             dbkeys = set()
             states = defaultdict(int)
             deleted = 0
+            store_times = {}
             for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
@@ -7606,7 +7607,13 @@ class HistoryDatasetCollectionAssociation(
                         deleted += 1
                     if row.state:
                         states[row.state] += 1
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted)
+                    store_id = row.object_store_id
+                    create_time = row.create_time
+                    if store_id is not None and create_time is not None:
+                        store_times[store_id] = min(create_time, store_times.get(store_id, create_time))
+            # Convert to set of (object_store_id, oldest_create_time) pairs
+            store_times_summary = set(store_times.items())
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions, states, deleted, store_times_summary)
         return self._dataset_dbkeys_and_extensions_summary
 
     @property
@@ -9189,7 +9196,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship(
+    steps: Mapped[list["WorkflowInvocationStep"]] = relationship(
         "WorkflowInvocationStep",
         back_populates="workflow_invocation",
         order_by=lambda: WorkflowInvocationStep.order_index,
@@ -10778,7 +10785,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
     provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
-    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)
+    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)  # type:ignore[assignment]
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
     user: Mapped[Optional["User"]] = relationship(back_populates="social_auth")

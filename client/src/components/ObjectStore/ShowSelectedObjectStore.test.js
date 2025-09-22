@@ -50,7 +50,7 @@ describe("ShowSelectedObjectStore", () => {
         server.use(
             http.get("/api/object_stores/{object_store_id}", ({ response }) => {
                 return response(200).json(OBJECT_STORE_DATA);
-            })
+            }),
         );
         wrapper = mount(ShowSelectedObjectStore, {
             propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
@@ -69,7 +69,7 @@ describe("ShowSelectedObjectStore", () => {
         server.use(
             http.get("/api/object_store_instances/{user_object_store_id}", ({ response }) => {
                 return response(200).json(USER_OBJECT_STORE_DATA);
-            })
+            }),
         );
 
         wrapper = mount(ShowSelectedObjectStore, {

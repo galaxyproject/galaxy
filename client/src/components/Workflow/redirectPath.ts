@@ -4,7 +4,7 @@ import { Toast } from "@/composables/toast";
 
 export function getRedirectOnImportPath(
     response: { id?: string; message?: string; status?: string },
-    isRunFormRedirect = false
+    isRunFormRedirect = false,
 ): RawLocation {
     if (isRunFormRedirect) {
         return { path: "/workflows/run", query: { id: response.id } };

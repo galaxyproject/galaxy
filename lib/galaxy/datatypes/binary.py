@@ -1489,6 +1489,8 @@ class Anndata(H5):
     True
     >>> Anndata().sniff(get_test_fname('adata_unk.h5ad'))
     True
+    >>> Anndata().sniff(get_test_fname('adata_noX.h5ad'))
+    True
     """
 
     file_ext = "h5ad"
@@ -1663,14 +1665,23 @@ class Anndata(H5):
 
             # Resolving the problematic shape parameter
             if "X" in dataset.metadata.layers_names:
-                # Shape we determine here due to the non-standard representation of 'X' dimensions
-                shape = anndata_file["X"].attrs.get("shape")
-                if shape is not None:
-                    dataset.metadata.shape = tuple(shape)
-                elif hasattr(anndata_file["X"], "shape"):
-                    dataset.metadata.shape = tuple(anndata_file["X"].shape)
 
-            if dataset.metadata.shape is None:
+                # Check if X is a null/empty matrix (common in fragment-only files of snapatac data for example)
+                if (
+                    anndata_file["X"].attrs.get("encoding-type") == "null"
+                    or anndata_file["X"].attrs.get("shape") is None
+                ):
+                    # if X matrix is null/empty, derive shape from obs and var sizes
+                    dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+                else:
+                    # if X matrix has actual data
+                    shape = anndata_file["X"].attrs.get("shape")
+                    if shape is not None:
+                        dataset.metadata.shape = tuple(shape)
+                    elif hasattr(anndata_file["X"], "shape") and anndata_file["X"].shape is not None:
+                        dataset.metadata.shape = tuple(anndata_file["X"].shape)
+
+            if dataset.metadata.shape is None or dataset.metadata.shape == (-1, -1):
                 dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
@@ -3181,6 +3192,7 @@ class Docx(Binary):
 
     file_ext = "docx"
     compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Docx is compressed in zip format and must not be uncompressed in Galaxy.
@@ -3201,6 +3213,22 @@ class Xlsx(Binary):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
         return file_prefix.compressed_mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+@build_sniff_from_prefix
+class Pptx(Binary):
+    """Class for PowerPoint 2007 (pptx) files"""
+
+    file_ext = "pptx"
+    compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # Pptx is compressed in zip format and must not be uncompressed in Galaxy.
+        return (
+            file_prefix.compressed_mime_type
+            == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
 
 
 @build_sniff_from_prefix
@@ -4767,3 +4795,63 @@ class Numpy(Binary):
             return dataset.peek
         except Exception:
             return f"Binary numpy file ({nice_size(dataset.get_size())})"
+
+
+@build_sniff_from_prefix
+class Hic(Binary):
+    """
+    Hic: highly compressed binary file that stores contact matrices
+    from multiple resolutions in a clever way, allowing random access.
+    https://github.com/aidenlab/hic-format
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('merlin.hic')
+    >>> Hic().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> Hic().sniff(fname)
+    False
+    """
+
+    file_ext = "hic"
+
+    MetadataElement(
+        name="version",
+        default="",
+        param=MetadataParameter,
+        desc="Version of the HiC file format",
+        readonly=True,
+        visible=True,
+        no_value=0,
+        optional=True,
+    )
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b"HIC"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.startswith_bytes(self._magic)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary HiC file"
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            dataset.blurb += f"\nHiC Format v{dataset.metadata.version}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary HiC file ({nice_size(dataset.get_size())})"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """
+        Set metadata for HiC file.
+        """
+        with open(dataset.get_file_name(), "rb") as handle:
+            header_bytes = handle.read(8)
+        dataset.metadata.version = struct.unpack("<i", header_bytes[4:8])[0]

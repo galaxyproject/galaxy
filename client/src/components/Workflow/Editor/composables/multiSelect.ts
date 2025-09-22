@@ -14,7 +14,7 @@ export function useMultiSelect(workflowId?: Ref<string> | string) {
     const anySelected = computed(() => selectedCommentsCount.value > 0 || selectedStepsCount.value > 0);
 
     const multiSelectedComments = computed(() =>
-        commentStore.multiSelectedCommentIds.map((id) => ensureDefined(commentStore.commentsRecord[id]))
+        commentStore.multiSelectedCommentIds.map((id) => ensureDefined(commentStore.commentsRecord[id])),
     );
 
     function deselectAll() {
@@ -34,7 +34,7 @@ export function useMultiSelect(workflowId?: Ref<string> | string) {
             } else {
                 return [];
             }
-        })
+        }),
     );
 
     return {

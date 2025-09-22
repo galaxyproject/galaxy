@@ -85,8 +85,8 @@ describe("MarkdownVitessce.vue", () => {
                             id: "label_id",
                         },
                     ],
-                })
-            )
+                }),
+            ),
         );
         const content = {
             datasets: [

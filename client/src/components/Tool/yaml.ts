@@ -284,7 +284,7 @@ export function buildProviderFunctions(monaco: MonacoEditor, options?: MonacoYam
             const codeActions = await (worker as any).getCodeAction(
                 String(model.uri),
                 fromRange(range),
-                fromCodeActionContext(context)
+                fromCodeActionContext(context),
             );
 
             if (codeActions) {
@@ -308,14 +308,14 @@ export function buildProviderFunctions(monaco: MonacoEditor, options?: MonacoYam
             model: any,
             position: IPosition,
             ch: any,
-            formattingOptions: FormattingOptions
+            formattingOptions: FormattingOptions,
         ) {
             const worker = await workerManager.getWorker(model.uri);
             const edits = await (worker as any).doDocumentOnTypeFormatting(
                 String(model.uri),
                 fromPosition(position),
                 ch,
-                fromFormattingOptions(formattingOptions)
+                fromFormattingOptions(formattingOptions),
             );
 
             return edits?.map(toTextEdit);
@@ -325,7 +325,7 @@ export function buildProviderFunctions(monaco: MonacoEditor, options?: MonacoYam
             const worker = await workerManager.getWorker(model.uri);
             const selectionRanges = await (worker as any).getSelectionRanges(
                 String(model.uri),
-                positions.map(fromPosition)
+                positions.map(fromPosition),
             );
 
             return selectionRanges?.map(toSelectionRanges);

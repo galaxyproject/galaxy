@@ -295,7 +295,7 @@ NumberCompatiableValidators = Union[InRangeParameterValidatorModel,]
 class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_integer"] = "gx_integer"
     type: Literal["integer"]
-    optional: bool
+    optional: bool = False
     value: Optional[int] = None
     min: Optional[int] = None
     max: Optional[int] = None
@@ -543,6 +543,7 @@ class DataInternalJson(StrictModel):
     nameext: Annotated[
         Optional[str], Field(description="The basename extension such that nameroot + nameext == basename")
     ]
+    format: Annotated[str, Field(description="The datatype extension of the file, e.g. 'txt', 'bam', 'fastq.gz'.")]
     # "secondaryFiles": List[Any],
     checksum: Optional[str]
     size: int

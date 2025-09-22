@@ -9,7 +9,7 @@ import { useRouter } from "vue-router/composables";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
-import { loadWebhookMenuItems } from "./_webhooks";
+import { loadMastheadWebhooks } from "./_webhooks";
 import MastheadDropdown from "./MastheadDropdown";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
@@ -72,7 +72,7 @@ function onWindowToggle() {
 }
 
 onMounted(() => {
-    loadWebhookMenuItems(extensionTabs.value);
+    loadMastheadWebhooks(extensionTabs.value);
 });
 </script>
 

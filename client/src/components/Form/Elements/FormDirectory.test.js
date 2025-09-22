@@ -76,7 +76,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json(rootResponse);
-            })
+            }),
         );
 
         const pinia = createPinia();

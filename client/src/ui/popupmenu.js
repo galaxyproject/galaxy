@@ -49,7 +49,7 @@ export function make_popupmenu(button_element, initial_options) {
                     menu_element.append(
                         $("<div/>")
                             .addClass("dropdown-item head")
-                            .append($("<a href='javascript:void(0)' role='button'></a>").html(k))
+                            .append($("<a href='javascript:void(0)' role='button'></a>").html(k)),
                     );
                 }
             });

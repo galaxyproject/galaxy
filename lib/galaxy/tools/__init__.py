@@ -17,6 +17,7 @@ from typing import (
     cast,
     NamedTuple,
     Optional,
+    Sequence,
     TYPE_CHECKING,
     Union,
 )
@@ -115,8 +116,11 @@ from galaxy.tool_util.version import (
     parse_version,
 )
 from galaxy.tool_util_models.tool_source import (
+    FileSourceConfigFile,
     HelpContent,
+    InputConfigFile,
     JavascriptRequirement,
+    TemplateConfigFile,
 )
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
@@ -146,6 +150,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     HiddenToolParameter,
+    ParameterValueError,
     SelectTagParameter,
     SelectToolParameter,
     ToolParameter,
@@ -401,6 +406,8 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
+    if tool_source.parse_class() == "GalaxyUserTool":
+        return UserDefinedTool(config_file, tool_source, app, **kwds)
     if (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
@@ -1093,7 +1100,23 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     @property
     def version_object(self):
-        return parse_version(self.version)
+        """Parse version string, handling special Galaxy version format."""
+        GALAXY_VERSION_SUFFIX = "+galaxy"
+        version = self.version
+
+        # Check if version has Galaxy suffix that we need to modify (e.g., "1.0+galaxy123")
+        if GALAXY_VERSION_SUFFIX not in version:
+            return parse_version(version)
+
+        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
+
+        # Handle Galaxy versions that need numeric sorting
+        if suffix:
+            # Per PEP-440 a version like <base_version>+galaxy<suffix> would be sorted lexicographically if not separated by a '.'.
+            # Injecting a '.' here will force a numeric sort if the suffix is an integer, otherwise the outcome will be the same.
+            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
+
+        return parse_version(version)
 
     @property
     def sa_session(self):
@@ -1384,6 +1407,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 tool_classes.append("local")
             if self.requires_galaxy_python_environment:
                 tool_classes.append("requires_galaxy")
+            if self.tool_type == "user_defined":
+                tool_classes.append("user_defined")
 
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids, tool_classes)
 
@@ -1477,7 +1502,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
 
     def __parse_legacy_features(self, tool_source: ToolSource):
-        self.code_namespace: dict[str, str] = {}
+        self.code_namespace: dict[str, Any] = {}
         self.hook_map: dict[str, str] = {}
         self.uihints: dict[str, str] = {}
 
@@ -1523,32 +1548,12 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             for key, value in uihints_elem.attrib.items():
                 self.uihints[key] = value
 
-    def __parse_config_files(self, tool_source):
-        self.config_files = []
-        if not hasattr(tool_source, "root"):
-            return
+    def __parse_config_files(self, tool_source: ToolSource):
+        self.config_files: Sequence[Union[TemplateConfigFile, InputConfigFile, FileSourceConfigFile]] = []
 
-        root = tool_source.root
-        if (conf_parent_elem := root.find("configfiles")) is not None:
-            inputs_elem = conf_parent_elem.find("inputs")
-            if inputs_elem is not None:
-                name = inputs_elem.get("name")
-                filename = inputs_elem.get("filename", None)
-                format = inputs_elem.get("format", "json")
-                data_style = inputs_elem.get("data_style", "skip")
-                content = dict(format=format, handle_files=data_style, type="inputs")
-                self.config_files.append((name, filename, content))
-            file_sources_elem = conf_parent_elem.find("file_sources")
-            if file_sources_elem is not None:
-                name = file_sources_elem.get("name")
-                filename = file_sources_elem.get("filename", None)
-                content = dict(type="files")
-                self.config_files.append((name, filename, content))
-            for conf_elem in conf_parent_elem.findall("configfile"):
-                name = conf_elem.get("name")
-                filename = conf_elem.get("filename", None)
-                content = conf_elem.text
-                self.config_files.append((name, filename, content))
+        self.config_files.extend(tool_source.parse_input_configfiles())
+        self.config_files.extend(tool_source.parse_template_configfiles())
+        self.config_files.extend(tool_source.parse_file_sources())
 
     def __parse_trackster_conf(self, tool_source):
         self.trackster_conf = None
@@ -2064,7 +2069,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
     ) -> tuple[
         list[ToolStateJobInstancePopulatedT],
-        list[ToolStateJobInstancePopulatedT],
+        list[ParameterValidationErrorsT],
         Optional[int],
         Optional[MatchingCollections],
     ]:
@@ -2149,7 +2154,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     def _handle_validate_input_hook(
         self, request_context, params: ToolStateJobInstancePopulatedT, errors: ParameterValidationErrorsT
-    ):
+    ) -> None:
         # If the tool provides a `validate_input` hook, call it.
         if validate_input := self.get_hook("validate_input"):
             # hooks are so terrible ... this is specifically for https://github.com/galaxyproject/tools-devteam/blob/main/tool_collections/gops/basecoverage/operation_filter.py
@@ -2199,11 +2204,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         there were no errors).
         """
         request_context = proxy_work_context_for_history(trans, history=history)
-        expanded = self.expand_incoming(request_context, incoming=incoming, input_format=input_format)
-        all_params: list[ToolStateJobInstancePopulatedT] = expanded[0]
-        all_errors: list[ParameterValidationErrorsT] = expanded[1]
-        rerun_remap_job_id: Optional[int] = expanded[2]
-        collection_info: Optional[MatchingCollections] = expanded[3]
+        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(
+            request_context, incoming=incoming, input_format=input_format
+        )
 
         # If there were errors, we stay on the same page and display them
         self.handle_incoming_errors(all_errors)
@@ -2266,7 +2269,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             param_errors = {}
             for d in all_errors:
                 for key, value in d.items():
-                    if hasattr(value, "to_dict"):
+                    if isinstance(value, ParameterValueError):
                         value_obj = value.to_dict()
                     else:
                         value_obj = {"message": unicodify(value)}
@@ -2466,16 +2469,18 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         param_dict = job.raw_param_dict()
         return self.params_from_strings(param_dict, ignore_errors=ignore_errors)
 
-    def check_and_update_param_values(self, values, trans, update_values=True, workflow_building_mode=False):
+    def check_and_update_param_values(
+        self, values, trans, update_values: bool = True, workflow_building_mode: bool = False
+    ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added.
         """
-        messages = {}
+        messages: dict[str, Any] = {}
         request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
 
-        def validate_inputs(input, value, error, parent, context, prefixed_name, prefixed_label, **kwargs):
+        def validate_inputs(input, value, error, parent, context, prefixed_name: str, prefixed_label, **kwargs):
             if not error:
                 value, error = check_param(request_context, input, value, context)
             if error:
@@ -3166,6 +3171,11 @@ class OutputParameterJSONTool(Tool):
             raise Exception("Must call 'exec_before_job' with 'out_data' containing at least one entry.")
         with open(json_filename, "w") as out:
             out.write(json.dumps(json_params))
+
+
+class UserDefinedTool(Tool):
+    tool_type = "user_defined"
+    requires_js_runtime = True
 
 
 class ExpressionTool(Tool):

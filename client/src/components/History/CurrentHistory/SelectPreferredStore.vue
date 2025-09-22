@@ -80,7 +80,7 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
                     okTitle: "Private new datasets",
                     cancelTitle: "Keep datasets public",
                     cancelVariant: "outline-primary",
-                }
+                },
             );
 
             if (confirmed) {
@@ -145,6 +145,7 @@ function reset() {
 
 <template>
     <BModal
+        id="modal-select-history-storage-location"
         :visible="props.showModal"
         centered
         scrollable
@@ -154,6 +155,7 @@ function reset() {
         title-tag="h3"
         ok-title="Change Storage Location"
         cancel-variant="outline-primary"
+        dialog-class="modal-select-history-storage-location"
         :ok-disabled="currentSelectedStoreId === props.preferredObjectStoreId"
         :no-close-on-backdrop="currentSelectedStoreId !== props.preferredObjectStoreId"
         :no-close-on-esc="currentSelectedStoreId !== props.preferredObjectStoreId"

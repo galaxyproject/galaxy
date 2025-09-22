@@ -60,7 +60,7 @@ describe("History SelectorModal.vue", () => {
             }),
             http.get("/api/histories/count", ({ response }) => {
                 return response(200).json(allHistories.length);
-            })
+            }),
         );
 
         const pinia = createPinia();

@@ -19,7 +19,7 @@ const props = withDefaults(
     }>(),
     {
         height: 400,
-    }
+    },
 );
 
 const emit = defineEmits(["change"]);

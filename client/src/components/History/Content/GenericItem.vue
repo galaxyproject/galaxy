@@ -1,5 +1,11 @@
 <template>
-    <component :is="providerComponent" :id="itemId" v-slot="{ result: item, loading }" auto-refresh>
+    <component
+        :is="providerComponent"
+        :id="itemId"
+        :key="view"
+        v-slot="{ result: item, loading }"
+        :view="view"
+        auto-refresh>
         <LoadingSpan v-if="loading" message="Loading dataset" />
         <div v-else>
             <ContentItem
@@ -11,7 +17,7 @@
                 :expand-dataset="expandDataset"
                 :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
                 @update:expand-dataset="expandDataset = $event"
-                @view-collection="viewCollection = !viewCollection"
+                @view-collection="onViewCollection"
                 @delete="onDelete"
                 @toggleHighlights="onHighlight(item)"
                 @undelete="onUndelete(item)"
@@ -60,6 +66,7 @@ export default {
         return {
             viewCollection: false,
             expandDataset: false,
+            view: this.itemSrc === "hdca" ? "collection" : "element",
         };
     },
     computed: {
@@ -123,6 +130,12 @@ export default {
             } catch (error) {
                 this.onError(error, "Failed to highlight related items");
             }
+        },
+        onViewCollection(collection) {
+            if (this.view === "collection" && collection.model_class === "HistoryDatasetCollectionAssociation") {
+                this.view = "element";
+            }
+            this.viewCollection = !this.viewCollection;
         },
     },
 };

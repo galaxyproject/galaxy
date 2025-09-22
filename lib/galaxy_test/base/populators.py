@@ -141,6 +141,29 @@ workflow_str = resource_string(__name__, "data/test_workflow_1.ga")
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga")
+# example of user defined tool
+TOOL_WITH_SHELL_COMMAND = {
+    "id": "basecommand",
+    "name": "Base command tool",
+    "class": "GalaxyUserTool",
+    "container": "busybox",
+    "version": "1.0.0",
+    "shell_command": "cat '$(inputs.input.path)' > output.fastq",
+    "inputs": [
+        {
+            "type": "data",
+            "name": "input",
+            "format": "txt",
+        }
+    ],
+    "outputs": [
+        {
+            "type": "data",
+            "from_work_dir": "output.fastq",
+            "name": "output",
+        }
+    ],
+}
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
@@ -2808,12 +2831,10 @@ class CwlPopulator:
 
         if os.path.exists(tool_id):
             raw_tool_id = os.path.basename(tool_id)
-            index = self.dataset_populator._get("tools", data=dict(in_panel=False))
-            index.raise_for_status()
-            tools = index.json()
-            # In panels by default, so flatten out sections...
-            tool_ids = [itemgetter("id")(_) for _ in tools]
-            if raw_tool_id in tool_ids:
+            get_response = self.dataset_populator._get("tools", data=dict(tool_id=raw_tool_id))
+            get_response.raise_for_status()
+            tool_versions: list[str] = get_response.json()
+            if tool_versions:
                 galaxy_tool_id = raw_tool_id
             else:
                 dynamic_tool = self.dataset_populator.create_tool_from_path(tool_id)

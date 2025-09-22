@@ -33,7 +33,7 @@ watch(
     () => props.objectStoreId,
     async () => {
         fetch();
-    }
+    },
 );
 fetch();
 const loadingMessage = "Loading Galaxy storage details";

@@ -5,9 +5,9 @@ This has the advantage of using a common interface and feature set for all icons
 
 Use cases for custom icons are:
 
--   The free font-awesome library does not have a fitting icon
--   A font awesome icon is not clear enough for the intended purpose
--   A variant for an icon is required, which is not included in font awesome free
+- The free font-awesome library does not have a fitting icon
+- A font awesome icon is not clear enough for the intended purpose
+- A variant for an icon is required, which is not included in font awesome free
 
 Avoid using custom icons in all other cases when possible.
 
@@ -31,19 +31,19 @@ These can then be loaded by specifying the right prefix.
 
 Example:
 
--   The icon pack galaxy has the prefix `gx`
--   It includes an icon called `magnet.duotone.svg`
--   The icon can be used using `<FontAwesomeIcon :icon="['gxd', 'magnet']" />`
--   The `d` in `gxd` is for duotone
+- The icon pack galaxy has the prefix `gx`
+- It includes an icon called `magnet.duotone.svg`
+- The icon can be used using `<FontAwesomeIcon :icon="['gxd', 'magnet']" />`
+- The `d` in `gxd` is for duotone
 
 ## File Structure
 
 SVG files need to follow a certain structure in order to be usable by Font-Awesome-Vue.
 Make sure your icon:
 
--   Has no transforms. Most SVG applications allow for "flattening transforms" on export. This will remove any transforms from your SVG file
--   Has one (or two for duotone) paths. Styles will be ignored, so make sure the path alone shows your icon. If you have an icon which utilizes outlines/strokes, expand the stroke before export
--   Has a width and height property
+- Has no transforms. Most SVG applications allow for "flattening transforms" on export. This will remove any transforms from your SVG file
+- Has one (or two for duotone) paths. Styles will be ignored, so make sure the path alone shows your icon. If you have an icon which utilizes outlines/strokes, expand the stroke before export
+- Has a width and height property
 
 ## Icon List
 

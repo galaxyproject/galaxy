@@ -156,7 +156,7 @@ export default {
                             isMakePrivate
                                 ? "The dataset is now private to you."
                                 : "Access to this dataset is now unrestricted."
-                        }`
+                        }`,
                     );
                     this.assignFetchedPermissions(fetched_permissions);
                     this.$refs.access_field.assignValue(this.access_dataset_roles);
@@ -164,7 +164,7 @@ export default {
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
                     console.error(error);
-                }
+                },
             );
         },
         setUserPermissionsPreferences(ids, permission_type) {
@@ -182,7 +182,7 @@ export default {
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
                     console.error(error);
-                }
+                },
             );
         },
     },

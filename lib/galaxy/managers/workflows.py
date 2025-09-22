@@ -63,9 +63,6 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
 from galaxy.model import (
     History,
-    ImplicitCollectionJobs,
-    ImplicitCollectionJobsJobAssociation,
-    Job,
     StoredWorkflow,
     StoredWorkflowTagAssociation,
     StoredWorkflowUserShareAssociation,
@@ -419,9 +416,9 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         return workflow_canvas.finish(for_embed=for_embed)
 
     def get_invocation(
-        self, trans, decoded_invocation_id: int, eager=False, check_ownership=True, check_accessible=True
+        self, trans, decoded_invocation_id: int, check_ownership=True, check_accessible=True
     ) -> WorkflowInvocation:
-        workflow_invocation = _get_invocation(trans.sa_session, eager, decoded_invocation_id)
+        workflow_invocation = _get_invocation(trans.sa_session, decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
             message = f"'{encoded_wfi_id}' is not a valid workflow invocation id"
@@ -1308,6 +1305,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if isinstance(module, ToolModule) and module.tool:
                 # Serialize tool version
                 step_dict["tool_version"] = module.tool.version
+                step_dict["tool_uuid"] = str(step.tool_uuid) if step.tool_uuid else None
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
@@ -1559,6 +1557,7 @@ class WorkflowContentsManager(UsesAnnotations):
             }
             if step.type == "tool":
                 step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
+                step_dict["tool_uuid"] = str(step.tool_uuid) if step.tool_uuid else None
             # Add tool shed repository information and post-job actions to step dict.
             if isinstance(module, ToolModule):
                 if module.tool and module.tool.tool_shed:
@@ -1577,6 +1576,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     if util.is_uuid(step_dict["content_id"]):
                         step_dict["content_id"] = None
                         step_dict["tool_id"] = None
+                        step_dict["tool_uuid"] = None
 
                 pja_dict = {}
                 for pja in step.post_job_actions:
@@ -1743,6 +1743,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "id": step_id,
                 "type": step_type,
                 "tool_id": step.tool_id,
+                "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
                 "tool_version": step.tool_version,
                 "annotation": self.get_item_annotation_str(sa_session, stored.user, step),
                 "tool_inputs": step.tool_inputs,
@@ -2062,10 +2063,14 @@ class WorkflowContentsManager(UsesAnnotations):
                     if {
                         "tool_id": step.tool_id,
                         "tool_version": step.tool_version,
-                        "tool_uuid": step.tool_uuid,
+                        "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
                     } not in tools:
                         tools.append(
-                            {"tool_id": step.tool_id, "tool_version": step.tool_version, "tool_uuid": step.tool_uuid}
+                            {
+                                "tool_id": step.tool_id,
+                                "tool_version": step.tool_version,
+                                "tool_uuid": str(step.tool_uuid) if step.tool_uuid else None,
+                            }
                         )
             elif step.type == "subworkflow":
                 tools.extend(self.get_all_tools(step.subworkflow))
@@ -2256,16 +2261,8 @@ def _get_stored_workflow(session, workflow_uuid, workflow_id, by_stored_id):
     return session.scalars(stmt).first()
 
 
-def _get_invocation(session, eager, invocation_id):
+def _get_invocation(session, invocation_id):
     stmt = select(WorkflowInvocation)
-    if eager:
-        stmt = stmt.options(
-            subqueryload(WorkflowInvocation.steps)
-            .joinedload(WorkflowInvocationStep.implicit_collection_jobs)
-            .joinedload(ImplicitCollectionJobs.jobs)
-            .joinedload(ImplicitCollectionJobsJobAssociation.job)
-            .joinedload(Job.input_datasets)
-        )
     stmt = stmt.where(WorkflowInvocation.id == invocation_id).limit(1)
     return session.scalars(stmt).first()
 

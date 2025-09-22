@@ -87,7 +87,7 @@ describe("UserDeletion.vue", () => {
         server.use(
             http.delete("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser({ deleted: true }));
-            })
+            }),
         );
 
         const wrapper = await mountComponent();

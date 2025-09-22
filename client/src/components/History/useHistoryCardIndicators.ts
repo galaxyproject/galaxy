@@ -31,7 +31,7 @@ import localize from "@/utils/localization";
 export function useHistoryCardIndicators(
     history: Ref<AnyHistoryEntry>,
     publishedView: boolean,
-    updateFilter: (key: string, value: boolean) => void
+    updateFilter: (key: string, value: boolean) => void,
 ): {
     historyCardIndicators: CardIndicator[];
 } {

@@ -63,6 +63,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
     discover_via: Literal["pattern"]
     sort_key: SortKeyT
     sort_comp: SortCompT
+    sort_reverse: bool = False
     pattern: str
 
 

@@ -15,7 +15,7 @@ export type Mode = "modal" | "wizard";
 /** Terminal states that are not usable from an upload (anything but `ok` or `deferred`)
  */
 const UNUSABLE_FROM_UPLOAD_STATES = Object.values(STATES.READY_STATES).filter(
-    (state) => state !== STATES.OK && state !== STATES.DEFERRED
+    (state) => state !== STATES.OK && state !== STATES.DEFERRED,
 );
 
 interface CommonCollectionBuilderProps {

@@ -209,7 +209,7 @@ export function getContentItemState(item: HistoryContentItem | HDADetailed | HDC
                     elements_states?: Record<string, number>;
                     elements_deleted?: number;
                     populated_state?: string | null;
-                }
+                },
             );
             for (const datasetState of HIERARCHICAL_COLLECTION_DATASET_STATES) {
                 if (datasetSummary.get(datasetState) > 0) {

@@ -76,7 +76,7 @@ watch(
                 showToggle.value = false;
             }, toggleLinger);
         }
-    }
+    },
 );
 
 const sideClasses = computed(() => ({
@@ -148,7 +148,9 @@ $border-width: 6px;
     border-color: transparent;
     border-width: $border-width;
     box-shadow: 1px 0 transparent;
-    transition: border-color 0.1s, box-shadow 0.1s;
+    transition:
+        border-color 0.1s,
+        box-shadow 0.1s;
     align-items: stretch;
     flex-direction: column;
 
@@ -186,7 +188,10 @@ $border-width: 6px;
     width: var(--width);
     overflow: hidden;
 
-    transition: width 0.1s, left 0.1s, right 0.1s;
+    transition:
+        width 0.1s,
+        left 0.1s,
+        right 0.1s;
     border-style: none;
 
     &:hover,

@@ -18,6 +18,7 @@ export interface SelectionItem {
     details: string;
     isLeaf: boolean;
     url: string;
+    entry: Record<string, unknown>;
     _rowVariant?: SelectionState;
 }
 

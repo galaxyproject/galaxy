@@ -10,9 +10,9 @@ export default {
             tmpl = this.grid_header(options) + this.grid_table(options);
         } else {
             tmpl = `<div class="loading-elt-overlay"></div><table><tr><td width="75%">${this.grid_header(
-                options
+                options,
             )}</td><td></td><td></td></tr><tr><td width="100%" id="grid-message" valign="top"></td><td></td><td></td></tr></table>${this.grid_table(
-                options
+                options,
             )}`;
         }
 
@@ -332,7 +332,7 @@ export default {
             status = "done";
         }
         return `<p><div class="${status}message transient-message">${_.escape(
-            options.message
+            options.message,
         )}</div><div style="clear: both"></div></p>`;
     },
 

@@ -41,7 +41,7 @@ const fetchIfAbsent = <T>(item?: T) => !item;
  */
 export function useKeyedCache<T>(
     fetchItemHandler: Ref<FetchHandler<T>> | FetchHandler<T>,
-    shouldFetchHandler?: MaybeRefOrGetter<ShouldFetchHandler<T>>
+    shouldFetchHandler?: MaybeRefOrGetter<ShouldFetchHandler<T>>,
 ) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingErrors = ref<{ [key: string]: Error }>({});

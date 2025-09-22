@@ -5,7 +5,7 @@ import type { FileSourceTypes } from "@/api/fileSources";
 import { templateTypes } from "@/api/fileSources";
 
 const MESSAGES = Object.fromEntries(
-    Object.entries(templateTypes).map(([type, { message }]) => [type, message])
+    Object.entries(templateTypes).map(([type, { message }]) => [type, message]),
 ) as Record<FileSourceTypes, string>;
 
 interface Props {

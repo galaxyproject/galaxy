@@ -34,7 +34,7 @@ export function setItemDragstart<T>(
     event: DragEvent,
     itemIsSelected = false,
     selectionSize = 0,
-    selectedItems?: Map<string, T>
+    selectedItems?: Map<string, T>,
 ) {
     if (selectedItems && itemIsSelected && selectionSize > 1) {
         const selectedItemsObj: Record<string, T> = {};

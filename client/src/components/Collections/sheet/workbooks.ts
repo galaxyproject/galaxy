@@ -6,7 +6,7 @@ import type { PrefixColumnsType } from "@/components/Collections/wizard/types";
 export async function downloadWorkbook(
     columnDefinitions: SampleSheetColumnDefinitions,
     collectionType: SampleSheetCollectionType,
-    initialRows?: string[][]
+    initialRows?: string[][],
 ) {
     if (!columnDefinitions) {
         return;
@@ -67,7 +67,7 @@ export function parseWorkbook(
     collectionType: SampleSheetCollectionType,
     columnDefinitions: SampleSheetColumnDefinitions | undefined,
     prefixColumnTypes: PrefixColumnsType,
-    base64Content: string
+    base64Content: string,
 ) {
     const parseBody = {
         collection_type: collectionType,

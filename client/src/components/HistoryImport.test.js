@@ -41,7 +41,7 @@ describe("HistoryImport.vue", () => {
                         },
                     },
                 ]);
-            })
+            }),
         );
 
         wrapper = mount(HistoryImport, {
@@ -83,14 +83,14 @@ describe("HistoryImport.vue", () => {
             http.post("/api/histories", async ({ response, request }) => {
                 formData = await request.formData();
                 return response(200).json({ job_id: TEST_JOB_ID });
-            })
+            }),
         );
 
         let then;
         waitOnJob.mockReturnValue(
             new Promise((then_) => {
                 then = then_;
-            })
+            }),
         );
         wrapper.vm.submit();
         await flushPromises();
@@ -113,7 +113,7 @@ describe("HistoryImport.vue", () => {
         const alert = wrapper.find(".alert");
         expect(alert.classes()).toContain("alert-warning");
         expect(alert.text()).toContain(
-            "It looks like you are trying to import a published history from another galaxy instance"
+            "It looks like you are trying to import a published history from another galaxy instance",
         );
 
         // Link to the GTN

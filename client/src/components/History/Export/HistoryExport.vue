@@ -193,7 +193,7 @@ function copyDownloadLinkFromRecord(record: ExportRecord) {
 
 async function reimportFromRecord(record: ExportRecord) {
     const confirmed = await confirm(
-        `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`
+        `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`,
     );
     if (confirmed) {
         try {

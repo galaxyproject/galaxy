@@ -47,7 +47,7 @@ const currentUserOwnsHistory = computed(() => {
         <BAlert :show="userOverQuota" variant="warning">
             {{
                 localize(
-                    "You are over your disk quota. Tool execution is on hold until your disk usage drops below your allocated quota."
+                    "You are over your disk quota. Tool execution is on hold until your disk usage drops below your allocated quota.",
                 )
             }}
         </BAlert>

@@ -13,7 +13,7 @@ export function useWorkflowCardBadges(
     publishedView: boolean,
     filterable: boolean,
     hideRuns: boolean,
-    updateFilter: (key: string, value: string) => void
+    updateFilter: (key: string, value: string) => void,
 ) {
     const router = useRouter();
 

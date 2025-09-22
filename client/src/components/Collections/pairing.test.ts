@@ -47,13 +47,13 @@ describe("guessInitialFilterType", () => {
 describe("guessNameForPair", () => {
     test("it should use the LCS and work with _1/_2 filters", () => {
         expect(guessNameForPair(mockDataset("moo_1.fastq"), mockDataset("moo_2.fastq"), "_1", "_2", true)).toEqual(
-            "moo"
+            "moo",
         );
     });
 
     test("it should use the LCS as a name and work with .1.fastq/.2.fastq filters", () => {
         expect(
-            guessNameForPair(mockDataset("moo.1.fastq"), mockDataset("moo.2.fastq"), ".1.fastq", ".2.fastq", true)
+            guessNameForPair(mockDataset("moo.1.fastq"), mockDataset("moo.2.fastq"), ".1.fastq", ".2.fastq", true),
         ).toEqual("moo");
     });
 
@@ -64,8 +64,8 @@ describe("guessNameForPair", () => {
                 mockDataset("moo_yuck_endssame.2.fastq"),
                 ".1.fastq",
                 ".2.fastq",
-                true
-            )
+                true,
+            ),
         ).toEqual("moo__endssame");
     });
 

@@ -36,9 +36,9 @@ describe("ToolForm", () => {
                     HttpResponse.json({
                         enable_tool_source_display: false,
                         object_store_allows_id_selection: false,
-                    })
+                    }),
                 );
-            })
+            }),
         );
 
         // the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be

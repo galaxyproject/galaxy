@@ -33,6 +33,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_tool,
     stage_rules_example,
+    TOOL_WITH_SHELL_COMMAND,
 )
 from ._framework import ApiTestCase
 
@@ -52,29 +53,6 @@ MINIMAL_TOOL_NO_ID = {
     "command": "echo 'Hello World 2' > $output1",
     "inputs": [],
     "outputs": {"output1": {"format": "txt", "type": "data"}},
-}
-
-TOOL_WITH_SHELL_COMMAND = {
-    "id": "basecommand",
-    "name": "Base command tool",
-    "class": "GalaxyUserTool",
-    "container": "busybox",
-    "version": "1.0.0",
-    "shell_command": "cat '$(inputs.input.path)' > output.fastq",
-    "inputs": [
-        {
-            "type": "data",
-            "name": "input",
-            "format": "txt",
-        }
-    ],
-    "outputs": [
-        {
-            "type": "data",
-            "from_work_dir": "output.fastq",
-            "name": "output",
-        }
-    ],
 }
 
 
@@ -1826,6 +1804,27 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         assert output_content == "abc\n"
+
+    @skip_without_tool("cat_multiple_user_defined")
+    def test_collection_into_multiple_true(self):
+        with (
+            self.dataset_populator.test_history() as history_id,
+            self.dataset_populator.user_tool_execute_permissions(),
+        ):
+            hdca = self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()[
+                "output_collections"
+            ][0]
+            response = self._run(
+                "cat_multiple_user_defined",
+                history_id,
+                {"datasets": {"values": [{"src": "hdca", "id": hdca["id"]}]}},
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            output_content = self.dataset_populator.get_history_dataset_content(
+                history_id, response["outputs"][0]["id"]
+            )
+            assert output_content == "TestData123\n" * 3
 
     def test_show_dynamic_tools(self):
         # Create tool.

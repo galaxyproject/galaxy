@@ -224,6 +224,15 @@ class SessionlessContext:
     def __init__(self) -> None:
         self.objects: dict[type, dict] = defaultdict(dict)
 
+    def execute(self, query: Any, *args, **kwargs) -> Any:
+        pass
+
+    def delete(self, obj: model.RepresentById) -> None:
+        self.objects[obj.__class__].pop(obj.id, None)
+
+    def scalars(self, query: Any, *args, **kwargs) -> Any:
+        pass
+
     def commit(self) -> None:
         pass
 
@@ -660,7 +669,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     if dataset_state == dataset_instance.states.DEFERRED:
                         dataset_instance.state = dataset_instance.states.DEFERRED
                         dataset_instance.deleted = False
-                        dataset_instance.purged = False
+                        if isinstance(dataset_instance, model.HistoryDatasetAssociation):
+                            dataset_instance.purged = False
+                        assert dataset_instance.dataset
                         dataset_instance.dataset.deleted = False
                         dataset_instance.dataset.purged = False
                     elif (
@@ -675,7 +686,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.state = target_state
                         deleted = is_discarded and (discarded_data == ImportDiscardedDataType.FORBID)
                         dataset_instance.deleted = deleted
-                        dataset_instance.purged = deleted
+                        if isinstance(dataset_instance, model.HistoryDatasetAssociation):
+                            dataset_instance.purged = deleted
+                        assert dataset_instance.dataset
                         dataset_instance.dataset.state = target_state
                         dataset_instance.dataset.deleted = deleted
                         dataset_instance.dataset.purged = deleted
@@ -2860,11 +2873,13 @@ class BcoModelExportStore(FileSourceModelExportStore, WorkflowInvocationOnlyExpo
         parametric_domain_items: list[ParametricDomainItem] = []
         for inv_step in workflow_invocation.steps:
             try:
-                for k, v in inv_step.workflow_step.tool_inputs.items():
-                    param, value, step = k, v, inv_step.workflow_step.order_index
-                    parametric_domain_items.append(
-                        ParametricDomainItem(param=str(param), value=str(value), step=str(step))
-                    )
+                tool_inputs = inv_step.workflow_step.tool_inputs
+                if tool_inputs:
+                    for k, v in tool_inputs.items():
+                        param, value, step_index = k, v, inv_step.workflow_step.order_index
+                        parametric_domain_items.append(
+                            ParametricDomainItem(param=str(param), value=str(value), step=str(step_index))
+                        )
             except Exception:
                 continue
 

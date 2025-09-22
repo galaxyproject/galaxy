@@ -233,6 +233,8 @@ history_panel:
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations: '${_} .dataset-actions'
+      
+      expiration_indicator_badge: '${_} .expiration-indicator .badge'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -283,6 +285,14 @@ history_panel:
       tag_area_input: '.details .stateless-tags .headless-multiselect input'
       list_items: '.dataset-collection-panel .listing-layout .content-item'
       back_to_history: svg[data-description="back to history"]
+
+  object_store_selection:
+    selectors:
+      modal: '#modal-select-history-storage-location'
+      option_cards: '[id^="g-card-"][data-source-option-card-id]'
+      option_card: '#g-card-${object_store_id}'
+      option_card_select: '#g-card-action-select-${object_store_id}'
+      confirm_button: '#modal-select-history-storage-location .btn-primary'
 
   selectors:
     _: '#current-history-panel'
@@ -336,6 +346,7 @@ history_panel:
     pagination_previous: '.list-pagination button.prev'
 
     storage_overview: '.history-storage-overview-button'
+    storage_location_button: '.storage-location-indicator button'
 
   text:
     tooltip_name: 'Rename history...'
@@ -691,7 +702,7 @@ trs_search:
     search: "#trs-search-query"
     search_result:
       type: xpath
-      selector: "//td[contains(text(), '${workflow_name}')]"
+      selector: "//td[contains(., '${workflow_name}')]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
     import_version: '[data-version-name*="${version}"]'
@@ -1044,6 +1055,17 @@ tools:
     search: '#toolbox-panel .search-query'
     clear_search: '#toolbox-panel .search-clear'
     title: '.toolSectionTitle'
+
+custom_tools:
+  selectors:
+    activity: '#activity-user-defined-tools'
+    create_button:
+      selector: 'create new custom tool'
+      type: data-description
+    save_button:
+      selector: 'save custom tool'
+      type: data-description
+    tool_link: "#g-card-custom-tool-${tool_uuid}"
 
 admin:
   allowlist:

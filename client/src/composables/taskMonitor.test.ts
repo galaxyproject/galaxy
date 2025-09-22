@@ -51,7 +51,7 @@ describe("useTaskMonitor", () => {
                     default:
                         return response("4XX").json({ err_msg: "Not found", err_code: 404 }, { status: 404 });
                 }
-            })
+            }),
         );
     });
 

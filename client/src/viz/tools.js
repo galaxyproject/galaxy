@@ -136,8 +136,8 @@ var Tool = Backbone.Model.extend({
                 _.map(options.inputs, (p) => {
                     var p_class = ToolParameter.subModelTypes[p.type] || ToolParameter;
                     return new p_class(p);
-                })
-            )
+                }),
+            ),
         );
     },
 
@@ -248,7 +248,7 @@ var Tool = Backbone.Model.extend({
                 tool_id: this.id,
                 inputs: this.get_inputs_dict(),
             },
-            additional_params
+            additional_params,
         );
 
         // Because job may require indexing datasets, use server-side
@@ -321,7 +321,7 @@ var templates = {
             // TODO: we need scoping here because 'help' is the dom for the help menu in the masthead
             // which implies a leaky variable that I can't find
         ].join(""),
-        { variable: "tool" }
+        { variable: "tool" },
     ),
 };
 

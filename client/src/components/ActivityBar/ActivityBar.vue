@@ -56,7 +56,7 @@ const props = withDefaults(
         optionsTooltip: "View additional activities",
         initialActivity: undefined,
         hidePanel: false,
-    }
+    },
 );
 
 // require user to long click before dragging
@@ -85,7 +85,7 @@ watchImmediate(
         } else {
             activityStore.resetDefaultActivities();
         }
-    }
+    },
 );
 
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
@@ -101,13 +101,13 @@ const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRe
 const activities = computed({
     get() {
         return storeActivities.value.filter(
-            (activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value
+            (activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value,
         );
     },
     set(newActivities: Activity[]) {
         // Find any filtered-out activities and add them back
         const filteredOut = storeActivities.value.filter(
-            (activity) => activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value
+            (activity) => activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value,
         );
         storeActivities.value = [...newActivities, ...filteredOut];
     },

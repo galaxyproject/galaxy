@@ -9,7 +9,7 @@ import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useUserStore } from "@/stores/userStore";
 
-import { loadWebhookMenuItems } from "./_webhooks";
+import { loadMastheadWebhooks } from "./_webhooks";
 
 import Masthead from "./Masthead.vue";
 
@@ -38,7 +38,7 @@ describe("Masthead.vue", () => {
         });
     }
 
-    loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
+    loadMastheadWebhooks.mockImplementation(stubLoadWebhooks);
 
     beforeEach(async () => {
         localVue = getLocalVue();

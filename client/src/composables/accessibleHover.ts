@@ -4,7 +4,7 @@ import { ref, watch } from "vue";
 export function useAccessibleHover(
     elementRef: MaybeRefOrGetter<HTMLElement | null>,
     onHoverEnter?: () => void,
-    onHoverExit?: () => void
+    onHoverExit?: () => void,
 ) {
     const isHovering = ref(false);
     let previousElement: HTMLElement | null = null;
@@ -53,7 +53,7 @@ export function useAccessibleHover(
         },
         {
             immediate: true,
-        }
+        },
     );
 
     return isHovering;

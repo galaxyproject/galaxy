@@ -23,6 +23,11 @@ from typing import (
 import pytest
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.files.models import (
+    AnyRemoteEntry,
+    RemoteDirectory,
+    RemoteFile,
+)
 from galaxy.files.sources import BaseFilesSource
 from galaxy.files.unittest_utils import TestConfiguredFileSources
 from ._util import (
@@ -139,14 +144,58 @@ class BaseFileSourceTestSuite(ABC):
 
     def assert_list_contains_names(
         self, file_source: BaseFilesSource, path: str, recursive: bool, expected_names: list[str]
-    ) -> list[Any]:
+    ) -> list[AnyRemoteEntry]:
         """Assert that listing a path returns entries with the expected names."""
         result, count = file_source.list(path, recursive=recursive)
-        assert count == len(expected_names), f"Expected {len(expected_names)} items, got {count}"
+        expected_count = len(expected_names)
+        assert count == expected_count, f"Expected {expected_count} items, got {count}"
         actual_names = sorted([entry.name for entry in result])
         expected_names_sorted = sorted(expected_names)
         assert actual_names == expected_names_sorted, f"Expected {expected_names_sorted}, got {actual_names}"
         return result
+
+    def assert_entry_properties(
+        self, entry: AnyRemoteEntry, expected_name: str, expected_class: str, expected_path: str
+    ) -> None:
+        """Assert that an entry has all the expected properties and values."""
+        assert entry is not None, f"Expected to find entry '{expected_name}' in the listing"
+        assert entry.class_ == expected_class, f"Expected '{expected_name}' to be a {expected_class} entry"
+        assert entry.name == expected_name, f"Entry '{expected_name}' should have name '{expected_name}'"
+        assert entry.path == expected_path, f"Entry '{expected_name}' should have path '{expected_path}'"
+        assert entry.uri == f"{self.root_uri}{expected_path}", f"Entry '{expected_name}' should have correct URI"
+
+        # Additional checks for file entries
+        if expected_class == "File":
+            assert isinstance(entry, RemoteFile), f"Entry '{expected_name}' should be a RemoteFile instance"
+            assert hasattr(entry, "size"), f"File entry '{expected_name}' should have a size attribute"
+            assert entry.size > 0, f"File '{expected_name}' should have a size greater than 0"
+        elif expected_class == "Directory":
+            assert isinstance(entry, RemoteDirectory), f"Entry '{expected_name}' should be a RemoteDirectory instance"
+
+    def verify_all_entries(self, entries: list[AnyRemoteEntry], expected_entries: dict[str, tuple[str, str]]) -> None:
+        """
+        Verify all entries in a listing have the correct properties.
+
+        Args:
+            entries: List of entries from file source listing
+            expected_entries: Dict mapping entry name to (class, path) tuple
+        """
+        # Verify count matches expected
+        expected_count = len(expected_entries)
+        actual_count = len(entries)
+        assert actual_count == expected_count, f"Expected {expected_count} entries, got {actual_count}"
+
+        # Create a lookup dict for quick access
+        entries_by_name = {entry.name: entry for entry in entries}
+
+        # Verify we have all expected entries
+        missing_entries = set(expected_entries.keys()) - set(entries_by_name.keys())
+        assert not missing_entries, f"Missing expected entries: {missing_entries}"
+
+        # Verify each expected entry has correct properties
+        for name, (expected_class, expected_path) in expected_entries.items():
+            entry = entries_by_name[name]
+            self.assert_entry_properties(entry, name, expected_class, expected_path)
 
     # Test methods that can be used directly or called from specific test classes
 
@@ -172,22 +221,47 @@ class BaseFileSourceTestSuite(ABC):
         file_source = self.get_file_source_instance(self.get_configured_file_sources())
 
         # Test root directory
-        self.assert_list_contains_names(file_source, "/", recursive=False, expected_names=["a", "b", "c", "dir1"])
+        root_expected_entries = {
+            "a": ("File", "/a"),
+            "b": ("File", "/b"),
+            "c": ("File", "/c"),
+            "dir1": ("Directory", "/dir1"),
+        }
+
+        root_result, count = file_source.list("/", recursive=False)
+        assert count == len(root_expected_entries), f"Expected {len(root_expected_entries)} items, got {count}"
+        self.verify_all_entries(root_result, root_expected_entries)
 
         # Test subdirectory
-        self.assert_list_contains_names(file_source, "/dir1", recursive=False, expected_names=["d", "e", "sub1"])
+        subdir_expected_entries = {
+            "d": ("File", "/dir1/d"),
+            "e": ("File", "/dir1/e"),
+            "sub1": ("Directory", "/dir1/sub1"),
+        }
+
+        subdir_result, count = file_source.list("/dir1", recursive=False)
+        assert count == len(subdir_expected_entries), f"Expected {len(subdir_expected_entries)} items, got {count}"
+        self.verify_all_entries(subdir_result, subdir_expected_entries)
 
     def test_recursive_listing(self) -> None:
         """Test recursive directory listing."""
         file_source = self.get_file_source_instance(self.get_configured_file_sources())
 
-        expected_names = ["a", "b", "c", "dir1", "d", "e", "sub1", "f"]
-        result, count = file_source.list("/", recursive=True)
+        # Define expected entries with their properties
+        expected_entries = {
+            "a": ("File", "/a"),
+            "b": ("File", "/b"),
+            "c": ("File", "/c"),
+            "dir1": ("Directory", "/dir1"),
+            "d": ("File", "/dir1/d"),
+            "e": ("File", "/dir1/e"),
+            "sub1": ("Directory", "/dir1/sub1"),
+            "f": ("File", "/dir1/sub1/f"),
+        }
 
-        # For recursive listings, the exact behavior may vary between implementations
-        # We verify that we get at least the expected number of items
-        assert count == len(expected_names), f"Expected {len(expected_names)} items, got {count}"
-        assert len(result) == len(expected_names), f"Expected {len(expected_names)} results, got {len(result)}"
+        result, count = file_source.list("/", recursive=True)
+        assert count == len(expected_entries), f"Expected {len(expected_entries)} items, got {count}"
+        self.verify_all_entries(result, expected_entries)
 
     def test_pagination_functionality(self) -> None:
         """Test pagination when supported by the file source."""
@@ -196,26 +270,42 @@ class BaseFileSourceTestSuite(ABC):
         if not file_source.supports_pagination:
             pytest.skip("File source does not support pagination")
 
-        # Get all entries for comparison
+        # Define expected entries for root directory
+        root_expected_entries = {
+            "a": ("File", "/a"),
+            "b": ("File", "/b"),
+            "c": ("File", "/c"),
+            "dir1": ("Directory", "/dir1"),
+        }
+
+        # Get all entries for comparison and verify their properties
         all_entries, total_count = file_source.list("/", recursive=False)
-        assert total_count == 4  # a, b, c, dir1
-        assert len(all_entries) == 4
+        assert total_count == len(root_expected_entries)
+        self.verify_all_entries(all_entries, root_expected_entries)
 
         # Test first entry
         result, count = file_source.list("/", recursive=False, limit=1, offset=0)
-        assert count == 4
+        assert count == len(root_expected_entries)
         assert len(result) == 1
         assert result[0] == all_entries[0]
+        # Verify the single entry properties
+        first_entry = result[0]
+        expected_class, expected_path = root_expected_entries[first_entry.name]
+        self.assert_entry_properties(first_entry, first_entry.name, expected_class, expected_path)
 
         # Test second entry
         result, count = file_source.list("/", recursive=False, limit=1, offset=1)
-        assert count == 4
+        assert count == len(root_expected_entries)
         assert len(result) == 1
         assert result[0] == all_entries[1]
+        # Verify the single entry properties
+        second_entry = result[0]
+        expected_class, expected_path = root_expected_entries[second_entry.name]
+        self.assert_entry_properties(second_entry, second_entry.name, expected_class, expected_path)
 
         # Test multiple entries
         result, count = file_source.list("/", recursive=False, limit=2, offset=1)
-        assert count == 4
+        assert count == len(root_expected_entries)
         assert len(result) == 2
         assert result[0] == all_entries[1]
         assert result[1] == all_entries[2]
@@ -227,14 +317,23 @@ class BaseFileSourceTestSuite(ABC):
         if not file_source.supports_pagination:
             pytest.skip("File source does not support pagination")
 
+        # Define expected entries for counting
+        root_expected_entries = {
+            "a": ("File", "/a"),
+            "b": ("File", "/b"),
+            "c": ("File", "/c"),
+            "dir1": ("Directory", "/dir1"),
+        }
+        expected_count = len(root_expected_entries)
+
         # Test with limit larger than total entries
         result, count = file_source.list("/", recursive=False, limit=10, offset=0)
-        assert count == 4  # Total entries: a, b, c, dir1
-        assert len(result) == 4  # Should return all available entries
+        assert count == expected_count
+        assert len(result) == expected_count  # Should return all available entries
 
         # Test with offset at the end
         result, count = file_source.list("/", recursive=False, limit=5, offset=3)
-        assert count == 4
+        assert count == expected_count
         assert len(result) == 1  # Only one entry left after offset=3
 
     def test_search_functionality(self) -> None:
@@ -370,6 +469,49 @@ class BaseFileSourceTestSuite(ABC):
         with pytest.raises(RequestParameterInvalidException) as exc_info:
             file_source.list("/", recursive=False, limit=1, offset=-1)
         assert "Offset must be greater than or equal to 0" in str(exc_info.value)
+
+    def test_comprehensive_entry_properties(self) -> None:
+        """Test comprehensive verification of all entry properties across different listing scenarios."""
+        file_source = self.get_file_source_instance(self.get_configured_file_sources())
+
+        # Define all expected entries across the test scenario
+        all_expected_entries = {
+            "a": ("File", "/a"),
+            "b": ("File", "/b"),
+            "c": ("File", "/c"),
+            "dir1": ("Directory", "/dir1"),
+            "d": ("File", "/dir1/d"),
+            "e": ("File", "/dir1/e"),
+            "sub1": ("Directory", "/dir1/sub1"),
+            "f": ("File", "/dir1/sub1/f"),
+        }
+
+        # Test root directory listing
+        root_expected = {k: v for k, v in all_expected_entries.items() if v[1].startswith("/") and "/" not in v[1][1:]}
+        root_result, root_count = file_source.list("/", recursive=False)
+        assert root_count == len(root_expected)
+        self.verify_all_entries(root_result, root_expected)
+
+        # Test subdirectory listing (/dir1)
+        dir1_expected = {
+            k: v for k, v in all_expected_entries.items() if v[1].startswith("/dir1/") and v[1].count("/") == 2
+        }
+        dir1_result, dir1_count = file_source.list("/dir1", recursive=False)
+        assert dir1_count == len(dir1_expected)
+        self.verify_all_entries(dir1_result, dir1_expected)
+
+        # Test nested subdirectory listing (/dir1/sub1)
+        sub1_expected = {
+            k: v for k, v in all_expected_entries.items() if v[1].startswith("/dir1/sub1/") and v[1].count("/") == 3
+        }
+        sub1_result, sub1_count = file_source.list("/dir1/sub1", recursive=False)
+        assert sub1_count == len(sub1_expected)
+        self.verify_all_entries(sub1_result, sub1_expected)
+
+        # Test recursive listing includes all expected entries with correct properties
+        recursive_result, recursive_count = file_source.list("/", recursive=True)
+        assert recursive_count == len(all_expected_entries)
+        self.verify_all_entries(recursive_result, all_expected_entries)
 
     def test_file_source_properties(self) -> None:
         """Test basic file source properties and metadata."""

@@ -188,12 +188,12 @@ watch(
         invisibleHistoryItems.value = {};
         offsetQueryParam.value = 0;
         loadHistoryItems();
-    }
+    },
 );
 
 watch(
     () => props.filter,
-    (newVal) => (filterText.value = newVal)
+    (newVal) => (filterText.value = newVal),
 );
 
 watch(filterText, (newFilterTextValue) => {
@@ -216,7 +216,7 @@ watch(
         if (newValue !== currentValue) {
             operationRunning.value = null;
         }
-    }
+    },
 );
 
 watch(historyItems, (newHistoryItems) => {
@@ -538,7 +538,7 @@ const {
                                         $event,
                                         showSelection && isSelected(item),
                                         selectionSize,
-                                        selectedItems
+                                        selectedItems,
                                     )
                                 "
                                 @init-key-selection="initKeySelection"

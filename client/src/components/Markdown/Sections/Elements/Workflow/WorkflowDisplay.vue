@@ -67,7 +67,7 @@ watch(
             loading.value = false;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
@@ -125,6 +125,7 @@ watch(
                             :tool-version="step.tool_version" />
                         <WorkflowStepTitle
                             :step-tool-id="step.tool_id"
+                            :step-tool-uuid="step.tool_uuid"
                             :step-subworkflow-id="step.subworkflow_id"
                             :step-label="step.label"
                             :step-type="step.type"

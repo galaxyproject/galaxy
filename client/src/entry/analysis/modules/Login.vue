@@ -18,7 +18,7 @@ const sessionCsrfToken = computed(() => {
     return getGalaxyInstance().session_csrf_token;
 });
 const queryAttributeForceString = function (
-    queryAttribute: string | (string | null)[] | undefined
+    queryAttribute: string | (string | null)[] | undefined,
 ): string | undefined {
     if (Array.isArray(queryAttribute)) {
         return queryAttribute[0] || undefined;

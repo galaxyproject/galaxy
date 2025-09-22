@@ -8,7 +8,7 @@ export const useUserFlagsStore = defineStore("userFlagsStore", () => {
     const showSelectionQueryBreakWarning = useUserLocalStorage("user-flags-store-show-break-warning", true);
     const preferredFormSelectElement = useUserLocalStorage(
         "user-flags-store-preferred-form-select",
-        "none" as PreferredFormSelect
+        "none" as PreferredFormSelect,
     );
 
     function ignoreSelectionQueryBreakWarning() {

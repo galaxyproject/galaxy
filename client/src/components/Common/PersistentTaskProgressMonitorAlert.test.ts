@@ -45,7 +45,7 @@ const mountComponent = (
     props: ComponentUnderTestProps = {
         monitorRequest: FAKE_MONITOR_REQUEST,
         useMonitor: FAKE_MONITOR,
-    }
+    },
 ) => {
     return shallowMount(PersistentTaskProgressMonitorAlert as object, {
         propsData: {

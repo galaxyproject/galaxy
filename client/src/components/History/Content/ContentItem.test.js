@@ -6,6 +6,7 @@ import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { updateContentFields } from "@/components/History/model/queries";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
 import ContentItem from "./ContentItem.vue";
 
@@ -22,6 +23,8 @@ jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({})),
     useRouter: jest.fn(() => ({})),
 }));
+
+setupSelectableMock();
 
 // mock queries
 updateContentFields.mockImplementation(async () => {});
@@ -45,7 +48,7 @@ describe("ContentItem", () => {
                 // We need to use untyped here because this endpoint is not
                 // described in the OpenAPI spec due to its complexity for now.
                 return response.untyped(HttpResponse.json(item));
-            })
+            }),
         );
 
         wrapper = mount(ContentItem, {

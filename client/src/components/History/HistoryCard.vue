@@ -172,7 +172,7 @@ const historyCardTitle = computed(() => {
 const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimaryActions } = useHistoryCardActions(
     computed(() => props.history),
     props.archivedView,
-    () => emit("refreshList", true)
+    () => emit("refreshList", true),
 );
 
 /**
@@ -181,7 +181,7 @@ const { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimary
 const { historyCardIndicators } = useHistoryCardIndicators(
     computed(() => props.history),
     props.archivedView,
-    (k, v) => emit("updateFilter", k, v)
+    (k, v) => emit("updateFilter", k, v),
 );
 
 /**
@@ -191,7 +191,7 @@ const { historyCardTitleBadges } = useHistoryCardBadges(
     computed(() => props.history),
     props.sharedView,
     props.publishedView,
-    (k, v) => emit("updateFilter", k, v)
+    (k, v) => emit("updateFilter", k, v),
 );
 
 /**

@@ -93,7 +93,7 @@ export default {
     emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel"],
     setup(props, { emit }) {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
-            toRef(props, "step")
+            toRef(props, "step"),
         );
         const { stepStore } = useWorkflowStores();
         const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
@@ -103,7 +103,7 @@ export default {
 
         watch(
             () => formKey.value,
-            () => (mainValues.value = null)
+            () => (mainValues.value = null),
         );
 
         return {
@@ -208,6 +208,7 @@ export default {
         postChanges(newVersion) {
             const payload = Object.assign({}, this.mainValues);
             const options = this.configForm;
+            const toolUuid = options.uuid;
             let toolId = options.id;
             let toolVersion = options.version;
             if (newVersion) {
@@ -216,6 +217,7 @@ export default {
             }
             this.$emit("onSetData", this.stepId, {
                 tool_id: toolId,
+                tool_uuid: toolUuid,
                 tool_version: toolVersion,
                 type: "tool",
                 inputs: payload,

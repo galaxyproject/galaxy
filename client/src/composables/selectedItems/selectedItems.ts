@@ -40,10 +40,10 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
     const currentFilters = computed(() => filterClass.getFiltersForText(filterText.value));
     const initSelectedKey = computed(() => (initSelectedItem.value ? getItemKey(initSelectedItem.value as T) : null)); // TODO: Weird Unwrap ref type
     const lastInRangeIndex = computed(() =>
-        lastInRange.value ? allItems.value.indexOf(lastInRange.value as T) : null
+        lastInRange.value ? allItems.value.indexOf(lastInRange.value as T) : null,
     );
     const firstInRangeIndex = computed(() =>
-        firstInRange.value ? allItems.value.indexOf(firstInRange.value as T) : null
+        firstInRange.value ? allItems.value.indexOf(firstInRange.value as T) : null,
     );
     const rangeSelectActive = computed(() => lastInRange.value && initDirection.value);
 
@@ -409,12 +409,12 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
                     ? allItems.value.find(
                           (item) =>
                               lastElement.getAttribute(attributeForRangeSelection) ===
-                              getAttributeForRangeSelection(item)
+                              getAttributeForRangeSelection(item),
                       )
                     : null;
                 lastItemId.value = lastItem ? getItemKey(lastItem) : null;
             }
-        }
+        },
     );
 
     watch(scopeKey, (newKey, oldKey) => {

@@ -26,13 +26,13 @@ watch(
     () => props.forwardFilter,
     () => {
         currentForwardFilter.value = props.forwardFilter;
-    }
+    },
 );
 watch(
     () => props.reverseFilter,
     () => {
         currentReverseFilter.value = props.reverseFilter;
-    }
+    },
 );
 
 function resync() {

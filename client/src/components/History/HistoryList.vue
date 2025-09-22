@@ -143,7 +143,7 @@ const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purg
 
 const historyListFilters = computed(() => getHistoryListFilters(props.activeList));
 const rawFilters = computed(() =>
-    Object.fromEntries(historyListFilters.value.getFiltersForText(filterText.value, true, false))
+    Object.fromEntries(historyListFilters.value.getFiltersForText(filterText.value, true, false)),
 );
 const validFilters = computed(() => historyListFilters.value.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => historyListFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
@@ -300,7 +300,7 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
             okVariant: "danger",
             cancelVariant: "outline-primary",
             centered: true,
-        }
+        },
     );
 
     if (confirmed) {
@@ -320,7 +320,7 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
 
                 tmpSelected.splice(
                     tmpSelected.findIndex((ts) => ts.id === h.id),
-                    1
+                    1,
                 );
             }
 
@@ -368,7 +368,7 @@ async function onBulkRestore() {
 
                 tmpSelected.splice(
                     tmpSelected.findIndex((ts) => ts.id === his.id),
-                    1
+                    1,
                 );
             }
 
@@ -413,7 +413,7 @@ async function onBulkTagsAdd(tags: string[]) {
 
             tmpSelected.splice(
                 tmpSelected.findIndex((ts) => ts.id === his.id),
-                1
+                1,
             );
         }
 

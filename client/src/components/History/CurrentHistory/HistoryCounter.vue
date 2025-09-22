@@ -34,7 +34,7 @@ const props = withDefaults(
         filterText: "",
         showControls: false,
         hideReload: false,
-    }
+    },
 );
 
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
@@ -42,7 +42,7 @@ const emit = defineEmits(["update:filter-text", "reloadContents"]);
 const router = useRouter();
 const { currentUser } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
-    toRef(props, "history")
+    toRef(props, "history"),
 );
 
 const reloadButtonLoading = ref(false);
@@ -52,12 +52,12 @@ const historyPreferredObjectStoreId = ref<string | null | undefined>();
 
 watchImmediate(
     () => props.history,
-    () => (historyPreferredObjectStoreId.value = props.history.preferred_object_store_id)
+    () => (historyPreferredObjectStoreId.value = props.history.preferred_object_store_id),
 );
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 const canManageStorage = computed(
-    () => userOwnsHistory(currentUser.value, props.history) && !currentUser.value?.isAnonymous
+    () => userOwnsHistory(currentUser.value, props.history) && !currentUser.value?.isAnonymous,
 );
 
 function onDashboard() {

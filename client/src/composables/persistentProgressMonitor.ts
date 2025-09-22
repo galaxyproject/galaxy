@@ -160,7 +160,7 @@ export interface PersistentProgressTaskMonitorResult {
 export function usePersistentProgressTaskMonitor(
     request: MonitoringRequest,
     useMonitor: TaskMonitor,
-    monitoringData: MonitoringData | null = null
+    monitoringData: MonitoringData | null = null,
 ): PersistentProgressTaskMonitorResult {
     const {
         waitForTask,
@@ -214,7 +214,7 @@ export function usePersistentProgressTaskMonitor(
                 };
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     watch(
@@ -227,7 +227,7 @@ export function usePersistentProgressTaskMonitor(
                 };
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     async function start(monitoringData?: MonitoringData) {

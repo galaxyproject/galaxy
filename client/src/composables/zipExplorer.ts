@@ -70,7 +70,7 @@ export function useZipExplorer() {
         zipUrl: string,
         filesToImport: ImportableFile[],
         historyId: string | null,
-        zipExplorer: IZipExplorer
+        zipExplorer: IZipExplorer,
     ) {
         const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
@@ -132,7 +132,7 @@ export function useZipExplorer() {
     async function handleLocalZip(
         filesToImport: ImportableFile[],
         historyId: string | null,
-        zipExplorer: IZipExplorer
+        zipExplorer: IZipExplorer,
     ) {
         const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
@@ -411,7 +411,7 @@ export type ArchiveSource = File | string;
 export type ArchiveExplorerEventBusKey = "set-archive-source";
 
 export const archiveExplorerEventBus = useEventBus<ArchiveExplorerEventBusKey, ArchiveSource>(
-    "archive-explorer-event-bus"
+    "archive-explorer-event-bus",
 );
 
 interface DatasetAttrs {

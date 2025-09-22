@@ -1192,6 +1192,8 @@ test_data:
         # do the raw re-import as a regular user we expect a 403 error.
         response = self.workflow_populator.create_workflow_response(downloaded_workflow)
         self._assert_status_code_is(response, 403)
+        response_dict = response.json()
+        assert response_dict["err_msg"] == "Only admin users can create tools dynamically."
 
     def test_import_annotations(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_annotations", publish=True)
@@ -7833,6 +7835,72 @@ steps:
         r = self._post("workflows", files={"archive_file": io.StringIO(invalid_collection_type)})
         assert r.status_code == 400
         assert "Invalid collection type:" in r.json()["err_msg"]
+
+    @skip_without_tool("multi_data_optional")
+    def test_invalid_sample_sheet_definitions_rejected(self):
+        valid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: sample_sheet
+    column_definitions:
+    - type: string
+      name: condition
+      default_value: treatment
+      optional: false
+      restrictions: ["treatment", "control"]
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(valid_collection_type)})
+        assert r.status_code == 200
+
+        invalid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: sample_sheet
+    column_definitions:
+    - type: stringx
+      name: condition
+      default_value: treatment
+      optional: false
+      restrictions: ["treatment", "control"]
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(invalid_collection_type)})
+        assert r.status_code == 400
+
+        invalid_collection_type = """
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: sample_sheet
+    column_definitions:
+    - type: string
+      name: condition
+      default_value: treatment
+      optional: false
+      restrictions: ["treatment", "control"]
+      extra_key: not_allowed
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input
+"""
+        r = self._post("workflows", files={"archive_file": io.StringIO(invalid_collection_type)})
+        assert r.status_code == 400
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_over_default_delayed(self):
