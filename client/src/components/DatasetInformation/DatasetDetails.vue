@@ -104,7 +104,7 @@ onUnmounted(() => {
 
                 <JobParameters dataset_type="hda" :dataset-id="datasetId" />
 
-                <JobInformation :job_id="dataset.creating_job" />
+                <JobInformation :job-id="dataset.creating_job" />
 
                 <DatasetStorage :dataset-id="datasetId" />
 

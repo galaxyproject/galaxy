@@ -4,10 +4,16 @@ export type JobDestinationParams = components["schemas"]["JobDestinationParams"]
 export type ShowFullJobResponse = components["schemas"]["ShowFullJobResponse"];
 export type JobBaseModel = components["schemas"]["JobBaseModel"];
 export type JobState = components["schemas"]["JobState"];
+export type JobConsoleOutput = components["schemas"]["JobConsoleOutput"];
 export type JobDetails = components["schemas"]["ShowFullJobResponse"] | components["schemas"]["EncodedJobDetails"];
 export type JobInputSummary = components["schemas"]["JobInputSummary"];
 export type JobDisplayParametersSummary = components["schemas"]["JobDisplayParametersSummary"];
 export type JobMetric = components["schemas"]["JobMetric"];
+
+export type JobMessage =
+    | components["schemas"]["ExitCodeJobMessage"]
+    | components["schemas"]["RegexJobMessage"]
+    | components["schemas"]["MaxDiscoveredFilesJobMessage"];
 
 export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting", "paused", "resubmitted", "stop"];
 export const ERROR_STATES = ["error", "deleted", "deleting"];

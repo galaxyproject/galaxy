@@ -55,7 +55,7 @@ describe("JobInformation/JobInformation.vue", () => {
 
     beforeEach(async () => {
         const propsData = {
-            job_id: JOB_ID,
+            jobId: JOB_ID,
         };
         wrapper = mount(JobInformation, {
             propsData,

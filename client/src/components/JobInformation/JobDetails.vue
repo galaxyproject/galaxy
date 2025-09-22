@@ -1,6 +1,6 @@
 <template>
     <div>
-        <JobInformation :job_id="id" :include-times="true">
+        <JobInformation :job-id="id" :include-times="true">
             <!-- only needed for admin job component -->
             <tr v-if="hasTraceback">
                 <td>Traceback</td>
