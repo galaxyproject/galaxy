@@ -10656,6 +10656,11 @@ export interface components {
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey";
+            /**
+             * Sort Reverse
+             * @default false
+             */
+            sort_reverse: boolean;
             /** Visible */
             visible: boolean;
         };
