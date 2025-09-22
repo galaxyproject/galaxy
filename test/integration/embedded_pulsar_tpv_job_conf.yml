@@ -1,0 +1,43 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+  pulsar_embed:
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+    pulsar_app_config:  # this doesn't start without disabling - filelock problem
+      tool_dependency_dir: none
+      conda_auto_init: false
+      conda_auto_install: false
+
+execution:
+  default: tpv
+  environments:
+    tpv:
+      runner: dynamic_tpv
+      tpv_configs:
+        - destinations:
+            local:
+              runner: local
+              rejected_tool_types: [user_defined]
+              env:
+                MEM: '{mem}'
+                CORES: '{cores}'
+            user_defined:
+              runner: pulsar_embed
+              accepted_tool_types: [user_defined]
+              remote_metadata: true
+              docker_enabled: true
+              require_container: true
+              docker_net: "none"
+              max_accepted_cores: 2
+              max_accepted_mem: 8
+              env:
+                MEM: '{mem}'
+                CORES: '{cores}'
+          global:
+            default_inherits: default
+
+          tools:
+            default:
+              abstract: true
+              cores: 1
+              mem: cores * 4
