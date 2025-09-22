@@ -17,13 +17,14 @@ execution:
         - destinations:
             local:
               runner: local
-              rejected_tool_types: [user_defined]
               env:
                 MEM: '{mem}'
                 CORES: '{cores}'
             user_defined:
               runner: pulsar_embed
-              accepted_tool_types: [user_defined]
+              scheduling:
+                accept:
+                  - tool_type_user_defined
               remote_metadata: true
               docker_enabled: true
               require_container: true
