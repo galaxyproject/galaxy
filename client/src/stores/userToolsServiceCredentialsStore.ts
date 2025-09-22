@@ -10,7 +10,7 @@ import type {
     ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
     ServiceGroupPayload,
-    UserSourceService,
+    UserCredentialsResponse,
     UserToolsServiceCredentialsFull,
 } from "@/api/userCredentials";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
@@ -36,7 +36,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
     const userStore = useUserStore();
     const { currentUser } = storeToRefs(userStore);
 
-    const userToolsServices = ref<Record<string, UserSourceService[]>>({});
+    const userToolsServices = ref<Record<string, UserCredentialsResponse[]>>({});
     const userToolServiceCredentialsGroups = ref<Record<string, ServiceCredentialsGroup>>({});
 
     const { setToolServiceCredentialsDefinitionFor, getToolServiceCredentialsDefinitionsFor } =
@@ -113,7 +113,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return userToolsServices.value[userToolKey];
     });
 
-    function updateUserToolServiceGroups(userSourceServices: UserSourceService[]) {
+    function updateUserToolServiceGroups(userSourceServices: UserCredentialsResponse[]) {
         for (const sourceService of userSourceServices) {
             for (const group of sourceService.groups) {
                 userToolServiceCredentialsGroups.value[group.id] = group;
@@ -138,7 +138,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         toolId: string,
         toolVersion: string,
         serviceIdentifier: ServiceCredentialsIdentifier,
-    ): UserSourceService | undefined {
+    ): UserCredentialsResponse | undefined {
         const userToolKey = getUserToolKey(toolId, toolVersion);
         const service = userToolsServices.value[userToolKey]?.find(
             (service) => service.name === serviceIdentifier.name && service.version === serviceIdentifier.version,

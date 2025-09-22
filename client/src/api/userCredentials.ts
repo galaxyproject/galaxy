@@ -13,7 +13,6 @@ export type CreateSourceCredentialsPayload = components["schemas"]["CreateSource
 export type UserCredentialsResponse = components["schemas"]["UserCredentialsResponse"];
 export type ServiceCredentialPayload = components["schemas"]["ServiceCredentialPayload"];
 export type ServiceGroupPayload = components["schemas"]["ServiceGroupPayload"];
-export type UserSourceService = components["schemas"]["UserCredentialsResponse"];
 export type UserToolsServiceCredentialsFull = components["schemas"]["ExtendedUserCredentialsResponse"];
 export type SelectCurrentGroupPayload = components["schemas"]["SelectCurrentGroupPayload"];
 export type ServiceParameterDefinition = components["schemas"]["CredentialDefinitionResponse"];

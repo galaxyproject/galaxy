@@ -6,7 +6,7 @@ import type {
     ServiceCredentialsDefinition,
     ServiceCredentialsGroup,
     ServiceCredentialsIdentifier,
-    UserSourceService,
+    UserCredentialsResponse,
 } from "@/api/userCredentials";
 import { setupTestPinia } from "@/stores/testUtils";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
@@ -96,7 +96,7 @@ const TEST_CREDENTIALS_GROUP: ServiceCredentialsGroup = {
     ],
 };
 
-const TEST_USER_SOURCE_SERVICE: UserSourceService = {
+const TEST_USER_SOURCE_SERVICE: UserCredentialsResponse = {
     id: "service-123",
     user_id: TEST_USER_ID,
     source_type: "tool",
@@ -108,7 +108,7 @@ const TEST_USER_SOURCE_SERVICE: UserSourceService = {
     groups: [TEST_CREDENTIALS_GROUP],
 };
 
-const TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP: UserSourceService = {
+const TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP: UserCredentialsResponse = {
     id: "service-456",
     user_id: TEST_USER_ID,
     source_type: "tool",
@@ -394,7 +394,7 @@ describe("useUserToolCredentials", () => {
 
         it("should return success when all credentials provided", async () => {
             // Set up both services with current groups
-            const serviceWithCurrentGroup: UserSourceService = {
+            const serviceWithCurrentGroup: UserCredentialsResponse = {
                 ...TEST_USER_SOURCE_SERVICE_NO_CURRENT_GROUP,
                 current_group_id: "group-456",
             };

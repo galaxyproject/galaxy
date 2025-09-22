@@ -10,7 +10,7 @@ import type {
     ServiceCredentialsIdentifier,
     ServiceGroupPayload,
     SourceCredentialsDefinition,
-    UserSourceService,
+    UserCredentialsResponse,
 } from "@/api/userCredentials";
 import { getKeyFromCredentialsIdentifier, transformToSourceCredentials } from "@/api/userCredentials";
 import { useUserStore } from "@/stores/userStore";
@@ -68,7 +68,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     function buildGroupsFromUserCredentials(
         definition: ServiceCredentialsDefinition,
-        initialUserCredentials?: UserSourceService,
+        initialUserCredentials?: UserCredentialsResponse,
     ): ServiceGroupPayload[] {
         const groups: ServiceGroupPayload[] = [];
         if (initialUserCredentials) {
@@ -170,7 +170,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     /**
      * Check if all credentials (required and optional) are set by the user
      */
-    function serviceHasCurrentGroupId(sourceService: UserSourceService): boolean {
+    function serviceHasCurrentGroupId(sourceService: UserCredentialsResponse): boolean {
         if (sourceService.groups && sourceService.current_group_id) {
             return true;
         }
