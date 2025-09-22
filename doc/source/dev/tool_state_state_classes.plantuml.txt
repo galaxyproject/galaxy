@@ -14,7 +14,7 @@ class RelaxedRequestToolState {
 state_representation = "request"
 + _to_base_model(parameters: ToolParameterBundle): Type[BaseModel]
 }
-note bottom: Object references of the form \n{src: "hda", id: <encoded_id>}.\n Allow mapping/reduce constructs. Relaxed syntax to allow some of the odd stuff allowed in legacy tool input format.
+note bottom: Object references of the form \n{src: "hda", id: <encoded_id>}.\n Allow mapping/reduce constructs. Relaxed syntax to allow some of the odd\nstuff allowed in legacy tool input format.
 
 class RequestToolState {
 state_representation = "request"
