@@ -18,6 +18,7 @@ import UtcDate from "../UtcDate.vue";
 
 const props = defineProps<{
     jobs: JobBaseModel[];
+    invocationId: string;
     currentPage: number;
     sortDesc: boolean;
     perPage: number;
@@ -187,7 +188,7 @@ watch(
                     </div>
                 </div>
             </template>
-            <JobDetails v-if="viewedJob" :job-id="viewedJob.id" />
+            <JobDetails v-if="viewedJob" :job-id="viewedJob.id" :invocation-id="invocationId" />
         </GModal>
     </div>
 </template>

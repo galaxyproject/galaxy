@@ -16,13 +16,16 @@ import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-const job = ref<ShowFullJobResponse | null>(null);
-const invocationId = ref<string | null | undefined>(undefined);
-
 const props = defineProps<{
     jobId: string;
+    /** If `true`, the job's update and create times, as well as time to finish are shown. */
     includeTimes?: boolean;
+    /** If provided, this component will skip fetching the invocation ID for the job. */
+    invocationId?: string;
 }>();
+
+const job = ref<ShowFullJobResponse | null>(null);
+const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
 
 const stdout_length = ref(50000);
 const stdout_text = ref("");
@@ -42,7 +45,7 @@ function jobStateIsRunning(jobState: string) {
 
 const jobIsTerminal = computed(() => (job.value?.state ? jobStateIsTerminal(job.value?.state) : false));
 const jobIsRunning = computed(() => (job.value?.state ? jobStateIsRunning(job.value.state) : false));
-const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
+const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
 
 // Curious as to why we're trying to access tool_version and traceback like this, when they don't exist on
 // `ShowFullJobResponse`? Possibly historical reasons or maybe the `JobProvider` can return different types (doesn't seem like it)?
@@ -113,12 +116,15 @@ async function fetchInvocationForJob(jobId: string) {
 watch(
     () => props.jobId,
     async (newId, oldId) => {
-        if (newId && (invocationId.value === undefined || newId !== oldId)) {
+        if (
+            newId &&
+            (fetchedInvocationId.value === undefined || (fetchedInvocationId.value === null && newId !== oldId))
+        ) {
             const invocation = await fetchInvocationForJob(newId);
             if (invocation) {
-                invocationId.value = invocation.id;
+                fetchedInvocationId.value = invocation.id;
             } else {
-                invocationId.value = null;
+                fetchedInvocationId.value = null;
             }
         }
     },
@@ -245,10 +251,10 @@ watch(
                         {{ job.copied_from_job_id }} <DecodedId :id="job.copied_from_job_id" />
                     </td>
                 </tr>
-                <tr v-if="invocationId">
+                <tr v-if="fetchedInvocationId">
                     <td>Workflow Invocation</td>
                     <td>
-                        <router-link :to="routeToInvocation">{{ invocationId }}</router-link>
+                        <router-link :to="routeToInvocation">{{ fetchedInvocationId }}</router-link>
                     </td>
                 </tr>
             </tbody>

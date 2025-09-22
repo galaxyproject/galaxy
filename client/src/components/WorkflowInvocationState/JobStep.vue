@@ -12,13 +12,10 @@ import JobStepJobs from "./JobStepJobs.vue";
 
 const PER_PAGE = 10;
 
-interface Props {
+const props = defineProps<{
     jobs: JobBaseModel[];
-}
-
-const props = withDefaults(defineProps<Props>(), {
-    jobs: () => [],
-});
+    invocationId: string;
+}>();
 
 const firstJob = computed(() => props.jobs[0]);
 const jobCount = computed(() => props.jobs.length);
@@ -75,7 +72,7 @@ watch(
 <template>
     <BAlert v-if="!jobCount" variant="info" show> No jobs found for this step. </BAlert>
     <div v-else-if="jobCount === 1 && firstJob">
-        <JobDetailsDisplayed :job-id="firstJob.id" />
+        <JobDetailsDisplayed :job-id="firstJob.id" :invocation-id="props.invocationId" />
     </div>
     <div v-else>
         <div class="mb-2 p-2 d-flex justify-content-between align-items-center flex-wrap">
@@ -107,6 +104,7 @@ watch(
         <JobStepJobs
             v-else
             :jobs="currentStateJobs"
+            :invocation-id="props.invocationId"
             :current-page.sync="currentPage"
             :sort-desc.sync="sortDesc"
             :per-page="PER_PAGE" />

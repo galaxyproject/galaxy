@@ -254,7 +254,8 @@ onUnmounted(() => {
                                             <JobStep
                                                 v-if="stepDetails.jobs?.length"
                                                 class="mt-1"
-                                                :jobs="stepDetails.jobs" />
+                                                :jobs="stepDetails.jobs"
+                                                :invocation-id="props.invocation.id" />
                                             <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
                                         </div>
                                     </BTab>

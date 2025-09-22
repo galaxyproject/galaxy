@@ -12,6 +12,7 @@ import JobParameters from "components/JobParameters/JobParameters.vue";
 const props = defineProps<{
     job?: JobBaseModel;
     jobId?: string;
+    invocationId?: string;
 }>();
 
 const id = computed(() => props.job?.id || props.jobId);
@@ -25,7 +26,7 @@ const remoteHost = computed(() => (props.job && "remote_host" in props.job ? (pr
 
 <template>
     <div v-if="id">
-        <JobInformation :job-id="id" :include-times="true">
+        <JobInformation :job-id="id" :include-times="true" :invocation-id="invocationId">
             <!-- only needed for admin job component -->
             <tr v-if="traceback">
                 <td>Traceback</td>
