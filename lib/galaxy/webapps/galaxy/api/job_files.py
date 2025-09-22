@@ -111,27 +111,21 @@ class FastAPIJobFiles:
     # means that the endpoint still needs to include some code to handle this behavior, as tests existing before the
     # migration to FastAPI expect HEAD requests to work.
     @router.get(
-        # simplify me (remove `_args` and `_kwargs` defined using the walrus operator) when ALL endpoints have been
-        # migrated to FastAPI, this is a workaround for FastAPI bug https://github.com/fastapi/fastapi/issues/13175
-        *(_args := ["/api/jobs/{job_id}/files"]),
-        **(
-            _kwargs := dict(
-                summary="Get a file required to staging a job.",
-                responses={
-                    200: {
-                        "description": "Contents of file.",
-                        "content": {"application/json": None, "application/octet-stream": {"example": None}},
-                    },
-                    400: {
-                        "description": (
-                            "File not found, path does not refer to a file, or input dataset(s) for job have been purged."
-                        )
-                    },
-                },
-            )
-        ),
+        "/api/jobs/{job_id}/files",
+        summary="Get a file required to staging a job.",
+        responses={
+            200: {
+                "description": "Contents of file.",
+                "content": {"application/json": None, "application/octet-stream": {"example": None}},
+            },
+            400: {
+                "description": (
+                    "File not found, path does not refer to a file, or input dataset(s) for job have been purged."
+                )
+            },
+        },
     )
-    @router.head(*_args, **_kwargs, include_in_schema=False)  # type: ignore[name-defined]
+    @router.head("/api/jobs/{job_id}/files", include_in_schema=False)
     # remove `@router.head(...)` when ALL endpoints have been migrated to FastAPI
     def index(
         self,
