@@ -212,8 +212,8 @@ onBeforeMount(() => {
                 v-if="props.options.credentials?.length && !props.editorView"
                 class="mt-2"
                 :tool-id="props.id"
-                :tool-version="props.version" />
-
+                :tool-version="props.version"
+                :job-credentials-context="props.options.job_credentials_context" />
             <BAlert
                 v-else-if="props.options.credentials?.length && props.editorView"
                 v-b-tooltip.hover

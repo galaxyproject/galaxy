@@ -402,14 +402,10 @@ export default {
                 jobDef.data_manager_mode = this.dataManagerMode;
             }
             if (this.formConfig.credentials?.length) {
-                if (this.formConfig.job_credentials_context === null) {
-                    jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
-                        this.formConfig.id,
-                        this.formConfig.version,
-                    );
-                } else {
-                    jobDef.credentials_context = this.formConfig.job_credentials_context;
-                }
+                jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
             }
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;

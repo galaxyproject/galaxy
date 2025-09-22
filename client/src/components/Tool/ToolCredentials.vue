@@ -5,17 +5,20 @@ import { BAlert, BBadge, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
+import type { ServiceCredentialsContext } from "@/api/userCredentials";
 import { Toast } from "@/composables/toast";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import ToolCredentialsContextCheck from "@/components/Tool/ToolCredentialsContextCheck.vue";
 import ToolCredentialsManagement from "@/components/User/Credentials/ToolCredentialsManagement.vue";
 
 interface Props {
     toolId: string;
     toolVersion: string;
+    jobCredentialsContext?: ServiceCredentialsContext[];
 }
 
 const props = defineProps<Props>();
@@ -150,6 +153,11 @@ onMounted(async () => {
                     </BButton>
                 </div>
             </div>
+
+            <ToolCredentialsContextCheck
+                :tool-id="props.toolId"
+                :tool-version="props.toolVersion"
+                :job-credentials-context="props.jobCredentialsContext" />
 
             <div v-if="!isAnonymous && currentServiceGroups" class="d-flex flex-wrap flex-gapx-1 flex-gapy-1">
                 <div v-for="csg in currentServiceGroups" :key="csg.serviceName" class="d-flex align-items-center">
