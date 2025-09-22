@@ -95,7 +95,7 @@ onBeforeMount(() => {
         cancel-title="Close"
         cancel-variant="outline-danger"
         @ok="onSelectCredentials"
-        @close="emit('close')">
+        @hide="emit('close')">
         <p>
             You can manage your credentials here. Any changes to credential groups will persist, but changes to the
             current group selection for services will only be saved when you click "{{ okTitle }}".
