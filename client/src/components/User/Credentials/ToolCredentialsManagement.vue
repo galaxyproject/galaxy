@@ -1,4 +1,28 @@
 <script setup lang="ts">
+/**
+ * ToolCredentialsManagement Component
+ *
+ * A modal component for managing user service credentials for a specific tool.
+ * This component provides an interface for users to create, edit, and select
+ * credential groups for various services required by a tool.
+ *
+ * Features:
+ * - Modal interface for credential management
+ * - Service credentials creation and editing
+ * - Current group selection for tool execution
+ * - Accordion layout for multiple service credentials
+ * - Persistent credential group changes
+ * - Selective group assignment for tool execution
+ * - Real-time validation and state management
+ *
+ * @component ToolCredentialsManagement
+ * @example
+ * <ToolCredentialsManagement
+ *   :tool-id="toolId"
+ *   :tool-version="toolVersion"
+ *   @close="onModalClose" />
+ */
+
 import { BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount } from "vue";
@@ -11,13 +35,29 @@ import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCr
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
 interface Props {
+    /**
+     * The ID of the tool for which to manage credentials
+     * @type {string}
+     */
     toolId: string;
+
+    /**
+     * The version of the tool for which to manage credentials
+     * @type {string}
+     */
     toolVersion: string;
 }
 
 const props = defineProps<Props>();
 
+/**
+ * Events emitted to parent components
+ */
 const emit = defineEmits<{
+    /**
+     * Emitted when the modal should be closed
+     * @event close
+     */
     (e: "close"): void;
 }>();
 
@@ -31,22 +71,38 @@ const { userServiceFor, sourceCredentialsDefinition, selectCurrentCredentialsGro
     props.toolVersion,
 );
 
+/** Button text for saving group selection. */
 const okTitle = "Save Group Selection";
+
+/** Display name of the tool. */
 const toolName = getToolNameById(props.toolId);
+
+/** Unique key for the current tool. */
 const userToolKey = userToolsServiceCredentialsStore.getUserToolKey(props.toolId, props.toolVersion);
 
+/** Current group IDs for services of this tool. */
 const userToolServicesCurrentGroupIds = computed(() => {
     return userToolsServicesCurrentGroupIds.value[userToolKey] || {};
 });
 
+/** Gets user service ID for a specific service credentials identifier. */
 const userToolServiceIdFor = computed(() => {
-    return (sd: ServiceCredentialsIdentifier): string | undefined => {
-        const userToolService = userServiceFor.value(sd);
+    /**
+     * @param {ServiceCredentialsIdentifier} sci - Service credentials identifier.
+     * @returns {string | undefined} User service ID or undefined if not found.
+     */
+    return (sci: ServiceCredentialsIdentifier): string | undefined => {
+        const userToolService = userServiceFor.value(sci);
         return userToolService?.id;
     };
 });
 
-function onSelectCredentials() {
+/**
+ * Handles the selection of current credentials groups for the tool.
+ * Builds the payload from current group selections and submits it.
+ * @function onSelectCredentials
+ */
+function onSelectCredentials(): void {
     if (Object.keys(userToolServicesCurrentGroupIds.value).length === 0) {
         return;
     }
@@ -63,7 +119,14 @@ function onSelectCredentials() {
     selectCurrentCredentialsGroups(serviceCredentials);
 }
 
-function onCurrentGroupChange(serviceDefinition: ServiceCredentialsIdentifier, groupId?: string) {
+/**
+ * Handles changes to the current group selection for a service.
+ * Updates the store with the new group selection.
+ * @param {ServiceCredentialsIdentifier} serviceDefinition - The service definition.
+ * @param {string} [groupId] - The selected group ID (undefined to deselect).
+ * @function onCurrentGroupChange
+ */
+function onCurrentGroupChange(serviceDefinition: ServiceCredentialsIdentifier, groupId?: string): void {
     const userServiceCredentialsId = userToolServiceIdFor.value(serviceDefinition);
     if (userServiceCredentialsId) {
         userToolsServiceCredentialsStore.updateToolServiceCredentialsCurrentGroupId(
@@ -75,6 +138,9 @@ function onCurrentGroupChange(serviceDefinition: ServiceCredentialsIdentifier, g
     }
 }
 
+/**
+ * Initialize current group IDs before component mounts
+ */
 onBeforeMount(() => {
     userToolsServiceCredentialsStore.initToolsCurrentGroupIds();
 });
