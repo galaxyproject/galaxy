@@ -1,6 +1,6 @@
 {
   "name": "@galaxyproject/galaxy",
-  "version": "25.0.2",
+  "version": "25.0.3",
   "description": ".. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg    :alt: Galaxy Logo",
   "main": "index.js",
   "scripts": {

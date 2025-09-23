@@ -3,11 +3,24 @@ History
 
 .. to_doc
 
------------
-25.0.3.dev0
------------
+-------------------
+25.0.3 (2025-09-23)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Fix DOCX detection and add PPTX support by `@arash77 <https://github.com/arash77>`_ in `#20827 <https://github.com/galaxyproject/galaxy/pull/20827>`_
+* Add HiC datatype by `@abretaud <https://github.com/abretaud>`_ in `#20874 <https://github.com/galaxyproject/galaxy/pull/20874>`_
+
+=============
+Other changes
+=============
+
+* Undo accidental push by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20854 <https://github.com/galaxyproject/galaxy/pull/20854>`_
+* Merge 25.0 into dev by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20911 <https://github.com/galaxyproject/galaxy/pull/20911>`_
 
 -------------------
 25.0.2 (2025-08-13)

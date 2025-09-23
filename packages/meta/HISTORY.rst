@@ -3,11 +3,49 @@ History
 
 .. to_doc
 
------------
-25.0.3.dev0
------------
+-------------------
+25.0.3 (2025-09-23)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Cascade newly created windows in window manager by `@guerler <https://github.com/guerler>`_ in `#20780 <https://github.com/galaxyproject/galaxy/pull/20780>`_
+* Remove ``packages/meta/requirements.txt`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20782 <https://github.com/galaxyproject/galaxy/pull/20782>`_
+* Ensure that workflow invocations are persisted with state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20784 <https://github.com/galaxyproject/galaxy/pull/20784>`_
+* Fix password reset functionality for lowercase emails by `@jdavcs <https://github.com/jdavcs>`_ in `#20801 <https://github.com/galaxyproject/galaxy/pull/20801>`_
+* Fix token refresh bug (cilogon) by `@jdavcs <https://github.com/jdavcs>`_ in `#20821 <https://github.com/galaxyproject/galaxy/pull/20821>`_
+* Disable Run Tool button when there are errors by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20839 <https://github.com/galaxyproject/galaxy/pull/20839>`_
+* Update Celery section in admin docs by `@jdavcs <https://github.com/jdavcs>`_ in `#20856 <https://github.com/galaxyproject/galaxy/pull/20856>`_
+* Drop eager argument from invocation related methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20863 <https://github.com/galaxyproject/galaxy/pull/20863>`_
+* Improve dataset collection fetch performance in the invocation view by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20870 <https://github.com/galaxyproject/galaxy/pull/20870>`_
+* Use ``populated_optimized`` when serializing collection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20872 <https://github.com/galaxyproject/galaxy/pull/20872>`_
+* Fix role.description bug by `@jdavcs <https://github.com/jdavcs>`_ in `#20883 <https://github.com/galaxyproject/galaxy/pull/20883>`_
+* Speed up ``ImplicitCollectionJobs.job_list`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20887 <https://github.com/galaxyproject/galaxy/pull/20887>`_
+* Bump up integration test k8s version by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20889 <https://github.com/galaxyproject/galaxy/pull/20889>`_
+* Make check for existing user in custos_authnz.py case insensitive by `@cat-bro <https://github.com/cat-bro>`_ in `#20893 <https://github.com/galaxyproject/galaxy/pull/20893>`_
+* Add LDDA purged property by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20895 <https://github.com/galaxyproject/galaxy/pull/20895>`_
+* Avoid potential race condition in replacement_for_connection by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20909 <https://github.com/galaxyproject/galaxy/pull/20909>`_
+* Fix sessionless tag creation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20925 <https://github.com/galaxyproject/galaxy/pull/20925>`_
+* Fix collection element sorting in extended_metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20928 <https://github.com/galaxyproject/galaxy/pull/20928>`_
+
+============
+Enhancements
+============
+
+* Render Tool Descriptions in Markdown in TRS imports by `@itisAliRH <https://github.com/itisAliRH>`_ in `#20814 <https://github.com/galaxyproject/galaxy/pull/20814>`_
+* Fix DOCX detection and add PPTX support by `@arash77 <https://github.com/arash77>`_ in `#20827 <https://github.com/galaxyproject/galaxy/pull/20827>`_
+* Include galaxy user agent in data source tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20836 <https://github.com/galaxyproject/galaxy/pull/20836>`_
+* Add HiC datatype by `@abretaud <https://github.com/abretaud>`_ in `#20874 <https://github.com/galaxyproject/galaxy/pull/20874>`_
+
+=============
+Other changes
+=============
+
+* Undo accidental push by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20854 <https://github.com/galaxyproject/galaxy/pull/20854>`_
+* Merge 25.0 into dev by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20911 <https://github.com/galaxyproject/galaxy/pull/20911>`_
 
 -------------------
 25.0.2 (2025-08-13)
