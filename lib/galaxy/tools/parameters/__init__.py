@@ -480,7 +480,11 @@ def populate_state(
             elif isinstance(input, Conditional):
                 test_param = input.test_param
                 assert test_param is not None
-                test_param_value = incoming.get(input.name, {}).get(test_param.name)
+                incoming_group_state = incoming.get(input.name, {})
+                if test_param.name in incoming_group_state:
+                    test_param_value = incoming_group_state.get(test_param.name)
+                else:
+                    test_param_value = group_state.get(test_param.name)
                 value, error = (
                     check_param(request_context, test_param, test_param_value, context, simple_errors=simple_errors)
                     if check

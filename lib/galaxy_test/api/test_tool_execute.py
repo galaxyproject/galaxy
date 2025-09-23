@@ -22,15 +22,23 @@ from galaxy_test.base.populators import (
 
 
 @requires_tool_id("multi_data_param")
-def test_multidata_param(target_history: TargetHistory, required_tool: RequiredTool):
+def test_multidata_param(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hda1 = target_history.with_dataset("1\t2\t3").src_dict
     hda2 = target_history.with_dataset("4\t5\t6").src_dict
-    execution = required_tool.execute.with_inputs(
+    inputs = tool_input_format.when.flat(
+        {
+            "f1": {"batch": False, "values": [hda1, hda2]},
+            "f2": {"batch": False, "values": [hda2, hda1]},
+        }
+    ).when.nested(
         {
             "f1": {"batch": False, "values": [hda1, hda2]},
             "f2": {"batch": False, "values": [hda2, hda1]},
         }
     )
+    execution = required_tool.execute.with_inputs(inputs)
     execution.assert_has_job(0).with_output("out1").with_contents("1\t2\t3\n4\t5\t6\n")
     execution.assert_has_job(0).with_output("out2").with_contents("4\t5\t6\n1\t2\t3\n")
 
