@@ -233,7 +233,7 @@ onMounted(async () => {
                 <div v-for="csg in currentServiceGroups" :key="csg.serviceName" class="d-flex align-items-center">
                     <BBadge
                         v-b-tooltip.hover
-                        :title="getBadgeTitle(csg.isRequired, csg.groupName)"
+                        :title="getBadgeTitle(csg)"
                         :variant="csg.isRequired ? 'primary' : 'secondary'">
                         <FontAwesomeIcon :icon="csg.groupName ? faCheck : faExclamation" fixed-width />
                         {{ csg.serviceName }}
