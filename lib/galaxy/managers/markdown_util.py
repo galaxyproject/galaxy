@@ -19,11 +19,9 @@ import os
 import re
 import shutil
 import tempfile
+from re import Match
 from typing import (
     Any,
-    Dict,
-    List,
-    Match,
     Optional,
 )
 
@@ -236,6 +234,9 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "instance_citation_link":
                 url = trans.app.config.citation_url
                 rval = self.handle_instance_citation_link(line, url)
+            elif container == "instance_citation_bibtex":
+                url = trans.app.config.citation_bibtex
+                rval = self.handle_instance_citation_bibtex(line, url)
             elif container == "instance_terms_link":
                 url = trans.app.config.terms_url
                 rval = self.handle_instance_terms_link(line, url)
@@ -388,6 +389,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def handle_instance_citation_bibtex(self, line, url):
+        pass
+
+    @abc.abstractmethod
     def handle_instance_terms_link(self, line, url):
         pass
 
@@ -507,6 +512,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_instance_citation_link(self, line, url):
+        pass
+
+    def handle_instance_citation_bibtex(self, line, url):
         pass
 
     def handle_instance_terms_link(self, line, url):
@@ -712,7 +720,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_job_metrics(self, line, job):
         job_metrics = summarize_job_metrics(self.trans, job)
-        metrics_by_plugin: Dict[str, Dict[str, Any]] = {}
+        metrics_by_plugin: dict[str, dict[str, Any]] = {}
         for job_metric in job_metrics:
             plugin = job_metric["plugin"]
             if plugin not in metrics_by_plugin:
@@ -774,6 +782,9 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_instance_citation_link(self, line, url):
         return self._handle_link(url)
 
+    def handle_instance_citation_bibtex(self, line, url):
+        return self._handle_link(url)
+
     def handle_instance_terms_link(self, line, url):
         return self._handle_link(url)
 
@@ -833,7 +844,7 @@ def to_html(basic_markdown: str) -> str:
     return html
 
 
-def to_pdf_raw(basic_markdown: str, css_paths: Optional[List[str]] = None) -> bytes:
+def to_pdf_raw(basic_markdown: str, css_paths: Optional[list[str]] = None) -> bytes:
     """Convert RAW markdown with specified CSS paths into bytes of a PDF."""
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
@@ -974,8 +985,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
 
     def get_invocation(trans, line):
         workflow_manager = trans.app.workflow_manager
-        invocation_id_match = re.search(INVOCATION_ID_PATTERN, line)
-        if invocation_id_match:
+        if invocation_id_match := re.search(INVOCATION_ID_PATTERN, line):
             invocation_id = invocation_id_match.group(1)
             invocation = workflow_manager.get_invocation(
                 trans, invocation_id, check_ownership=False, check_accessible=True
@@ -1119,8 +1129,6 @@ def resolve_job_markdown(trans, job, job_markdown):
         elif container == "job_metrics":
             return (f"job_metrics(job_id={job.id})\n", False)
         ref_object_type = None
-        output_match = re.search(OUTPUT_LABEL_PATTERN, line)
-        input_match = re.search(INPUT_LABEL_PATTERN, line)
 
         def find_non_empty_group(match):
             for group in match.groups():
@@ -1129,7 +1137,7 @@ def resolve_job_markdown(trans, job, job_markdown):
 
         target_match: Optional[Match]
         ref_object: Optional[Any]
-        if output_match:
+        if output_match := re.search(OUTPUT_LABEL_PATTERN, line):
             target_match = output_match
             name = find_non_empty_group(target_match)
             if name in io_dicts.out_data:
@@ -1138,7 +1146,7 @@ def resolve_job_markdown(trans, job, job_markdown):
                 ref_object = io_dicts.out_collections[name]
             else:
                 raise Exception("Unknown exception")
-        elif input_match:
+        elif input_match := re.search(INPUT_LABEL_PATTERN, line):
             target_match = input_match
             name = find_non_empty_group(target_match)
             ref_object = io_dicts.inp_data[name]

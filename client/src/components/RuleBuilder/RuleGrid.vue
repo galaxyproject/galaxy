@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
-import { type ColDef, type IHeaderParams, type ValueGetterParams } from "ag-grid-community";
+import type { ColDef, IHeaderParams, ValueGetterParams } from "ag-grid-community";
 import { computed, ref, watch } from "vue";
 
 import { useAgGrid } from "@/composables/useAgGrid";
@@ -101,6 +101,7 @@ watch(() => props.colHeaders, resizeOnNextTick);
             :row-data="data"
             :column-defs="agColumnHeaders"
             :default-col-def="defaultColDef"
+            :always-show-horizontal-scroll="true"
             :style="style"
             :row-height="20"
             :header-height="30"

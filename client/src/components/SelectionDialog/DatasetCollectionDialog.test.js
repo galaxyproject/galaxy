@@ -31,7 +31,7 @@ describe("DatasetCollectionDialog.vue", () => {
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
         // Initially in loading state.
-        const collectionsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesome Collection" }];
+        const collectionsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesome Collection", hid: 1 }];
         axiosMock
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(200, collectionsResponse);

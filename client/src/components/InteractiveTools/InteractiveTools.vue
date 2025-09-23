@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const filter = ref("");
@@ -83,7 +84,7 @@ onMounted(() => {
 <template>
     <div aria-labelledby="interactive-tools-heading">
         <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
-        <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
+        <Heading id="interactive-tools-heading" h1 separator inline size="lg">Active Interactive Tools</Heading>
         <b-row class="mb-3">
             <b-col cols="6">
                 <b-input
@@ -124,22 +125,21 @@ onMounted(() => {
                     :name="row.item.name"
                     @click.prevent="openInteractiveTool(row.item.id)"
                     >{{ row.item.name }}
-                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 </a>
-                <!-- Add a direct link option as well -->
                 <a
+                    v-if="row.item.target"
                     :id="createId('external-link', row.item.id)"
                     v-b-tooltip
                     class="ml-2"
                     title="Open in new tab"
                     :href="row.item.target"
                     target="_blank">
-                    <small>(new tab)</small>
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 </a>
             </template>
             <template v-slot:cell(job_info)="row">
-                <label v-if="row.item.active"> running </label>
-                <label v-else> stopped </label>
+                <label v-if="row.item.active"> Running </label>
+                <label v-else> Starting </label>
             </template>
             <template v-slot:cell(created_time)="row">
                 <UtcDate :date="row.item.created_time" mode="elapsed" />

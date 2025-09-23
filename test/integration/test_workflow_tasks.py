@@ -9,7 +9,6 @@ import os
 from typing import (
     Any,
     cast,
-    Dict,
 )
 
 from galaxy.util.compression_utils import CompressedFile
@@ -33,7 +32,7 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
+        super().handle_galaxy_config_kwds(config)
         UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
     def setUp(self):
@@ -101,6 +100,7 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
             assert "wf_output_1" in output_collections
             out = output_collections["wf_output_1"]
             assert out["src"] == "hdca"
+            assert out["id"]
 
             inputs = invocation_details["inputs"]
             assert inputs["0"]["src"] == "hdca"
@@ -146,6 +146,9 @@ steps:
     in:
       input:
         source: input
+outputs:
+  extracted_dataset:
+    outputSource: extract_dataset/output
 """
             )
             inputs = {"input": {"src": "hdca", "id": copied_collection["id"]}}
@@ -166,13 +169,15 @@ steps:
                 workflow_request=workflow_request,
             )
             imported_invocation_details = self._export_and_import_workflow_invocation(summary)
+            assert imported_invocation_details["outputs"]["extracted_dataset"]["src"] == "hda"
+            assert imported_invocation_details["outputs"]["extracted_dataset"]["id"]
             original_contents = self.dataset_populator.get_history_contents(new_history["id"])
             contents = self.dataset_populator.get_history_contents(imported_invocation_details["history_id"])
             assert len(contents) == len(original_contents) == 5
 
     def _export_and_import_workflow_invocation(
         self, summary: RunJobsSummary, use_uris: bool = True, model_store_format="tgz"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         invocation_id = summary.invocation_id
         extension = model_store_format or "tgz"
         if use_uris:
@@ -194,7 +199,7 @@ steps:
         imported_invocation_details = self._assert_one_invocation_created_and_get_details(response)
         return imported_invocation_details
 
-    def _rerun_imported_workflow(self, summary: RunJobsSummary, create_response: Dict[str, Any]):
+    def _rerun_imported_workflow(self, summary: RunJobsSummary, create_response: dict[str, Any]):
         workflow_id = create_response["workflow_id"]
         history_id = self.dataset_populator.new_history()
         new_workflow_request = summary.workflow_request.copy()
@@ -204,7 +209,7 @@ steps:
         invocation_id = invocation_response.json()["id"]
         self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=True)
 
-    def _assert_one_invocation_created_and_get_details(self, response: Any) -> Dict[str, Any]:
+    def _assert_one_invocation_created_and_get_details(self, response: Any) -> dict[str, Any]:
         assert isinstance(response, list)
         assert len(response) == 1
         invocation = response[0]

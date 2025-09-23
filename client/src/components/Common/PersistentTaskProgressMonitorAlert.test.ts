@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { type PropType, ref } from "vue";
 
-import { type TaskMonitor } from "@/composables/genericTaskMonitor";
+import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import {
     type MonitoringData,
     type MonitoringRequest,
@@ -20,7 +20,7 @@ const FAKE_MONITOR_REQUEST: MonitoringRequest = {
     source: "test",
     action: "testing",
     taskType: "task",
-    object: { id: "1", type: "dataset" },
+    object: { id: "1", type: "history" },
     description: "Test description",
 };
 
@@ -28,6 +28,7 @@ const FAKE_EXPIRATION_TIME = 1000;
 
 const FAKE_MONITOR: TaskMonitor = {
     waitForTask: jest.fn(),
+    stopWaitingForTask: jest.fn(),
     isRunning: ref(false),
     isCompleted: ref(false),
     hasFailed: ref(false),
@@ -37,6 +38,7 @@ const FAKE_MONITOR: TaskMonitor = {
     expirationTime: FAKE_EXPIRATION_TIME,
     isFinalState: jest.fn(),
     loadStatus: jest.fn(),
+    fetchTaskStatus: jest.fn(),
 };
 
 const mountComponent = (
@@ -72,6 +74,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -97,6 +100,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -122,6 +126,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -152,6 +157,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "short_term_storage",
             request: monitoringRequest,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(monitoringRequest, useMonitor, existingMonitoringData);
 
@@ -181,6 +187,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(),
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -206,6 +213,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
             startedAt: new Date(Date.now() - FAKE_EXPIRATION_TIME * 2), // Make sure the task has expired
+            isFinal: true,
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 

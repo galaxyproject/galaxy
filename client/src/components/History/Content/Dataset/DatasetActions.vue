@@ -6,12 +6,12 @@ import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type HDADetailed } from "@/api";
+import type { HDADetailed } from "@/api";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
 
-import { type ItemUrls } from ".";
+import type { ItemUrls } from ".";
 
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
 
@@ -37,17 +37,16 @@ const showDownloads = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
 const showError = computed(() => {
-    return props.item.state == "error" || props.item.state == "failed_metadata";
+    return props.item.state === "error" || props.item.state === "failed_metadata";
 });
 const showInfo = computed(() => {
     return props.item.accessible;
 });
+const showVisualizations = computed(() => {
+    return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
+});
 const showRerun = computed(() => {
     return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
-});
-const showVisualizations = computed(() => {
-    // TODO: Check hasViz, if visualizations are activated in the config
-    return !props.item.purged && ["ok", "failed_metadata", "error", "deferred"].includes(props.item.state);
 });
 const reportErrorUrl = computed(() => {
     return prependPath(props.itemUrls.reportError!);
@@ -55,11 +54,11 @@ const reportErrorUrl = computed(() => {
 const showDetailsUrl = computed(() => {
     return prependPath(props.itemUrls.showDetails!);
 });
-const rerunUrl = computed(() => {
-    return prependPath(props.itemUrls.rerun!);
-});
 const visualizeUrl = computed(() => {
     return prependPath(props.itemUrls.visualize!);
+});
+const rerunUrl = computed(() => {
+    return prependPath(props.itemUrls.rerun!);
 });
 const downloadUrl = computed(() => {
     return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
@@ -74,24 +73,24 @@ function onDownload(resource: string) {
     window.location.href = resource;
 }
 
+function onHighlight() {
+    emit("toggleHighlights");
+}
+
 function onError() {
-    router.push(props.itemUrls.reportError!);
+    router.push(`/datasets/${props.item.id}/error`);
 }
 
 function onInfo() {
-    router.push(props.itemUrls.showDetails!);
+    router.push(`/datasets/${props.item.id}/details`);
+}
+
+function onVisualize() {
+    router.push(`/datasets/${props.item.id}/visualize`);
 }
 
 function onRerun() {
     router.push(`/root?job_id=${props.item.creating_job}`);
-}
-
-function onVisualize() {
-    router.push(props.itemUrls.visualize!);
-}
-
-function onHighlight() {
-    emit("toggleHighlights");
 }
 </script>
 
@@ -127,25 +126,13 @@ function onHighlight() {
                 <BButton
                     v-if="showInfo"
                     v-b-tooltip.hover
-                    class="params-btn px-1"
+                    class="info-btn px-1"
                     title="Dataset Details"
                     size="sm"
                     variant="link"
                     :href="showDetailsUrl"
                     @click.prevent.stop="onInfo">
                     <FontAwesomeIcon :icon="faInfoCircle" />
-                </BButton>
-
-                <BButton
-                    v-if="writable && showRerun"
-                    v-b-tooltip.hover
-                    class="rerun-btn px-1"
-                    title="Run Job Again"
-                    size="sm"
-                    variant="link"
-                    :href="rerunUrl"
-                    @click.prevent.stop="onRerun">
-                    <FontAwesomeIcon :icon="faRedo" />
                 </BButton>
 
                 <BButton
@@ -169,6 +156,18 @@ function onHighlight() {
                     variant="link"
                     @click.stop="onHighlight">
                     <FontAwesomeIcon :icon="faSitemap" />
+                </BButton>
+
+                <BButton
+                    v-if="writable && showRerun"
+                    v-b-tooltip.hover
+                    class="rerun-btn px-1"
+                    title="Run Job Again"
+                    size="sm"
+                    variant="link"
+                    :href="rerunUrl"
+                    @click.prevent.stop="onRerun">
+                    <FontAwesomeIcon :icon="faRedo" />
                 </BButton>
             </div>
         </div>

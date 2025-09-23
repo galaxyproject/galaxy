@@ -1,8 +1,6 @@
 import time
 from typing import (
-    List,
     Optional,
-    Tuple,
 )
 
 from galaxy import exceptions
@@ -53,7 +51,7 @@ def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[d
         return response
 
 
-def _get_access_info(obj_url: str, access_method: dict, headers=None) -> Tuple[str, dict]:
+def _get_access_info(obj_url: str, access_method: dict, headers=None) -> tuple[str, dict]:
     try:
         access_url = access_method["access_url"]
     except KeyError:
@@ -81,7 +79,7 @@ def fetch_drs_to_file(
     force_http=False,
     retry_options: Optional[RetryOptions] = None,
     headers: Optional[dict] = None,
-    fetch_url_allowlist: Optional[List[IpAllowedListEntryT]] = None,
+    fetch_url_allowlist: Optional[list[IpAllowedListEntryT]] = None,
 ):
     """Fetch contents of drs:// URI to a target path."""
     if not drs_uri.startswith("drs://"):

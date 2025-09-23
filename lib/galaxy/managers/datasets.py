@@ -7,11 +7,7 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Set,
-    Type,
     TypeVar,
 )
 
@@ -49,7 +45,9 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class DatasetManager(base.ModelManager[Dataset], secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetManager(
+    base.ModelManager[Dataset], secured.AccessibleManagerMixin[Dataset], deletable.PurgableManagerMixin
+):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -268,7 +266,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
     def add_serializers(self):
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "create_time": self.serialize_date,
             "update_time": self.serialize_date,
             "uuid": lambda item, key, **context: str(item.uuid) if item.uuid else None,
@@ -326,7 +324,7 @@ U = TypeVar("U", bound=DatasetInstance)
 
 class DatasetAssociationManager(
     base.ModelManager[U],
-    secured.AccessibleManagerMixin,
+    secured.AccessibleManagerMixin[U],
     secured.OwnableManagerMixin[U],
     deletable.PurgableManagerMixin,
 ):
@@ -457,7 +455,7 @@ class DatasetAssociationManager(
         access_roles = set(dataset.get_access_roles(self.app.security_agent))
         manage_roles = set(dataset.get_manage_permissions_roles(self.app.security_agent))
 
-        def make_tuples(roles: Set):
+        def make_tuples(roles: set):
             tuples = []
             for role in roles:
                 # use role name for non-private roles, and user.email from private rules
@@ -488,7 +486,7 @@ class DatasetAssociationManager(
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been purged.")
         elif dataset.deleted and not (
             trans.user_is_admin
-            or (isinstance(dataset, HistoryDatasetAssociation) and self.is_owner(dataset, trans.get_user()))  # type: ignore[arg-type]
+            or (isinstance(dataset, HistoryDatasetAssociation) and self.is_owner(dataset, trans.get_user()))
         ):
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been deleted.")
         elif dataset.state == Dataset.states.UPLOAD:
@@ -631,7 +629,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
 
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "create_time": self.serialize_date,
             "update_time": self.serialize_date,
             # underlying dataset
@@ -650,7 +648,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             "file_size": lambda item, key, **context: self.serializers["size"](item, key, **context),
             "nice_size": lambda item, key, **context: item.get_size(nice_size=True, calculate_size=False),
             # common to lddas and hdas - from mapping.py
-            "copied_from_history_dataset_association_id": lambda item, key, **context: item.id,
+            "copied_from_history_dataset_association_id": self.serialize_id,
             "copied_from_library_dataset_dataset_association_id": self.serialize_id,
             "info": lambda item, key, **context: item.info.strip() if isinstance(item.info, str) else item.info,
             "blurb": lambda item, key, **context: item.blurb,
@@ -756,7 +754,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         """
         dataset = item
         if dataset.creating_job:
-            tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
+            tool = self.app.toolbox.tool_for_job(
+                dataset.creating_job, exact=False, check_access=True, user=context.get("user")
+            )
             if tool and tool.is_workflow_compatible:
                 return True
         return False
@@ -923,7 +923,7 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         datatypes in the comma separated string `class_strs`?
         """
         parse_datatype_fn = self.app.datatypes_registry.get_datatype_class_by_name
-        comparison_classes: List[Type] = []
+        comparison_classes: list[type] = []
         for class_str in class_strs.split(","):
             datatype_class = parse_datatype_fn(class_str)
             if datatype_class:

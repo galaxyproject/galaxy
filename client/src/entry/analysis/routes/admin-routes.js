@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app";
+import AdminHome from "components/admin/AdminHome";
 import DataManager from "components/admin/DataManager/DataManager";
 import DataManagerJob from "components/admin/DataManager/DataManagerJob";
 import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
@@ -9,7 +10,6 @@ import DataTypes from "components/admin/DataTypes";
 import ToolboxDependencies from "components/admin/Dependencies/Landing";
 import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
-import Home from "components/admin/Home";
 import JobsList from "components/admin/JobsList";
 import BroadcastForm from "components/admin/Notifications/BroadcastForm";
 import NotificationForm from "components/admin/Notifications/NotificationForm";
@@ -37,13 +37,7 @@ export default [
         children: [
             {
                 path: "",
-                component: Home,
-                props: () => {
-                    const config = getGalaxyInstance().config;
-                    return {
-                        isToolShedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
-                    };
-                },
+                component: AdminHome,
             },
             { path: "data_tables", component: DataTables },
             { path: "data_types", component: DataTypes },

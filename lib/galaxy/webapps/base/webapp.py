@@ -11,9 +11,7 @@ from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
-    Dict,
     Optional,
-    Tuple,
 )
 from urllib.parse import urlparse
 
@@ -27,6 +25,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.exc import NoResultFound
+from webob.exc import HTTPException
 
 from galaxy import util
 from galaxy.exceptions import (
@@ -66,9 +65,9 @@ from galaxy.web.framework.middleware.static import CacheableStaticURLParser as S
 try:
     import galaxy.web_client
 
-    default_static_dir = os.path.dirname(galaxy.web_client.__file__)
+    default_static_dist_dir = os.path.join(os.path.dirname(galaxy.web_client.__file__), "dist")
 except ImportError:
-    default_static_dir = "static/"
+    default_static_dist_dir = None  # type: ignore[assignment]
 
 log = logging.getLogger(__name__)
 
@@ -202,7 +201,9 @@ class WebApplication(base.WebApplication):
             )
 
     def handle_controller_exception(self, e, trans, method, **kwargs):
-        log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
+        if not isinstance(e, HTTPException):
+            # We're still logging too much here but at least it's not logging webob.exc.HTTPFound and friends
+            log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
         if isinstance(e, TypeError):
             method_signature = inspect.signature(method)
             required_parameters = {
@@ -312,7 +313,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     """
 
     def __init__(
-        self, environ: Dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
+        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
     ) -> None:
         self._app = app
         self.webapp = webapp
@@ -331,7 +332,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.galaxy_session = None
         self.error_message = None
         self.host = self.request.host
-        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
+        self._short_term_cache: dict[tuple[str, ...], Any] = {}
 
         # set any cross origin resource sharing headers if configured to do so
         self.set_cors_headers()
@@ -939,8 +940,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # Look for an existing history that has the default name, is not
         # deleted, and is empty. If this exists, we associate it with the
         # current session and return it.
-        user = self.galaxy_session.user
-        if user:
+        if user := self.galaxy_session.user:
             stmt = select(History).filter_by(user=user, name=History.default_name, deleted=False)
             unnamed_histories = self.sa_session.scalars(stmt)
             for history in unnamed_histories:
@@ -1160,17 +1160,19 @@ def build_url_map(app, global_conf, **local_conf):
         return Static(config_val, cache_time, directory_per_host=per_host_config)
 
     # Define static mappings from config
-    static_dir = get_static_from_config("static_dir", default_static_dir)
+    static_dir = get_static_from_config("static_dir", "static/")
     static_dir_bare = static_dir.directory.rstrip("/")
+    static_dist_dir = get_static_from_config("static_dist_dir", default_static_dist_dir or f"{static_dir_bare}/dist/")
     urlmap["/static"] = static_dir
+    urlmap["/static/dist"] = static_dist_dir
     urlmap["/images"] = get_static_from_config("static_images_dir", f"{static_dir_bare}/images")
     urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", f"{static_dir_bare}/scripts/")
 
     urlmap["/static/welcome.html"] = get_static_from_config(
         "static_welcome_html", f"{static_dir_bare}/welcome.html", sample=default_url_path("static/welcome.sample.html")
     )
-    urlmap["/static/favicon.svg"] = get_static_from_config(
-        "static_favicon_dir", f"{static_dir_bare}/favicon.svg", sample=default_url_path("static/favicon.svg")
+    urlmap["/favicon.ico"] = get_static_from_config(
+        "static_favicon_dir", f"{static_dir_bare}/favicon.ico", sample=default_url_path("static/favicon.ico")
     )
     urlmap["/robots.txt"] = get_static_from_config(
         "static_robots_txt", f"{static_dir_bare}/robots.txt", sample=default_url_path("static/robots.txt")

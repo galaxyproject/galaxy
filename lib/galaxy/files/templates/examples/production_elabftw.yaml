@@ -2,9 +2,9 @@
   version: 0
   name: eLabFTW
   description: |
-    eLabFTW is a free and open source electronic lab notebook from Deltablot. It can keep track of experiments,
-    equipment, and materials from a research lab. Each lab can either host their own installation or go for Deltablot's
-    hosted solution. This template configuration allows you to connect to an eLabFTW instance of your choice.
+    [eLabFTW](https://elabftw.net) is a free and open source electronic lab notebook from [Deltablot](https://www.deltablot.com/).
+    It can keep track of experiments, equipment, and materials from a research lab. Each lab can either host their own installation or go for Deltablot's
+    hosted solution. Here you can connect to an eLabFTW instance of your choice.
   variables:
     endpoint:
       label: eLabFTW instance endpoint (e.g. https://demo.elabftw.net)

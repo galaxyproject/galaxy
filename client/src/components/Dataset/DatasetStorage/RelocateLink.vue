@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { type ConcreteObjectStoreModel, type DatasetStorageDetails, type SelectableObjectStore } from "@/api";
+import type { ConcreteObjectStoreModel, DatasetStorageDetails, SelectableObjectStore } from "@/api";
 import { updateObjectStore } from "@/api/objectStores";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
@@ -20,10 +20,10 @@ const props = defineProps<RelocateLinkProps>();
 const showModal = ref(false);
 
 const store = useObjectStoreStore();
-const { isLoaded, selectableObjectStores } = storeToRefs(store);
+const { loading, selectableObjectStores } = storeToRefs(store);
 
 const currentObjectStore = computed<ConcreteObjectStoreModel | null>(() => {
-    const isLoadedVal = isLoaded.value;
+    const isLoadedVal = !loading.value;
     const objectStores = selectableObjectStores.value;
     const currentObjectStoreId = props.datasetStorageDetails.object_store_id;
 
@@ -40,7 +40,7 @@ const currentObjectStore = computed<ConcreteObjectStoreModel | null>(() => {
 });
 
 const validTargets = computed<SelectableObjectStore[]>(() => {
-    const isLoadedVal = isLoaded.value;
+    const isLoadedVal = !loading.value;
     const objectStores = selectableObjectStores.value;
     const currentObjectStoreId = props.datasetStorageDetails.object_store_id;
 

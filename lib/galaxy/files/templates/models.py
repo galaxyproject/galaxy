@@ -1,9 +1,7 @@
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
-    Type,
     Union,
 )
 
@@ -12,7 +10,6 @@ from pydantic import (
     RootModel,
 )
 from typing_extensions import (
-    Annotated,
     Literal,
 )
 
@@ -49,6 +46,7 @@ FileSourceTemplateType = Literal[
     "inveniordm",
     "zenodo",
     "rspace",
+    "dataverse",
 ]
 
 
@@ -282,6 +280,24 @@ class RSpaceFileSourceConfiguration(StrictModel):
     writable: bool = True
 
 
+class DataverseFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["dataverse"]
+    url: Union[str, TemplateExpansion]
+    public_name: Union[str, TemplateExpansion]
+    token: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = True
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class DataverseFileSourceConfiguration(StrictModel):
+    type: Literal["dataverse"]
+    url: str
+    public_name: str
+    token: str
+    writable: bool = True
+
+
 FileSourceTemplateConfiguration = Annotated[
     Union[
         PosixFileSourceTemplateConfiguration,
@@ -296,6 +312,7 @@ FileSourceTemplateConfiguration = Annotated[
         InvenioFileSourceTemplateConfiguration,
         ZenodoFileSourceTemplateConfiguration,
         RSpaceFileSourceTemplateConfiguration,
+        DataverseFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -314,6 +331,7 @@ FileSourceConfiguration = Annotated[
         InvenioFileSourceConfiguration,
         ZenodoFileSourceConfiguration,
         RSpaceFileSourceConfiguration,
+        DataverseFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -338,8 +356,8 @@ class FileSourceTemplateBase(StrictModel):
     # template by hiding but keep it in the catalog for backward
     # compatibility for users with existing stores of that template.
     hidden: bool = False
-    variables: Optional[List[TemplateVariable]] = None
-    secrets: Optional[List[TemplateSecret]] = None
+    variables: Optional[list[TemplateVariable]] = None
+    secrets: Optional[list[TemplateSecret]] = None
 
 
 class FileSourceTemplateSummary(FileSourceTemplateBase):
@@ -348,23 +366,23 @@ class FileSourceTemplateSummary(FileSourceTemplateBase):
 
 class FileSourceTemplate(FileSourceTemplateBase):
     configuration: FileSourceTemplateConfiguration
-    environment: Optional[List[TemplateEnvironmentEntry]] = None
+    environment: Optional[list[TemplateEnvironmentEntry]] = None
 
     @property
     def type(self):
         return self.configuration.type
 
 
-FileSourceTemplateCatalog = RootModel[List[FileSourceTemplate]]
+FileSourceTemplateCatalog = RootModel[list[FileSourceTemplate]]
 
 
 class FileSourceTemplateSummaries(RootModel):
-    root: List[FileSourceTemplateSummary]
+    root: list[FileSourceTemplateSummary]
 
 
 def template_to_configuration(
     template: FileSourceTemplate,
-    variables: Dict[str, TemplateVariableValueType],
+    variables: dict[str, TemplateVariableValueType],
     secrets: SecretsDict,
     user_details: UserDetailsDict,
     environment: EnvironmentDict,
@@ -377,7 +395,7 @@ def template_to_configuration(
     return to_configuration_object(raw_config)
 
 
-TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfiguration]] = {
+TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfiguration]] = {
     "ftp": FtpFileSourceConfiguration,
     "posix": PosixFileSourceConfiguration,
     "s3fs": S3FSFileSourceConfiguration,
@@ -390,6 +408,7 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "inveniordm": InvenioFileSourceConfiguration,
     "zenodo": ZenodoFileSourceConfiguration,
     "rspace": RSpaceFileSourceConfiguration,
+    "dataverse": DataverseFileSourceConfiguration,
 }
 
 
@@ -418,7 +437,7 @@ def get_oauth2_config_or_none(template: FileSourceTemplate) -> Optional[OAuth2Co
     return get_oauth2_config(template)
 
 
-def to_configuration_object(configuration_dict: Dict[str, Any]) -> FileSourceConfiguration:
+def to_configuration_object(configuration_dict: dict[str, Any]) -> FileSourceConfiguration:
     if "type" not in configuration_dict:
         raise KeyError("Configuration objects require a file source 'type' key, none found.")
     object_store_type = configuration_dict["type"]

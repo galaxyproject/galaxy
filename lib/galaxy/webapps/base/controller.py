@@ -634,7 +634,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # -- Get tool definition and add input values from job. --
         tool_dict = tool.to_dict(trans, io_details=True)
         tool_param_values = {p.name: p.value for p in job.parameters}
-        tool_param_values = tool.params_from_strings(tool_param_values, trans.app, ignore_errors=True)
+        tool_param_values = tool.params_from_strings(tool_param_values, ignore_errors=True)
 
         # Only get values for simple inputs for now.
         inputs_dict = [i for i in tool_dict["inputs"] if i["type"] not in ["data", "hidden_data", "conditional"]]
@@ -659,8 +659,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             bookmarks = latest_revision.config.get("bookmarks", [])
 
             def pack_track(track_dict):
-                unencoded_id = track_dict.get("dataset_id")
-                if unencoded_id:
+                if unencoded_id := track_dict.get("dataset_id"):
                     encoded_id = trans.security.encode_id(unencoded_id)
                 else:
                     encoded_id = track_dict["dataset"]["id"]

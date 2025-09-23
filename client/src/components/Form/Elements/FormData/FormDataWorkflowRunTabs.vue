@@ -4,11 +4,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 
+import type { HDCASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import type { DataOption } from "./types";
+import type { DataOption, ExtendedCollectionType } from "./types";
 import type { VariantInterface } from "./variants";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
@@ -30,6 +31,7 @@ const props = defineProps<{
     collectionType?: CollectionBuilderType;
     stepTitle?: string;
     workflowTab: string;
+    extendedCollectionType: ExtendedCollectionType;
 }>();
 
 const emit = defineEmits<{
@@ -62,7 +64,7 @@ function addUploadedFiles(value: any[], viewUploads = true) {
     }
 }
 
-function collectionCreated(collection: any) {
+function collectionCreated(collection: HDCASummary) {
     addUploadedFiles([collection], false);
     emit("focus");
 }
@@ -120,7 +122,7 @@ watch(
                 :list-db-keys="listDbKeys"
                 disable-footer
                 emit-uploaded
-                size="sm"
+                size="small"
                 @uploaded="addUploadedFiles"
                 @dismiss="goToFirstWorkflowTab">
                 <template v-slot:footer>
@@ -140,6 +142,7 @@ watch(
                 not-modal
                 :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"
                 :suggested-name="props.stepTitle"
+                :extended-collection-type="extendedCollectionType"
                 @created-collection="collectionCreated"
                 @on-hide="goToFirstWorkflowTab" />
         </div>

@@ -4,11 +4,9 @@ import urllib.request
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
+from urllib.error import HTTPError
 from urllib.parse import quote
 
 from typing_extensions import (
@@ -78,7 +76,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         self.repository: DataverseRepositoryInteractor
 
     def get_scheme(self) -> str:
-        return "dataverse"
+        return self.scheme if self.scheme and self.scheme != DEFAULT_SCHEME else self.plugin_type
 
     def score_url_match(self, url: str) -> int:
         if match := self._scheme_regex.match(url):
@@ -138,7 +136,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """This method lists the datasets or files from dataverse."""
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
@@ -146,10 +144,10 @@ class DataverseRDMFilesSource(RDMFilesSource):
             datasets, total_hits = self.repository.get_file_containers(
                 writeable, user_context, limit=limit, offset=offset, query=query
             )
-            return cast(List[AnyRemoteEntry], datasets), total_hits
+            return cast(list[AnyRemoteEntry], datasets), total_hits
         dataset_id = self.get_container_id_from_path(path)
         files = self.repository.get_files_in_container(dataset_id, writeable, user_context, query)
-        return cast(List[AnyRemoteEntry], files), len(files)
+        return cast(list[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
         self,
@@ -255,7 +253,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[RemoteDirectory], int]:
+    ) -> tuple[list[RemoteDirectory], int]:
         """Lists the Dataverse datasets in the repository."""
         request_url = self.search_url
         params = {
@@ -277,7 +275,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         writeable: bool,
         user_context: OptionalUserContext = None,
         query: Optional[str] = None,
-    ) -> List[RemoteFile]:
+    ) -> list[RemoteFile]:
         """This method lists the files in a dataverse dataset."""
         request_url = self.files_of_dataset_url(dataset_id=container_id)
         response_data = self._get_response(user_context, request_url)
@@ -285,7 +283,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         files = self._filter_files_by_name(files, query)
         return files
 
-    def _filter_files_by_name(self, files: List[RemoteFile], query: Optional[str] = None) -> List[RemoteFile]:
+    def _filter_files_by_name(self, files: list[RemoteFile], query: Optional[str] = None) -> list[RemoteFile]:
         if not query:
             return files
         return [file for file in files if query in file["name"]]
@@ -377,15 +375,15 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 return stream_to_open_named_file(
                     page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
                 )
-        except urllib.error.HTTPError as e:
+        except HTTPError as e:
             # TODO: We can only download files from published datasets for now
             if e.code in [401, 403, 404]:
                 raise NotFoundException(
                     f"Cannot download file from URL '{file_path}'. Please make sure the dataset and/or file exists and it is public."
                 )
 
-    def _get_datasets_from_response(self, response: dict) -> List[RemoteDirectory]:
-        rval: List[RemoteDirectory] = []
+    def _get_datasets_from_response(self, response: dict) -> list[RemoteDirectory]:
+        rval: list[RemoteDirectory] = []
         for dataset in response["items"]:
             uri = self.to_plugin_uri(dataset_id=dataset["global_id"])
             rval.append(
@@ -398,8 +396,8 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             )
         return rval
 
-    def _get_files_from_response(self, dataset_id: str, response: dict) -> List[RemoteFile]:
-        rval: List[RemoteFile] = []
+    def _get_files_from_response(self, dataset_id: str, response: dict) -> list[RemoteFile]:
+        rval: list[RemoteFile] = []
         for entry in response:
             dataFile = entry.get("dataFile")
             uri = self.to_plugin_uri(dataset_id, dataFile.get("persistentId"))
@@ -419,7 +417,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         self,
         user_context: OptionalUserContext,
         request_url: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         auth_required: bool = False,
     ) -> dict:
         headers = self._get_request_headers(user_context, auth_required)
@@ -436,21 +434,21 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
 
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
         if response.status_code != expected_status_code:
-            if response.status_code == 403:
-                self._raise_auth_required()
             error_message = self._get_response_error_message(response)
+            if response.status_code == 403:
+                self._raise_auth_required(error_message)
             raise Exception(
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
 
-    def _raise_auth_required(self):
+    def _raise_auth_required(self, message: Optional[str] = None):
         raise AuthenticationRequired(
-            f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
+            message or f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
         )
 
     def _get_response_error_message(self, response):
         response_json = response.json()
-        error_message = response_json.get("message") if response.status_code == 400 else response.text
+        error_message = response_json.get("message") or response.text
         errors = response_json.get("errors", [])
         for error in errors:
             error_message += f"\n{json.dumps(error)}"

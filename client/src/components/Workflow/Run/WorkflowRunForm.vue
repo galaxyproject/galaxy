@@ -26,6 +26,21 @@
                     @onClick="onExecute" />
             </div>
         </div>
+        <BAlert v-if="disableSimpleFormReason" show variant="warning">
+            This is the legacy workflow run form.
+            <span v-if="disableSimpleFormReason === 'hasReplacementParameters'">
+                This workflow contains parameters in tool steps that require advanced handling. The simplified form does
+                not support these parameters.
+            </span>
+            <span v-else-if="disableSimpleFormReason === 'hasDisconnectedInputs'">
+                One or more tools in this workflow have required inputs that are not connected to other steps. The
+                simplified form cannot handle disconnected runtime inputs.
+            </span>
+            <span v-else-if="disableSimpleFormReason === 'hasWorkflowResourceParameters'">
+                This workflow is configured with resource request parameters. The simplified form does not support
+                workflows with resource options.
+            </span>
+        </BAlert>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
                 <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
@@ -107,6 +122,10 @@ export default {
         disableSimpleForm: {
             type: Boolean,
             default: false,
+        },
+        disableSimpleFormReason: {
+            type: String,
+            default: undefined,
         },
     },
     data() {

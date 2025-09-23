@@ -1,6 +1,6 @@
 from typing import (
+    Annotated,
     Any,
-    List,
     Optional,
 )
 
@@ -8,7 +8,6 @@ from pydantic import (
     ConfigDict,
     Field,
 )
-from typing_extensions import Annotated
 
 from galaxy.schema.schema import Model
 
@@ -60,7 +59,7 @@ class HelpForumTopic(Model):
     archived: Annotated[bool, Field(description="Whether the topic is archived.")]
     bookmarked: Annotated[Optional[bool], Field(default=None, description="Whether the topic is bookmarked.")]
     liked: Annotated[Optional[bool], Field(default=None, description="Whether the topic is liked.")]
-    tags: Annotated[List[str], Field(description="The tags of the topic.")]
+    tags: Annotated[list[str], Field(description="The tags of the topic.")]
     tags_descriptions: Annotated[
         Optional[Any], Field(default=None, description="The descriptions of the tags of the topic.")
     ]
@@ -104,22 +103,22 @@ class HelpForumSearchResponse(Model):
     This model is based on the Discourse API response for the search endpoint.
     """
 
-    posts: Annotated[List[HelpForumPost], Field(default=None, description="The list of posts returned by the search.")]
+    posts: Annotated[list[HelpForumPost], Field(default=None, description="The list of posts returned by the search.")]
     topics: Annotated[
-        List[HelpForumTopic], Field(default=None, description="The list of topics returned by the search.")
+        list[HelpForumTopic], Field(default=None, description="The list of topics returned by the search.")
     ]
     users: Annotated[
-        Optional[List[HelpForumUser]], Field(default=None, description="The list of users returned by the search.")
+        Optional[list[HelpForumUser]], Field(default=None, description="The list of users returned by the search.")
     ]
     categories: Annotated[
-        Optional[List[HelpForumCategory]],
+        Optional[list[HelpForumCategory]],
         Field(default=None, description="The list of categories returned by the search."),
     ]
     tags: Annotated[
-        Optional[List[HelpForumTag]], Field(default=None, description="The list of tags returned by the search.")
+        Optional[list[HelpForumTag]], Field(default=None, description="The list of tags returned by the search.")
     ]
     groups: Annotated[
-        Optional[List[HelpForumGroup]], Field(default=None, description="The list of groups returned by the search.")
+        Optional[list[HelpForumGroup]], Field(default=None, description="The list of groups returned by the search.")
     ]
     grouped_search_result: Annotated[
         Optional[HelpForumGroupedSearchResult], Field(default=None, description="The grouped search result.")

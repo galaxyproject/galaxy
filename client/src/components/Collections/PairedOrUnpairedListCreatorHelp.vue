@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
+import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
 
 interface Props {
     fromSelection?: boolean;

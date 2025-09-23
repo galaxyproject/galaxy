@@ -16,6 +16,7 @@ from subprocess import (
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 from galaxy.tool_util.deps import (
@@ -853,7 +854,7 @@ def __dependency_manager(file_content, extension=".xml"):
             yield dm
 
 
-def __dependency_manager_for_base_path(default_base_path, conf_file=None):
+def __dependency_manager_for_base_path(default_base_path: str, conf_file: Optional[str] = None) -> DependencyManager:
     dm = DependencyManager(
         default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False}
     )

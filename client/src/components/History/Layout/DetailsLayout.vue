@@ -21,6 +21,7 @@ interface Props {
     name?: string;
     tags?: string[];
     writeable?: boolean;
+    renameable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
     summarized?: DetailsLayoutSummarized;
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
     name: undefined,
     tags: undefined,
     writeable: true,
+    renameable: true,
     annotation: undefined,
     showAnnotation: true,
     summarized: undefined,
@@ -119,14 +121,19 @@ function selectText() {
 <template>
     <section :class="detailsClass" data-description="edit details">
         <div class="d-flex justify-content-between w-100">
-            <ClickToEdit
-                v-if="!summarized && !editing"
-                v-model="clickToEditName"
-                component="h3"
-                title="..."
-                data-description="name display"
-                no-save-on-blur
-                class="my-2 w-100" />
+            <template v-if="!summarized && !editing">
+                <ClickToEdit
+                    v-if="renameable"
+                    v-model="clickToEditName"
+                    component="h3"
+                    title="..."
+                    data-description="name display"
+                    no-save-on-blur
+                    class="my-2 w-100" />
+                <h3 v-else class="my-2 w-100">
+                    {{ props.name || "..." }}
+                </h3>
+            </template>
             <div v-else style="max-width: 80%">
                 <TextSummary
                     :description="name"
@@ -228,6 +235,8 @@ function selectText() {
                 <span v-localize>Cancel</span>
             </BButton>
         </div>
+
+        <slot></slot>
     </section>
 </template>
 

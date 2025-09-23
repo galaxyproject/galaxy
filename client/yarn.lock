@@ -3876,9 +3876,9 @@ axios-mock-adapter@^1.22.0:
     is-buffer "^2.0.5"
 
 axios@^1.6.2:
-  version "1.7.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.7.4.tgz#4c8ded1b43683c8dd362973c393f3ede24052aa2"
-  integrity sha512-DukmaFRnY6AzAALSH4J2M3k6PkaC+MfaAGdEERRWcC9q3/TWQwLpHR8ZRLKTdQ3aBDL64EdluRDjJqKw+BPZEw==
+  version "1.8.2"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.8.2.tgz#fabe06e241dfe83071d4edfbcaa7b1c3a40f7979"
+  integrity sha512-ls4GYBm5aig9vWx8AWDSGLpnpDQRtWAfrjU+EuytuODrFBkqesN2RkOQCBzrA1RQNHw1SmRMSDDDSwzNAYQ6Rg==
   dependencies:
     follow-redirects "^1.15.6"
     form-data "^4.0.0"
@@ -7639,6 +7639,11 @@ jest-environment-node@^29.7.0:
     jest-mock "^29.7.0"
     jest-util "^29.7.0"
 
+jest-fail-on-console@^3.3.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/jest-fail-on-console/-/jest-fail-on-console-3.3.1.tgz#7d17e3a155cd0452b5be0d0906b6cb35e8594000"
+  integrity sha512-dmq/dmh5OBgJlD1MJdpznzwFQP8S7msf3ghTGWQLGhagWwHKzGtqXza76nuJUKOK7BdwqcTK6CCE49Xxv4ckUQ==
+
 jest-fixed-jsdom@^0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/jest-fixed-jsdom/-/jest-fixed-jsdom-0.0.2.tgz#2a15d2db64cf9276afd162c451ae727b89a8811e"
@@ -8664,10 +8669,10 @@ monaco-worker-manager@^2.0.0:
   resolved "https://registry.yarnpkg.com/monaco-worker-manager/-/monaco-worker-manager-2.0.1.tgz#f67c54dfca34ed4b225d5de84e77b24b4e36de8a"
   integrity sha512-kdPL0yvg5qjhKPNVjJoym331PY/5JC11aPJXtCZNwWRvBr6jhkIamvYAyiY5P1AWFmNOy0aRDRoMdZfa71h8kg==
 
-monaco-yaml@^5.2.3:
-  version "5.2.3"
-  resolved "https://registry.yarnpkg.com/monaco-yaml/-/monaco-yaml-5.2.3.tgz#990fcf697bfa54e684a2d2f7df6d81a889843db4"
-  integrity sha512-GEplKC+YYmS0TOlJdv0FzbqkDN/IG2FSwEw+95myECVxTlhty2amwERYjzvorvJXmIagP1grd3Lleq7aQEJpPg==
+monaco-yaml@^5.4.0:
+  version "5.4.0"
+  resolved "https://registry.yarnpkg.com/monaco-yaml/-/monaco-yaml-5.4.0.tgz#c0ed6226c710c32c509e7c316c9a45f004862088"
+  integrity sha512-tuBVDy1KAPrgO905GHTItu8AaA5bIzF5S4X0JVRAE/D66FpRhkDUk7tKi5bwKMVTTugtpMLsXN4ewh4CgE/FtQ==
   dependencies:
     jsonc-parser "^3.0.0"
     monaco-languageserver-types "^0.4.0"
@@ -8675,7 +8680,7 @@ monaco-yaml@^5.2.3:
     monaco-types "^0.1.0"
     monaco-worker-manager "^2.0.0"
     path-browserify "^1.0.0"
-    prettier "^2.0.0"
+    prettier "^3.0.0"
     vscode-languageserver-textdocument "^1.0.0"
     vscode-languageserver-types "^3.0.0"
     vscode-uri "^3.0.0"
@@ -9652,10 +9657,15 @@ prelude-ls@~1.1.2:
   resolved "https://registry.npmjs.org/prettier/-/prettier-2.7.1.tgz"
   integrity sha512-ujppO+MkdPqoVINuDFDRLClm7D78qbDt0/NR+wp5FqEZOoTNAjPHWj17QRhu7geIHJfcNhRk1XVQmF8Bp3ye+g==
 
-prettier@^2.0.0, prettier@^2.8.8:
+prettier@^2.8.8:
   version "2.8.8"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.8.tgz#e8c5d7e98a4305ffe3de2e1fc4aca1a71c28b1da"
   integrity sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==
+
+prettier@^3.0.0:
+  version "3.5.3"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.5.3.tgz#4fc2ce0d657e7a02e602549f053b239cb7dfe1b5"
+  integrity sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==
 
 pretty-bytes@^6.1.1:
   version "6.1.1"
@@ -10095,10 +10105,10 @@ rimraf@^3.0.2:
   dependencies:
     glob "^7.1.3"
 
-ro-crate-zip-explorer@^0.3.1:
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.3.1.tgz#c78095d27baf46f778467f831fc068537e31e799"
-  integrity sha512-mF06U2wBi6NjW5tQnr0W5fFxCKRzgcOdsbookLvU5a+8ocg2UrU6iH/wpkjkEKrUZd+otRQZJzRz0wf3VFFchA==
+ro-crate-zip-explorer@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.4.0.tgz#28e6a5a0c7dd7a7e5eb8ec5a271e8d108402ca62"
+  integrity sha512-23WC9WuJ+FMjOjC2uyXdT8IpZ/DYqWNqtMkFNgBtyqHLVXVY7nIvCgV+nMYPHPHnnDlr2m0fjQagXxd0xXiDUQ==
   dependencies:
     jszip "^3.10.1"
     pako "^2.1.0"

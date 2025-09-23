@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faStop, faTools } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faStop, faTools } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
@@ -10,6 +10,7 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 import type { Tool } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+import { filterLatestToolVersions } from "@/utils/tool-version";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -39,7 +40,8 @@ const filteredTools = computed(() => {
 
 onMounted(async () => {
     await toolStore.fetchTools();
-    interactiveTools.value = toolStore.getInteractiveTools();
+    const allInteractiveTools = toolStore.getInteractiveTools();
+    interactiveTools.value = filterLatestToolVersions(allInteractiveTools);
     loading.value = false;
 
     // Make sure we load active interactive tools
@@ -86,12 +88,22 @@ function openInteractiveTool(toolId: string) {
                                 | Created <UtcDate :date="tool.created_time" mode="elapsed" />
                             </div>
                         </div>
-                        <button
-                            class="btn btn-sm btn-link text-danger"
-                            title="Stop this interactive tool"
-                            @click="stopInteractiveTool(tool.id, tool.name)">
-                            <FontAwesomeIcon :icon="faStop" />
-                        </button>
+                        <div class="d-flex align-items-center">
+                            <a
+                                v-if="tool.target"
+                                :href="tool.target"
+                                target="_blank"
+                                class="btn btn-sm btn-link text-muted me-1"
+                                title="Open in new tab">
+                                <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                            </a>
+                            <button
+                                class="btn btn-sm btn-link text-danger"
+                                title="Stop this interactive tool"
+                                @click="stopInteractiveTool(tool.id, tool.name)">
+                                <FontAwesomeIcon :icon="faStop" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -116,7 +128,7 @@ function openInteractiveTool(toolId: string) {
                         <div class="tool-icon mr-2">
                             <img
                                 v-if="tool.icon"
-                                :src="getAppRoot() + 'api/tools/' + tool.id + '/icon'"
+                                :src="getAppRoot() + 'api/tools/' + encodeURIComponent(tool.id) + '/icon'"
                                 alt="tool icon" />
                             <FontAwesomeIcon v-else :icon="faTools" size="2x" />
                         </div>

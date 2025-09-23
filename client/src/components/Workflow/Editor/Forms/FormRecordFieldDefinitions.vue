@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type FieldDict } from "@/api";
+import type { FieldDict } from "@/api";
 import localize from "@/utils/localization";
 
 import FormRecordFieldDefinition from "./FormRecordFieldDefinition.vue";
@@ -80,7 +80,7 @@ const emit = defineEmits(["onChange"]);
         </div>
         <FormCard
             v-for="(fieldDefinition, index) in value"
-            v-bind:key="index"
+            :key="index"
             data-description="field definition block"
             class="card"
             :title="titleForFieldDefinition(index)">

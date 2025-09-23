@@ -1,10 +1,7 @@
 <template>
-    <b-container>
-        <b-row>
-            <b-col>
-                <h1 class="h-sm">Current Custom Builds</h1>
-            </b-col>
-        </b-row>
+    <div>
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
         <b-row>
             <b-col>
                 <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
@@ -145,7 +142,7 @@ chr5    152537259</pre
                 </b-card>
             </b-col>
         </b-row>
-    </b-container>
+    </div>
 </template>
 
 <script>
@@ -157,15 +154,19 @@ import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
+import BreadcrumbHeading from "components/Common/BreadcrumbHeading.vue";
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        BreadcrumbHeading,
         Multiselect,
     },
     data() {
         const Galaxy = getGalaxyInstance();
         return {
+            breadcrumbItems: [{ title: "User Preferences", to: "/user" }, { title: "Current Custom Builds" }],
             customBuildsUrl: `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`,
             selectedInstalledBuilds: [],
             installedBuilds: [],

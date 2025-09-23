@@ -13,9 +13,6 @@ from inspect import (
 )
 from types import ModuleType
 from typing import (
-    Dict,
-    List,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -49,7 +46,7 @@ log = logging.getLogger(__name__)
 # of a request (which run within a threadpool) to see changes to the ContextVar
 # state. See https://github.com/tiangolo/fastapi/issues/953#issuecomment-586006249
 # for details
-REQUEST_ID: ContextVar[Union[Dict[str, str], None]] = ContextVar("request_id", default=None)
+REQUEST_ID: ContextVar[Union[dict[str, str], None]] = ContextVar("request_id", default=None)
 
 
 def check_database_connection(session):
@@ -71,7 +68,7 @@ def check_database_connection(session):
 
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
-    def __init__(self, model_modules: List[ModuleType], engine):
+    def __init__(self, model_modules: list[ModuleType], engine):
         self.engine = engine
         self._SessionLocal = sessionmaker(autoflush=False)
         versioned_session(self._SessionLocal)
@@ -79,7 +76,7 @@ class ModelMapping(Bunch):
         self.session = context
         self.scoped_registry = context.registry
 
-        model_classes: Dict[str, type] = {}
+        model_classes: dict[str, type] = {}
         for module in model_modules:
             name_class_pairs = getmembers(module, isclass)
             filtered_module_classes_dict = dict(m for m in name_class_pairs if m[1].__module__ == module.__name__)
@@ -143,10 +140,10 @@ class SharedModelMapping(ModelMapping):
     a way to do app.model.<CLASS> for common code shared by the tool shed and Galaxy.
     """
 
-    User: Union[Type["GalaxyUser"], Type["ToolShedUser"]]
-    GalaxySession: Union[Type["GalaxyGalaxySession"], Type["ToolShedGalaxySession"]]
-    APIKeys: Union[Type["GalaxyAPIKeys"], Type["ToolShedAPIKeys"]]
-    PasswordResetToken: Union[Type["GalaxyPasswordResetToken"], Type["ToolShedPasswordResetToken"]]
+    User: Union[type["GalaxyUser"], type["ToolShedUser"]]
+    GalaxySession: Union[type["GalaxyGalaxySession"], type["ToolShedGalaxySession"]]
+    APIKeys: Union[type["GalaxyAPIKeys"], type["ToolShedAPIKeys"]]
+    PasswordResetToken: Union[type["GalaxyPasswordResetToken"], type["ToolShedPasswordResetToken"]]
 
 
 def versioned_objects(iter):

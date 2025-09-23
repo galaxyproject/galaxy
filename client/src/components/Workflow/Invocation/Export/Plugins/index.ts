@@ -1,6 +1,6 @@
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-import { type ExportParams } from "@/components/Common/models/exportRecordModel";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 
 import { BIO_COMPUTE_OBJ_EXPORT_PLUGIN } from "./BioComputeObject/BioComputeObjectExportPlugin";
 import { DEFAULT_FILE_EXPORT_PLUGIN } from "./DefaultFileExportPlugin";

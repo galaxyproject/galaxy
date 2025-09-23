@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
-import { type FieldDict } from "@/api";
+import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
+import type { SampleSheetCollectionType } from "@/api/datasetCollections";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { Step } from "@/stores/workflowStepStore";
 
@@ -9,6 +10,7 @@ import { useToolState } from "../composables/useToolState";
 
 import FormElement from "@/components/Form/FormElement.vue";
 import FormCollectionType from "@/components/Workflow/Editor/Forms/FormCollectionType.vue";
+import FormColumnDefinitions from "@/components/Workflow/Editor/Forms/FormColumnDefinitions.vue";
 import FormDatatype from "@/components/Workflow/Editor/Forms/FormDatatype.vue";
 import FormRecordFieldDefinitions from "@/components/Workflow/Editor/Forms/FormRecordFieldDefinitions.vue";
 
@@ -18,6 +20,7 @@ interface ToolState {
     format: string | null;
     tag: string | null;
     fields: FieldDict[] | null;
+    column_definitions: SampleSheetColumnDefinitions;
 }
 
 const props = defineProps<{
@@ -42,6 +45,7 @@ function cleanToolState(): ToolState {
             tag: null,
             format: null,
             fields: null,
+            column_definitions: null,
         };
     }
 }
@@ -80,8 +84,15 @@ function onRecordFieldDefinitions(newRecordFieldDefinitions: FieldDict[]) {
 
 const isRecordType = computed(() => {
     const collectionType = asToolState(toolState.value).collection_type;
-    return collectionType == "record" || collectionType == "list:record";
+    return collectionType == "record" || collectionType == "list:record" || collectionType == "sample_sheet:record";
 });
+
+function onColumnDefinitions(newColumnDefinitions: SampleSheetColumnDefinitions) {
+    const state = cleanToolState();
+    console.log(newColumnDefinitions);
+    state.column_definitions = newColumnDefinitions;
+    emit("onChange", state);
+}
 
 const formatsAsList = computed(() => {
     const formatStr = toolState.value?.format as string | string[] | null;
@@ -96,6 +107,14 @@ const formatsAsList = computed(() => {
 
 const collectionType = computed(() => {
     return toolState.value.collection_type as string | undefined;
+});
+
+const isSampleSheetType = computed(() => {
+    return collectionType.value?.startsWith("sample_sheet");
+});
+
+const sampleSheetCollectionType = computed(() => {
+    return toolState.value.collection_type as SampleSheetCollectionType;
 });
 
 // Terrible Hack: The parent component (./FormDefault.vue) ignores the first update, so
@@ -123,6 +142,11 @@ emit("onChange", cleanToolState());
             type="text"
             help="Tags to automatically filter inputs"
             @input="onTags" />
+        <FormColumnDefinitions
+            v-if="isSampleSheetType"
+            :collection-type="sampleSheetCollectionType"
+            :value="asToolState(toolState).column_definitions"
+            @onChange="onColumnDefinitions" />
         <FormRecordFieldDefinitions
             v-if="isRecordType"
             :value="asToolState(toolState).fields || []"

@@ -1,7 +1,6 @@
 import logging
 import os
 from typing import (
-    List,
     Optional,
 )
 
@@ -114,7 +113,7 @@ class FastAPIUsers:
         description="index users",
         operation_id="users__index",
     )
-    def index(self, trans: SessionRequestContext = DependsOnTrans) -> List[User]:
+    def index(self, trans: SessionRequestContext = DependsOnTrans) -> list[User]:
         deleted = False
         return index(trans.app, deleted)
 

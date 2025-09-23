@@ -2,7 +2,7 @@
 import { BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type ErrorType, type ValidFilter } from "@/utils/filtering";
+import type { ErrorType, ValidFilter } from "@/utils/filtering";
 
 type FilterType = string | boolean | undefined;
 

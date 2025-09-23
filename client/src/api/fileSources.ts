@@ -1,7 +1,7 @@
 import { faAws, faDropbox, faGoogleDrive } from "@fortawesome/free-brands-svg-icons";
 import { faCloud, faFolderTree, faNetworkWired, type IconDefinition } from "font-awesome-6";
 
-import { type components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { contains } from "@/utils/filtering";
 
 export type FileSourceTemplateSummary = components["schemas"]["FileSourceTemplateSummary"];
@@ -14,23 +14,23 @@ export type FileSourceTypesDetail = Record<FileSourceTypes, { icon: IconDefiniti
 export const templateTypes: FileSourceTypesDetail = {
     azure: {
         icon: faCloud,
-        message: "This is a remote file source plugin based on the Azure service.",
+        message: "This is a repository plugin based on the Azure service.",
     },
     dropbox: {
         icon: faDropbox,
-        message: "This is a file source plugin that connects with the commercial Dropbox service.",
+        message: "This is a repository plugin that connects with the commercial Dropbox service.",
     },
     ftp: {
         icon: faNetworkWired,
-        message: "This is a remote file source plugin based on the FTP protocol.",
+        message: "This is a repository plugin based on the FTP/S protocol.",
     },
     googledrive: {
         icon: faGoogleDrive,
-        message: "This is a file source plugin that connects with the commercial Google Drive service.",
+        message: "This is a  repository plugin that connects with the commercial Google Drive service.",
     },
     onedata: {
         icon: faNetworkWired,
-        message: "This is a remote file source plugin based on the Onedata service.",
+        message: "This is a repository plugin based on the Onedata service.",
     },
     posix: {
         icon: faFolderTree,
@@ -40,27 +40,31 @@ export const templateTypes: FileSourceTypesDetail = {
     s3fs: {
         icon: faAws,
         message:
-            "This is a remote file source plugin based on the Amazon Simple Storage Service (S3) interface. The AWS interface has become an industry standard and many storage vendors support it and use it to expose 'object' based storage.",
+            "This is a repository plugin based on the Amazon Simple Storage Service (S3) interface. The AWS interface has become an industry standard and many storage vendors support it and use it to expose 'object' based storage.",
     },
     webdav: {
         icon: faNetworkWired,
-        message: "This is a remote file source plugin based on the WebDAV protocol.",
+        message: "This is a repository plugin based on the WebDAV protocol.",
     },
     elabftw: {
         icon: faNetworkWired,
-        message: "This is a remote file source that connects with an eLabFTW instance.",
+        message: "This is a repository plugin that connects with an eLabFTW instance.",
     },
     inveniordm: {
         icon: faNetworkWired,
-        message: "This is a remote file source that connects with an InvenioRDM instance.",
+        message: "This is a repository plugin that connects with an InvenioRDM instance.",
     },
     zenodo: {
         icon: faNetworkWired,
-        message: "This is a remote file source that connects with the Zenodo instance.",
+        message: "This is a repository plugin that connects with the Zenodo instance.",
     },
     rspace: {
         icon: faNetworkWired,
         message: "This is a remote file source that connects with the Gallery of an RSpace instance.",
+    },
+    dataverse: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with a Dataverse.org instance.",
     },
 };
 

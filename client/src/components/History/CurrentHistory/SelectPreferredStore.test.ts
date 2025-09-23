@@ -3,7 +3,6 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import { h } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
@@ -25,15 +24,40 @@ const TEST_HISTORY = {
     preferred_object_store_id: null,
 };
 
-async function mountComponent() {
+async function mountComponent(preferredObjectStoreId: string | null = null) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json({});
         })
     );
+
+    server.use(
+        http.get("/api/users/{user_id}/usage/{label}", ({ response }) => {
+            return response(200).json({
+                total_disk_usage: 0,
+            });
+        })
+    );
+
     const wrapper = mount(SelectPreferredStore as object, {
-        propsData: { userPreferredObjectStoreId: null, history: TEST_HISTORY },
+        propsData: {
+            preferredObjectStoreId: preferredObjectStoreId,
+            history: TEST_HISTORY,
+            showModal: true,
+        },
         localVue,
+        stubs: {
+            BModal: {
+                template: `
+                    <div>
+                        <slot></slot>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" @click="$emit('ok')">OK</button>
+                        </div>
+                    </div>
+                `,
+            },
+        },
     });
 
     await flushPromises();
@@ -42,13 +66,6 @@ async function mountComponent() {
 }
 
 const PREFERENCES = ROOT_COMPONENT.preferences;
-
-// bootstrap vue will try to match targets to actual HTML elements in DOM but there
-// may be no DOM for jest tests, just stub out an alternative minimal implementation.
-jest.mock("@/components/ObjectStore/ObjectStoreSelectButtonPopover.vue", () => ({
-    name: "ObjectStoreSelectButtonPopover",
-    render: () => h("div", "Mocked Popover"),
-}));
 
 describe("SelectPreferredStore.vue", () => {
     let axiosMock: MockAdapter;
@@ -62,11 +79,11 @@ describe("SelectPreferredStore.vue", () => {
     });
 
     it("updates object store to default on selection null", async () => {
-        const wrapper = await mountComponent();
-        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
+        const wrapper = await mountComponent("object_store_1");
+        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_cards.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
-            PREFERENCES.object_store_selection.option_button({ object_store_id: "__null__" }).selector
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "__null__" }).selector
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
         axiosMock
@@ -76,16 +93,22 @@ describe("SelectPreferredStore.vue", () => {
         await flushPromises();
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
+
+        const okButton = wrapper.find(".btn-primary");
+        await okButton.trigger("click");
+
+        await flushPromises();
+
         const emitted = wrapper.emitted();
         expect(emitted["updated"]?.[0]?.[0]).toEqual(null);
     });
 
     it("updates object store to on non-null selection", async () => {
         const wrapper = await mountComponent();
-        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
+        const els = wrapper.findAll(PREFERENCES.object_store_selection.option_cards.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
-            PREFERENCES.object_store_selection.option_button({ object_store_id: "object_store_2" }).selector
+            PREFERENCES.object_store_selection.option_card_select({ object_store_id: "object_store_2" }).selector
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
         axiosMock
@@ -98,6 +121,12 @@ describe("SelectPreferredStore.vue", () => {
         await flushPromises();
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
+
+        const okButton = wrapper.find(".btn-primary");
+        await okButton.trigger("click");
+
+        await flushPromises();
+
         const emitted = wrapper.emitted();
         expect(emitted["updated"]?.[0]?.[0]).toEqual("object_store_2");
     });

@@ -10,15 +10,14 @@ import os.path
 import re
 import typing
 import urllib.parse
-from collections.abc import MutableMapping
+from collections.abc import (
+    MutableMapping,
+    Sequence,
+)
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -798,7 +797,7 @@ class FTPFileToolParameter(ToolParameter):
     def to_python(self, value, app, validate=False):
         if not isinstance(value, list):
             value = [value]
-        lst: List[str] = []
+        lst: list[str] = []
         for val in value:
             if val in [None, ""]:
                 lst = []
@@ -1022,14 +1021,14 @@ class SelectToolParameter(ToolParameter):
         """
         determine the set of values of legal options
         """
-        options = cast(List[ParameterOption], self.get_options(trans, other_values))
+        options = cast(list[ParameterOption], self.get_options(trans, other_values))
         return {option.dataset or option.value for option in options}
 
     def get_legal_names(self, trans, other_values):
         """
         determine the set of values of legal options
         """
-        options = cast(List[ParameterOption], self.get_options(trans, other_values))
+        options = cast(list[ParameterOption], self.get_options(trans, other_values))
         return {option.name: option.value for option in options}
 
     def from_json(self, value, trans, other_values=None):
@@ -1153,7 +1152,7 @@ class SelectToolParameter(ToolParameter):
 
     def get_initial_value(self, trans, other_values):
         try:
-            options = cast(List[ParameterOption], self.get_options(trans, other_values))
+            options = cast(list[ParameterOption], self.get_options(trans, other_values))
         except ImplicitConversionRequired:
             return None
         if not options:
@@ -1163,7 +1162,7 @@ class SelectToolParameter(ToolParameter):
             if not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                value2: Optional[Union[str, List[str]]] = options[0].value
+                value2: Optional[Union[str, list[str]]] = options[0].value
             else:
                 value2 = None
         elif len(value) == 1 or not self.multiple:
@@ -1203,7 +1202,7 @@ class SelectToolParameter(ToolParameter):
         d = super().to_dict(trans, other_values)
 
         # Get options, value.
-        options = cast(List[ParameterOption], self.get_options(trans, other_values))
+        options = cast(list[ParameterOption], self.get_options(trans, other_values))
         d["options"] = serialize_options(trans.security, options)
         d["display"] = self.display
         d["multiple"] = self.multiple
@@ -1690,7 +1689,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         except Exception:
             return []
 
-    def get_options(self, trans=None, other_values=None) -> List[DrillDownOptionsDict]:
+    def get_options(self, trans=None, other_values=None) -> list[DrillDownOptionsDict]:
         other_values = other_values or {}
         if self.is_dynamic:
             if self.dynamic_options:
@@ -1700,12 +1699,12 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return self.options
 
     def get_legal_values(self, trans, other_values, value):
-        def recurse_options(legal_values, options: List[DrillDownOptionsDict]):
+        def recurse_options(legal_values, options: list[DrillDownOptionsDict]):
             for option in options:
                 legal_values.append(option["value"])
                 recurse_options(legal_values, option["options"])
 
-        legal_values: List[str] = []
+        legal_values: list[str] = []
         recurse_options(legal_values, self.get_options(trans=trans, other_values=other_values))
         return legal_values
 
@@ -1746,7 +1745,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         other_values = other_values or {}
 
         def get_options_list(value):
-            def get_base_option(value, options: List[DrillDownOptionsDict]):
+            def get_base_option(value, options: list[DrillDownOptionsDict]):
                 for option in options:
                     if value == option["value"]:
                         return option
@@ -1762,10 +1761,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                     for opt in option["options"]:
                         recurse_option(option_list, opt)
 
-            rval: List[str] = []
+            rval: list[str] = []
             options = self.get_options(other_values=other_values)
-            base_option = get_base_option(value, options)
-            if base_option:
+            if base_option := get_base_option(value, options):
                 recurse_option(rval, base_option)
             return rval or [value]
 
@@ -1792,7 +1790,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         return rval
 
     def get_initial_value(self, trans, other_values):
-        def recurse_options(initial_values, options: List[DrillDownOptionsDict]):
+        def recurse_options(initial_values, options: list[DrillDownOptionsDict]):
             for option in options:
                 if option["selected"]:
                     initial_values.append(option["value"])
@@ -1802,14 +1800,14 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         options = self.get_options(trans=trans, other_values=other_values)
         if not options:
             return None
-        initial_values: List[str] = []
+        initial_values: list[str] = []
         recurse_options(initial_values, options)
         if len(initial_values) == 0:
             return None
         return initial_values
 
     def to_text(self, value):
-        def get_option_display(value, options: List[DrillDownOptionsDict]):
+        def get_option_display(value, options: list[DrillDownOptionsDict]):
             for option in options:
                 if value == option["value"]:
                     return option["name"]
@@ -1892,7 +1890,7 @@ class BaseDataToolParameter(ToolParameter):
         """
         Build list of classes for supported data formats
         """
-        self.extensions = [extension.strip().lower() for extension in input_source.get("format", "data").split(",")]
+        self.extensions = input_source.parse_extensions()
         formats = []
         if self.datatypes_registry:  # This may be None when self.tool.app is a ValidationContext
             for extension in self.extensions:
@@ -2084,7 +2082,7 @@ def src_id_to_item_collection(
     rval = src_id_to_item(sa_session, value, security)
     if isinstance(rval, (LibraryDatasetDatasetAssociation, HistoryDatasetAssociation)):
         raise ValueError("Expected to find collection, but got single dataset wrapper")
-    return cast(ItemFromSrcCollection, rval)
+    return rval
 
 
 class DataToolParameter(BaseDataToolParameter):
@@ -2168,7 +2166,7 @@ class DataToolParameter(BaseDataToolParameter):
             value = self.to_python(value, trans.app)
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
-        rval: List[
+        rval: list[
             Union[
                 DatasetCollectionElement,
                 HistoryDatasetAssociation,
@@ -2416,7 +2414,7 @@ class DataToolParameter(BaseDataToolParameter):
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
         # Prefetch all at once, big list of visible, non-deleted datasets.
-        matches_by_hid: Dict[int, List] = {}
+        matches_by_hid: dict[int, list] = {}
         for hda in history.active_visible_datasets_and_roles:
             match = dataset_matcher.hda_match(hda)
             if match:
@@ -2501,6 +2499,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         self.tag = tag
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self.is_dynamic = True
+        self._fields = input_source.get("fields", None)
+        self._column_definitions = input_source.get("column_definitions", None)
         self._parse_options(input_source)  # TODO: Review and test.
         self.default_object = input_source.parse_default()
         if self.optional and self.default_object is not None:
@@ -2509,7 +2509,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             )
 
     @property
-    def collection_types(self) -> Optional[List[str]]:
+    def collection_types(self) -> Optional[list[str]]:
         return self._collection_types
 
     def _history_query(self, trans):
@@ -2613,6 +2613,8 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         other_values = other_values or {}
         d = super().to_dict(trans)
         d["collection_types"] = self.collection_types
+        d["fields"] = self._fields
+        d["column_definitions"] = self._column_definitions
         d["extensions"] = self.extensions
         d["multiple"] = self.multiple
         d["options"] = {"hda": [], "hdca": [], "dce": []}
@@ -2788,7 +2790,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
 # Code from CWL branch to massage in order to be shared across tools and workflows,
 # and for CWL artifacts as well as Galaxy ones.
 def raw_to_galaxy(
-    app: "MinimalApp", history: "History", as_dict_value: Dict[str, Any], commit: bool = True
+    app: "MinimalApp", history: "History", as_dict_value: dict[str, Any], commit: bool = True
 ) -> "HistoryItem":
     object_class = as_dict_value["class"]
     if object_class == "File":
@@ -2804,7 +2806,7 @@ def raw_to_galaxy(
         source = DatasetSource()
         source.source_uri = location
         # TODO: validate this...
-        source.transform = as_dict_value.get("transform")
+        source.requested_transform = as_dict_value.get("transform")
         dataset.sources.append(source)
 
         for hash_name in HASH_NAMES:
@@ -2874,7 +2876,7 @@ def raw_to_galaxy(
         return hdca
 
 
-parameter_types: Dict[str, Type[ToolParameter]] = dict(
+parameter_types: dict[str, type[ToolParameter]] = dict(
     text=TextToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,

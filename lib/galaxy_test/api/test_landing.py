@@ -1,7 +1,6 @@
 from base64 import b64encode
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.schema.schema import (
@@ -121,7 +120,7 @@ class TestLandingApi(ApiTestCase):
         assert workflow["source_metadata"]["trs_version_id"] == "v0.12"
 
 
-def _workflow_request_state() -> Dict[str, Any]:
+def _workflow_request_state() -> dict[str, Any]:
     deferred = False
     input_b64_1 = b64encode(b"1 2 3").decode("utf-8")
     input_b64_2 = b64encode(b"4 5 6").decode("utf-8")

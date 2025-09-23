@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type ConcreteObjectStoreModel, type SelectableObjectStore } from "@/api";
+import type { ConcreteObjectStoreModel, SelectableObjectStore } from "@/api";
 
 import ObjectStoreSelectButton from "@/components/ObjectStore/ObjectStoreSelectButton.vue";
 import ObjectStoreSelectButtonDescribePopover from "@/components/ObjectStore/ObjectStoreSelectButtonDescribePopover.vue";
@@ -36,7 +36,7 @@ const toWhat = "This dataset will be relocated to";
                 :object-store="fromObjectStore"
                 @click="emit('closeModal')" />
         </b-button-group>
-        <p class="relocate-to">Select new storage location for the dataset:</p>
+        <p class="relocate-to">Select new Galaxy storage for the dataset:</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 v-for="objectStore in targetObjectStores"

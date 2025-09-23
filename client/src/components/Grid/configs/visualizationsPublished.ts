@@ -6,7 +6,7 @@ import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/fi
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type FieldArray, type GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -76,7 +76,10 @@ const fields: FieldArray = [
     {
         key: "username",
         title: "Owner",
-        type: "text",
+        type: "link",
+        handler: (data: VisualizationEntry) => {
+            emit(`/visualizations/list_published?f-username=${data.username}`);
+        },
     },
     {
         key: "tags",
@@ -103,6 +106,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
 };
 
 /**

@@ -18,13 +18,13 @@ from . import VisualizationsBase_TestCase
 
 glx_dir = galaxy_directory()
 template_cache_dir = os.path.join(glx_dir, "database", "compiled_templates")
-additional_templates_dir = os.path.join(glx_dir, "config", "plugins", "visualizations", "common", "templates")
 vis_reg_path = "config/plugins/visualizations"
 
 config1 = """\
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="scatterplot">
+<visualization name="Minimal Example" hidden="true">
+    <description>Welcome to the Minimal JS-Based Example Plugin.</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -35,14 +35,28 @@ config1 = """\
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
+    <entry_point entry_point_type="script" src="script.js" />
+    <settings>
+        <input>
+            <name>setting_input</name>
+            <help>setting help</help>
+            <type>setting_type</type>
+        </input>
+    </settings>
+    <tracks>
+        <input>
+            <name>track_input</name>
+            <help>track help</help>
+            <type>track_type</type>
+        </input>
+    </tracks>
     <specs>
         <exports>
-            <exports>png</exports>
-            <exports>svg</exports>
-            <exports>pdf</exports>
+            <exports>export_a</exports>
+            <exports>export_b</exports>
+            <exports>export_c</exports>
         </exports>
     </specs>
-    <template>scatterplot.mako</template>
 </visualization>
 """
 
@@ -55,21 +69,12 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
 
         expected_plugins_path = os.path.join(glx_dir, vis_reg_path)
         assert plugin_mgr.base_url == "visualizations"
-        assert plugin_mgr.directories == [expected_plugins_path]
+        assert expected_plugins_path in plugin_mgr.directories
 
-        scatterplot = plugin_mgr.plugins["scatterplot"]
-        assert scatterplot.name == "scatterplot"
-        assert scatterplot.path == os.path.join(expected_plugins_path, "scatterplot")
-        assert scatterplot.base_url == "/".join((plugin_mgr.base_url, scatterplot.name))
-        assert scatterplot.serves_templates
-        assert scatterplot.template_path == os.path.join(scatterplot.path, "templates")
-        assert scatterplot.template_lookup.__class__.__name__ == "TemplateLookup"
-
-        trackster = plugin_mgr.plugins["trackster"]
-        assert trackster.name == "trackster"
-        assert trackster.path == os.path.join(expected_plugins_path, "trackster")
-        assert trackster.base_url == "/".join((plugin_mgr.base_url, trackster.name))
-        assert not trackster.serves_templates
+        example = plugin_mgr.plugins["example"]
+        assert example.name == "example"
+        assert example.path == os.path.join(expected_plugins_path, "example")
+        assert example.base_url == "/".join((plugin_mgr.base_url, example.name))
 
     def test_plugin_load(self):
         """"""
@@ -77,19 +82,18 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
             {
                 "plugins": {
                     "vis1": {
-                        "config": {"vis1.xml": config1},
-                        "static": {},
+                        "static": {"vis1.xml": config1},
                         "templates": {},
                     },
-                    "vis2": {"config": {"vis2.xml": config1}},
+                    "vis2": {"static": {"vis2.xml": config1}},
                     "not_a_vis1": {
-                        "config": {"vis1.xml": "blerbler"},
+                        "static": {"vis1.xml": "blerbler"},
                     },
                     # empty
                     "not_a_vis2": {},
                     "not_a_vis3": "blerbler",
                     # bad config
-                    "not_a_vis4": {"config": {"not_a_vis4.xml": "blerbler"}},
+                    "not_a_vis4": {"static": {"not_a_vis4.xml": "blerbler"}},
                     "not_a_vis5": {
                         # no config
                         "static": {},
@@ -107,7 +111,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         expected_plugin_names = ["vis1", "vis2"]
 
         assert plugin_mgr.base_url == "visualizations"
-        assert plugin_mgr.directories == [expected_plugins_path]
+        assert expected_plugins_path in plugin_mgr.directories
         assert sorted(plugin_mgr.plugins.keys()) == expected_plugin_names
 
         vis1 = plugin_mgr.plugins["vis1"]
@@ -124,15 +128,14 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert "exports" in specs
         exports = specs["exports"]
         assert len(exports) == 3
-        assert "png" in exports
-        assert "svg" in exports
-        assert "pdf" in exports
+        assert "export_a" in exports
+        assert "export_b" in exports
+        assert "export_c" in exports
 
         vis2 = plugin_mgr.plugins["vis2"]
         assert vis2.name == "vis2"
         assert vis2.path == os.path.join(expected_plugins_path, "vis2")
         assert vis2.base_url == "/".join((plugin_mgr.base_url, vis2.name))
-        assert not vis2.serves_templates
 
         mock_app_dir.remove()
 
@@ -155,7 +158,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         mock_app_dir = galaxy_mock.MockDir(
             {
                 "plugins": {
-                    "jstest": {"config": {"jstest.xml": script_entry_config}, "static": {}},
+                    "jstest": {"static": {"jstest.xml": script_entry_config}},
                 }
             }
         )
@@ -170,14 +173,9 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert script_entry.serves_templates
 
         trans = galaxy_mock.MockTrans()
-        script_entry._set_up_template_plugin(mock_app_dir.root_path, [additional_templates_dir])
         response = script_entry.render(trans=trans, embedded=True)
         assert '<script type="module" src="mysrc">' in response
         assert '<link rel="stylesheet" href="mycss">' in response
         assert re.search(r'<div id="mycontainer" data-incoming=\'.*?\'></div>', response)
         assert escape("'root': 'request.host_url/'") in response
         mock_app_dir.remove()
-
-
-# -----------------------------------------------------------------------------
-# TODO: config parser tests (in separate file)

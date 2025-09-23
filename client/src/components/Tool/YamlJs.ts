@@ -1,6 +1,6 @@
 import * as monaco from "monaco-editor";
 import { editor } from "monaco-editor";
-import { type IPosition, type MonacoEditor } from "monaco-types";
+import type { IPosition, MonacoEditor } from "monaco-types";
 import { configureMonacoYaml } from "monaco-yaml";
 
 import { extractEmbeddedJs } from "./extractEmbeddedJs";
@@ -311,6 +311,44 @@ function attachDiagnosticsProvider(
     });
 }
 
+function quickInfoToMarkdown(quickInfo: any, position: IPosition) {
+    const { displayParts, documentation, tags } = quickInfo;
+    const markdownText = [];
+
+    // Format displayParts as code
+    if (displayParts && displayParts.length > 0) {
+        const signature = displayParts.map((part: any) => part.text).join("");
+        markdownText.push({ value: "```ts\n" + signature + "\n```" });
+    }
+
+    // Add documentation text
+    if (documentation && documentation.length > 0) {
+        const docText = documentation.map((part: any) => part.text).join("");
+        markdownText.push({ value: docText });
+    }
+
+    // Add tag text (e.g. @description)
+    if (tags && tags.length > 0) {
+        tags.forEach((tag: any) => {
+            if (tag.text && Array.isArray(tag.text)) {
+                const tagText = tag.text.map((t: any) => t.text).join("");
+                markdownText.push({ value: `**@${tag.name}** — ${tagText}` });
+            } else if (typeof tag.text === "string") {
+                markdownText.push({ value: `**@${tag.name}** — ${tag.text}` });
+            }
+        });
+    }
+    return {
+        range: {
+            startLineNumber: position.lineNumber,
+            startColumn: position.column,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+        },
+        contents: markdownText,
+    };
+}
+
 async function provideHover(model: editor.ITextModel, position: IPosition) {
     const currentData = await modelForCurrentPosition(model, position);
     if (currentData) {
@@ -320,18 +358,7 @@ async function provideHover(model: editor.ITextModel, position: IPosition) {
             currentData.offset
         );
         if (quickInfo) {
-            return {
-                range: {
-                    startLineNumber: position.lineNumber,
-                    startColumn: position.column,
-                    endLineNumber: position.lineNumber,
-                    endColumn: position.column,
-                },
-                contents: [
-                    { value: quickInfo.displayParts.map((p: any) => p.text).join("") },
-                    { value: quickInfo.documentation },
-                ],
-            };
+            return quickInfoToMarkdown(quickInfo, position);
         }
     }
     return null;

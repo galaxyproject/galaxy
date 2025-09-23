@@ -45,12 +45,10 @@
                 <ToolPanel
                     v-if="isActiveSideBar('workflow-editor-tools')"
                     workflow
-                    :module-sections="moduleSections"
-                    :data-managers="dataManagers"
                     @onInsertTool="onInsertTool"
-                    @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
@@ -108,6 +106,7 @@
                 <UserToolPanel
                     v-if="isActiveSideBar('workflow-editor-user-defined-tools')"
                     :in-workflow-editor="true"
+                    in-panel
                     @onInsertTool="onInsertTool" />
             </template>
         </ActivityBar>
@@ -224,6 +223,7 @@ import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useMagicKeys } from "@/composables/useMagicKeys";
@@ -235,6 +235,7 @@ import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { textify } from "@/utils/utils";
 
 import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
@@ -244,7 +245,7 @@ import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivitie
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
-import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
+import { getModule, getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
@@ -260,6 +261,7 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
+import SearchPanel from "@/components/Panels/SearchPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
@@ -286,6 +288,7 @@ export default {
         NodeInspector,
         InputPanel,
         UserToolPanel,
+        SearchPanel,
     },
     props: {
         workflowId: {
@@ -299,14 +302,6 @@ export default {
         workflowTags: {
             type: Array,
             default: () => [],
-        },
-        moduleSections: {
-            type: Array,
-            required: true,
-        },
-        dataManagers: {
-            type: Array,
-            required: true,
         },
     },
     setup(props, { emit }) {
@@ -366,7 +361,8 @@ export default {
             undoRedoStore,
             (value) => (license.value = value),
             showAttributes,
-            "set license"
+            "set license",
+            "license"
         );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
@@ -380,7 +376,8 @@ export default {
             undoRedoStore,
             (value) => (creator.value = value),
             showAttributes,
-            "set creator"
+            "set creator",
+            "creator"
         );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
@@ -403,7 +400,8 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify short description"
+            "modify short description",
+            "annotation"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
@@ -467,14 +465,6 @@ export default {
 
         const tags = ref([]);
 
-        watch(
-            () => props.workflowTags,
-            (newTags) => {
-                tags.value = [...newTags];
-            },
-            { immediate: true }
-        );
-
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
@@ -484,6 +474,7 @@ export default {
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
             setTagsHandler.set(tags.value, newTags);
+            hasChanges.value = true;
         }
 
         watch(
@@ -515,6 +506,23 @@ export default {
         const { hasChanges } = storeToRefs(stateStore);
         const initialLoading = ref(true);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
+        const hasDuplicateOutputs = computed(() => stepStore.duplicateLabels.size > 0);
+
+        const hasErrors = computed(() => hasInvalidConnections.value || hasDuplicateOutputs.value);
+
+        const errorText = computed(() => {
+            const texts = [];
+
+            if (hasInvalidConnections.value) {
+                texts.push("invalid connections");
+            }
+
+            if (hasDuplicateOutputs.value) {
+                texts.push("duplicate output labels");
+            }
+
+            return `Workflow has ${textify(texts, "and")}`;
+        });
 
         stepStore.$subscribe((_mutation, _state) => {
             if (!initialLoading.value) {
@@ -561,9 +569,7 @@ export default {
         const getLabels = computed(() => fromSteps(steps.value));
 
         const saveWorkflowTitle = computed(() =>
-            hasInvalidConnections.value
-                ? "Workflow has invalid connections, review and remove invalid connections"
-                : "Save Workflow"
+            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow"
         );
 
         useActivityLogic(
@@ -584,11 +590,16 @@ export default {
             )
         );
 
+        function onSearchResultClicked(searchData) {
+            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        }
+
         return {
             id,
             name,
             parameters,
             workflowGraph,
+            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,
@@ -608,6 +619,8 @@ export default {
             help,
             setHelp,
             logoUrl,
+            // make component look like an API workflow with logo_url alias for logoUrl
+            logo_url: logoUrl,
             setLogoUrl,
             tags,
             setTags,
@@ -616,6 +629,9 @@ export default {
             connectionStore,
             hasChanges,
             hasInvalidConnections,
+            hasDuplicateOutputs,
+            hasErrors,
+            errorText,
             stepStore,
             steps,
             comments,
@@ -817,7 +833,7 @@ export default {
         copyIntoWorkflow(id) {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
-            loadWorkflow({ id }).then((data) => {
+            getWorkflowFull(id).then((data) => {
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
@@ -876,9 +892,9 @@ export default {
             this.$router.push("/workflows/edit");
         },
         async saveOrCreate() {
-            if (this.hasInvalidConnections) {
+            if (this.hasErrors) {
                 const confirmed = await this.confirm(
-                    `Workflow has invalid connections. You can save the workflow, but it may not run correctly.`,
+                    `${this.errorText}. You can save the workflow, but it may not run correctly.`,
                     {
                         id: "save-workflow-confirmation",
                         okTitle: "Save Workflow",
@@ -1124,6 +1140,7 @@ export default {
             this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;
+            this.tags = data.tags;
             this.license = data.license;
             this.creator = data.creator;
             this.doi = data.doi;
@@ -1139,7 +1156,7 @@ export default {
                 this.onWorkflowMessage("Loading workflow...", "progress");
 
                 try {
-                    const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
+                    const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
                     await fromSimple(id, data);
                     await this._loadEditorData(data);
                 } catch (e) {

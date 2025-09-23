@@ -1,4 +1,4 @@
-import { type IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { createPinia, setActivePinia } from "pinia";
 
 import { useActivityStore } from "@/stores/activityStore";

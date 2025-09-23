@@ -1,4 +1,3 @@
-import sys
 from string import Template
 
 import lxml.etree as ET
@@ -205,10 +204,6 @@ echo '$parameter' >> '$output'
 </tool>
 """
 )
-
-
-if sys.version_info < (3, 8):  # noqa: UP036
-    pytest.skip(reason="Pydantic assertion models require python3.8 or higher", allow_module_level=True)
 
 
 def test_valid_json_models_validate():

@@ -334,6 +334,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dataset_collections/{hdca_id}/sample_sheet_workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an XLSX workbook for a sample sheet definition targeting an existing collection. */
+        post: operations["dataset_collections__workbook_download_for_collection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dataset_collections/{hdca_id}/sample_sheet_workbook/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse an XLSX workbook for a sample sheet definition and supplied file contents. */
+        post: operations["dataset_collections__workbook_parse_for_collection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dataset_collections/{hdca_id}/suitable_converters": {
         parameters: {
             query?: never;
@@ -476,6 +510,23 @@ export interface paths {
         };
         /** Get the list of extra files/directories associated with a dataset. */
         get: operations["extra_files_api_datasets__dataset_id__extra_files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/extra_files/raw/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Downloads a raw extra file associated with a dataset. */
+        get: operations["extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -867,6 +918,54 @@ export interface paths {
          *     response.
          */
         get: operations["types_and_mapping_api_datatypes_types_and_mapping_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datatypes/{datatype}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get details for a specific datatype
+         * @description Gets detailed information about a specific datatype.
+         *
+         *     Includes information about:
+         *     - Basic properties (description, mime type, etc.)
+         *     - Available converters
+         *     - EDAM mappings
+         *     - Preferred visualization
+         */
+        get: operations["show_api_datatypes__datatype__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datatypes/{datatype}/visualizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the visualization mapping for a specific datatype
+         * @description Gets the visualization mapping for a specific datatype.
+         *
+         *     Mappings are defined in the datatypes_conf.xml configuration file.
+         */
+        get: operations["visualization_for_datatype_api_datatypes__datatype__visualizations_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2674,6 +2773,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invocations/{invocation_id}/error": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submits a bug report for a workflow run via the API. */
+        post: operations["report_error_api_invocations__invocation_id__error_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/invocations/{invocation_id}/jobs_summary": {
         parameters: {
             query?: never;
@@ -4151,6 +4267,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sample_sheet_workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an XLSX workbook for a sample sheet definition. */
+        post: operations["dataset_collections__workbook_download"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sample_sheet_workbook/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse an XLSX workbook for a sample sheet definition and supplied file contents. */
+        post: operations["dataset_collections__workbook_parse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/short_term_storage/{storage_request_id}": {
         parameters: {
             query?: never;
@@ -4555,6 +4705,40 @@ export interface paths {
         put?: never;
         /** Upload files to Galaxy */
         post: operations["fetch_form_api_tools_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/fetch/workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Generate a template workbook to use with the activity builder UI */
+        get: operations["tools__fetch_workbook_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/fetch/workbook/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a template workbook to use with the activity builder UI */
+        post: operations["tools__fetch_workbook_parse"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6569,10 +6753,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -6723,10 +6911,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -7071,7 +7263,7 @@ export interface components {
              * Source
              * @description The source of the element.
              */
-            src: components["schemas"]["ColletionSourceType"];
+            src: components["schemas"]["CollectionSourceType"];
             /**
              * Tags
              * @description The list of tags associated with the element.
@@ -7079,10 +7271,10 @@ export interface components {
             tags?: string[] | null;
         };
         /**
-         * ColletionSourceType
+         * CollectionSourceType
          * @enum {string}
          */
-        ColletionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
+        CollectionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
         /** ColorParameterModel */
         ColorParameterModel: {
             /** Argument */
@@ -7101,10 +7293,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -7172,6 +7368,8 @@ export interface components {
             } | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
              * @default false
@@ -7293,10 +7491,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -7336,10 +7538,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -7468,6 +7674,13 @@ export interface components {
              */
             type: "container";
         };
+        /** ContentTypeMessage */
+        ContentTypeMessage: {
+            /** Content Type */
+            content_type: string;
+            /** Message */
+            message: string;
+        };
         /** ContentsObject */
         ContentsObject: {
             /**
@@ -7532,6 +7745,11 @@ export interface components {
              */
             collection_type?: string | null;
             /**
+             * Column Definitions
+             * @description Specify definitions for row data if collection_type if sample_sheet
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Content
              * @description Depending on the `source` it can be:
              *     - The encoded id from the library dataset
@@ -7590,6 +7808,13 @@ export interface components {
              * @description The name of the new collection.
              */
             name?: string | null;
+            /**
+             * Row data
+             * @description Specify rows of metadata data corresponding to an identifier if collection_type is sample_sheet
+             */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
@@ -7751,6 +7976,11 @@ export interface components {
              */
             collection_type?: string | null;
             /**
+             * Column Definitions
+             * @description Specify definitions for row data if collection_type if sample_sheet
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Copy Elements
              * @description Whether to create a copy of the source HDAs for the new collection.
              * @default true
@@ -7794,6 +8024,13 @@ export interface components {
              * @description The name of the new collection.
              */
             name?: string | null;
+            /**
+             * Row data
+             * @description Specify rows of metadata data corresponding to an identifier if collection_type is sample_sheet
+             */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
         };
         /** CreatePagePayload */
         CreatePagePayload: {
@@ -7920,6 +8157,50 @@ export interface components {
          * @enum {string}
          */
         CreateType: "file" | "folder" | "collection";
+        /** CreateWorkbookForCollectionApi */
+        CreateWorkbookForCollectionApi: {
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Prefix sample sheet values
+             * @description An area to pre-populate URIs, etc...
+             */
+            prefix_values?: (number | boolean | string | null)[][] | null;
+        };
+        /** CreateWorkbookRequest */
+        CreateWorkbookRequest: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type:
+                | "sample_sheet"
+                | "sample_sheet:paired"
+                | "sample_sheet:paired_or_unpaired"
+                | "sample_sheet:record";
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Prefix Columns Type
+             * @default URI
+             * @constant
+             */
+            prefix_columns_type: "URI";
+            /** Prefix Values */
+            prefix_values?: (number | boolean | string | null)[][] | null;
+            /**
+             * Title of the workbook to generate
+             * @description A short title to give the workbook.
+             * @default Sample Sheet for Galaxy
+             */
+            title: string;
+        };
         /** CreateWorkflowLandingRequestPayload */
         CreateWorkflowLandingRequestPayload: {
             /** Client Secret */
@@ -8011,6 +8292,27 @@ export interface components {
              * @description The name of the user.
              */
             username: string;
+        };
+        /** CsvDialect */
+        CsvDialect: {
+            /** Delimiter */
+            delimiter: string;
+            /** Double Quote */
+            double_quote: boolean;
+            /** Escape Character */
+            escape_character: string | null;
+            /** Line Terminator */
+            line_terminator: string;
+            /** Quote Character */
+            quote_character: string | null;
+            /** Skip Initial Space */
+            skip_initial_space: boolean;
+        };
+        /** CsvDialectInferenceMessage */
+        CsvDialectInferenceMessage: {
+            dialect: components["schemas"]["CsvDialect"];
+            /** Message */
+            message: string;
         };
         /** CustomArchivedHistoryView */
         CustomArchivedHistoryView: {
@@ -8391,7 +8693,10 @@ export interface components {
         };
         /** CwlBooleanParameterModel */
         CwlBooleanParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Parameter Type
@@ -8418,10 +8723,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -8450,10 +8759,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -8466,7 +8779,10 @@ export interface components {
         };
         /** CwlFloatParameterModel */
         CwlFloatParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Parameter Type
@@ -8477,7 +8793,10 @@ export interface components {
         };
         /** CwlIntegerParameterModel */
         CwlIntegerParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Parameter Type
@@ -8488,7 +8807,10 @@ export interface components {
         };
         /** CwlNullParameterModel */
         CwlNullParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Parameter Type
@@ -8499,7 +8821,10 @@ export interface components {
         };
         /** CwlStringParameterModel */
         CwlStringParameterModel: {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Parameter Type
@@ -8510,7 +8835,10 @@ export interface components {
         };
         /** CwlUnionParameterModel */
         "CwlUnionParameterModel-Input": {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Parameter Type
@@ -8532,7 +8860,10 @@ export interface components {
         };
         /** CwlUnionParameterModel */
         "CwlUnionParameterModel-Output": {
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Parameter Type
@@ -8557,6 +8888,11 @@ export interface components {
          * @description Dataset Collection Element summary information.
          */
         DCESummary: {
+            /**
+             * Columns
+             * @description A row (or list of columns) of data associated with this element
+             */
+            columns?: (number | boolean | string | null)[] | null;
             /**
              * Element Identifier
              * @description The actual name of this element.
@@ -8623,6 +8959,18 @@ export interface components {
              */
             elements: components["schemas"]["DCESummary"][];
             /**
+             * Elements Datatypes
+             * @description A set containing all the different element datatypes in the collection.
+             */
+            elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
+            /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
              */
@@ -8666,10 +9014,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -8709,10 +9061,14 @@ export interface components {
             label?: string | null;
             /** Multiple */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -8792,6 +9148,7 @@ export interface components {
             argument?: string | null;
             /**
              * Extensions
+             * @description Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.
              * @default [
              *       "data"
              *     ]
@@ -8817,13 +9174,18 @@ export interface components {
             min?: number | null;
             /**
              * Multiple
+             * @description Allow multiple values to be selected.
              * @default false
              */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -8958,10 +9320,22 @@ export interface components {
              */
             dep: string;
             /**
+             * Id
+             * @description ID of the referenced dataset
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
              * Name
              * @description Name of the referenced dataset
              */
             name: string;
+            /**
+             * User Id
+             * @description ID of the user who owns the referenced dataset.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
         };
         /**
          * DatasetPermissionAction
@@ -9191,6 +9565,11 @@ export interface components {
              */
             description_url: string | null;
             /**
+             * Display behavior
+             * @description How this datatype behaves when displayed with preview=True: 'inline' (can be displayed in browser) or 'download' (triggers download)
+             */
+            display_behavior?: string | null;
+            /**
              * Display in upload
              * @description If True, the associated file extension will be displayed in the `File Format` select list in the `Upload File from your computer` tool in the `Get Data` tool section of the tool panel
              * @default false
@@ -9225,6 +9604,24 @@ export interface components {
              */
             prefix_IRI: string;
         };
+        /** DatatypeVisualizationMapping */
+        DatatypeVisualizationMapping: {
+            /**
+             * Datatype
+             * @description The datatype extension this visualization applies to
+             */
+            datatype: string;
+            /**
+             * Visualization
+             * @description The visualization plugin to use
+             */
+            visualization: string;
+        };
+        /**
+         * DatatypeVisualizationMappingsList
+         * @default []
+         */
+        DatatypeVisualizationMappingsList: components["schemas"]["DatatypeVisualizationMapping"][];
         /** DatatypesCombinedMap */
         DatatypesCombinedMap: {
             /**
@@ -9508,10 +9905,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -9627,10 +10028,14 @@ export interface components {
             label?: string | null;
             /** Multiple */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -9673,10 +10078,14 @@ export interface components {
             label?: string | null;
             /** Multiple */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -9789,11 +10198,6 @@ export interface components {
              */
             active: boolean | null;
             /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean | null;
-            /**
              * Hidden
              * @default false
              */
@@ -9806,8 +10210,6 @@ export interface components {
              * @constant
              */
             src: "representation";
-            /** Uuid */
-            uuid?: string | null;
         };
         /** DynamicUnprivilegedToolCreatePayload */
         DynamicUnprivilegedToolCreatePayload: {
@@ -9816,11 +10218,6 @@ export interface components {
              * @default true
              */
             active: boolean | null;
-            /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean | null;
             /**
              * Hidden
              * @default false
@@ -9833,14 +10230,39 @@ export interface components {
              * @constant
              */
             src: "representation";
-            /** Uuid */
-            uuid?: string | null;
         };
         /**
          * ElementsFromType
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /** ElementsStatesDict */
+        ElementsStatesDict: {
+            /** Deferred */
+            deferred?: number;
+            /** Discarded */
+            discarded?: number;
+            /** Empty */
+            empty?: number;
+            /** Error */
+            error?: number;
+            /** Failed Metadata */
+            failed_metadata?: number;
+            /** New */
+            new?: number;
+            /** Ok */
+            ok?: number;
+            /** Paused */
+            paused?: number;
+            /** Queued */
+            queued?: number;
+            /** Running */
+            running?: number;
+            /** Setting Metadata */
+            setting_metadata?: number;
+            /** Upload */
+            upload?: number;
+        };
         /** EmptyFieldParameterValidatorModel */
         EmptyFieldParameterValidatorModel: {
             /**
@@ -10379,6 +10801,8 @@ export interface components {
             info?: string | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
              * @default false
@@ -10529,7 +10953,8 @@ export interface components {
                 | "elabftw"
                 | "inveniordm"
                 | "zenodo"
-                | "rspace";
+                | "rspace"
+                | "dataverse";
             /** Variables */
             variables?:
                 | (
@@ -10631,6 +11056,24 @@ export interface components {
              */
             sorting: boolean;
         };
+        /** FillIdentifiers */
+        FillIdentifiers: {
+            /**
+             * Deduplication Index From
+             * @default 1
+             */
+            deduplication_index_from: number;
+            /**
+             * Deduplication Pattern
+             * @default _{#}
+             */
+            deduplication_pattern: string;
+            /**
+             * Fill Inner List Identifiers
+             * @default false
+             */
+            fill_inner_list_identifiers: boolean;
+        };
         /** FillStepDefaultsAction */
         FillStepDefaultsAction: {
             /**
@@ -10663,10 +11106,14 @@ export interface components {
             max?: number | null;
             /** Min */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -10775,6 +11222,8 @@ export interface components {
             info?: string | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
              * @default false
@@ -10803,6 +11252,8 @@ export interface components {
             auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
+            /** Column Definitions */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             elements_from?: components["schemas"]["ElementsFromType"] | null;
             /** Ftp Path */
@@ -10879,10 +11330,14 @@ export interface components {
             label?: string | null;
             /** Multiple */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -11025,10 +11480,14 @@ export interface components {
             label?: string | null;
             /** Multiple */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -11109,6 +11568,11 @@ export interface components {
             copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
+            /**
+             * Copied From Library Dataset Dataset Association Id
+             * @description ID of LDDA this HDA was copied from.
+             */
+            copied_from_library_dataset_dataset_association_id?: string | null;
             /**
              * Create Time
              * @description The time and date this item was created.
@@ -11359,10 +11823,16 @@ export interface components {
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
+             * Copied From Library Dataset Dataset Association Id
+             * @description ID of LDDA this HDA was copied from.
+             */
+            copied_from_library_dataset_dataset_association_id?: string | null;
+            /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Created from basename
              * @description The basename of the output that produced this dataset.
@@ -11593,9 +12063,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -11712,9 +12183,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Dataset ID
              * @description The encoded ID of the dataset associated with this item.
@@ -11814,6 +12286,11 @@ export interface components {
              */
             collection_type?: string | null;
             /**
+             * Column Definitions
+             * @description Column data associated with each element of this collection.
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
              */
@@ -11843,6 +12320,13 @@ export interface components {
              * @description A set containing all the different element datatypes in the collection.
              */
             elements_datatypes?: string[] | null;
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted?: number | null;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states?: components["schemas"]["ElementsStatesDict"] | null;
             /**
              * HID
              * @description The index position of this item in the History.
@@ -11953,15 +12437,21 @@ export interface components {
              */
             collection_type: string;
             /**
+             * Column Definitions
+             * @description Column data associated with each element of this collection.
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
              */
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -11983,6 +12473,13 @@ export interface components {
              * @description A set containing all the different element datatypes in the collection.
              */
             elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -12102,9 +12599,10 @@ export interface components {
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -12120,6 +12618,13 @@ export interface components {
              * @description A set containing all the different element datatypes in the collection.
              */
             elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -12321,6 +12826,8 @@ export interface components {
             auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
+            /** Column Definitions */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             elements_from: components["schemas"]["ElementsFromType"];
             /** Ftp Path */
@@ -12347,6 +12854,8 @@ export interface components {
             auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
+            /** Column Definitions */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Elements */
             elements: (
@@ -12656,10 +13165,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -13126,15 +13639,17 @@ export interface components {
              */
             negate: boolean;
             /**
-             * Type
-             * @default in_range
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "in_range";
         };
         /** IncomingToolOutputCollection */
         "IncomingToolOutputCollection-Input": {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden?: boolean | null;
             /** Label */
             label?: string | null;
@@ -13152,7 +13667,10 @@ export interface components {
         };
         /** IncomingToolOutputCollection */
         "IncomingToolOutputCollection-Output": {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden?: boolean | null;
             /** Label */
             label?: string | null;
@@ -13186,7 +13704,10 @@ export interface components {
             format_source?: string | null;
             /** From Work Dir */
             from_work_dir?: string | null;
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden?: boolean | null;
             /** Label */
             label?: string | null;
@@ -13202,6 +13723,21 @@ export interface components {
              * @enum {string}
              */
             type: "data";
+        };
+        /** InferredCollectionTypeLogEntry */
+        InferredCollectionTypeLogEntry: {
+            /** From Columns */
+            from_columns: components["schemas"]["ParsedColumn"][];
+            /** Message */
+            message: string;
+        };
+        /** InferredColumnMapping */
+        InferredColumnMapping: {
+            /** Column Index */
+            column_index: number;
+            /** Column Title */
+            column_title: string;
+            parsed_column: components["schemas"]["ParsedColumn"];
         };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
@@ -13374,12 +13910,12 @@ export interface components {
              * Latest installed revision
              * @description Most recent version available on the tool shed
              */
-            latest_installable_revision: string | null;
+            latest_installable_revision?: string | null;
             /**
              * Repository deprecated
              * @description Repository has been depreciated on the tool shed
              */
-            repository_deprecated: string | null;
+            repository_deprecated?: string | null;
             /** Revision Update */
             revision_update: string;
             /** Revision Upgrade */
@@ -13441,7 +13977,7 @@ export interface components {
              */
             tool_shed: string;
             /** Latest updated status from the tool shed */
-            tool_shed_status: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
+            tool_shed_status?: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
         };
@@ -13467,7 +14003,10 @@ export interface components {
             max?: number | null;
             /** Min */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /** Optional */
             optional: boolean;
@@ -14952,9 +15491,8 @@ export interface components {
              */
             negate: boolean;
             /**
-             * Type
-             * @default length
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "length";
         };
@@ -16070,6 +16608,8 @@ export interface components {
             info?: string | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
              * @default false
@@ -16703,6 +17243,205 @@ export interface components {
          * @default []
          */
         PageSummaryList: components["schemas"]["PageSummary"][];
+        /** ParseFetchWorkbook */
+        ParseFetchWorkbook: {
+            /**
+             * Workbook Content (Base 64 encoded)
+             * @description The workbook content (the contents of the xlsx file) that have been base64 encoded.
+             */
+            content: string;
+            fill_identifiers?: components["schemas"]["FillIdentifiers"] | null;
+        };
+        /** ParseWorkbook */
+        ParseWorkbook: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type:
+                | "sample_sheet"
+                | "sample_sheet:paired"
+                | "sample_sheet:paired_or_unpaired"
+                | "sample_sheet:record";
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Workbook Content (Base 64 encoded)
+             * @description The workbook content (the contents of the xlsx file) that have been base64 encoded.
+             */
+            content: string;
+            /**
+             * Prefix Columns Type
+             * @default URI
+             * @enum {string}
+             */
+            prefix_columns_type: "URI" | "ModelObjects";
+        };
+        /** ParseWorkbookForCollectionApi */
+        ParseWorkbookForCollectionApi: {
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Workbook Content (Base 64 encoded)
+             * @description The workbook content (the contents of the xlsx file) that have been base64 encoded.
+             */
+            content: string;
+        };
+        /** ParsedColumn */
+        ParsedColumn: {
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type:
+                | "list_identifiers"
+                | "paired_identifier"
+                | "paired_or_unpaired_identifier"
+                | "collection_name"
+                | "name_tag"
+                | "tags"
+                | "group_tags"
+                | "name"
+                | "dbkey"
+                | "hash_sha1"
+                | "hash_md5"
+                | "hash_sha256"
+                | "hash_sha512"
+                | "file_type"
+                | "url"
+                | "url_deferred"
+                | "info"
+                | "ftp_path";
+            /** Type Index */
+            type_index: number;
+        };
+        /** ParsedFetchWorkbookForCollections */
+        ParsedFetchWorkbookForCollections: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type: "list" | "list:paired" | "list:list" | "list:list:paired" | "list:paired_or_unpaired";
+            /** Columns */
+            columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["SplitUpPairedDataLogEntry"]
+                | components["schemas"]["InferredCollectionTypeLogEntry"]
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: string | null;
+            }[];
+            /**
+             * Workbook Type
+             * @default collection
+             * @enum {string}
+             */
+            workbook_type: "datasets" | "collection" | "collections";
+        };
+        /** ParsedFetchWorkbookForDatasets */
+        ParsedFetchWorkbookForDatasets: {
+            /** Columns */
+            columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["SplitUpPairedDataLogEntry"]
+                | components["schemas"]["InferredCollectionTypeLogEntry"]
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: string | null;
+            }[];
+            /**
+             * Workbook Type
+             * @default datasets
+             * @enum {string}
+             */
+            workbook_type: "datasets" | "collection" | "collections";
+        };
+        /** ParsedWorkbook */
+        ParsedWorkbook: {
+            /** Extra Columns */
+            extra_columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: number | boolean | string | null;
+            }[];
+        };
+        /** ParsedWorkbookCollection */
+        ParsedWorkbookCollection: {
+            /** Id */
+            id: string;
+            /**
+             * Model Class
+             * @default DatasetCollection
+             * @constant
+             */
+            model_class: "DatasetCollection";
+        };
+        /** ParsedWorkbookElement */
+        ParsedWorkbookElement: {
+            /** Element Identifier */
+            element_identifier: string;
+            /** Element Index */
+            element_index: number;
+            /**
+             * Element Type
+             * @enum {string}
+             */
+            element_type: "hda" | "child_collection";
+            /** Object */
+            object: components["schemas"]["ParsedWorkbookHda"] | components["schemas"]["ParsedWorkbookCollection"];
+        };
+        /** ParsedWorkbookForCollection */
+        ParsedWorkbookForCollection: {
+            /** Elements */
+            elements: components["schemas"]["ParsedWorkbookElement"][];
+            /** Extra Columns */
+            extra_columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: number | boolean | string | null;
+            }[];
+        };
+        /** ParsedWorkbookHda */
+        ParsedWorkbookHda: {
+            /** Id */
+            id: string;
+            /**
+             * Model Class
+             * @default HistoryDatasetAssociation
+             * @constant
+             */
+            model_class: "HistoryDatasetAssociation";
+        };
         /** PastedDataElement */
         PastedDataElement: {
             /** Md5 */
@@ -16753,6 +17492,8 @@ export interface components {
              * @description Content to upload
              */
             paste_content: string | number | boolean;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
              * @default false
@@ -16775,11 +17516,6 @@ export interface components {
         PathBasedDynamicToolCreatePayload: {
             /** Active */
             active?: boolean | null;
-            /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean;
             /** Hidden */
             hidden?: boolean | null;
             /** Path */
@@ -16791,8 +17527,6 @@ export interface components {
             src: "from_path";
             /** Tool Directory */
             tool_directory?: string | null;
-            /** Uuid */
-            uuid?: string | null;
         };
         /** PathDataElement */
         PathDataElement: {
@@ -16843,6 +17577,8 @@ export interface components {
             name?: string | number | boolean | null;
             /** Path */
             path: string;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
              * @default false
@@ -17346,9 +18082,8 @@ export interface components {
              */
             negate: boolean;
             /**
-             * Type
-             * @default regex
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "regex";
         };
@@ -17465,10 +18200,14 @@ export interface components {
             max?: number | null;
             /** Min */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -17536,10 +18275,14 @@ export interface components {
             max?: number | null;
             /** Min */
             min?: number | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -17589,6 +18332,25 @@ export interface components {
         Report: {
             /** Markdown */
             markdown: string;
+        };
+        /** ReportInvocationErrorPayload */
+        ReportInvocationErrorPayload: {
+            /**
+             * Email
+             * @description Email address for communication with the user. Only required for anonymous users.
+             */
+            email?: string | null;
+            /**
+             * Invocation ID
+             * @description The ID of the invocation related to the error.
+             * @example 0123456789ABCDEF
+             */
+            invocation_id: string;
+            /**
+             * Message
+             * @description The optional message sent with the error report.
+             */
+            message?: string | null;
         };
         /** ReportJobErrorPayload */
         ReportJobErrorPayload: {
@@ -17725,8 +18487,8 @@ export interface components {
              */
             url: string;
         };
-        /** RootModel[Dict[str, int]] */
-        RootModel_Dict_str__int__: {
+        /** RootModel[dict[str, int]] */
+        RootModel_dict_str__int__: {
             [key: string]: number;
         };
         /** RulesParameterModel */
@@ -17747,10 +18509,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -17765,6 +18531,60 @@ export interface components {
              * @enum {string}
              */
             type: "rules";
+        };
+        /** SampleSheetColumnDefinition */
+        SampleSheetColumnDefinition: {
+            /** Default Value */
+            default_value?: number | boolean | string | null;
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+            /** Restrictions */
+            restrictions?: (number | boolean | string | null)[] | null;
+            /** Suggestions */
+            suggestions?: (number | boolean | string | null)[] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "int" | "float" | "boolean" | "element_identifier";
+            /** Validators */
+            validators?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+        };
+        /** SampleSheetColumnDefinitionModel */
+        SampleSheetColumnDefinitionModel: {
+            /** Default Value */
+            default_value?: number | boolean | string | null;
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+            /** Restrictions */
+            restrictions?: (number | boolean | string | null)[] | null;
+            /** Suggestions */
+            suggestions?: (number | boolean | string | null)[] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "int" | "float" | "boolean" | "element_identifier";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
@@ -17806,10 +18626,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -17873,10 +18697,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -17945,10 +18773,14 @@ export interface components {
              * @default false
              */
             multiple: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -18018,6 +18850,8 @@ export interface components {
             link_data_only?: boolean | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /** Server Dir */
             server_dir: string;
             /**
@@ -18535,6 +19369,15 @@ export interface components {
              */
             user_id?: string | null;
         };
+        /** SplitUpPairedDataLogEntry */
+        SplitUpPairedDataLogEntry: {
+            /** Message */
+            message: string;
+            /** New Paired Status Column */
+            new_paired_status_column: number;
+            old_forward_column: components["schemas"]["ParsedColumn"];
+            old_reverse_column: components["schemas"]["ParsedColumn"];
+        };
         /**
          * Src
          * @enum {string}
@@ -19050,10 +19893,14 @@ export interface components {
             is_dynamic: boolean;
             /** Label */
             label?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
+             */
             name: string;
             /**
              * Optional
+             * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
@@ -19163,7 +20010,10 @@ export interface components {
         };
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown;
             /** Label */
             label?: string | null;
@@ -19198,7 +20048,10 @@ export interface components {
         };
         /** ToolOutputFloat */
         ToolOutputFloat: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown;
             /** Label */
             label?: string | null;
@@ -19215,7 +20068,10 @@ export interface components {
         };
         /** ToolOutputInteger */
         ToolOutputInteger: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown;
             /** Label */
             label?: string | null;
@@ -19232,7 +20088,10 @@ export interface components {
         };
         /** ToolOutputText */
         ToolOutputText: {
-            /** Hidden */
+            /**
+             * Hidden
+             * @description If true, the output will not be shown in the history.
+             */
             hidden: unknown;
             /** Label */
             label?: string | null;
@@ -19964,6 +20823,8 @@ export interface components {
             info?: string | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
              * @default false
@@ -20113,7 +20974,8 @@ export interface components {
                 | "elabftw"
                 | "inveniordm"
                 | "zenodo"
-                | "rspace";
+                | "rspace"
+                | "dataverse";
             /** Uri Root */
             uri_root: string;
             /**
@@ -20326,25 +21188,41 @@ export interface components {
              * @enum {string}
              */
             class: "GalaxyUserTool";
-            /** Container */
+            /**
+             * Container
+             * @description Container image to use for this tool.
+             */
             container: string;
-            /** Description */
+            /**
+             * Description
+             * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
+             */
             description?: string | null;
             /** Edam Operations */
             edam_operations?: string[] | null;
             /** Edam Topics */
             edam_topics?: string[] | null;
+            /** @description Help text shown below the tool interface. */
             help?: components["schemas"]["HelpContent"] | null;
-            /** Id */
-            id: string | null;
+            /**
+             * Id
+             * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             */
+            id: string;
             /**
              * Inputs
              * @default []
              */
             inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
-            /** License */
+            /**
+             * License
+             * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             */
             license?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool.
+             */
             name: string;
             /**
              * Outputs
@@ -20360,6 +21238,7 @@ export interface components {
             )[];
             /**
              * Requirements
+             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
              * @default []
              */
             requirements:
@@ -20374,8 +21253,11 @@ export interface components {
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
              */
             shell_command: string;
-            /** Version */
-            version: string | null;
+            /**
+             * Version
+             * @description Version for the tool.
+             */
+            version: string;
             /** Xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
@@ -20388,25 +21270,41 @@ export interface components {
              * @constant
              */
             class: "GalaxyUserTool";
-            /** Container */
+            /**
+             * Container
+             * @description Container image to use for this tool.
+             */
             container: string;
-            /** Description */
+            /**
+             * Description
+             * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
+             */
             description?: string | null;
             /** Edam Operations */
             edam_operations?: string[] | null;
             /** Edam Topics */
             edam_topics?: string[] | null;
+            /** @description Help text shown below the tool interface. */
             help?: components["schemas"]["HelpContent"] | null;
-            /** Id */
-            id: string | null;
+            /**
+             * Id
+             * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             */
+            id: string;
             /**
              * Inputs
              * @default []
              */
             inputs: components["schemas"]["GalaxyToolParameterModel-Output"][];
-            /** License */
+            /**
+             * License
+             * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             */
             license?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool.
+             */
             name: string;
             /**
              * Outputs
@@ -20422,6 +21320,7 @@ export interface components {
             )[];
             /**
              * Requirements
+             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
              * @default []
              */
             requirements:
@@ -20436,8 +21335,11 @@ export interface components {
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
              */
             shell_command: string;
-            /** Version */
-            version: string | null;
+            /**
+             * Version
+             * @description Version for the tool.
+             */
+            version: string;
             /** Xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
@@ -20527,15 +21429,6 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * Groups
-             * @description The groups of the plugin.
-             */
-            groups?:
-                | {
-                      [key: string]: unknown;
-                  }[]
-                | null;
-            /**
              * Href
              * @description The href of the plugin.
              */
@@ -20559,9 +21452,11 @@ export interface components {
              * Settings
              * @description The settings of the plugin.
              */
-            settings: {
-                [key: string]: unknown;
-            }[];
+            settings?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Specs
              * @description The specs of the plugin.
@@ -20579,6 +21474,15 @@ export interface components {
              * @description The title of the plugin.
              */
             title?: string | null;
+            /**
+             * Tracks
+             * @description The tracks of the plugin.
+             */
+            tracks?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
         };
         /** VisualizationRevisionResponse */
         VisualizationRevisionResponse: {
@@ -22175,6 +23079,103 @@ export interface operations {
             };
         };
     };
+    dataset_collections__workbook_download_for_collection: {
+        parameters: {
+            query?: {
+                /** @description Filename of the workbook download to generate */
+                filename?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the `HDCA`. */
+                hdca_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkbookForCollectionApi"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    dataset_collections__workbook_parse_for_collection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the `HDCA`. */
+                hdca_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseWorkbookForCollectionApi"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsedWorkbookForCollection"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     suitable_converters_api_dataset_collections__hdca_id__suitable_converters_get: {
         parameters: {
             query?: {
@@ -22693,6 +23694,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the dataset. */
+                dataset_id: string;
+                /** @description The name of the extra file to retrieve. */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */
@@ -23704,6 +24751,88 @@ export interface operations {
             };
         };
     };
+    show_api_datatypes__datatype__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Datatype extension to get information for */
+                datatype: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detailed information about a datatype */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    visualization_for_datatype_api_datatypes__datatype__visualizations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Datatype extension to get visualization mapping for */
+                datatype: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visualization mapping for the specified datatype */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatatypeVisualizationMappingsList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     display_applications_index_api_display_applications_get: {
         parameters: {
             query?: never;
@@ -23976,7 +25105,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Request Error */
@@ -30180,6 +31311,52 @@ export interface operations {
             };
         };
     };
+    report_error_api_invocations__invocation_id__error_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Invocation. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportInvocationErrorPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get: {
         parameters: {
             query?: never;
@@ -34983,6 +36160,97 @@ export interface operations {
             };
         };
     };
+    dataset_collections__workbook_download: {
+        parameters: {
+            query?: {
+                /** @description Filename of the workbook download to generate */
+                filename?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkbookRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    dataset_collections__workbook_parse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseWorkbook"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsedWorkbook"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     serve_api_short_term_storage__storage_request_id__get: {
         parameters: {
             query?: never;
@@ -36017,6 +37285,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__fetch_workbook_download: {
+        parameters: {
+            query?: {
+                /** @description Generate a workbook for simple datasets or a collection. */
+                type?: "datasets" | "collection" | "collections";
+                /** @description Generate workbook for specified collection type (not all collection types are supported) */
+                collection_type?: "list" | "list:paired" | "list:list" | "list:list:paired" | "list:paired_or_unpaired";
+                /** @description Filename of the workbook download to generate */
+                filename?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__fetch_workbook_parse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseFetchWorkbook"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["ParsedFetchWorkbookForDatasets"]
+                        | components["schemas"]["ParsedFetchWorkbookForCollections"];
                 };
             };
             /** @description Request Error */
@@ -38843,7 +40204,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RootModel_Dict_str__int__"];
+                    "application/json": components["schemas"]["RootModel_dict_str__int__"];
                 };
             };
             /** @description Request Error */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type DatasetHash } from "@/api";
+import type { DatasetHash } from "@/api";
 
 interface Props {
     hash: DatasetHash;

@@ -6,6 +6,7 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
+import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import {
     type DataOutput,
     type Step,
@@ -40,6 +41,7 @@ function useStores(id = "mock-workflow") {
     const commentStore = useWorkflowCommentStore(id);
     const toolbarStore = useWorkflowEditorToolbarStore(id);
     const undoRedoStore = useUndoRedoStore(id);
+    const searchStore = useWorkflowSearchStore(id);
 
     return {
         workflowId: id,
@@ -49,6 +51,7 @@ function useStores(id = "mock-workflow") {
         commentStore,
         toolbarStore,
         undoRedoStore,
+        searchStore,
     };
 }
 

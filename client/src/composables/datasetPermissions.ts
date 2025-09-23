@@ -1,4 +1,4 @@
-import { type AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
 import { computed, type Ref, ref } from "vue";
 
 import { useToast } from "@/composables/toast";

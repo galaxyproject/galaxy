@@ -1,8 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from galaxy.util import (
@@ -35,7 +33,7 @@ class VisualizationsConfigParser:
     """
 
     #: what are the allowed 'entry_point_type' for entry_point elements
-    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script", "chart"]
+    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script"]
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = ["galaxy_main", "_top", "_blank"]
 
@@ -123,7 +121,7 @@ class VisualizationsConfigParser:
         # param modifiers provide extra information for other params (e.g. hda_ldda='hda' -> dataset_id is an hda id)
         # store these modifiers in a 2-level dictionary { target_param: { param_modifier_key: { param_mod_data }
         # ugh - wish we didn't need these
-        param_modifiers: Dict[str, Any] = {}
+        param_modifiers: dict[str, Any] = {}
         param_modifier_elements = param_confs.findall("param_modifier") if param_confs is not None else []
         for param_modifier_conf in param_modifier_elements:
             param_modifier = self.param_modifier_parser.parse(param_modifier_conf)
@@ -271,7 +269,7 @@ class DataSourceParser:
         # tests should NOT include expensive operations: reading file data, running jobs, etc.
         # do as much here as possible to reduce the overhead of seeing if a visualization is applicable
         # currently tests are or'd only (could be and'd or made into compound boolean tests)
-        tests: List[Dict[str, Any]] = []
+        tests: list[dict[str, Any]] = []
         if not xml_tree_list:
             return tests
 
@@ -320,7 +318,7 @@ class DataSourceParser:
         the registry to convert the data_source into one or more appropriate
         params for the visualization.
         """
-        to_param_dict: Dict[str, Any] = {}
+        to_param_dict: dict[str, Any] = {}
         if not xml_tree_list:
             return to_param_dict
 

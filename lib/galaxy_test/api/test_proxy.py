@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
@@ -50,8 +52,22 @@ class TestProxyApi(ApiTestCase):
         self._assert_status_code_is(response, 403)
         assert response.json()["err_msg"] == "Anonymous users are not allowed to access this endpoint"
 
-    def test_user_cannot_access_local_file(self):
-        local_file_url = "file://etc/passwd"
-        response = self._get(f"proxy?url={local_file_url}")
-        self._assert_status_code_is(response, 403)
-        assert response.json()["err_msg"] == "Action requires admin account."
+    @pytest.mark.parametrize(
+        "invalid_url",
+        [
+            "htp://invalid-url",
+            "http:/missing-slash.com",
+            "//missing-scheme.com",
+            "invalid-url",
+            "https://first.url\nhttps://second.url",
+            "https://first.url https://second.url",
+            "https://first.urlhttps://second.url",
+            # Schemes other than http and https are not allowed
+            "ftp://not-allowed.com",
+            "file://etc/passwd",
+        ],
+    )
+    def test_invalid_url_format(self, invalid_url: str):
+        response = self._get(f"proxy?url={invalid_url}")
+        self._assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == "Invalid URL format."

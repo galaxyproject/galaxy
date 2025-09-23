@@ -11,7 +11,6 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.structured_app import StructuredApp
-from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import (
@@ -23,7 +22,6 @@ from galaxy.workflow.extract import (
     extract_workflow,
     summarize,
 )
-from galaxy.workflow.modules import load_module_sections
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -141,100 +139,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             log.exception("Failed to generate SVG image")
             error_message = str(e)
             return trans.show_error_message(error_message)
-
-    @web.expose
-    @web.json
-    @web.require_login("edit workflows")
-    def editor(self, trans, id=None, workflow_id=None, version=None, **kwargs):
-        """
-        Render the main workflow editor interface. The canvas is embedded as
-        an iframe (necessary for scrolling to work properly), which is
-        rendered by `editor_canvas`.
-        """
-
-        new_workflow = False
-        if not id:
-            if workflow_id:
-                stored_workflow = self.app.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=False)
-                self.security_check(trans, stored_workflow, True, False)
-                id = trans.security.encode_id(stored_workflow.id)
-            else:
-                new_workflow = True
-
-        # create workflow module models
-        module_sections = []
-        for module_section in load_module_sections(trans).values():
-            module_sections.append(
-                {
-                    "title": module_section.get("title"),
-                    "name": module_section.get("name"),
-                    "elems": [
-                        {"name": elem.get("name"), "title": elem.get("title"), "description": elem.get("description")}
-                        for elem in module_section.get("modules")
-                    ],
-                }
-            )
-
-        # create data manager tool models
-        data_managers = []
-        if trans.user_is_admin and trans.app.data_managers.data_managers:
-            for data_manager_val in trans.app.data_managers.data_managers.values():
-                tool = data_manager_val.tool
-                if not tool.hidden:
-                    data_managers.append(
-                        {
-                            "id": tool.id,
-                            "name": tool.name,
-                            "hidden": tool.hidden,
-                            "description": tool.description,
-                            "is_workflow_compatible": tool.is_workflow_compatible,
-                        }
-                    )
-
-        stored = None
-        if new_workflow is False:
-            stored = self.get_stored_workflow(trans, id)
-
-            if version is None:
-                version = len(stored.workflows) - 1
-            else:
-                version = int(version)
-
-            # identify item tags
-            item_tags = stored.make_tag_string_list()
-
-        # build workflow editor model
-        editor_config = {
-            "moduleSections": module_sections,
-            "dataManagers": data_managers,
-        }
-
-        # for existing workflow add its data to the model
-        if stored:
-            editor_config.update(
-                {
-                    "id": trans.security.encode_id(stored.id),
-                    "name": stored.name,
-                    "tags": item_tags,
-                    "initialVersion": version,
-                    "annotation": self.get_item_annotation_str(trans.sa_session, trans.user, stored),
-                }
-            )
-
-        # parse to mako
-        return editor_config
-
-    @web.json
-    def load_workflow(self, trans, id, version=None, **kwargs):
-        """
-        Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be read by the workflow editor
-        web interface.
-        """
-        trans.workflow_building_mode = workflow_building_modes.ENABLED
-        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
-        workflow_contents_manager = self.app.workflow_contents_manager
-        return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
     @web.json_pretty
     def for_direct_import(self, trans, id, **kwargs):

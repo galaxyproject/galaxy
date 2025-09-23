@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -216,15 +216,11 @@ watch(
                     :list-db-keys="listDbKeys"
                     disable-footer
                     emit-uploaded
-                    size="sm"
+                    size="small"
                     @uploaded="addUploadedFiles"
                     @dismiss="currentTab = Tabs.create">
                     <template v-slot:footer>
                         <CollectionCreatorShowExtensions :extensions="extensions" upload />
-                    </template>
-                    <template v-slot:emit-btn-txt>
-                        <FontAwesomeIcon :icon="faPlus" fixed-width />
-                        {{ localize("Add Uploaded") }}
                     </template>
                 </DefaultBox>
             </BTab>

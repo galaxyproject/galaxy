@@ -12,8 +12,6 @@ import sys
 import tempfile
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -45,7 +43,7 @@ MAIN_SHED_API = f"{MAIN_SHED_URL}/api"
 CATEGORIES_TO_COPY = ["Data Export", "Climate Analysis", "Materials science"]
 
 
-def main(argv: List[str]) -> None:
+def main(argv: list[str]) -> None:
     arg_parser = _arg_parser()
     namespace = arg_parser.parse_args(argv)
     populator = init_populator(namespace)
@@ -79,19 +77,19 @@ def main(argv: List[str]) -> None:
                 mirror_main_repository(populator, repo, local_category.id)
 
 
-def get_main_categories() -> List[Dict[str, Any]]:
+def get_main_categories() -> list[dict[str, Any]]:
     main_categories_endpoint = f"{MAIN_SHED_API}/categories"
     main_categories = requests.get(main_categories_endpoint).json()
     return main_categories
 
 
-def get_main_users() -> List[Dict[str, Any]]:
+def get_main_users() -> list[dict[str, Any]]:
     main_users_endpoint = f"{MAIN_SHED_API}/users"
     main_users = requests.get(main_users_endpoint).json()
     return main_users
 
 
-def get_main_repositories_for_category(category_id) -> List[Dict[str, Any]]:
+def get_main_repositories_for_category(category_id) -> list[dict[str, Any]]:
     main_category_repos_endpoint = f"{MAIN_SHED_API}/categories/{category_id}/repositories"
     main_repos_for_category_response = requests.get(main_category_repos_endpoint)
     main_repos_for_category = main_repos_for_category_response.json()
@@ -106,9 +104,9 @@ class RemoteToolShedPopulator(ToolShedPopulator):
     for tests.
     """
 
-    _categories_by_name: Optional[Dict[str, Category]] = None
-    _users_by_username: Optional[Dict[str, Dict[str, Any]]] = None
-    _populators_by_username: Dict[str, "RemoteToolShedPopulator"] = {}
+    _categories_by_name: Optional[dict[str, Category]] = None
+    _users_by_username: Optional[dict[str, dict[str, Any]]] = None
+    _populators_by_username: dict[str, "RemoteToolShedPopulator"] = {}
 
     def __init__(self, admin_interactor: ShedApiInteractor, user_interactor: ShedApiInteractor):
         super().__init__(admin_interactor, user_interactor)
@@ -130,14 +128,14 @@ class RemoteToolShedPopulator(ToolShedPopulator):
         return self._populators_by_username[username]
 
     @property
-    def categories_by_name(self) -> Dict[str, Category]:
+    def categories_by_name(self) -> dict[str, Category]:
         if self._categories_by_name is None:
             categories = self.get_categories()
             self._categories_by_name = {c.name: c for c in categories}
         return self._categories_by_name
 
     @property
-    def users_by_username(self) -> Dict[str, Dict[str, Any]]:
+    def users_by_username(self) -> dict[str, dict[str, Any]]:
         if self._users_by_username is None:
             users_response = self._api_interactor.get("users")
             if users_response.status_code == 400:
@@ -148,14 +146,14 @@ class RemoteToolShedPopulator(ToolShedPopulator):
             self._users_by_username = {u["username"]: u for u in users}
         return self._users_by_username
 
-    def new_category_if_needed(self, as_json: Dict[str, Any]) -> Category:
+    def new_category_if_needed(self, as_json: dict[str, Any]) -> Category:
         name = as_json["name"]
         description = as_json["description"]
         if name in self.categories_by_name:
             return self.categories_by_name[name]
         return self.new_category(name, description)
 
-    def new_user_if_needed(self, as_json: Dict[str, Any]) -> Dict[str, Any]:
+    def new_user_if_needed(self, as_json: dict[str, Any]) -> dict[str, Any]:
         if "username" not in as_json:
             email = as_json["email"]
             as_json["username"] = email.split("@", 1)[0]
@@ -187,7 +185,7 @@ def mirror_main_users(populator: RemoteToolShedPopulator):
         populator.new_user_if_needed(user)
 
 
-def mirror_main_repository(populator: RemoteToolShedPopulator, repository: Dict[str, Any], category_id: str):
+def mirror_main_repository(populator: RemoteToolShedPopulator, repository: dict[str, Any], category_id: str):
     # TODO: mirror the user
     as_dict = repository.copy()
     as_dict["category_ids"] = category_id

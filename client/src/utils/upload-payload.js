@@ -43,7 +43,6 @@ export function uploadPayload(items, historyId, composite = false) {
                     name: fileName,
                     space_to_tab: item.spaceToTab,
                     to_posix_lines: item.toPosixLines,
-                    deferred: item.deferred,
                 };
                 // match file mode
                 switch (item.fileMode) {
@@ -59,6 +58,7 @@ export function uploadPayload(items, historyId, composite = false) {
                                     return {
                                         src: "url",
                                         url: urlTrim,
+                                        deferred: item.deferred,
                                         ...elem,
                                     };
                                 } else {
@@ -66,6 +66,11 @@ export function uploadPayload(items, historyId, composite = false) {
                                 }
                             });
                         } else {
+                            // The researcher may have checked the deferred option and we don't know
+                            // that until here and we cannot make pasted content deferred. Idealy we would
+                            // have some sort of warning here but I don't want to import Toaster in this
+                            // utility function. This stems from the same comment above from Sam about this being
+                            // uncomfortable magic. -John
                             return {
                                 src: "pasted",
                                 paste_content: item.fileContent,
@@ -77,6 +82,7 @@ export function uploadPayload(items, historyId, composite = false) {
                             return {
                                 src: "url",
                                 url: urlContent,
+                                deferred: item.deferred,
                                 ...elem,
                             };
                         } else {

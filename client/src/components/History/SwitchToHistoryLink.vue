@@ -24,9 +24,15 @@ const userStore = useUserStore();
 interface Props {
     historyId: string;
     filters?: Record<string, string | boolean>;
+    inline?: boolean;
+    thin?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    filters: undefined,
+    inline: false,
+    thin: true,
+});
 
 const history = computed(() => historyStore.getHistoryById(props.historyId));
 
@@ -56,6 +62,13 @@ const linkTitle = computed(() => {
     }
 });
 
+const tag = computed(() => {
+    if (props.inline) {
+        return "span";
+    }
+    return "div";
+});
+
 async function onClick(event: MouseEvent, history: HistorySummary) {
     const eventStore = useEventStore();
     const ctrlKey = eventStore.isMac ? event.metaKey : event.ctrlKey;
@@ -81,15 +94,20 @@ function viewHistoryInNewTab(history: HistorySummary) {
     const routeData = router.resolve(`/histories/view?id=${history.id}`);
     window.open(routeData.href, "_blank");
 }
+
+const linkClass = computed(() => {
+    return props.inline ? ["history-link-inline"] : ["history-link"];
+});
 </script>
 
 <template>
-    <div>
+    <component :is="tag">
         <LoadingSpan v-if="!history" />
-        <div v-else class="history-link" data-description="switch to history link">
+        <component :is="tag" v-else :class="linkClass" data-description="switch to history link">
             <GLink
+                class="history-link-click"
                 tooltip
-                thin
+                :thin="thin"
                 data-description="switch to history link"
                 :title="linkTitle"
                 @click.stop="onClick($event, history)">
@@ -98,8 +116,8 @@ function viewHistoryInNewTab(history: HistorySummary) {
 
             <FontAwesomeIcon v-if="history.purged" :icon="faBurn" fixed-width />
             <FontAwesomeIcon v-else-if="history.archived" :icon="faArchive" fixed-width />
-        </div>
-    </div>
+        </component>
+    </component>
 </template>
 
 <style scoped>

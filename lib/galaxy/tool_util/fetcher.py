@@ -1,3 +1,4 @@
+import os
 from typing import (
     Dict,
     Type,
@@ -8,6 +9,7 @@ from galaxy.util import plugin_config
 
 if TYPE_CHECKING:
     from galaxy.tool_util.locations import ToolLocationResolver
+    from galaxy.util.path import StrPath
 
 
 class ToolLocationFetcher:
@@ -19,8 +21,8 @@ class ToolLocationFetcher:
 
         return plugin_config.plugins_dict(galaxy.tool_util.locations, "scheme")
 
-    def to_tool_path(self, path_or_uri_like: str, **kwds) -> str:
-        if "://" not in path_or_uri_like:
+    def to_tool_path(self, path_or_uri_like: "StrPath", **kwds) -> "StrPath":
+        if isinstance(path_or_uri_like, os.PathLike) or "://" not in path_or_uri_like:
             path = path_or_uri_like
         else:
             uri_like = path_or_uri_like

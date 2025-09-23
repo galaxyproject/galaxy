@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type DatasetTransform } from "@/api";
+import type { DatasetTransform } from "@/api";
 
 const TRANSFORM_ACTION_DESCRIPTIONS = {
     to_posix_lines: {

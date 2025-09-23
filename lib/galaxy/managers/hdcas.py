@@ -7,7 +7,6 @@ history.
 
 import logging
 from typing import (
-    Dict,
     Optional,
 )
 
@@ -63,7 +62,7 @@ def set_collection_attributes(dataset_element, *payload):
 # TODO: to DatasetCollectionInstanceManager
 class HDCAManager(
     base.ModelManager[model.HistoryDatasetCollectionAssociation],
-    secured.AccessibleManagerMixin,
+    secured.AccessibleManagerMixin[model.HistoryDatasetCollectionAssociation],
     secured.OwnableManagerMixin[model.HistoryDatasetCollectionAssociation],
     deletable.PurgableManagerMixin,
     annotatable.AnnotatableManagerMixin,
@@ -106,7 +105,7 @@ class HDCAManager(
                 returned.append(processed)
         return returned
 
-    def update_attributes(self, content, payload: Dict):
+    def update_attributes(self, content, payload: dict):
         # pre-requisite checked that attributes are valid
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
 
@@ -287,6 +286,9 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "populated_state",
                 "populated_state_message",
                 "element_count",
+                "elements_datatypes",
+                "elements_deleted",
+                "elements_states",
                 "job_source_id",
                 "job_source_type",
                 "job_state_summary",
@@ -306,7 +308,6 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             [
                 "populated",
                 "elements",
-                "elements_datatypes",
             ],
             include_keys_from="summary",
         )
@@ -315,7 +316,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "model_class": lambda item, key, **context: self.hdca_manager.model_class.__class__.__name__,
             # TODO: remove
             "type": lambda item, key, **context: "collection",
@@ -334,6 +335,8 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             "contents_url": self.generate_contents_url,
             "job_state_summary": self.serialize_job_state_summary,
             "elements_datatypes": self.serialize_elements_datatypes,
+            "elements_states": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[2],
+            "elements_deleted": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[3],
             "collection_id": self.serialize_id,
         }
         self.serializers.update(serializers)

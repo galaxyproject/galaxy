@@ -54,7 +54,7 @@ const textTooLong = computed(() => {
             role="button"
             tabindex="0"
             @keyup.enter="showDetails = !showDetails"
-            @click="showDetails = !showDetails">
+            @click.prevent.stop="showDetails = !showDetails">
             <template v-if="showExpandText">
                 <template v-if="showDetails">Show less</template>
                 <template v-else>Show more</template>

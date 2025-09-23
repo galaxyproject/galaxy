@@ -11,7 +11,6 @@ import tempfile
 from typing import (
     IO,
     Optional,
-    Tuple,
 )
 
 import yaml
@@ -229,7 +228,7 @@ class Ipynb(Json):
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
         **kwd,
-    ) -> Tuple[IO, Headers]:
+    ) -> tuple[IO, Headers]:
         headers = kwd.pop("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:
@@ -662,12 +661,7 @@ class VitessceJson(Json):
     https://www.npmjs.com/package/@vitessce/json-schema
     """
 
-    file_ext = "vitesscejson"
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        super().set_peek(dataset)
-        if not dataset.dataset.purged:
-            dataset.blurb = "VitessceJSON"
+    file_ext = "vitessce.json"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -677,7 +671,7 @@ class VitessceJson(Json):
         >>> fname = get_test_fname( '1.json' )
         >>> VitessceJson().sniff( fname )
         False
-        >>> fname = get_test_fname( '1.vitesscejson' )
+        >>> fname = get_test_fname( '1.vitessce.json' )
         >>> VitessceJson().sniff( fname )
         True
         """

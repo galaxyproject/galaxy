@@ -394,6 +394,9 @@ class YamlInputSource(InputSource):
         else:
             return "param"
 
+    def parse_extensions(self):
+        return [ext.strip().lower() for ext in self.input_dict.get("extensions", ["data"])]
+
     def parse_nested_inputs_source(self):
         assert self.parse_input_type() == "repeat"
         return YamlPageSource(self.input_dict["blocks"])

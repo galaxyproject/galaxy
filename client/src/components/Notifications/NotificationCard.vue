@@ -13,7 +13,8 @@ import { BLink } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
 
-import { type UserNotification } from "@/api/notifications";
+import type { UserNotification } from "@/api/notifications";
+import type { CardAction } from "@/components/Common/GCard.types";
 import { useMarkdown } from "@/composables/markdown";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
@@ -67,7 +68,7 @@ const notificationVariant = computed(() => {
 });
 
 const primaryActions = computed(() => {
-    const tmp = [
+    const tmp: CardAction[] = [
         {
             id: "expiration-time-button",
             label: "",

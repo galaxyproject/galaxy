@@ -2,7 +2,7 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import Vue, { computed, onMounted, ref } from "vue";
+import Vue, { computed, onMounted, ref, watch } from "vue";
 
 import {
     browseRemoteFiles,
@@ -50,6 +50,8 @@ interface FilesDialogProps {
     selectedItem?: SelectionItem;
     /** Whether the dialog is visible at the start */
     isOpen?: boolean;
+    /** Function to push a new route, used for navigation */
+    routePush?: (route: string) => void;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -61,12 +63,15 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     requireWritable: false,
     selectedItem: undefined,
     isOpen: true,
+    routePush: () => {},
 });
 
 const { config, isConfigLoaded } = useConfig();
 
 const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
+const query = ref<string>();
+const selectionDialog = ref();
 const allSelected = ref(false);
 const selectedDirectories = ref<SelectionItem[]>([]);
 const errorMessage = ref<string>();
@@ -103,6 +108,10 @@ const fileMode = computed(() => props.mode == "file");
 const okButtonDisabled = computed(
     () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
 );
+
+const canCreateNewFileSource = computed(() => {
+    return urlTracker.value.atRoot() && fileSourceTemplatesStore.hasTemplates;
+});
 
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 fileSourceTemplatesStore.ensureTemplates();
@@ -242,13 +251,14 @@ function checkIfAllSelected(): boolean {
 }
 
 function open(record: SelectionItem) {
-    load(record);
+    currentDirectory.value = urlTracker.value.getUrl({ ...record, parentPage: selectionDialog.value.currentPage });
+    selectionDialog.value?.resetPagination(1);
+    load();
 }
 
 /** Performs server request to retrieve data records **/
-function load(record?: SelectionItem) {
-    currentDirectory.value = urlTracker.value.getUrl(record);
-    showFTPHelper.value = record?.url === "gxftp://";
+function load() {
+    showFTPHelper.value = currentDirectory.value?.url === "gxftp://";
     filter.value = undefined;
     optionsShow.value = false;
     undoShow.value = !urlTracker.value.atRoot();
@@ -346,8 +356,8 @@ async function provideItems(ctx: ItemsProviderContext, url?: string): Promise<Se
         }
         const limit = ctx.perPage;
         const offset = (ctx.currentPage ? ctx.currentPage - 1 : 0) * ctx.perPage;
-        const query = ctx.filter;
-        const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query);
+        query.value = ctx.filter;
+        const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query.value);
         const result = response.entries.map(entryToRecord);
         totalItems.value = response.totalMatches;
         items.value = result;
@@ -423,13 +433,38 @@ function onOk() {
     finalize();
 }
 
+function pushToPropRouter(route: string) {
+    if (props.routePush) {
+        modalShow.value = false;
+        props.routePush(route);
+    }
+}
+
+function onGoBack(record?: SelectionItem) {
+    const res = urlTracker.value.getUrl(record, true);
+
+    currentDirectory.value = res.url;
+
+    load();
+
+    if (res?.popped) {
+        selectionDialog.value?.resetPagination(res?.popped.parentPage);
+    }
+}
+
+watch(query, () => {
+    selectionDialog.value?.resetPagination(1);
+});
+
 onMounted(() => {
-    load(props.selectedItem);
+    currentDirectory.value = urlTracker.value.getUrl(props.selectedItem);
+    load();
 });
 </script>
 
 <template>
     <SelectionDialog
+        ref="selectionDialog"
         :disable-ok="okButtonDisabled"
         :error-message="errorMessage"
         :file-mode="fileMode"
@@ -437,7 +472,6 @@ onMounted(() => {
         :is-busy="isBusy"
         :items="items"
         :items-provider="itemsProvider"
-        :provider-url="currentDirectory?.url"
         :total-items="totalItems"
         :modal-show="modalShow"
         :modal-static="modalStatic"
@@ -446,12 +480,13 @@ onMounted(() => {
         :select-all-variant="selectAllIcon"
         :show-select-icon="undoShow && multiple"
         :undo-show="undoShow"
+        :watch-on-page-changes="false"
         @onCancel="() => (modalShow = false)"
         @onClick="clicked"
         @onOk="onOk"
         @onOpen="open"
         @onSelectAll="onSelectAll"
-        @onUndo="load()">
+        @onUndo="onGoBack">
         <template v-slot:helper>
             <BAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
@@ -465,14 +500,13 @@ onMounted(() => {
             </BAlert>
         </template>
         <template v-slot:buttons>
-            <!-- TODO: Change this to a `:to` router-link button -->
             <GButton
-                v-if="fileSourceTemplatesStore.hasTemplates"
+                v-if="canCreateNewFileSource"
                 tooltip
                 size="small"
                 title="Create a new remote file source"
                 data-description="create new file source button"
-                href="/file_source_instances/create">
+                @click="pushToPropRouter('/file_source_instances/create')">
                 <FontAwesomeIcon :icon="faPlus" />
                 Create new
             </GButton>

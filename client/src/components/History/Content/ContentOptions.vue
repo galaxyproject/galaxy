@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BButton, BDropdown } from "bootstrap-vue";
-import { faStop } from "font-awesome-6";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { ScanEye } from "lucide-vue";
 import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
@@ -34,19 +36,12 @@ const entryPointStore = useEntryPointStore();
 const errorMessage = ref("");
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
 
-const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
-
-const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
-
 const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
-
 const editDisabled = computed(() =>
     ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
 );
-
-const displayUrl = computed(() => prependPath(props.itemUrls.display));
-
 const editUrl = computed(() => prependPath(props.itemUrls.edit));
+const displayUrl = computed(() => (props.itemUrls.display ? prependPath(props.itemUrls.display) : undefined));
 
 const isCollection = computed(() => !props.isDataset);
 
@@ -119,15 +114,14 @@ function onDisplay($event: MouseEvent) {
         <BButton
             v-if="isDataset"
             v-b-tooltip.hover
-            :disabled="displayDisabled"
-            :title="displayButtonTitle"
+            title="View"
             tabindex="0"
             class="display-btn px-1"
             size="sm"
             variant="link"
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
-            <icon icon="eye" />
+            <ScanEye absolute-stroke-width :size="16" />
         </BButton>
         <BButton
             v-if="writable && isHistoryItem"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
-import { type AxiosError } from "axios";
+import type { AxiosError } from "axios";
 import { BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -43,7 +43,7 @@ async function onCreate() {
 
 <template>
     <div>
-        <Heading v-if="!showHeading" h1 separator size="xl">Create workflow</Heading>
+        <Heading v-if="!showHeading" h1 separator size="lg">Create workflow</Heading>
 
         <label for="workflow-name-input" class="font-weight-bold"> Workflow name </label>
         <BFormInput

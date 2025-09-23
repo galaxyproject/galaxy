@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { faSave } from "@fortawesome/free-solid-svg-icons";
+import { faLevelDownAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
-
-import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     value: string;
@@ -47,15 +45,9 @@ watch(
     }
 );
 
-function onBlur(e: FocusEvent) {
+function onBlur() {
     if (props.noSaveOnBlur) {
-        const target = e.relatedTarget;
-        // if the user clicked the save button, do nothing
-        if (target instanceof HTMLElement && target.id === "save-btn") {
-            return;
-        } else {
-            revertToOriginal();
-        }
+        revertToOriginal();
     } else {
         editable.value = false;
     }
@@ -68,23 +60,24 @@ function revertToOriginal() {
 </script>
 
 <template>
-    <div v-if="editable" class="d-flex flex-gapx-1">
+    <div v-if="editable" class="d-flex flex-gapx-1 input-icon-wrapper">
         <BFormInput
             id="click-to-edit-input"
             ref="clickToEditInput"
             v-model="localValue"
-            class="w-100"
+            class="w-100 input-with-icon"
             tabindex="0"
+            title="Press enter/return to save, esc to revert changes"
             contenteditable
             max-rows="4"
+            aria-label="Press enter/return to save, esc to revert changes"
             @blur.prevent.stop="onBlur"
             @keyup.prevent.stop.enter="editable = false"
             @keyup.prevent.stop.escape="revertToOriginal"
             @click.prevent.stop />
-        <GButton id="save-btn" class="p-0" transparent color="blue" size="small" @click.prevent.stop="editable = false">
-            <FontAwesomeIcon :icon="faSave" />
-            <span class="sr-only">Save changes</span>
-        </GButton>
+        <div class="input-icon">
+            <FontAwesomeIcon :icon="faLevelDownAlt" class="enter-icon" />
+        </div>
     </div>
 
     <component
@@ -107,5 +100,26 @@ function revertToOriginal() {
     &:hover > * {
         text-decoration: underline;
     }
+}
+
+.input-icon-wrapper {
+    position: relative;
+}
+
+.input-with-icon {
+    padding-right: 15px;
+}
+
+.input-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.enter-icon {
+    transform: rotate(90deg); // Rotates the arrow to look like the enter/return key
+    opacity: 0.7;
 }
 </style>

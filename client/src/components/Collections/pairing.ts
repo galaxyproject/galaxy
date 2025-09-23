@@ -70,7 +70,13 @@ export function _guessNameForPair(
     if (willRemoveExtensions) {
         const lastDotIndex = lcs.lastIndexOf(".");
         if (lastDotIndex > 0) {
-            const extension = lcs.slice(lastDotIndex, lcs.length);
+            let extension = lcs.slice(lastDotIndex, lcs.length);
+            if ([".gz", ".bz", ".bzip", ".bz2"].indexOf(extension) !== -1) {
+                const secondLastDotIndex = lcs.lastIndexOf(".", lastDotIndex - 1);
+                if (secondLastDotIndex > 0) {
+                    extension = lcs.slice(secondLastDotIndex, lcs.length);
+                }
+            }
             lcs = lcs.replace(extension, "");
             fwdName = fwdName.replace(extension, "");
             revName = revName.replace(extension, "");

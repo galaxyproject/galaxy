@@ -18,11 +18,14 @@ export function useFileDrop(
     solo: MaybeRefOrGetter<boolean>,
     idleTime = 800
 ) {
-    /** returns if any bootstrap modal or workflow run form is open */
-    function isAnyModalOpen() {
+    /** returns true if any other more specific file drop target is on the screen and should
+     *  supersede the global file drop or if an existing modal is present and should likewise
+     *  take precedent.
+     */
+    function disableGlobalDropTargetTarget() {
         return (
             document.querySelectorAll(".modal.show").length > 0 ||
-            document.querySelectorAll(".workflow-run-form-simple").length > 0
+            document.querySelectorAll("[data-galaxy-file-drop-target]").length > 0
         );
     }
 
@@ -46,7 +49,7 @@ export function useFileDrop(
                 case "dragstart":
                     return "blocked";
                 case "dragenter":
-                    if (!(unref(solo) && isAnyModalOpen())) {
+                    if (!(unref(solo) && disableGlobalDropTargetTarget())) {
                         return "fileDragging";
                     }
                     break;

@@ -4,6 +4,7 @@ import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { nextTick } from "vue";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 
@@ -12,6 +13,7 @@ import mountTarget from "./ActivitySettings.vue";
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
+const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";
 
 function testActivity(id, newOptions = {}) {
@@ -41,6 +43,12 @@ describe("ActivitySettings", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ stubActions: false });
+        // Mock the response of the API call
+        server.use(
+            http.get("/api/unprivileged_tools", ({ params, query, response }) => {
+                return response("4XX").json({ err_code: 400, err_msg: "permission problem" }, { status: 403 });
+            })
+        );
         activityStore = useActivityStore(undefined);
         wrapper = mount(mountTarget, {
             localVue,
@@ -58,7 +66,7 @@ describe("ActivitySettings", () => {
 
     it("availability of built-in activities", async () => {
         const items = wrapper.findAll(activityItemSelector);
-        const nOptional = defaultActivities.filter((x) => x.optional).length;
+        const nOptional = defaultActivities.filter((x) => x.optional).length - 1; // 403 for unprivileged_tools excludes user-defined-tools activity
         expect(items.length).toBe(nOptional);
     });
 

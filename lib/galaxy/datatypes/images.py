@@ -5,14 +5,12 @@ Image classes
 import base64
 import json
 import logging
+import math
 import struct
+from collections.abc import Iterator
 from typing import (
     Any,
-    Dict,
-    Iterator,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -20,6 +18,7 @@ import mrcfile
 import numpy as np
 import png
 import tifffile
+from typing_extensions import Literal
 
 try:
     import PIL
@@ -65,6 +64,7 @@ class Image(data.Data):
     edam_data = "data_2968"
     edam_format = "format_3547"
     file_ext = ""
+    display_behavior: Literal["inline", "download"] = "inline"  # Most image formats can be displayed inline in browsers
 
     MetadataElement(
         name="axes",
@@ -218,7 +218,7 @@ class Png(Image):
             reader = png.Reader(filename=dataset.get_file_name())
             width, height, pixels, metadata = reader.asDirect()
 
-            unique_values: List[Any] = []
+            unique_values: list[Any] = []
             for row in pixels:
                 values = np.array(row, dtype="uint8")
                 unique_values = list(np.unique(unique_values + list(values)))
@@ -228,6 +228,7 @@ class Png(Image):
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
+    display_behavior = "download"  # TIFF files trigger browser downloads
     MetadataElement(
         name="offsets",
         desc="Offsets File",
@@ -258,7 +259,7 @@ class Tiff(Image):
                 offsets = [page.offset for page in tif.pages]
 
                 # Aggregate a list of values for each metadata field (one value for each page of the TIFF file)
-                metadata: Dict[str, List[Any]] = {
+                metadata: dict[str, list[Any]] = {
                     key: []
                     for key in [
                         "axes",
@@ -321,7 +322,7 @@ class Tiff(Image):
             pass
 
     @staticmethod
-    def _get_axis_size(shape: Tuple[int, ...], axes: str, axis: str) -> int:
+    def _get_axis_size(shape: tuple[int, ...], axes: str, axis: str) -> int:
         idx = axes.find(axis)
         return shape[idx] if idx >= 0 else 0
 
@@ -330,7 +331,7 @@ class Tiff(Image):
         """
         Determines the number of unique values in a TIFF series of pages.
         """
-        unique_values: List[Any] = []
+        unique_values: list[Any] = []
         try:
             for page in series.pages:
 
@@ -365,7 +366,8 @@ class Tiff(Image):
             if mmap_chunk_size > len(arr_flat):
                 yield arr_flat
             else:
-                yield from np.array_split(arr_flat, mmap_chunk_size)
+                chunks_count = math.ceil(len(arr_flat) / mmap_chunk_size)
+                yield from np.array_split(arr_flat, chunks_count)
 
     @staticmethod
     def _read_segments(page: Union[tifffile.TiffPage, tifffile.TiffFrame]) -> Iterator["np.typing.NDArray"]:
@@ -418,18 +420,22 @@ class OMEZarr(data.ZarrDirectory):
 
 class Hamamatsu(Image):
     file_ext = "vms"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Mirax(Image):
     file_ext = "mrxs"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Sakura(Image):
     file_ext = "svslide"
+    display_behavior = "download"  # Proprietary microscopy format, not browser-displayable
 
 
 class Nrrd(Image):
     file_ext = "nrrd"
+    display_behavior = "download"  # Medical imaging format, not browser-displayable
 
 
 class Bmp(Image):
@@ -505,6 +511,7 @@ class Rast(Image):
 class Pdf(Image):
     edam_format = "format_3508"
     file_ext = "pdf"
+    display_behavior = "download"  # PDFs often trigger downloads depending on browser settings
 
     def sniff(self, filename: str) -> bool:
         """Determine if the file is in pdf format."""

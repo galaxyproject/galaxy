@@ -20,7 +20,7 @@ import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToo
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
 import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-collection";
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
-import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
@@ -444,6 +444,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
             v-if="collectionModalType && collectionHistoryId"
             :history-id="collectionHistoryId"
             :collection-type="collectionModalType"
+            :extended-collection-type="{}"
             :selected-items="collectionSelection"
             :show.sync="collectionModalShow"
             default-hide-source-items />

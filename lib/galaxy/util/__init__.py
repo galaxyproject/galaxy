@@ -24,6 +24,7 @@ import textwrap
 import threading
 import time
 import unicodedata
+import uuid
 import xml.dom.minidom
 from datetime import (
     datetime,
@@ -98,6 +99,9 @@ try:
 
         def findall(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> List[Self]:  # type: ignore[override]
             return cast(List[Self], super().findall(path, namespaces))
+
+        def iterfind(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> Iterator[Self]:
+            return cast(Iterator[Self], super().iterfind(path, namespaces))
 
     def SubElement(parent: Element, tag: str, attrib: Optional[Dict[str, str]] = None, **extra) -> Element:
         return cast(Element, etree.SubElement(parent, tag, attrib, **extra))
@@ -196,6 +200,14 @@ def str_removeprefix(s: str, prefix: str):
         return s
 
 
+@overload
+def remove_protocol_from_url(url: None) -> None: ...
+
+
+@overload
+def remove_protocol_from_url(url: str) -> str: ...
+
+
 def remove_protocol_from_url(url):
     """Supplied URL may be null, if not ensure http:// or https://
     etc... is stripped off.
@@ -241,6 +253,15 @@ def is_uuid(value):
     if re.match(uuid_re, str(value)):
         return True
     else:
+        return False
+
+
+def is_valid_uuid_v4(uuid_str: str) -> bool:
+    """Check if a string is a valid UUID v4."""
+    try:
+        u = uuid.UUID(uuid_str)
+        return u.version == 4
+    except ValueError:
         return False
 
 
@@ -1956,14 +1977,14 @@ class classproperty:
 
 
 class ExecutionTimer:
-    def __init__(self):
+    def __init__(self) -> None:
         self.begin = time.time()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"({self.elapsed * 1000:0.3f} ms)"
 
     @property
-    def elapsed(self):
+    def elapsed(self) -> float:
         return time.time() - self.begin
 
 

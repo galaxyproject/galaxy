@@ -14,7 +14,7 @@ const userStore = useUserStore();
 const historyStore = useHistoryStore();
 
 const { currentUser } = storeToRefs(userStore);
-const { currentHistory, histories, historiesLoading } = storeToRefs(historyStore);
+const { currentHistory } = storeToRefs(historyStore);
 
 const listOffset = ref<number | undefined>(0);
 const breadcrumbs = ref<CollectionEntry[]>([]);
@@ -37,10 +37,7 @@ function onViewCollection(collection: CollectionEntry, currentOffset?: number) {
             :filterable="true"
             @view-collection="onViewCollection">
             <template v-slot:navigation>
-                <HistoryNavigation
-                    :history="currentHistory"
-                    :histories="histories"
-                    :histories-loading="historiesLoading" />
+                <HistoryNavigation :history="currentHistory" />
             </template>
         </HistoryPanel>
 

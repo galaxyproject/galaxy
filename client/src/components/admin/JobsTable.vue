@@ -158,4 +158,7 @@ export default {
     top: 0;
     width: 100%;
 }
+.jobs-table-wrapper {
+    padding-bottom: 1em;
+}
 </style>

@@ -112,7 +112,7 @@ async function submit() {
                                 <BCardBody>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
                                     redirect you to your institutional login through Custos.
-                                    <ExternalLogin />
+                                    <ExternalLogin class="mt-2" />
                                 </BCardBody>
                             </BCollapse>
                         </span>

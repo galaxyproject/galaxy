@@ -332,6 +332,7 @@
   <tool file="${model_tools_path}/apply_rules.xml" />
   <tool file="${model_tools_path}/build_list.xml" />
   <tool file="${model_tools_path}/build_list_1.2.0.xml" />
+  <tool file="${model_tools_path}/sample_sheet_to_tabular.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
   <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
   <tool file="${model_tools_path}/split_paired_and_unpaired.xml" />

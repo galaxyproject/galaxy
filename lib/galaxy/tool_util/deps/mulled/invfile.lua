@@ -95,7 +95,7 @@ inv.task('build')
     .using(conda_image)
         .withHostConfig({binds = bind_args})
         .run('/bin/sh', '-c', preinstall
-            .. conda_bin .. ' install '
+            .. conda_bin .. ' create '
             .. channel_args .. ' '
             .. strict_channel_priority .. ' '
             .. target_args

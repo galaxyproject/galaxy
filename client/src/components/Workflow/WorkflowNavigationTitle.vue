@@ -137,76 +137,79 @@ async function rerunWorkflow() {
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
 
         <div class="position-relative">
-            <div v-if="workflow" class="bg-secondary px-2 py-1 rounded d-flex flex-gapx-1">
-                <div class="flex-grow-1 d-flex align-items-center flex-gapx-1" data-description="workflow heading">
+            <div v-if="workflow" class="bg-secondary px-2 py-1 rounded d-flex flex-gapx-1 justify-content-between">
+                <div class="py-1 d-flex flex-wrap align-items-center flex-gapx-1" data-description="workflow heading">
                     <FontAwesomeIcon :icon="faSitemap" fixed-width />
                     <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
                     <span>(Version: {{ workflow.version + 1 }})</span>
                 </div>
-                <GButtonGroup data-button-group>
-                    <GButton
-                        v-if="owned && workflow"
-                        tooltip
-                        data-button-edit
-                        transparent
-                        color="blue"
-                        size="small"
-                        title="Edit Workflow"
-                        disabled-title="This workflow has been deleted."
-                        :disabled="workflow.deleted"
-                        :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
-                        <FontAwesomeIcon :icon="faEdit" fixed-width />
-                    </GButton>
-                    <AsyncButton
-                        v-else
-                        data-description="import workflow button"
-                        transparent
-                        color="blue"
-                        size="small"
-                        :disabled="isAnonymous || workflowImportedAttempted"
-                        :title="workflowImportTitle"
-                        :icon="faUpload"
-                        :action="onImport">
-                    </AsyncButton>
+                <div class="d-flex flex-gapx-1 align-self-baseline">
+                    <GButtonGroup data-button-group>
+                        <GButton
+                            v-if="owned && workflow"
+                            tooltip
+                            data-button-edit
+                            transparent
+                            color="blue"
+                            size="small"
+                            title="Edit Workflow"
+                            disabled-title="This workflow has been deleted."
+                            :disabled="workflow.deleted"
+                            :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
+                            <FontAwesomeIcon :icon="faEdit" fixed-width />
+                        </GButton>
+                        <AsyncButton
+                            v-else
+                            data-description="import workflow button"
+                            transparent
+                            color="blue"
+                            size="small"
+                            :disabled="isAnonymous || workflowImportedAttempted"
+                            :title="workflowImportTitle"
+                            :icon="faUpload"
+                            :action="onImport">
+                        </AsyncButton>
 
-                    <slot name="workflow-title-actions" />
-                </GButtonGroup>
-                <ButtonSpinner
-                    v-if="!props.invocation"
-                    id="run-workflow"
-                    data-description="execute workflow button"
-                    :wait="runWaiting"
-                    :disabled="runDisabled"
-                    size="small"
-                    :tooltip="executeButtonTooltip"
-                    :title="!props.validRerun ? 'Run Workflow' : 'Rerun Workflow'"
-                    @onClick="emit('on-execute')" />
-                <GButtonGroup v-else>
-                    <GButton
-                        title="Run Workflow"
-                        disabled-title="This workflow has been deleted."
-                        data-button-run
-                        tooltip
-                        color="blue"
+                        <slot name="workflow-title-actions" />
+                    </GButtonGroup>
+                    <ButtonSpinner
+                        v-if="!props.invocation"
+                        id="run-workflow"
+                        class="text-nowrap"
+                        data-description="execute workflow button"
+                        :wait="runWaiting"
+                        :disabled="runDisabled"
                         size="small"
-                        :disabled="workflow.deleted"
-                        :to="`/workflows/run?id=${workflow.id}&version=${workflow.version}`">
-                        <FontAwesomeIcon :icon="faPlay" fixed-width />
-                        <span v-localize>Run</span>
-                    </GButton>
-                    <GButton
-                        title="Rerun Workflow with same inputs"
-                        disabled-title="This workflow has been deleted."
-                        data-button-rerun
-                        tooltip
-                        color="blue"
-                        size="small"
-                        :disabled="workflow.deleted"
-                        @click="rerunWorkflow">
-                        <FontAwesomeIcon :icon="faRedo" fixed-width />
-                        <span v-localize>Rerun</span>
-                    </GButton>
-                </GButtonGroup>
+                        :tooltip="executeButtonTooltip"
+                        :title="!props.validRerun ? 'Run Workflow' : 'Rerun Workflow'"
+                        @onClick="emit('on-execute')" />
+                    <GButtonGroup v-else>
+                        <GButton
+                            title="Run Workflow"
+                            disabled-title="This workflow has been deleted."
+                            data-button-run
+                            tooltip
+                            color="blue"
+                            size="small"
+                            :disabled="workflow.deleted"
+                            :to="`/workflows/run?id=${workflow.id}&version=${workflow.version}`">
+                            <FontAwesomeIcon :icon="faPlay" fixed-width />
+                            <span v-localize>Run</span>
+                        </GButton>
+                        <GButton
+                            title="Rerun Workflow with same inputs"
+                            disabled-title="This workflow has been deleted."
+                            data-button-rerun
+                            tooltip
+                            color="blue"
+                            size="small"
+                            :disabled="workflow.deleted"
+                            @click="rerunWorkflow">
+                            <FontAwesomeIcon :icon="faRedo" fixed-width />
+                            <span v-localize>Rerun</span>
+                        </GButton>
+                    </GButtonGroup>
+                </div>
             </div>
             <div v-if="props.success" class="donemessagelarge">
                 Successfully invoked workflow

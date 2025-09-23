@@ -1,4 +1,4 @@
-import { type CollectionType } from "@/api/datasetCollections";
+import type { CollectionType } from "@/api/datasetCollections";
 
 import { buildersForCollectionType, buildersForCollectionTypes } from "./collections";
 

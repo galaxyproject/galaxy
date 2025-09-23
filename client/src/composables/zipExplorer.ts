@@ -14,8 +14,10 @@ import {
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
-import { useIndexedDBFileStorage } from "@/composables/localFileStore";
+import { defaultModel, type FileStream, type UploadItem } from "@/components/Upload/model";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { uploadPayload } from "@/utils/upload-payload";
+import { uploadSubmit } from "@/utils/upload-submit";
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
@@ -70,7 +72,7 @@ export function useZipExplorer() {
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
-        const toUploadToHistory: { file: ImportableFile; entry: ZipFileEntry }[] = [];
+        const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
             const entry = zipExplorer.entries.get(file.path);
             if (!entry) {
@@ -132,6 +134,7 @@ export function useZipExplorer() {
         historyId: string | null,
         zipExplorer: IZipExplorer
     ) {
+        const toUploadToHistory: UploadPair[] = [];
         for (const file of filesToImport) {
             const entry = zipExplorer.entries.get(file.path);
 
@@ -145,20 +148,49 @@ export function useZipExplorer() {
 
             if (isWorkflowFile(file)) {
                 try {
+                    // Loading the entire file into memory here should be fine since
+                    // workflows are usually relatively small.
                     const fileData = await entry.data();
                     const formData = new FormData();
-                    formData.append("archive_file", new Blob([fileData]), file.name);
+                    formData.append("archive_file", new Blob([new Uint8Array(fileData)]), file.name);
 
                     await axios.post(getFullAppUrl("api/workflows"), formData);
                 } catch (e) {
                     rethrowSimple(e);
                 }
             } else {
-                await extractFileToDB(entry);
+                toUploadToHistory.push({ file, entry });
             }
         }
 
-        await uploadExtractedFiles(historyId, filesToImport);
+        if (!historyId) {
+            throw new Error("There is no history available to upload the selected files.");
+        }
+
+        const uploadItems: UploadItem[] = [];
+        for (const { file, entry } of toUploadToHistory) {
+            const fileStream: FileStream = {
+                name: file.name,
+                size: entry.fileSize,
+                stream: entry.dataStream(),
+                lastModified: entry.dateTime.getTime(),
+                isStream: true,
+            };
+            const uploadItem = {
+                ...defaultModel,
+                fileName: file.name,
+                fileSize: entry.fileSize,
+                fileData: fileStream,
+                fileMode: "local",
+            };
+            uploadItems.push(uploadItem);
+        }
+        try {
+            const data = uploadPayload(uploadItems, historyId);
+            uploadSubmit({ data });
+        } catch (e) {
+            rethrowSimple(e);
+        }
     }
 
     function toExtractUrl(zipUrl: string, entry: ZipFileEntry): string {
@@ -172,7 +204,6 @@ export function useZipExplorer() {
     function reset() {
         zipExplorer.value = undefined;
         zipExplorerError.value = undefined;
-        clearDatabaseStore();
     }
 
     function getOriginalUrl(maybeProxyUrl: string) {
@@ -183,65 +214,6 @@ export function useZipExplorer() {
         const url = new URL(maybeProxyUrl);
         const originalUrl = decodeURIComponent(url.searchParams.get("url") ?? "");
         return originalUrl;
-    }
-
-    const { storeFile, getAllStoredFiles, clearDatabaseStore } = useIndexedDBFileStorage({
-        name: "zip-extract-db",
-        store: "files",
-        version: 1,
-    });
-
-    async function extractFileToDB(entry: ZipFileEntry) {
-        const fileData = await entry.data();
-        const fileBlob = new Blob([fileData]);
-        await storeFile(entry.path, fileBlob);
-    }
-
-    async function uploadExtractedFiles(historyId: string | null, filesToImport: ImportableFile[]) {
-        const databaseFiles = await getAllStoredFiles();
-        if (databaseFiles.length === 0) {
-            return; // No files to upload
-        }
-
-        if (!historyId) {
-            throw new Error("There is no history available to upload the selected files.");
-        }
-
-        const files: Blob[] = [];
-        const elements = [];
-
-        for (const fileEntry of databaseFiles) {
-            const file = filesToImport.find((file) => file.path === fileEntry.name);
-            if (!file) {
-                continue; // File not selected for import
-            }
-            files.push(fileEntry.fileData);
-            elements.push({
-                name: file.name,
-                deferred: false,
-                src: "files",
-                ext: "auto",
-            });
-        }
-
-        const target = {
-            destination: { type: "hdas" },
-            elements: elements,
-        };
-        const formData = new FormData();
-        formData.append("history_id", historyId);
-        formData.append("targets", JSON.stringify([target]));
-        for (const file of files) {
-            formData.append("files", file);
-        }
-
-        try {
-            await axios.post(getFullAppUrl("api/tools/fetch"), formData);
-        } catch (e) {
-            rethrowSimple(e);
-        }
-
-        await clearDatabaseStore();
     }
 
     function isZipOpen(zipSource: ArchiveSource): boolean {
@@ -368,7 +340,7 @@ export async function isRemoteZipFile(url: string): Promise<boolean> {
 }
 
 export function isValidUrl(inputUrl?: string | null): boolean {
-    if (!inputUrl) {
+    if (!inputUrl || isMultiLine(inputUrl)) {
         return false;
     }
     try {
@@ -377,6 +349,11 @@ export function isValidUrl(inputUrl?: string | null): boolean {
     } catch (_) {
         return false;
     }
+}
+
+function isMultiLine(inputString: string): boolean {
+    const hasLineBreaks = inputString.includes("\n") || inputString.includes("\\n");
+    return hasLineBreaks;
 }
 
 export function isRoCrateZip(explorer?: IZipExplorer): explorer is ROCrateZipExplorer {
@@ -415,6 +392,11 @@ const ROCRATE_METADATA_FILE = "ro-crate-metadata.json";
 const ROCRATE_METADATA_FILES = new Set([ROCRATE_METADATA_FILE, "ro-crate-preview.html"]);
 
 const COMMON_KNOWN_FILES_TO_SKIP = new Set([...GALAXY_EXPORT_METADATA_FILES, ...ROCRATE_METADATA_FILES]);
+
+interface UploadPair {
+    file: ImportableFile;
+    entry: ZipFileEntry;
+}
 
 export interface ImportableFile extends ZipEntryMetadata {
     type: "workflow" | "file";

@@ -203,11 +203,11 @@ for the list of behavior changes associated with profile versions.
       <xs:attribute name="license" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies any full URI or a
-a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
-wrapper. The tool wrapper version can be indepedent of the underlying tool. This
-license covers the tool XML and associated scripts shipped with the tool.
+            a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool
+            wrapper. The tool wrapper version can be independent of the underlying tool. This
+            license covers the tool XML and associated scripts shipped with the tool.
 
-This is interpreted as [schema.org/license](https://schema.org/license) property.
+            This is interpreted as [schema.org/license](https://schema.org/license) property.
 </xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -747,7 +747,7 @@ Read more about configuring Galaxy to run Docker jobs
   </xs:simpleType>
   <xs:complexType name="Help">
     <xs:annotation gxdocs:best_practices="help-tag">
-      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
+      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText or Markdown. Included here is only an overview of a subset of features. For more information see [the RST site](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html) or the [Markdown site](https://www.markdownguide.org/basic-syntax/).
 
 tag | details
 --- | -------
@@ -7210,8 +7210,10 @@ paths for data or collection inputs set the ``data_style`` attribute to ``paths`
 To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
 
-Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
-and the other elements the identifiers of the collections containing the dataset.
+Note that the ``element_identifier`` field matches the type of input, which means for simple data inputs ``element_identifier`` is a string,
+for multiple="true" data inputs ``element_identifier`` is a list of strings corresponding to the element identifiers of each dataset passed to the input.
+For dataset collections the element identifier is a list of strings with as many items in the list as the nesting level of the collection (i.e. 1 for list, 2 for list:list, 3 for list:list:list etc),
+where the first item represents the outermost element identifier and the innermost item represents the innermost element identifier of the collection.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>

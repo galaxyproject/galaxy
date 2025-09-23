@@ -1,14 +1,14 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
+import type { HistorySortByLiteral } from "@/api";
 import { GalaxyApi } from "@/api";
-import { type HistorySortByLiteral } from "@/api";
 import { updateTags } from "@/api/tags";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type FieldArray, type GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

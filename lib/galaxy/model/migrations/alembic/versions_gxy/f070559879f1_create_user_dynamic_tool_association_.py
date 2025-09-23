@@ -1,7 +1,7 @@
 """Create user_dynamic_tool_association table
 
 Revision ID: f070559879f1
-Revises: 75348cfb3715
+Revises: ec25b23b08e2
 Create Date: 2024-12-06 14:56:18.494243
 
 """

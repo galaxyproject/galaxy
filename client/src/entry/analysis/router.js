@@ -3,9 +3,8 @@ import CitationsList from "components/Citation/CitationsList";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import DatasetList from "components/Dataset/DatasetList";
-import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
+import DatasetView from "components/Dataset/DatasetView";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
-import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
 import GalaxyWizard from "components/GalaxyWizard";
 import HelpTerm from "components/Help/HelpTerm";
@@ -21,7 +20,7 @@ import JobDetails from "components/JobInformation/JobDetails";
 import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import ToolLanding from "components/Landing/ToolLanding";
 import WorkflowLanding from "components/Landing/WorkflowLanding";
-import PageDisplay from "components/PageDisplay/PageDisplay";
+import PageView from "components/Page/PageView";
 import PageForm from "components/PageDisplay/PageForm";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolReport from "components/Tool/ToolReport";
@@ -50,7 +49,6 @@ import WorkflowCreate from "components/Workflow/WorkflowCreate";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import Analysis from "entry/analysis/modules/Analysis";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Home from "entry/analysis/modules/Home";
 import Login from "entry/analysis/modules/Login";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
@@ -74,6 +72,7 @@ import { patchRouterPush } from "./router-push";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
+import RecentDownloads from "@/components/Downloads/RecentDownloads.vue";
 import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
 import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageIndex.vue";
 import UpgradeFileSourceInstance from "@/components/FileSources/Instances/UpgradeInstance.vue";
@@ -81,6 +80,7 @@ import CreateUserFileSource from "@/components/FileSources/Templates/CreateUserF
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryAccessibility from "@/components/History/HistoryAccessibility.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
 import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
@@ -90,7 +90,6 @@ import ManageObjectStoreIndex from "@/components/ObjectStore/Instances/ManageInd
 import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/UpgradeInstance.vue";
 import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
-import CustomToolEditor from "@/components/Tool/CustomToolEditor.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
@@ -99,6 +98,21 @@ import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 Vue.use(VueRouter);
+
+// Async component for CustomToolEditor to reduce bundle size
+// NOTE: We use the full async component factory pattern instead of simple dynamic imports
+// (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4
+const CustomToolEditor = () => ({
+    component: import("@/components/Tool/CustomToolEditor.vue"),
+    loading: {
+        template: '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading Tool Editor...</div>',
+    },
+    error: {
+        template: '<div class="alert alert-danger">Failed to load Tool Editor</div>',
+    },
+    delay: 200,
+    timeout: 10000,
+});
 
 // patches $router.push() to trigger an event and hide duplication warnings
 patchRouterPush(VueRouter);
@@ -155,8 +169,12 @@ export function getRouter(Galaxy) {
             },
             {
                 path: "/published/page",
-                component: PageDisplay,
-                props: (route) => ({ pageId: route.query.id }),
+                component: PageView,
+                props: (route) => ({
+                    pageId: route.query.id,
+                    embed: route.query.embed ? parseBool(route.query.embed) : undefined,
+                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                }),
             },
             {
                 path: "/published/visualization",
@@ -168,6 +186,7 @@ export function getRouter(Galaxy) {
                 component: WorkflowPublished,
                 props: (route) => ({
                     id: route.query.id,
+                    version: route.query.version,
                     zoom: route.query.zoom ? parseFloat(route.query.zoom) : undefined,
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
                     showButtons: route.query.buttons ? parseBool(route.query.buttons) : undefined,
@@ -230,27 +249,8 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "datasets/:datasetId/edit",
-                        component: DatasetAttributes,
-                        props: true,
-                    },
-                    {
                         path: "datasets/list",
                         component: DatasetList,
-                    },
-                    {
-                        path: "datasets/:datasetId/details",
-                        name: "DatasetDetails",
-                        component: DatasetDetails,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/:datasetId/preview",
-                        component: CenterFrame,
-                        props: (route) => ({
-                            src: `/datasets/${route.params.datasetId}/display/?preview=True`,
-                            isPreview: true,
-                        }),
                     },
                     {
                         path: "datasets/:datasetId/report",
@@ -264,9 +264,16 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "datasets/:datasetId/error",
-                        component: DatasetError,
-                        props: true,
+                        // Consolidated route for dataset view with optional tab
+                        // Handles /datasets/{id}, /datasets/{id}/details, /datasets/{id}/visualize, etc.
+                        path: "datasets/:datasetId/:tab?",
+                        name: "DatasetDetails",
+                        component: DatasetView,
+                        props: (route) => ({
+                            datasetId: route.params.datasetId,
+                            tab: route.params.tab,
+                            displayOnly: route.query.displayOnly === "true",
+                        }),
                     },
                     {
                         path: "datatypes",
@@ -294,11 +301,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/sharing",
-                        component: Sharing,
+                        component: HistoryAccessibility,
                         props: (route) => ({
-                            id: route.query.id,
-                            pluralName: "Histories",
-                            modelClass: "History",
+                            historyId: route.query.id,
                         }),
                     },
                     {
@@ -569,10 +574,6 @@ export function getRouter(Galaxy) {
                     {
                         path: "user",
                         component: UserPreferences,
-                        props: {
-                            enableQuotas: Galaxy.config.enable_quotas,
-                            userId: Galaxy.user.id,
-                        },
                         redirect: redirectAnon(),
                     },
                     {
@@ -664,9 +665,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "visualizations/list_published",
                         component: GridVisualization,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "visualizations/list_shared",
@@ -713,10 +715,13 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "workflows/invocations/:invocationId",
+                        // Consolidated route for workflow invocation state with optional success query param
+                        // Handles /workflows/invocations/{id}, /workflows/invocations/{id}/steps, /workflows/invocations/{id}/inputs, etc.
+                        path: "workflows/invocations/:invocationId/:tab?",
                         component: WorkflowInvocationState,
                         props: (route) => ({
                             invocationId: route.params.invocationId,
+                            tab: route.params.tab,
                             isFullPage: true,
                             success: Boolean(route.query.success),
                         }),
@@ -808,6 +813,12 @@ export function getRouter(Galaxy) {
                             workflowFileCount: Number(route.params.workflowFileCount),
                             regularFileCount: Number(route.params.regularFileCount),
                         }),
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "downloads",
+                        name: "RecentDownloads",
+                        component: RecentDownloads,
                         redirect: redirectAnon(),
                     },
                 ],

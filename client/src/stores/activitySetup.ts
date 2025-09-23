@@ -5,6 +5,7 @@ import {
     faChartBar,
     faColumns,
     faDatabase,
+    faDownload,
     faFile,
     faFileContract,
     faFolder,
@@ -18,8 +19,8 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 
-import { type Activity } from "@/stores/activityStoreTypes";
-import { type EventData } from "@/stores/eventStore";
+import type { Activity } from "@/stores/activityStoreTypes";
+import type { EventData } from "@/stores/eventStore";
 
 export const defaultActivities = [
     {
@@ -189,6 +190,19 @@ export const defaultActivities = [
         title: "Custom Tools",
         to: null,
         tooltip: "Search and run user-defined tools",
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Manage your recent downloads.",
+        icon: faDownload,
+        id: "recent-downloads",
+        mutable: false,
+        optional: true,
+        panel: false,
+        title: "Recent Exports",
+        to: "/downloads",
+        tooltip: "Access your recent exports and downloads to check their status or download them again.",
         visible: true,
     },
 ] as const;

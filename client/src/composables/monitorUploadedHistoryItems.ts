@@ -2,11 +2,18 @@ import { faExclamation, faSpinner, type IconDefinition } from "@fortawesome/free
 import { computed, type Ref } from "vue";
 
 import { type HDASummary, type HistoryItemSummary, isHDA } from "@/api";
+import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
 import type { UploadItem } from "@/components/Upload/model";
+import STATES from "@/mvc/dataset/states";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
-import { stateIsTerminal } from "@/utils/utils";
 
 const REFER_TO_HISTORY_MSG = "Refer to the history panel to view dataset state.";
+
+/** Terminal states that are not usable from an upload (anything but `ok` or `deferred`)
+ */
+const UNUSABLE_FROM_UPLOAD_STATES = Object.values(STATES.READY_STATES).filter(
+    (state) => state !== STATES.OK && state !== STATES.DEFERRED
+);
 
 /**
  * For given uploaded items, monitor the states of those items from the history.
@@ -30,10 +37,16 @@ export function monitorUploadedHistoryItems(
         const uploadedDatasets: HistoryItemSummary[] = [];
         uploadValues.value.forEach((model) => {
             const outputs = model.outputs;
+            // Some uploads (e.g.: in the case of remote file upload) may have the entire set of uploaded files
+            // in the `outputs` object, while typically, the `outputs` object contains each individual upload.
             if (outputs) {
                 Object.entries(outputs).forEach((output) => {
                     const outputDetails = output[1] as HistoryItemSummary;
-                    uploadedDatasets.push(outputDetails);
+                    // Since there is a possibility of all uploads being in the `outputs` object,
+                    // we need to ensure that we only add unique datasets to the list.
+                    if (!uploadedDatasets.some((item) => item.id === outputDetails.id)) {
+                        uploadedDatasets.push(outputDetails);
+                    }
                 });
             }
         });
@@ -46,43 +59,53 @@ export function monitorUploadedHistoryItems(
     });
 
     const uploadedHistoryItemsReady = computed(() =>
-        uploadedHistoryItems.value.every((item) => item && stateIsTerminal(item))
+        uploadedHistoryItems.value.every((item) => item && item.extension !== "auto")
     );
 
+    // TODO: Could be refactored to use `useCollectionCreator.isElementInvalid()` instead? (with the added `auto` check)
     const uploadedHistoryItemsOk = computed(() =>
-        uploadedHistoryItems.value.filter((item) => item && item.state === "ok")
+        uploadedHistoryItems.value.filter(
+            (item) => item && !UNUSABLE_FROM_UPLOAD_STATES.includes(item.state) && item.extension !== "auto"
+        )
     );
 
     const historyItemsStateInfo = computed<{
-        variant: string;
+        color?: ComponentColor;
         message: string;
         icon?: IconDefinition;
         spin?: boolean;
     } | null>(() => {
-        if (uploadedHistoryItems.value?.length && !enableStart.value) {
-            if (!uploadedHistoryItemsReady.value) {
+        if (!enableStart.value && uploadValues.value.length) {
+            if (!uploadedHistoryItems.value?.length) {
                 return {
-                    variant: "info",
-                    message: `Your upload(s) are not ready to be used yet. ${REFER_TO_HISTORY_MSG}`,
+                    color: "blue",
+                    message: `Dataset(s) not uploaded yet. ${REFER_TO_HISTORY_MSG}`,
+                    icon: faSpinner,
+                    spin: true,
+                };
+            } else if (!uploadedHistoryItemsReady.value) {
+                return {
+                    color: "blue",
+                    message: `Waiting for upload(s) to have valid extension(s). ${REFER_TO_HISTORY_MSG}`,
                     icon: faSpinner,
                     spin: true,
                 };
             } else if (uploadedHistoryItems.value.length > uploadedHistoryItemsOk.value.length) {
                 return {
-                    variant: "warning",
+                    color: "orange",
                     message: `Only ${uploadedHistoryItemsOk.value.length} / ${uploadedHistoryItems.value.length} uploaded items are usable. ${REFER_TO_HISTORY_MSG}`,
                     icon: faExclamation,
                 };
             } else if (creatingPairedType.value && uploadedHistoryItemsOk.value.length % 2 !== 0) {
                 return {
-                    variant: "danger",
+                    color: "red",
                     message:
                         "Please upload an even number of datasets to create a dataset pair or a list of dataset pairs.",
                     icon: faExclamation,
                 };
             } else if (uploadedHistoryItemsOk.value.length) {
                 return {
-                    variant: "success",
+                    color: "blue", // Not "green" because this is for a `GButton`, that is ready
                     message: "Upload(s) ready to be used.",
                 };
             } else {

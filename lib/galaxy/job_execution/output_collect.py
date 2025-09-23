@@ -9,8 +9,6 @@ from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -112,7 +110,7 @@ class MetadataSourceProvider(AbstractMetadataSourceProvider):
 
 def collect_dynamic_outputs(
     job_context: "BaseJobContext",
-    output_collections: Dict[str, Any],
+    output_collections: dict[str, Any],
 ):
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
     # from the tool provided metadata (e.g. galaxy.json).
@@ -146,6 +144,8 @@ def collect_dynamic_outputs(
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)
+                if "column_definitions" in unnamed_output_dict:
+                    hdca.collection.column_definitions = unnamed_output_dict["column_definitions"]
                 output_collections[name] = hdca
                 job_context.add_dataset_collection(hdca)
             error_message = unnamed_output_dict.get("error_message")
@@ -208,7 +208,7 @@ class BaseJobContext(ModelPersistenceContext):
         pass
 
     def find_files(self, output_name, collection, dataset_collectors):
-        discovered_files: List[DiscoveredFile] = []
+        discovered_files: list[DiscoveredFile] = []
         for discovered_file in discover_files(
             output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection
         ):
@@ -221,7 +221,7 @@ class BaseJobContext(ModelPersistenceContext):
 
     @property
     @abc.abstractmethod
-    def change_datatype_actions(self) -> Dict[str, Any]: ...
+    def change_datatype_actions(self) -> dict[str, Any]: ...
 
     @abc.abstractmethod
     def create_hdca(self, name: str, structure: UninitializedTree) -> Union[HistoryDatasetCollectionAssociation]: ...
@@ -230,7 +230,7 @@ class BaseJobContext(ModelPersistenceContext):
     def get_hdca(self, object_id) -> HistoryDatasetCollectionAssociation: ...
 
     @abc.abstractmethod
-    def get_library_folder(self, destination: Dict[str, Any]) -> "LibraryFolder": ...
+    def get_library_folder(self, destination: dict[str, Any]) -> "LibraryFolder": ...
 
     @abc.abstractmethod
     def output_collection_def(self, name: str) -> Union[None, ToolOutputCollection]: ...
@@ -322,14 +322,14 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         return self.metadata_params.get("implicit_collection_jobs_association_id")
 
 
-def collect_primary_datasets(job_context: BaseJobContext, output: Dict[str, DatasetInstance], input_ext):
+def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, DatasetInstance], input_ext):
     job_working_directory = job_context.job_working_directory
 
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
     new_outdata_name = None
-    primary_datasets: Dict[str, Dict[str, DatasetInstance]] = {}
-    storage_callbacks: List[Callable] = []
+    primary_datasets: dict[str, dict[str, DatasetInstance]] = {}
+    storage_callbacks: list[Callable] = []
     for name, outdata in output.items():
         primary_output_assigned = False
         dataset_collectors = [DEFAULT_DATASET_COLLECTOR]

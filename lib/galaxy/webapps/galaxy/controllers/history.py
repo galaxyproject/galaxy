@@ -33,6 +33,7 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
 )
+from galaxy.webapps.galaxy.services.histories import HistoriesService
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
     slug_builder: SlugBuilder = depends(SlugBuilder)
+    service: HistoriesService = depends(HistoriesService)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -212,8 +214,12 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 ):
                     # If it's not private to me, and I can manage it, set fixed private permissions.
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
+
+            importable = history.importable
+            link_access = self.service.shareable_service.disable_link_access(trans, history_id)
         return {
-            "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
+            "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}.",
+            "sharing_status_changed": importable != link_access.importable,
         }
 
     # ......................................................................... actions/orig. async

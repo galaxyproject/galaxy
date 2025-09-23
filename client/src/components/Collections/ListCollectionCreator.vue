@@ -129,18 +129,18 @@ function _elementsSetUp() {
     const inListElementsPrev = inListElements.value;
     inListElements.value = [];
     inListElementsPrev.forEach((prevElem) => {
-        const element = workingElements.value.find((e) => e.id === prevElem.id);
-        const problem = isElementInvalid(prevElem);
+        const matchingElem = workingElements.value.find((e) => e.id === prevElem.id);
 
-        if (element) {
-            inListElements.value.push(element);
-        } else if (problem) {
-            const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
-            invalidElements.value.push(invalidMsg);
-            Toast.error(invalidMsg, localize("Invalid element"));
+        if (matchingElem) {
+            const problem = isElementInvalid(matchingElem);
+            if (problem) {
+                const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${problem} and ${NOT_VALID_ELEMENT_MSG}`;
+                Toast.error(invalidMsg, localize("Invalid element"));
+            } else {
+                inListElements.value.push(matchingElem);
+            }
         } else {
             const invalidMsg = `${prevElem.hid}: ${prevElem.name} ${localize("has been removed from the collection")}`;
-            invalidElements.value.push(invalidMsg);
             Toast.error(invalidMsg, localize("Invalid element"));
         }
     });
@@ -333,7 +333,7 @@ function addUploadedFiles(files: HDASummary[]) {
                 localize(`Dataset ${f.hid}: ${f.name} ${problem} and is an invalid element for this collection`),
                 localize("Uploaded item is invalid")
             );
-        } else {
+        } else if (!file) {
             invalidElements.value.push("Uploaded item: " + f.name + " could not be added to the collection");
             Toast.error(
                 localize(`Dataset ${f.hid}: ${f.name} could not be added to the collection`),
@@ -345,9 +345,26 @@ function addUploadedFiles(files: HDASummary[]) {
 
 /** find the element in the workingElements array and update its name */
 function renameElement(element: any, name: string) {
+    // We do this whole process of removing and readding because, in the case that the element
+    // is in the list, inListElements might be reacting to changes in workingElements, and we
+    // want to prevent that from causing issues with producing duplicate elements in either array:
+
+    // first check at what index of inlistElements the element is
+    const index = inListElements.value.findIndex((e) => e.id === element.id);
+    if (index >= 0) {
+        // remove from inListElements
+        inListElements.value = inListElements.value.filter((e) => e.id !== element.id);
+    }
+
+    // then find the element in workingElements, and rename it
     element = workingElements.value.find((e) => e.id === element.id);
     if (element) {
         element.name = name;
+    }
+
+    // now add again to inListElements at same index
+    if (index >= 0) {
+        inListElements.value.splice(index, 0, element);
     }
 }
 
@@ -448,7 +465,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
                             <i data-target=".collection-element .name">
                                 {{ localize("the existing name") }}
                             </i>
-                            {{ localize(".") }}
+                            {{ localize("in either column.") }}
                         </li>
 
                         <li>
@@ -667,12 +684,17 @@ function selectionAsHdaSummary(value: any): HDASummary {
                         maintain-selection-order
                         :placeholder="localize('Filter datasets by name')"
                         :options="workingElements.map((e) => ({ label: e.name || '', value: e }))">
-                        <template v-slot:label-area="{ value }">
+                        <template v-slot:column-heading-end>
+                            <i style="font-weight: normal">
+                                {{ localize("(Click name to edit)") }}
+                            </i>
+                        </template>
+                        <template v-slot:label-area="selectValue">
                             <DatasetCollectionElementView
-                                class="w-100"
-                                :element="selectionAsHdaSummary(value)"
+                                text-only
+                                :element="selectionAsHdaSummary(selectValue.option.value)"
                                 :hide-extension="!showElementExtension"
-                                @onRename="(name) => renameElement(value, name)" />
+                                @onRename="(name) => renameElement(selectValue.option.value, name)" />
                         </template>
                     </FormSelectMany>
                 </template>
@@ -730,11 +752,6 @@ function selectionAsHdaSummary(value: any): HDASummary {
             margin: 2px 4px 0px 4px;
             &:hover {
                 border-color: black;
-            }
-        }
-        &:not(.with-actions) {
-            &:hover {
-                border: none;
             }
         }
 

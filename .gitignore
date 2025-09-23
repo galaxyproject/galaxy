@@ -76,6 +76,7 @@ config/*
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
 config/plugins/**/.parcel-cache
+config/plugins/visualizations
 !config/plugins
 static/welcome.html.*
 static/welcome.html
@@ -164,6 +165,7 @@ client/webpack-stats.json
 packages/*/build
 packages/*/dist
 packages/*/*.egg-info
+packages/meta/requirements.txt
 
 # Standalone script + main, or build into dist
 config/plugins/**/static/dist
@@ -177,6 +179,7 @@ config/plugins/**/static/*.map
 config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
 config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
 config/plugins/visualizations/scatterplot/static/scatterplot.js
+config/plugins/visualizations/tiffviewer/static/
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py

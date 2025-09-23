@@ -13,14 +13,11 @@ import subprocess
 import tarfile
 import tempfile
 import zipfile
+from collections.abc import Iterable
 from json import dumps
 from typing import (
     Any,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -375,7 +372,7 @@ class DynamicCompressedArchive(CompressedArchive):
     compressed_format: str
     uncompressed_datatype_instance: Data
 
-    def matches_any(self, target_datatypes: List[Any]) -> bool:
+    def matches_any(self, target_datatypes: list[Any]) -> bool:
         """Treat two aspects of compressed datatypes separately."""
         compressed_target_datatypes = []
         uncompressed_target_datatypes = []
@@ -414,6 +411,7 @@ class CompressedZipArchive(CompressedArchive):
     """
 
     file_ext = "zip"
+    display_behavior = "download"  # Archive files trigger downloads
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -660,7 +658,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """
         Merges BAM files
 
@@ -1115,7 +1113,7 @@ class CRAM(Binary):
             if self.set_index_file(dataset, index_file):
                 dataset.metadata.cram_index = index_file
 
-    def get_cram_version(self, filename: str) -> Tuple[int, int]:
+    def get_cram_version(self, filename: str) -> tuple[int, int]:
         try:
             with open(filename, "rb") as fh:
                 header = bytearray(fh.read(6))
@@ -2209,7 +2207,7 @@ class H5MLM(H5):
             to_ext = to_ext or dataset.extension
             return self._serve_raw(dataset, to_ext, headers, **kwd)
 
-        out_dict: Dict = {}
+        out_dict: dict = {}
         try:
             with h5py.File(dataset.get_file_name(), "r", locking=False) as handle:
                 out_dict["Attributes"] = {}
@@ -3198,6 +3196,7 @@ class Xlsx(Binary):
 
     file_ext = "xlsx"
     compressed = True
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
@@ -3210,6 +3209,7 @@ class ExcelXls(Binary):
 
     file_ext = "excel.xls"
     edam_format = "format_3468"
+    display_behavior = "download"  # Office documents trigger downloads
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.mime_type == self.get_mime()

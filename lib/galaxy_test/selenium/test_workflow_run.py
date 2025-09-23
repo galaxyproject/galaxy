@@ -3,6 +3,7 @@ from uuid import uuid4
 
 import yaml
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from typing_extensions import Literal
 
 from galaxy_test.base import rules_test_data
@@ -31,6 +32,7 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .test_workflow_editor import CHIPSEQ_COLUMNS
 
 
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
@@ -114,6 +116,262 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.workflow_run_wait_for_ok(hid=2, expand=True)
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
+
+    def _setup_chipseq_input_workflow(self):
+        editor = self.components.workflow_editor
+
+        name = self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        editor.label_input.wait_for_and_send_keys("input1")
+        editor.annotation_input.wait_for_and_send_keys("chipseq example input")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.collection_type_input.wait_for_and_clear_and_send_keys("sample_sheet:paired")
+        self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
+
+        self.tool_open("__SAMPLE_SHEET_TO_TABULAR__")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("as_table")
+        self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_editor_connect("input1#output", "as_table#input")
+
+        self.workflow_editor_click_save()
+        return name
+
+    def _chipseq_data_entry(self, element_identifier_mutable: bool = False) -> None:
+        workflow_run = self.components.workflow_run
+        sample_sheet = workflow_run.input.sample_sheet
+
+        sample_sheet.grid_cell_input(row_index=0, column_name="Condition").assert_absent()
+        sample_sheet.grid_cell(row_index=0, column_name="Condition").wait_for_and_double_click()
+        sample_sheet.grid_cell_input(row_index=0, column_name="Condition").wait_for_visible()
+        action_chains = self.action_chains()
+
+        def tab_if_element_identifier_mutable():
+            if element_identifier_mutable:
+                return action_chains.send_keys(Keys.TAB)
+
+        # 0: row for SRR5680995
+        action_chains.send_keys("input")
+        action_chains.send_keys(Keys.TAB)
+        # no replicate here...
+        action_chains.send_keys(Keys.TAB)
+        # no control here...
+        action_chains.send_keys(Keys.TAB)
+
+        # 1: row for SRR5680996
+        tab_if_element_identifier_mutable()
+        action_chains.send_keys("H3K4me3")
+        action_chains.send_keys(Keys.TAB)
+        action_chains.send_keys("1")
+        action_chains.send_keys(Keys.TAB)
+        # action_chains.send_keys("SRR5680995")
+        action_chains.send_keys(Keys.TAB)
+
+        # 2: row for SRR5680997
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        action_chains.send_keys("H3K27me3")
+        action_chains.send_keys(Keys.TAB)
+        action_chains.send_keys("1")
+        action_chains.send_keys(Keys.TAB)
+        # action_chains.send_keys("SRR5680995")
+        action_chains.send_keys(Keys.TAB)
+
+        # 3: row for SRR5681007
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        action_chains.send_keys("H3K27me3")
+        action_chains.send_keys(Keys.TAB)
+        action_chains.send_keys("2")
+        action_chains.send_keys(Keys.TAB)
+        # action_chains.send_keys("SRR5681005")
+        action_chains.send_keys(Keys.TAB)
+
+        # 4: row for SRR5681006
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        action_chains.send_keys("H3K4me3")
+        action_chains.send_keys(Keys.TAB)
+        action_chains.send_keys("2")
+        action_chains.send_keys(Keys.TAB)
+        # action_chains.send_keys("SRR5681005")
+        action_chains.send_keys(Keys.TAB)
+
+        # 5: row for SRR5680998
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        action_chains.send_keys("CTCF")
+        action_chains.send_keys(Keys.TAB)
+        action_chains.send_keys("1")
+        action_chains.send_keys(Keys.TAB)
+        # action_chains.send_keys("SRR5680995")
+        action_chains.send_keys(Keys.TAB)
+
+        # 6: row for SRR5681008
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        action_chains.send_keys("CTCF")
+        action_chains.send_keys(Keys.TAB)
+        action_chains.send_keys("2")
+        action_chains.send_keys(Keys.TAB)
+        # action_chains.send_keys("SRR5681005")
+        action_chains.send_keys(Keys.TAB)
+
+        # 7: row for SRR5681005
+        # identifier correct...
+        tab_if_element_identifier_mutable()
+        action_chains.send_keys("input")
+        action_chains.send_keys(Keys.TAB)
+
+        action_chains.click()
+        action_chains.perform()
+
+        controls = {
+            1: "SRR5680995",
+            2: "SRR5680995",
+            3: "SRR5681005",
+            4: "SRR5681005",
+            5: "SRR5680995",
+            6: "SRR5681005",
+        }
+
+        for row_index, control in controls.items():
+            sample_sheet.grid_cell(row_index=row_index, column_name="Control").wait_for_and_double_click()
+            sample_sheet.select_picker.wait_for_and_click()
+            sample_sheet.select_item(item=control).wait_for_and_click()
+
+    @selenium_test
+    @managed_history
+    def test_collection_input_sample_sheet_chipseq_example_from_uris(self):
+        history_id = self.current_history_id()
+
+        name = self._setup_chipseq_input_workflow()
+        self.workflow_run_with_name(name)
+
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+
+        sample_sheet = workflow_run.input.sample_sheet
+        sample_sheet._.wait_for_present()
+        self.screenshot("workflow_run_sample_sheet_chipseq_source")
+        sample_sheet.data_import_source_from(source="pasted_table").wait_for_and_click()
+        sample_sheet.wizard_next_button.wait_for_and_click()
+        base_url = self.dataset_populator.base64_url_for_bytes(b"hello world")
+        urls = [
+            f"{base_url}/SRR5680995_R1.fastq.gz",
+            f"{base_url}/SRR5680995_R2.fastq.gz",
+            f"{base_url}/SRR5680996_R1.fastq.gz",
+            f"{base_url}/SRR5680996_R2.fastq.gz",
+            f"{base_url}/SRR5680997_R1.fastq.gz",
+            f"{base_url}/SRR5680997_R2.fastq.gz",
+            f"{base_url}/SRR5681007_R1.fastq.gz",
+            f"{base_url}/SRR5681007_R2.fastq.gz",
+            f"{base_url}/SRR5681006_R1.fastq.gz",
+            f"{base_url}/SRR5681006_R2.fastq.gz",
+            f"{base_url}/SRR5680998_R1.fastq.gz",
+            f"{base_url}/SRR5680998_R2.fastq.gz",
+            f"{base_url}/SRR5681008_R1.fastq.gz",
+            f"{base_url}/SRR5681008_R2.fastq.gz",
+            f"{base_url}/SRR5681005_R1.fastq.gz",
+            f"{base_url}/SRR5681005_R2.fastq.gz",
+        ]
+        pasted_data = "\n".join(urls)
+        sample_sheet.paste_table_textarea.wait_for_and_send_keys(pasted_data)
+        self.screenshot("workflow_run_sample_sheet_chipseq_pasted_data")
+        sample_sheet.wizard_next_button.wait_for_and_click()
+
+        self.screenshot("workflow_run_sample_sheet_chipseq_table_empty")
+        self._chipseq_data_entry(element_identifier_mutable=True)
+        self.screenshot("workflow_run_sample_sheet_chipseq_table_full")
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        sample_sheet.wizard_next_button.wait_for_and_click()
+
+        self.history_panel_wait_for_hid_ok(1)
+        self.screenshot("workflow_run_sample_sheet_chipseq_sheet_created")
+        sample_sheet.collection_created_message.wait_for_present()
+        self.workflow_run_submit()
+        self._expect_chipseq_table(history_id, 18)
+
+    def _expect_chipseq_table(self, history_id: str, hid: int):
+        self.history_panel_wait_for_hid_ok(hid)
+        contents = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
+        expected_contents = """SRR5680995\tinput\t\t
+SRR5680996\tH3K4me3\t1\tSRR5680995
+SRR5680997\tH3K27me3\t1\tSRR5680995
+SRR5681007\tH3K27me3\t2\tSRR5681005
+SRR5681006\tH3K4me3\t2\tSRR5681005
+SRR5680998\tCTCF\t1\tSRR5680995
+SRR5681008\tCTCF\t2\tSRR5681005
+SRR5681005\tinput\t\t
+"""
+        assert (
+            contents == expected_contents
+        ), f"Expected chipseq sample sheet table:\n{expected_contents}\nGot:\n{contents}"
+
+    @selenium_test
+    @managed_history
+    def test_collection_input_sample_sheet_chipseq_example_from_list_pairs(self):
+        history_id = self.current_history_id()
+
+        base_url = self.dataset_populator.base64_url_for_bytes(b"hello world")
+        urls = [
+            f"{base_url}/SRR5680995_R1.fastq.gz",
+            f"{base_url}/SRR5680995_R2.fastq.gz",
+            f"{base_url}/SRR5680996_R1.fastq.gz",
+            f"{base_url}/SRR5680996_R2.fastq.gz",
+            f"{base_url}/SRR5680997_R1.fastq.gz",
+            f"{base_url}/SRR5680997_R2.fastq.gz",
+            f"{base_url}/SRR5681007_R1.fastq.gz",
+            f"{base_url}/SRR5681007_R2.fastq.gz",
+            f"{base_url}/SRR5681006_R1.fastq.gz",
+            f"{base_url}/SRR5681006_R2.fastq.gz",
+            f"{base_url}/SRR5680998_R1.fastq.gz",
+            f"{base_url}/SRR5680998_R2.fastq.gz",
+            f"{base_url}/SRR5681008_R1.fastq.gz",
+            f"{base_url}/SRR5681008_R2.fastq.gz",
+            f"{base_url}/SRR5681005_R1.fastq.gz",
+            f"{base_url}/SRR5681005_R2.fastq.gz",
+        ]
+        pasted_data = "\n".join(urls)
+        self.perform_upload_of_pasted_content(pasted_data)
+        self.history_panel_wait_for_and_select([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+        self.history_panel_build_list_of_pairs()
+        self.collection_builder_set_name("inputaslist")
+        self.collection_builder_create()
+        self.history_panel_wait_for_hid_visible(33)
+        name = self._setup_chipseq_input_workflow()
+        self.workflow_run_with_name(name)
+
+        workflow_run = self.components.workflow_run
+        input = workflow_run.input._(label="input1")
+        input.upload.wait_for_and_click()
+
+        sample_sheet = workflow_run.input.sample_sheet
+        sample_sheet._.wait_for_present()
+        sample_sheet.data_import_source_from(source="collection").wait_for_and_click()
+        sample_sheet.wizard_next_button.wait_for_and_click()
+        self.screenshot("workflow_run_sample_sheet_from_collection")
+        # no longer needed since the collection dialog just pops up when navigates to form
+        # sample_sheet.select_collection.wait_for_and_click()
+        collection_id = self.hid_to_history_item(33)["id"]
+        sample_sheet.collection_selection(id=collection_id).wait_for_present()
+        self.screenshot("workflow_run_sample_sheet_from_collection_select_collection")
+        sample_sheet.collection_selection(id=collection_id).wait_for_and_click()
+        # sample_sheet.wizard_next_button.wait_for_and_click()
+        self.screenshot("workflow_run_sample_sheet_from_collection_grid")
+        self._chipseq_data_entry(element_identifier_mutable=False)
+        self.screenshot("workflow_run_sample_sheet_from_collection_grid_full")
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        sample_sheet.wizard_next_button.wait_for_and_click()
+        self.history_panel_wait_for_hid_ok(50)
+        sample_sheet.collection_created_message.wait_for_present()
+        self.workflow_run_submit()
+        self._expect_chipseq_table(history_id, 51)
 
     @selenium_test
     @managed_history
@@ -523,7 +781,6 @@ steps: {}
         input.collection_tab_upload_link.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input1")
         self._upload_hello_world_for_input(builder, count=2)
-        input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
@@ -539,7 +796,6 @@ steps: {}
         input.collection_tab_upload_link.wait_for_and_click()
         builder = workflow_run.input.collection_builder._(label="input_list")
         self._upload_hello_world_for_input(builder, count=2)
-        input.collection_tab_build_link.wait_for_and_click()
         builder.create.wait_for_and_click()
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
@@ -583,9 +839,7 @@ steps: {}
             workflow_input.title(n=i).wait_for_and_clear_and_send_keys(f"hello world.{i + 1}.fastq")
 
         workflow_input.embedded_start_button.wait_for_and_click()
-        workflow_input.status.wait_for_present()
-        for i in range(from_hid, from_hid + count):
-            self.history_panel_wait_for_hid_ok(i)
+        workflow_input.use_button_disabled.wait_for_absent()
         workflow_input.use_button.wait_for_and_click()
 
     def _create_and_run_workflow_with_unique_name(

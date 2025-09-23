@@ -1,6 +1,20 @@
-from typing import Union
+import re
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
+from galaxy.exceptions import RequestParameterInvalidException
 from .registry import DATASET_COLLECTION_TYPES_REGISTRY
+
+if TYPE_CHECKING:
+    from galaxy.tool_util_models.tool_source import FieldDict
+
+
+COLLECTION_TYPE_REGEX = re.compile(
+    r"^((list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*|sample_sheet|sample_sheet:paired|sample_sheet:record|sample_sheet:paired_or_unpaired)$"
+)
 
 
 class CollectionTypeDescriptionFactory:
@@ -9,7 +23,7 @@ class CollectionTypeDescriptionFactory:
         # I think.
         self.type_registry = type_registry
 
-    def for_collection_type(self, collection_type, fields=None):
+    def for_collection_type(self, collection_type, fields: Optional[Union[str, list["FieldDict"]]] = None):
         assert collection_type is not None
         return CollectionTypeDescription(collection_type, self, fields=fields)
 
@@ -22,7 +36,10 @@ class CollectionTypeDescription:
     collection_type: str
 
     def __init__(
-        self, collection_type: Union[str, "CollectionTypeDescription"], collection_type_description_factory, fields=None
+        self,
+        collection_type: Union[str, "CollectionTypeDescription"],
+        collection_type_description_factory: CollectionTypeDescriptionFactory,
+        fields: Optional[Union[str, list["FieldDict"]]] = None,
     ):
         if isinstance(collection_type, CollectionTypeDescription):
             self.collection_type = collection_type.collection_type
@@ -135,6 +152,11 @@ class CollectionTypeDescription:
 
     def __str__(self):
         return f"CollectionTypeDescription[{self.collection_type}]"
+
+    def validate(self):
+        """Validate that this collection type is a valid Galaxy collection type."""
+        if COLLECTION_TYPE_REGEX.match(self.collection_type) is None:
+            raise RequestParameterInvalidException(f"Invalid collection type: [{self.collection_type}]")
 
 
 def map_over_collection_type(mapped_over_collection_type, target_collection_type):

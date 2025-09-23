@@ -5,6 +5,7 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
+import { useWorkflowSearchStore } from "@/stores/workflowSearchStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { useTimeoutStoreDispose } from "./timeoutStoreDispose";
@@ -31,6 +32,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
     const commentStore = useWorkflowCommentStore(workflowId.value);
     const toolbarStore = useWorkflowEditorToolbarStore(workflowId.value);
     const undoRedoStore = useUndoRedoStore(workflowId.value);
+    const searchStore = useWorkflowSearchStore(workflowId.value);
 
     const disposeConnectionStore = useTimeoutStoreDispose(connectionStore);
     const disposeStateStore = useTimeoutStoreDispose(stateStore);
@@ -38,6 +40,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
     const disposeCommentStore = useTimeoutStoreDispose(commentStore);
     const disposeToolbarStore = useTimeoutStoreDispose(toolbarStore);
     const disposeUndoRedoStore = useTimeoutStoreDispose(undoRedoStore);
+    const disposeSearchStore = useTimeoutStoreDispose(searchStore);
 
     onScopeDispose(() => {
         disposeConnectionStore();
@@ -46,6 +49,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
         disposeCommentStore();
         disposeToolbarStore();
         disposeUndoRedoStore();
+        disposeSearchStore();
     });
 
     return {
@@ -55,6 +59,7 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
         commentStore,
         toolbarStore,
         undoRedoStore,
+        searchStore,
     };
 }
 
@@ -83,6 +88,7 @@ export function useWorkflowStores(workflowId?: Ref<string> | string) {
     const commentStore = useWorkflowCommentStore(id);
     const toolbarStore = useWorkflowEditorToolbarStore(id);
     const undoRedoStore = useUndoRedoStore(id);
+    const searchStore = useWorkflowSearchStore(id);
 
     return {
         workflowId: id,
@@ -92,5 +98,6 @@ export function useWorkflowStores(workflowId?: Ref<string> | string) {
         commentStore,
         toolbarStore,
         undoRedoStore,
+        searchStore,
     };
 }

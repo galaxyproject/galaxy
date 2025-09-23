@@ -90,7 +90,6 @@ async function saveTool() {
         hidden: false,
         representation: parse(yamlRepresentation.value),
         src: "representation",
-        allow_load: true,
     };
     const { data, error } = await GalaxyApi().POST("/api/unprivileged_tools", { body: payload });
     if (error) {
@@ -106,7 +105,7 @@ async function saveTool() {
 <template>
     <div>
         <div class="d-flex flex-gapx-1">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Tool Editor</Heading>
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
             <b-button variant="primary" size="m" @click="saveTool">Save</b-button>
         </div>
         <VueMonacoEditor

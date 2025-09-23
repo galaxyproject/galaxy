@@ -62,9 +62,9 @@ describe("Default", () => {
         expect((wrapper.vm as any).counterAnnounce).toBe(0);
         expect((wrapper.vm as any).showHelper).toBe(true);
         expect((wrapper.vm as any).listExtensions[0].id).toBe("ab1");
-        expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["disabled"]));
-        expect(wrapper.find("#btn-start").classes()).toEqual(expect.arrayContaining(["disabled"]));
-        expect(wrapper.find("#btn-stop").classes()).toEqual(expect.arrayContaining(["disabled"]));
+        expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["g-disabled"]));
+        expect(wrapper.find("#btn-start").classes()).toEqual(expect.arrayContaining(["g-disabled"]));
+        expect(wrapper.find("#btn-stop").classes()).toEqual(expect.arrayContaining(["g-disabled"]));
         await flushPromises();
     });
 
@@ -79,7 +79,7 @@ describe("Default", () => {
         await flushPromises();
     });
 
-    it("does render remote files button", async () => {
+    it("does render remote files / repository button", async () => {
         const wrapper = getWrapper();
         expect(wrapper.find("#btn-remote-files").exists()).toBeTruthy();
         await wrapper.setProps({ fileSourcesConfigured: false });

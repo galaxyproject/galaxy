@@ -6,11 +6,12 @@ export class UrlTracker {
     }
 
     /** Returns urls for data drilling **/
-    getUrl(url) {
+    getUrl(url, returnWithPrevious = false) {
+        let previous = undefined;
         if (url) {
             this.navigation.push(url);
         } else {
-            this.navigation.pop();
+            previous = this.navigation.pop();
             const navigationLength = this.navigation.length;
             if (navigationLength > 0) {
                 url = this.navigation[navigationLength - 1];
@@ -18,7 +19,12 @@ export class UrlTracker {
                 url = this.root;
             }
         }
-        return url;
+
+        if (returnWithPrevious) {
+            return { url, popped: previous };
+        } else {
+            return url;
+        }
     }
 
     /** Returns true if the last data is at navigation root **/

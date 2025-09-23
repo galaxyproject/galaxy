@@ -3,7 +3,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
-import { type AxiosError } from "axios";
 import { BAlert, BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
@@ -14,6 +13,7 @@ import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -25,6 +25,7 @@ library.add(faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser);
 
 interface Props {
     id: string;
+    version?: number;
     zoom?: number;
     embed?: boolean;
     initialX?: number;
@@ -38,6 +39,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    version: undefined,
     zoom: 0.75,
     embed: false,
     initialX: -20,
@@ -74,8 +76,8 @@ async function load() {
 
     try {
         const [workflowInfoData, fullWorkflow] = await Promise.all([
-            getWorkflowInfo(props.id),
-            getWorkflowFull(props.id),
+            getWorkflowInfo(props.id, props.version),
+            getWorkflowFull(props.id, props.version),
         ]);
 
         assertDefined(workflowInfoData.name);
@@ -85,11 +87,7 @@ async function load() {
 
         fromSimple(props.id, fullWorkflow);
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        if (error.response?.data.err_msg) {
-            errorMessage.value = error.response.data.err_msg ?? "Unknown Error";
-        }
+        errorMessage.value = errorMessageAsString(e);
     } finally {
         loading.value = false;
     }
@@ -124,13 +122,13 @@ defineExpose({
 
         <div id="center" class="container-root" :class="{ 'm-3': !props.quickView }">
             <div v-if="loading">
-                <Heading h1 separator size="xl">
+                <Heading h1 separator size="lg">
                     <FontAwesomeIcon :icon="faSpinner" spin />
                     Loading Workflow
                 </Heading>
             </div>
             <div v-else-if="hasError">
-                <Heading h1 separator size="xl"> Failed to load published Workflow </Heading>
+                <Heading h1 separator size="lg"> Failed to load published Workflow </Heading>
 
                 <BAlert show variant="danger">
                     {{ errorMessage }}
@@ -138,7 +136,7 @@ defineExpose({
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div v-if="props.showHeading || props.showButtons" class="workflow-header">
-                    <Heading v-if="props.showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
+                    <Heading v-if="props.showHeading" h1 separator inline size="lg" class="flex-grow-1 mb-0">
                         <span v-if="props.showAbout"> Workflow Preview </span>
                         <span v-else> {{ workflowInfo.name }} </span>
                     </Heading>

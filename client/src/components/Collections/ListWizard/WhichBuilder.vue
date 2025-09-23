@@ -4,7 +4,7 @@ import { ref } from "vue";
 
 import { borderVariant } from "@/components/Common/Wizard/utils";
 
-import { type WhichListBuilder } from "./types";
+import type { WhichListBuilder } from "./types";
 
 interface Props {
     value: WhichListBuilder;

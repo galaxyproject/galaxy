@@ -14,6 +14,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import type { Item, ShareOption } from "./item";
 
 import EditableUrl from "./EditableUrl.vue";
+import PageEmbed from "./Embeds/PageEmbed.vue";
 import WorkflowEmbed from "./Embeds/WorkflowEmbed.vue";
 import ErrorMessages from "./ErrorMessages.vue";
 import UserSharing from "./UserSharing.vue";
@@ -25,6 +26,7 @@ const props = defineProps<{
     id: string;
     pluralName: string;
     modelClass: string;
+    noHeading?: boolean;
 }>();
 
 const errors = ref<string[]>([]);
@@ -218,12 +220,16 @@ async function setUsername() {
         .catch(onError);
 }
 
-const embedable = computed(() => item.value.importable && props.modelClass.toLocaleLowerCase() === "workflow");
+const embedable = computed(
+    () =>
+        item.value.importable &&
+        (props.modelClass.toLocaleLowerCase() === "workflow" || props.modelClass.toLocaleLowerCase() === "page")
+);
 </script>
 
 <template>
     <div class="sharing-page">
-        <Heading h1 size="lg" separator>
+        <Heading v-if="!props.noHeading" h1 size="lg" separator>
             <span>
                 Share or Publish {{ modelClass }} <span v-if="ready">"{{ item.title }}"</span>
             </span>
@@ -281,6 +287,7 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
                 <Heading h2 size="md"> Embed {{ modelClass }} </Heading>
 
                 <WorkflowEmbed v-if="props.modelClass.toLowerCase() === 'workflow'" :id="id" />
+                <PageEmbed v-else-if="props.modelClass.toLowerCase() === 'page'" :id="id" />
             </div>
 
             <Heading h2 size="md"> Share {{ modelClass }} with Individual Users </Heading>

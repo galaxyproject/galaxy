@@ -1,9 +1,9 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 
-import { type WorkflowInvocation } from "@/api/invocations";
+import type { WorkflowInvocation } from "@/api/invocations";
 import { getAppRoot } from "@/onload";
 
-import { type FieldArray, type GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
 
 /**
  * Request and return invocations for the given workflow (and current user) from server

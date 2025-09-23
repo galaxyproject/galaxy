@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { useTableSummary } from "@/components/Collections/tables";
@@ -42,6 +42,10 @@ function inputDialog() {
     });
 }
 
+onMounted(() => {
+    inputDialog();
+});
+
 watch(table, (newValue: string[][]) => {
     emit("onChange", table.value);
 });
@@ -54,7 +58,7 @@ watch(table, (newValue: string[][]) => {
         </BCardTitle>
         <div>
             <BAlert v-if="errorMessage" show variant="danger">{{ errorMessage }}</BAlert>
-            <JaggedDataAlert :jaggedDataWarning="jaggedDataWarning" />
+            <JaggedDataAlert :jagged-data-warning="jaggedDataWarning" />
             Select a history datasets, the contents will be loaded as tabular data and made available to the rule based
             import utility.
         </div>

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faHdd, faInfoCircle, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { WorkflowInvocation } from "@/api/invocations";
 import { getData } from "@/components/Grid/configs/invocations";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -17,6 +17,9 @@ import Heading from "@/components/Common/Heading.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const currentUser = computed(() => useUserStore().currentUser);
+
+const invocationStore = useInvocationStore();
+const { sortedStoredInvocations, scrollListScrollTop, totalInvocationCount } = storeToRefs(invocationStore);
 
 interface Props {
     inPanel?: boolean;
@@ -30,8 +33,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits(["invocation-clicked"]);
 
-library.add(faEye, faArrowDown, faInfoCircle);
-
 const stateClasses: Record<string, string> = {
     ready: "waiting",
     scheduled: "ok",
@@ -44,6 +45,11 @@ async function loadInvocations(offset: number, limit: number) {
     }
     const extraProps = { user_id: currentUser.value.id };
     const [data, totalMatches] = await getData(offset, limit, "", "create_time", true, extraProps);
+
+    for (const item of data) {
+        invocationStore.updateInvocation(item.id, item);
+    }
+    totalInvocationCount.value = totalMatches ?? 0;
     return { items: data, total: totalMatches! };
 }
 
@@ -94,7 +100,17 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
 </script>
 
 <template>
-    <ScrollList :loader="loadInvocations" :item-key="(invocation) => invocation.id" :in-panel="inPanel">
+    <ScrollList
+        :loader="loadInvocations"
+        :item-key="(invocation) => invocation.id"
+        :in-panel="props.inPanel"
+        :prop-items="sortedStoredInvocations"
+        :prop-total-count="totalInvocationCount"
+        adjust-for-total-count-changes
+        name="invocation"
+        name-plural="invocations"
+        :load-disabled="!currentUser || currentUser.isAnonymous"
+        :prop-scroll-top.sync="scrollListScrollTop">
         <template v-slot:item="{ item: invocation }">
             <GCard
                 :id="`invocation-${invocation.id}`"
@@ -105,6 +121,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                 :badges="getInvocationBadges(invocation)"
                 :title="workflowName(invocation.workflow_id)"
                 :title-icon="{ icon: faSitemap }"
+                :title-n-lines="2"
                 title-size="text"
                 :update-time="invocation.create_time"
                 @title-click="workflowName(invocation.workflow_id)"
@@ -118,21 +135,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                         </small>
                     </Heading>
                 </template>
-
-                <template v-slot:extra-actions>
-                    <div v-if="props.inPanel">
-                        <FontAwesomeIcon v-if="invocation.id === currentItemId" :icon="faEye" />
-                    </div>
-                </template>
             </GCard>
-        </template>
-
-        <template v-slot:loading>
-            <p>Loading...</p>
-        </template>
-
-        <template v-slot:footer>
-            <p>All items loaded</p>
         </template>
     </ScrollList>
 </template>

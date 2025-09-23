@@ -9,10 +9,9 @@ from datetime import datetime
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 
 from packaging.version import Version
@@ -135,13 +134,13 @@ class ToolEvaluator:
         self.job = job
         self.tool = tool
         self.local_working_directory = local_working_directory
-        self.file_sources_dict: Dict[str, Any] = {}
-        self.param_dict: Dict[str, Any] = {}
-        self.extra_filenames: List[str] = []
-        self.environment_variables: List[Dict[str, str]] = []
+        self.file_sources_dict: dict[str, Any] = {}
+        self.param_dict: dict[str, Any] = {}
+        self.extra_filenames: list[str] = []
+        self.environment_variables: list[dict[str, str]] = []
         self.version_command_line: Optional[str] = None
         self.command_line: Optional[str] = None
-        self.interactivetools: List[Dict[str, Any]] = []
+        self.interactivetools: list[dict[str, Any]] = []
         self.consumes_names = False
         self.use_cached_job = False
 
@@ -154,7 +153,7 @@ class ToolEvaluator:
 
         job = self.job
         incoming = {p.name: p.value for p in job.parameters}
-        incoming = self.tool.params_from_strings(incoming, self.app)
+        incoming = self.tool.params_from_strings(incoming)
         if "__use_cached_job__" in incoming:
             self.use_cached_job = bool(incoming["__use_cached_job__"])
 
@@ -266,12 +265,12 @@ class ToolEvaluator:
         return param_dict.clean_copy()
 
     def _materialize_objects(
-        self, deferred_objects: Dict[str, DeferrableObjectsT], job_working_directory: str
-    ) -> Dict[str, DeferrableObjectsT]:
+        self, deferred_objects: dict[str, DeferrableObjectsT], job_working_directory: str
+    ) -> dict[str, DeferrableObjectsT]:
         if not self.materialize_datasets:
             return {}
 
-        undeferred_objects: Dict[str, DeferrableObjectsT] = {}
+        undeferred_objects: dict[str, DeferrableObjectsT] = {}
         transient_directory = os.path.join(job_working_directory, "inputs")
         safe_makedirs(transient_directory)
         dataset_materializer = materializer_factory(
@@ -287,6 +286,30 @@ class ToolEvaluator:
                 assert isinstance(value, (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation))
                 undeferred = dataset_materializer.ensure_materialized(value)
                 undeferred_objects[key] = undeferred
+            elif isinstance(value, list):
+                undeferred_list: list[
+                    Union[
+                        model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
+                    ]
+                ] = []
+                for potentially_deferred in value:
+                    if isinstance(potentially_deferred, model.DatasetInstance):
+                        if potentially_deferred.state != model.Dataset.states.DEFERRED:
+                            undeferred_list.append(potentially_deferred)
+                        else:
+                            assert isinstance(
+                                potentially_deferred,
+                                (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation),
+                            )
+                            undeferred = dataset_materializer.ensure_materialized(potentially_deferred)
+                            undeferred_list.append(undeferred)
+                    elif isinstance(
+                        potentially_deferred,
+                        (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement),
+                    ):
+                        undeferred_collection = materialize_collection_input(potentially_deferred, dataset_materializer)
+                        undeferred_list.append(undeferred_collection)
+                undeferred_objects[key] = undeferred_list
             else:
                 undeferred_collection = materialize_collection_input(value, dataset_materializer)
                 undeferred_objects[key] = undeferred_collection
@@ -296,8 +319,8 @@ class ToolEvaluator:
     def _eval_format_source(
         self,
         job: model.Job,
-        inp_data: Dict[str, Optional[model.DatasetInstance]],
-        out_data: Dict[str, model.DatasetInstance],
+        inp_data: dict[str, Optional[model.DatasetInstance]],
+        out_data: dict[str, model.DatasetInstance],
     ):
         for output_name, output in out_data.items():
             if (
@@ -313,9 +336,9 @@ class ToolEvaluator:
 
     def _replaced_deferred_objects(
         self,
-        inp_data: Dict[str, Optional[model.DatasetInstance]],
+        inp_data: dict[str, Optional[model.DatasetInstance]],
         incoming: dict,
-        materalized_objects: Dict[str, DeferrableObjectsT],
+        materalized_objects: dict[str, DeferrableObjectsT],
     ):
         for key, value in materalized_objects.items():
             if isinstance(value, model.DatasetInstance):
@@ -340,18 +363,14 @@ class ToolEvaluator:
 
     def _deferred_objects(
         self,
-        input_datasets: Dict[str, Optional[model.DatasetInstance]],
+        input_datasets: dict[str, Optional[model.DatasetInstance]],
         incoming: dict,
-    ) -> Dict[str, DeferrableObjectsT]:
+    ) -> dict[str, DeferrableObjectsT]:
         """Collect deferred objects required for execution.
 
         Walk input datasets and collections and find inputs that need to be materialized.
         """
-        deferred_objects: Dict[str, DeferrableObjectsT] = {}
-        for key, value in input_datasets.items():
-            if value is not None and value.state == model.Dataset.states.DEFERRED:
-                if self._should_materialize_deferred_input(key, value):
-                    deferred_objects[key] = value
+        deferred_objects: dict[str, DeferrableObjectsT] = {}
 
         def find_deferred_collections(input, value, context, prefixed_name=None, **kwargs):
             if (
@@ -360,7 +379,37 @@ class ToolEvaluator:
             ):
                 deferred_objects[prefixed_name] = value
 
+        def find_deferred_datasets(input, value, context, prefixed_name=None, **kwargs):
+            if isinstance(input, DataToolParameter):
+                if isinstance(value, model.DatasetInstance) and value.state == model.Dataset.states.DEFERRED:
+                    deferred_objects[prefixed_name] = value
+                elif isinstance(value, list):
+                    # handle single list reduction as a collection input
+                    if (
+                        value
+                        and len(value) == 1
+                        and isinstance(
+                            value[0], (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement)
+                        )
+                    ):
+                        deferred_objects[prefixed_name] = value
+                        return
+
+                    for v in value:
+                        if self._should_materialize_deferred_input(prefixed_name, v):
+                            deferred_objects[prefixed_name] = value
+                            break
+
+        visit_input_values(self.tool.inputs, incoming, find_deferred_datasets)
         visit_input_values(self.tool.inputs, incoming, find_deferred_collections)
+
+        # now place the the inputX datasets hacked in for multiple inputs into the deferred
+        # object array also. This is so messy. I think in this case - we only need these for
+        # Pulsar staging up which uses the hackier input_datasets flat dict.
+        for key, value in input_datasets.items():
+            if key not in deferred_objects and value is not None and value.state == model.Dataset.states.DEFERRED:
+                if self._should_materialize_deferred_input(key, value):
+                    deferred_objects[key] = value
 
         return deferred_objects
 
@@ -944,7 +993,7 @@ class UserToolEvaluator(ToolEvaluator):
         job_working_directory = compute_environment.working_directory()
         from galaxy.workflow.modules import to_cwl
 
-        hda_references: List[model.HistoryDatasetAssociation] = []
+        hda_references: list[model.HistoryDatasetAssociation] = []
         cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 

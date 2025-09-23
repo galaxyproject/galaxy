@@ -1,10 +1,9 @@
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    Dict,
     Generic,
-    List,
     Optional,
     Union,
 )
@@ -18,7 +17,6 @@ from pydantic import (
     UUID4,
 )
 from typing_extensions import (
-    Annotated,
     Literal,
     TypeAliasType,
 )
@@ -411,17 +409,17 @@ class InvocationStep(Model, WithModelClass):
         title="UUID",
         description="Universal unique identifier of the workflow step.",
     )
-    outputs: Dict[str, InvocationStepOutput] = Field(
+    outputs: dict[str, InvocationStepOutput] = Field(
         {},
         title="Outputs",
         description="The outputs of the workflow invocation step.",
     )
-    output_collections: Dict[str, InvocationStepCollectionOutput] = Field(
+    output_collections: dict[str, InvocationStepCollectionOutput] = Field(
         {},
         title="Output collections",
         description="The dataset collection outputs of the workflow invocation step.",
     )
-    jobs: List[schema.JobBaseModel] = Field(
+    jobs: list[schema.JobBaseModel] = Field(
         [],
         title="Jobs",
         description="Jobs associated with the workflow invocation step.",
@@ -470,41 +468,59 @@ class InvocationReport(Model, WithModelClass):
     generate_time: Optional[str] = schema.GenerateTimeField
     generate_version: Optional[str] = schema.GenerateVersionField
 
-    errors: Optional[Dict[str, Any]] = Field(
+    errors: Optional[dict[str, Any]] = Field(
         default=None,
         title="Errors",
         description="Errors associated with the invocation.",
     )
 
-    history_datasets: Optional[Dict[str, Any]] = Field(
+    history_datasets: Optional[dict[str, Any]] = Field(
         default=None,
         title="History datasets",
         description="History datasets associated with the invocation.",
     )
-    workflows: Optional[Dict[str, Any]] = Field(
+    workflows: Optional[dict[str, Any]] = Field(
         default=None,
         title="Workflows",
         description="Workflows associated with the invocation.",
     )
-    history_dataset_collections: Optional[Dict[str, Any]] = Field(
+    history_dataset_collections: Optional[dict[str, Any]] = Field(
         default=None,
         title="History dataset collections",
         description="History dataset collections associated with the invocation.",
     )
-    jobs: Optional[Dict[str, Any]] = Field(
+    jobs: Optional[dict[str, Any]] = Field(
         default=None,
         title="Jobs",
         description="Jobs associated with the invocation.",
     )
-    histories: Optional[Dict[str, Any]] = Field(
+    histories: Optional[dict[str, Any]] = Field(
         default=None,
         title="Histories",
         description="Histories associated with the invocation.",
     )
-    invocations: Optional[Dict[str, Any]] = Field(
+    invocations: Optional[dict[str, Any]] = Field(
         default=None,
         title="Invocations",
         description="Other invocations associated with the invocation.",
+    )
+
+
+class ReportInvocationErrorPayload(Model):
+    invocation_id: DecodedDatabaseIdField = Field(
+        default=...,
+        title="Invocation ID",
+        description="The ID of the invocation related to the error.",
+    )
+    email: Optional[str] = Field(
+        default=None,
+        title="Email",
+        description="Email address for communication with the user. Only required for anonymous users.",
+    )
+    message: Optional[str] = Field(
+        default=None,
+        title="Message",
+        description="The optional message sent with the error report.",
     )
 
 
@@ -583,25 +599,25 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
 
 
 class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
-    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
-    inputs: Dict[str, InvocationInput] = Field(
+    steps: list[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
+    inputs: dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
     )
-    input_step_parameters: Dict[str, InvocationInputParameter] = Field(
+    input_step_parameters: dict[str, InvocationInputParameter] = Field(
         default=..., title="Input step parameters", description="Input step parameters of the workflow invocation."
     )
-    outputs: Dict[str, InvocationOutput] = Field(
+    outputs: dict[str, InvocationOutput] = Field(
         default=..., title="Outputs", description="Output datasets of the workflow invocation."
     )
-    output_collections: Dict[str, InvocationOutputCollection] = Field(
+    output_collections: dict[str, InvocationOutputCollection] = Field(
         default=...,
         title="Output collections",
         description="Output dataset collections of the workflow invocation.",
     )
-    output_values: Dict[str, Any] = Field(
+    output_values: dict[str, Any] = Field(
         default=..., title="Output values", description="Output values of the workflow invocation."
     )
-    messages: List[InvocationMessageResponseUnion] = Field(
+    messages: list[InvocationMessageResponseUnion] = Field(
         default=...,
         title="Messages",
         description="A list of messages about why the invocation did not succeed.",
@@ -623,7 +639,7 @@ class WorkflowInvocationRequestModel(Model):
         description="The encoded history id the workflow was run in.",
     )
     workflow_id: str = Field(title="Workflow ID", description="The encoded Workflow ID associated with the invocation.")
-    inputs: Dict[str, Any] = Field(
+    inputs: dict[str, Any] = Field(
         ...,
         title="Inputs",
         description="Values for inputs",
@@ -633,8 +649,8 @@ class WorkflowInvocationRequestModel(Model):
         title="Inputs by",
         description=INPUTS_BY_DESCRIPTION,
     )
-    replacement_params: Optional[Dict[str, Any]] = ReplacementParametersField
-    resource_params: Optional[Dict[str, Any]] = ResourceParametersField
+    replacement_params: Optional[dict[str, Any]] = ReplacementParametersField
+    resource_params: Optional[dict[str, Any]] = ResourceParametersField
     use_cached_job: bool = UseCachedJobField
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
     preferred_intermediate_object_store_id: Optional[str] = PreferredIntermediateObjectStoreIdField
@@ -644,7 +660,7 @@ class WorkflowInvocationRequestModel(Model):
         title=STEP_PARAMETERS_NORMALIZED_TITLE,
         description=STEP_PARAMETERS_NORMALIZED_DESCRIPTION,
     )
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: Optional[dict[str, Any]] = Field(
         None,
         title=STEP_PARAMETERS_TITLE,
         description=f"{STEP_PARAMETERS_DESCRIPTION} If these are set, the workflow was not executed in a best-practice fashion and we the resulting invocation request may not fully reflect the executed workflow state.",
@@ -658,7 +674,7 @@ class WorkflowInvocationRequestModel(Model):
 
 class InvocationJobsSummaryBaseModel(Model):
     id: EncodedDatabaseIdField = InvocationIdField
-    states: Dict[JobState, int] = Field(
+    states: dict[JobState, int] = Field(
         default=..., title="States", description="The states of all the jobs related to the Invocation."
     )
     populated_state: JobState = Field(

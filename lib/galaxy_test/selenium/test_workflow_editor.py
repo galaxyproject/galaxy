@@ -7,8 +7,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
-from seletools.actions import drag_and_drop
 
+from galaxy.selenium.navigates_galaxy import ColumnDefinition
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
@@ -27,6 +27,27 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+
+CHIPSEQ_COLUMNS = [
+    ColumnDefinition(
+        "Condition",
+        "The column is used to specify the specific experimental condition that each sample represents. There is no formal restriction on this column, but values should be kept short for readable reports.",
+        "Text",
+    ),
+    ColumnDefinition(
+        "Replicate",
+        "This column is used to specify a replicate number for the experiment.",
+        "Integer",
+        optional=True,
+        default_value="",
+    ),
+    ColumnDefinition(
+        "Control",
+        "If set, this should reference the element identifier corresponding to the control for this sample.",
+        "Element Identifier",
+        optional=True,
+    ),
+]
 
 
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
@@ -85,15 +106,14 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
     def test_edit_license(self):
         editor = self.components.workflow_editor
         name = self.create_and_wait_for_new_workflow_in_editor()
-        editor.license_selector.wait_for_visible()
-        assert "Do not specify" in editor.license_current_value.wait_for_text()
+        editor.canvas_body.wait_for_visible()
+        assert "Do not specify" in self.workflow_editor_license_text()
 
         self.workflow_editor_set_license("MIT")
         self.workflow_editor_click_save()
 
         self.workflow_index_open_with_name(name)
-        editor.license_selector.wait_for_visible()
-        assert "MIT" in editor.license_current_value.wait_for_text()
+        assert "MIT" in self.workflow_editor_license_text()
 
     @selenium_test
     def test_parameter_regex_validation(self):
@@ -209,8 +229,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         name = self.workflow_create_new()
         self.workflow_editor_add_input(item_name="data_input")
         self.screenshot("workflow_editor_data_input_new")
-        editor.label_input.wait_for_and_send_keys("input1")
-        editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        self.workflow_editor_set_node_label("input1")
+        self.workflow_editor_set_node_annotation("my cool annotation")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_click_save()
@@ -250,6 +270,45 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_deleted")
+
+    @selenium_test
+    def test_collection_input_sample_sheet_chipseq_example(self):
+        editor = self.components.workflow_editor
+
+        self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        self.screenshot("workflow_editor_data_collection_sample_sheet_input_new")
+        editor.label_input.wait_for_and_send_keys("input1")
+        editor.annotation_input.wait_for_and_send_keys("chipseq example input")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.collection_type_input.wait_for_and_clear_and_send_keys("sample_sheet:paired")
+
+        self.workflow_editor_enter_column_definitions(CHIPSEQ_COLUMNS)
+
+        self.screenshot("workflow_editor_data_collection_sample_sheet_input_filled_in")
+        self.workflow_editor_click_save()
+
+        workflow = self._download_current_workflow()
+        tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
+        assert tool_state["collection_type"] == "sample_sheet:paired"
+        column_definitions = tool_state["column_definitions"]
+        assert len(column_definitions) == len(CHIPSEQ_COLUMNS)
+        condition = column_definitions[0]
+        assert condition["name"] == "Condition"
+        assert condition["description"] == CHIPSEQ_COLUMNS[0].description
+        assert condition["type"] == "string"
+        assert condition["optional"] is False
+
+        replicate = column_definitions[1]
+        assert replicate["name"] == "Replicate"
+        assert replicate["type"] == "int"
+        assert replicate["optional"] is True
+        assert replicate["default_value"] is None
+
+        control = column_definitions[2]
+        assert control["name"] == "Control"
+        assert control["type"] == "element_identifier"
+        assert control["optional"] is True
 
     @selenium_test
     def test_data_column_input_editing(self):
@@ -442,6 +501,81 @@ steps:
         self.assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
+    def test_editor_change_stack_inserting_inputs(self):
+        editor = self.components.workflow_editor
+        annotation = "change_stack_test_inserting_inputs"
+        self.workflow_create_new(annotation=annotation)
+
+        self.workflow_editor_add_input(item_name="data_input")
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        self.workflow_editor_add_input(item_name="parameter_input")
+
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).wait_for_present()
+
+        editor.tool_bar.changes.wait_for_and_click()
+        changes = editor.changes
+
+        changes.action_insert_data_input.wait_for_present()
+        changes.action_insert_data_collection_input.wait_for_present()
+        changes.action_insert_parameter.wait_for_present()
+
+        # Undo all of it by clicking the first node.
+        changes.action_insert_data_input.wait_for_and_click()
+        editor.node.by_id(id=0).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        # now that same action has become a redo, so we should have a node back afterward.
+        changes.action_insert_data_input.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).assert_absent_or_hidden_after_transitions()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        changes.action_insert_data_collection_input.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).assert_absent_or_hidden_after_transitions()
+
+        changes.action_insert_parameter.wait_for_and_click()
+        editor.node.by_id(id=0).wait_for_present()
+        editor.node.by_id(id=1).wait_for_present()
+        editor.node.by_id(id=2).wait_for_present()
+
+    @selenium_test
+    def test_editor_change_stack_set_attributes(self):
+        editor = self.components.workflow_editor
+        annotation = "change_stack_test_set_attributes"
+        name = self.workflow_create_new(annotation=annotation)
+
+        assert "Do not specify" in self.workflow_editor_license_text()
+        self.workflow_editor_set_license("MIT")
+        assert "MIT" in self.workflow_editor_license_text()
+
+        editor.tool_bar.changes.wait_for_and_click()
+
+        changes = editor.changes
+        changes.action_set_license.wait_for_and_click()
+        # it switches back so this isn't needed per se
+        # editor.tool_bar.attributes.wait_for_and_click()
+        assert "Do not specify" in self.workflow_editor_license_text()
+
+        # for annotation we want to reset the change stack to dismiss
+        # the original setting of the annotation
+        name = self.workflow_index_open_with_name(name)
+
+        annotation_modified = "change_stack_test_set_attributes modified!!!"
+
+        self.workflow_editor_set_annotation(annotation_modified)
+        self.assert_wf_annotation_is(annotation_modified)
+
+        editor.tool_bar.changes.wait_for_and_click()
+        changes.action_set_annotation.wait_for_and_click()
+
+        self.assert_wf_annotation_is(annotation)
+
+    @selenium_test
     def test_rendering_output_collection_connections(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_OUTPUT_COLLECTION)
         self.workflow_editor_maximize_center_pane()
@@ -465,6 +599,38 @@ steps:
         self.open_in_workflow_editor(WORKFLOW_NESTED_SIMPLE)
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_simple_nested")
+
+    @selenium_test
+    def test_best_practices_input_label(self):
+        editor = self.components.workflow_editor
+        annotation = "best_practices_input_label"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_input(item_name="data_input")
+        editor.tool_bar.best_practices.wait_for_and_click()
+        best_practices = editor.best_practices
+        section_element = best_practices.section_input_metadata.wait_for_present()
+        assert section_element.get_attribute("data-lint-status") == "warning"
+        item = best_practices.item_input_metadata(index=0)
+        element = item.wait_for_present()
+        assert element.get_attribute("data-missing-label") == "true"
+        assert element.get_attribute("data-missing-annotation") == "true"
+
+        item.wait_for_and_click()
+        self.workflow_editor_set_node_label("best practice input")
+
+        # editor.tool_bar.best_practices.wait_for_and_click()
+        element = item.wait_for_present()
+        assert element.get_attribute("data-missing-label") == "false"
+        assert element.get_attribute("data-missing-annotation") == "true"
+
+        self.workflow_editor_set_node_annotation("informative annotation")
+
+        @retry_assertion_during_transitions
+        def assert_linting_input_metadata_okay():
+            section_element = best_practices.section_input_metadata.wait_for_present()
+            assert section_element.get_attribute("data-lint-status") == "ok"
+
+        assert_linting_input_metadata_okay()
 
     @selenium_test
     def test_rendering_rules_workflow_1(self):
@@ -558,9 +724,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        editor.node._(label="multiple_versions").wait_for_and_click()
-        editor.tool_version_button.wait_for_and_click()
-        assert self.select_dropdown_item("Switch to 0.2"), "Switch to tool version dropdown item not found"
+        self.workflow_editor_set_tool_vesrion("0.2", node="multiple_versions")
         self.screenshot("workflow_editor_version_update")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
@@ -574,6 +738,22 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow["steps"]["0"]["tool_version"] == "0.1+galaxy6"
+
+    @selenium_test
+    def test_editor_tool_upgrade_all_tools(self):
+        editor = self.components.workflow_editor
+        annotation = "upgarde_all_test"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_tool_step("multiple_versions")
+        self.workflow_editor_set_node_label(label="target label")
+        self.workflow_editor_set_tool_vesrion("0.1")
+        self.assert_workflow_has_changes_and_save()
+
+        editor.tool_bar.upgrade_all.wait_for_and_click()
+        self.workflow_editor_ensure_tool_form_open(node=0)
+        node = self.components.tool_form.tool_version.wait_for_present()
+        version = node.get_attribute("data-version")
+        assert version == "0.2"
 
     @selenium_test
     def test_editor_tool_upgrade_message(self):
@@ -747,9 +927,7 @@ steps:
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
-        cat_node = editor.node._(label="first_cat")
-        cat_node.wait_for_and_click()
-        self.set_text_element(editor.label_input, "source label")
+        self.workflow_editor_set_node_label(label="source label", node="first_cat")
         # Select node using new label, ensures labels are synced between side panel and node
         cat_node = editor.node._(label="source label")
         self.assert_workflow_has_changes_and_save()
@@ -838,9 +1016,14 @@ steps:
         self.workflow_editor_add_steps(steps_to_insert)
         self.assert_connected("input1#output", "first_cat#input1")
         self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        assert len(workflow["steps"]) == 3
+
+    def _download_current_workflow(self):
+        self.sleep_for(self.wait_types.DATABASE_OPERATION)
         workflow_id = self.driver.current_url.split("id=")[1]
         workflow = self.workflow_populator.download_workflow(workflow_id)
-        assert len(workflow["steps"]) == 3
+        return workflow
 
     @selenium_test
     def test_editor_create_conditional_step(self):
@@ -1300,7 +1483,7 @@ steps:
         canvas = editor.canvas_body.wait_for_visible()
 
         # place tool in center of canvas
-        self.tool_open("cat")
+        self.workflow_editor_add_tool_step("cat")
         self.sleep_for(self.wait_types.UX_RENDER)
         editor.label_input.wait_for_and_send_keys("tool_node")
         tool_node = editor.node._(label="tool_node").wait_for_present()
@@ -1440,19 +1623,6 @@ steps:
 
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def workflow_editor_connect(self, source, sink, screenshot_partial=None):
-        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.find_element_by_selector(f"#{source_id}")
-        sink_element = self.find_element_by_selector(f"#{sink_id}")
-        ac = self.action_chains()
-        ac = ac.move_to_element(source_element).click_and_hold()
-        if screenshot_partial:
-            ac = ac.move_by_offset(10, 10)
-            ac.perform()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            self.screenshot(screenshot_partial)
-        drag_and_drop(self.driver, source_element, sink_element)
-
     def assert_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
@@ -1473,29 +1643,6 @@ steps:
             self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
-
-    def workflow_editor_source_sink_terminal_ids(self, source, sink):
-        editor = self.components.workflow_editor
-
-        source_node_label, source_output = source.split("#", 1)
-        sink_node_label, sink_input = sink.split("#", 1)
-
-        source_node = editor.node._(label=source_node_label)
-        sink_node = editor.node._(label=sink_node_label)
-
-        source_node.wait_for_present()
-        sink_node.wait_for_present()
-
-        output_terminal = source_node.output_terminal(name=source_output)
-        input_terminal = sink_node.input_terminal(name=sink_input)
-
-        output_element = output_terminal.wait_for_present()
-        input_element = input_terminal.wait_for_present()
-
-        source_id = output_element.get_attribute("id").replace("|", r"\|")
-        sink_id = input_element.get_attribute("id").replace("|", r"\|")
-
-        return source_id, sink_id
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor
@@ -1519,11 +1666,6 @@ steps:
         sink_node = editor.node._(label=sink_node_label)
         sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
         sink_mapping_icon.wait_for_absent_or_hidden()
-
-    def workflow_index_open_with_name(self, name):
-        self.workflow_index_open()
-        self.workflow_index_search_for(name)
-        self.components.workflows.edit_button.wait_for_and_click()
 
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):

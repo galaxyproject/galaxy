@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-import { type TaskMonitor } from "@/composables/genericTaskMonitor";
+import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import {
     type MonitoringData,
     type MonitoringRequest,
@@ -26,6 +26,7 @@ function useMonitorMock(): TaskMonitor {
         waitForTask: jest.fn().mockImplementation(() => {
             isRunning.value = true;
         }),
+        stopWaitingForTask: jest.fn(),
         isRunning,
         isCompleted: ref(false),
         hasFailed: ref(false),
@@ -37,6 +38,7 @@ function useMonitorMock(): TaskMonitor {
         loadStatus(storedStatus) {
             taskStatus.value = storedStatus;
         },
+        fetchTaskStatus: jest.fn(),
     };
 }
 const mockUseMonitor = useMonitorMock();
@@ -47,7 +49,7 @@ const MOCK_REQUEST: MonitoringRequest = {
     taskType: "task",
     object: {
         id: "1",
-        type: "dataset",
+        type: "history",
     },
     description: "Test description",
 };
@@ -64,6 +66,7 @@ describe("usePersistentProgressTaskMonitor", () => {
             taskType: "task",
             request: MOCK_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
 
         const { start, isRunning } = usePersistentProgressTaskMonitor(MOCK_REQUEST, mockUseMonitor, monitoringData);
@@ -85,6 +88,7 @@ describe("usePersistentProgressTaskMonitor", () => {
             taskType: "task",
             request: MOCK_REQUEST,
             startedAt: new Date(),
+            isFinal: false,
         };
 
         const { reset, hasMonitoringData } = usePersistentProgressTaskMonitor(

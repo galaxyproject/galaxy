@@ -8,7 +8,6 @@ files, etc..).
 """
 
 from dataclasses import dataclass
-from typing import List
 
 import pytest
 
@@ -231,7 +230,7 @@ def test_map_over_empty_collection(target_history: TargetHistory, required_tool:
 
 @dataclass
 class MultiRunInRepeatFixtures:
-    repeat_datasets: List[SrcDict]
+    repeat_datasets: list[SrcDict]
     common_dataset: SrcDict
 
 
@@ -302,8 +301,8 @@ def _check_multi_run_in_repeat(execute: DescribeToolExecution):
 
 @dataclass
 class TwoMultiRunsFixture:
-    first_two_datasets: List[SrcDict]
-    second_two_datasets: List[SrcDict]
+    first_two_datasets: list[SrcDict]
+    second_two_datasets: list[SrcDict]
 
 
 @pytest.fixture
@@ -520,7 +519,7 @@ def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, req
 
 @requires_tool_id("gx_select")
 @requires_tool_id("gx_select_no_options_validation")
-def test_select_first_by_default(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+def test_select_first_by_default(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
     empty = tool_input_format.when.any({})
     for required_tool in required_tools:
         required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
@@ -532,7 +531,7 @@ def test_select_first_by_default(required_tools: List[RequiredTool], tool_input_
 @requires_tool_id("gx_select_no_options_validation")
 @requires_tool_id("gx_select_dynamic_empty")
 @requires_tool_id("gx_select_dynamic_empty_validated")
-def test_select_on_null_errors(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+def test_select_on_null_errors(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
     # test_select_first_by_default verifies the first option will just be selected, despite that if an explicit null
     # is passed, an error (rightfully) occurs. This test verifies that.
     null_parameter = tool_input_format.when.any({"parameter": None})
@@ -543,7 +542,7 @@ def test_select_on_null_errors(required_tools: List[RequiredTool], tool_input_fo
 @requires_tool_id("gx_select_dynamic_empty")
 @requires_tool_id("gx_select_dynamic_empty_validated")
 def test_select_empty_causes_error_regardless(
-    required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs
+    required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs
 ):
     # despite selects otherwise selecting defaults - nothing can be done if the select option list is empty
     empty = tool_input_format.when.any({})
@@ -553,7 +552,7 @@ def test_select_empty_causes_error_regardless(
 
 @requires_tool_id("gx_select_optional")
 @requires_tool_id("gx_select_optional_no_options_validation")
-def test_select_optional_null_by_default(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+def test_select_optional_null_by_default(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
     # test_select_first_by_default shows that required select values will pick an option by default,
     # this test verify that doesn't occur for optional selects.
     empty = tool_input_format.when.any({})
@@ -570,7 +569,7 @@ def test_select_optional_null_by_default(required_tools: List[RequiredTool], too
 @requires_tool_id("gx_select_multiple")
 @requires_tool_id("gx_select_multiple_optional")
 def test_select_multiple_does_not_select_first_by_default(
-    required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs
+    required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs
 ):
     # unlike single selects - no selection is forced and these serve as optional by default
     empty = tool_input_format.when.any({})
@@ -586,7 +585,7 @@ def test_select_multiple_does_not_select_first_by_default(
 
 @requires_tool_id("gx_text")
 @requires_tool_id("gx_text_optional_false")
-def test_null_to_text_tools(required_tools: List[RequiredTool], tool_input_format: DescribeToolInputs):
+def test_null_to_text_tools(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
     for required_tool in required_tools:
         execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
         execute.assert_has_single_job.with_output("output").with_contents_stripped("")
@@ -613,3 +612,35 @@ def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_inp
     required_tool.execute.with_inputs(tool_input_format.when.any({})).assert_fails()
     required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None})).assert_fails()
     required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
+
+
+@requires_tool_id("cat|cat1")
+def test_deferred_basic(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
+    inputs = {
+        "input1": has_src_dict.src_dict,
+    }
+    output = required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+
+
+@requires_tool_id("metadata_bam")
+def test_deferred_with_metadata_options_filter(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bam", ext="bam")
+    inputs = {
+        "input_bam": has_src_dict.src_dict,
+        "ref_names": "chrM",
+    }
+    required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output.with_contents_stripped("chrM")
+
+
+@requires_tool_id("cat_list")
+def test_deferred_multi_input(required_tool: RequiredTool, target_history: TargetHistory):
+    has_src_dict_bed = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
+    has_src_dict_txt = target_history.with_deferred_dataset_for_test_file("1.txt", ext="txt")
+    inputs = {
+        "input1": [has_src_dict_bed.src_dict, has_src_dict_txt.src_dict],
+    }
+    output = required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output
+    output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+    output.assert_contains("chr1    4225    19670")

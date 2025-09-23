@@ -41,13 +41,14 @@ dependencies = [
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "gravity>=1.0.4",
+    "gravity>=1.1.1",
     "gunicorn",
     "gxformat2",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
+    "httpx",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
-    "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
+    "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
     "jinja2",
     "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
@@ -61,6 +62,7 @@ dependencies = [
     "nodeenv",
     "numpy>=1.26.0",  # Python 3.12 support
     "numpy>=2.1.0 ; python_version>='3.10'",  # Python 3.13 support
+    "openpyxl>=3.1.5",  # Minimum version ever tested with
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",  # https://github.com/paramiko/paramiko/issues/1961
     "Parsley",
@@ -92,8 +94,7 @@ dependencies = [
     "slowapi",
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
-    "SQLAlchemy>=2.0,<2.1,!=2.0.36",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019,
-    "sqlitedict",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
     "sqlparse",
     "starlette",
     "starlette-context",
@@ -115,21 +116,13 @@ Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
 [dependency-groups]
-dev = [
+test = [
     "ase>=3.18.1",
     "axe-selenium-python",
-    "black",
     "boto3",
-    "codespell",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
-    "darker",
     "fluent-logger",
-    "galaxy-release-util",
-    "httpx",
-    "isort",
     "lxml!=4.2.2",
-    "markdown-it-reporter",
-    "myst-parser",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
@@ -145,18 +138,28 @@ dev = [
     "pytest-postgresql!=3.0.0",  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
     "pytest-shard",
     "responses",
-    "roc-validator",
-    "rucio-clients>=33.6.0,!=37.0.*,!=37.1.0,!=37.1.0.post1",  # https://github.com/rucio/rucio/pull/7665
+    "roc-validator!=0.7.2",  # https://github.com/crs4/rocrate-validator/pull/97
+    "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
-    "Sphinx>=4.0",  # support docutils 0.17
-    "sphinx-rtd-theme",
     "statsd",
     "testfixtures",
     "tuspy",
     "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
+]
+dev = [
+    {include-group = "test"},
+    "black",
+    "codespell",
+    "darker",
+    "galaxy-release-util",
+    "isort",
+    "markdown-it-reporter",
+    "myst-parser",
+    "Sphinx>=4.0",  # support docutils 0.17
+    "sphinx-rtd-theme",
 ]
 typecheck = [
     "boto3-stubs[s3]",

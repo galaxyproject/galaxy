@@ -1,6 +1,4 @@
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -10,6 +8,19 @@ from pydantic import (
     HttpUrl,
     RootModel,
 )
+
+__all__ = [
+    "CompositeFileInfo",
+    "DatatypeDetails",
+    "DatatypesMap",
+    "DatatypesCombinedMap",
+    "DatatypeConverter",
+    "DatatypeConverterList",
+    "DatatypeEDAMDetails",
+    "DatatypesEDAMDetailsDict",
+    "DatatypeVisualizationMapping",
+    "DatatypeVisualizationMappingsList",
+]
 
 
 class CompositeFileInfo(BaseModel):
@@ -45,7 +56,7 @@ class DatatypeDetails(BaseModel):
         title="Display in upload",
         description="If True, the associated file extension will be displayed in the `File Format` select list in the `Upload File from your computer` tool in the `Get Data` tool section of the tool panel",
     )
-    composite_files: Optional[List[CompositeFileInfo]] = Field(
+    composite_files: Optional[list[CompositeFileInfo]] = Field(
         default=None, title="Composite files", description="A collection of files composing this data type"
     )
     upload_warning: Optional[str] = Field(
@@ -53,15 +64,20 @@ class DatatypeDetails(BaseModel):
         title="Upload warning",
         description="End-user information regarding potential pitfalls with this upload type.",
     )
+    display_behavior: Optional[str] = Field(
+        default=None,
+        title="Display behavior",
+        description="How this datatype behaves when displayed with preview=True: 'inline' (can be displayed in browser) or 'download' (triggers download)",
+    )
 
 
 class DatatypesMap(BaseModel):
-    ext_to_class_name: Dict[str, str] = Field(
+    ext_to_class_name: dict[str, str] = Field(
         ...,  # Mark this field as required
         title="Extension Map",
         description="Dictionary mapping datatype's extensions with implementation classes",
     )
-    class_to_classes: Dict[str, Dict[str, bool]] = Field(
+    class_to_classes: dict[str, dict[str, bool]] = Field(
         ...,  # Mark this field as required
         title="Classes Map",
         description="Dictionary mapping datatype's classes with their base classes",
@@ -69,7 +85,7 @@ class DatatypesMap(BaseModel):
 
 
 class DatatypesCombinedMap(BaseModel):
-    datatypes: List[str] = Field(
+    datatypes: list[str] = Field(
         ...,  # Mark this field as required
         title="Datatypes",
         description="List of datatypes extensions",
@@ -103,7 +119,7 @@ class DatatypeConverter(BaseModel):
 
 
 class DatatypeConverterList(RootModel):
-    root: List[DatatypeConverter] = Field(title="List of data type converters", default=[])
+    root: list[DatatypeConverter] = Field(title="List of data type converters", default=[])
 
 
 class DatatypeEDAMDetails(BaseModel):
@@ -126,7 +142,29 @@ class DatatypeEDAMDetails(BaseModel):
 
 
 class DatatypesEDAMDetailsDict(RootModel):
-    root: Dict[str, DatatypeEDAMDetails] = Field(
+    root: dict[str, DatatypeEDAMDetails] = Field(
         title="Dict of EDAM details for formats",
         default={},
+    )
+
+
+class DatatypeVisualizationMapping(BaseModel):
+    datatype: str = Field(
+        ...,  # Mark this field as required
+        title="Datatype",
+        description="The datatype extension this visualization applies to",
+        examples=["bam", "h5", "vcf"],
+    )
+    visualization: str = Field(
+        ...,  # Mark this field as required
+        title="Visualization",
+        description="The visualization plugin to use",
+        examples=["igv", "trackster", "vitessce"],
+    )
+
+
+class DatatypeVisualizationMappingsList(RootModel):
+    root: list[DatatypeVisualizationMapping] = Field(
+        title="List of datatype visualization mappings",
+        default=[],
     )

@@ -2,9 +2,9 @@ import { replaceLabel } from "@/components/Markdown/parse";
 import { useToast } from "@/composables/toast";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
-import { type WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
+import type { WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
-import { type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import type { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type NewStep, type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Connection } from "@/stores/workflowStoreTypes";
 import { assertDefined } from "@/utils/assertions";
@@ -268,6 +268,13 @@ export class InsertStepAction extends UndoRedoAction {
 
     get name() {
         return `insert ${this.stepData.name}`;
+    }
+
+    get dataAttributes(): Record<string, string> {
+        return {
+            type: "step-insert",
+            "step-type": this.stepData.type as string,
+        };
     }
 
     stepDataToTuple() {

@@ -28,11 +28,13 @@ import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
 import TextContent from "./Elements/TextContent.vue";
 import ToolStd from "./Elements/ToolStd.vue";
-import VisualizationFrame from "./Elements/VisualizationFrame.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
+import WorkflowInvocationInputs from "@/components/WorkflowInvocationState/WorkflowInvocationInputs.vue";
+import WorkflowInvocationOutputs from "@/components/WorkflowInvocationState/WorkflowInvocationOutputs.vue";
 
 const { config, isConfigLoaded } = useConfig();
 const { getInvocationById, getInvocationLoadError, isLoadingInvocation } = useInvocationStore();
@@ -72,6 +74,10 @@ const isLoading = computed(() => invocationLoading.value || workflowLoading.valu
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
 const name = computed(() => attributes.value.name);
 const workflowId = computed(() => invocation.value && getStoredWorkflowIdByInstanceId(invocation.value.workflow_id));
+const compact = computed(() => Boolean(args.value?.compact));
+const showColumnHeaders = computed(() => {
+    return args.value?.show_column_headers !== undefined ? Boolean(args.value.show_column_headers) : true;
+});
 
 async function fetchWorkflow() {
     if (invocation.value?.workflow_id) {
@@ -156,12 +162,12 @@ watch(
                 :path="args.path" />
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table'"
-                :compact="argToBoolean(args, 'compact', false)"
+                :compact="compact"
                 :dataset-id="args.history_dataset_id"
                 :footer="args.footer"
-                :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
+                :show-column-headers="showColumnHeaders"
                 :title="args.title"
-                :path="path" />
+                :path="args.path" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"
                 :collection-id="args.history_dataset_collection_id" />
@@ -213,16 +219,8 @@ watch(
                 :href="config.terms_url"
                 :loading="!isConfigLoaded" />
             <InvocationTime v-else-if="name == 'invocation_time'" :invocation-id="args.invocation_id" />
-            <div v-else-if="name === 'invocation_inputs'">
-                <div v-for="(input, index) in args.invocation.inputs" :key="index">
-                    <h4>Input {{ parseInt(index) + 1 }}: {{ input.label }}</h4>
-                </div>
-            </div>
-            <div v-else-if="name === 'invocation_outputs'">
-                <div v-for="(outputKey, index) in Object.keys(args.invocation.outputs)" :key="index">
-                    <h4>Output {{ index + 1 }}: {{ outputKey }}</h4>
-                </div>
-            </div>
+            <WorkflowInvocationInputs v-else-if="name == 'invocation_inputs'" :invocation="args.invocation" />
+            <WorkflowInvocationOutputs v-else-if="name === 'invocation_outputs'" :invocation="args.invocation" />
             <JobMetrics
                 v-else-if="name == 'job_metrics'"
                 :job-id="args.job_id"
@@ -241,7 +239,11 @@ watch(
                 :job-id="args.job_id"
                 :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :name="name" />
-            <VisualizationFrame v-else-if="name == 'visualization'" :args="args" />
+            <VisualizationWrapper
+                v-else-if="name == 'visualization'"
+                :name="args.visualization_id"
+                :config="{ dataset_id: args.history_dataset_id }"
+                :height="args.height && parseInt(args.height)" />
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"

@@ -19,9 +19,10 @@ export function datasetCollectionDialog(callback, options = {}) {
     });
 }
 
-export function filesDialog(callback, options = {}) {
+export function filesDialog(callback, options = {}, routePush) {
     Object.assign(options, {
         callback: callback,
+        routePush: routePush,
     });
     mountSelectionDialog(FilesDialog, options);
 }

@@ -8,11 +8,10 @@ testing configuration.
 import os
 import re
 import sys
+from collections.abc import Iterator
 from typing import (
     ClassVar,
-    Iterator,
     Optional,
-    Type,
     TYPE_CHECKING,
 )
 from unittest import (
@@ -207,7 +206,7 @@ class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
-def integration_module_instance(clazz: Type[IntegrationInstance]):
+def integration_module_instance(clazz: type[IntegrationInstance]):
     def _instance() -> Iterator[IntegrationInstance]:
         instance = clazz()
         instance.setUpClass()

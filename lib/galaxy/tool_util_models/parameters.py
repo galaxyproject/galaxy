@@ -176,7 +176,10 @@ def dynamic_model_information_from_py_type(
 # where value in the incoming model means "default value" and value in the outgoing model is the actual
 # value a user has set. (incoming/outgoing from the client perspective).
 class BaseToolParameterModelDefinition(BaseModel):
-    name: str
+    name: Annotated[
+        str,
+        Field(description="Parameter name. Used when referencing parameter in workflows or inside command templating."),
+    ]
     parameter_type: str
 
     @abstractmethod
@@ -186,11 +189,27 @@ class BaseToolParameterModelDefinition(BaseModel):
 
 class BaseGalaxyToolParameterModelDefinition(BaseToolParameterModelDefinition):
     hidden: bool = False
-    label: Optional[str] = None
-    help: Optional[str] = None
-    argument: Optional[str] = None
+    label: Optional[
+        Annotated[str, Field(description="Will be displayed on the tool page as the label of the parameter.")]
+    ] = None
+    help: Optional[
+        Annotated[
+            str,
+            Field(
+                description="Short bit of text, rendered on the tool form just below the associated field to provide information about the field."
+            ),
+        ]
+    ] = None
+    argument: Optional[
+        Annotated[
+            str,
+            Field(
+                description="""If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit)."""
+            ),
+        ]
+    ] = None
     is_dynamic: bool = False
-    optional: bool = False
+    optional: Annotated[bool, Field(description="If `false`, parameter must have a value.")] = False
 
 
 class LabelValue(BaseModel):
@@ -511,12 +530,19 @@ class DataRequestInternalHdca(StrictModel):
 
 class DataInternalJson(StrictModel):
     class_: Annotated[Literal["File"], Field(alias="class")]
-    basename: str
+    basename: Annotated[
+        str,
+        Field(
+            description="The base name of the file, that is, the name of the file without any leading directory path"
+        ),
+    ]
     location: str
-    path: str
+    path: Annotated[str, Field(description="The absolute path to the file on disk.")]
     listing: Optional[List[str]]  # Should be recursive
-    nameroot: Optional[str]
-    nameext: Optional[str]
+    nameroot: Annotated[Optional[str], Field(description="The basename root such that nameroot + nameext == basename")]
+    nameext: Annotated[
+        Optional[str], Field(description="The basename extension such that nameroot + nameext == basename")
+    ]
     # "secondaryFiles": List[Any],
     checksum: Optional[str]
     size: int
@@ -576,8 +602,14 @@ MultiDataRequestInternalDereferenced: Type = union_type(
 class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data"] = "gx_data"
     type: Literal["data"]
-    extensions: List[str] = ["data"]
-    multiple: bool = False
+    extensions: Annotated[
+        List[str],
+        Field(
+            description="Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.",
+            examples=["txt", "tabular", "tiff"],
+        ),
+    ] = ["data"]
+    multiple: Annotated[bool, Field(description="Allow multiple values to be selected.")] = False
     min: Optional[int] = None
     max: Optional[int] = None
 
@@ -889,14 +921,14 @@ class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type
-        initialize: Any = ...
+        requires_value = self.request_requires_value
+        initialize = ... if requires_value else None
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
             validators = {
                 "color_format": field_validator(self.name)(ColorParameterModel.validate_color_str_or_connected_value)
             }
         elif state_representation == "workflow_step":
-            initialize = None
             validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str_if_value)}
         else:
             validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str)}
@@ -1739,7 +1771,7 @@ class ToolParameterBundleModel(BaseModel):
 def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) -> ToolParameterT:
     if input_parameter.__class__ == ToolParameterModel:
         assert isinstance(input_parameter, ToolParameterModel)
-        return cast(ToolParameterT, input_parameter.root)
+        return input_parameter.root
     else:
         return cast(ToolParameterT, input_parameter)
 

@@ -2,10 +2,6 @@ import textwrap
 import urllib
 import zipfile
 from io import BytesIO
-from typing import (
-    Dict,
-    List,
-)
 from urllib.parse import quote
 
 from galaxy.model.unittest_utils.store_fixtures import (
@@ -85,7 +81,7 @@ class TestDatasetsApi(ApiTestCase):
             history_id, order_by="size-asc", expected_ids_order=dataset_ids_ordered_by_size_asc
         )
 
-    def _assert_history_datasets_ordered(self, history_id, order_by: str, expected_ids_order: List[str]):
+    def _assert_history_datasets_ordered(self, history_id, order_by: str, expected_ids_order: list[str]):
         datasets_response = self._get(f"histories/{history_id}/contents?v=dev&keys=size&order={order_by}")
         self._assert_status_code_is(datasets_response, 200)
         datasets = datasets_response.json()
@@ -346,6 +342,27 @@ class TestDatasetsApi(ApiTestCase):
         display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
+
+    def test_display_extra_paths(self, history_id: str):
+        test_data_resolver = TestDataResolver()
+        with open(test_data_resolver.get_filename("1.fasta")) as fh:
+            fasta_contents = fh.read()
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta_contents, ftype="fasta", wait=True)
+        response = self.dataset_populator.run_tool(
+            "create_directory_index", inputs={"reference": {"src": "hda", "id": hda1["id"]}}, history_id=history_id
+        )
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"])
+        directory_dataset = response["outputs"][0]
+        # Check that we can access extra_files/1.fasta via the display endpoint.
+        display_response = self._get(
+            f"histories/{history_id}/contents/{directory_dataset['id']}/display?filename=/1.fasta"
+        )
+        display_response.raise_for_status()
+        assert display_response.text == fasta_contents
+        # Check that we can access extra_files/1.fasta via the extra_files/raw endpoint.
+        extra_files_response = self._get(f"datasets/{directory_dataset['id']}/extra_files/raw/1.fasta")
+        extra_files_response.raise_for_status()
+        assert extra_files_response.text == fasta_contents
 
     def test_display_error_handling(self, history_id):
         hda1 = self.dataset_populator.create_deferred_hda(
@@ -677,7 +694,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_delete_batch(self):
         num_datasets = 4
-        dataset_map: Dict[int, str] = {}
+        dataset_map: dict[int, str] = {}
         history_id = self.dataset_populator.new_history()
         for index in range(num_datasets):
             hda = self.dataset_populator.new_dataset(history_id)
@@ -726,7 +743,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_delete_batch_error(self):
         num_datasets = 4
-        dataset_map: Dict[int, str] = {}
+        dataset_map: dict[int, str] = {}
 
         with self._different_user():
             history_id = self.dataset_populator.new_history()
@@ -899,3 +916,33 @@ class TestDatasetsApi(ApiTestCase):
         response = self._get(f"histories/{history_id}/contents/{hda['id']}/display?to_ext=json")
         self._assert_status_code_is(response, 200)
         assert quote(name, safe="") in response.headers["Content-Disposition"]
+
+    def test_copy_dataset_from_history_with_copied_from_fields(self, history_id):
+        original_hda = self.dataset_populator.new_dataset(history_id, content="original data", wait=True)
+        self._assert_copied_from_fields(history_id, original_hda["id"], None, None, None)
+
+        copy_payload = {"content": original_hda["id"], "source": "hda", "type": "dataset"}
+        copied_hda_id = self._post(f"histories/{history_id}/contents", data=copy_payload, json=True).json()["id"]
+        self._assert_copied_from_fields(history_id, copied_hda_id, original_hda["id"], None, None)
+
+    @requires_new_library
+    def test_copy_dataset_from_library_with_copied_from_fields(self, history_id):
+        library_dataset = self.library_populator.new_library_dataset("test_library_dataset")
+        copy_payload = {"content": library_dataset["id"], "source": "library", "type": "dataset"}
+        copied_hda_id = self._post(f"histories/{history_id}/contents", data=copy_payload, json=True).json()["id"]
+        self._assert_copied_from_fields(
+            history_id, copied_hda_id, None, library_dataset["ldda_id"], library_dataset["ldda_id"]
+        )
+
+    def _assert_copied_from_fields(
+        self, history_id, hda_id, expected_history_id, expected_ldda_id, expected_library_id
+    ):
+        keys = "copied_from_history_dataset_association_id,copied_from_ldda_id,copied_from_library_dataset_dataset_association_id"
+        for url in [
+            f"datasets/{hda_id}?keys={keys}",
+            f"histories/{history_id}/contents/datasets/{hda_id}?keys={keys}",
+        ]:
+            data = self._get(url).json()
+            assert data["copied_from_history_dataset_association_id"] == expected_history_id
+            assert data["copied_from_ldda_id"] == expected_ldda_id
+            assert data["copied_from_library_dataset_dataset_association_id"] == expected_library_id

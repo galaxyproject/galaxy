@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    List,
     Optional,
 )
 
@@ -66,7 +65,7 @@ class GridData:
     """
 
     model_class: Optional[type] = None
-    columns: List[GridColumn] = []
+    columns: list[GridColumn] = []
     default_limit: int = 1000
 
     def __init__(self):

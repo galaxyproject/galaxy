@@ -120,9 +120,6 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
             if (other.collectionType.endsWith(":paired_or_unpaired")) {
                 return !this.collectionType.endsWith(":paired");
             }
-            if (this.rank == other.rank) {
-                console.log("skipping over this because may be equal rank...");
-            }
             // Cannot map over self...
             return false;
         }
@@ -209,7 +206,8 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
     }
 }
 
-const collectionTypeRegex = /^(list|paired|record)(:(list|paired|record))*$/;
+const collectionTypeRegex =
+    /^((list|paired|paired_or_unpaired|record)(:(list|paired|paired_or_unpaired|record))*|sample_sheet|sample_sheet:paired|sample_sheet:record|sample_sheet:paired_or_unpaired)$/;
 
 export function isValidCollectionTypeStr(collectionType: string | undefined) {
     if (collectionType) {

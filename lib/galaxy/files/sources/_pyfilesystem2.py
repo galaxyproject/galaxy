@@ -4,10 +4,7 @@ import logging
 import os
 from typing import (
     ClassVar,
-    List,
     Optional,
-    Tuple,
-    Type,
 )
 
 import fs
@@ -34,7 +31,7 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python PyFilesystem2 p
 
 
 class PyFilesystem2FilesSource(BaseFilesSource):
-    required_module: ClassVar[Optional[Type[FS]]]
+    required_module: ClassVar[Optional[type[FS]]]
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
@@ -60,12 +57,12 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[List[AnyRemoteEntry], int]:
+    ) -> tuple[list[AnyRemoteEntry], int]:
         """Return dictionary of 'Directory's and 'File's."""
         try:
             with self._open_fs(user_context=user_context, opts=opts) as h:
                 if recursive:
-                    recursive_result: List[AnyRemoteEntry] = []
+                    recursive_result: list[AnyRemoteEntry] = []
                     try:
                         for p, dirs, files in h.walk(path, namespaces=["details"]):
                             to_dict = functools.partial(self._resource_info_to_dict, p)
@@ -89,10 +86,10 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         except fs.errors.FSError as e:
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
 
-    def _get_total_matches_count(self, fs: FS, path: str, filter: Optional[List[str]] = None) -> int:
+    def _get_total_matches_count(self, fs: FS, path: str, filter: Optional[list[str]] = None) -> int:
         return sum(1 for _ in fs.filterdir(path, namespaces=["basic"], files=filter, dirs=filter))
 
-    def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[Tuple[int, int]]:
+    def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[tuple[int, int]]:
         if limit is None and offset is None:
             return None
         limit = limit or DEFAULT_PAGE_LIMIT
@@ -100,7 +97,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         end = start + limit
         return (start, end)
 
-    def _query_to_filter(self, query: Optional[str]) -> Optional[List[str]]:
+    def _query_to_filter(self, query: Optional[str]) -> Optional[list[str]]:
         if not query:
             return None
         return [f"*{query}*"]

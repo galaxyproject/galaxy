@@ -2,10 +2,13 @@ import { computed, ref } from "vue";
 
 import { type AutoPairingResult, type HasName, splitIntoPairedAndUnpaired } from "@/components/Collections/pairing";
 
-import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./useCollectionCreator";
+import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./useCollectionCreator";
 
 interface PropsWithCollectionType {
-    collectionType: SupportedPairedOrPairedBuilderCollectionTypes;
+    collectionType:
+        | SupportedPairedOrPairedBuilderCollectionTypes
+        | "sample_sheet:paired"
+        | "sample_sheet:paired_or_unpaired";
 }
 
 export function usePairingSummary<T extends HasName>(props: PropsWithCollectionType) {
@@ -17,7 +20,7 @@ export function usePairingSummary<T extends HasName>(props: PropsWithCollectionT
             const numMatchedText = `Auto-matched ${summary.pairs.length} pair(s) of datasets from target datasets.`;
             const numUnmatched = summary.unpaired.length;
             let numUnmatchedText = "";
-            if (numUnmatched > 0 && props.collectionType.endsWith("paired")) {
+            if (numUnmatched > 0 && props.collectionType.endsWith(":paired")) {
                 numUnmatchedText = `${numUnmatched} dataset(s) were not paired and will not be included in the resulting list of pairs.`;
             } else if (numUnmatched > 0) {
                 numUnmatchedText = `${numUnmatched} dataset(s) were not paired and will be included in the resulting list as unpaired datasets.`;

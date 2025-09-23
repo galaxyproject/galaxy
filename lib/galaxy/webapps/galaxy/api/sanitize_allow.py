@@ -5,7 +5,6 @@ API operations allowing clients to retrieve and modify the HTML sanitization all
 import logging
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy import web
@@ -55,7 +54,7 @@ class SanitizeAllowController(BaseAPIController):
         trans.app.queue_worker.send_control_task("reload_sanitize_allowlist", noop_self=True)
 
     def _generate_allowlist(self, trans):
-        sanitize_dict: Dict[str, Any] = dict(
+        sanitize_dict: dict[str, Any] = dict(
             blocked_toolshed=[], allowed_toolshed=[], blocked_local=[], allowed_local=[]
         )
         ids = None

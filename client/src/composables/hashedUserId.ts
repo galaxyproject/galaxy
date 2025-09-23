@@ -1,6 +1,6 @@
 import { computed, type Ref, ref, watch } from "vue";
 
-import { type AnyUser } from "@/api";
+import type { AnyUser } from "@/api";
 
 import { usePersistentRef } from "./persistentRef";
 
@@ -22,7 +22,7 @@ function createSalt(): string {
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
 
-    return bufferToString(bytes);
+    return bufferToString(bytes.buffer);
 }
 
 const currentHash = ref<string | null>(null);

@@ -8,20 +8,20 @@ from json import loads
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
 )
 
 from fastapi import (
     Body,
     Depends,
+    Query,
     Request,
     Response,
     UploadFile,
 )
 from fastapi.responses import FileResponse
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from starlette.responses import StreamingResponse
 
 from galaxy import (
     exceptions,
@@ -33,6 +33,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
@@ -40,6 +41,15 @@ from galaxy.schema.fetch_data import (
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import UserToolSource
 from galaxy.tools.evaluation import global_tool_errors
+from galaxy.tools.fetch.workbooks import (
+    FetchWorkbookCollectionType,
+    FetchWorkbookType,
+    generate,
+    GenerateFetchWorkbookRequest,
+    parse,
+    ParsedFetchWorkbook,
+    ParseFetchWorkbook,
+)
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
     memory_bound_hexdigest,
@@ -53,6 +63,7 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.api.common import serve_workbook
 from galaxy.webapps.galaxy.services.tools import ToolsService
 from . import (
     APIContentTypeRoute,
@@ -86,14 +97,30 @@ class PNGIconResponse(FileResponse):
     media_type = "image/png"
 
 
+FetchWorkbookTypeQueryParam: FetchWorkbookType = Query(
+    default="datasets",
+    title="Workbook Type",
+    description="Generate a workbook for simple datasets or a collection.",
+)
+FetchWorkbookCollectionTypeQueryParam: FetchWorkbookCollectionType = Query(
+    default="list",
+    title="Collection Type",
+    description="Generate workbook for specified collection type (not all collection types are supported)",
+)
+FetchWorkbookFilenameQueryParam: Optional[str] = Query(
+    None,
+    description="Filename of the workbook download to generate",
+)
+
+
 router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
-async def get_files(request: Request, files: Optional[List[UploadFile]] = None):
+async def get_files(request: Request, files: Optional[list[UploadFile]] = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-    files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+    files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
     if not files2:
         data = await request.form()
         for value in data.values():
@@ -119,12 +146,45 @@ class FetchTools:
         self,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         trans: ProvidesHistoryContext = DependsOnTrans,
-        files: List[StarletteUploadFile] = Depends(get_files),
+        files: list[StarletteUploadFile] = Depends(get_files),
     ):
         return self.service.create_fetch(trans, payload, files)
 
     @router.get(
-        "/api/tools/{tool_id}/icon",
+        "/api/tools/fetch/workbook",
+        summary="Generate a template workbook to use with the activity builder UI",
+        response_class=StreamingResponse,
+        operation_id="tools__fetch_workbook_download",
+    )
+    def fetch_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        type: FetchWorkbookType = FetchWorkbookTypeQueryParam,
+        collection_type: FetchWorkbookCollectionType = FetchWorkbookCollectionTypeQueryParam,
+        filename: Optional[str] = FetchWorkbookFilenameQueryParam,
+    ):
+        generate_request = GenerateFetchWorkbookRequest(
+            type=type,
+            collection_type=collection_type,
+        )
+        workbook = generate(generate_request)
+        contents = workbook_to_bytes(workbook)
+        return serve_workbook(contents, filename)
+
+    @router.post(
+        "/api/tools/fetch/workbook/parse",
+        summary="Generate a template workbook to use with the activity builder UI",
+        operation_id="tools__fetch_workbook_parse",
+    )
+    def parse_workbook(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: ParseFetchWorkbook = Body(...),
+    ) -> ParsedFetchWorkbook:
+        return parse(payload)
+
+    @router.get(
+        "/api/tools/{tool_id:path}/icon",
         summary="Get the icon image associated with a tool",
         response_class=PNGIconResponse,
         responses={
@@ -376,7 +436,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
-        test_counts_by_tool: Dict[str, Dict] = {}
+        test_counts_by_tool: dict[str, dict] = {}
         for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
@@ -391,7 +451,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return test_counts_by_tool
 
     @expose_api_anonymous_and_sessionless
-    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> List[ToolTestDescriptionDict]:
+    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> list[ToolTestDescriptionDict]:
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
 
@@ -677,7 +737,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return self.service._create(trans, payload, **kwd)
 
 
-def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:
+def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
     if "payload" in kwd:
-        kwd = cast(Dict[str, Any], kwd.get("payload"))
+        kwd = cast(dict[str, Any], kwd.get("payload"))
     return kwd

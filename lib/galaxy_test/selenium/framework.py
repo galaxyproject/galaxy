@@ -12,9 +12,7 @@ from functools import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -290,6 +288,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # tests or may be required if you have no external internet access
     axe_skip = GALAXY_TEST_SKIP_AXE
 
+    timeout_multiplier = TIMEOUT_MULTIPLIER
+
     def assert_baseline_accessibility(self):
         axe_results = self.axe_eval()
         assert_baseline_accessible(axe_results)
@@ -426,10 +426,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     @classproperty
     def default_web_host(cls):
         return default_web_host_for_selenium_tests()
-
-    @property
-    def timeout_multiplier(self):
-        return TIMEOUT_MULTIPLIER
 
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
@@ -624,7 +620,7 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
         return name
 
-    def workflow_run_setup_inputs(self, content: Optional[str]) -> Tuple[str, Dict[str, Any]]:
+    def workflow_run_setup_inputs(self, content: Optional[str]) -> tuple[str, dict[str, Any]]:
         history_id = self.current_history_id()
         if content:
             yaml_content = yaml.safe_load(content)

@@ -2,8 +2,8 @@
 import { faCopy, faDatabase, faExchangeAlt, faEye, faGlobe, faUndo } from "font-awesome-6";
 import { computed } from "vue";
 
-import { type ArchivedHistorySummary } from "@/api/histories.archived";
-import { type CardAttributes } from "@/components/Common/GCard.types";
+import type { ArchivedHistorySummary } from "@/api/histories.archived";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -39,7 +39,7 @@ async function onImportCopy() {
     emit("onImportCopy", props.history);
 }
 
-const badges: CardAttributes[] = [
+const badges: CardBadge[] = [
     {
         id: "published",
         label: "Published",
@@ -63,14 +63,13 @@ const badges: CardAttributes[] = [
     },
 ];
 
-const secondaryActions: CardAttributes[] = [
+const secondaryActions: CardAction[] = [
     {
         id: "view",
         label: "View",
         icon: faEye,
         title: "View this history",
         handler: onViewHistoryInCenterPanel,
-        visible: true,
     },
     {
         id: "switch",
@@ -78,11 +77,10 @@ const secondaryActions: CardAttributes[] = [
         icon: faExchangeAlt,
         title: "Set as current history",
         handler: onSetAsCurrentHistory,
-        visible: true,
     },
 ];
 
-const primaryActions: CardAttributes[] = [
+const primaryActions: CardAction[] = [
     {
         id: "import-copy",
         label: "Import Copy",
@@ -100,7 +98,6 @@ const primaryActions: CardAttributes[] = [
         title: "Unarchive this history and move it back to your active histories",
         variant: !props.history.purged ? "primary" : "outline-primary",
         handler: onRestoreHistory,
-        visible: true,
     },
 ];
 </script>

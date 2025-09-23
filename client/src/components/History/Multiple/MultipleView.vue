@@ -114,7 +114,7 @@ function showRecent() {
 <template>
     <div v-if="currentUser" class="d-flex flex-column">
         <div class="d-flex">
-            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">History Multiview</Heading>
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">History Multiview</Heading>
 
             <div class="d-flex justify-content-between">
                 <div>

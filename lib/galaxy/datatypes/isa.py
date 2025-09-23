@@ -12,27 +12,18 @@ import re
 import shutil
 import tempfile
 from typing import (
-    List,
     Optional,
     TYPE_CHECKING,
 )
 
 logger = logging.getLogger(__name__)
 
-ISA_MISSING_MODULE_MESSAGE = "Please install the missing isatools dependency from `isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master`"
-
-try:
-    # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
-    logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-    from isatools import (
-        isajson,
-        isatab_meta,
-    )
-except ImportError:
-    isajson = None
-    isatab_meta = None
-    logger.exception(ISA_MISSING_MODULE_MESSAGE)
-
+# Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
+logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
+from isatools import (
+    isajson,
+    isatab_meta,
+)
 from markupsafe import escape
 
 from galaxy import util
@@ -103,7 +94,7 @@ class _Isa(Data):
         main_file = self._get_main_file(dataset)
         return self._make_investigation_instance(main_file)
 
-    def _find_main_file_in_archive(self, files_list: List) -> str:
+    def _find_main_file_in_archive(self, files_list: list) -> str:
         """Find the main file inside the ISA archive."""
 
         found_file = None
@@ -129,7 +120,7 @@ class _Isa(Data):
 
         # Read first lines of main file
         with open(main_file, encoding="utf-8") as f:
-            data: List = []
+            data: list = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:
                     data.append(line)
@@ -283,8 +274,6 @@ class IsaTab(_Isa):
         super().__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
 
     def _make_investigation_instance(self, filename: str):
-        if not isatab_meta:
-            raise Exception(ISA_MISSING_MODULE_MESSAGE)
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
@@ -308,8 +297,6 @@ class IsaJson(_Isa):
         super().__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
 
     def _make_investigation_instance(self, filename: str):
-        if not isajson:
-            raise Exception(ISA_MISSING_MODULE_MESSAGE)
         # Parse JSON file
         with open(filename, newline="", encoding="utf8") as fp:
             isa = isajson.load(fp)

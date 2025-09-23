@@ -9,7 +9,7 @@ import { computed, ref, useAttrs } from "vue";
 
 import { linkify } from "@/utils/utils";
 
-import { isDataUri } from "./Elements/FormData/types";
+import { type ExtendedCollectionType, isDataUri } from "./Elements/FormData/types";
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
@@ -267,6 +267,14 @@ function addTempFocus() {
 function onAlert(value: string | undefined) {
     formAlert.value = value;
 }
+
+const extendedCollectionType = computed<ExtendedCollectionType>(() => {
+    const attrsValue = attrs.value;
+    return {
+        columnDefinitions: attrsValue.column_definitions ?? undefined,
+        fields: attrsValue.fields ?? undefined,
+    };
+});
 </script>
 
 <template>
@@ -435,6 +443,7 @@ function onAlert(value: string | undefined) {
                     :user-defined-title="userDefinedTitle"
                     :type="formDataField"
                     :collection-types="attrs.collection_types"
+                    :extended-collection-type="extendedCollectionType"
                     :workflow-run="props.workflowRun"
                     @alert="onAlert"
                     @focus="addTempFocus" />

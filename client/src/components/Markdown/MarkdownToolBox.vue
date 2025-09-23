@@ -259,13 +259,15 @@ export default {
             const outputLabels = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
-                    step.workflow_outputs.forEach((workflowOutput) => {
-                        if (workflowOutput.label) {
-                            if (!filterByType || this.stepOutputMatchesType(step, workflowOutput, filterByType)) {
-                                outputLabels.push(workflowOutput.label);
+                    if (step.workflow_outputs) {
+                        step.workflow_outputs.forEach((workflowOutput) => {
+                            if (workflowOutput.label) {
+                                if (!filterByType || this.stepOutputMatchesType(step, workflowOutput, filterByType)) {
+                                    outputLabels.push(workflowOutput.label);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 });
             return outputLabels;
         },

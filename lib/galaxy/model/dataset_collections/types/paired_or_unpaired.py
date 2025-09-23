@@ -1,3 +1,8 @@
+from collections.abc import Iterable
+from typing import (
+    TYPE_CHECKING,
+)
+
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import DatasetCollectionElement
 from . import BaseDatasetCollectionType
@@ -5,6 +10,9 @@ from .paired import (
     FORWARD_IDENTIFIER,
     REVERSE_IDENTIFIER,
 )
+
+if TYPE_CHECKING:
+    from . import DatasetInstanceMapping
 
 SINGLETON_IDENTIFIER = "unpaired"
 
@@ -14,7 +22,9 @@ class PairedOrUnpairedDatasetCollectionType(BaseDatasetCollectionType):
 
     collection_type = "paired_or_unpaired"
 
-    def generate_elements(self, dataset_instances, **kwds):
+    def generate_elements(
+        self, dataset_instances: "DatasetInstanceMapping", **kwds
+    ) -> Iterable["DatasetCollectionElement"]:
         num_datasets = len(dataset_instances)
         if num_datasets > 2 or num_datasets < 1:
             raise RequestParameterInvalidException(

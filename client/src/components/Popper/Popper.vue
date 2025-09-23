@@ -20,7 +20,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type Placement } from "@popperjs/core";
+import type { Placement } from "@popperjs/core";
 import type { PropType } from "vue";
 import { ref } from "vue";
 
@@ -31,6 +31,7 @@ library.add(faTimesCircle);
 const props = defineProps({
     arrow: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
+    interactive: { type: Boolean, default: false },
     mode: { type: String, default: "dark" },
     placement: String as PropType<Placement>,
     referenceEl: HTMLElement,
@@ -43,6 +44,7 @@ const reference = props.referenceEl ? ref(props.referenceEl) : ref();
 const popper = ref();
 
 const { visible } = usePopper(reference, popper, {
+    interactive: props.interactive,
     placement: props.placement,
     trigger: props.trigger,
 });
@@ -64,6 +66,7 @@ defineExpose({
 .popper-element {
     z-index: 9999;
     border-radius: $border-radius-large;
+    pointer-events: auto;
 }
 
 /** Available variants */

@@ -82,12 +82,37 @@ class ToolSourceBase(BaseModel):
 # repeated fields to get consistent order, ugh, FIXME obviously
 class UserToolSource(BaseModel):
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
-    id: Optional[str]
-    version: Optional[str]
-    name: str
-    description: Optional[str] = None
-    container: str
-    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
+    id: Annotated[
+        str,
+        Field(
+            description="Unique identifier for the tool. Should be all lower-case and should not include whitespace.",
+            examples=["my-cool-tool"],
+            min_length=3,
+            max_length=255,
+        ),
+    ]
+    version: Annotated[str, Field(description="Version for the tool.", examples=["0.1.0"])]
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool."
+        ),
+    ]
+    description: Annotated[
+        Optional[str],
+        Field(
+            description="The description is displayed in the tool menu immediately following the hyperlink for the tool."
+        ),
+    ] = None
+    container: Annotated[
+        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
+    ]
+    requirements: Annotated[
+        Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
+        Field(
+            description="A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images."
+        ),
+    ] = []
     shell_command: Annotated[
         str,
         Field(
@@ -99,11 +124,17 @@ class UserToolSource(BaseModel):
     inputs: List[GalaxyToolParameterModel] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
-    license: Optional[str] = None
+    license: Annotated[
+        Optional[str],
+        Field(
+            description="A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.",
+            examples=["MIT"],
+        ),
+    ] = None
     edam_operations: Optional[List[str]] = None
     edam_topics: Optional[List[str]] = None
     xrefs: Optional[List[XrefDict]] = None
-    help: Optional[HelpContent] = None
+    help: Annotated[Optional[HelpContent], Field(description="Help text shown below the tool interface.")] = None
 
     @model_validator(mode="before")
     @classmethod

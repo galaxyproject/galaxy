@@ -1,3 +1,8 @@
+from collections.abc import Iterable
+from typing import (
+    TYPE_CHECKING,
+)
+
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.model import (
     DatasetCollectionElement,
@@ -5,13 +10,18 @@ from galaxy.model import (
 )
 from ..types import BaseDatasetCollectionType
 
+if TYPE_CHECKING:
+    from . import DatasetInstanceMapping
+
 
 class RecordDatasetCollectionType(BaseDatasetCollectionType):
     """Arbitrary CWL-style record type."""
 
     collection_type = "record"
 
-    def generate_elements(self, dataset_instances, **kwds):
+    def generate_elements(
+        self, dataset_instances: "DatasetInstanceMapping", **kwds
+    ) -> Iterable[DatasetCollectionElement]:
         fields = kwds.get("fields", None)
         if fields is None:
             raise RequestParameterMissingException("Missing or null parameter 'fields' required for record types.")

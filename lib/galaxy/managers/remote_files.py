@@ -3,8 +3,6 @@ import logging
 from operator import itemgetter
 from typing import (
     Optional,
-    Set,
-    Tuple,
 )
 
 from galaxy import exceptions
@@ -55,7 +53,7 @@ class RemoteFilesManager:
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> Tuple[AnyRemoteFilesListResponse, int]:
+    ) -> tuple[AnyRemoteFilesListResponse, int]:
         """Returns a list of remote files and directories available to the user and the total count of them."""
 
         user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
@@ -148,8 +146,8 @@ class RemoteFilesManager:
         self,
         user_context: ProvidesUserContext,
         browsable_only: Optional[bool] = True,
-        include_kind: Optional[Set[PluginKind]] = None,
-        exclude_kind: Optional[Set[PluginKind]] = None,
+        include_kind: Optional[set[PluginKind]] = None,
+        exclude_kind: Optional[set[PluginKind]] = None,
     ):
         """Display plugin information for each of the gxfiles:// URI targets available."""
         user_file_source_context = ProvidesFileSourcesUserContext(user_context)

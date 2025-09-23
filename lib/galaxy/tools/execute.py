@@ -11,11 +11,8 @@ from abc import abstractmethod
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     NamedTuple,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -51,10 +48,10 @@ SINGLE_EXECUTION_SUCCESS_MESSAGE = "Tool ${tool_id} created job ${job_id}"
 BATCH_EXECUTION_MESSAGE = "Created ${job_count} job(s) for tool ${tool_id} request"
 
 
-CompletedJobsT = Dict[int, Optional[model.Job]]
+CompletedJobsT = dict[int, Optional[model.Job]]
 JobCallbackT: TypeAlias = Callable
-WorkflowResourceParametersT = Dict[str, Any]
-DatasetCollectionElementsSliceT = Dict[str, model.DatasetCollectionElement]
+WorkflowResourceParametersT = dict[str, Any]
+DatasetCollectionElementsSliceT = dict[str, model.DatasetCollectionElement]
 DEFAULT_USE_CACHED_JOB = False
 DEFAULT_PREFERRED_OBJECT_STORE_ID: Optional[str] = None
 DEFAULT_RERUN_REMAP_JOB_ID: Optional[int] = None
@@ -70,7 +67,7 @@ class PartialJobExecution(Exception):
 
 class MappingParameters(NamedTuple):
     param_template: ToolRequestT
-    param_combinations: List[ToolStateJobInstancePopulatedT]
+    param_combinations: list[ToolStateJobInstancePopulatedT]
 
 
 def execute(
@@ -183,7 +180,7 @@ def execute(
     jobs_executed = 0
     has_remaining_jobs = False
     execution_slice = None
-    job_datasets: Dict[str, List[model.DatasetInstance]] = {}  # job: list of dataset instances created by job
+    job_datasets: dict[str, list[model.DatasetInstance]] = {}  # job: list of dataset instances created by job
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
         if max_num_jobs is not None and jobs_executed >= max_num_jobs:
@@ -264,11 +261,11 @@ ExecutionErrorsT = Union[str, Exception]
 
 
 class ExecutionTracker:
-    execution_errors: List[ExecutionErrorsT]
-    successful_jobs: List[model.Job]
-    output_datasets: List[Tuple[str, model.HistoryDatasetAssociation]]
-    output_collections: List[Tuple[str, model.HistoryDatasetCollectionAssociation]]
-    implicit_collections: Dict[str, model.HistoryDatasetCollectionAssociation]
+    execution_errors: list[ExecutionErrorsT]
+    successful_jobs: list[model.Job]
+    output_datasets: list[tuple[str, model.HistoryDatasetAssociation]]
+    output_collections: list[tuple[str, model.HistoryDatasetCollectionAssociation]]
+    implicit_collections: dict[str, model.HistoryDatasetCollectionAssociation]
 
     def __init__(
         self,
@@ -321,12 +318,31 @@ class ExecutionTracker:
         log.warning(message, self.tool.id, error)
         self.execution_errors.append(error)
 
+    @staticmethod
+    def _collection_info_to_collection_hids_element_ids(
+        items: list[Union[model.DatasetCollectionElement, model.HistoryDatasetCollectionAssociation]],
+    ) -> tuple[list[int], list[str]]:
+        element_ids = []
+        collection_hids = []
+        for item in items:
+            if isinstance(item, model.DatasetCollectionElement):
+                assert item.element_identifier is not None
+                element_ids.append(item.element_identifier)
+            else:
+                assert item.hid is not None
+                collection_hids.append(item.hid)
+        return collection_hids, element_ids
+
     @property
     def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
-            collection_hids = [c.hid for c in collection_info.collections.values()]
-            self._on_text = on_text_for_dataset_and_collections(collection_hids=collection_hids)
+            collection_hids, element_ids = self._collection_info_to_collection_hids_element_ids(
+                collection_info.collections.values()
+            )
+            self._on_text = on_text_for_dataset_and_collections(
+                collection_hids=collection_hids, element_ids=element_ids
+            )
         return self._on_text
 
     def output_name(self, trans, history, params, output):
@@ -617,7 +633,7 @@ class ToolExecutionTracker(ExecutionTracker):
         # New to track these things for tool output API response in the tool case,
         # in the workflow case we just write stuff to the database and forget about
         # it.
-        self.outputs_by_output_name: Dict[str, List[Union[model.DatasetInstance, model.DatasetCollection]]] = (
+        self.outputs_by_output_name: dict[str, list[Union[model.DatasetInstance, model.DatasetCollection]]] = (
             collections.defaultdict(list)
         )
 

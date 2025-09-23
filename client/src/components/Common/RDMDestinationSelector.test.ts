@@ -3,7 +3,7 @@ import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { type BrowsableFilesSourcePlugin, type CreatedEntry } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin, CreatedEntry } from "@/api/remoteFiles";
 
 import RDMDestinationSelector from "./RDMDestinationSelector.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";

@@ -34,7 +34,9 @@ const handleDrop = (event: DragEvent) => {
 </script>
 
 <template>
-    <div class="paste-data">
+    <!-- galaxy-drop-target suppresses global upload drop target so this component can be
+         dropped to -->
+    <div class="paste-data" data-galaxy-file-drop-target>
         <JaggedDataAlert :jagged-data-warning="jaggedDataWarning" />
         <div
             class="dropzone"

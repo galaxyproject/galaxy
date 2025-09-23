@@ -3,6 +3,9 @@ import { mount } from "@vue/test-utils";
 
 import PopperComponent from "./Popper.vue";
 
+// value from usePopper.ts
+const DELAY_CLOSE = 50;
+
 jest.mock("@popperjs/core", () => ({
     createPopper: jest.fn(() => ({
         destroy: jest.fn(),
@@ -10,12 +13,13 @@ jest.mock("@popperjs/core", () => ({
     })),
 }));
 
-function mountTarget(trigger = "click") {
+function mountTarget(trigger = "click", interactive = false) {
     return mount(PopperComponent, {
         propsData: {
             title: "Test Title",
             placement: "bottom",
-            trigger: trigger,
+            interactive,
+            trigger,
         },
         slots: {
             reference: "<button>Reference</button>",
@@ -95,7 +99,7 @@ describe("PopperComponent.vue", () => {
         expect(wrapper.find(".popper-element").isVisible()).toBe(false);
     });
 
-    test("shows and hides popper on hover trigger", async () => {
+    test("shows and hides popper on hover trigger over reference", async () => {
         const wrapper = mountTarget("hover");
         const reference = wrapper.find("button");
         const popperElement = wrapper.find(".popper-element");
@@ -103,6 +107,24 @@ describe("PopperComponent.vue", () => {
         await reference.trigger("mouseover");
         expect(popperElement.isVisible()).toBe(true);
         await reference.trigger("mouseout");
+        await new Promise((r) => setTimeout(r, 0));
+        expect(popperElement.isVisible()).toBe(false);
+    });
+
+    test("popper remains visible when hovering over popper", async () => {
+        const wrapper = mountTarget("hover", true);
+        const reference = wrapper.find("button");
+        const popperElement = wrapper.find(".popper-element");
+        expect(popperElement.isVisible()).toBe(false);
+        await reference.trigger("mouseover");
+        expect(popperElement.isVisible()).toBe(true);
+        await reference.trigger("mouseout");
+        await new Promise((r) => setTimeout(r, DELAY_CLOSE / 2));
+        expect(popperElement.isVisible()).toBe(true);
+        await popperElement.trigger("mouseover");
+        await new Promise((r) => setTimeout(r, DELAY_CLOSE * 2));
+        await popperElement.trigger("mouseout");
+        await new Promise((r) => setTimeout(r, DELAY_CLOSE * 2));
         expect(popperElement.isVisible()).toBe(false);
     });
 

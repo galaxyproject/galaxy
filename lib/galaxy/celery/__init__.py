@@ -9,7 +9,6 @@ from threading import local
 from typing import (
     Any,
     Callable,
-    Dict,
 )
 
 import pebble
@@ -201,7 +200,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
 
 
 def init_celery_app():
-    celery_app_kwd: Dict[str, Any] = {
+    celery_app_kwd: dict[str, Any] = {
         "include": TASKS_MODULES,
         "task_default_queue": DEFAULT_TASK_QUEUE,
         "task_create_missing_queues": True,
@@ -235,7 +234,7 @@ def setup_periodic_tasks(config, celery_app):
                 "schedule": interval,
             }
 
-    beat_schedule: Dict[str, Dict[str, Any]] = {}
+    beat_schedule: dict[str, dict[str, Any]] = {}
     schedule_task("prune_history_audit_table", config.history_audit_table_prune_interval)
     schedule_task("cleanup_short_term_storage", config.short_term_storage_cleanup_interval)
 

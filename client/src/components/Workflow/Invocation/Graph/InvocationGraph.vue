@@ -14,7 +14,7 @@ import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
-import type { WorkflowInvocationElementView } from "@/api/invocations";
+import type { StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
@@ -31,6 +31,8 @@ library.add(faArrowDown, faChevronDown, faChevronUp, faSignInAlt, faSitemap, faT
 interface Props {
     /** The invocation to display */
     invocation: WorkflowInvocationElementView;
+    /** The job summary for each step in the invocation */
+    stepsJobsSummary: StepJobSummary[];
     /** The workflow which was run */
     workflow: StoredWorkflowDetailed;
     /** Whether the invocation is terminal */
@@ -69,15 +71,14 @@ const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
-const invocationRef = computed(() => props.invocation);
-
 const { datatypesMapper } = useDatatypesMapper();
 
 const workflowId = computed(() => props.workflow?.id);
 const workflowVersion = computed(() => props.workflow?.version);
 
 const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
-    invocationRef,
+    computed(() => props.invocation),
+    computed(() => props.stepsJobsSummary),
     workflowId.value,
     workflowVersion.value
 );
@@ -230,7 +231,6 @@ function stepClicked(nodeId: number | null) {
                         ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
-                        :workflow="props.workflow"
                         :workflow-step="props.workflow.steps[activeNodeId]"
                         in-graph-view
                         :graph-step="steps[activeNodeId]"

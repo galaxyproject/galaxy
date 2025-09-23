@@ -267,6 +267,7 @@ import BootstrapVue from "bootstrap-vue";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
+import { usePersistentRef } from "composables/persistentRef";
 import { Toast } from "composables/toast";
 import { sanitize } from "dompurify";
 import linkifyHtml from "linkify-html";
@@ -342,7 +343,10 @@ export default {
         ...mapState(useUserStore, ["currentUser"]),
     },
     watch: {
-        perPage() {
+        perPage(newValue) {
+            if (this.perPageRef) {
+                this.perPageRef.value = newValue;
+            }
             this.fetchFolderContents();
         },
         includeDeleted() {
@@ -357,6 +361,8 @@ export default {
     },
     created() {
         this.services = new Services({ root: this.root });
+        this.perPageRef = usePersistentRef("library-folder-per-page", DEFAULT_PER_PAGE);
+        this.perPage = this.perPageRef.value;
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
@@ -370,6 +376,10 @@ export default {
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
+            // Restore perPage from localStorage after reset
+            if (this.perPageRef) {
+                this.perPage = this.perPageRef.value;
+            }
         },
         onSort(props) {
             this.sortBy = props.sortBy;

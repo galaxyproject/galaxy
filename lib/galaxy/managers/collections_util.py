@@ -2,13 +2,13 @@ import logging
 import math
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
@@ -33,6 +33,9 @@ def api_payload_to_create_params(payload):
         message = f"Missing required parameters {missing_parameters}"
         raise exceptions.ObjectAttributeMissingException(message)
 
+    column_definitions = payload.get("column_definitions", None)
+    validate_column_definitions(column_definitions)
+
     params = dict(
         collection_type=payload.get("collection_type"),
         element_identifiers=payload.get("element_identifiers"),
@@ -40,6 +43,8 @@ def api_payload_to_create_params(payload):
         hide_source_items=string_as_bool(payload.get("hide_source_items", False)),
         copy_elements=string_as_bool(payload.get("copy_elements", False)),
         fields=payload.get("fields", None),
+        column_definitions=column_definitions,
+        rows=payload.get("rows", None),
     )
     return params
 
@@ -168,7 +173,7 @@ def dictify_element_reference(
     """
     dictified = element.to_dict(view="element")
     if (element_object := element.element_object) is not None:
-        object_details: Dict[str, Any] = dict(
+        object_details: dict[str, Any] = dict(
             id=element_object.id,
             model_class=element_object.__class__.__name__,
         )
@@ -176,6 +181,13 @@ def dictify_element_reference(
             object_details["collection_type"] = element_object.collection_type
             object_details["element_count"] = element_object.element_count
             object_details["populated"] = element_object.populated_optimized
+
+            # Add hierarchical state information for intermediate collections
+            # Add elements_states and intermediate_states from DatasetCollection
+            dataset_summary = element_object.dataset_states_and_extensions_summary
+            object_details["elements_states"] = dataset_summary.states
+            object_details["elements_deleted"] = dataset_summary.deleted
+            object_details["elements_datatypes"] = dataset_summary.extensions
 
             # Recursively yield elements for each nested collection...
             if recursive:

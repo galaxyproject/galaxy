@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { CardBadge } from "@/components/Common/GCard.types";
 import { getImportableFiles, type IZipExplorer } from "@/composables/zipExplorer";
 
 import GCard from "@/components/Common/GCard.vue";
@@ -12,12 +13,11 @@ const props = defineProps<{
 
 const files = computed(() => getImportableFiles(props.explorer));
 
-const zipFileBadges = [
+const zipFileBadges: CardBadge[] = [
     {
         id: "file-count",
         label: `${files.value.length} file${files.value.length > 1 ? "s" : ""} available`,
         title: "Number of Files available to import",
-        visible: true,
     },
 ];
 </script>

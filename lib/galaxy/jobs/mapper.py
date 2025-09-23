@@ -140,11 +140,6 @@ class JobRunnerMapper:
 
         return expand_function(**actual_args)
 
-    def __job_params(self, job):
-        app = self.job_wrapper.app
-        param_values = job.get_param_values(app, ignore_errors=True)
-        return param_values
-
     def __convert_url_to_destination(self, url: str):
         """
         Job runner URLs are deprecated, but dynamic mapper functions may still

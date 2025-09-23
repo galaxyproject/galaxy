@@ -1,7 +1,7 @@
-import { type UseElementBoundingReturn } from "@vueuse/core";
+import type { UseElementBoundingReturn } from "@vueuse/core";
 import { computed, reactive, ref, set, type UnwrapRef } from "vue";
 
-import { type OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
+import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 
 import { defineScopedStore } from "./scopedStore";
@@ -41,6 +41,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const draggingTerminal = ref<OutputTerminals | null>(null);
     const activeNodeId = ref<number | null>(null);
     const scale = ref(1);
+    const position = ref<[number, number]>([0, 0]);
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
     const multiSelectedSteps = ref<Record<number, boolean>>({});
@@ -56,6 +57,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal.value = null;
         activeNodeId.value = null;
         scale.value = 1;
+        position.value = [0, 0];
         stepPosition.value = {};
         stepLoadingState.value = {};
         multiSelectedSteps.value = {};
@@ -142,6 +144,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal,
         activeNodeId,
         scale,
+        position,
         report,
         hasChanges,
         stepPosition,

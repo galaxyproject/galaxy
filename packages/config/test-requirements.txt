@@ -1,2 +1,2 @@
-gravity>=1.0
+gravity>=1.1.1
 pytest

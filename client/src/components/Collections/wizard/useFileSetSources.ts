@@ -2,7 +2,7 @@ import { type Ref, ref } from "vue";
 
 import { getRemoteEntriesAt } from "@/components/Upload/utils";
 
-import { type ListUriResponse, type RemoteDirectory, type RemoteFile } from "./types";
+import type { ListUriResponse, RemoteDirectory, RemoteFile } from "./types";
 
 export function useFileSetSources(isBusy: Ref<boolean>) {
     const pasteData = ref<string[][]>([] as string[][]);

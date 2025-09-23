@@ -10,11 +10,13 @@ import sys
 import tempfile
 import weakref
 from collections import OrderedDict
-from collections.abc import Mapping
+from collections.abc import (
+    Iterator,
+    Mapping,
+)
 from os.path import abspath
 from typing import (
     Any,
-    Iterator,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -90,21 +92,22 @@ class MetadataCollection(Mapping):
         self.parent = parent
         self._session = session
         # initialize dict if needed
+        assert self.parent is not None
         if self.parent._metadata is None:
             self.parent._metadata = {}
 
-    def get_parent(self):
+    @property
+    def parent(self) -> Union["DatasetInstance", "NoneDataset", None]:
         if "_parent" in self.__dict__:
             return self.__dict__["_parent"]()
         return None
 
-    def set_parent(self, parent):
+    @parent.setter
+    def parent(self, parent: Union["DatasetInstance", "NoneDataset"]) -> None:
         # use weakref to prevent a circular reference interfering with garbage
         # collection: hda/lda (parent) <--> MetadataCollection (self) ; needs to be
         # hashable, so cannot use proxy.
         self.__dict__["_parent"] = weakref.ref(parent)
-
-    parent = property(get_parent, set_parent)
 
     @property
     def spec(self):
@@ -153,8 +156,12 @@ class MetadataCollection(Mapping):
         return None
 
     def __setattr__(self, name, value):
-        if name == "parent":
-            return self.set_parent(value)
+        # Workaround for properties like "parent"
+        class_attr = getattr(self.__class__, name, None)
+        if isinstance(class_attr, property):
+            if class_attr.fset is None:
+                raise AttributeError(f"Property {name} does not have a setter")
+            class_attr.fset(self, value)
         elif name == "_session":
             super().__setattr__(name, value)
         else:
@@ -182,6 +189,8 @@ class MetadataCollection(Mapping):
                   False if its equal of if no metadata with the name is specified
         """
         meta_val = self[name]
+        if self.parent is None:
+            return False
         try:
             meta_spec = self.parent.metadata.spec[name]
         except KeyError:
@@ -620,11 +629,13 @@ class FileParameter(MetadataParameter):
     def make_copy(self, value, target_context: MetadataCollection, source_context):
         session = target_context._object_session(target_context.parent)
         value = self.wrap(value, session=session)
-        target_dataset = target_context.parent.dataset
         if value and not value.id:
             # This is a new MetadataFile object, we're not copying to another dataset.
             # Just use it.
             return self.unwrap(value)
+        if target_context.parent is None:
+            return None
+        target_dataset = target_context.parent.dataset
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,

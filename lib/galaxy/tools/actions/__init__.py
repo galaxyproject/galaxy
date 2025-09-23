@@ -3,17 +3,15 @@ import logging
 import os
 import re
 from abc import abstractmethod
+from collections.abc import (
+    Mapping,
+    MutableMapping,
+)
 from json import dumps
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
-    Mapping,
-    MutableMapping,
     Optional,
-    Set,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -73,15 +71,18 @@ from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetInstance,
+    )
     from galaxy.tool_util.parser.output_objects import ToolOutput
     from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
 
 
-OutputDatasetsT = Dict[str, "DatasetInstance"]
-ToolActionExecuteResult = Union[Tuple[Job, OutputDatasetsT, Optional[History]], Tuple[Job, OutputDatasetsT]]
+OutputDatasetsT = dict[str, "DatasetInstance"]
+ToolActionExecuteResult = Union[tuple[Job, OutputDatasetsT, Optional[History]], tuple[Job, OutputDatasetsT]]
 
 
 class ToolAction:
@@ -150,7 +151,7 @@ class DefaultToolAction(ToolAction):
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = LegacyUnprefixedDict()
-        all_permissions: Dict[str, Set[str]] = {}
+        all_permissions: dict[str, set[str]] = {}
 
         def record_permission(action, role_id):
             if action not in all_permissions:
@@ -269,11 +270,10 @@ class DefaultToolAction(ToolAction):
                 if not value:
                     return
 
-                collection = None
                 child_collection = False
                 if isinstance(value, CollectionAdapter):
                     # collection was created for this execution, use it as is
-                    collection = value
+                    collection: Union[CollectionAdapter, DatasetCollection] = value
                 elif hasattr(value, "child_collection"):
                     # if we are mapping a collection over a tool, so value is a DCE and
                     # we only require the child_collection
@@ -294,7 +294,8 @@ class DefaultToolAction(ToolAction):
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
-                _, extensions = collection.dataset_states_and_extensions_summary
+                summary = collection.dataset_states_and_extensions_summary
+                extensions = summary.extensions
                 conversion_required = False
                 for ext in extensions:
                     if ext:
@@ -306,7 +307,7 @@ class DefaultToolAction(ToolAction):
                         if not datatype.matches_any(input.formats):
                             conversion_required = True
                             break
-                processed_dataset_dict = {}
+                processed_dataset_dict: dict[DatasetInstance, DatasetInstance] = {}
                 for i, v in enumerate(collection.dataset_instances):
                     processed_dataset = None
                     if conversion_required:
@@ -512,7 +513,7 @@ class DefaultToolAction(ToolAction):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
-        out_data: Dict[str, DatasetInstance] = {}
+        out_data: dict[str, DatasetInstance] = {}
         input_collections = LegacyUnprefixedDict({k: v[0][0] for k, v in inp_dataset_collections.items()})
         input_collections._legacy_mapping = inp_dataset_collections._legacy_mapping
         output_collections = OutputCollections(
@@ -616,14 +617,14 @@ class DefaultToolAction(ToolAction):
             out_data[name] = data
             if output.actions:
                 # Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
-                output_action_params: Dict[str, Any] = dict(out_data)
+                output_action_params: dict[str, Any] = dict(out_data)
                 output_action_params.update(wrapped_params.params)
                 output_action_params["__python_template_version__"] = tool.python_template_version
                 output.actions.apply_action(data, output_action_params)
             # Flush all datasets at once.
             return data
 
-        child_dataset_names: Set[str] = set()
+        child_dataset_names: set[str] = set()
 
         for name, output in tool.outputs.items():
             if not filter_output(tool, output, incoming):
@@ -633,7 +634,7 @@ class DefaultToolAction(ToolAction):
                         # Output collection is mapped over and has already been copied from original job
                         continue
                     collections_manager = app.dataset_collection_manager
-                    element_identifiers: List[Dict[str, Union[str, List[Dict[str, Union[str, List[Any]]]]]]] = []
+                    element_identifiers: list[dict[str, Union[str, list[dict[str, Union[str, list[Any]]]]]]] = []
                     # mypy doesn't yet support recursive type definitions
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
                     # Just to echo TODO elsewhere - this should be restructured to allow
@@ -665,10 +666,10 @@ class DefaultToolAction(ToolAction):
                                 else:
                                     index = name_to_index[parent_id]
                             current_element_identifiers = cast(
-                                List[
-                                    Dict[
+                                list[
+                                    dict[
                                         str,
-                                        Union[str, List[Dict[str, Union[str, List[Any]]]]],
+                                        Union[str, list[dict[str, Union[str, list[Any]]]]],
                                     ]
                                 ],
                                 current_element_identifiers[index]["element_identifiers"],
@@ -923,7 +924,7 @@ class DefaultToolAction(ToolAction):
 
     def _new_job_for_session(
         self, trans, tool: "Tool", history: Optional[History]
-    ) -> Tuple[Job, Optional[model.GalaxySession]]:
+    ) -> tuple[Job, Optional[model.GalaxySession]]:
         job = Job()
         job.galaxy_version = trans.app.config.version_major
         galaxy_session = None
@@ -952,7 +953,7 @@ class DefaultToolAction(ToolAction):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
-        reductions: Dict[str, List[str]] = {}
+        reductions: dict[str, list[str]] = {}
         for name, dataset_collection_info_pairs in inp_dataset_collections.items():
             for dataset_collection, reduced in dataset_collection_info_pairs:
                 if reduced:

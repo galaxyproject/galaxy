@@ -10,7 +10,7 @@ import {
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
-import { type ArchivedHistoryDetailed } from "@/api/histories.archived";
+import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
@@ -305,7 +305,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * @param reduction Whether it is a reduction or addition (default)
      */
     async function handleTotalCountChange(count = 0, reduction = false) {
-        historiesOffset.value += !reduction ? count : -count;
+        const adjustment = !reduction ? count : -count;
+        historiesOffset.value = Math.max(0, historiesOffset.value + adjustment);
         await loadTotalHistoryCount();
     }
 
@@ -369,9 +370,12 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
-    async function secureHistory(history: HistorySummary) {
-        const securedHistory = (await secureHistoryOnServer(history)) as HistorySummaryExtended;
+    async function secureHistory(history: HistorySummary): Promise<{ sharingStatusChanged: boolean }> {
+        const { securedHistory, sharingStatusChanged } = await secureHistoryOnServer(history);
         setHistory(securedHistory);
+        return {
+            sharingStatusChanged,
+        };
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {

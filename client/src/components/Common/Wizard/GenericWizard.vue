@@ -21,9 +21,10 @@ interface Props {
      *
      * This is displayed at the top of the wizard.
      *
-     * The default component can be replaced by a slot named `header`.
+     * The default component can be replaced by a slot named `header` or it can be excluded
+     * as a property to skip the wizard all together.
      *
-     * @default "Generic Wizard"
+     * @default ""
      */
     title?: string;
 
@@ -65,7 +66,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     use: undefined,
-    title: "Generic Wizard",
+    title: undefined,
     description: undefined,
     submitButtonLabel: "Submit",
     isBusy: false,
@@ -171,7 +172,7 @@ const bodyStyle = computed(() => {
 <template>
     <component :is="props.containerComponent" class="wizard-container">
         <slot name="header">
-            <BCardTitle>
+            <BCardTitle v-if="title">
                 <h2>{{ title }}</h2>
             </BCardTitle>
         </slot>

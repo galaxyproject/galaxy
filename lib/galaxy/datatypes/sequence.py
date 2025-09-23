@@ -9,13 +9,11 @@ import os
 import re
 import string
 import subprocess
+from collections.abc import Iterable
 from itertools import islice
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
-    List,
     Optional,
 )
 
@@ -139,7 +137,7 @@ class Sequence(data.Text):
             dataset.blurb = "file purged from disk"
 
     @staticmethod
-    def get_sequences_per_file(total_sequences: int, split_params: Dict) -> List:
+    def get_sequences_per_file(total_sequences: int, split_params: dict) -> list:
         if split_params["split_mode"] == "number_of_parts":
             # legacy basic mode - split into a specified number of parts
             parts = int(split_params["split_size"])
@@ -218,7 +216,7 @@ class Sequence(data.Text):
         return directories
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -227,7 +225,7 @@ class Sequence(data.Text):
     @staticmethod
     def get_split_commands_with_toc(
         input_name: str, output_name: str, toc_file: Any, start_sequence: int, sequence_count: int
-    ) -> List:
+    ) -> list:
         """
         Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
         shell commands that will extract the parts necessary
@@ -299,7 +297,7 @@ class Sequence(data.Text):
     @staticmethod
     def get_split_commands_sequential(
         is_compressed: bool, input_name: str, output_name: str, start_sequence: int, sequence_count: int
-    ) -> List:
+    ) -> list:
         """
         Does a brain-dead sequential scan & extract of certain sequences
         >>> Sequence.get_split_commands_sequential(True, './input.gz', './output.gz', start_sequence=0, sequence_count=10)
@@ -357,7 +355,7 @@ class Alignment(data.Text):
     )
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -445,7 +443,7 @@ class Fasta(Sequence):
         return False
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """Split a FASTA file sequence by sequence.
 
         Note that even if split_mode="number_of_parts", the actual number of
@@ -793,7 +791,7 @@ class BaseFastq(Sequence):
         return self.check_first_block(file_prefix)
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
@@ -818,7 +816,7 @@ class BaseFastq(Sequence):
         return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
 
     @staticmethod
-    def process_split_file(data: Dict) -> bool:
+    def process_split_file(data: dict) -> bool:
         """
         This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
         to create the input files for the Task. The parameters:
@@ -855,7 +853,7 @@ class BaseFastq(Sequence):
         return cls.check_block(block)
 
     @classmethod
-    def check_block(cls, block: List) -> bool:
+    def check_block(cls, block: list) -> bool:
         if (
             len(block) == 4
             and block[0][0]
@@ -1065,7 +1063,7 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[List] = None) -> str:
+    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[list] = None) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:

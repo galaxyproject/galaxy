@@ -1,6 +1,6 @@
 import { computed, type Ref, ref, unref, watch } from "vue";
 
-import { type CollectionElementIdentifiers, type CreateNewCollectionPayload, type HistoryItemSummary } from "@/api";
+import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HistoryItemSummary } from "@/api";
 import type RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
@@ -11,6 +11,12 @@ import { useCollectionCreation } from "./useCollectionCreation";
 import { useExtensionFiltering } from "./useExtensionFilter";
 
 export type Mode = "modal" | "wizard";
+
+/** Terminal states that are not usable from an upload (anything but `ok` or `deferred`)
+ */
+const UNUSABLE_FROM_UPLOAD_STATES = Object.values(STATES.READY_STATES).filter(
+    (state) => state !== STATES.OK && state !== STATES.DEFERRED
+);
 
 interface CommonCollectionBuilderProps {
     extensions?: string[];
@@ -67,11 +73,9 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
 
     if (emit) {
         watch(collectionName, (newValue) => {
-            console.log("name upated...");
             emit("name", newValue);
         });
         watch(validInput, (newValue) => {
-            console.log("emitting...");
             emit("input-valid", newValue);
         });
     }
@@ -96,9 +100,7 @@ export function useCollectionCreator(props: CommonCollectionBuilderProps, emit?:
             return localize("is a collection, this is not allowed");
         }
 
-        const validState = STATES.VALID_INPUT_STATES.includes(element.state as string);
-
-        if (!validState) {
+        if (UNUSABLE_FROM_UPLOAD_STATES.includes(element.state)) {
             return localize("has errored, is paused, or is not accessible");
         }
 

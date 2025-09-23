@@ -2,10 +2,10 @@ import threading
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
+    cast,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -39,6 +39,11 @@ from galaxy.tool_util.toolbox.watcher import (
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 
+if TYPE_CHECKING:
+    from galaxy.model.tool_shed_install import ToolShedRepository
+    from galaxy.tools import Tool
+    from galaxy.util.path import StrPath
+
 
 class ToolShedTarget(NamedTuple):
     url: str
@@ -62,7 +67,7 @@ EMPTY_TOOL_DATA_TABLE_CONFIG = """<?xml version="1.0"?>
 class Config:
     tool_data_path: str
     install_database_connection: str
-    install_database_engine_options: Dict[str, Any] = {}
+    install_database_engine_options: dict[str, Any] = {}
     update_integrated_tool_panel: bool = True
     integrated_tool_panel_config: str
     shed_tool_config_file: str
@@ -79,11 +84,11 @@ class Config:
 
 
 class TestTool:
-    _macro_paths: List[str] = []
+    _macro_paths: list[str] = []
     params_with_missing_data_table_entry: list = []
     params_with_missing_index_file: list = []
 
-    def __init__(self, config_file, tool_shed_repository, guid):
+    def __init__(self, config_file: "StrPath", tool_shed_repository, guid: str) -> None:
         self.config_file = config_file
         self.tool_shed_repository = tool_shed_repository
         self.guid = guid
@@ -100,12 +105,14 @@ class TestTool:
 
 
 class TestToolBox(AbstractToolBox):
-    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        tool = TestTool(config_file, kwds["tool_shed_repository"], kwds["guid"])
+    def create_tool(self, config_file: "StrPath", **kwds) -> "Tool":
+        tool = cast("Tool", TestTool(config_file, kwds["tool_shed_repository"], kwds["guid"]))
         tool._lineage = self._lineage_map.register(tool)  # cleanup?
         return tool
 
-    def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
+    def _get_tool_shed_repository(
+        self, tool_shed: str, name: str, owner: str, installed_changeset_revision: Optional[str]
+    ) -> "ToolShedRepository":
         return get_installed_repository(
             self.app,
             tool_shed=tool_shed,
@@ -139,7 +146,7 @@ class DummyDataManager(DataManagerInterface):
     def process_result(self, out_data):
         return None
 
-    def write_bundle(self, out) -> Dict[str, OutputDataset]:
+    def write_bundle(self, out) -> dict[str, OutputDataset]:
         return {}
 
 
@@ -154,7 +161,7 @@ class StandaloneDataManagers(DataManagersInterface):
     def get_manager(self, data_manager_id: str) -> Optional[DataManagerInterface]:
         return None
 
-    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None:
+    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None:
         return None
 
     @property

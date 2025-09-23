@@ -4,8 +4,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { CreateNewCollectionPayload, HistoryItemSummary } from "@/api";
-import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
+import { type CreateNewCollectionPayload, type HDCASummary, type HistoryItemSummary, isHDCA } from "@/api";
+import { createHistoryDatasetCollectionInstanceFull, type SampleSheetCollectionType } from "@/api/datasetCollections";
+import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
 import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -14,11 +15,12 @@ import { orList } from "@/utils/strings";
 import { stateIsTerminal } from "@/utils/utils";
 
 import type { CollectionBuilderType } from "../History/adapters/buildCollectionModal";
-import { type SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
+import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
 
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
+import SampleSheetCollectionCreator from "./SampleSheetCollectionCreator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -27,6 +29,7 @@ interface Props {
     historyId: string;
     show: boolean;
     collectionType: CollectionBuilderType;
+    extendedCollectionType: ExtendedCollectionType;
     selectedItems?: HistoryItemSummary[];
     defaultHideSourceItems?: boolean;
     extensions?: string[];
@@ -40,7 +43,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "created-collection", collection: any): void;
+    (e: "created-collection", collection: HDCASummary): void;
     (e: "update:show", show: boolean): void;
     (e: "on-hide"): void;
 }>();
@@ -158,9 +161,13 @@ const modalTitle = computed(() => {
 
 const historyItemsStore = useHistoryItemsStore();
 /** The created collection accessed from the history items store */
-const createdCollectionInHistory = computed(() => {
+const createdCollectionInHistory = computed<HDCASummary | undefined>(() => {
     const historyItems = historyItemsStore.getHistoryItems(props.historyId, "");
-    return historyItems.find((item) => item.id === createdCollection.value?.id);
+    const createdCollectionItem = historyItems.find((item) => item.id === createdCollection.value?.id);
+    if (createdCollectionItem && isHDCA(createdCollectionItem)) {
+        return createdCollectionItem;
+    }
+    return undefined;
 });
 /** If the created collection has achieved a terminal state */
 const createdCollectionInReadyState = computed(
@@ -189,7 +196,7 @@ async function createHDCA(payload: CreateNewCollectionPayload) {
 watch(
     () => createdCollectionInReadyState.value,
     (stateReady) => {
-        if (stateReady) {
+        if (stateReady && createdCollectionInHistory.value) {
             emit("created-collection", createdCollectionInHistory.value);
         }
     }
@@ -226,6 +233,13 @@ function redrawCreator() {
         creator.value.redraw();
     }
 }
+
+const sampleSheetType = computed<SampleSheetCollectionType | null>(() => {
+    if (!props.collectionType.startsWith("sample_sheet")) {
+        return null;
+    }
+    return props.collectionType as SampleSheetCollectionType;
+});
 
 defineExpose({ redrawCreator });
 </script>
@@ -325,6 +339,17 @@ defineExpose({ redrawCreator });
             mode="modal"
             @on-cancel="hideCreator"
             @on-create="createHDCA" />
+        <SampleSheetCollectionCreator
+            v-else-if="sampleSheetType"
+            :history-id="props.historyId"
+            :initial-elements="creatorItems || []"
+            :default-hide-source-items="props.defaultHideSourceItems"
+            :from-selection="fromSelection"
+            :extensions="props.extensions"
+            :collection-type="sampleSheetType"
+            :extended-collection-type="extendedCollectionType"
+            @on-create="createHDCA"
+            @on-cancel="hideCreator" />
     </component>
 </template>
 

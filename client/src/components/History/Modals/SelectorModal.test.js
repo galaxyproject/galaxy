@@ -1,6 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
-import { BListGroupItem } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -10,6 +9,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import SelectorModal from "./SelectorModal.vue";
+import GCard from "components/Common/GCard.vue";
 
 const localVue = getLocalVue();
 
@@ -35,7 +35,8 @@ const PROPS_FOR_MODAL_MULTIPLE_SELECT = {
     multiple: true,
 };
 
-const CURRENT_HISTORY_INDICATION_TEXT = "(Current)";
+const CURRENT_HISTORY_INDICATION_CLASS = "g-card-current";
+const SELECTED_HISTORY_CLASS = "g-card-selected";
 
 const CURRENT_USER = {
     email: "email",
@@ -89,24 +90,24 @@ describe("History SelectorModal.vue", () => {
         await mountWith(PROPS_FOR_MODAL);
 
         const currentHistoryRow = wrapper.find(`[data-pk="${CURRENT_HISTORY_ID}"]`);
-        expect(currentHistoryRow.html()).toContain(CURRENT_HISTORY_INDICATION_TEXT);
+        expect(currentHistoryRow.classes()).toContain(CURRENT_HISTORY_INDICATION_CLASS);
     });
 
     it("paginates the histories", async () => {
         await mountWith(PROPS_FOR_MODAL);
 
-        let displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
+        let displayedRows = wrapper.findAllComponents(GCard).wrappers;
         expect(displayedRows.length).toBe(10);
-        expect(wrapper.find("[data-description='load more histories button']").exists()).toBe(true);
+        expect(wrapper.find("[data-description='load more items button']").exists()).toBe(true);
 
         await historyStore.loadHistories();
         await wrapper.setProps({
             histories: historyStore.histories,
         });
 
-        displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
+        displayedRows = wrapper.findAllComponents(GCard).wrappers;
         expect(displayedRows.length).toBe(15);
-        expect(wrapper.find("[data-description='load more histories button']").exists()).toBe(false);
+        expect(wrapper.find("[data-description='load more items button']").exists()).toBe(false);
     });
 
     it("emits selectHistory with the correct history ID when a row is clicked", async () => {
@@ -136,7 +137,7 @@ describe("History SelectorModal.vue", () => {
             const targetRow2 = wrapper.find(`[data-pk="${targetHistoryId2}"]`);
             await targetRow2.trigger("click");
 
-            const selectedHistories = wrapper.findAll(".list-group-item.active").wrappers;
+            const selectedHistories = wrapper.findAll(`.${SELECTED_HISTORY_CLASS}`).wrappers;
             expect(selectedHistories.length).toBe(2);
 
             const button = wrapper.find("[data-description='change selected histories button']");

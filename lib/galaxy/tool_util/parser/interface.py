@@ -400,7 +400,7 @@ class ToolSource(metaclass=ABCMeta):
         return []
 
     @property
-    def macro_paths(self):
+    def macro_paths(self) -> List[str]:
         return []
 
     @property
@@ -513,6 +513,10 @@ class InputSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_input_type(self) -> str:
         """Return the type of this input."""
+
+    @abstractmethod
+    def parse_extensions(self) -> List[str]:
+        """Return list of extensions"""
 
     def parse_help(self):
         return self.get("help")
@@ -675,9 +679,7 @@ class TestCollectionDef:
                     identifier=identifier, **element_object._test_format_to_dict()
                 )
             else:
-                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(
-                    cast(ToolSourceTestInput, element_object)
-                )
+                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(element_object)
                 if input_as_dict is not None:
                     as_dict = JsonTestCollectionDefDatasetElementDict(
                         identifier=identifier,

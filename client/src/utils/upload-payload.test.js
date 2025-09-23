@@ -32,7 +32,6 @@ describe("uploadPayload", () => {
                 { fileContent: " fileContent ", fileMode: "new", fileName: "1" },
                 {
                     dbKey: "dbKey2",
-                    deferred: true,
                     extension: "extension2",
                     fileData: { size: 1 },
                     fileMode: "local",
@@ -62,7 +61,6 @@ describe("uploadPayload", () => {
                 },
                 {
                     dbKey: "dbKey5",
-                    deferred: true,
                     extension: "extension5",
                     fileData: { size: 1 },
                     fileMode: "local",
@@ -83,7 +81,6 @@ describe("uploadPayload", () => {
                     elements: [
                         {
                             dbkey: "?",
-                            deferred: undefined,
                             ext: "auto",
                             name: "1",
                             paste_content: " fileContent ",
@@ -93,7 +90,6 @@ describe("uploadPayload", () => {
                         },
                         {
                             dbkey: "dbKey2",
-                            deferred: true,
                             ext: "extension2",
                             name: "2",
                             space_to_tab: true,
@@ -132,7 +128,6 @@ describe("uploadPayload", () => {
                         },
                         {
                             dbkey: "dbKey5",
-                            deferred: true,
                             ext: "extension5",
                             name: "PreviousGalaxyFile",
                             space_to_tab: true,
@@ -151,7 +146,6 @@ describe("uploadPayload", () => {
                 { fileContent: "fileContent", fileMode: "new", fileName: "1" },
                 {
                     dbKey: "dbKey",
-                    deferred: true,
                     extension: "extension",
                     fileContent: "fileContent",
                     fileData: "fileData",
@@ -162,7 +156,6 @@ describe("uploadPayload", () => {
                 },
                 {
                     dbKey: "dbKey2",
-                    deferred: true,
                     extension: "extension2",
                     fileContent: "fileContent",
                     fileData: "fileData",
@@ -188,7 +181,6 @@ describe("uploadPayload", () => {
                                 items: [
                                     {
                                         dbkey: "?",
-                                        deferred: undefined,
                                         ext: "auto",
                                         name: "1",
                                         paste_content: "fileContent",
@@ -198,7 +190,6 @@ describe("uploadPayload", () => {
                                     },
                                     {
                                         dbkey: "dbKey",
-                                        deferred: true,
                                         ext: "extension",
                                         name: "2",
                                         space_to_tab: true,
@@ -207,7 +198,6 @@ describe("uploadPayload", () => {
                                     },
                                     {
                                         dbkey: "dbKey2",
-                                        deferred: true,
                                         ext: "extension2",
                                         name: "PreviousGalaxyFile",
                                         space_to_tab: true,

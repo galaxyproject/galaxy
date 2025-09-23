@@ -90,14 +90,14 @@ class BoolAnd(BoolBinaryOperation):
     """Represents the `AND` boolean operation."""
 
     reprsymbol = "&"
-    evalop = all
+    evalop = all  # type: ignore[assignment]
 
 
 class BoolOr(BoolBinaryOperation):
     """Represents the `OR` boolean operation."""
 
     reprsymbol = "|"
-    evalop = any
+    evalop = any  # type: ignore[assignment]
 
 
 class BoolNot:

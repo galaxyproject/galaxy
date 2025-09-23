@@ -1,5 +1,5 @@
-import { type CollectionType } from "@/api/datasetCollections";
-import { type CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionType } from "@/api/datasetCollections";
+import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
 
 export const unconstrainedCollectionTypeBuilders: CollectionBuilderType[] = ["list", "list:paired", "paired"];
 
@@ -14,6 +14,14 @@ export function buildersForCollectionType(collectionType: CollectionType): Colle
         return ["list:paired"];
     } else if (collectionType == "list:paired_or_unpaired") {
         return ["list", "list:paired", "list:paired_or_unpaired"];
+    } else if (collectionType == "sample_sheet") {
+        return ["sample_sheet"];
+    } else if (collectionType == "sample_sheet:paired") {
+        return ["sample_sheet:paired"];
+    } else if (collectionType == "sample_sheet:paired_or_unpaired") {
+        return ["sample_sheet:paired_or_unpaired"];
+    } else if (collectionType == "sample_sheet:record") {
+        return ["sample_sheet:record"];
     } else {
         return [];
     }
