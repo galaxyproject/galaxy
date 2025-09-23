@@ -20,35 +20,55 @@ import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/store
  * Vue composable that combines user credentials store with tool credentials management.
  * Provides a unified interface for managing user credentials for a specific tool.
  *
- * @param toolId - The ID of the tool
- * @param toolVersion - The version of the tool
+ * @param {string} toolId - The ID of the tool.
+ * @param {string} toolVersion - The version of the tool.
+ * @returns {Object} Composable interface with credential management functions and state.
  */
 export function useUserToolCredentials(toolId: string, toolVersion: string) {
     const { currentUser } = storeToRefs(useUserStore());
 
+    const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
+    const { isBusy, userToolServicesFor } = storeToRefs(userToolsServiceCredentialsStore);
+
+    /** Source credentials definition transformed for the specific tool. */
     const sourceCredentialsDefinition = ref<SourceCredentialsDefinition>(
         transformToSourceCredentials(toolId, toolVersion),
     );
 
-    const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
-    const { isBusy, userToolServicesFor } = storeToRefs(userToolsServiceCredentialsStore);
-
+    /** Current user tool services for the specific tool and version. */
     const currentUserToolServices = computed(() => userToolServicesFor.value(toolId, toolVersion));
 
+    /** Gets user service for a specific credentials identifier. */
     const userServiceFor = computed(() => {
+        /**
+         * @param {ServiceCredentialsIdentifier} credentialsIdentifier - Service name and version identifier.
+         * @returns {UserServiceCredentialsResponse | undefined} User service or undefined if not found.
+         */
         return (credentialsIdentifier: ServiceCredentialsIdentifier) => {
             return currentUserToolServices.value?.find((service) => {
                 return service.name === credentialsIdentifier.name && service.version === credentialsIdentifier.version;
             });
         };
     });
+
+    /** Gets user service groups for a specific credentials identifier. */
     const userServiceGroupsFor = computed(() => {
+        /**
+         * @param {ServiceCredentialsIdentifier} credentialsIdentifier - Service name and version identifier.
+         * @returns {ServiceCredentialGroupResponse[] | undefined} Service groups or undefined if not found.
+         */
         return (credentialsIdentifier: ServiceCredentialsIdentifier) => {
             const foundedService = userServiceFor.value(credentialsIdentifier);
             return foundedService?.groups;
         };
     });
 
+    /**
+     * Gets service credentials definition by key.
+     * @param {string} key - The service credentials key.
+     * @returns {ServiceCredentialsDefinition} Service credentials definition.
+     * @throws {Error} If no definition is found for the given key.
+     */
     function getServiceCredentialsDefinitionByKey(key: string): ServiceCredentialsDefinition {
         const definition = sourceCredentialsDefinition.value.services.get(key);
         if (!definition) {
@@ -59,6 +79,12 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return definition;
     }
 
+    /**
+     * Gets tool service credentials definition for a service identifier.
+     * @param {ServiceCredentialsIdentifier} serviceIdentifier - Service name and version identifier.
+     * @returns {ServiceCredentialsDefinition} Service credentials definition.
+     * @throws {Error} If no definition is found for the service identifier.
+     */
     function getToolServiceCredentialsDefinitionFor(
         serviceIdentifier: ServiceCredentialsIdentifier,
     ): ServiceCredentialsDefinition {
@@ -66,6 +92,12 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return getServiceCredentialsDefinitionByKey(key);
     }
 
+    /**
+     * Builds credential groups from user credentials and service definition.
+     * @param {ServiceCredentialsDefinition} definition - Service credentials definition.
+     * @param {UserServiceCredentialsResponse} [initialUserCredentials] - Initial user credentials.
+     * @returns {ServiceCredentialGroupPayload[]} Array of service credential group payloads.
+     */
     function buildGroupsFromUserCredentials(
         definition: ServiceCredentialsDefinition,
         initialUserCredentials?: UserServiceCredentialsResponse,
@@ -92,6 +124,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return groups;
     }
 
+    /** Whether user has provided all service credentials (required and optional). */
     const hasUserProvidedAllServiceCredentials = computed<boolean>(() => {
         if (!currentUserToolServices.value || currentUserToolServices.value.length === 0) {
             return false;
@@ -107,6 +140,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return true;
     });
 
+    /** Whether tool has any required service credentials. */
     const toolHasRequiredServiceCredentials = computed<boolean>(() => {
         for (const definition of sourceCredentialsDefinition.value.services.values()) {
             if (definition.optional === false) {
@@ -116,6 +150,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return false;
     });
 
+    /** Whether user has provided all required service credentials. */
     const hasUserProvidedAllRequiredServiceCredentials = computed<boolean>(() => {
         if (!currentUserToolServices.value || currentUserToolServices.value.length === 0) {
             return false;
@@ -135,6 +170,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         return true;
     });
 
+    /** Whether user has provided some optional service credentials. */
     const hasUserProvidedSomeOptionalServiceCredentials = computed<boolean>(() => {
         if (!currentUserToolServices.value || currentUserToolServices.value.length === 0) {
             return false;
@@ -155,7 +191,8 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     });
 
     /**
-     * Get the appropriate banner variant based on credential state
+     * Get the appropriate banner variant based on credential state.
+     * @returns {string} Banner variant ('info', 'success', or 'warning').
      */
     const statusVariant = computed(() => {
         if (isBusy.value) {
@@ -168,7 +205,9 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     });
 
     /**
-     * Check if all credentials (required and optional) are set by the user
+     * Check if all credentials (required and optional) are set by the user.
+     * @param {UserServiceCredentialsResponse} sourceService - Source service to check.
+     * @returns {boolean} True if service has current group ID.
      */
     function serviceHasCurrentGroupId(sourceService: UserServiceCredentialsResponse): boolean {
         if (sourceService.groups && sourceService.current_group_id) {
@@ -178,9 +217,11 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     }
 
     /**
-     * Fetch or check user credentials for the tool
+     * Fetch or check user credentials for the tool.
+     * @returns {Promise<void>}
+     * @throws {Error} If the credentials check fails.
      */
-    async function checkUserCredentials() {
+    async function checkUserCredentials(): Promise<void> {
         if (!isRegisteredUser(currentUser.value)) {
             return;
         }
@@ -195,7 +236,15 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         }
     }
 
-    async function createUserCredentials(createSourceCredentialsPayload: CreateSourceCredentialsPayload) {
+    /**
+     * Creates new user credentials for the tool.
+     * @param {CreateSourceCredentialsPayload} createSourceCredentialsPayload - Credential creation payload.
+     * @returns {Promise<void>}
+     * @throws {Error} If the credential creation fails.
+     */
+    async function createUserCredentials(
+        createSourceCredentialsPayload: CreateSourceCredentialsPayload,
+    ): Promise<void> {
         try {
             const serviceIdentifier = createSourceCredentialsPayload.service_credential;
             await userToolsServiceCredentialsStore.createNewCredentialsGroupForTool(
@@ -209,9 +258,16 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     }
 
     /**
-     * Save user credentials for the tool
+     * Save user credentials for the tool.
+     * @param {string} groupId - Group ID to update.
+     * @param {ServiceCredentialGroupPayload} serviceGroupPayload - Service group payload to save.
+     * @returns {Promise<void>}
+     * @throws {Error} If the credential save fails.
      */
-    async function saveUserCredentials(groupId: string, serviceGroupPayload: ServiceCredentialGroupPayload) {
+    async function saveUserCredentials(
+        groupId: string,
+        serviceGroupPayload: ServiceCredentialGroupPayload,
+    ): Promise<void> {
         try {
             await userToolsServiceCredentialsStore.updateUserCredentialsForTool(
                 toolId,
@@ -226,9 +282,16 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
     }
 
     /**
-     * Delete a credentials group for a specific service
+     * Delete a credentials group for a specific service.
+     * @param {ServiceCredentialsIdentifier} serviceIdentifier - Service name and version identifier.
+     * @param {string} groupId - Group ID to delete.
+     * @returns {Promise<void>}
+     * @throws {Error} If the credential deletion fails.
      */
-    async function deleteCredentialsGroup(serviceIdentifier: ServiceCredentialsIdentifier, groupId: string) {
+    async function deleteCredentialsGroup(
+        serviceIdentifier: ServiceCredentialsIdentifier,
+        groupId: string,
+    ): Promise<void> {
         try {
             await userToolsServiceCredentialsStore.deleteCredentialsGroupForTool(
                 toolId,
@@ -242,7 +305,13 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
         }
     }
 
-    async function selectCurrentCredentialsGroups(serviceCredentials: SelectCurrentGroupPayload[]) {
+    /**
+     * Selects current credentials groups for the tool.
+     * @param {SelectCurrentGroupPayload[]} serviceCredentials - Array of service credentials to select.
+     * @returns {Promise<void>}
+     * @throws {Error} If the selection fails.
+     */
+    async function selectCurrentCredentialsGroups(serviceCredentials: SelectCurrentGroupPayload[]): Promise<void> {
         try {
             await userToolsServiceCredentialsStore.selectCurrentCredentialsGroupsForTool(
                 toolId,
@@ -257,17 +326,14 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     return {
         sourceCredentialsDefinition,
-
         currentUserToolServices,
         userServiceFor,
         userServiceGroupsFor,
-
         statusVariant,
         toolHasRequiredServiceCredentials,
         hasUserProvidedAllServiceCredentials,
         hasUserProvidedAllRequiredServiceCredentials,
         hasUserProvidedSomeOptionalServiceCredentials,
-
         checkUserCredentials,
         createUserCredentials,
         saveUserCredentials,
