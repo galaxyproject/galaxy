@@ -16,43 +16,65 @@ import type {
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
+/** Placeholder for secret values in UI. */
 export const SECRET_PLACEHOLDER = "********";
 
+/** Maps user service credentials ID to current group ID. */
 export interface ServiceCredentialsCurrentGroupIds {
     [userServiceCredentialsId: string]: string | undefined;
 }
 
+/** Maps user tool key to service credentials group IDs. */
 export interface ToolsCurrentGroupIds {
     [userToolKey: string]: ServiceCredentialsCurrentGroupIds;
 }
 
+/** Service credentials group with additional source metadata. */
 export interface ServiceCredentialsGroupDetails extends ServiceCredentialGroupResponse {
     sourceId: string;
     sourceVersion: string;
     serviceDefinition: ServiceCredentialsDefinition;
 }
 
+/**
+ * Pinia store for managing user service credentials for tools.
+ * Handles CRUD operations for tool-specific service credentials and groups.
+ */
 export const useUserToolsServiceCredentialsStore = defineStore("userToolsServiceCredentialsStore", () => {
     const userStore = useUserStore();
     const { currentUser } = storeToRefs(userStore);
 
-    const userToolsServices = ref<Record<string, UserServiceCredentialsResponse[]>>({});
-    const userToolServiceCredentialsGroups = ref<Record<string, ServiceCredentialGroupResponse>>({});
-
     const { setToolServiceCredentialsDefinitionFor, getToolServiceCredentialsDefinitionsFor } =
         useToolsServiceCredentialsDefinitionsStore();
 
+    /** Tool services mapped by user tool key. */
+    const userToolsServices = ref<Record<string, UserServiceCredentialsResponse[]>>({});
+    /** Service credential groups mapped by group ID. */
+    const userToolServiceCredentialsGroups = ref<Record<string, ServiceCredentialGroupResponse>>({});
+
+    /** Loading state indicator. */
     const isBusy = ref(false);
+    /** Current loading message. */
     const busyMessage = ref<string>("");
 
+    /** Currently selected group IDs for each tool service. */
     const userToolsServicesCurrentGroupIds = ref<ToolsCurrentGroupIds>({});
 
+    /**
+     * Updates the current group ID for a specific tool service credential.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @param {string} userServiceCredentialsId - Service credentials ID.
+     * @param {string | undefined} groupId - Group ID to set (undefined to unset).
+     * @returns {void}
+     * @throws {Error} If current group IDs are not defined for the tool service.
+     */
     function updateToolServiceCredentialsCurrentGroupId(
         toolId: string,
         toolVersion: string,
         userServiceCredentialsId: string,
         groupId: string | undefined,
-    ) {
+    ): void {
         const userToolKey = getUserToolKey(toolId, toolVersion);
         const userToolServiceCurrentGroupIds = userToolsServicesCurrentGroupIds.value[userToolKey];
 
@@ -64,6 +86,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         userToolsServicesCurrentGroupIds.value = { ...userToolsServicesCurrentGroupIds.value };
     }
 
+    /** All service credential groups with source metadata. */
     const userToolsGroups = computed(() => {
         const groups: ServiceCredentialsGroupDetails[] = [];
         for (const userToolKey in userToolsServices.value) {
@@ -95,6 +118,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return groups;
     });
 
+    /** Gets current group ID for a specific tool service credential. */
     const getUserToolServiceCurrentGroupId = computed(() => {
         return (toolId: string, toolVersion: string, userServiceCredentialsId: string): string | undefined => {
             const userToolKey = getUserToolKey(toolId, toolVersion);
@@ -105,6 +129,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         };
     });
 
+    /** Gets tool services for a specific tool and version. */
     const userToolServicesFor = computed(() => (toolId: string, toolVersion: string) => {
         if (!isRegisteredUser(currentUser.value)) {
             return undefined;
@@ -113,7 +138,12 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return userToolsServices.value[userToolKey];
     });
 
-    function updateUserToolServiceGroups(userSourceServices: UserServiceCredentialsResponse[]) {
+    /**
+     * Updates credential groups for multiple services.
+     * @param {UserServiceCredentialsResponse[]} userSourceServices - Array of user service credentials to update.
+     * @returns {void}
+     */
+    function updateUserToolServiceGroups(userSourceServices: UserServiceCredentialsResponse[]): void {
         for (const sourceService of userSourceServices) {
             for (const group of sourceService.groups) {
                 userToolServiceCredentialsGroups.value[group.id] = group;
@@ -121,7 +151,11 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
-    function initToolsCurrentGroupIds() {
+    /**
+     * Initializes current group IDs for all tool services.
+     * @returns {void}
+     */
+    function initToolsCurrentGroupIds(): void {
         for (const userToolKey in userToolsServices.value) {
             const userToolServices = userToolsServices.value[userToolKey];
             if (userToolServices) {
@@ -134,6 +168,13 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
+    /**
+     * Gets a specific tool service by identifier.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @param {ServiceCredentialsIdentifier} serviceIdentifier - Service name and version.
+     * @returns {UserServiceCredentialsResponse | undefined} Tool service or undefined if not found.
+     */
     function getToolService(
         toolId: string,
         toolVersion: string,
@@ -147,7 +188,12 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return service;
     }
 
-    function updateUserToolServiceGroup(group: ServiceCredentialGroupResponse) {
+    /**
+     * Updates a single credential group across all tool services.
+     * @param {ServiceCredentialGroupResponse} group - The credential group to update.
+     * @returns {void}
+     */
+    function updateUserToolServiceGroup(group: ServiceCredentialGroupResponse): void {
         set(userToolServiceCredentialsGroups.value, group.id, group);
 
         for (const userToolKey in userToolsServices.value) {
@@ -164,9 +210,14 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
-    async function fetchAllUserToolsServiceCredentials(includeDefinition: boolean = true) {
+    /**
+     * Fetches all service credentials for the current user.
+     * @param {boolean} [includeDefinition=true] - Whether to include service definitions.
+     * @returns {Promise<void>}
+     */
+    async function fetchAllUserToolsServiceCredentials(includeDefinition: boolean = true): Promise<void> {
         if (!isRegisteredUser(currentUser.value)) {
-            return [];
+            return;
         }
 
         const userId = ensureUserIsRegistered();
@@ -213,6 +264,13 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
+    /**
+     * Fetches service credentials for a specific tool.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @returns {Promise<void>}
+     * @throws {Error} If the API request fails.
+     */
     async function fetchAllUserToolServices(toolId: string, toolVersion: string): Promise<void> {
         const userId = ensureUserIsRegistered();
 
@@ -248,6 +306,13 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
+    /**
+     * Creates a new credentials group for a tool.
+     * @param {ServiceCredentialsIdentifier} serviceIdentifier - Service name and version.
+     * @param {CreateSourceCredentialsPayload} createSourceCredentialsPayload - Credential creation payload.
+     * @returns {Promise<ServiceCredentialGroupResponse>} Created credential group.
+     * @throws {Error} If the API request fails or no service is found.
+     */
     async function createNewCredentialsGroupForTool(
         serviceIdentifier: ServiceCredentialsIdentifier,
         createSourceCredentialsPayload: CreateSourceCredentialsPayload,
@@ -299,6 +364,15 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
+    /**
+     * Updates existing credentials for a tool.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @param {string} groupId - Group ID to update.
+     * @param {ServiceCredentialGroupPayload} serviceGroupPayload - Updated credential data.
+     * @returns {Promise<ServiceCredentialGroupResponse>} Updated credential group.
+     * @throws {Error} If the API request fails.
+     */
     async function updateUserCredentialsForTool(
         toolId: string,
         toolVersion: string,
@@ -335,6 +409,15 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
+    /**
+     * Deletes a credentials group for a tool.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @param {ServiceCredentialsIdentifier} serviceIdentifier - Service name and version.
+     * @param {string} groupId - Group ID to delete.
+     * @returns {Promise<void>}
+     * @throws {Error} If no service is found or the API request fails.
+     */
     async function deleteCredentialsGroupForTool(
         toolId: string,
         toolVersion: string,
@@ -387,11 +470,19 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         }
     }
 
+    /**
+     * Selects current credential groups for a tool.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @param {SelectCurrentGroupPayload[]} serviceCredentials - Credentials to select.
+     * @returns {Promise<void>}
+     * @throws {Error} If the API request fails.
+     */
     async function selectCurrentCredentialsGroupsForTool(
         toolId: string,
         toolVersion: string,
         serviceCredentials: SelectCurrentGroupPayload[],
-    ) {
+    ): Promise<void> {
         const userId = ensureUserIsRegistered();
 
         busyMessage.value = "Selecting current credentials groups";
@@ -432,8 +523,11 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
      * This information is used when executing a tool to provide the appropriate credentials.
      * In addition to the corresponding service credentials ID and group ID, the service name and version
      * are also provided to facilitate the identification of the credentials being used.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @returns {ServiceCredentialsContext[]} Array of selected service credentials context.
      */
-    function getCredentialsExecutionContextForTool(toolId: string, toolVersion: string) {
+    function getCredentialsExecutionContextForTool(toolId: string, toolVersion: string): ServiceCredentialsContext[] {
         const services = userToolServicesFor.value(toolId, toolVersion);
         if (!services) {
             console.warn(
@@ -468,11 +562,23 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return selectedCredentials;
     }
 
+    /**
+     * Generates unique key for user tool combination.
+     * @param {string} toolId - Tool identifier.
+     * @param {string} toolVersion - Tool version.
+     * @returns {string} Unique user tool key.
+     * @throws {Error} If user is not registered.
+     */
     function getUserToolKey(toolId: string, toolVersion: string): string {
         const userId = ensureUserIsRegistered();
         return `${userId}-${toolId}-${toolVersion}`;
     }
 
+    /**
+     * Ensures current user is registered and returns user ID.
+     * @returns {string} User ID.
+     * @throws {Error} If user is not registered.
+     */
     function ensureUserIsRegistered(): string {
         if (!isRegisteredUser(currentUser.value)) {
             throw new Error("Only registered users can have tool credentials");
@@ -480,7 +586,12 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         return currentUser.value.id;
     }
 
-    function removeSecretPlaceholders(serviceGroupPayload: ServiceCredentialGroupPayload) {
+    /**
+     * Removes secret placeholders from payload before API submission.
+     * @param {ServiceCredentialGroupPayload} serviceGroupPayload - Payload to clean.
+     * @returns {void}
+     */
+    function removeSecretPlaceholders(serviceGroupPayload: ServiceCredentialGroupPayload): void {
         serviceGroupPayload.secrets.forEach((secret) => {
             if (secret.value === SECRET_PLACEHOLDER) {
                 secret.value = null;
