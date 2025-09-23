@@ -1,4 +1,27 @@
 <script setup lang="ts">
+/**
+ * WorkflowCredentials Component
+ *
+ * A comprehensive workflow credentials interface that displays credential status
+ * across multiple tools, provides management capabilities, and shows workflow-level
+ * service information. Handles both required and optional credentials with visual
+ * indicators for each tool in the workflow.
+ *
+ * Features:
+ * - Workflow-level credential status display with visual indicators
+ * - Anonymous user handling with login prompts
+ * - Multi-tool required vs optional credential differentiation
+ * - Tool and service-specific credential group management
+ * - Modal-based workflow credential management interface
+ * - Real-time credential status updates across all tools
+ * - Contextual messaging based on overall workflow credential state
+ * - Badge display for each tool-service combination
+ *
+ * @component WorkflowCredentials
+ * @example
+ * <WorkflowCredentials :tool-identifiers="workflowToolIdentifiers" />
+ */
+
 import { faCaretRight, faCheck, faExclamation, faKey, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BButton } from "bootstrap-vue";
@@ -14,6 +37,10 @@ import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentia
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
+    /**
+     * Array of tool identifiers for the workflow
+     * @type {ToolIdentifier[]}
+     */
     toolIdentifiers: ToolIdentifier[];
 }
 
@@ -34,12 +61,21 @@ const {
     checkAllUserCredentials,
 } = useUserMultiToolCredentials(props.toolIdentifiers);
 
+/** Controls modal visibility for workflow credential management */
 const showModal = ref(false);
 
+/**
+ * Dynamic button title based on overall workflow credential state
+ * @returns {string} Button text for credential management
+ */
 const provideCredentialsButtonTitle = computed(() => {
     return hasUserProvidedAllToolsServiceCredentials.value ? "Manage credentials" : "Provide credentials";
 });
 
+/**
+ * Service group mappings for all tools in the workflow with selection status
+ * @returns {Array} All tool-service combinations with current group selections
+ */
 const currentWorkflowServiceGroups = computed(() => {
     const allServiceGroups: {
         toolName: string;
@@ -73,14 +109,28 @@ const currentWorkflowServiceGroups = computed(() => {
     return allServiceGroups;
 });
 
-function getBadgeTitle(toolName: string, isRequired: boolean, groupName?: string) {
+/**
+ * Generates tooltip text for workflow service badges
+ * @param {string} toolName - Name and version of the tool
+ * @param {boolean} isRequired - Whether the service is required
+ * @param {string} [groupName] - Name of the selected group, if any
+ * @returns {string} Tooltip text describing the tool-service status
+ */
+function getBadgeTitle(toolName: string, isRequired: boolean, groupName?: string): string {
     return `This service is ${isRequired ? "required" : "optional"} by tool '${toolName}' and you ${groupName ? "have selected the credentials group: " + groupName : "have not selected a credentials group for it."}`;
 }
 
-function toggleDialog() {
+/**
+ * Toggles the workflow credential management modal
+ * @returns {void}
+ */
+function toggleDialog(): void {
     showModal.value = !showModal.value;
 }
 
+/**
+ * Loads credentials for all tools on component mount
+ */
 onMounted(async () => {
     await checkAllUserCredentials();
 });
