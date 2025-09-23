@@ -692,7 +692,7 @@ class TestHistoryContentsApi(ApiTestCase):
         assert not dataset_collection["deleted"]
 
         delete_response = self._delete(collection_url)
-        self._assert_status_code_is(delete_response, 200)
+        self._assert_status_code_is_ok(delete_response)
 
         show_response = self._get(collection_url)
         dataset_collection = show_response.json()

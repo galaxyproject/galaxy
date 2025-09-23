@@ -672,7 +672,7 @@ class TestDatasetsApi(ApiTestCase):
             history_id, output_hda_id, stop_job=True, use_query_params=use_query_params
         )
         self._assert_status_code_is_ok(delete_response)
-        deleted_hda = delete_response.json()
+        deleted_hda = self.dataset_populator.get_history_dataset_details(history_id, content_id=output_hda_id)
         assert deleted_hda["deleted"], deleted_hda
 
         # The job should be cancelled
