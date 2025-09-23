@@ -1,4 +1,29 @@
 <script setup lang="ts">
+/**
+ * ToolCredentials Component
+ *
+ * A comprehensive tool credentials interface that displays credential status,
+ * provides management capabilities, and shows service-specific information.
+ * Handles both required and optional credentials with visual indicators.
+ *
+ * Features:
+ * - Credential status display with visual indicators
+ * - Anonymous user handling with login prompts
+ * - Required vs optional credential differentiation
+ * - Service-specific credential group management
+ * - Modal-based credential management interface
+ * - Real-time credential status updates
+ * - Contextual messaging based on credential state
+ * - Job credentials context validation
+ *
+ * @component ToolCredentials
+ * @example
+ * <ToolCredentials
+ *   :tool-id="toolId"
+ *   :tool-version="toolVersion"
+ *   :job-credentials-context="jobContext" />
+ */
+
 import { faCaretRight, faCheck, faExclamation, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BButton } from "bootstrap-vue";
@@ -15,9 +40,30 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolCredentialsContextCheck from "@/components/Tool/ToolCredentialsContextCheck.vue";
 import ToolCredentialsManagement from "@/components/User/Credentials/ToolCredentialsManagement.vue";
 
+/** Maps service names to their groups and requirements. */
+type ServiceGroupMapping = {
+    serviceName: string;
+    isRequired: boolean;
+    groupName?: string;
+};
+
 interface Props {
+    /**
+     * The ID of the tool to manage credentials for
+     * @type {string}
+     */
     toolId: string;
+
+    /**
+     * The version of the tool to manage credentials for
+     * @type {string}
+     */
     toolVersion: string;
+
+    /**
+     * Job credentials context from when a job was created
+     * @type {ServiceCredentialsContext[] | undefined}
+     */
     jobCredentialsContext?: ServiceCredentialsContext[];
 }
 
@@ -38,18 +84,23 @@ const {
     checkUserCredentials,
 } = useUserToolCredentials(props.toolId, props.toolVersion);
 
+/** Controls modal visibility for credential management. */
 const showModal = ref(false);
 
+/**
+ * Dynamic button title based on credential state.
+ * @returns {string} Button text for credential management.
+ */
 const provideCredentialsButtonTitle = computed(() => {
     return hasUserProvidedAllServiceCredentials.value ? "Manage credentials" : "Provide credentials";
 });
 
+/**
+ * Service group mappings with selection status.
+ * @returns {Array} Service definitions with current group selections.
+ */
 const currentServiceGroups = computed(() => {
-    const mappings: {
-        serviceName: string;
-        isRequired: boolean;
-        groupName?: string;
-    }[] = [];
+    const mappings: ServiceGroupMapping[] = [];
 
     for (const serviceDefinition of sourceCredentialsDefinition.value.services.values()) {
         const userService = userServiceFor.value(serviceDefinition);
@@ -60,25 +111,41 @@ const currentServiceGroups = computed(() => {
             selectedGroup = group?.name;
         }
 
-        mappings.push({
+        const serviceGroupMapping: ServiceGroupMapping = {
             serviceName: serviceDefinition.label || serviceDefinition.name,
             isRequired: !serviceDefinition.optional,
             groupName: selectedGroup,
-        });
+        };
+
+        mappings.push(serviceGroupMapping);
     }
 
     return mappings;
 });
 
-function getBadgeTitle(isRequired: boolean, groupName?: string) {
-    return `This service is ${isRequired ? "required" : "optional"} and you ${groupName ? "have selected the credentials group: " + groupName : "have not selected a credentials group for it."}`;
+/**
+ * Generates tooltip text for service badges.
+ * @param {ServiceGroupMapping} serviceGroupMapping - Mapping of service to its group and requirement status.
+ * @returns {string} Tooltip text describing the service status.
+ */
+function getBadgeTitle(serviceGroupMapping: ServiceGroupMapping): string {
+    return `This service is ${serviceGroupMapping.isRequired ? "required" : "optional"} and you ${serviceGroupMapping.groupName ? "have selected the credentials group: " + serviceGroupMapping.groupName : "have not selected a credentials group for it."}`;
 }
 
-function toggleDialog() {
+/**
+ * Toggles the credential management modal.
+ * @returns {void}
+ */
+function toggleDialog(): void {
     showModal.value = !showModal.value;
 }
 
-async function refreshCredentials() {
+/**
+ * Refreshes user credentials data.
+ * @returns {Promise<void>}
+ * @throws {Error} When credential loading fails.
+ */
+async function refreshCredentials(): Promise<void> {
     try {
         await checkUserCredentials();
     } catch (err) {
@@ -86,6 +153,9 @@ async function refreshCredentials() {
     }
 }
 
+/**
+ * Loads credentials on component mount
+ */
 onMounted(async () => {
     await refreshCredentials();
 });
