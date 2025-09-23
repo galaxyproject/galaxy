@@ -35,13 +35,13 @@ jobs:
         galaxy_python_version: ['3.9']
     steps:
       - name: Checkout Galaxy
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           path: galaxy
           persist-credentials: false
       - name: Checkout Bioblend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: galaxyproject/bioblend
           path: bioblend

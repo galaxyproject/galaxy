@@ -28,7 +28,7 @@ jobs:
       TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
       CORE_PATH: 'lib/galaxy/dependencies/pinned-requirements.txt'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - uses: actions/setup-python@v5

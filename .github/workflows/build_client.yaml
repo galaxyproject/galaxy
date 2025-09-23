@@ -11,7 +11,7 @@ jobs:
     outputs:
       commit-id: ${{ steps.client-commit.outputs.commit }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: 'galaxy root'
           persist-credentials: false

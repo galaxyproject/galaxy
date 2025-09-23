@@ -51,7 +51,7 @@ jobs:
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: 'galaxy root'
           persist-credentials: false
