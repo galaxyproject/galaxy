@@ -43,7 +43,7 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
