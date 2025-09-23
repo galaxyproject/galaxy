@@ -2075,7 +2075,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     ]:
         rerun_remap_job_id = _rerun_remap_job_id(request_context, incoming, self.id)
         set_dataset_matcher_factory(request_context, self)
-
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings: list[ToolStateJobInstanceT]
@@ -2226,6 +2225,19 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             collection_info=collection_info,
             completed_jobs=completed_jobs,
         )
+
+        # Reserved global tags parameter. Applies to all tool outputs.
+        # This may change in the future if per-output tags are introduced.
+        tags = incoming.get("__tags", [])
+        if tags:
+            tag_handler = trans.tag_handler
+            for _, hda in execution_tracker.output_datasets:
+                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
+
+            for _, hdca in execution_tracker.output_collections:
+                tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
+            trans.sa_session.commit()
+
         # Raise an exception if there were jobs to execute and none of them were submitted,
         # if at least one is submitted or there are no jobs to execute - return aggregate
         # information including per-job errors. Arguably we should just always return the
