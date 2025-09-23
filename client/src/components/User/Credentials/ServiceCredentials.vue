@@ -1,4 +1,30 @@
 <script setup lang="ts">
+/**
+ * ServiceCredentials Component
+ *
+ * A collapsible component for managing service credentials for a specific tool.
+ * Provides functionality to create, edit, delete, and select credential groups
+ * with validation and real-time updates.
+ *
+ * Features:
+ * - Expandable/collapsible interface
+ * - Create new credential groups
+ * - Edit existing credential groups inline
+ * - Delete credential groups with confirmation
+ * - Select current group for tool execution
+ * - Validation for required/optional fields
+ * - Visual indicators for current group selection
+ * - Temporary editing state management
+ *
+ * @component ServiceCredentials
+ * @example
+ * <ServiceCredentials
+ *   :source-id="toolId"
+ *   :source-version="toolVersion"
+ *   :service-definition="serviceDefinition"
+ *   @update-current-group="onGroupChange" />
+ */
+
 import {
     faBan,
     faCaretRight,
@@ -33,31 +59,65 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroupForm.vue";
 
+/**
+ * Edit group structure for temporary editing state
+ * @interface EditGroup
+ */
 interface EditGroup {
+    /** Group ID being edited */
     groupId: string;
+    /** Whether this is a new group being created */
     isNewGroup: boolean;
+    /** Group payload data */
     groupPayload: ServiceCredentialGroupPayload;
 }
 
 interface Props {
+    /**
+     * Source tool ID
+     * @type {string}
+     */
     sourceId: string;
+
+    /**
+     * Source tool version
+     * @type {string}
+     */
     sourceVersion: string;
+
+    /**
+     * Service definition configuration
+     * @type {ServiceCredentialsDefinition}
+     */
     serviceDefinition: ServiceCredentialsDefinition;
 }
 
 const props = defineProps<Props>();
 
+/**
+ * Events emitted to parent components
+ */
 const emit = defineEmits<{
+    /**
+     * Emitted when the current group selection changes
+     * @event update-current-group
+     * @param {string} [groupId] - ID of the selected group, undefined to clear selection
+     */
     (e: "update-current-group", groupId?: string): void;
 }>();
 
 const { confirm } = useConfirmDialog();
 
+/** Controls expansion state of the service section */
 const isExpanded = ref(false);
+/** Text for the save button */
 const saveButtonText = ref("Save");
+/** Map of groups currently being edited */
 const editingGroups = ref<Record<string, EditGroup>>({});
 
+/** Computed source ID from props */
 const sourceId = computed(() => props.sourceId);
+/** Computed source version from props */
 const sourceVersion = computed(() => props.sourceVersion);
 
 const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
@@ -66,14 +126,26 @@ const { isBusy, busyMessage, getUserToolServiceCurrentGroupId } = storeToRefs(us
 const { userServiceGroupsFor, userServiceFor, createUserCredentials, saveUserCredentials, deleteCredentialsGroup } =
     useUserToolCredentials(sourceId.value, sourceVersion.value);
 
+/**
+ * Display name for the service
+ * @returns {string} Service label, name, or fallback
+ */
 const serviceName = computed<string>(() => {
     return props.serviceDefinition.label || props.serviceDefinition.name || "Unknown Service";
 });
 
+/**
+ * Available credential groups for this service
+ * @returns {ServiceCredentialGroupResponse[]} Array of credential groups
+ */
 const userServicesGroups = computed<ServiceCredentialGroupResponse[]>(() => {
     return userServiceGroupsFor.value(props.serviceDefinition) ?? [];
 });
 
+/**
+ * Currently selected credential group for this service
+ * @returns {ServiceCredentialGroupResponse | undefined} Current group or undefined
+ */
 const currentServiceCredentialsGroup = computed(() => {
     const userToolService = userServiceFor.value(props.serviceDefinition);
 
@@ -88,10 +160,20 @@ const currentServiceCredentialsGroup = computed(() => {
     return userServicesGroups.value.find((group) => group.id === currentGroupId);
 });
 
+/**
+ * Filter to get only new groups being created
+ * @returns {EditGroup[]} Array of new editing groups
+ */
 const newEditingGroups = computed(() => {
     return Object.values(editingGroups.value).filter((g) => g.isNewGroup);
 });
 
+/**
+ * Ensures an editing group exists and returns it
+ * @param {string} groupId - The group ID to retrieve
+ * @returns {EditGroup} The editing group
+ * @throws {Error} When no editing group is found
+ */
 function ensureEditingGroup(groupId: string): EditGroup {
     const group = editingGroups.value[groupId];
     if (!group) {
@@ -100,12 +182,23 @@ function ensureEditingGroup(groupId: string): EditGroup {
     return group;
 }
 
+/**
+ * Checks if a variable or secret is optional
+ * @param {string} name - Variable/secret name
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {boolean} True if the credential is optional
+ */
 function isVariableOptional(name: string, type: CredentialType): boolean {
     const definitions = type === "variable" ? props.serviceDefinition.variables : props.serviceDefinition.secrets;
     const definition = definitions.find((variable) => variable.name === name);
     return definition?.optional || false;
 }
 
+/**
+ * Validates group data for completeness and uniqueness
+ * @param {ServiceCredentialGroupPayload} groupData - Group data to validate
+ * @returns {boolean} True if group data is valid
+ */
 function validateGroupData(groupData: ServiceCredentialGroupPayload): boolean {
     if (!groupData.name?.trim()) {
         return false;
@@ -124,6 +217,11 @@ function validateGroupData(groupData: ServiceCredentialGroupPayload): boolean {
     return !hasInvalidVariable && !hasInvalidSecret && !hasDuplicateName;
 }
 
+/**
+ * Determines if save button should be disabled for a group
+ * @param {string} editingGroupKey - Key of the editing group
+ * @returns {boolean} True if save button should be disabled
+ */
 const disableSaveButton = computed(() => {
     return (editingGroupKey: string): boolean => {
         const editGroup = editingGroups.value[editingGroupKey];
@@ -135,6 +233,12 @@ const disableSaveButton = computed(() => {
     };
 });
 
+/**
+ * Generates a unique name for a new group
+ * @param {string} template - Base name template
+ * @param {ServiceCredentialGroupResponse[]} currentGroups - Existing groups
+ * @returns {string} Unique group name
+ */
 function generateUniqueName(template: string, currentGroups: ServiceCredentialGroupResponse[]): string {
     let name = template;
     let counter = 1;
@@ -145,7 +249,11 @@ function generateUniqueName(template: string, currentGroups: ServiceCredentialGr
     return name;
 }
 
-function createTemporaryGroup() {
+/**
+ * Creates a new temporary group for editing
+ * @returns {void}
+ */
+function createTemporaryGroup(): void {
     const editableGroup: ServiceCredentialGroupPayload = {
         name: generateUniqueName("new group", userServicesGroups.value),
         variables: props.serviceDefinition.variables.map((variable) => ({
@@ -168,7 +276,12 @@ function createTemporaryGroup() {
     };
 }
 
-function editGroup(groupId: string) {
+/**
+ * Prepares an existing group for editing
+ * @param {string} groupId - ID of the group to edit
+ * @returns {void}
+ */
+function editGroup(groupId: string): void {
     const groupToEdit = userServicesGroups.value.find((group) => group.id === groupId);
 
     if (!groupToEdit) {
@@ -198,20 +311,39 @@ function editGroup(groupId: string) {
     };
 }
 
-function discardGroupChanges(groupId: string) {
+/**
+ * Discards changes to a group being edited
+ * @param {string} groupId - ID of the group to discard changes for
+ * @returns {void}
+ */
+function discardGroupChanges(groupId: string): void {
     const { [groupId]: _removedGroup, ...remainingGroups } = editingGroups.value;
     editingGroups.value = remainingGroups;
 }
 
-function updateCurrentGroup(selectedGroup?: ServiceCredentialGroupResponse) {
+/**
+ * Updates the current group selection
+ * @param {ServiceCredentialGroupResponse} [selectedGroup] - Group to select, undefined to clear
+ * @returns {void}
+ */
+function updateCurrentGroup(selectedGroup?: ServiceCredentialGroupResponse): void {
     emit("update-current-group", selectedGroup?.id);
 }
 
+/**
+ * Clears the current group selection
+ */
 function onClearSelection() {
     updateCurrentGroup(undefined);
 }
 
-async function createGroup(editGroup: EditGroup) {
+/**
+ * Creates a new credential group
+ * @param {EditGroup} editGroup - Group data to create
+ * @returns {Promise<void>} Resolves when creation is complete
+ * @throws {Error} When creation fails
+ */
+async function createGroup(editGroup: EditGroup): Promise<void> {
     try {
         const newGroup: CreateSourceCredentialsPayload = {
             source_id: sourceId.value,
@@ -235,7 +367,13 @@ async function createGroup(editGroup: EditGroup) {
     }
 }
 
-async function updateGroup(groupId: string) {
+/**
+ * Updates an existing credential group
+ * @param {string} groupId - ID of the group to update
+ * @returns {Promise<void>} Resolves when update is complete
+ * @throws {Error} When update fails
+ */
+async function updateGroup(groupId: string): Promise<void> {
     try {
         const groupToUpdate = editingGroups.value[groupId];
 
@@ -259,7 +397,13 @@ async function updateGroup(groupId: string) {
     }
 }
 
-async function deleteGroup(groupToDelete: ServiceCredentialGroupResponse) {
+/**
+ * Deletes a credential group after confirmation
+ * @param {ServiceCredentialGroupResponse} groupToDelete - Group to delete
+ * @return {Promise<void>} Resolves when deletion is complete
+ * @throws {Error} When deletion fails
+ */
+async function deleteGroup(groupToDelete: ServiceCredentialGroupResponse): Promise<void> {
     const confirmed = await confirm(`Are you sure you want to delete the credentials group "${groupToDelete.name}"?`, {
         title: "Delete credentials group",
         okTitle: "Delete group",
@@ -279,6 +423,11 @@ async function deleteGroup(groupToDelete: ServiceCredentialGroupResponse) {
     }
 }
 
+/**
+ * Generates primary action configuration for existing credential groups
+ * @param {ServiceCredentialGroupResponse} groupData - The credential group
+ * @returns {CardAction[]} Array of action configurations
+ */
 const primaryActions = computed(() => (groupData: ServiceCredentialGroupResponse): CardAction[] => {
     const editingGroup = editingGroups.value[groupData.id];
     const isBeingEdited = Boolean(editingGroup);
@@ -339,6 +488,11 @@ const primaryActions = computed(() => (groupData: ServiceCredentialGroupResponse
     ];
 });
 
+/**
+ * Generates primary action configuration for new credential groups
+ * @param {EditGroup} editGroup - The editing group
+ * @returns {CardAction[]} Array of action configurations
+ */
 const primaryActionsForNewGroup = computed(() => (editGroup: EditGroup): CardAction[] => {
     const groupId = editGroup.groupId;
     const isBeingEdited = Boolean(editingGroups.value[groupId]);
@@ -367,6 +521,11 @@ const primaryActionsForNewGroup = computed(() => (editGroup: EditGroup): CardAct
     ];
 });
 
+/**
+ * Generates indicator configuration for credential groups
+ * @param {ServiceCredentialGroupResponse} group - The credential group
+ * @returns {CardIndicator[]} Array of indicator configurations
+ */
 const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): CardIndicator[] => {
     const isCurrentGroup = currentServiceCredentialsGroup.value?.id === group.id;
     const isBeingEdited = Boolean(editingGroups.value[group.id]);
