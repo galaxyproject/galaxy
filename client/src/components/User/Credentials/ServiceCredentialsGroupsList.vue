@@ -1,4 +1,23 @@
 <script setup lang="ts">
+/**
+ * ServiceCredentialsGroupsList Component
+ *
+ * A component that displays a list of service credential groups using cards.
+ * Provides functionality to view, edit, and delete credential groups for tools.
+ *
+ * Features:
+ * - Card-based display of credential groups
+ * - Edit credentials with modal form
+ * - Delete credentials with confirmation
+ * - Visual indicators for groups in use
+ * - Tool association badges
+ * - Real-time status updates
+ *
+ * @component ServiceCredentialsGroupsList
+ * @example
+ * <ServiceCredentialsGroupsList :service-groups="groups" />
+ */
+
 import { faKey, faPencilAlt, faTrash, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { BModal } from "bootstrap-vue";
 import { faCheck } from "font-awesome-6";
@@ -21,18 +40,30 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GCard from "@/components/Common/GCard.vue";
 import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroupForm.vue";
 
+/**
+ * Edit data structure for credential group editing
+ * @interface EditData
+ */
 interface EditData {
+    /** Source tool ID. */
     sourceId: string;
+    /** Source tool version. */
     sourceVersion: string;
+    /** Group data including ID, payload, and new group flag. */
     groupData: {
         groupId: string;
         groupPayload: ServiceCredentialGroupPayload;
         isNewGroup: boolean;
     };
+    /** Service definition for the credentials. */
     serviceDefinition: ServiceCredentialsDefinition;
 }
 
 interface Props {
+    /**
+     * Array of service credential groups to display
+     * @type {ServiceCredentialsGroupDetails[]}
+     */
     serviceGroups: ServiceCredentialsGroupDetails[];
 }
 
@@ -45,15 +76,30 @@ const { getToolNameById } = useToolStore();
 const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
 const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServiceCredentialsStore);
 
+/** Controls modal visibility. */
 const showModal = ref(false);
+/** Text for the save button. */
 const saveButtonText = ref("Save Changes");
+/** Data for the currently edited group. */
 const editData = ref<EditData>();
 
+/** Icon configuration for card titles. */
 const cardTitleIcon: TitleIcon = { icon: faKey, size: "sm" };
 
+/**
+ * Generates the display title for a credential group card.
+ * @param {ServiceCredentialsGroupDetails} group - The credential group.
+ * @returns {string} Formatted title string.
+ */
 const cardTitle = computed(() => (group: ServiceCredentialsGroupDetails) => {
     return `${group.serviceDefinition.name} (v${group.serviceDefinition.version}) - ${group.name}`;
 });
+
+/**
+ * Checks if a credential group is currently in use by any tool.
+ * @param {ServiceCredentialsGroupDetails} group - The credential group to check.
+ * @returns {boolean} True if the group is in use.
+ */
 const isGroupInUse = computed(() => (group: ServiceCredentialsGroupDetails) => {
     const userToolKey = userToolsServiceCredentialsStore.getUserToolKey(group.sourceId, group.sourceVersion);
     const userToolService = userToolsServicesCurrentGroupIds.value[userToolKey];
@@ -65,7 +111,13 @@ const isGroupInUse = computed(() => (group: ServiceCredentialsGroupDetails) => {
     return false;
 });
 
-async function deleteGroup(groupToDelete: ServiceCredentialsGroupDetails) {
+/**
+ * Deletes a credential group after user confirmation.
+ * @param {ServiceCredentialsGroupDetails} groupToDelete - The group to delete.
+ * @returns {Promise<void>} Resolves when deletion is complete.
+ * @throws {Error} When deletion fails.
+ */
+async function deleteGroup(groupToDelete: ServiceCredentialsGroupDetails): Promise<void> {
     let message = `Are you sure you want to delete the credentials group "${groupToDelete.name}"?`;
 
     if (isGroupInUse.value(groupToDelete)) {
@@ -93,7 +145,12 @@ async function deleteGroup(groupToDelete: ServiceCredentialsGroupDetails) {
     }
 }
 
-function editGroup(group: ServiceCredentialsGroupDetails) {
+/**
+ * Prepares a credential group for editing in the modal.
+ * @param {ServiceCredentialsGroupDetails} group - The group to edit.
+ * @returns {void}
+ */
+function editGroup(group: ServiceCredentialsGroupDetails): void {
     editData.value = {
         sourceId: group.sourceId,
         sourceVersion: group.sourceVersion,
@@ -118,7 +175,12 @@ function editGroup(group: ServiceCredentialsGroupDetails) {
     showModal.value = true;
 }
 
-async function onSaveChanges() {
+/**
+ * Saves changes to the currently edited credential group.
+ * @returns {Promise<void>} Resolves when save is complete.
+ * @throws {Error} When saving fails.
+ */
+async function onSaveChanges(): Promise<void> {
     if (!editData.value) {
         return;
     }
@@ -149,6 +211,11 @@ async function onSaveChanges() {
     }
 }
 
+/**
+ * Generates badge configuration for a credential group card.
+ * @param {ServiceCredentialsGroupDetails} group - The credential group.
+ * @returns {CardBadge[]} Array of badge configurations.
+ */
 function getBadgesFor(group: ServiceCredentialsGroupDetails): CardBadge[] {
     const badges: CardBadge[] = [
         {
@@ -170,6 +237,11 @@ function getBadgesFor(group: ServiceCredentialsGroupDetails): CardBadge[] {
     return badges;
 }
 
+/**
+ * Generates primary action configuration for a credential group card
+ * @param {ServiceCredentialsGroupDetails} group - The credential group
+ * @returns {CardAction[]} Array of action configurations
+ */
 function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] {
     const primaryActions: CardAction[] = [
         {
