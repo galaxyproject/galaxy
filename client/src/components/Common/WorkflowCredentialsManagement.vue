@@ -1,4 +1,27 @@
 <script setup lang="ts">
+/**
+ * WorkflowCredentialsManagement Component
+ *
+ * A modal component for managing credentials across multiple tools in a workflow.
+ * Provides functionality to view, edit, and select credential groups for all tools
+ * used in a workflow with batch operations and persistent selection.
+ *
+ * Features:
+ * - Multi-tool credential management in a single interface
+ * - Tool-specific credential group selection
+ * - Batch credential group selection saving
+ * - Service credentials creation and editing for each tool
+ * - Persistent credential group changes
+ * - Workflow-level credential coordination
+ * - Modal interface with scrollable content
+ *
+ * @component WorkflowCredentialsManagement
+ * @example
+ * <WorkflowCredentialsManagement
+ *   :tool-identifiers="toolIdentifiers"
+ *   @close="onModalClose" />
+ */
+
 import { faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BModal } from "bootstrap-vue";
@@ -15,12 +38,23 @@ import Heading from "@/components/Common/Heading.vue";
 import ServiceCredentials from "@/components/User/Credentials/ServiceCredentials.vue";
 
 interface Props {
+    /**
+     * Array of tool identifiers for the workflow
+     * @type {ToolIdentifier[]}
+     */
     toolIdentifiers: ToolIdentifier[];
 }
 
 const props = defineProps<Props>();
 
+/**
+ * Events emitted to parent components
+ */
 const emit = defineEmits<{
+    /**
+     * Emitted when the modal should be closed
+     * @event close
+     */
     (e: "close"): void;
 }>();
 
@@ -32,8 +66,16 @@ const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServiceCredent
 const { userServiceForTool, sourceCredentialsDefinitionFor, selectCurrentCredentialsGroupsForTool } =
     useUserMultiToolCredentials(props.toolIdentifiers);
 
+/** Button text for saving group selection */
 const okTitle = "Save Group Selection";
 
+/**
+ * Gets user service ID for a specific tool and service definition
+ * @param {string} toolId - Tool ID
+ * @param {string} toolVersion - Tool version
+ * @param {ServiceCredentialsIdentifier} sd - Service credentials identifier
+ * @returns {string | undefined} User service ID or undefined if not found
+ */
 const userToolServiceIdFor = computed(() => {
     return (toolId: string, toolVersion: string, sd: ServiceCredentialsIdentifier): string | undefined => {
         const userToolService = userServiceForTool.value(toolId, toolVersion, sd);
@@ -41,12 +83,20 @@ const userToolServiceIdFor = computed(() => {
     };
 });
 
+/**
+ * Handles current group changes for a specific tool service
+ * @param {string} toolId - Tool ID
+ * @param {string} toolVersion - Tool version
+ * @param {ServiceCredentialsIdentifier} serviceDefinition - Service definition
+ * @param {string} [groupId] - New group ID, undefined to clear selection
+ * @returns {void}
+ */
 function onToolServiceCurrentGroupChange(
     toolId: string,
     toolVersion: string,
     serviceDefinition: ServiceCredentialsIdentifier,
     groupId?: string,
-) {
+): void {
     const userToolServiceCredentialsId = userToolServiceIdFor.value(toolId, toolVersion, serviceDefinition);
     if (userToolServiceCredentialsId) {
         userToolsServiceCredentialsStore.updateToolServiceCredentialsCurrentGroupId(
@@ -58,7 +108,11 @@ function onToolServiceCurrentGroupChange(
     }
 }
 
-function onSelectCredentials() {
+/**
+ * Saves credential group selections for all tools in the workflow
+ * @returns {void}
+ */
+function onSelectCredentials(): void {
     for (const ti of props.toolIdentifiers) {
         const userToolKey = userToolsServiceCredentialsStore.getUserToolKey(ti.toolId, ti.toolVersion);
         const userToolServiceCurrentGroupIds = userToolsServicesCurrentGroupIds.value[userToolKey];
@@ -93,7 +147,7 @@ function onSelectCredentials() {
         cancel-title="Close"
         cancel-variant="outline-danger"
         @ok="onSelectCredentials"
-        @close="emit('close')">
+        @hide="emit('close')">
         <p class="mb-0">
             You can manage your credentials groups for each tool used in this workflow below. Any changes to credential
             groups will persist, but changes to the current group selection for services will only be saved when you
