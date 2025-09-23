@@ -1,4 +1,25 @@
 <script setup lang="ts">
+/**
+ * CredentialsManagement Component
+ *
+ * A comprehensive management interface for user tool service credentials.
+ * Provides functionality to view, search, filter, and manage credential groups
+ * across all tools and services.
+ *
+ * Features:
+ * - Search and filter credential groups by name, tool, or service
+ * - Advanced filtering with specific filter types
+ * - Real-time data fetching and updates
+ * - Breadcrumb navigation
+ * - Loading states and error handling
+ * - Empty state management
+ * - Invalid filter detection and correction
+ *
+ * @component CredentialsManagement
+ * @example
+ * <CredentialsManagement />
+ */
+
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -18,8 +39,10 @@ import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ServiceCredentialsGroupsList from "@/components/User/Credentials/ServiceCredentialsGroupsList.vue";
 
+/** Breadcrumb navigation items */
 const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Tools Credentials Management" }];
 
+/** Filter configuration for credential groups */
 const credentialsFilterClass = new Filtering({
     name: { placeholder: "credential group name", type: String, handler: contains("name"), menuItem: true },
     tool: { placeholder: "tool name", type: String, handler: contains("tool"), menuItem: true },
@@ -34,9 +57,15 @@ const { getToolNameById } = useToolStore();
 const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
 const { isBusy, busyMessage, userToolsGroups } = storeToRefs(userToolsServiceCredentialsStore);
 
+/** Current filter text input */
 const filterText = ref("");
+/** Controls advanced filter menu visibility */
 const showAdvanced = ref(false);
 
+/**
+ * Filtered list of credential groups based on search criteria
+ * @returns {Array} Filtered credential groups
+ */
 const filteredUserToolsGroups = computed(() => {
     if (!filterText.value) {
         return userToolsGroups.value;
@@ -69,18 +98,37 @@ const filteredUserToolsGroups = computed(() => {
     });
 });
 
+/** True when no items exist and not filtering */
 const noItems = computed(() => !isBusy.value && filteredUserToolsGroups.value.length === 0 && !filterText.value);
+/** True when no results match the filter */
 const noResults = computed(
     () => !isBusy.value && filteredUserToolsGroups.value.length === 0 && Boolean(filterText.value),
 );
+/** Raw filter values extracted from filter text */
 const rawFilters = computed(() =>
     Object.fromEntries(credentialsFilterClass.getFiltersForText(filterText.value, true, false)),
 );
+/** Valid filters from the filter text */
 const validFilters = computed(() => credentialsFilterClass.getValidFilters(rawFilters.value, true).validFilters);
+/** Invalid filters from the filter text */
 const invalidFilters = computed(() => credentialsFilterClass.getValidFilters(rawFilters.value, true).invalidFilters);
+/** True if filter text is surrounded by quotes */
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
+/** True if there are invalid filters in the query */
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 
+/**
+ * Checks if a group matches specific filter criteria
+ * @param {Object} filters - Filter criteria object
+ * @param {string} filters.name - Name filter
+ * @param {string} filters.tool - Tool filter
+ * @param {string} filters.service - Service filter
+ * @param {Object} values - Searchable values object
+ * @param {string} values.groupName - Group name
+ * @param {string} values.serviceName - Service name
+ * @param {string} values.toolName - Tool name
+ * @returns {boolean} True if group matches filters
+ */
 function matchesSpecificFilters(
     filters: { name: string; tool: string; service: string },
     values: { groupName: string; serviceName: string; toolName: string },
@@ -107,6 +155,15 @@ function matchesSpecificFilters(
     return true;
 }
 
+/**
+ * Checks if a group matches general search criteria
+ * @param {string} searchTerm - Search term
+ * @param {Object} values - Searchable values object
+ * @param {string} values.groupName - Group name
+ * @param {string} values.serviceName - Service name
+ * @param {string} values.toolName - Tool name
+ * @returns {boolean} True if group matches search term
+ */
 function matchesGeneralSearch(
     searchTerm: string,
     values: { groupName: string; serviceName: string; toolName: string },
@@ -116,7 +173,11 @@ function matchesGeneralSearch(
     return groupName.includes(searchTerm) || serviceName.includes(searchTerm) || toolName.includes(searchTerm);
 }
 
-function validatedFilterText() {
+/**
+ * Returns validated filter text by removing quotes or invalid filters
+ * @returns {string} Cleaned filter text
+ */
+function validatedFilterText(): string {
     if (isSurroundedByQuotes.value) {
         // the `filterText` is surrounded by quotes, remove them
         return filterText.value.slice(1, -1);
@@ -128,7 +189,12 @@ function validatedFilterText() {
     return credentialsFilterClass.getFilterText(validFilters.value, true);
 }
 
-async function fetchData() {
+/**
+ * Fetches all user tools service credentials data
+ * @returns {Promise<void>} Resolves when fetching is complete
+ * @throws {Error} When fetching fails
+ */
+async function fetchData(): Promise<void> {
     if (isRegisteredUser(currentUser.value)) {
         try {
             await userToolsServiceCredentialsStore.fetchAllUserToolsServiceCredentials();
@@ -138,6 +204,9 @@ async function fetchData() {
     }
 }
 
+/**
+ * Watches for user changes and fetches data when user becomes available
+ */
 watch(
     () => currentUser.value,
     async () => {
