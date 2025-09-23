@@ -61,7 +61,8 @@ watchEffect(() => {
         name="tool"
         name-plural="tools"
         :load-disabled="!props.tools.length"
-        show-count-in-footer>
+        show-count-in-footer
+        no-footer>
         <template v-slot:loading>
             <BAlert v-if="props.tools.length" show>
                 <LoadingSpan message="Loading tools" />

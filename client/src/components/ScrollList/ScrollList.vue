@@ -25,6 +25,7 @@ interface Props<T> {
     inPanel?: boolean;
     name?: string;
     namePlural?: string;
+    noFooter?: boolean;
     propItems?: T[];
     propTotalCount?: number;
     propBusy?: boolean;
@@ -51,6 +52,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     inPanel: false,
     name: "item",
     namePlural: "items",
+    noFooter: false,
     propItems: undefined,
     propTotalCount: undefined,
     propBusy: undefined,
@@ -235,7 +237,7 @@ watch(
             </div>
             <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </div>
-        <div :class="!inPanel && 'd-flex flex-row mt-3'">
+        <div v-if="!props.noFooter" :class="!inPanel && 'd-flex flex-row mt-3'">
             <div
                 v-if="!allLoaded"
                 class="mr-auto d-flex justify-content-center align-items-center"
