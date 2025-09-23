@@ -1,4 +1,27 @@
 <script setup lang="ts">
+/**
+ * CredentialsGroupForm Component
+ *
+ * A form component for creating and editing service credential groups.
+ * Provides input fields for group name, variables, and secrets with
+ * validation and proper field types.
+ *
+ * Features:
+ * - Group name input with validation
+ * - Dynamic variable and secret fields
+ * - Field validation and state management
+ * - Required/optional field handling
+ * - Password masking for secrets
+ * - Descriptive labels and placeholders
+ * - Real-time validation feedback
+ *
+ * @component CredentialsGroupForm
+ * @example
+ * <CredentialsGroupForm
+ *   :group-data="editGroup"
+ *   :service-definition="serviceDefinition" />
+ */
+
 import { BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
 
@@ -9,19 +32,39 @@ import type {
     ServiceParameterDefinition,
 } from "@/api/userCredentials";
 
+/**
+ * Edit group structure for form data
+ * @interface EditGroup
+ */
 interface EditGroup {
+    /** Group ID being edited */
     groupId: string;
+    /** Whether this is a new group being created */
     isNewGroup: boolean;
+    /** Group payload data */
     groupPayload: ServiceCredentialGroupPayload;
 }
 
 interface Props {
+    /**
+     * Group data being edited
+     * @type {EditGroup}
+     */
     groupData: EditGroup;
+
+    /**
+     * Service definition configuration
+     * @type {ServiceCredentialsDefinition}
+     */
     serviceDefinition: ServiceCredentialsDefinition;
 }
 
 const props = defineProps<Props>();
 
+/**
+ * Computed property for group name with getter/setter
+ * @returns {string} Current group name
+ */
 const groupName = computed<string>({
     get(): string {
         return props.groupData.groupPayload?.name || "";
@@ -34,6 +77,10 @@ const groupName = computed<string>({
     },
 });
 
+/**
+ * Validates group name and returns field state
+ * @returns {boolean | null} Validation state - true if valid, false if invalid, null if neutral
+ */
 function getGroupNameState(): boolean | null {
     const name = groupName.value;
     if (!name) {
@@ -45,6 +92,10 @@ function getGroupNameState(): boolean | null {
     return true;
 }
 
+/**
+ * Gets error message for group name validation
+ * @returns {string | null} Error message or null if valid
+ */
 function getGroupNameErrorMessage(): string | null {
     const name = groupName.value;
     if (!name) {
@@ -56,14 +107,33 @@ function getGroupNameErrorMessage(): string | null {
     return null;
 }
 
+/**
+ * Generates a unique field ID for form elements
+ * @param {string} fieldName - Name of the field
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {string} Unique field ID
+ */
 function getFieldId(fieldName: string, type: CredentialType): string {
     return `${props.groupData.groupId}-${fieldName}-${type}`;
 }
 
+/**
+ * Generates a unique input ID for form input elements
+ * @param {string} fieldName - Name of the field
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {string} Unique input ID
+ */
 function getInputId(fieldName: string, type: CredentialType): string {
     return `${getFieldId(fieldName, type)}-input`;
 }
 
+/**
+ * Gets the parameter definition for a variable or secret
+ * @param {string} name - Parameter name
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {ServiceParameterDefinition} Parameter definition
+ * @throws {Error} When parameter definition is not found
+ */
 function getVariableDefinition(name: string, type: CredentialType): ServiceParameterDefinition {
     const definitions = type === "variable" ? props.serviceDefinition.variables : props.serviceDefinition.secrets;
     const definition = definitions.find((variable) => variable.name === name);
@@ -75,21 +145,46 @@ function getVariableDefinition(name: string, type: CredentialType): ServiceParam
     return definition;
 }
 
+/**
+ * Gets the display title for a variable or secret field
+ * @param {string} name - Parameter name
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {string} Display title for the field
+ */
 function getVariableTitle(name: string, type: CredentialType): string {
     const definition = getVariableDefinition(name, type);
     return definition.label || name;
 }
 
+/**
+ * Gets the description for a variable or secret field
+ * @param {string} name - Parameter name
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {string | undefined} Field description or undefined if not available
+ */
 function getVariableDescription(name: string, type: CredentialType): string | undefined {
     const definition = getVariableDefinition(name, type);
     return definition.description;
 }
 
+/**
+ * Checks if a variable or secret is optional
+ * @param {string} name - Parameter name
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {boolean} True if the parameter is optional
+ */
 function isVariableOptional(name: string, type: CredentialType): boolean {
     const definition = getVariableDefinition(name, type);
     return definition.optional;
 }
 
+/**
+ * Gets the validation state for a field based on its value and requirements
+ * @param {string | null | undefined} value - Current field value
+ * @param {string} name - Parameter name
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {boolean | null} Validation state - true if valid, false if invalid, null if neutral
+ */
 function getFieldState(value: string | null | undefined, name: string, type: CredentialType): boolean | null {
     if (!value) {
         return isVariableOptional(name, type) ? null : false;
