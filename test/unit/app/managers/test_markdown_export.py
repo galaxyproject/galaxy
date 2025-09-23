@@ -339,7 +339,7 @@ history_dataset_display(history_dataset_id=1)
 ```
 """
         with self._expect_get_hda(hda):
-            export_markdown, extra_data = self._ready_export(example)
+            _, export_markdown, extra_data = self._ready_export(example)
         assert "history_datasets" in extra_data
         assert len(extra_data["history_datasets"]) == 1
 
@@ -357,7 +357,7 @@ history_dataset_display(history_dataset_id=2)
 ```
 """
         self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
-        export_markdown, extra_data = self._ready_export(example)
+        _, export_markdown, extra_data = self._ready_export(example)
         assert "history_datasets" in extra_data
         assert len(extra_data["history_datasets"]) == 2
 
@@ -385,7 +385,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
             mock.patch.object(HDCASerializer, "serialize_to_view", return_value=mock_hdca_view),
             mock.patch.object(HDCASerializer, "serialize_store_times_summary", return_value=[]),
         ):
-            export, extra_data = self._ready_export(example)
+            _, export, extra_data = self._ready_export(example)
         assert "history_dataset_collections" in extra_data
         assert len(extra_data.get("history_dataset_collections")) == 1
 
@@ -395,7 +395,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
 generate_galaxy_version()
 ```
 """
-        result, extra_data = self._ready_export(example)
+        _, result, extra_data = self._ready_export(example)
         assert "generate_version" in extra_data
         assert extra_data["generate_version"] == "19.09"
 
@@ -405,7 +405,7 @@ generate_galaxy_version()
 generate_time()
 ```
 """
-        result, extra_data = self._ready_export(example)
+        _, result, extra_data = self._ready_export(example)
         assert "generate_time" in extra_data
 
     def test_get_invocation_time(self):
@@ -416,12 +416,95 @@ generate_time()
 invocation_time(invocation_id=1)
 ```
 """
-        result, extra_data = self._ready_export(example)
+        _, result, extra_data = self._ready_export(example)
         assert "invocations" in extra_data
         assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
         assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.strftime(
             "%Y-%m-%d, %H:%M:%S"
         )
 
-    def _ready_export(self, example):
+    def test_export_replaces_embedded_history_dataset_type(self):
+        hda = self._new_hda()
+        hda.extension = "fasta"
+        hda2 = self._new_hda()
+        hda2.extension = "fastqsanger"
+        hda2.id = 2
+        example = """
+I ran a cool analysis with two inputs of types ${galaxy history_dataset_type(history_dataset_id=1)} and ${galaxy history_dataset_type(history_dataset_id=2)}.
+"""
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
+        _, export_markdown, _ = self._ready_export(example)
+        assert (
+            export_markdown
+            == """
+I ran a cool analysis with two inputs of types fasta and fastqsanger.
+"""
+        )
+
+    def test_export_replaces_embedded_history_dataset_name(self):
+        hda = self._new_hda()
+        hda.name = "foo bar"
+        hda2 = self._new_hda()
+        hda2.name = "cow dog"
+        hda2.id = 2
+        example = """
+I ran a cool analysis with two inputs of types ${galaxy history_dataset_name(history_dataset_id=1)} and ${galaxy history_dataset_name(history_dataset_id=2)}.
+"""
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
+        _, export_markdown, _ = self._ready_export(example)
+        assert (
+            export_markdown
+            == """
+I ran a cool analysis with two inputs of types foo bar and cow dog.
+"""
+        )
+
+    def test_export_replaces_embedded_generate_time(self):
+        example = """
+I ran a cool analysis at ${galaxy generate_time()}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown.startswith(
+            """
+I ran a cool analysis at 2"""
+        )
+
+    def test_export_replaces_embedded_invocation_time(self):
+        invocation = self._new_invocation()
+        self.app.workflow_manager.get_invocation.side_effect = [invocation]
+        example = """
+I ran a cool analysis at ${galaxy invocation_time(invocation_id=1)}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown.startswith(
+            """
+I ran a cool analysis at 2"""
+        )
+
+    def test_export_replaces_embedded_galaxy_version(self):
+        example = """
+I ran a cool analysis with Galaxy ${galaxy generate_galaxy_version()}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert (
+            export_markdown
+            == """
+I ran a cool analysis with Galaxy 19.09.
+"""
+        )
+
+    def test_export_replaces_embedded_access_link(self):
+        self.trans.app.config.instance_access_url = "http://mycoolgalaxy.org"
+        example = """
+I ran a cool analysis at ${galaxy instance_access_link()}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert (
+            export_markdown
+            == """
+I ran a cool analysis at [http://mycoolgalaxy.org](http://mycoolgalaxy.org).
+"""
+        )
+
+    def _ready_export(self, example: str):
         return ready_galaxy_markdown_for_export(self.trans, example)

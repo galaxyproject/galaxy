@@ -3849,6 +3849,12 @@ ContentFormatField: PageContentFormat = Field(
 ContentField: Optional[str] = Field(
     default="",
     title="Content",
+    description="Text contents of the last page revision with embedded directives expanded (type dependent on content_format).",
+)
+
+ContentEditorField: Optional[str] = Field(
+    default="",
+    title="Content for Editor",
     description="Raw text contents of the last page revision (type dependent on content_format).",
 )
 
@@ -4064,6 +4070,7 @@ class PageDetails(PageSummary):
     annotation: Optional[str] = AnnotationField
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
+    content_editor: Optional[str] = ContentEditorField
     generate_version: Optional[str] = GenerateVersionField
     generate_time: Optional[str] = GenerateTimeField
     model_config = ConfigDict(extra="allow")
