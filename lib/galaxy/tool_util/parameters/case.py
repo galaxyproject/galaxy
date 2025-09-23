@@ -149,7 +149,11 @@ def legacy_from_string(parameter: ToolParameterT, value: Optional[Any], warnings
 
 
 def test_case_state(
-    test_dict: ToolSourceTest, tool_parameter_bundle: List[ToolParameterT], profile: str, validate: bool = True
+    test_dict: ToolSourceTest,
+    tool_parameter_bundle: List[ToolParameterT],
+    profile: str,
+    validate: bool = True,
+    name: Optional[str] = None,
 ) -> TestCaseStateAndWarnings:
     warnings: List[str] = []
     inputs: ToolSourceTestInputs = test_dict["inputs"]
@@ -165,7 +169,7 @@ def test_case_state(
 
     tool_state = TestCaseToolState(state)
     if validate:
-        tool_state.validate(tool_parameter_bundle)
+        tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in unhandled_inputs:
             raise Exception(f"Invalid parameter name found {input_name}")
     return TestCaseStateAndWarnings(tool_state, warnings, unhandled_inputs)

@@ -23,6 +23,7 @@ from galaxy.tool_util_models.parameters import (
     FloatParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
+    TextParameterModel,
     ToolParameterBundle,
     ToolParameterT,
 )
@@ -79,11 +80,11 @@ def cwl_runtime_model(input_models: ToolParameterBundle):
 
 
 def decode(
-    external_state: RequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int]
+    external_state: RequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int], name_base: Optional[str] = None
 ) -> RequestInternalToolState:
     """Prepare an internal representation of tool state (request_internal) for storing in the database."""
 
-    external_state.validate(input_models)
+    external_state.validate(input_models, f"{name_base} (request model)")
     decode_callback = _decode_callback_for(decode_id)
     internal_state_dict = visit_input_values(
         input_models,
@@ -92,7 +93,7 @@ def decode(
     )
 
     internal_request_state = RequestInternalToolState(internal_state_dict)
-    internal_request_state.validate(input_models)
+    internal_request_state.validate(input_models, f"{name_base} (request internal model)")
     return internal_request_state
 
 
@@ -163,8 +164,7 @@ def dereference(
         if parameter.parameter_type == "gx_data":
             if value is None:
                 return VISITOR_NO_REPLACEMENT
-            if parameter.multiple:
-                assert isinstance(value, list), str(value)
+            if parameter.multiple and isinstance(value, list):
                 return list(map(derefrence_dict, value))
             else:
                 assert isinstance(value, dict), str(value)
@@ -328,6 +328,25 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             tool_state[parameter_name] = {}
         section_state = cast(Dict[str, Any], tool_state[parameter_name])
         _fill_defaults(section_state, parameter)
+    elif parameter.parameter_type == "gx_data_collection":
+        collection_parameter = parameter
+        if parameter_name not in tool_state and collection_parameter.optional:
+            tool_state[parameter_name] = None
+    elif parameter.parameter_type in ["gx_text"]:
+        text_parameter = cast(TextParameterModel, parameter)
+        if parameter_name not in tool_state:
+            if not text_parameter.optional:
+                # restore legacy behavior of allowing empty string implicit default
+                # for these non-optional inputs.
+                tool_state[parameter_name] = ""
+            else:
+                tool_state[parameter_name] = None
+        else:
+            # legacy behavior of converting explicit None into implicit null. We should introduce
+            # a layer somewhere to deal with this behavior further up the stack and clean up these models.
+            if not text_parameter.optional and tool_state[parameter_name] is None:
+                tool_state[parameter_name] = ""
+
 
 
 def _select_which_when(
@@ -354,17 +373,25 @@ def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
         else:
             return src_dict
 
+    def encode_element(element: dict):
+        if element.get("__class__") == "Batch":
+            encoded = element.copy()
+            values = encoded.pop("values")
+            encoded["values"] = list(map(encode_src_dict, values))
+            return encoded
+        else:
+            return encode_src_dict(element)
+
     def encode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
-            if parameter.multiple:
-                assert isinstance(value, list), str(value)
-                return list(map(encode_src_dict, value))
+            if parameter.multiple and isinstance(value, list):
+                return list(map(encode_element, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return encode_src_dict(value)
+                return encode_element(value)
         elif parameter.parameter_type == "gx_data_collection":
             assert isinstance(value, dict), str(value)
-            return encode_src_dict(value)
+            return encode_element(value)
         else:
             return VISITOR_NO_REPLACEMENT
 
@@ -381,16 +408,24 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
         else:
             return src_dict
 
+    def decode_element(element: dict):
+        if element.get("__class__") == "Batch":
+            decoded = element.copy()
+            values = decoded.pop("values")
+            decoded["values"] = list(map(decode_src_dict, values))
+            return decoded
+        else:
+            return decode_src_dict(element)
+
     def decode_callback(parameter: ToolParameterT, value: Any):
         if parameter.parameter_type == "gx_data":
             if value is None:
                 return VISITOR_NO_REPLACEMENT
-            if parameter.multiple:
-                assert isinstance(value, list), str(value)
-                return list(map(decode_src_dict, value))
+            if parameter.multiple and isinstance(value, list):
+                return list(map(decode_element, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return decode_src_dict(value)
+                return decode_element(value)
         elif parameter.parameter_type == "gx_data_collection":
             if value is None:
                 return VISITOR_NO_REPLACEMENT

@@ -27,16 +27,25 @@ def test_multidata_param(
 ):
     hda1 = target_history.with_dataset("1\t2\t3").src_dict
     hda2 = target_history.with_dataset("4\t5\t6").src_dict
-    inputs = tool_input_format.when.flat(
-        {
-            "f1": {"batch": False, "values": [hda1, hda2]},
-            "f2": {"batch": False, "values": [hda2, hda1]},
-        }
-    ).when.nested(
-        {
-            "f1": {"batch": False, "values": [hda1, hda2]},
-            "f2": {"batch": False, "values": [hda2, hda1]},
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "f1": {"batch": False, "values": [hda1, hda2]},
+                "f2": {"batch": False, "values": [hda2, hda1]},
+            }
+        )
+        .when.nested(
+            {
+                "f1": {"batch": False, "values": [hda1, hda2]},
+                "f2": {"batch": False, "values": [hda2, hda1]},
+            }
+        )
+        .when.request(
+            {
+                "f1": [hda1, hda2],
+                "f2": [hda2, hda1],
+            }
+        )
     )
     execution = required_tool.execute.with_inputs(inputs)
     execution.assert_has_job(0).with_output("out1").with_contents("1\t2\t3\n4\t5\t6\n")
@@ -139,18 +148,29 @@ def test_map_over_with_output_format_actions(
 ):
     hdca = target_history.with_pair()
     for use_action in ["do", "dont"]:
-        inputs = tool_input_format.when.flat(
-            {
-                "input_cond|dispatch": use_action,
-                "input_cond|input": {"batch": True, "values": [hdca.src_dict]},
-            }
-        ).when.nested(
-            {
-                "input_cond": {
-                    "dispatch": use_action,
-                    "input": {"batch": True, "values": [hdca.src_dict]},
+        inputs = (
+            tool_input_format.when.flat(
+                {
+                    "input_cond|dispatch": use_action,
+                    "input_cond|input": {"batch": True, "values": [hdca.src_dict]},
                 }
-            }
+            )
+            .when.nested(
+                {
+                    "input_cond": {
+                        "dispatch": use_action,
+                        "input": {"batch": True, "values": [hdca.src_dict]},
+                    }
+                }
+            )
+            .when.request(
+                {
+                    "input_cond": {
+                        "dispatch": use_action,
+                        "input": {"__class__": "Batch", "values": [hdca.src_dict]},
+                    }
+                }
+            )
         )
         execute = required_tool.execute.with_inputs(inputs)
         execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
@@ -256,20 +276,33 @@ def test_multi_run_in_repeat(
     multi_run_in_repeat_datasets: MultiRunInRepeatFixtures,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
-            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
-            "queries": [
-                {
-                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-                }
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+                "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+                "queries": [
+                    {
+                        "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
     )
     execute = required_tool.execute.with_inputs(inputs)
     _check_multi_run_in_repeat(execute)
@@ -282,20 +315,33 @@ def test_multi_run_in_repeat_mismatch(
     tool_input_format: DescribeToolInputs,
 ):
     """Same test as above but without the batch wrapper around the common dataset shared between multirun."""
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": multi_run_in_repeat_datasets.common_dataset,
-            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": multi_run_in_repeat_datasets.common_dataset,
-            "queries": [
-                {
-                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-                }
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
     )
     execute = required_tool.execute.with_inputs(inputs)
     _check_multi_run_in_repeat(execute)
@@ -328,18 +374,31 @@ def test_multirun_on_multiple_inputs(
     two_multi_run_datasets: TwoMultiRunsFixture,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
-            "queries_0|input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
-            "queries": [
-                {"input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets}},
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+                "queries_0|input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {"input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets}},
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": {"__class__": "Batch", "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": two_multi_run_datasets.second_two_datasets},
+                    }
+                ],
+            }
+        )
     )
     execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_n_jobs(2)
@@ -353,18 +412,39 @@ def test_multirun_on_multiple_inputs_unlinked(
     two_multi_run_datasets: TwoMultiRunsFixture,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
-            "queries_0|input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
-            "queries": [
-                {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+                "queries_0|input2": {
+                    "batch": True,
+                    "linked": False,
+                    "values": two_multi_run_datasets.second_two_datasets,
+                },
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": {"__class__": "Batch", "values": two_multi_run_datasets.first_two_datasets, "linked": False},
+                "queries": [
+                    {
+                        "input2": {
+                            "__class__": "Batch",
+                            "values": two_multi_run_datasets.second_two_datasets,
+                            "linked": False,
+                        },
+                    }
+                ],
+            }
+        )
     )
     execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_n_jobs(4)
@@ -379,7 +459,9 @@ def test_map_over_collection(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair(["123", "456"])
-    inputs = tool_input_format.when.any({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    legacy = {"input1": {"batch": True, "values": [hdca.src_dict]}}
+    request = {"input1": {"__class__": "Batch", "values": [hdca.src_dict]}}
+    inputs = tool_input_format.when.flat(legacy).when.nested(legacy).when.request(request)
     execute = required_tool.execute.with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
@@ -544,7 +626,11 @@ def test_select_on_null_errors(required_tools: list[RequiredTool], tool_input_fo
     # is passed, an error (rightfully) occurs. This test verifies that.
     null_parameter = tool_input_format.when.any({"parameter": None})
     for required_tool in required_tools:
-        required_tool.execute.with_inputs(null_parameter).assert_fails.with_error_containing("an invalid option")
+        fails = required_tool.execute.with_inputs(null_parameter).assert_fails
+        if tool_input_format.is_request:
+            fails.with_error_containing("Input should be")
+        else:
+            fails.with_error_containing("an invalid option")
 
 
 @requires_tool_id("gx_select_dynamic_empty")
@@ -555,7 +641,11 @@ def test_select_empty_causes_error_regardless(
     # despite selects otherwise selecting defaults - nothing can be done if the select option list is empty
     empty = tool_input_format.when.any({})
     for required_tool in required_tools:
-        required_tool.execute.with_inputs(empty).assert_fails.with_error_containing("an invalid option")
+        failure = required_tool.execute.with_inputs(empty).assert_fails
+        if tool_input_format.is_request:
+            failure.with_error_containing("validation error")
+        else:
+            failure.with_error_containing("an invalid option")
 
 
 @requires_tool_id("gx_select_optional")
