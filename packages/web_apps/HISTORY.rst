@@ -10,6 +10,18 @@ History
 
 
 -------------------
+25.0.3 (2025-09-23)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix password reset functionality for lowercase emails by `@jdavcs <https://github.com/jdavcs>`_ in `#20801 <https://github.com/galaxyproject/galaxy/pull/20801>`_
+* Drop eager argument from invocation related methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20863 <https://github.com/galaxyproject/galaxy/pull/20863>`_
+
+-------------------
 25.0.2 (2025-08-13)
 -------------------
 

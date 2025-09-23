@@ -10,6 +10,17 @@ History
 
 
 -------------------
+25.0.3 (2025-09-23)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix collection element sorting in extended_metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20928 <https://github.com/galaxyproject/galaxy/pull/20928>`_
+
+-------------------
 25.0.2 (2025-08-13)
 -------------------
 
