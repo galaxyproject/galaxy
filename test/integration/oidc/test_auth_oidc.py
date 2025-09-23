@@ -7,7 +7,10 @@ import subprocess
 import tempfile
 import time
 from string import Template
-from typing import ClassVar
+from typing import (
+    ClassVar,
+    Union,
+)
 from unittest.mock import (
     _patch,
     patch,
@@ -124,7 +127,7 @@ class AbstractTestCases:
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
-        saved_oauthlib_insecure_transport: ClassVar[bool]
+        saved_env_vars: ClassVar[dict[str, Union[str, None]]]
         config_patcher: ClassVar[_patch]
 
         @classmethod
@@ -174,18 +177,21 @@ class AbstractTestCases:
 
         @classmethod
         def disableOauthlibHttps(cls):
-            if "OAUTHLIB_INSECURE_TRANSPORT" in os.environ:
-                cls.saved_oauthlib_insecure_transport = bool(os.environ["OAUTHLIB_INSECURE_TRANSPORT"])
-            os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
-            os.environ["REQUESTS_CA_BUNDLE"] = os.path.dirname(__file__) + "/keycloak-server.crt.pem"
-            os.environ["SSL_CERT_FILE"] = os.path.dirname(__file__) + "/keycloak-server.crt.pem"
+            env_vars = {
+                "OAUTHLIB_INSECURE_TRANSPORT": "true",
+                "REQUESTS_CA_BUNDLE": os.path.dirname(__file__) + "/keycloak-server.crt.pem",
+                "SSL_CERT_FILE": os.path.dirname(__file__) + "/keycloak-server.crt.pem",
+            }
+            cls.saved_env_vars = {key: os.environ.get(key) for key in env_vars}
+            os.environ.update(env_vars)
 
         @classmethod
         def restoreOauthlibHttps(cls):
-            if getattr(cls, "saved_oauthlib_insecure_transport", None):
-                os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = str(cls.saved_oauthlib_insecure_transport)
-            else:
-                del os.environ["OAUTHLIB_INSECURE_TRANSPORT"]
+            for key, value in cls.saved_env_vars.items():
+                if value is not None:
+                    os.environ[key] = value
+                else:
+                    del os.environ[key]
 
         @classmethod
         def handle_galaxy_oidc_config_kwds(cls, config):

@@ -8,6 +8,7 @@ ase==3.26.0
 async-timeout==5.0.1 ; python_full_version < '3.11'
 attrs==25.3.0
 axe-selenium-python==2.1.6
+backports-asyncio-runner==1.2.0 ; python_full_version < '3.11'
 boto3==1.40.18
 botocore==1.40.18
 cachecontrol==0.14.3
@@ -94,8 +95,8 @@ pyparsing==3.2.4
 pyshacl==0.26.0 ; python_full_version < '3.10'
 pyshacl==0.30.1 ; python_full_version >= '3.10'
 pysocks==1.7.1
-pytest==7.4.4
-pytest-asyncio==0.23.8
+pytest==8.4.2
+pytest-asyncio==1.2.0
 pytest-base-url==2.1.0
 pytest-cov==7.0.0
 pytest-html==4.1.1
