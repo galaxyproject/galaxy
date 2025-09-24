@@ -141,18 +141,6 @@ const jobsTabTitle = computed(() => {
     return "No jobs";
 });
 
-const outputsTabTitle = computed(() => {
-    if (hasOutputDatasets.value && hasOutputCollections.value) {
-        return "Outputs";
-    } else if (hasOutputDatasets.value) {
-        return "Output Datasets";
-    } else if (hasOutputCollections.value) {
-        return "Output Collections";
-    } else {
-        return "No outputs";
-    }
-});
-
 function toggleStep() {
     computedExpanded.value = !computedExpanded.value;
 }
@@ -260,7 +248,7 @@ onUnmounted(() => {
                                         </div>
                                     </BTab>
 
-                                    <BTab v-if="hasOutputDatasets || hasOutputCollections" :title="outputsTabTitle">
+                                    <BTab v-if="hasOutputDatasets || hasOutputCollections" title="Outputs">
                                         <div v-if="hasOutputDatasets" class="invocation-step-output-details">
                                             <Heading v-if="hasOutputCollections" size="md" separator>
                                                 Output Datasets
