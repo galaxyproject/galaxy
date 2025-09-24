@@ -383,14 +383,14 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             if not text_parameter.optional:
                 # restore legacy behavior of allowing empty string implicit default
                 # for these non-optional inputs.
-                tool_state[parameter_name] = ""
+                tool_state[parameter_name] = text_parameter.default_value or ""
             else:
-                tool_state[parameter_name] = None
+                tool_state[parameter_name] = text_parameter.default_value or None
         else:
             # legacy behavior of converting explicit None into implicit null. We should introduce
             # a layer somewhere to deal with this behavior further up the stack and clean up these models.
             if not text_parameter.optional and tool_state[parameter_name] is None:
-                tool_state[parameter_name] = ""
+                tool_state[parameter_name] = text_parameter.default_value or ""
 
 
 def _initialize_section_state(parameter: ToolParameterT, tool_state: Dict[str, Any]) -> Dict[str, Any]:

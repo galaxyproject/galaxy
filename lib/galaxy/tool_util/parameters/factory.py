@@ -119,12 +119,15 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "text":
             optional, optionality_inferred = text_input_is_optional(input_source)
+            implicit_default = None if optional else ""
+            default_value = input_source.get("value", implicit_default)
             text_validators: List[TextCompatiableValidators] = _text_validators(input_source)
             return TextParameterModel(
                 type="text",
                 name=input_source.parse_name(),
                 optional=optional,
                 validators=text_validators,
+                value=default_value,
             )
         elif param_type == "float":
             optional = input_source.parse_optional()

@@ -404,6 +404,67 @@ gx_text_optional_false:
   relaxed_request_invalid:
   - parameter: 5
 
+gx_text_default:
+  request_valid: &gx_text_default_request_valid
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    # these are implicitly null just like gx_text
+    - parameter: null
+  request_invalid: &gx_text_default_request_invalid
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {__class__: 'ConnectedValue'}
+  request_internal_valid:
+    *gx_text_default_request_valid
+  request_internal_invalid:
+    *gx_text_default_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_text_default_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_text_default_request_invalid
+  landing_request_valid:
+    *gx_text_default_request_valid
+  landing_request_invalid:
+    *gx_text_default_request_invalid
+  landing_request_internal_valid:
+    *gx_text_default_request_valid
+  landing_request_internal_invalid:
+    *gx_text_default_request_invalid
+  job_internal_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - parameter: null
+  job_internal_invalid:
+    - {}
+    - parameter: { "moo": "cow" }
+  workflow_step_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: null
+  workflow_step_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: null
+  workflow_step_linked_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {"class": 'ConnectedValue'}
+
 gx_text_length_validation: 
   request_valid:
   - parameter: "mytext"
