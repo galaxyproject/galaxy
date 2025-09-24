@@ -47,7 +47,6 @@ class SecretResponse(CredentialResponse):
     ]
 
 
-# TODO: ServiceCredentialsGroupResponse
 class ServiceCredentialGroupResponse(Model):
     id: Annotated[
         EncodedDatabaseIdField,
@@ -98,7 +97,6 @@ class ServiceParameterDefinition(Model):
     ]
 
 
-# TODO: Rename the class to UserSourceServicesResponse
 class UserServiceCredentialsResponse(Model):
     user_id: Annotated[
         EncodedDatabaseIdField,
