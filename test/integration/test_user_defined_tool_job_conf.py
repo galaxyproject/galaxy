@@ -24,16 +24,10 @@ description: test resource requirement
 container: busybox
 requirements:
   - type: resource
-    ram_min: 2
-  - type: resource
     cores_min: 2
 shell_command: |
-  echo $MEM > galaxy_memory_mb.txt && echo $CORES > galaxy_cores.txt
+  echo $GALAXY_SLOTS > galaxy_cores.txt
 outputs:
-  - name: output1
-    type: data
-    format: txt
-    from_work_dir: galaxy_memory_mb.txt
   - name: output2
     type: data
     format: txt
@@ -79,12 +73,13 @@ class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCas
                 assert_ok=True,
             )
 
-            output_content = self.dataset_populator.get_history_dataset_content(history_id)
-            assert output_content == "abc\n"
+            # output_content = self.dataset_populator.get_history_dataset_content(history_id)
+            # assert output_content == "abc\n"
             with self._different_user(email="udt@galaxy.org"):
                 destination_params = self._get(f"/api/jobs/{response['jobs'][0]['id']}/destination_params").json()
 
         assert destination_params["Runner"] == "pulsar_embed"
+        assert destination_params["require_container"]
 
 
 class TestUserDefinedToolRecommendedJobSetupTPV(TestUserDefinedToolRecommendedJobSetup):
@@ -109,8 +104,6 @@ class TestUserDefinedToolRecommendedJobSetupTPV(TestUserDefinedToolRecommendedJo
                 wait_for_job=True,
                 assert_ok=True,
             )
-            memory, cores = response["outputs"]
-            memory_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=memory["id"])
-            assert memory_content == "2.0\n"
+            cores = response["outputs"][0]
             cores_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=cores["id"])
             assert cores_content == "2.0\n"

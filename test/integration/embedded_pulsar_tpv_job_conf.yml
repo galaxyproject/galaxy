@@ -18,22 +18,19 @@ execution:
             local:
               runner: local
               env:
-                MEM: '{mem}'
-                CORES: '{cores}'
+                GALAXY_SLOTS: '{cores}'
             user_defined:
               runner: pulsar_embed
+              env:
+                GALAXY_SLOTS: '{cores}'
               scheduling:
                 accept:
-                  - tool_type_user_defined
-              remote_metadata: true
-              docker_enabled: true
-              require_container: true
-              docker_net: "none"
-              max_accepted_cores: 2
-              max_accepted_mem: 8
-              env:
-                MEM: '{mem}'
-                CORES: '{cores}'
+                  - support_user_defined
+              params:
+                remote_metadata: true
+                docker_enabled: true
+                require_container: true
+                docker_net: "none"
           global:
             default_inherits: default
 
@@ -41,4 +38,7 @@ execution:
             default:
               abstract: true
               cores: 1
-              mem: cores * 4
+            user_defined-*:
+              scheduling:
+                require:
+                  - support_user_defined
