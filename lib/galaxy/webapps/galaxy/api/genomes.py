@@ -55,6 +55,10 @@ FormatQueryParam: str = Query(None, title="Format", description="Format")
 
 ReferenceQueryParam: bool = Query(None, title="Reference", description="If true, return reference data")
 
+IndexTypeQueryParam: str = Query(
+    "fasta_indexes", title="Index type", description="Index type"  # currently this is the only supported index type
+)
+
 
 def get_id(base, format):
     if format:
@@ -105,6 +109,7 @@ class FastAPIGenomes:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: str = IdPathParam,
+        type: str = IndexTypeQueryParam,
         format: str = FormatQueryParam,
     ) -> Response:
         id = get_id(id, format)
