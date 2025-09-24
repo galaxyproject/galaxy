@@ -200,13 +200,13 @@ async function submit() {
                                 </div>
 
                                 <template v-if="Object.keys(idpsWithRegistration).length > 0">
-                                    <VerticalSeparator v-if="!registerColumnDisplay">
+                                    <VerticalSeparator v-if="!registerColumnDisplay && !disableLocalAccounts">
                                         <span v-localize>or</span>
                                     </VerticalSeparator>
 
-                                    <hr v-else class="w-100" />
+                                    <hr v-else-if="!disableLocalAccounts" class="w-100" />
 
-                                    <div class="m-1">
+                                    <div class="m-1 w-100">
                                         <ExternalRegistration
                                             :idps-with-registration="idpsWithRegistration"
                                             :column-display="registerColumnDisplay" />

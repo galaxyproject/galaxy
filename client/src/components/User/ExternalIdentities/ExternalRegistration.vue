@@ -23,7 +23,7 @@ const messageVariant = ref<string | null>(null);
             {{ messageText }}
         </BAlert>
 
-        <BForm id="externalRegister" :class="{ 'd-flex h-100': !props.columnDisplay }">
+        <BForm id="externalRegister" :class="{ 'd-flex h-100 justify-content-center': !props.columnDisplay }">
             <div :class="!props.columnDisplay ? 'oidc-idps-column' : 'oidc-idps-grid'">
                 <div v-for="(iDPInfo, idp) in props.idpsWithRegistration" :key="idp">
                     <GButton
@@ -80,6 +80,8 @@ const messageVariant = ref<string | null>(null);
     justify-content: center;
     .oidc-button {
         width: 100%;
+        display: flex !important;
+        justify-content: center;
     }
 }
 /* Flexible grid for idps */

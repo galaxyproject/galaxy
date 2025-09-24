@@ -222,11 +222,11 @@ function returnToLogin() {
                                 </BForm>
 
                                 <template v-if="enableOidc">
-                                    <VerticalSeparator v-if="!loginColumnDisplay">
+                                    <VerticalSeparator v-if="!loginColumnDisplay && !disableLocalAccounts">
                                         <span v-localize>or</span>
                                     </VerticalSeparator>
 
-                                    <hr v-else class="w-100" />
+                                    <hr v-else-if="!disableLocalAccounts" class="w-100" />
 
                                     <div class="m-1 w-100">
                                         <!-- OIDC login-->

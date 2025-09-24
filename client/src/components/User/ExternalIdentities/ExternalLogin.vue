@@ -335,6 +335,8 @@ function getIdpPreference() {
     justify-content: center;
     .oidc-button {
         width: 100%;
+        display: flex !important;
+        justify-content: center;
     }
 }
 /* Flexible grid for idps */
