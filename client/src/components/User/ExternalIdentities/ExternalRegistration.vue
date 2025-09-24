@@ -52,13 +52,10 @@ const messageVariant = ref<string | null>(null);
                         data-description="registration button"
                         :href="iDPInfo.end_user_registration_endpoint">
                         <i :class="props.idpsWithRegistration[idp]" />
-                        Register with
                         <span v-if="iDPInfo['label']">
-                            {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
+                            Register with {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
                         </span>
-                        <span v-else>
-                            {{ capitalizeFirstLetter(idp) }}
-                        </span>
+                        <span v-else> Register with {{ capitalizeFirstLetter(idp) }} </span>
                     </GButton>
                 </div>
             </div>
