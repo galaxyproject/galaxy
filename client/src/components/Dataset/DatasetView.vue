@@ -318,6 +318,7 @@ watch(
     flex-direction: column;
     overflow: hidden;
     overflow-y: auto;
+    height: 100%;
 }
 
 .auto-download-message {
