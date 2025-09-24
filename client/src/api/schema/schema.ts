@@ -1379,6 +1379,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/genomes/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return sequence data for download */
+        get: operations["download_api_genomes__id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/genomes/{id}/indexes": {
         parameters: {
             query?: never;
@@ -1386,7 +1403,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return all available indexes for a genome id for provided type */
+        /** Return all available indexes for a genome id */
         get: operations["indexes_api_genomes__id__indexes_get"];
         put?: never;
         post?: never;
@@ -26954,6 +26971,8 @@ export interface operations {
             query?: {
                 /** @description If true, return genome keys with chromosome lengths */
                 chrom_info?: boolean;
+                /** @description If true, return genome ids of available indexes */
+                indexes?: boolean;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -27050,11 +27069,51 @@ export interface operations {
             };
         };
     };
+    download_api_genomes__id__download_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Genome ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sequence data file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     indexes_api_genomes__id__indexes_get: {
         parameters: {
             query?: {
-                /** @description Index type */
-                type?: string;
                 /** @description Format */
                 format?: string;
             };
@@ -27070,7 +27129,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Indexes for a genome id for provided type */
+            /** @description Indexes for a genome id */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -27102,8 +27161,6 @@ export interface operations {
     sequences_api_genomes__id__sequences_get: {
         parameters: {
             query?: {
-                /** @description If true, return reference data */
-                reference?: boolean;
                 /** @description Limits size of returned data */
                 chrom?: string;
                 /** @description Limits size of returned data */

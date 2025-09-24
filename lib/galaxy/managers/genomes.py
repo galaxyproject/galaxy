@@ -9,10 +9,7 @@ from sqlalchemy import (
     text,
 )
 
-from galaxy.exceptions import (
-    ReferenceDataError,
-    RequestParameterInvalidException,
-)
+from galaxy.exceptions import ReferenceDataError
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import User
 from galaxy.model.database_utils import is_postgres
@@ -34,6 +31,11 @@ class GenomesManager:
     def get_dbkeys(self, user: Optional[User], chrom_info: bool) -> list[list[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
+    def get_dbkeys_indexes(self) -> list[list[str]]:
+        tbl_entries = self._get_tbl_entries()
+        # return display_name and unique_build_id
+        return [[x[2], x[0]] for x in tbl_entries]
+
     def is_registered_dbkey(self, dbkey: str, user: Optional[User]) -> bool:
         dbkeys = self.get_dbkeys(user, chrom_info=False)
         for _, key in dbkeys:
@@ -54,30 +56,26 @@ class GenomesManager:
         region = self.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
         return region.sequence
 
-    def get_indexes(self, id: str, index_type: str) -> Any:
-        index_extensions = {"fasta_indexes": ".fai"}
-        if index_type not in index_extensions:
-            raise RequestParameterInvalidException(f"Invalid index type: {index_type}")
-
-        tbl_entries = self._app.tool_data_tables.data_tables[index_type].data
-        ext = index_extensions[index_type]
-        index_filename = self._get_index_filename(id, tbl_entries, ext, index_type)
+    def get_indexes(self, id: str) -> str:
+        index_filename = self.get_indexes_filename(id)
         try:
-            with open(index_filename) as f:
+            with open(f"{index_filename}.fai") as f:
                 return f.read()
         except OSError:
             raise ReferenceDataError(f"Failed to load index file for {id}")
 
-    def _get_index_filename(self, id, tbl_entries, ext, index_type):
+    def get_indexes_filename(self, id: str) -> str:
+        tbl_entries = self._get_tbl_entries()
+        paths = [x[-1] for x in tbl_entries if id in x]
+        if not paths:
+            raise ReferenceDataError(f"Data tables not found for fasta_indexes for {id}")
+        return paths.pop()
+
+    def _get_tbl_entries(self):
         try:
-            paths = [x[-1] for x in tbl_entries if id in x]
-            file_name = paths.pop()
+            return self._app.tool_data_tables.data_tables["fasta_indexes"].data
         except TypeError:
-            raise ReferenceDataError(f"Data tables not found for {index_type}")
-        except IndexError:
-            raise ReferenceDataError(f"Data tables not found for {index_type} for {id}")
-        else:
-            return f"{file_name}{ext}"
+            raise ReferenceDataError("Data table not found for fasta_indexes")
 
 
 class GenomeFilterMixin:

@@ -10,6 +10,7 @@ from fastapi.responses import Response
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
+from galaxy.webapps.base.api import GalaxyFileResponse
 from . import (
     depends,
     DependsOnTrans,
@@ -19,6 +20,8 @@ from . import (
 router = Router(tags=["genomes"])
 
 IdPathParam: str = Path(..., title="Genome ID", description="Genome ID")
+
+IndexesQueryParam: bool = Query(False, title="Indexes", description="If true, return genome ids of available indexes")
 
 ChromInfoQueryParam: bool = Query(
     None, title="ChromInfo", description="If true, return genome keys with chromosome lengths"
@@ -52,10 +55,6 @@ FormatQueryParam: str = Query(None, title="Format", description="Format")
 
 ReferenceQueryParam: bool = Query(None, title="Reference", description="If true, return reference data")
 
-IndexTypeQueryParam: str = Query(
-    "fasta_indexes", title="Index type", description="Index type"  # currently this is the only supported index type
-)
-
 
 def get_id(base, format):
     if format:
@@ -69,8 +68,13 @@ class FastAPIGenomes:
 
     @router.get("/api/genomes", summary="Return a list of installed genomes", response_description="Installed genomes")
     def index(
-        self, trans: ProvidesUserContext = DependsOnTrans, chrom_info: bool = ChromInfoQueryParam
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        chrom_info: bool = ChromInfoQueryParam,
+        indexes: bool = IndexesQueryParam,
     ) -> list[list[str]]:
+        if indexes:
+            return self.manager.get_dbkeys_indexes()
         return self.manager.get_dbkeys(trans.user, chrom_info)
 
     @router.get(
@@ -94,18 +98,17 @@ class FastAPIGenomes:
 
     @router.get(
         "/api/genomes/{id}/indexes",
-        summary="Return all available indexes for a genome id for provided type",
-        response_description="Indexes for a genome id for provided type",
+        summary="Return all available indexes for a genome id",
+        response_description="Indexes for a genome id",
     )
     def indexes(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,  # may want to get custom index in the future
+        trans: ProvidesUserContext = DependsOnTrans,
         id: str = IdPathParam,
-        type: str = IndexTypeQueryParam,
         format: str = FormatQueryParam,
-    ) -> Any:
+    ) -> Response:
         id = get_id(id, format)
-        rval = self.manager.get_indexes(id, type)
+        rval = self.manager.get_indexes(id)
         return Response(rval)
 
     @router.get(
@@ -115,12 +118,21 @@ class FastAPIGenomes:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: str = IdPathParam,
-        reference: bool = ReferenceQueryParam,
         chrom: str = ChromQueryParam,
         low: int = LowQueryParam,
         high: int = HighQueryParam,
         format: str = FormatQueryParam,
-    ) -> Any:
+    ) -> Response:
         id = get_id(id, format)
         rval = self.manager.get_sequence(trans, id, chrom, low, high)
         return Response(rval)
+
+    @router.get(
+        "/api/genomes/{id}/download",
+        summary="Return sequence data for download",
+        response_description="Sequence data file",
+        response_class=GalaxyFileResponse,
+    )
+    def download(self, trans: ProvidesUserContext = DependsOnTrans, id: str = IdPathParam) -> GalaxyFileResponse:
+        filename = self.manager.get_indexes_filename(id)
+        return GalaxyFileResponse(filename)
