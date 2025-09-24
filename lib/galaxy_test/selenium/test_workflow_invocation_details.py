@@ -69,6 +69,9 @@ class TestWorkflowInvocationDetails(SeleniumTestCase):
             in invocations.step_job_information_tool_id(order_index="1").wait_for_visible().text
         )
 
+        # switch to outputs tab
+        invocations.step_outputs_tab_link.wait_for_and_click()
+
         invocations.step_output_collection(order_index="1").wait_for_visible()
         invocations.step_output_collection_toggle(order_index="1").wait_for_and_click()
         invocations.step_output_collection_element_identifier(element_identifier="forward").wait_for_and_click()

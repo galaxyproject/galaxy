@@ -248,7 +248,10 @@ onUnmounted(() => {
                                         </div>
                                     </BTab>
 
-                                    <BTab v-if="hasOutputDatasets || hasOutputCollections" title="Outputs">
+                                    <BTab
+                                        v-if="hasOutputDatasets || hasOutputCollections"
+                                        title="Outputs"
+                                        title-item-class="invocation-step-outputs-tab">
                                         <div v-if="hasOutputDatasets" class="invocation-step-output-details">
                                             <Heading v-if="hasOutputCollections" size="md" separator>
                                                 Output Datasets
