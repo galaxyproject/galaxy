@@ -192,16 +192,25 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     /**
      * Get the appropriate banner variant based on credential state.
-     * @returns {string} Banner variant ('info', 'success', or 'warning').
+     * "info" - when busy checking credentials.
+     * "success" - when all required credentials are provided or no required credentials exist.
+     * "warning" - when some required credentials are missing.
+     * @returns {"info" | "success" | "warning"} Status variant.
      */
-    const statusVariant = computed(() => {
+    const statusVariant = computed<"info" | "success" | "warning">(() => {
         if (isBusy.value) {
             return "info";
         }
         if (hasUserProvidedAllServiceCredentials.value || hasUserProvidedAllRequiredServiceCredentials.value) {
             return "success";
         }
-        return "warning";
+        if (toolHasRequiredServiceCredentials.value) {
+            return "warning";
+        }
+        if (!toolHasRequiredServiceCredentials.value) {
+            return "success";
+        }
+        return "info";
     });
 
     /**

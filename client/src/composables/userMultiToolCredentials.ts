@@ -105,7 +105,13 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
         );
     });
 
-    /** Status variant based on overall credential state across all tools. */
+    /**
+     * Get the appropriate status variant based on overall credential state.
+     * "info" - when busy checking credentials.
+     * "success" - when all required credentials are provided or no required credentials exist.
+     * "warning" - when some required credentials are missing.
+     * @returns {"info" | "success" | "warning"} Status variant.
+     */
     const statusVariant = computed<"info" | "success" | "warning">(() => {
         if (isBusy.value) {
             return "info";
@@ -116,7 +122,13 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
         ) {
             return "success";
         }
-        return "warning";
+        if (someToolsHasRequiredServiceCredentials.value) {
+            return "warning";
+        }
+        if (!someToolsHasRequiredServiceCredentials.value) {
+            return "success";
+        }
+        return "info";
     });
 
     /**

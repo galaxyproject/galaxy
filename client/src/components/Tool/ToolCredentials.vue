@@ -186,7 +186,10 @@ onMounted(async () => {
                             fixed-width
                             transform="shrink-6 right-6 down-6" />
                         <FontAwesomeIcon
-                            v-else-if="hasUserProvidedAllRequiredServiceCredentials"
+                            v-else-if="
+                                !hasUserProvidedAllRequiredServiceCredentials ||
+                                !hasUserProvidedSomeOptionalServiceCredentials
+                            "
                             :icon="faExclamation"
                             fixed-width
                             transform="shrink-6 right-8 down-7" />
