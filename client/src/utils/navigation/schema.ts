@@ -23,7 +23,8 @@ interface Root_ extends Component {
 interface Rootmasthead extends Component {
     _: SelectorTemplate;
     user: SelectorTemplate;
-    register_or_login: SelectorTemplate;
+    login_masthead_button: SelectorTemplate;
+    register_masthead_button: SelectorTemplate;
     user_menu: SelectorTemplate;
     workflow: SelectorTemplate;
     username: SelectorTemplate;

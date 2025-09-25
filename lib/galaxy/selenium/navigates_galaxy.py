@@ -808,7 +808,7 @@ class NavigatesGalaxy(HasDriver):
         return "".join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(len))
 
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
-        self.components.masthead.register_or_login.wait_for_and_click()
+        self.components.masthead.login_masthead_button.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         self.fill_login_and_submit(email, password=password)
         if assert_valid:
@@ -846,7 +846,7 @@ class NavigatesGalaxy(HasDriver):
             username = email.split("@")[0]
 
         self.home()
-        self.components.masthead.register_or_login.wait_for_and_click()
+        self.components.masthead.login_masthead_button.wait_for_and_click()
         registration = self.components.registration
         registration.toggle.wait_for_and_click()
         form = registration.form.wait_for_visible()
