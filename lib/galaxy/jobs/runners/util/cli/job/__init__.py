@@ -69,7 +69,7 @@ class BaseJobExec(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_single_status(self, status: str, job_id: str) -> job_states:
+    def parse_single_status(self, status: str, job_id: str, shell) -> job_states:
         """
         Parse the status of output from get_single_status command.
         """

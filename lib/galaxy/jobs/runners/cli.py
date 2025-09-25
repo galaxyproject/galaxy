@@ -174,7 +174,7 @@ class ShellJobRunner(AsynchronousJobRunner):
                 shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
                 shell, job_interface = self.get_cli_plugins(shell_params, job_params)
                 cmd_out = shell.execute(job_interface.get_single_status(external_job_id))
-                state = job_interface.parse_single_status(cmd_out.stdout, external_job_id)
+                state = job_interface.parse_single_status(cmd_out.stdout, external_job_id, shell)
                 if not state == model.Job.states.OK:
                     log.warning(
                         f"({id_tag}/{external_job_id}) job not found in batch state check, but found in individual state check"

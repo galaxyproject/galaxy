@@ -1,6 +1,5 @@
 # A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
-import subprocess
 from logging import getLogger
 
 from . import (
@@ -38,6 +37,10 @@ class Slurm(BaseJobExec):
         "TO": runner_states.WALLTIME_REACHED,
         "UN": runner_states.UNKNOWN_ERROR,
     }
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.sacct_available = True
 
     def job_script_kwargs(self, ofile, efile, job_name):
         scriptargs = {"-o": ofile, "-e": efile, "-J": job_name}
@@ -81,18 +84,23 @@ class Slurm(BaseJobExec):
                 rval[id] = self._get_job_state(state)
         return rval
 
-    def parse_single_status(self, status, job_id):
+    def parse_single_status(self, status, job_id, shell):
         status = status.splitlines()
         if len(status) > 1:
             # Job still on cluster and has state.
             id, state = status[1].split()
             return self._get_job_state(state)
-        elif len(status) <= 1:
+        elif self.sacct_available and len(status) <= 1:
             log.debug(f"For job '{job_id}', relying on 'sacct' method to determine job state")
             # Job no longer on cluster, retrieve state
-            pdata = subprocess.run(
-                ["sacct", "-o", "JobIDRaw,State", "-P", "-n", "-j", job_id], capture_output=True, encoding="utf-8"
-            )
+            pdata = shell.execute(f"sacct -o JobIDRaw,State -P -n -j {job_id}")
+            if "Slurm accounting storage is disabled" in pdata.stderr:
+                log.warning(f"({job_id}) Slurm accounting storage is disabled")
+                self.sacct_available = False
+
+                # Technically we don't know what the state is, but chances are the job just completed very quickly.
+                return job_states.OK
+
             job_data = pdata.stdout.splitlines()
 
             if len(job_data) == 0:
