@@ -55,18 +55,14 @@ ram_description = """May be a fractional value. If so, the actual RAM request is
 
 class ResourceRequirement(ToolSourceBaseModel):
     type: Literal["resource"]
-    cores_min: Optional[
-        Annotated[Union[int, float], Field(description=f"{cores_min_description}\n{cores_description}")]
+    cores_min: Annotated[
+        Union[int, float, None], Field(description=f"{cores_min_description}\n{cores_description}")
     ] = 1
-    cores_max: Optional[
-        Annotated[Union[int, float], Field(description=f"{cores_max_description}\n{cores_description}")]
+    cores_max: Annotated[
+        Union[int, float, None], Field(description=f"{cores_max_description}\n{cores_description}")
     ] = None
-    ram_min: Optional[Annotated[Union[int, float], Field(description=f"{ram_min_description}\n{ram_description}")]] = (
-        256
-    )
-    ram_max: Optional[Annotated[Union[int, float], Field(description=f"{ram_max_description}\n{ram_description}")]] = (
-        None
-    )
+    ram_min: Annotated[Union[int, float, None], Field(description=f"{ram_min_description}\n{ram_description}")] = 256
+    ram_max: Annotated[Union[int, float, None], Field(description=f"{ram_max_description}\n{ram_description}")] = None
     tmpdir_min: Optional[Union[int, float]] = None
     tmpdir_max: Optional[Union[int, float]] = None
     cuda_version_min: Optional[Union[int, float]] = None

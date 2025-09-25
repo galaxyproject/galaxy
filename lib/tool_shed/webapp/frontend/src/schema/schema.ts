@@ -783,9 +783,15 @@ export interface components {
         }
         /** BaseUrlParameterModel */
         BaseUrlParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -797,7 +803,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -831,11 +840,17 @@ export interface components {
         }
         /** BooleanParameterModel */
         BooleanParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
             /** falsevalue */
             falsevalue?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -847,7 +862,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -924,9 +942,15 @@ export interface components {
         }
         /** ColorParameterModel */
         ColorParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -938,7 +962,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -967,9 +994,15 @@ export interface components {
         }
         /** ConditionalParameterModel */
         ConditionalParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -981,7 +1014,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -1102,9 +1138,15 @@ export interface components {
         }
         /** CwlDirectoryParameterModel */
         CwlDirectoryParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1116,7 +1158,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -1138,9 +1183,15 @@ export interface components {
         }
         /** CwlFileParameterModel */
         CwlFileParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1152,7 +1203,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -1255,7 +1309,10 @@ export interface components {
         }
         /** DataCollectionParameterModel */
         DataCollectionParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
             /** collection_type */
             collection_type?: string | null
@@ -1266,7 +1323,10 @@ export interface components {
              *     ]
              */
             extensions: string[]
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1278,7 +1338,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -1309,9 +1372,15 @@ export interface components {
         }
         /** DataColumnParameterModel */
         DataColumnParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1323,7 +1392,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** multiple */
             multiple: boolean
@@ -1354,7 +1426,10 @@ export interface components {
         }
         /** DataParameterModel */
         DataParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
             /**
              * extensions
@@ -1364,7 +1439,10 @@ export interface components {
              *     ]
              */
             extensions: string[]
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1376,7 +1454,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** max */
             max?: number | null
@@ -1456,9 +1537,15 @@ export interface components {
         }
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1470,7 +1557,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -1518,9 +1608,15 @@ export interface components {
         }
         /** DrillDownParameterModel */
         DrillDownParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1537,7 +1633,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** multiple */
             multiple: boolean
@@ -1659,9 +1758,15 @@ export interface components {
         }
         /** FloatParameterModel */
         FloatParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1673,7 +1778,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** max */
             max?: number | null
@@ -1711,9 +1819,15 @@ export interface components {
         }
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1725,7 +1839,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** multiple */
             multiple: boolean
@@ -1754,9 +1871,15 @@ export interface components {
         }
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1768,7 +1891,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** multiple */
             multiple: boolean
@@ -1807,9 +1933,15 @@ export interface components {
         }
         /** HiddenParameterModel */
         HiddenParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1821,7 +1953,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -1934,9 +2069,15 @@ export interface components {
         }
         /** IntegerParameterModel */
         IntegerParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -1948,7 +2089,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** max */
             max?: number | null
@@ -2104,9 +2248,15 @@ export interface components {
         }
         /** RepeatParameterModel */
         RepeatParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -2118,7 +2268,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /** max */
             max?: number | null
@@ -2445,9 +2598,15 @@ export interface components {
         }
         /** RulesParameterModel */
         RulesParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -2459,7 +2618,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -2486,9 +2648,15 @@ export interface components {
         }
         /** SectionParameterModel */
         SectionParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -2500,7 +2668,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -2557,9 +2728,15 @@ export interface components {
         }
         /** SelectParameterModel */
         SelectParameterModel: {
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -2571,7 +2748,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * multiple
@@ -2750,14 +2930,20 @@ export interface components {
              * @default false
              */
             area: boolean
-            /** argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null
             /**
              * default_options
              * @default []
              */
             default_options: components["schemas"]["LabelValue"][]
-            /** help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null
             /**
              * hidden
@@ -2769,7 +2955,10 @@ export interface components {
              * @default false
              */
             is_dynamic: boolean
-            /** label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null
             /**
              * name
@@ -2888,7 +3077,10 @@ export interface components {
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
-            /** label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null
             /**
              * name
@@ -2908,7 +3100,10 @@ export interface components {
              * @description If true, the output will not be shown in the history.
              */
             hidden: boolean
-            /** label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null
             /**
              * name
@@ -2955,18 +3150,30 @@ export interface components {
              * @description The short name for the output datatype.
              */
             format: string
-            /** format_source */
+            /**
+             * format_source
+             * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+             */
             format_source?: string | null
-            /** from_work_dir */
+            /**
+             * from_work_dir
+             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             */
             from_work_dir?: string | null
             /**
              * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: boolean
-            /** label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null
-            /** metadata_source */
+            /**
+             * metadata_source
+             * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
+             */
             metadata_source?: string | null
             /**
              * name
@@ -2986,7 +3193,10 @@ export interface components {
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
-            /** label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null
             /**
              * name
@@ -3006,7 +3216,10 @@ export interface components {
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
-            /** label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null
             /**
              * name
@@ -3026,7 +3239,10 @@ export interface components {
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
-            /** label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null
             /**
              * name

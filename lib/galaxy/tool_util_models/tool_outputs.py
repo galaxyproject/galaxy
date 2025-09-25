@@ -33,7 +33,7 @@ class GenericToolOutputBaseModel(ToolSourceBaseModel, Generic[IncomingNotRequire
     name: Annotated[
         IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
     ]
-    label: Optional[Annotated[str, Field(description="Output label. Will be used as dataset name in history.")]] = None
+    label: Annotated[Optional[str], Field(description="Output label. Will be used as dataset name in history.")] = None
     hidden: Annotated[
         IncomingNotRequiredBoolT, Field(description="If true, the output will not be shown in the history.")
     ]
@@ -75,31 +75,25 @@ class GenericToolOutputDataset(
 ):
     type: Literal["data"]
     format: Annotated[IncomingNotRequiredStringT, Field(description="The short name for the output datatype.")]
-    format_source: Optional[
-        Annotated[
-            str,
-            Field(
-                description="This sets the data type of the output dataset(s) to be the same format as that of the specified tool input."
-            ),
-        ]
+    format_source: Annotated[
+        Optional[str],
+        Field(
+            description="This sets the data type of the output dataset(s) to be the same format as that of the specified tool input."
+        ),
     ] = None
-    metadata_source: Optional[
-        Annotated[
-            str,
-            Field(
-                description="This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets."
-            ),
-        ]
+    metadata_source: Annotated[
+        Optional[str],
+        Field(
+            description="This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets."
+        ),
     ] = None
     discover_datasets: Optional[List[DatasetCollectionDescriptionT]] = None
-    from_work_dir: Optional[
-        Annotated[
-            str,
-            Field(
-                title="from_work_dir",
-                description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
-            ),
-        ]
+    from_work_dir: Annotated[
+        Optional[str],
+        Field(
+            title="from_work_dir",
+            description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
+        ),
     ] = None
 
 

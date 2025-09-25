@@ -10,6 +10,7 @@ from typing import (
 )
 
 from fastapi import Path
+from pydantic import Field
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigurationError
@@ -42,11 +43,13 @@ DEFAULT_PROMPT = """
 Please only say that something went wrong when configuing the ai prompt in your response.
 """
 
-JobIdPathParam = Optional[
-    Annotated[
-        DecodedDatabaseIdField,
-        Path(title="Job ID", description="The Job ID the chat exchange is linked to."),
-    ]
+JobIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Field(default=None, title="Job ID", description="The Job ID the chat exchange is linked to."),
+]
+JobIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(title="Job ID", description="The Job ID the chat exchange is linked to."),
 ]
 
 
@@ -59,7 +62,7 @@ class ChatAPI:
     @router.post("/api/chat")
     def query(
         self,
-        job_id: JobIdPathParam,
+        job_id: JobIdQueryParam,
         payload: ChatPayload,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
