@@ -43,6 +43,7 @@ from typing_extensions import (
     Protocol,
 )
 
+from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
     expand_annotation,
@@ -175,7 +176,7 @@ def dynamic_model_information_from_py_type(
 # We probably need incoming (parameter def) and outgoing (parameter value as transmitted) models,
 # where value in the incoming model means "default value" and value in the outgoing model is the actual
 # value a user has set. (incoming/outgoing from the client perspective).
-class BaseToolParameterModelDefinition(BaseModel):
+class BaseToolParameterModelDefinition(ToolSourceBaseModel):
     name: Annotated[
         str,
         Field(description="Parameter name. Used when referencing parameter in workflows or inside command templating."),

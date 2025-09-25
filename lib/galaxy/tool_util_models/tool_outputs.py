@@ -12,15 +12,14 @@ from typing import (
     Union,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
 from typing_extensions import (
     Annotated,
     Literal,
     TypeVar,
 )
+
+from ._base import ToolSourceBaseModel
 
 AnyT = TypeVar("AnyT")
 NotRequired = Annotated[Optional[AnyT], Field(None)]
@@ -30,7 +29,7 @@ IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
 # Use IncomingNotRequired when concrete key: Optional[str] = None would be incorrect
 
 
-class GenericToolOutputBaseModel(BaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
+class GenericToolOutputBaseModel(ToolSourceBaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
     name: Annotated[
         IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
     ]
@@ -45,7 +44,7 @@ SortKeyT = Literal["filename", "name", "designation", "dbkey"]
 SortCompT = Literal["lexical", "numeric"]
 
 
-class DatasetCollectionDescription(BaseModel):
+class DatasetCollectionDescription(ToolSourceBaseModel):
     discover_via: DiscoverViaT
     format: Optional[str]
     visible: bool
@@ -115,7 +114,7 @@ class IncomingToolOutputDataset(
 ): ...
 
 
-class ToolOutputCollectionStructure(BaseModel):
+class ToolOutputCollectionStructure(ToolSourceBaseModel):
     collection_type: Optional[str] = None
     collection_type_source: Optional[str] = None
     collection_type_from_rules: Optional[str] = None
