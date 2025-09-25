@@ -81,15 +81,8 @@
                     v-model="dataManagerMode"
                     :options="bundleOptions"
                     title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
+                <ToolFormTags :tags.sync="tags" />
             </div>
-            <FormElement
-                id="tags"
-                :attributes="{ optional: true }"
-                :value="tags"
-                title="Output tags"
-                type="tags"
-                help="Enter tags to apply to the output datasets in your history (e.g., 'sample1'). Tags starting with '#' (e.g., '#sample1') will propagate to datasets derived from these outputs. Tags help you organize and search your history."
-                @input="updateTags" />
             <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"
@@ -136,6 +129,7 @@ import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 
+import ToolFormTags from "./ToolFormTags.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 export default {
@@ -147,6 +141,7 @@ export default {
         FormElement,
         FormSelect,
         ToolEntryPoints,
+        ToolFormTags,
         ToolRecommendation,
         Heading,
     },
@@ -462,9 +457,6 @@ export default {
                     }
                 },
             );
-        },
-        updateTags(newTags) {
-            this.tags = newTags;
         },
     },
 };
