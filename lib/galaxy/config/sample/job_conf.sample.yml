@@ -503,6 +503,11 @@ execution:
       # Following command can be used to tweak docker command.
       #docker_cmd: /usr/local/custom_docker/docker
 
+      # Docker containers that expose ports (e.g. Interactive Tools) can
+      # optionally use a command to determine the host port that is exposed. By
+      # default, one is chosen at random (docker run -p <guest_port> ...).
+      #docker_host_port_cmd:
+
       # Following can be used to connect to docker server in different
       # ways (translated as -H argument to docker client).
       #docker_host: unix:///var/run/docker.sock
