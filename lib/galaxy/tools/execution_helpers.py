@@ -96,8 +96,8 @@ def on_text_for_dataset_and_collections(
     collection_hids: Optional[list[int]] = None,
     element_ids: Optional[list[str]] = None,
 ) -> str:
-    on_text_datasets = on_text_for_numeric_ids(dataset_hids, "data")
-    on_text_collection = on_text_for_numeric_ids(collection_hids, "list")
+    on_text_datasets = on_text_for_numeric_ids(dataset_hids, "dataset")
+    on_text_collection = on_text_for_numeric_ids(collection_hids, "collection")
     on_text_elements = on_text_for_names(element_ids)
 
     on_text = []

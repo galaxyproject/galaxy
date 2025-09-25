@@ -54,23 +54,23 @@ TWO_OUTPUTS = """<tool id="test_tool" name="Test Tool">
 
 def test_on_text_for_numeric_ids():
     def assert_on_text_is(expected, hids):
-        on_text = on_text_for_numeric_ids(hids, "data")
+        on_text = on_text_for_numeric_ids(hids, "dataset")
         assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
 
-    assert_on_text_is("data 1", [1])
-    assert_on_text_is("data 1 and 2", [1, 2])
-    assert_on_text_is("data 1-3", [1, 2, 3])
-    assert_on_text_is("data 1-4", [1, 2, 3, 4])
-    assert_on_text_is("data 1, 3, and 4", [1, 3, 4])
-    assert_on_text_is("data 1-3 and 5-7", [1, 2, 3, 5, 6, 7])
-    assert_on_text_is("data 1-3, 5-7, and 9-11", [1, 2, 3, 5, 6, 7, 9, 10, 11])
+    assert_on_text_is("dataset 1", [1])
+    assert_on_text_is("dataset 1 and 2", [1, 2])
+    assert_on_text_is("dataset 1-3", [1, 2, 3])
+    assert_on_text_is("dataset 1-4", [1, 2, 3, 4])
+    assert_on_text_is("dataset 1, 3, and 4", [1, 3, 4])
+    assert_on_text_is("dataset 1-3 and 5-7", [1, 2, 3, 5, 6, 7])
+    assert_on_text_is("dataset 1-3, 5-7, and 9-11", [1, 2, 3, 5, 6, 7, 9, 10, 11])
 
-    assert_on_text_is("data 1-3, 5, and 9", [1, 2, 3, 5, 9])
+    assert_on_text_is("dataset 1-3, 5, and 9", [1, 2, 3, 5, 9])
 
-    assert_on_text_is("data 1, 2, and others", [1, 2, 4, 5])
-    assert_on_text_is("data 1, 2, and 4-6", [1, 2, 4, 5, 6])
+    assert_on_text_is("dataset 1, 2, and others", [1, 2, 4, 5])
+    assert_on_text_is("dataset 1, 2, and 4-6", [1, 2, 4, 5, 6])
 
-    assert_on_text_is("data 1 and 2", [1, 1, 2])
+    assert_on_text_is("dataset 1 and 2", [1, 1, 2])
 
 
 def test_on_text_for_dataset_and_collections():
@@ -78,8 +78,8 @@ def test_on_text_for_dataset_and_collections():
         on_text = on_text_for_dataset_and_collections(dataset_hids, collection_hids, element_ids)
         assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
 
-    assert_on_text_is("data 1 and list 4 and 5", [1], [4, 5], None)
-    assert_on_text_is("data 1 and SampleA and SampleB", [1], None, ["SampleA", "SampleB"])
+    assert_on_text_is("dataset 1 and collection 4 and 5", [1], [4, 5], None)
+    assert_on_text_is("dataset 1 and SampleA and SampleB", [1], None, ["SampleA", "SampleB"])
 
 
 class TestDefaultToolAction(TestCase, tools_support.UsesTools):
@@ -117,7 +117,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        assert output["out1"].name == "Test Tool on data 1 and 2"
+        assert output["out1"].name == "Test Tool on dataset 1 and 2"
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)
