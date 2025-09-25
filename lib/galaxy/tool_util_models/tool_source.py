@@ -41,21 +41,38 @@ class SetEnvironmentRequirement(Requirement):
     type: Literal["set_environment"]
     environment: str
 
+cores_min_description = "Minimum reserved number of CPU cores."
+cores_max_description = "Maximum reserved number of CPU cores."
+cores_description = """May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
+The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
+"""
+ram_min_description = "Minimum reserved RAM in mebibytes (2**20)."
+ram_max_description = "Maximum reserved RAM in mebibytes (2**20)."
+ram_description = """May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer."""
+
 
 class ResourceRequirement(BaseModel):
     type: Literal["resource"]
-    cores_min: Optional[Union[int, float]]
-    cores_max: Optional[Union[int, float]]
-    ram_min: Optional[Union[int, float]]
-    ram_max: Optional[Union[int, float]]
-    tmpdir_min: Optional[Union[int, float]]
-    tmpdir_max: Optional[Union[int, float]]
-    cuda_version_min: Optional[Union[int, float]]
-    cuda_compute_capability: Optional[Union[int, float]]
-    gpu_memory_min: Optional[Union[int, float]]
-    cuda_device_count_min: Optional[Union[int, float]]
-    cuda_device_count_max: Optional[Union[int, float]]
-    shm_size: Optional[Union[int, float]]
+    cores_min: Optional[
+        Annotated[Union[int, float], Field(description=f"{cores_min_description}\n{cores_description}")]
+    ] = 1
+    cores_max: Optional[
+        Annotated[Union[int, float], Field(description=f"{cores_max_description}\n{cores_description}")]
+    ] = None
+    ram_min: Optional[Annotated[Union[int, float], Field(description=f"{ram_min_description}\n{ram_description}")]] = (
+        256
+    )
+    ram_max: Optional[Annotated[Union[int, float], Field(description=f"{ram_max_description}\n{ram_description}")]] = (
+        None
+    )
+    tmpdir_min: Optional[Union[int, float]] = None
+    tmpdir_max: Optional[Union[int, float]] = None
+    cuda_version_min: Optional[Union[int, float]] = None
+    cuda_compute_capability: Optional[Union[int, float]] = None
+    gpu_memory_min: Optional[Union[int, float]] = None
+    cuda_device_count_min: Optional[Union[int, float]] = None
+    cuda_device_count_max: Optional[Union[int, float]] = None
+    shm_size: Optional[Union[int, float]] = None
 
 
 class JavascriptRequirement(BaseModel):

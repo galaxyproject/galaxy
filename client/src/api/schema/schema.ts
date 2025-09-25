@@ -18969,29 +18969,35 @@ export interface components {
         /** ResourceRequirement */
         ResourceRequirement: {
             /** Cores Max */
-            cores_max: number | null;
-            /** Cores Min */
+            cores_max?: number | null;
+            /**
+             * Cores Min
+             * @default 1
+             */
             cores_min: number | null;
             /** Cuda Compute Capability */
-            cuda_compute_capability: number | null;
+            cuda_compute_capability?: number | null;
             /** Cuda Device Count Max */
-            cuda_device_count_max: number | null;
+            cuda_device_count_max?: number | null;
             /** Cuda Device Count Min */
-            cuda_device_count_min: number | null;
+            cuda_device_count_min?: number | null;
             /** Cuda Version Min */
-            cuda_version_min: number | null;
+            cuda_version_min?: number | null;
             /** Gpu Memory Min */
-            gpu_memory_min: number | null;
+            gpu_memory_min?: number | null;
             /** Ram Max */
-            ram_max: number | null;
-            /** Ram Min */
+            ram_max?: number | null;
+            /**
+             * Ram Min
+             * @default 256
+             */
             ram_min: number | null;
             /** Shm Size */
-            shm_size: number | null;
+            shm_size?: number | null;
             /** Tmpdir Max */
-            tmpdir_max: number | null;
+            tmpdir_max?: number | null;
             /** Tmpdir Min */
-            tmpdir_min: number | null;
+            tmpdir_min?: number | null;
             /**
              * Type
              * @constant
