@@ -21,7 +21,8 @@
                 <ButtonSpinner
                     id="run-workflow"
                     title="Run Workflow"
-                    :disabled="!canRunOnHistory"
+                    :tooltip="runButtonTooltip"
+                    :disabled="!canRunOnHistory || hasCredentialErrors"
                     :wait="showExecuting"
                     @onClick="onExecute" />
             </div>
@@ -96,6 +97,7 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import { mapState } from "pinia";
 
+import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
@@ -211,6 +213,21 @@ export default {
         },
         canRunOnHistory() {
             return this.shouldRunOnNewHistory || this.canMutateCurrentHistory;
+        },
+        hasCredentialErrors() {
+            if (this.credentialTools.length) {
+                const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+                    this.credentialTools,
+                );
+                return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+            }
+            return false;
+        },
+        runButtonTooltip() {
+            if (this.hasCredentialErrors) {
+                return "Please provide all required credentials before running the workflow.";
+            }
+            return "Run workflow";
         },
     },
     methods: {

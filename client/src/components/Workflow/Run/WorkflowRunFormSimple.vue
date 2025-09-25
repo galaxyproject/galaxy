@@ -14,6 +14,7 @@ import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
+import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -357,6 +358,16 @@ const credentialTools = computed<ToolIdentifier[]>(() => {
     return toolIdentifiers;
 });
 
+const hasCredentialErrors = computed(() => {
+    if (credentialTools.value.length) {
+        const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+            credentialTools.value,
+        );
+        return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+    }
+    return false;
+});
+
 onBeforeMount(() => {
     const credentialSteps = props.model.steps.filter(
         (step: any) => step.step_type === "tool" && step.credentials?.length,
@@ -386,7 +397,7 @@ onBeforeMount(() => {
             <div class="mb-2">
                 <WorkflowNavigationTitle
                     :workflow-id="model.runData.workflow_id"
-                    :run-disabled="hasValidationErrors || !canRunOnHistory"
+                    :run-disabled="hasValidationErrors || !canRunOnHistory || hasCredentialErrors"
                     :run-waiting="waitingForRequest"
                     :valid-rerun="isValidRerun"
                     @on-execute="onExecute">
