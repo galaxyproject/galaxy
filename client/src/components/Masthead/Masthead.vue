@@ -167,14 +167,14 @@ onMounted(() => {
             <QuotaMeter />
             <MastheadItem
                 v-if="isAnonymous"
-                id="login"
+                id="user"
                 class="loggedout-only"
                 data-description="login masthead button"
                 title="Login"
                 @click="performLogin()" />
             <MastheadItem
                 v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
-                id="register"
+                id="user-register"
                 class="loggedout-only"
                 data-description="register masthead button"
                 title="Register"
