@@ -162,6 +162,8 @@ class ConfiguredFileSources:
             _ensure_loaded("base64")
             _ensure_loaded("drs")
             _ensure_loaded("remoteZip")
+            # Do we actually want to do this here, if we're doing drs+s3fs?
+            _ensure_loaded("s3fs")
 
             if file_sources_config.ftp_upload_dir is not None:
                 _ensure_loaded("gxftp")

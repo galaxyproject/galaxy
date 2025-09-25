@@ -40,8 +40,11 @@ def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
     if "s3" in desc.lower():
         rest_of_message = """For S3 access methods, this DRS resource uses AWS S3 storage.
 
-        Most research data repositories require AWS credentials for S3 access:
-        - Public datasets: May allow anonymous access via configured S3 file source
+        S3 URLs are now handled through Galaxy's file source system. If you're seeing this error,
+        it means no configured S3 file source can handle the S3 URLs returned by this DRS service.
+
+        Most research data repositories require specific AWS credentials for S3 access:
+        - Public datasets: May work with anonymous S3 file source (anon: true)
         - Controlled access: Requires specific AWS credentials/permissions
         - SPARC datasets: Use "Requester Pays" model (user pays ~$0.09/GB)
 
@@ -55,8 +58,8 @@ def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
             secret: YOUR_AWS_SECRET_KEY
             id: s3_research_data
 
-        Note: Some datasets (like SPARC) require RequestPayer='requester' parameter
-        which is not currently supported by Galaxy's S3 file source.
+        Galaxy includes a stock S3 file source for basic anonymous access, but it may not
+        work with all S3 buckets depending on their access policies.
         """
     else:
         rest_of_message = """Currently Galaxy client only works with HTTP/HTTPS targets but extensions for
@@ -121,7 +124,7 @@ def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict]
             response = requests.get(s3_url, headers=headers or {}, timeout=DEFAULT_SOCKET_TIMEOUT, stream=True)
             response.raise_for_status()
 
-            with open(target_path, 'wb') as f:
+            with open(target_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
                     f.write(chunk)
             return
@@ -129,6 +132,7 @@ def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict]
         # For raw S3 URLs, try s3fs with different access patterns
         log.debug(f"Using s3fs for S3 URL: {s3_url}")
         import s3fs
+
         s3_path = s3_url[5:]  # Remove 's3://' prefix
 
         # Try different S3 access methods in order of preference
@@ -142,8 +146,8 @@ def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict]
         for method_name, fs_factory in access_methods:
             try:
                 fs = fs_factory()
-                with fs.open(s3_path, 'rb') as s3_file:
-                    with open(target_path, 'wb') as local_file:
+                with fs.open(s3_path, "rb") as s3_file:
+                    with open(target_path, "wb") as local_file:
                         while True:
                             chunk = s3_file.read(CHUNK_SIZE)
                             if not chunk:
@@ -385,27 +389,20 @@ def fetch_drs_to_file(
             opts.extra_props = PartialFilesSourceProperties(**extra_props)
 
         try:
-            # Handle S3 URLs directly using s3fs instead of going through file sources
-            if access_url.startswith("s3://"):
-                log.debug(f"Handling S3 URL directly: {access_url}")
-                _download_s3_file(access_url, target_path, access_headers)
-                downloaded = True
-                break
-            else:
-                file_sources = (
-                    user_context.file_sources
-                    if user_context
-                    else ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
-                )
-                stream_url_to_file(
-                    access_url,
-                    target_path=str(target_path),
-                    file_sources=file_sources,
-                    user_context=user_context,
-                    file_source_opts=opts,
-                )
-                downloaded = True
-                break
+            file_sources = (
+                user_context.file_sources
+                if user_context
+                else ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
+            )
+            stream_url_to_file(
+                access_url,
+                target_path=str(target_path),
+                file_sources=file_sources,
+                user_context=user_context,
+                file_source_opts=opts,
+            )
+            downloaded = True
+            break
         except exceptions.RequestParameterInvalidException as e:
             log.debug(f"Failed to fetch via {access_method['type']} access method: {e}")
             continue
