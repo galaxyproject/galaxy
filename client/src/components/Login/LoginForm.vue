@@ -245,8 +245,7 @@ function returnToLogin() {
                                     <GLink
                                         v-if="allowUserCreation || disableLocalAccounts"
                                         id="register-toggle"
-                                        to="/register/start"
-                                        thin>
+                                        to="/register/start">
                                         Register here.
                                     </GLink>
                                     <span v-else data-description="registration disabled message">

@@ -218,7 +218,7 @@ async function submit() {
                         <BCardFooter v-if="!hideLoginLink">
                             <span v-localize>Already have an account?</span>
 
-                            <GLink id="login-toggle" to="/login/start" thin> Log in here. </GLink>
+                            <GLink id="login-toggle" to="/login/start"> Log in here. </GLink>
                         </BCardFooter>
                     </BCard>
                 </BForm>
