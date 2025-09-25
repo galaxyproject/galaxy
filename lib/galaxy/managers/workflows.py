@@ -462,8 +462,8 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         return workflow_invocation
 
     def get_invocation_step(
-        self, trans, decoded_workflow_invocation_step_id, check_ownership=True, check_accessible=True
-    ):
+        self, trans, decoded_workflow_invocation_step_id, check_ownership: bool = True, check_accessible: bool = True
+    ) -> WorkflowInvocationStep:
         try:
             workflow_invocation_step = trans.sa_session.get(WorkflowInvocationStep, decoded_workflow_invocation_step_id)
         except Exception:

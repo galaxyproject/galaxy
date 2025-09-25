@@ -12,15 +12,14 @@ from typing import (
     Union,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
 from typing_extensions import (
     Annotated,
     Literal,
     TypeVar,
 )
+
+from ._base import ToolSourceBaseModel
 
 AnyT = TypeVar("AnyT")
 NotRequired = Annotated[Optional[AnyT], Field(None)]
@@ -30,11 +29,11 @@ IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
 # Use IncomingNotRequired when concrete key: Optional[str] = None would be incorrect
 
 
-class GenericToolOutputBaseModel(BaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
+class GenericToolOutputBaseModel(ToolSourceBaseModel, Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT]):
     name: Annotated[
         IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
     ]
-    label: Optional[Annotated[str, Field(description="Output label. Will be used as dataset name in history.")]] = None
+    label: Annotated[Optional[str], Field(description="Output label. Will be used as dataset name in history.")] = None
     hidden: Annotated[
         IncomingNotRequiredBoolT, Field(description="If true, the output will not be shown in the history.")
     ]
@@ -45,7 +44,7 @@ SortKeyT = Literal["filename", "name", "designation", "dbkey"]
 SortCompT = Literal["lexical", "numeric"]
 
 
-class DatasetCollectionDescription(BaseModel):
+class DatasetCollectionDescription(ToolSourceBaseModel):
     discover_via: DiscoverViaT
     format: Optional[str]
     visible: bool
@@ -76,31 +75,25 @@ class GenericToolOutputDataset(
 ):
     type: Literal["data"]
     format: Annotated[IncomingNotRequiredStringT, Field(description="The short name for the output datatype.")]
-    format_source: Optional[
-        Annotated[
-            str,
-            Field(
-                description="This sets the data type of the output dataset(s) to be the same format as that of the specified tool input."
-            ),
-        ]
+    format_source: Annotated[
+        Optional[str],
+        Field(
+            description="This sets the data type of the output dataset(s) to be the same format as that of the specified tool input."
+        ),
     ] = None
-    metadata_source: Optional[
-        Annotated[
-            str,
-            Field(
-                description="This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets."
-            ),
-        ]
+    metadata_source: Annotated[
+        Optional[str],
+        Field(
+            description="This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets."
+        ),
     ] = None
     discover_datasets: Optional[List[DatasetCollectionDescriptionT]] = None
-    from_work_dir: Optional[
-        Annotated[
-            str,
-            Field(
-                title="from_work_dir",
-                description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
-            ),
-        ]
+    from_work_dir: Annotated[
+        Optional[str],
+        Field(
+            title="from_work_dir",
+            description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
+        ),
     ] = None
 
 
@@ -115,7 +108,7 @@ class IncomingToolOutputDataset(
 ): ...
 
 
-class ToolOutputCollectionStructure(BaseModel):
+class ToolOutputCollectionStructure(ToolSourceBaseModel):
     collection_type: Optional[str] = None
     collection_type_source: Optional[str] = None
     collection_type_from_rules: Optional[str] = None

@@ -181,7 +181,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             metrics_dict["step_label"] = step_label
         return metrics_dict_list
 
-    def update_invocation_step(self, trans, step_id, action):
+    def update_invocation_step(self, trans, step_id, action) -> InvocationStep:
         wfi_step = self._workflows_manager.update_invocation_step(trans, step_id, action)
         return self.serialize_workflow_invocation_step(wfi_step)
 

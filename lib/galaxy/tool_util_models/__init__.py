@@ -29,6 +29,7 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util_models.parameters import GalaxyToolParameterModel
+from ._base import ToolSourceBaseModel
 from .assertions import assertions
 from .parameters import ToolParameterT
 from .tool_outputs import (
@@ -55,7 +56,7 @@ def normalize_dict(values, keys: List[str]):
             values[key] = [{"name": k, **v} for k, v in items.items()]
 
 
-class ToolSourceBase(BaseModel):
+class ToolSourceBase(ToolSourceBaseModel):
     id: Optional[str] = None
     name: Optional[str] = None
     version: Optional[str] = "1.0"
@@ -81,7 +82,7 @@ class ToolSourceBase(BaseModel):
 
 
 # repeated fields to get consistent order, ugh, FIXME obviously
-class UserToolSource(BaseModel):
+class UserToolSource(ToolSourceBaseModel):
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     id: Annotated[
         str,
@@ -156,7 +157,7 @@ class AdminToolSource(ToolSourceBase):
 DynamicToolSources = Annotated[Union[UserToolSource, AdminToolSource], Field(discriminator="class_")]
 
 
-class ParsedTool(BaseModel):
+class ParsedTool(ToolSourceBaseModel):
     id: str
     version: Optional[str]
     name: str
@@ -174,9 +175,7 @@ class ParsedTool(BaseModel):
 
 class StrictModel(BaseModel):
 
-    model_config = ConfigDict(
-        extra="forbid",
-    )
+    model_config = ConfigDict(extra="forbid", field_title_generator=lambda field_name, field_info: field_name.lower())
 
 
 class BaseTestOutputModel(StrictModel):

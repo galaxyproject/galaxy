@@ -43,6 +43,7 @@ from typing_extensions import (
     Protocol,
 )
 
+from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
     expand_annotation,
@@ -175,7 +176,7 @@ def dynamic_model_information_from_py_type(
 # We probably need incoming (parameter def) and outgoing (parameter value as transmitted) models,
 # where value in the incoming model means "default value" and value in the outgoing model is the actual
 # value a user has set. (incoming/outgoing from the client perspective).
-class BaseToolParameterModelDefinition(BaseModel):
+class BaseToolParameterModelDefinition(ToolSourceBaseModel):
     name: Annotated[
         str,
         Field(description="Parameter name. Used when referencing parameter in workflows or inside command templating."),
@@ -189,24 +190,20 @@ class BaseToolParameterModelDefinition(BaseModel):
 
 class BaseGalaxyToolParameterModelDefinition(BaseToolParameterModelDefinition):
     hidden: bool = False
-    label: Optional[
-        Annotated[str, Field(description="Will be displayed on the tool page as the label of the parameter.")]
+    label: Annotated[
+        Optional[str], Field(description="Will be displayed on the tool page as the label of the parameter.")
     ] = None
-    help: Optional[
-        Annotated[
-            str,
-            Field(
-                description="Short bit of text, rendered on the tool form just below the associated field to provide information about the field."
-            ),
-        ]
+    help: Annotated[
+        Optional[str],
+        Field(
+            description="Short bit of text, rendered on the tool form just below the associated field to provide information about the field."
+        ),
     ] = None
-    argument: Optional[
-        Annotated[
-            str,
-            Field(
-                description="""If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit)."""
-            ),
-        ]
+    argument: Annotated[
+        Optional[str],
+        Field(
+            description="""If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit)."""
+        ),
     ] = None
     is_dynamic: bool = False
     optional: Annotated[bool, Field(description="If `false`, parameter must have a value.")] = False
