@@ -47,6 +47,7 @@ dependencies = [
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
     "httpx",
+    "ijson",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
     "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
