@@ -70,9 +70,8 @@ const props = defineProps({
         type: String,
         default: null,
     },
-    /** Whether there will be a `FormDisplay` rendered in the default slot with all tool inputs.
-     * For now, this is used to determine if tool generated tours can be offered. */
-    hasCompleteInputs: {
+    /** If tool generated tours can be offered. */
+    allowGeneratedTours: {
         type: Boolean,
         default: false,
     },
@@ -126,8 +125,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
 
 const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable_help_forum_tool_panel_integration);
 
-const allowGeneratedTours = computed(() =>
-    Boolean(props.hasCompleteInputs && isConfigLoaded.value && config.value.enable_tool_generated_tours),
+const canGenerateTours = computed(() =>
+    Boolean(props.allowGeneratedTours && isConfigLoaded.value && config.value.enable_tool_generated_tours),
 );
 </script>
 
@@ -147,7 +146,7 @@ const allowGeneratedTours = computed(() =>
                     @onChangeVersion="onChangeVersion" />
                 <ToolOptionsButton
                     :id="props.id"
-                    :allow-generated-tours="allowGeneratedTours"
+                    :allow-generated-tours="canGenerateTours"
                     :tool-uuid="props.toolUuid"
                     :sharable-url="props.options.sharable_url"
                     :version="props.version"

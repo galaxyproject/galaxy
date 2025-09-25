@@ -5,6 +5,7 @@ import { BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { ERROR_STATES } from "@/api/jobs";
 import { generateTour, type TourDetails } from "@/api/tours";
 import { Toast } from "@/composables/toast";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -13,8 +14,6 @@ import { useTourStore } from "@/stores/tourStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-const INVALID_UPLOAD_STATES = ["discarded", "failed", "error"];
 
 const props = defineProps<{
     toolId: string;
@@ -73,7 +72,7 @@ const allStatesOk = computed(() => {
 
 /** Checks if any of the states are invalid. */
 const anyStateInvalid = computed(() => {
-    return states.value.some((state) => state && INVALID_UPLOAD_STATES.includes(state));
+    return states.value.some((state) => state && ERROR_STATES.includes(state));
 });
 
 const waitedForItemsOk = computed<boolean>(() => localTourData.value !== null && allStatesOk.value);
