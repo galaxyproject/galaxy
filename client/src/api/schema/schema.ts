@@ -7913,6 +7913,8 @@ export interface components {
         CreateDataLandingPayload: {
             /** Client Secret */
             client_secret?: string | null;
+            /** Origin */
+            origin?: string | null;
             /**
              * Public
              * @default false
@@ -8363,6 +8365,11 @@ export interface components {
             /** Client Secret */
             client_secret?: string | null;
             /**
+             * Origin
+             * @description The origin of the landing request.
+             */
+            origin?: string | null;
+            /**
              * Public
              * @default false
              */
@@ -8429,6 +8436,11 @@ export interface components {
         CreateWorkflowLandingRequestPayload: {
             /** Client Secret */
             client_secret?: string | null;
+            /**
+             * Origin
+             * @description The origin of the landing request.
+             */
+            origin?: string | null;
             /**
              * Public
              * @description If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.
@@ -20937,6 +20949,8 @@ export interface components {
         };
         /** ToolLandingRequest */
         ToolLandingRequest: {
+            /** Origin */
+            origin?: string | null;
             /** Request State */
             request_state?: {
                 [key: string]: unknown;
@@ -23085,6 +23099,8 @@ export interface components {
         };
         /** WorkflowLandingRequest */
         WorkflowLandingRequest: {
+            /** Origin */
+            origin?: string | null;
             /** Request State */
             request_state: {
                 [key: string]: unknown;

@@ -12,6 +12,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    HttpUrl,
     Json,
     TypeAdapter,
 )
@@ -310,5 +311,6 @@ class CreateDataLandingPayload(Model):
     request_state: DataLandingRequestState
     client_secret: Optional[str] = None
     public: bool = False
+    origin: Optional[HttpUrl] = None
 
     model_config = ConfigDict(extra="forbid")

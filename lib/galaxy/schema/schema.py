@@ -21,6 +21,7 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    HttpUrl,
     Json,
     model_validator,
     RootModel,
@@ -4102,6 +4103,7 @@ class CreateToolLandingRequestPayload(Model):
     request_state: Optional[dict[str, Any]] = None
     client_secret: Optional[str] = None
     public: bool = False
+    origin: Optional[HttpUrl] = Field(None, description="The origin of the landing request.")
 
 
 class CreateWorkflowLandingRequestPayload(Model):
@@ -4113,6 +4115,7 @@ class CreateWorkflowLandingRequestPayload(Model):
         False,
         description="If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.",
     )
+    origin: Optional[HttpUrl] = Field(None, description="The origin of the landing request.")
 
 
 class ClaimLandingPayload(Model):
@@ -4125,6 +4128,7 @@ class ToolLandingRequest(Model):
     tool_version: Optional[str] = None
     request_state: Optional[dict[str, Any]] = None
     state: LandingRequestState
+    origin: Optional[HttpUrl] = None
 
 
 class WorkflowLandingRequest(Model):
@@ -4133,6 +4137,7 @@ class WorkflowLandingRequest(Model):
     workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
     request_state: dict[str, Any]
     state: LandingRequestState
+    origin: Optional[HttpUrl] = None
 
 
 class MessageExceptionModel(BaseModel):

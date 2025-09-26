@@ -89,6 +89,7 @@ class LandingRequestManager:
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.public = payload.public
+        model.origin = str(payload.origin) if payload.origin else None
         if user_id:
             model.user_id = user_id
         self._save(model)
@@ -194,6 +195,7 @@ class LandingRequestManager:
             request_state=model.request_state,
             uuid=model.uuid,
             state=self._state(model),
+            origin=model.origin,
         )
         return response_model
 
@@ -216,6 +218,7 @@ class LandingRequestManager:
             request_state=model.request_state,
             uuid=model.uuid,
             state=self._state(model),
+            origin=model.origin,
         )
         return response_model
 
