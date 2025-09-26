@@ -84,7 +84,7 @@ class FastAPICredentials:
         return self.service.provide_credential(trans, user_id, payload)
 
     @router.put(
-        "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
+        "/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}",
         summary="Updates user credentials",
     )
     def update_user_credentials(
@@ -126,7 +126,7 @@ class FastAPICredentials:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
-        "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
+        "/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}",
         summary="Deletes a specific credential group",
         status_code=status.HTTP_204_NO_CONTENT,
     )

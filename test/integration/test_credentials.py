@@ -281,7 +281,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert list_user_credentials[0]["current_group_id"] == target_group_id
 
         # Delete the group
-        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/group/{target_group_id}")
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/groups/{target_group_id}")
         self._assert_status_code_is(response, 204)
 
         # Check group is deleted - should only have our initial group left
@@ -330,7 +330,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         self._assert_status_code_is(response, 400)
 
     def test_delete_nonexistent_credentials_group(self):
-        response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e/group/f2db41e1fa331b3e")
+        response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e/groups/f2db41e1fa331b3e")
         self._assert_status_code_is(response, 400)
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
@@ -343,7 +343,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         user_credentials_list = self._check_credentials_exist()
         user_credentials_id = user_credentials_list[0]["id"]
 
-        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/group/{group_id}")
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/groups/{group_id}")
         self._assert_status_code_is(response, 204)
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
@@ -450,7 +450,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             # Delete the credentials group
             user_credentials_id = credentials_list[0]["id"]
             group_id = group["id"]
-            response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/group/{group_id}")
+            response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/groups/{group_id}")
             self._assert_status_code_is(response, 204)
 
             # Check that secrets are removed from the vault
@@ -497,7 +497,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
     def _update_credentials(self, user_credentials_id, group_id, payload=None, status_code=200):
         payload = payload or self._build_update_credentials_payload()
         response = self._put(
-            f"/api/users/current/credentials/{user_credentials_id}/group/{group_id}", data=payload, json=True
+            f"/api/users/current/credentials/{user_credentials_id}/groups/{group_id}", data=payload, json=True
         )
         self._assert_status_code_is(response, status_code)
         return response.json()

@@ -398,7 +398,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
         try {
             const { data, error } = await GalaxyApi().PUT(
-                "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
+                "/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}",
                 {
                     params: {
                         path: { user_id: userId, user_credentials_id: toolServicesId, group_id: groupId },
@@ -454,7 +454,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
         try {
             const { error } = await GalaxyApi().DELETE(
-                "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
+                "/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}",
                 {
                     params: {
                         path: { user_id: userId, user_credentials_id: toolServicesId, group_id: groupId },

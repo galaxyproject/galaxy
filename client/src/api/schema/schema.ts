@@ -5211,7 +5211,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}": {
+    "/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -5220,10 +5220,10 @@ export interface paths {
         };
         get?: never;
         /** Updates user credentials */
-        put: operations["update_user_credentials_api_users__user_id__credentials__user_credentials_id__group__group_id__put"];
+        put: operations["update_user_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__put"];
         post?: never;
         /** Deletes a specific credential group */
-        delete: operations["delete_credentials_api_users__user_id__credentials__user_credentials_id__group__group_id__delete"];
+        delete: operations["delete_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -40498,7 +40498,7 @@ export interface operations {
             };
         };
     };
-    update_user_credentials_api_users__user_id__credentials__user_credentials_id__group__group_id__put: {
+    update_user_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__put: {
         parameters: {
             query?: never;
             header?: {
@@ -40547,7 +40547,7 @@ export interface operations {
             };
         };
     };
-    delete_credentials_api_users__user_id__credentials__user_credentials_id__group__group_id__delete: {
+    delete_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__delete: {
         parameters: {
             query?: never;
             header?: {
