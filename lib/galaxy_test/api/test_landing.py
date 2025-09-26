@@ -3,6 +3,8 @@ from typing import (
     Any,
 )
 
+from pydantic import HttpUrl
+
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
     DataLandingRequestState,
@@ -39,13 +41,16 @@ class TestLandingApi(ApiTestCase):
             tool_id="create_2",
             tool_version=None,
             request_state={"sleep_time": 0},
+            origin=HttpUrl("http://example.localhost/"),
         )
         response = self.dataset_populator.create_tool_landing(request)
         assert response.tool_id == "create_2"
         assert response.state == "unclaimed"
+        assert str(response.origin) == "http://example.localhost/"
         response = self.dataset_populator.claim_tool_landing(response.uuid)
         assert response.tool_id == "create_2"
         assert response.state == "claimed"
+        assert str(response.origin) == "http://example.localhost/"
 
     @skip_without_tool("gx_int")
     def test_tool_landing_invalid(self):

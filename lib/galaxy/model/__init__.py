@@ -11900,6 +11900,7 @@ class ToolLandingRequest(Base):
     request_state: Mapped[Optional[dict]] = mapped_column(JSONType)
     client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
     public: Mapped[bool] = mapped_column(Boolean)
+    origin: Mapped[Optional[str]] = mapped_column(String(255), default=None)
 
     user: Mapped[Optional["User"]] = relationship()
 
@@ -11925,6 +11926,7 @@ class WorkflowLandingRequest(Base):
     user: Mapped[Optional["User"]] = relationship()
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
     workflow: Mapped[Optional["Workflow"]] = relationship()
+    origin: Mapped[Optional[str]] = mapped_column(String(255), default=None)
 
 
 class UserAction(Base, RepresentById):
