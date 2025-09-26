@@ -631,6 +631,12 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
             except ValidationError:
                 log.warning(f"Problem validating user_file_source {user_file_source.uuid}, skipping load.")
                 continue
+            except Exception:
+                log.exception(
+                    f"Problem loading user_file_source {user_file_source.uuid}, skipping load and deactivating file source."
+                )
+                user_file_source.active = False
+                continue
             all_file_source_properties.append(files_source_properties)
         return all_file_source_properties
 
