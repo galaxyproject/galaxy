@@ -10,10 +10,10 @@ from pydantic import parse_obj_as
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.navigation.data import load_root_component
+from galaxy.schema.tours import TourList
 from galaxy.util import config_directories_from_setting
 from galaxy.util.path import StrPath
 from ._interface import ToursRegistry
-from ._schema import TourList
 
 log = logging.getLogger(__name__)
 

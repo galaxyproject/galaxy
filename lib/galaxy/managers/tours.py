@@ -13,14 +13,14 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.schema import GenerateTourResponse
+from galaxy.schema.tours import (
+    TourDetails,
+    TourStep,
+)
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tools import Tool
 from galaxy.tools.parameters.grouping import Conditional
-from galaxy.tours import (
-    TourDetails,
-    TourStep,
-)
 from galaxy.util import Params
 
 

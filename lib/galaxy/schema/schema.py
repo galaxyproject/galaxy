@@ -44,12 +44,12 @@ from galaxy.schema.fields import (
     literal_to_value,
     ModelClassField,
 )
+from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
-from galaxy.tours import TourDetails
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
