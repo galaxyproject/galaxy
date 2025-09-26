@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faSignInAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { InvocationStep } from "@/api/invocations";
+import type { WorkflowStepTyped } from "@/api/workflows";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { type GraphStep, statePlaceholders } from "@/composables/useInvocationGraph";
-import type { Step } from "@/stores/workflowStepStore";
+import { useInvocationStore } from "@/stores/invocationStore";
 
 import ToolLinkPopover from "../Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "./WorkflowStepIcon.vue";
 import WorkflowStepTitle from "./WorkflowStepTitle.vue";
 
-library.add(faChevronDown, faChevronUp, faSignInAlt);
-
 interface Props {
-    workflowStep: Step;
+    workflowStep: WorkflowStepTyped;
     graphStep?: GraphStep;
     invocationStep?: InvocationStep;
     canExpand?: boolean;
@@ -25,6 +24,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const invocationStore = useInvocationStore();
+
 const stepLabel = computed(() => {
     const rawStepLabel = props.invocationStep?.workflow_step_label;
     if (rawStepLabel == null) {
@@ -32,6 +33,10 @@ const stepLabel = computed(() => {
     }
     return rawStepLabel;
 });
+
+const isPolling = computed(() =>
+    props.invocationStep ? invocationStore.isLoadingInvocationStep(props.invocationStep.id) : false,
+);
 </script>
 
 <template>
@@ -41,6 +46,7 @@ const stepLabel = computed(() => {
                 <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStep.type" />
             </span>
             <ToolLinkPopover
+                v-if="props.workflowStep.tool_id && props.workflowStep.tool_version"
                 :target="`step-icon-${props.workflowStep.id}`"
                 :tool-id="props.workflowStep.tool_id"
                 :tool-version="props.workflowStep.tool_version" />
@@ -52,12 +58,23 @@ const stepLabel = computed(() => {
                         :step-type="props.workflowStep.type"
                         :step-tool-id="props.workflowStep.tool_id"
                         :step-tool-uuid="props.workflowStep.tool_uuid"
-                        :step-subworkflow-id="props.workflowStep.workflow_id" />
+                        :step-subworkflow-id="
+                            'workflow_id' in props.workflowStep ? props.workflowStep.workflow_id : null
+                        " />
                 </u>
             </span>
         </div>
 
         <span v-if="props.graphStep">
+            <BBadge
+                v-if="isPolling"
+                v-b-tooltip.hover.noninteractive
+                class="mr-1"
+                title="Polling for updates"
+                variant="link">
+                <FontAwesomeIcon :icon="faSpinner" spin />
+            </BBadge>
+
             <span v-if="isWorkflowInput(props.workflowStep.type)">
                 <i>workflow input</i>
                 <FontAwesomeIcon class="ml-1" :icon="faSignInAlt" />

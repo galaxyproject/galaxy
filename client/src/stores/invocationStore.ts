@@ -124,8 +124,11 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     const { getItemById: getInvocationStepJobsSummaryById, fetchItemById: fetchInvocationStepJobsSummaryForId } =
         useKeyedCache<StepJobSummary[]>(fetchInvocationStepJobsSummary);
 
-    const { getItemById: getInvocationStepById, fetchItemById: fetchInvocationStepById } =
-        useKeyedCache<InvocationStep>(fetchInvocationStep);
+    const {
+        getItemById: getInvocationStepById,
+        fetchItemById: fetchInvocationStepById,
+        isLoadingItem: isLoadingInvocationStep,
+    } = useKeyedCache<InvocationStep>(fetchInvocationStep);
 
     const { getItemById: getInvocationRequestById } = useKeyedCache<WorkflowInvocationRequest>(fetchInvocationRequest);
 
@@ -153,6 +156,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         getInvocationRequestById,
         getInvocationCountByWorkflowId,
         isLoadingInvocation,
+        isLoadingInvocationStep,
         sortedStoredInvocations,
         totalInvocationCount,
         updateInvocation,

@@ -11,7 +11,7 @@
             (<b-link class="show-job-link" href="#" @click="showDetails">view job details</b-link>)
         </i>
         <BModal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>
-            <JobInformation :job_id="historyExport.job_id" :include-times="true" />
+            <JobInformation :job-id="historyExport.job_id" :include-times="true" />
         </BModal>
     </span>
 </template>

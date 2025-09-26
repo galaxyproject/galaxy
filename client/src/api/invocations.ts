@@ -7,6 +7,7 @@ export type InvocationInputParameter = components["schemas"]["InvocationInputPar
 export type InvocationOutput = components["schemas"]["InvocationOutput"];
 export type InvocationOutputCollection = components["schemas"]["InvocationOutputCollection"];
 export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
+export type InvocationState = components["schemas"]["InvocationState"];
 export type InvocationStep = components["schemas"]["InvocationStep"];
 export type InvocationMessage = components["schemas"]["InvocationMessageResponseUnion"];
 export type WorkflowInvocationRequest = components["schemas"]["WorkflowInvocationRequestModel"];

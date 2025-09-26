@@ -77,8 +77,8 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
 export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
     stepsJobsSummary: Ref<StepJobSummary[]>,
-    workflowId: string | undefined,
-    workflowVersion: number | undefined,
+    workflowId: Ref<string | undefined>,
+    workflowVersion: Ref<number | undefined>,
 ) {
     library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
 
@@ -109,16 +109,19 @@ export function useInvocationGraph(
         loading.value = true;
 
         try {
-            if (!workflowId) {
+            if (!workflowId.value) {
                 throw new Error("Workflow Id is not defined");
             }
-            if (workflowVersion === undefined) {
+            if (workflowVersion.value === undefined) {
                 throw new Error("Workflow Version is not defined");
             }
 
             // initialize the original full workflow and invocation graph refs (only on the first load)
             if (!loadedWorkflow.value) {
-                loadedWorkflow.value = await workflowStore.getFullWorkflowCached(workflowId, workflowVersion);
+                loadedWorkflow.value = await workflowStore.getFullWorkflowCached(
+                    workflowId.value,
+                    workflowVersion.value,
+                );
             }
             if (!invocationGraph.value) {
                 invocationGraph.value = {
@@ -362,4 +365,8 @@ export function getHeaderClass(state: string) {
         "node-header-invocation": true,
         [`header-${state}`]: !!state,
     };
+}
+
+export function isGraphStep(step: Step | GraphStep): step is GraphStep {
+    return "jobs" in step;
 }

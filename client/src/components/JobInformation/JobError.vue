@@ -12,7 +12,7 @@
             <!-- TODO: modal for reporting error. -->
         </b-card-text>
         <b-modal v-model="showInfo" modal-class="job-information-modal" scrollable ok-only hide-header>
-            <JobInformation :job_id="job.id" :include-times="true" />
+            <JobInformation :job-id="job.id" :include-times="true" />
         </b-modal>
     </b-card>
 </template>

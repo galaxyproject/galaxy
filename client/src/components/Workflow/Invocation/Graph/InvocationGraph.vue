@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
+    faArrowCircleLeft,
+    faArrowCircleRight,
     faArrowDown,
     faChevronDown,
     faChevronUp,
@@ -10,7 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
-import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
+import { BAlert, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
@@ -19,8 +21,9 @@ import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
@@ -79,8 +82,8 @@ const workflowVersion = computed(() => props.workflow?.version);
 const { steps, storeId, loadInvocationGraph, loading } = useInvocationGraph(
     computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
-    workflowId.value,
-    workflowVersion.value,
+    workflowId,
+    workflowVersion,
 );
 
 onMounted(async () => {
@@ -120,9 +123,7 @@ const initialPosition = computed(() => ({
     y: -props.initialY * props.zoom,
 }));
 
-function activeStepFor(activeNodeId: number): Step {
-    return props.workflow.steps[activeNodeId] as unknown as Step;
-}
+const activeStep = computed(() => (activeNodeId.value !== null ? props.workflow.steps[activeNodeId.value] : undefined));
 
 /** Updates and loads the invocation graph */
 async function loadGraph() {
@@ -144,6 +145,19 @@ async function loadGraph() {
         loadingGraph.value = false;
         if (initialLoading.value) {
             initialLoading.value = false;
+        }
+    }
+}
+
+/** Moves to the next or previous step in the workflow (if possible) */
+function navigateStep(direction: "previous" | "next") {
+    const totalSteps = Object.keys(props.workflow.steps).length;
+
+    if (activeNodeId.value !== null && totalSteps > 1) {
+        if (direction === "next" && activeNodeId.value < totalSteps - 1) {
+            activeNodeId.value += 1;
+        } else if (direction === "previous" && activeNodeId.value > 0) {
+            activeNodeId.value -= 1;
         }
     }
 }
@@ -208,22 +222,42 @@ function stepClicked(nodeId: number | null) {
                     </BCard>
                 </div>
             </div>
-            <BCard v-if="activeNodeId !== null" ref="stepCard" class="mt-2" no-body>
+            <BCard v-if="activeNodeId !== null && activeStep" ref="stepCard" class="invocation-step-card mt-2" no-body>
                 <BCardHeader
                     class="d-flex justify-content-between align-items-center px-3 py-1"
                     :class="activeNodeId !== null ? steps[activeNodeId]?.headerClass : ''">
                     <WorkflowInvocationStepHeader
                         class="w-100 pr-2"
-                        :workflow-step="activeStepFor(activeNodeId)"
+                        :workflow-step="activeStep"
                         :graph-step="steps[activeNodeId]"
                         :invocation-step="props.invocation.steps[activeNodeId]" />
                     <div class="d-flex flex-gapx-1">
-                        <BButton title="Scroll to Step" size="sm" variant="link" @click="scrollStepToView()">
+                        <GButton title="Scroll to Step" size="small" transparent @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
-                        </BButton>
-                        <BButton title="Hide Step" size="sm" variant="link" @click="activeNodeId = null">
+                        </GButton>
+                        <GButtonGroup>
+                            <GButton
+                                title="Previous Step"
+                                :disabled="activeNodeId === 0"
+                                disabled-title="No Previous Step"
+                                transparent
+                                @click="navigateStep('previous')">
+                                <FontAwesomeIcon :icon="faArrowCircleLeft" />
+                                Prev
+                            </GButton>
+                            <GButton
+                                title="Next Step"
+                                :disabled="activeNodeId === Object.keys(props.workflow.steps).length - 1"
+                                disabled-title="No More Steps"
+                                transparent
+                                @click="navigateStep('next')">
+                                <FontAwesomeIcon :icon="faArrowCircleRight" />
+                                Next
+                            </GButton>
+                        </GButtonGroup>
+                        <GButton title="Hide Step" size="small" transparent @click="activeNodeId = null">
                             <FontAwesomeIcon :icon="faTimes" />
-                        </BButton>
+                        </GButton>
                     </div>
                 </BCardHeader>
                 <BCardBody body-class="p-2">
@@ -231,7 +265,7 @@ function stepClicked(nodeId: number | null) {
                         ref="loadedJobInfo"
                         :key="activeNodeId"
                         :invocation="props.invocation"
-                        :workflow-step="props.workflow.steps[activeNodeId]"
+                        :workflow-step="activeStep"
                         in-graph-view
                         :graph-step="steps[activeNodeId]"
                         expanded />
@@ -274,5 +308,9 @@ function stepClicked(nodeId: number | null) {
     &:deep(.zoom-control) {
         z-index: 100;
     }
+}
+
+.invocation-step-card {
+    min-height: 500px;
 }
 </style>

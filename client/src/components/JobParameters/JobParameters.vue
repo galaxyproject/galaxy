@@ -1,7 +1,9 @@
 <template>
     <div>
         <div v-if="!isSingleParam" class="tool-parameters">
-            <h2 v-if="includeTitle" class="h-md">Tool Parameters</h2>
+            <Heading v-if="includeTitle" id="tool-parameters-heading" h1 separator inline size="md">
+                Tool Parameters
+            </Heading>
             <table id="tool-parameters" class="tabletip info_data_table">
                 <thead>
                     <tr>
@@ -56,6 +58,7 @@ import Vue from "vue";
 import JobOutputs from "../JobInformation/JobOutputs";
 import JobParametersArrayValue from "./JobParametersArrayValue";
 
+import Heading from "../Common/Heading.vue";
 import DataFetchRequestParameter from "./DataFetchRequestParameter.vue";
 
 Vue.use(BootstrapVue);
@@ -63,6 +66,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         DataFetchRequestParameter,
+        Heading,
         JobOutputs,
         JobParametersArrayValue,
     },

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h2 class="h-md">Inheritance Chain</h2>
+        <Heading id="inheritance-chain-heading" h1 separator inline size="md"> Inheritance Chain </Heading>
         <div class="current-dataset chain-box">{{ datasetName }}</div>
         <div v-if="inherit_chain && inherit_chain.length > 0">
             <div v-for="({ name, dep }, i) in inherit_chain" :key="i">
@@ -18,10 +18,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import { Services } from "./services";
 
+import Heading from "../Common/Heading.vue";
+
 library.add(faLongArrowAltUp);
 
 export default {
-    components: { FontAwesomeIcon },
+    components: { FontAwesomeIcon, Heading },
     props: {
         datasetName: {
             type: String,

@@ -11,6 +11,7 @@ import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
 
+import Heading from "../Common/Heading.vue";
 import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage.vue";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
 import InheritanceChain from "@/components/InheritanceChain//InheritanceChain.vue";
@@ -103,7 +104,7 @@ onUnmounted(() => {
 
                 <JobParameters dataset_type="hda" :dataset-id="datasetId" />
 
-                <JobInformation :job_id="dataset.creating_job" />
+                <JobInformation :job-id="dataset.creating_job" />
 
                 <DatasetStorage :dataset-id="datasetId" />
 
@@ -125,7 +126,7 @@ onUnmounted(() => {
                 </span>
 
                 <div v-if="dataset.peek">
-                    <h2 class="h-md">Dataset Peek</h2>
+                    <Heading id="dataset-peek-heading" h2 separator inline size="md"> Dataset Peek </Heading>
 
                     <div class="dataset-peek" v-html="dataset.peek" />
                 </div>

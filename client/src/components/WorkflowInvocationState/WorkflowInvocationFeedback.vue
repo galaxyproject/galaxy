@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
+import type { WorkflowStepTyped } from "@/api/workflows";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -26,11 +27,19 @@ const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
 const { steps, loadInvocationGraph } = useInvocationGraph(
     computed(() => props.invocation),
     computed(() => props.stepsJobsSummary),
-    workflow.value?.id,
-    workflow.value?.version,
+    computed(() => workflow.value?.id),
+    computed(() => workflow.value?.version),
 );
 
-loadInvocationGraph(false);
+watch(
+    () => workflow.value?.id,
+    (newVal) => {
+        if (newVal) {
+            loadInvocationGraph(false);
+        }
+    },
+    { immediate: true },
+);
 
 const stepsWithErrors = computed(() => {
     if (steps.value) {
@@ -54,7 +63,7 @@ const stepsWithErrors = computed(() => {
                 }
                 return false;
             })
-            .map(([_, step]) => step);
+            .map(([_, step]) => step as unknown as WorkflowStepTyped);
     }
     return [];
 });
@@ -123,7 +132,8 @@ async function submit(message: string): Promise<string[][] | undefined> {
                     :data-index="step.id"
                     :invocation="props.invocation"
                     :workflow-step="step"
-                    :graph-step="steps[step.id]" />
+                    :graph-step="steps[step.id]"
+                    :expanded="undefined" />
             </div>
         </div>
 
