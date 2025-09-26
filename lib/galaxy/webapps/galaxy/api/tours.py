@@ -7,11 +7,11 @@ import logging
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.tours import ToursManager
 from galaxy.schema.schema import GenerateTourResponse
-from galaxy.tours import (
+from galaxy.schema.tours import (
     TourDetails,
     TourList,
-    ToursRegistry,
 )
+from galaxy.tours import ToursRegistry
 from galaxy.webapps.galaxy.api import DependsOnTrans
 from . import (
     depends,
