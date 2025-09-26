@@ -166,7 +166,7 @@ ret_val = maf_block_pass_filter( maf_block )</configfile>
 			<param name="species1_is_isnot" value="in"/>
 			<param name="species1_attribute" value="chr1"/>
 			<param name="filter_condition"/>
-			<output name="out_file1" file="cf_maf_limit_to_species.dat"/>
+			<output name="out_file1" file="cf_maf_limit_to_species_2.dat"/>
 		</test>
 	</tests>
     <help>
