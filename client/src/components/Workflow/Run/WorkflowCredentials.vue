@@ -33,8 +33,8 @@ import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredenti
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
-import WorkflowCredentialsManagement from "@/components/Common/WorkflowCredentialsManagement.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowCredentialsManagement from "@/components/Workflow/Run/WorkflowCredentialsManagement.vue";
 
 interface Props {
     /**

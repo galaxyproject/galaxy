@@ -107,7 +107,7 @@ import { invokeWorkflow } from "./services";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
 
-import WorkflowCredentials from "@/components/Common/WorkflowCredentials.vue";
+import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 export default {
     components: {
