@@ -180,19 +180,15 @@ skip-client: ## Run only the server, skipping the client build.
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
-	@echo $(NO_YARN_MSG)
-	false;
-else
-	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
+	npm install -g yarn;
 endif
+	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
 
 client-node-deps: ## Install NodeJS dependencies for the client.
 ifndef YARN
-	@echo $(NO_YARN_MSG)
-	false;
-else
-	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
+	npm install -g yarn;
 endif
+	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
 
 format-xsd:
 	xmllint --format --output galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
