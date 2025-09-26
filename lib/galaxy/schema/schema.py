@@ -48,6 +48,7 @@ from galaxy.schema.types import (
     RelativeUrl,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
+from galaxy.tours import TourDetails
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.sanitize_html import sanitize_html
@@ -3899,6 +3900,24 @@ class ChatResponse(BaseModel):
         ...,
         title="Error Message",
         description="The error message, if any, for the chat query.",
+    )
+
+
+class GenerateTourResponse(Model):
+    use_datasets: bool = Field(
+        ...,
+        title="Use Datasets",
+        description="Indicates whether the tour should use (and wait for) datasets.",
+    )
+    uploaded_hids: list[int] = Field(
+        ...,
+        title="Uploaded HIDs to wait for",
+        description="List of hids for the datasets uploaded for the tour.",
+    )
+    tour: TourDetails = Field(
+        ...,
+        title="Tour",
+        description="The actual Tour being generated.",
     )
 
 

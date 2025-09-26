@@ -817,6 +817,14 @@ mapping:
           Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
           comma-separated list.
 
+      enable_tool_generated_tours:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Allow tools to show the option of and create interactive tours crafted for them
+          by the backend.
+
       webhooks_dir:
         type: str
         default: config/plugins/webhooks

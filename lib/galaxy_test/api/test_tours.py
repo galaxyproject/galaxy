@@ -1,3 +1,4 @@
+from galaxy_test.base.populators import skip_without_tool
 from ._framework import ApiTestCase
 
 
@@ -22,6 +23,21 @@ class TestToursApi(ApiTestCase):
         self._assert_status_code_is(response, 200)
         tour = response.json()
         self._assert_tour(tour)
+
+    def test_generate_tour_tool_not_found(self):
+        response = self._get("tours/generate?tool_id=nonexistent_tool_id&tool_version=1.0")
+        self._assert_status_code_is(response, 404)
+        assert 'Tool "nonexistent_tool_id" version "1.0" does not exist.' in response.json()["err_msg"]
+
+    @skip_without_tool("random_lines1")
+    def test_generate_tour_for_random_lines1(self):
+        response = self._get("tours/generate?tool_id=random_lines1&tool_version=1.0.0&performs_upload=false")
+        self._assert_status_code_is(response, 200)
+        tour = response.json()["tour"]
+        self._assert_tour(tour)
+        tool_response = self._get("tools/random_lines1")
+        tool_name = tool_response.json()["name"]
+        assert tour["name"] == f"{tool_name} Tour"
 
     def _assert_tour(self, tour):
         self._assert_has_keys(tour, "name", "description", "title_default", "steps")

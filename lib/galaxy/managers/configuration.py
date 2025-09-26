@@ -232,6 +232,7 @@ class ConfigSerializer(base.ModelSerializer):
             "install_tool_dependencies": _use_config,
             "install_repository_dependencies": _use_config,
             "install_resolver_dependencies": _use_config,
+            "enable_tool_generated_tours": _use_config,
         }
 
 

@@ -210,6 +210,7 @@ def setup_galaxy_config(
         data_dir=tmpdir,
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
+        enable_tool_generated_tours=True,
         expose_dataset_path=True,
         ftp_upload_purge=False,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,

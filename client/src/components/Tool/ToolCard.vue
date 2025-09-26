@@ -70,6 +70,11 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    /** If tool generated tours can be offered. */
+    allowGeneratedTours: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
@@ -119,6 +124,10 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
 }
 
 const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable_help_forum_tool_panel_integration);
+
+const canGenerateTours = computed(() =>
+    Boolean(props.allowGeneratedTours && isConfigLoaded.value && config.value.enable_tool_generated_tours),
+);
 </script>
 
 <template>
@@ -137,8 +146,10 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                     @onChangeVersion="onChangeVersion" />
                 <ToolOptionsButton
                     :id="props.id"
+                    :allow-generated-tours="canGenerateTours"
                     :tool-uuid="props.toolUuid"
                     :sharable-url="props.options.sharable_url"
+                    :version="props.version"
                     :options="props.options" />
                 <b-button
                     v-if="allowObjectStoreSelection"

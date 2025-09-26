@@ -49,7 +49,11 @@ const { currentTour } = storeToRefs(tourStore);
 const currentIndex = computed({
     get: () => (currentTour.value?.step !== undefined ? currentTour.value?.step : -1),
     set: (val: number) => {
-        tourStore.setTour(props.tourId, val);
+        // We still check if there's a current tour, because this setter might be called
+        // after the tour has ended and currentTour is unset.
+        if (currentTour.value) {
+            tourStore.setTour(props.tourId, val);
+        }
     },
 });
 

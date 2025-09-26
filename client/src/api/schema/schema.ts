@@ -4856,6 +4856,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tours/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Generate Tour
+         * @description Generate a tour designed for the given tool.
+         */
+        get: operations["generate_tour_api_tours_generate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tours/{tour_id}": {
         parameters: {
             query?: never;
@@ -11713,6 +11733,24 @@ export interface components {
             | components["schemas"]["ConditionalParameterModel-Output"]
             | components["schemas"]["RepeatParameterModel-Output"]
             | components["schemas"]["SectionParameterModel-Output"];
+        /** GenerateTourResponse */
+        GenerateTourResponse: {
+            /**
+             * Tour
+             * @description The actual Tour being generated.
+             */
+            tour: components["schemas"]["TourDetails"];
+            /**
+             * Uploaded HIDs to wait for
+             * @description List of hids for the datasets uploaded for the tour.
+             */
+            uploaded_hids: number[];
+            /**
+             * Use Datasets
+             * @description Indicates whether the tour should use (and wait for) datasets.
+             */
+            use_datasets: boolean;
+        };
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
             /**
@@ -21191,6 +21229,11 @@ export interface components {
              * @description CSS selector for the element to be described/clicked
              */
             element?: string | null;
+            /**
+             * Orphan
+             * @description If true, the step is an orphan step
+             */
+            orphan?: boolean | null;
             /**
              * Placement
              * @description Placement of the text box relative to the selected element
@@ -38685,6 +38728,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TourList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    generate_tour_api_tours_generate_get: {
+        parameters: {
+            query: {
+                tool_id: string;
+                tool_version: string;
+                performs_upload?: boolean;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateTourResponse"];
                 };
             };
             /** @description Request Error */

@@ -9,7 +9,7 @@ export const useTourStore = defineStore("tourStore", () => {
      * reactivity problems */
     const localTourId = ref<string>("");
 
-    const legacyTourCache = ref<Record<string, TourDetails>>({});
+    const toolGeneratedTours = ref<Record<string, TourDetails>>({});
 
     const currentTour = useUserLocalStorage<{ id: string; step: number } | undefined>(
         "currently-active-tour",
@@ -44,8 +44,7 @@ export const useTourStore = defineStore("tourStore", () => {
     return {
         currentTour,
         setTour,
-        /** This serves as a cache to store tour data for `components/Tour/runData` used in
-         * `bundleEntries` for webhooks */
-        legacyTourCache,
+        /** This serves as a temp cache to store Tool Generated Tours */
+        toolGeneratedTours,
     };
 });
