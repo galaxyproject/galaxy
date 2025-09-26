@@ -191,11 +191,8 @@ class PSAAuthnz(IdentityProvider):
         ):
             return False
         # refresh tokens if they reached their half lifetime
-        if "expires" in user_authnz_token.extra_data:
-            expires = user_authnz_token.extra_data["expires"]
-        elif "expires_in" in user_authnz_token.extra_data:
-            expires = user_authnz_token.extra_data["expires_in"]
-        else:
+        expires = self._try_to_locate_refresh_token_expiration(user_authnz_token.extra_data)
+        if not expires:
             log.debug("No `expires` or `expires_in` key found in token extra data, cannot refresh")
             return False
         if (
@@ -211,6 +208,14 @@ class PSAAuthnz(IdentityProvider):
                 user_authnz_token.refresh_token(strategy)
             return True
         return False
+
+    def _try_to_locate_refresh_token_expiration(self, extra_data):
+        return (
+            extra_data.get("expires", None)
+            or extra_data.get("expires_in", None)
+            or extra_data["refresh_token"].get("expires", None)
+            or extra_data["refresh_token"].get("expires_in", None)
+        )
 
     def authenticate(self, trans, idphint=None):
         on_the_fly_config(trans.sa_session)
