@@ -15,6 +15,7 @@ from pydantic import (
     HttpUrl,
     Json,
     TypeAdapter,
+    UUID4,
 )
 from typing_extensions import Literal
 
@@ -270,6 +271,7 @@ class FilesPayload(Model):
 class BaseDataPayload(FetchBaseModel):
     history_id: DecodedDatabaseIdField
     model_config = ConfigDict(extra="allow")
+    landing_uuid: Optional[UUID4] = None
 
     @field_validator("targets", mode="before", check_fields=False)
     @classmethod

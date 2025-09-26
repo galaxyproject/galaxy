@@ -16,6 +16,7 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 interface Props {
     targets: FetchTargets;
+    landingUuid?: string;
 }
 
 const props = defineProps<Props>();
@@ -41,6 +42,7 @@ async function onExecute() {
     fetchAndWatch({
         targets: request,
         history_id: historyId,
+        landing_uuid: props.landingUuid,
     });
 }
 

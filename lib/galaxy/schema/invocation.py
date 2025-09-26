@@ -591,6 +591,11 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
         default=None, title="UUID", description="Universal unique identifier of the workflow invocation."
     )
     state: InvocationState = Field(default=..., title="Invocation state", description="State of workflow invocation.")
+    landing_uuid: Optional[UUID4] = Field(
+        default=None,
+        title="Landing UUID",
+        description="The UUID of the workflow landing request associated with this invocation.",
+    )
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
 
 

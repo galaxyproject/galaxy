@@ -39,6 +39,7 @@ interface Props {
     canMutateCurrentHistory: boolean;
     requestState?: WorkflowInvocationRequestInputs;
     isRerun?: boolean;
+    landingUuid?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,6 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
     useJobCache: false,
     requestState: undefined,
     isRerun: false,
+    landingUuid: undefined,
 });
 
 const emit = defineEmits<{
@@ -299,6 +301,9 @@ async function onExecute() {
         require_exact_tool_versions: false,
         version: props.model.runData.version,
     };
+    if (props.landingUuid) {
+        data.landing_uuid = props.landingUuid;
+    }
     if (sendToNewHistory.value) {
         data.new_history_name = props.model.name;
     } else {

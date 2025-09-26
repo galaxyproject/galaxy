@@ -36,6 +36,7 @@ interface Props {
     requestState?: WorkflowInvocationRequestInputs;
     instance?: boolean;
     isRerun?: boolean;
+    landingUuid?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,6 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
     requestState: undefined,
     instance: false,
     isRerun: false,
+    landingUuid: undefined,
 });
 
 const loading = ref(true);
@@ -259,6 +261,7 @@ defineExpose({
                         :can-mutate-current-history="canRunOnHistory"
                         :request-state="requestState"
                         :is-rerun="props.isRerun"
+                        :landing-uuid="props.landingUuid"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showAdvanced="showAdvanced" />

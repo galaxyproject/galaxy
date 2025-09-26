@@ -5,6 +5,8 @@ from typing import (
     Union,
 )
 
+from pydantic import UUID4
+
 from galaxy import (
     exceptions,
     web,
@@ -16,7 +18,12 @@ from galaxy.managers.workflows import (
     WorkflowSerializer,
     WorkflowsManager,
 )
-from galaxy.model import StoredWorkflow
+from galaxy.model import (
+    LandingRequestToWorkflowInvocationAssociation,
+    StoredWorkflow,
+    WorkflowInvocation,
+    WorkflowLandingRequest,
+)
 from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -175,6 +182,10 @@ class WorkflowsService(ServiceBase):
             )
             invocations.append(workflow_invocation)
 
+        # Create landing request association if provided
+        if payload.landing_uuid:
+            self._create_landing_request_association(trans, payload.landing_uuid, invocations)
+
         trans.sa_session.commit()
         encoded_invocations = [WorkflowInvocationResponse(**invocation.to_dict()) for invocation in invocations]
         if is_batch:
@@ -261,3 +272,22 @@ class WorkflowsService(ServiceBase):
             if url in shed_url:
                 return shed_url
         return None
+
+    def _create_landing_request_association(
+        self, trans: ProvidesUserContext, landing_uuid: Optional[UUID4], invocations: list[WorkflowInvocation]
+    ):
+        """Create association between landing request and workflow invocations."""
+        # Look up the workflow landing request by UUID
+        workflow_landing_request = (
+            trans.sa_session.query(WorkflowLandingRequest).where(WorkflowLandingRequest.uuid == landing_uuid).first()
+        )
+
+        if not workflow_landing_request:
+            raise exceptions.ObjectNotFound(f"WorkflowLandingRequest with UUID {landing_uuid} not found")
+
+        # Create associations for each invocation
+        for invocation in invocations:
+            association = LandingRequestToWorkflowInvocationAssociation(
+                landing_request=workflow_landing_request, workflow_invocation=invocation
+            )
+            trans.sa_session.add(association)

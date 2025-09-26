@@ -10,6 +10,7 @@ from pydantic import (
     AfterValidator,
     Field,
     field_validator,
+    UUID4,
 )
 
 from galaxy.schema.schema import (
@@ -137,6 +138,11 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         False,
         title="Allow tool state corrections",
         description="Indicates if tool state corrections are allowed for workflow invocation.",
+    )
+    landing_uuid: Optional[UUID4] = Field(
+        None,
+        title="Landing UUID",
+        description="The UUID of the workflow landing request associated with this invocation.",
     )
     use_cached_job: Optional[bool] = UseCachedJobField
     parameters_normalized: Optional[bool] = Field(
