@@ -1840,6 +1840,91 @@ class InputParameterModule(WorkflowModule):
         step.tool_inputs = self._parse_state_into_dict()
 
 
+class RegexSwitchModule(WorkflowModule):
+    type = "regex_switch"
+    name = "Regex switch"
+
+    def __init__(self, trans, content_id=None, **kwds):
+        super().__init__(trans, content_id=content_id, **kwds)
+        self.state = DefaultToolState()
+        self.state.inputs = {"pattern": ""}
+
+    def get_inputs(self):
+        return {
+            "pattern": TextToolParameter(
+                None,
+                {
+                    "name": "pattern",
+                    "label": "Regex on element identifier",
+                    "type": "text",
+                    "optional": True,
+                    "value": (self.state.inputs or {}).get("pattern", ""),
+                    "help": r"Examples: \.csv$",
+                },
+            )
+        }
+
+    def get_all_inputs(self, data_only=False, connectable_only=False):
+        return [dict(name="input", label="Dataset", multiple=False, extensions="input", input_type="dataset")]
+
+    def get_all_outputs(self, data_only: bool = False):
+        return [
+            dict(name="matched", label="matched", type="boolean", parameter=True, optional=False),
+            dict(name="unmatched", label="unmatched", type="boolean", parameter=True, optional=False),
+        ]
+
+    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
+        data_src = dict(name="input", label="Dataset", type="data", multiple=False, format="data", optional=False)
+        input_param = DataToolParameter(None, data_src, self.trans)
+
+        pat_src = dict(
+            name="pattern",
+            label="Regex on element identifier",
+            type="text",
+            optional=True,
+            value=(self.state.inputs or {}).get("pattern", ""),
+        )
+        pattern_param = TextToolParameter(None, pat_src)
+
+        return {"input": input_param, "pattern": pattern_param}
+
+    def get_runtime_state(self):
+        s = DefaultToolState()
+        s.inputs = {
+            "input": NO_REPLACEMENT,
+            "pattern": (self.state.inputs or {}).get("pattern", ""),
+        }
+        return s
+
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
+        step = invocation_step.workflow_step
+
+        try:
+            conn = step.input_connections_by_name["input"][0]
+            obj = progress.replacement_for_connection(conn)
+        except Exception:
+            raise DelayedWorkflowEvaluation(why="regex switch awaiting inputs")
+
+        identifier = getattr(obj, "element_identifier", None) or getattr(obj, "name", "") or ""
+        pattern = (step.state.inputs or {}).get("pattern", "") or ""
+
+        matched = False
+        if pattern:
+            try:
+                matched = bool(re.search(pattern, identifier))
+            except re.error:
+                log.warning("Regex switch: invalid pattern %r (step %s)", pattern, getattr(step, "id", "?"))
+
+        log.info("Regex switch (step %s): id=%r pattern=%r -> matched=%s",
+                 getattr(step, "id", "?"), identifier, pattern, matched)
+
+        progress.set_outputs_for_input(
+            invocation_step,
+            {"matched": matched, "unmatched": (not matched)}
+        )
+        return True
+
+
 class PauseModule(WorkflowModule):
     """Initially this module will unconditionally pause a workflow - will aim
     to allow conditional pausing later on.
@@ -2647,6 +2732,7 @@ module_types = dict(
     pause=PauseModule,
     tool=ToolModule,
     subworkflow=SubWorkflowModule,
+    regex_switch=RegexSwitchModule,
 )
 module_factory = WorkflowModuleFactory(module_types)
 

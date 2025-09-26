@@ -2480,6 +2480,26 @@ class WorkflowInput(Model):
         description="Universal unique identifier of the input.",
     )
 
+class RegexSwitchStep(Model):
+    id: int
+    type: Literal["regex_switch"] = "regex_switch"
+    label: Optional[str] = None
+    annotation: Optional[str] = None
+    position: Optional[dict[str, Any]] = None
+
+    inputs: dict[str, Any] = {
+        "input": {
+            "type": "data",
+            "label": "Dataset",
+            "multiple": False,
+            "extensions": ["input"],
+        }
+    }
+
+    outputs: dict[str, Any] = {
+        "matched":   {"type": "boolean", "parameter": True, "label": "Matched"},
+        "unmatched": {"type": "boolean", "parameter": True, "label": "Unmatched"},
+    }
 
 class WorkflowOutput(Model):
     label: Optional[str] = Field(

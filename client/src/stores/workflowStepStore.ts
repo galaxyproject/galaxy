@@ -112,7 +112,7 @@ export interface NewStep {
     tool_state: Record<string, unknown>;
     tool_version?: string;
     tooltip?: string | null;
-    type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
+    type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause" | "regex_switch";
     uuid?: string;
     when?: string | null;
     workflow_id?: string;

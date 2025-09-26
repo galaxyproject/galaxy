@@ -21,6 +21,8 @@ function getContentId(step: Step) {
         data_input: () => "input",
         parameter_input: () => "input",
         pause: () => "pause",
+        regex_switch: () => `regex_switch_${step.id}`,
+        default: () => `step_${step.id}`,
     });
 }
 

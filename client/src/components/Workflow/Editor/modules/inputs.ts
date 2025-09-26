@@ -1,5 +1,5 @@
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
+import { faPencilAlt, faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "font-awesome-6";
 
 export interface WorkflowInput {
@@ -36,6 +36,12 @@ export function getWorkflowInputs(): WorkflowInput[] {
             stateOverwrites: {
                 collection_type: "sample_sheet",
             },
+        },
+        {
+            moduleId: "regex_switch",
+            title: "Regex Switch",
+            description: "Switch for input logic using regular expression",
+            icon: faCodeBranch,
         },
         {
             moduleId: "parameter_input",

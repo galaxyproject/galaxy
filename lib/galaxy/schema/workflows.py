@@ -25,6 +25,7 @@ from galaxy.schema.schema import (
     SubworkflowStep,
     ToolStep,
     WorkflowInput,
+    RegexSwitchStep,
 )
 
 TargetHistoryIdField = Field(
@@ -239,6 +240,7 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
                 PauseStep,
                 ToolStep,
                 SubworkflowStep,
+                RegexSwitchStep,
             ],
             Field(discriminator="type"),
         ],

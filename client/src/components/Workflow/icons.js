@@ -1,8 +1,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFile } from "@fortawesome/free-regular-svg-icons";
-import { faFolderOpen, faPause, faPencilAlt, faSitemap, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faFolderOpen, faPause, faPencilAlt, faSitemap, faWrench, faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faWrench, faFile, faSitemap, faPencilAlt, faPause, faFolderOpen);
+library.add(faWrench, faFile, faSitemap, faPencilAlt, faPause, faFolderOpen, faCodeBranch);
 
 export default {
     tool: "fa-wrench",
@@ -11,4 +11,5 @@ export default {
     subworkflow: "fa-sitemap fa-rotate-270",
     parameter_input: "fa-pencil-alt", // fa-pencil for older FontAwesome, fa-pencil-alt for newer
     pause: "fa-pause",
+    regex_switch: "fa-code-branch",
 };

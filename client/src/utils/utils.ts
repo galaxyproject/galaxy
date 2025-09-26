@@ -390,8 +390,10 @@ type MatchObject<T extends string | number | symbol, R> = {
  * result === 1;
  * ```
  */
-export function match<T extends string | number | symbol, R>(key: T, matcher: MatchObject<T, R>): R {
-    return matcher[key]();
+export function match<T extends PropertyKey, R>( key: T, matcher: MatchObject<T, R> & { default?: () => R }): R {
+  const fn = (matcher as any)[key] ?? matcher.default;
+  if (!fn) throw new TypeError(`match(): no case for "${String(key)}"`);
+  return fn();
 }
 
 /**
