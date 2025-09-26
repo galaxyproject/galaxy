@@ -13,7 +13,7 @@
         <import>model_operation_macros.xml</import>
     </macros>
     <inputs>
-        <param type="data_collection" name="input" label="Input Collection" />
+        <param type="data_collection" collection_type="list,paired" name="input" label="Input Collection" />
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type="list:list" label="${on_string} (flattened)" >
