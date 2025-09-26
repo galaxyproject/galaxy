@@ -198,7 +198,11 @@ async function onSaveChanges(): Promise<void> {
 
         saveButtonText.value = busyMessage.value;
 
-        await saveUserCredentials(groupToUpdate.groupData.groupId, groupToUpdate.groupData.groupPayload);
+        await saveUserCredentials(
+            groupToUpdate.serviceDefinition,
+            groupToUpdate.groupData.groupId,
+            groupToUpdate.groupData.groupPayload,
+        );
 
         Toast.success("Credentials group updated successfully");
 

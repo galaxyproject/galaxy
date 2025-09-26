@@ -185,14 +185,14 @@ describe("useUserToolCredentials", () => {
                 return response(200).json(TEST_CREDENTIALS_GROUP);
             }),
 
-            http.put("/api/users/{user_id}/credentials/group/{group_id}", ({ response }) => {
+            http.put("/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}", ({ response }) => {
                 return response(200).json({
                     ...TEST_CREDENTIALS_GROUP,
                     variables: [{ name: "bucket_name", value: "updated-bucket" }],
                 });
             }),
 
-            http.delete("/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}", ({ response }) => {
+            http.delete("/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}", ({ response }) => {
                 return response(204).empty();
             }),
 

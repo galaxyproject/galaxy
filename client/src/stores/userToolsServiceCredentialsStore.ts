@@ -368,6 +368,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
      * Updates existing credentials for a tool.
      * @param {string} toolId - Tool identifier.
      * @param {string} toolVersion - Tool version.
+     * @param {ServiceCredentialsIdentifier} serviceIdentifier - Service name and version.
      * @param {string} groupId - Group ID to update.
      * @param {ServiceCredentialGroupPayload} serviceGroupPayload - Updated credential data.
      * @returns {Promise<ServiceCredentialGroupResponse>} Updated credential group.
@@ -376,10 +377,18 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
     async function updateUserCredentialsForTool(
         toolId: string,
         toolVersion: string,
+        serviceIdentifier: ServiceCredentialsIdentifier,
         groupId: string,
         serviceGroupPayload: ServiceCredentialGroupPayload,
     ): Promise<ServiceCredentialGroupResponse> {
         const userId = ensureUserIsRegistered();
+
+        const toolService = getToolService(toolId, toolVersion, serviceIdentifier);
+        const toolServicesId = toolService?.id;
+        if (!toolServicesId) {
+            const userToolKey = getUserToolKey(toolId, toolVersion);
+            throw new Error(`No service found for tool ${userToolKey}`);
+        }
 
         const serviceGroupPayloadCopy = structuredClone(serviceGroupPayload);
         removeSecretPlaceholders(serviceGroupPayloadCopy);
@@ -388,12 +397,15 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
         isBusy.value = true;
 
         try {
-            const { data, error } = await GalaxyApi().PUT("/api/users/{user_id}/credentials/group/{group_id}", {
-                params: {
-                    path: { user_id: userId, group_id: groupId },
+            const { data, error } = await GalaxyApi().PUT(
+                "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
+                {
+                    params: {
+                        path: { user_id: userId, user_credentials_id: toolServicesId, group_id: groupId },
+                    },
+                    body: serviceGroupPayloadCopy,
                 },
-                body: serviceGroupPayloadCopy,
-            });
+            );
 
             if (error) {
                 const userToolKey = getUserToolKey(toolId, toolVersion);
@@ -442,7 +454,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
 
         try {
             const { error } = await GalaxyApi().DELETE(
-                "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
+                "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
                 {
                     params: {
                         path: { user_id: userId, user_credentials_id: toolServicesId, group_id: groupId },

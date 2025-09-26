@@ -94,19 +94,22 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         created_group = self._provide_user_credentials(payload)
         created_group_id = created_group["id"]
 
+        list_user_credentials = self._check_credentials_exist()
+        user_credentials_id = list_user_credentials[0]["id"]
+
         update_payload = self._build_update_credentials_payload(group_name=random_name())
-        group_name_updated_group = self._update_credentials(created_group_id, update_payload)
+        group_name_updated_group = self._update_credentials(user_credentials_id, created_group_id, update_payload)
         assert group_name_updated_group["update_time"] > created_group["update_time"]
 
         update_payload = self._build_update_credentials_payload(variables=[{"name": "server", "value": random_name()}])
-        variable_updated_group = self._update_credentials(created_group_id, update_payload)
+        variable_updated_group = self._update_credentials(user_credentials_id, created_group_id, update_payload)
         assert variable_updated_group["update_time"] > group_name_updated_group["update_time"]
         assert variable_updated_group["update_time"] > created_group["update_time"]
 
         update_payload = self._build_update_credentials_payload(
             secrets=[{"name": "username", "value": random_name()}, {"name": "password", "value": None}]
         )
-        secret_updated_group = self._update_credentials(created_group_id, update_payload)
+        secret_updated_group = self._update_credentials(user_credentials_id, created_group_id, update_payload)
         assert secret_updated_group["update_time"] > variable_updated_group["update_time"]
         assert secret_updated_group["update_time"] > group_name_updated_group["update_time"]
         assert secret_updated_group["update_time"] > created_group["update_time"]
@@ -117,19 +120,28 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         initial_group = self._provide_user_credentials()
         group_id = initial_group["id"]
 
+        list_user_credentials = self._check_credentials_exist()
+        user_credentials_id = list_user_credentials[0]["id"]
+
         # Update only group name
         new_name = random_name()
-        result = self._update_credentials(group_id, self._build_update_credentials_payload(group_name=new_name))
+        result = self._update_credentials(
+            user_credentials_id, group_id, self._build_update_credentials_payload(group_name=new_name)
+        )
         assert result["name"] == new_name
 
         # Update only variables
         new_variables = [{"name": "server", "value": "https://new-server.com"}]
-        result = self._update_credentials(group_id, self._build_update_credentials_payload(variables=new_variables))
+        result = self._update_credentials(
+            user_credentials_id, group_id, self._build_update_credentials_payload(variables=new_variables)
+        )
         assert result["variables"][0]["value"] == "https://new-server.com"
 
         # Update only secrets
         new_secrets = [{"name": "username", "value": "newuser"}, {"name": "password", "value": "newpass"}]
-        result = self._update_credentials(group_id, self._build_update_credentials_payload(secrets=new_secrets))
+        result = self._update_credentials(
+            user_credentials_id, group_id, self._build_update_credentials_payload(secrets=new_secrets)
+        )
         assert any(s["name"] == "username" and s["is_set"] for s in result["secrets"])
 
         # Update all fields at once
@@ -137,6 +149,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         final_variables = [{"name": "server", "value": "https://final-server.com"}]
         final_secrets = [{"name": "username", "value": "finaluser"}, {"name": "password", "value": "finalpass"}]
         result = self._update_credentials(
+            user_credentials_id,
             group_id,
             self._build_update_credentials_payload(
                 group_name=final_name, variables=final_variables, secrets=final_secrets
@@ -152,14 +165,22 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         group = self._provide_user_credentials()
         group_id = group["id"]
 
+        list_user_credentials = self._check_credentials_exist()
+        user_credentials_id = list_user_credentials[0]["id"]
+
         # Invalid group name - use empty string which should be invalid
-        self._update_credentials(group_id, self._build_update_credentials_payload(group_name=""), status_code=400)
+        self._update_credentials(
+            user_credentials_id, group_id, self._build_update_credentials_payload(group_name=""), status_code=400
+        )
 
         # Missing required variable
-        self._update_credentials(group_id, self._build_update_credentials_payload(variables=[]), status_code=400)
+        self._update_credentials(
+            user_credentials_id, group_id, self._build_update_credentials_payload(variables=[]), status_code=400
+        )
 
         # Missing required secret
         self._update_credentials(
+            user_credentials_id,
             group_id,
             self._build_update_credentials_payload(secrets=[{"name": "password", "value": "pass"}]),
             status_code=400,
@@ -167,11 +188,13 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
 
         # Invalid credential names
         self._update_credentials(
+            user_credentials_id,
             group_id,
             self._build_update_credentials_payload(variables=[{"name": "invalid_name", "value": "value"}]),
             status_code=400,
         )
         self._update_credentials(
+            user_credentials_id,
             group_id,
             self._build_update_credentials_payload(secrets=[{"name": "invalid_secret", "value": "value"}]),
             status_code=400,
@@ -179,11 +202,13 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
 
         # Empty required values
         self._update_credentials(
+            user_credentials_id,
             group_id,
             self._build_update_credentials_payload(variables=[{"name": "server", "value": ""}]),
             status_code=400,
         )
         self._update_credentials(
+            user_credentials_id,
             group_id,
             self._build_update_credentials_payload(
                 secrets=[{"name": "username", "value": ""}, {"name": "password", "value": "pass"}]
@@ -193,7 +218,10 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
 
         # Test non-existent group ID
         self._update_credentials(
-            "f2db41e1fa331b3e", self._build_update_credentials_payload(group_name="test"), status_code=400
+            user_credentials_id,
+            "f2db41e1fa331b3e",
+            self._build_update_credentials_payload(group_name="test"),
+            status_code=400,
         )
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
@@ -253,7 +281,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert list_user_credentials[0]["current_group_id"] == target_group_id
 
         # Delete the group
-        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/{target_group_id}")
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/group/{target_group_id}")
         self._assert_status_code_is(response, 204)
 
         # Check group is deleted - should only have our initial group left
@@ -302,7 +330,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         self._assert_status_code_is(response, 400)
 
     def test_delete_nonexistent_credentials_group(self):
-        response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e/f2db41e1fa331b3e")
+        response = self._delete("/api/users/current/credentials/f2db41e1fa331b3e/group/f2db41e1fa331b3e")
         self._assert_status_code_is(response, 400)
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
@@ -315,7 +343,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         user_credentials_list = self._check_credentials_exist()
         user_credentials_id = user_credentials_list[0]["id"]
 
-        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/{group_id}")
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/group/{group_id}")
         self._assert_status_code_is(response, 204)
 
     @skip_without_tool(CREDENTIALS_TEST_TOOL)
@@ -422,7 +450,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             # Delete the credentials group
             user_credentials_id = credentials_list[0]["id"]
             group_id = group["id"]
-            response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/{group_id}")
+            response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/group/{group_id}")
             self._assert_status_code_is(response, 204)
 
             # Check that secrets are removed from the vault
@@ -466,9 +494,11 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             },
         }
 
-    def _update_credentials(self, group_id, payload=None, status_code=200):
+    def _update_credentials(self, user_credentials_id, group_id, payload=None, status_code=200):
         payload = payload or self._build_update_credentials_payload()
-        response = self._put(f"/api/users/current/credentials/group/{group_id}", data=payload, json=True)
+        response = self._put(
+            f"/api/users/current/credentials/{user_credentials_id}/group/{group_id}", data=payload, json=True
+        )
         self._assert_status_code_is(response, status_code)
         return response.json()
 

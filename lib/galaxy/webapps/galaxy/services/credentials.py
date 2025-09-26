@@ -92,12 +92,13 @@ class CredentialsService:
         self,
         trans: ProvidesUserContext,
         user_id: FlexibleUserIdType,
+        user_credentials_id: DecodedDatabaseIdField,
         group_id: DecodedDatabaseIdField,
         payload: ServiceCredentialGroupPayload,
     ) -> ServiceCredentialGroupResponse:
         """Updates user credentials for a specific group."""
         user = self._ensure_user_access(trans, user_id)
-        return self._update_credentials(trans.sa_session, user, group_id, payload)
+        return self._update_credentials(trans.sa_session, user, user_credentials_id, group_id, payload)
 
     def update_user_credentials_group(
         self,
@@ -351,11 +352,14 @@ class CredentialsService:
         self,
         session: scoped_session,
         user: User,
+        user_credentials_id: DecodedDatabaseIdField,
         group_id: DecodedDatabaseIdField,
         payload: ServiceCredentialGroupPayload,
     ) -> ServiceCredentialGroupResponse:
         group_name, variables, secrets = payload.name, payload.variables, payload.secrets
-        existing_user_credentials = self.credentials_manager.get_user_credentials(user.id, group_id=group_id)
+        existing_user_credentials = self.credentials_manager.get_user_credentials(
+            user.id, user_credentials_id=user_credentials_id, group_id=group_id
+        )
         if not existing_user_credentials:
             raise ObjectNotFound(f"No credentials found for user {user.id} in group {group_id}.")
 

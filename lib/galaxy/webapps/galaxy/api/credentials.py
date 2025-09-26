@@ -84,17 +84,18 @@ class FastAPICredentials:
         return self.service.provide_credential(trans, user_id, payload)
 
     @router.put(
-        "/api/users/{user_id}/credentials/group/{group_id}",
+        "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
         summary="Updates user credentials",
     )
     def update_user_credentials(
         self,
         user_id: FlexibleUserIdType,
+        user_credentials_id: DecodedDatabaseIdField,
         group_id: DecodedDatabaseIdField,
         payload: ServiceCredentialGroupPayload,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> ServiceCredentialGroupResponse:
-        return self.service.update_user_credentials(trans, user_id, group_id, payload)
+        return self.service.update_user_credentials(trans, user_id, user_credentials_id, group_id, payload)
 
     @router.put(
         "/api/users/{user_id}/credentials",
@@ -125,8 +126,8 @@ class FastAPICredentials:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
-        "/api/users/{user_id}/credentials/{user_credentials_id}/{group_id}",
-        summary="Deletes a specific credential",
+        "/api/users/{user_id}/credentials/{user_credentials_id}/group/{group_id}",
+        summary="Deletes a specific credential group",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def delete_credentials(

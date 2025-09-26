@@ -384,7 +384,7 @@ async function updateGroup(groupId: string): Promise<void> {
 
         saveButtonText.value = busyMessage.value;
 
-        await saveUserCredentials(groupId, groupToUpdate.groupPayload);
+        await saveUserCredentials(props.serviceDefinition, groupId, groupToUpdate.groupPayload);
 
         discardGroupChanges(groupId);
 

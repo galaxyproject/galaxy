@@ -268,12 +268,14 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
 
     /**
      * Save user credentials for the tool.
+     * @param {ServiceCredentialsIdentifier} serviceIdentifier - Service name and version identifier.
      * @param {string} groupId - Group ID to update.
      * @param {ServiceCredentialGroupPayload} serviceGroupPayload - Service group payload to save.
      * @returns {Promise<void>}
      * @throws {Error} If the credential save fails.
      */
     async function saveUserCredentials(
+        serviceIdentifier: ServiceCredentialsIdentifier,
         groupId: string,
         serviceGroupPayload: ServiceCredentialGroupPayload,
     ): Promise<void> {
@@ -281,6 +283,7 @@ export function useUserToolCredentials(toolId: string, toolVersion: string) {
             await userToolsServiceCredentialsStore.updateUserCredentialsForTool(
                 toolId,
                 toolVersion,
+                serviceIdentifier,
                 groupId,
                 serviceGroupPayload,
             );
