@@ -11,8 +11,8 @@ aiosignal==1.4.0
 alembic==1.16.5
 amqp==5.3.1
 annotated-types==0.7.0
-anyio==4.10.0
-apispec==6.8.3
+anyio==4.11.0
+apispec==6.8.4
 appdirs==1.4.4
 arcp==0.2.1
 argcomplete==3.6.2
@@ -22,10 +22,10 @@ attrs==25.3.0
 babel==2.17.0
 bagit==1.8.1
 bagit-profile==1.3.1
-bcrypt==4.3.0
+bcrypt==5.0.0
 bdbag==1.7.5
 beaker==1.13.0
-billiard==4.2.1
+billiard==4.2.2
 bioblend==1.6.0
 bleach==6.2.0
 boltons==25.0.0
@@ -53,7 +53,7 @@ cryptography==46.0.1
 ct3==3.4.0
 cwl-upgrader==1.2.12
 cwl-utils==0.40
-cwltool==3.1.20250715140722
+cwltool==3.1.20250925164626
 defusedxml==0.7.1
 deprecated==1.2.18
 deprecation==2.1.0
@@ -67,7 +67,7 @@ edam-ontology==1.25.2
 email-validator==2.3.0
 et-xmlfile==2.0.0
 exceptiongroup==1.3.0 ; python_full_version < '3.11'
-fastapi-slim==0.116.2
+fastapi-slim==0.117.1
 filelock==3.19.1
 fissix==24.4.24
 frozenlist==1.7.0
@@ -76,12 +76,12 @@ fsspec==2025.9.0
 future==1.0.0
 google-api-core==2.25.1
 google-auth==2.40.3
-google-cloud-batch==0.17.36
+google-cloud-batch==0.17.37
 googleapis-common-protos==1.70.0
 gravity==1.1.1
 greenlet==3.2.4 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
-grpcio==1.75.0
-grpcio-status==1.75.0
+grpcio==1.75.1
+grpcio-status==1.75.1
 gunicorn==23.0.0
 gxformat2==0.21.0
 h11==0.16.0
@@ -108,7 +108,7 @@ lagom==2.7.7
 legacy-cgi==2.6.3 ; python_full_version >= '3.13'
 limits==4.2 ; python_full_version < '3.10'
 limits==5.5.0 ; python_full_version >= '3.10'
-lxml==6.0.1
+lxml==6.0.2
 mako==1.3.10
 markdown==3.9
 markdown-it-py==3.0.0
@@ -117,7 +117,7 @@ mdurl==0.1.2
 mercurial==7.1.1
 mistune==3.0.2
 mrcfile==1.5.4
-msal==1.33.0
+msal==1.34.0
 msgpack==1.1.1
 multidict==6.6.4
 mypy-extensions==1.1.0
@@ -162,7 +162,7 @@ pyjwt==2.10.1
 pykwalify==1.8.0
 pylibmagic==0.5.0
 pynacl==1.6.0
-pyparsing==3.2.4
+pyparsing==3.2.5
 pypng==0.20220715.0
 pyreadline3==3.5.4 ; sys_platform == 'win32'
 pysam==0.23.3
@@ -172,9 +172,9 @@ python-multipart==0.0.20
 python-slugify==8.0.4
 python3-openid==3.2.0
 pytz==2025.2
-pyyaml==6.0.2
+pyyaml==6.0.3
 pyzmq==27.1.0
-rdflib==7.1.4
+rdflib==7.2.1
 referencing==0.36.2
 refgenconf==0.12.2
 regex==2025.9.18
@@ -190,7 +190,7 @@ routes==2.5.1
 rpds-py==0.27.1
 rsa==4.9.1
 ruamel-yaml==0.18.15
-ruamel-yaml-clib==0.2.12 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
+ruamel-yaml-clib==0.2.14 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
 s3fs==2025.9.0
 schema-salad==8.9.20250723145140
 setuptools==80.9.0
@@ -211,7 +211,7 @@ tenacity==9.1.2
 text-unidecode==1.3
 tifffile==2024.8.30 ; python_full_version < '3.10'
 tifffile==2025.5.10 ; python_full_version == '3.10.*'
-tifffile==2025.9.9 ; python_full_version >= '3.11'
+tifffile==2025.9.20 ; python_full_version >= '3.11'
 tinydb==4.8.2
 tomli==2.2.1 ; python_full_version < '3.11'
 tornado==6.5.2
@@ -225,10 +225,10 @@ tzlocal==5.3.1
 ubiquerg==0.8.1
 urllib3==1.26.20 ; python_full_version < '3.10'
 urllib3==2.5.0 ; python_full_version >= '3.10'
-uvicorn==0.36.0
+uvicorn==0.37.0
 uvloop==0.21.0
 vine==5.1.0
-wcwidth==0.2.13
+wcwidth==0.2.14
 webencodings==0.5.1
 webob==1.8.9
 whoosh==2.7.4
