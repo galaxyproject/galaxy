@@ -793,6 +793,7 @@ class TestCollectionDef:
                 name=json_as_dict.get("name") or "Unnamed Collection",
                 elements=elements,
                 collection_type=json_as_dict["collection_type"],
+                fields=json_as_dict.get("fields", None),
             )
 
     def collect_inputs(self):
