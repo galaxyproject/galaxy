@@ -38,7 +38,7 @@ heatmap:
     version: 0.0.15
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
-    version: 0.0.16
+    version: 0.0.17
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
