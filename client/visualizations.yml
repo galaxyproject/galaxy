@@ -36,6 +36,9 @@ h5web:
 heatmap:
     package: "@galaxyproject/heatmap"
     version: 0.0.15
+igv:
+    package: "@galaxyproject/igv"
+    version: 0.0.10
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
     version: 0.0.17
