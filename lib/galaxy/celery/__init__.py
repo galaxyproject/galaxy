@@ -22,6 +22,7 @@ from celery.signals import (
     worker_shutting_down,
 )
 from kombu import serialization
+from lagom.exceptions import UnableToInvokeBoundFunction
 
 from galaxy.celery.base_task import GalaxyTaskBeforeStart
 from galaxy.config import Configuration
@@ -40,6 +41,7 @@ MAIN_TASK_MODULE = "galaxy.celery.tasks"
 DEFAULT_TASK_QUEUE = "galaxy.internal"
 TASKS_MODULES = [MAIN_TASK_MODULE]
 PYDANTIC_AWARE_SERIALIZER_NAME = "pydantic-aware-json"
+LAGOM_TYPE_ERRORS = "A lagom magic_partial was used which catches all TypeErrors and assumes they indicate binding problems. This may mask underlying bugs."
 
 APP_LOCAL = local()
 
@@ -184,6 +186,10 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
                 message = f"Successfully executed Celery task {desc} {timer}"
                 log.info(message)
                 return rval
+            except UnableToInvokeBoundFunction:
+                # @jmchilton & @mvdbeek lost a couple hours on a red herring here - LAGOM_TYPE_ERRORS might help in the future.
+                log.warning(f"Celery task execution failed for {desc}. {LAGOM_TYPE_ERRORS} {timer}")
+                raise
             except Exception:
                 log.warning(f"Celery task execution failed for {desc} {timer}")
                 raise
