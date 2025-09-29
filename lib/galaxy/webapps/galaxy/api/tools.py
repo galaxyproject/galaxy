@@ -352,9 +352,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(
-                trans, in_panel=in_panel, tool_help=tool_help, view=view
-            )
+            return self.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
         except exceptions.MessageException:
             raise
         except Exception:

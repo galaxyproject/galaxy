@@ -100,4 +100,3 @@ def _handle_authorization(context, tool):
     if not tool.allow_user_access(user, attempting_access=False):
         return False
     return True
-
