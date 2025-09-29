@@ -216,7 +216,6 @@ BaseJsonTestCollectionDefCollectionElementDict = TypedDict(
         "class": Literal["Collection"],
         "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
-        "fields": NotRequired[Optional[List[FieldDict]]],
     },
 )
 
