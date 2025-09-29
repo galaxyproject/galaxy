@@ -1232,9 +1232,6 @@
         <tool id="longbar" destination="dynamic" resources="all" />
         <!-- Pick a handler randomly from those declaring this tag. -->
         <tool id="baz" handler="special_handlers" destination="bigmem"/>
-        <tool id="foo" handler="handler0">
-            <param id="source">trackster</param>
-        </tool>
     </tools>
     <limits>
         <!-- Certain limits can be defined. The 'concurrent_jobs' limits all

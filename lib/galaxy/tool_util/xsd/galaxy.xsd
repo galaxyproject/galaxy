@@ -139,7 +139,6 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="code" type="Code" minOccurs="0"/>
         <xs:element name="uihints" type="UIhints" minOccurs="0"/>
         <xs:element name="options" type="Options" minOccurs="0"/>
-        <xs:element name="trackster_conf" type="TracksterConf" minOccurs="0"/>
         <xs:element name="citations" type="Citations" minOccurs="0"/>
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required">
@@ -1044,29 +1043,6 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
     <xs:attribute name="sanitize" type="PermissiveBoolean" default="true">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute can be used to turn off all input sanitization for a tool.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
-  <xs:complexType name="TracksterConf">
-    <xs:annotation>
-      <xs:documentation xml:lang="en">This directive is used to specify some rarely modified trackster options.</xs:documentation>
-    </xs:annotation>
-    <xs:sequence>
-      <xs:element name="action" type="TracksterAction" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-  <xs:complexType name="TracksterAction">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"/>
-    </xs:annotation>
-    <xs:attribute name="name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"/>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="output_name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"/>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
