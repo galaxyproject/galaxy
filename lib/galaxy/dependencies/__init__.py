@@ -207,6 +207,9 @@ class ConditionalDependencies:
     def check_pykube_ng(self):
         return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners or which("kubectl")
 
+    def check_pyarcrest(self):
+        return "galaxy.jobs.runners.arc:ArcRESTJobRunner" in self.job_runners
+
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
 
