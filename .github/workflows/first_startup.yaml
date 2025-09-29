@@ -34,9 +34,6 @@ jobs:
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - name: Read Node.js version
-        id: node-version
-        run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
