@@ -3,8 +3,6 @@ from typing import (
     Optional,
 )
 
-ATTRIBUTE_SPLIT_CHAR = "."
-
 log = logging.getLogger(__name__)
 
 
