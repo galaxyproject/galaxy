@@ -2085,7 +2085,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         rerun_remap_job_id: Optional[int],
     ) -> tuple[
         list[ToolStateJobInstancePopulatedT],
-        list[ToolStateJobInstancePopulatedT],
+        list[ParameterValidationErrorsT],
         Optional[MatchingCollections],
         list[JobInternalToolState],
     ]:
