@@ -76,6 +76,12 @@ class YamlToolSource(ToolSource):
     def parse_tool_type(self):
         return self.root_dict.get("tool_type")
 
+    def parse_tool_module(self) -> Optional[Tuple[str, str]]:
+        # This should not be settable for user defined tools - placing this here to
+        # ensure this. If we want to implement tool modules for YAML tools in the future
+        # ensure class is not GalaxyUserTool.
+        return None
+
     def parse_id(self):
         return self.root_dict.get("id")
 

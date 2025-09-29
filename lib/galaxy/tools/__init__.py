@@ -20,6 +20,7 @@ from typing import (
     cast,
     NamedTuple,
     Optional,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -439,16 +440,17 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
+    ToolClass: Optional[Type[Tool]] = None
     if tool_source.parse_class() == "GalaxyUserTool":
-        return UserDefinedTool(config_file, tool_source, app, **kwds)
-    if (tool_module := tool_source.parse_tool_module()) is not None:
+        ToolClass = UserDefinedTool
+    elif (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
         ToolClass = getattr(mod, cls)
         assert issubclass(ToolClass, Tool)
     elif tool_type := tool_source.parse_tool_type():
         ToolClass = tool_types.get(tool_type)
-        if not ToolClass:
+        if ToolClass is None:
             if tool_type == "cwl":
                 raise ToolLoadError("Runtime support for CWL tools is not implemented currently")
             else:
