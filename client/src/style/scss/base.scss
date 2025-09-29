@@ -60,9 +60,13 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 }
 
 // ==== Basic styles ====
+html,
+body {
+    overscroll-behavior: none;
+}
+
 body {
     @extend .m-2;
-    overscroll-behavior: none;
 }
 
 .unselectable {
