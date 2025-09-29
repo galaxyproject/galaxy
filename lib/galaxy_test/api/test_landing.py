@@ -192,6 +192,31 @@ class TestLandingApi(ApiTestCase):
         assert workflow["source_metadata"]["trs_tool_id"] == "#workflow/github.com/iwc-workflows/chipseq-pe/main"
         assert workflow["source_metadata"]["trs_version_id"] == "v0.12"
 
+    @skip_without_tool("cat1")
+    def test_workflow_landing_to_invocation_association(self):
+        """Test that landing_uuid is included in workflow invocation API response when invoked from landing request."""
+        # Create a workflow landing request
+        request = _get_simple_landing_payload(self.workflow_populator, public=True)
+        landing_response = self.dataset_populator.create_workflow_landing(request)
+
+        # Use the landing request
+        claimed_response = self.dataset_populator.use_workflow_landing(landing_response.uuid)
+
+        # Check that the workflow was invoked
+        invocation_id = self.workflow_populator.invoke_workflow(
+            claimed_response.workflow_id,
+            inputs=claimed_response.request_state,
+            request={"landing_uuid": str(landing_response.uuid)},
+            inputs_by="name",
+        ).json()["id"]
+        invocation_details = self.workflow_populator.get_invocation(invocation_id)
+
+        # Verify that the landing_uuid in the invocation matches the original landing request
+        assert "landing_uuid" in invocation_details, "landing_uuid should be included in invocation response"
+        assert invocation_details["landing_uuid"] == str(
+            landing_response.uuid
+        ), "landing_uuid should match the original landing request"
+
 
 def _workflow_request_state() -> dict[str, Any]:
     deferred = False

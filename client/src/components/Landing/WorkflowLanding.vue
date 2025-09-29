@@ -46,7 +46,8 @@ claimWorkflow(props.uuid, props.public, props.secret).then(() => {
                 :workflow-id="claimState.workflowId"
                 :prefer-simple-form="true"
                 :request-state="claimState.requestState ?? undefined"
-                :instance="claimState.instance" />
+                :instance="claimState.instance"
+                :landing-uuid="props.uuid" />
         </div>
     </div>
 </template>

@@ -9209,6 +9209,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     output_datasets = relationship("WorkflowInvocationOutputDatasetAssociation", back_populates="workflow_invocation")
     output_values = relationship("WorkflowInvocationOutputValue", back_populates="workflow_invocation")
     messages = relationship("WorkflowInvocationMessage", back_populates="workflow_invocation")
+    landing_request: Mapped[Optional["LandingRequestToWorkflowInvocationAssociation"]] = relationship(
+        "LandingRequestToWorkflowInvocationAssociation",
+        back_populates="workflow_invocation",
+        uselist=False,
+    )
 
     dict_collection_visible_keys = [
         "id",
@@ -9570,6 +9575,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             # this shouldn't happen anymore, likely fixed in https://github.com/galaxyproject/galaxy/pull/20784
             log.warning(f"Encountered workflow invocation [{self.id}] with no state set")
             rval["state"] = self.states.FAILED
+
+        # Add landing_uuid if there are any landing request associations
+        if self.landing_request:
+            rval["landing_uuid"] = str(self.landing_request.landing_request.uuid)
+        else:
+            rval["landing_uuid"] = None
         if view == "element":
             steps = []
             for step in self.steps:
@@ -11927,6 +11938,28 @@ class WorkflowLandingRequest(Base):
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
     workflow: Mapped[Optional["Workflow"]] = relationship()
     origin: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+
+
+class LandingRequestToWorkflowInvocationAssociation(Base, RepresentById):
+    __tablename__ = "landing_request_to_workflow_invocation_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    landing_request_id: Mapped[int] = mapped_column(ForeignKey("workflow_landing_request.id"))
+    workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"))
+
+    landing_request: Mapped["WorkflowLandingRequest"] = relationship()
+    workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="landing_request")
+
+
+class LandingRequestToToolRequestAssociation(Base, RepresentById):
+    __tablename__ = "landing_request_to_tool_request_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    landing_request_id: Mapped[int] = mapped_column(ForeignKey("tool_landing_request.id"))
+    tool_request_id: Mapped[int] = mapped_column(ForeignKey("tool_request.id"))
+
+    landing_request: Mapped["ToolLandingRequest"] = relationship()
+    tool_request: Mapped["ToolRequest"] = relationship()
 
 
 class UserAction(Base, RepresentById):

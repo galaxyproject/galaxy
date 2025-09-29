@@ -6986,6 +6986,8 @@ export interface components {
             files?: string[] | null;
             /** History Id */
             history_id: unknown;
+            /** Landing Uuid */
+            landing_uuid?: unknown;
             /** Targets */
             targets: unknown;
         };
@@ -11025,6 +11027,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             history_id: string;
+            /** Landing Uuid */
+            landing_uuid?: string | null;
             /** Targets */
             targets: (
                 | components["schemas"]["DataElementsTarget"]
@@ -15327,6 +15331,11 @@ export interface components {
              * @default false
              */
             instance: boolean | null;
+            /**
+             * Landing UUID
+             * @description The UUID of the workflow landing request associated with this invocation.
+             */
+            landing_uuid?: string | null;
             /**
              * Legacy
              * @description Indicating if to use legacy workflow invocation.
@@ -22816,6 +22825,11 @@ export interface components {
              */
             id: string;
             /**
+             * Landing UUID
+             * @description The UUID of the workflow landing request associated with this invocation.
+             */
+            landing_uuid?: string | null;
+            /**
              * Model class
              * @description The name of the database model class.
              * @constant
@@ -22878,6 +22892,11 @@ export interface components {
             inputs: {
                 [key: string]: components["schemas"]["InvocationInput"];
             };
+            /**
+             * Landing UUID
+             * @description The UUID of the workflow landing request associated with this invocation.
+             */
+            landing_uuid?: string | null;
             /**
              * Messages
              * @description A list of messages about why the invocation did not succeed.

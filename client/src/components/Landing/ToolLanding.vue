@@ -57,7 +57,7 @@ const fetchTargets = computed<FetchTargets | null>(() => {
             <LoadingSpan message="Loading tool parameters" />
         </div>
         <div v-else-if="claimState.toolId == '__DATA_FETCH__' && fetchTargets" class="h-100">
-            <FetchLanding :targets="fetchTargets" />
+            <FetchLanding :targets="fetchTargets" :landing-uuid="props.uuid" />
         </div>
         <div v-else>
             {{ claimState.requestState }}
