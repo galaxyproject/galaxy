@@ -34,14 +34,6 @@ jobs:
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - name: Read Node.js version
-        id: node-version
-        run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Clone galaxyproject/galaxy-test-data
         uses: actions/checkout@v5
         with:
