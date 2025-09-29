@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { faSitemap, faStar } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faGripVertical, faSitemap, faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
-import { useUserStore } from "@/stores/userStore";
+import { type ListViewMode, useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
 import { createWhooshQuery, FAVORITES_KEYS } from "../Panels/utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import FilterMenu from "../Common/FilterMenu.vue";
 import Heading from "../Common/Heading.vue";
 import ToolsListSectionFilters from "./ToolsListSectionFilters.vue";
@@ -39,7 +40,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter();
 
-const { isAnonymous } = storeToRefs(useUserStore());
+const userStore = useUserStore();
+const { isAnonymous, currentListViewPreferences } = storeToRefs(userStore);
+
+const currentListViewMode = computed(() => currentListViewPreferences.value["tools"] || "list");
 
 const toolStore = useToolStore();
 const { loading } = storeToRefs(toolStore);
@@ -141,6 +145,10 @@ async function searchTools() {
 
 function applyFilter(filter: string, value: string) {
     filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
+}
+
+function onToggleView(newView: ListViewMode) {
+    userStore.setListViewPreference("tools", newView);
 }
 </script>
 
@@ -249,11 +257,43 @@ function applyFilter(filter: string, value: string) {
                 </GButton>
             </div>
 
-            <ToolsListSectionFilters
-                :filter-class="ToolFilters"
-                :filter-text="filterText"
-                :disabled="loading"
-                @apply-filter="applyFilter" />
+            <div class="d-flex justify-content-between align-items-center">
+                <ToolsListSectionFilters
+                    :filter-class="ToolFilters"
+                    :filter-text="filterText"
+                    :disabled="loading"
+                    @apply-filter="applyFilter" />
+
+                <!-- TODO: This div here and in ListHeader.vue needs to be a reusable component -->
+                <div>
+                    Display:
+                    <GButtonGroup>
+                        <GButton
+                            id="view-grid"
+                            tooltip
+                            title="Grid view"
+                            size="small"
+                            :pressed="currentListViewMode === 'grid'"
+                            outline
+                            color="blue"
+                            @click="onToggleView('grid')">
+                            <FontAwesomeIcon :icon="faGripVertical" />
+                        </GButton>
+
+                        <GButton
+                            id="view-list"
+                            tooltip
+                            title="List view"
+                            size="small"
+                            :pressed="currentListViewMode === 'list'"
+                            outline
+                            color="blue"
+                            @click="onToggleView('list')">
+                            <FontAwesomeIcon :icon="faBars" />
+                        </GButton>
+                    </GButtonGroup>
+                </div>
+            </div>
         </div>
 
         <div class="tools-list-body">
@@ -261,6 +301,7 @@ function applyFilter(filter: string, value: string) {
                 :tools="itemsLoaded"
                 :loading="loading"
                 :has-owner-filter="hasOwnerFilter"
+                :grid-view="currentListViewMode === 'grid'"
                 @apply-filter="applyFilter" />
         </div>
     </section>

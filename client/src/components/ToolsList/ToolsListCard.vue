@@ -46,6 +46,7 @@ interface Props {
     local: boolean;
     owner?: string;
     fetching: boolean;
+    gridView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -62,6 +63,7 @@ const props = withDefaults(defineProps<Props>(), {
     local: false,
     owner: undefined,
     fetching: false,
+    gridView: false,
 });
 
 const emit = defineEmits<{
@@ -166,6 +168,7 @@ const {
         :id="props.id"
         class="tool-list-item"
         :badges="toolBadges"
+        :grid-view="props.gridView"
         :bookmarked="bookmark.label === 'Unfavorite'"
         :show-bookmark="!bookmark.title.includes('Login')"
         :primary-actions="toolsListCardPrimaryActions"

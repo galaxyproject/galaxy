@@ -41,6 +41,8 @@ interface Props<T> {
     showCountInFooter?: boolean;
     /** A key on which the `scrollTop` is reset to 0 */
     scrollTopResetKey?: string;
+    /** Whether to use grid view (div instead of `BListGroup` for better flex/grid support) */
+    gridView?: boolean;
 }
 
 // TODO: In Vue 3, we'll be able to use generic types directly in the template, so we can remove this type assertion
@@ -60,6 +62,7 @@ const props = withDefaults(defineProps<Props<T>>(), {
     propScrollTop: 0,
     showCountInFooter: false,
     scrollTopResetKey: undefined,
+    gridView: false,
 });
 
 const emit = defineEmits<{
@@ -212,28 +215,36 @@ watch(
                 }"
                 role="list">
                 <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-                <BListGroup v-else>
+                <template v-else>
                     <slot v-if="items.length === 0" name="loading">
                         <BAlert v-if="busy" variant="info" show>
                             <LoadingSpan :message="`Loading ${props.namePlural}`" />
                         </BAlert>
                     </slot>
+                    <component
+                        :is="props.gridView ? 'div' : BListGroup"
+                        :class="{ 'card-list d-flex flex-wrap': props.gridView }">
+                        <!-- Use component wrapper with v-for to provide proper keying while avoiding layout interference -->
+                        <component
+                            :is="'div'"
+                            v-for="(item, index) in items"
+                            :key="itemKey(item)"
+                            class=""
+                            style="display: contents">
+                            <slot name="item" :item="item" :index="index" />
+                        </component>
 
-                    <!-- Wrap slot in a template to use v-for -->
-                    <div v-for="(item, index) in items" :key="itemKey(item)">
-                        <slot name="item" :item="item" :index="index" />
-                    </div>
+                        <template v-if="!busy">
+                            <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
+                                <div class="list-end">- No {{ props.namePlural }} found -</div>
+                            </slot>
 
-                    <template v-if="!busy">
-                        <slot v-if="allLoaded && items.length === 0" name="none-loaded-footer">
-                            <div class="list-end">- No {{ props.namePlural }} found -</div>
-                        </slot>
-
-                        <slot v-else-if="allLoaded" name="all-loaded-footer">
-                            <div class="list-end">- {{ listEndText }} -</div>
-                        </slot>
-                    </template>
-                </BListGroup>
+                            <slot v-else-if="allLoaded" name="all-loaded-footer">
+                                <div class="list-end">- {{ listEndText }} -</div>
+                            </slot>
+                        </template>
+                    </component>
+                </template>
             </div>
             <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </div>
@@ -262,3 +273,9 @@ watch(
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.card-list {
+    container: cards-list / inline-size;
+}
+</style>

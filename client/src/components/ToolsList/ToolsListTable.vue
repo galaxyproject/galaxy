@@ -19,6 +19,7 @@ const props = defineProps<{
     tools: Tool[];
     loading?: boolean;
     hasOwnerFilter?: boolean;
+    gridView?: boolean;
 }>();
 
 const toolStore = useToolStore();
@@ -62,6 +63,7 @@ watchEffect(() => {
         name-plural="tools"
         :load-disabled="!props.tools.length"
         show-count-in-footer
+        :grid-view="props.gridView"
         no-footer>
         <template v-slot:loading>
             <BAlert v-if="props.tools.length" show>
@@ -87,6 +89,7 @@ watchEffect(() => {
                 :owner="props.hasOwnerFilter && item.tool_shed_repository ? item.tool_shed_repository.owner : undefined"
                 :workflow-compatible="item.is_workflow_compatible"
                 :version="item.version"
+                :grid-view="props.gridView"
                 @apply-filter="(filter, value) => $emit('apply-filter', filter, value)" />
         </template>
     </ScrollList>
