@@ -6,6 +6,7 @@ from json import dumps
 from typing import (
     Any,
     cast,
+    get_args,
     Optional,
     Union,
 )
@@ -335,9 +336,9 @@ class ToolsService(ServiceBase):
         preferred_object_store_id = payload.get("preferred_object_store_id")
         credentials_context = payload.get("credentials_context")
         input_format = str(payload.get("input_format", "legacy"))
-        if input_format not in ("legacy", "21.01"):
+        if input_format not in get_args(InputFormatT):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
-        input_format = cast(InputFormatT, input_format)
+        input_format = cast(InputFormatT, input_format)  # https://github.com/python/mypy/issues/15106
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         vars = tool.handle_input(

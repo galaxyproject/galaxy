@@ -2042,7 +2042,7 @@ class JobSubmitter:
 
     def _tool_request(self, tool_request_id: int) -> ToolRequest:
         sa_session = self.app.model.context
-        tool_request: ToolRequest = cast(ToolRequest, sa_session.query(ToolRequest).get(tool_request_id))
+        tool_request = sa_session.get(ToolRequest, tool_request_id)
         if tool_request is None:
             raise Exception(f"Problem fetching request with ID {tool_request_id}")
         return tool_request

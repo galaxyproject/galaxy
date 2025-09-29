@@ -332,12 +332,9 @@ class FetchTools:
     def _get_tool_request_or_raise_not_found(
         self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField
     ) -> ToolRequest:
-        tool_request: Optional[ToolRequest] = cast(
-            Optional[ToolRequest], trans.app.model.context.query(ToolRequest).get(id)
-        )
+        tool_request = trans.app.model.context.get(ToolRequest, id)
         if tool_request is None:
             raise exceptions.ObjectNotFound()
-        assert tool_request
         return tool_request
 
     @router.post("/api/tool_landings", public=True, allow_cors=True)
