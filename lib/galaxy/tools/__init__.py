@@ -53,8 +53,10 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    InpDataDictT,
     Job,
     JobToOutputDatasetAssociation,
+    OutDataDictT,
     StoredWorkflow,
     ToolRequest,
 )
@@ -2078,7 +2080,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         rerun_remap_job_id: Optional[int],
     ) -> tuple[
         list[ToolStateJobInstancePopulatedT],
-        list[ToolStateJobInstancePopulatedT],
+        list[ParameterValidationErrorsT],
         Optional[MatchingCollections],
         list[JobInternalToolState],
     ]:
@@ -2762,7 +2764,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             e.args = (f"Error in '{self.name}' hook '{hook_name}', original message: {original_message}",)
             raise
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         pass
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: Optional[str] = None):
@@ -3279,7 +3281,7 @@ class OutputParameterJSONTool(Tool):
                 rval[key] = str(value)
         return rval
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         if param_dict is None:
             param_dict = {}
         json_params = {}
@@ -3351,7 +3353,7 @@ class ExpressionTool(Tool):
                 message = "Expression tools may not declare output datasets at this time."
                 raise Exception(message)
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
         local_working_directory = param_dict["__local_working_directory__"]
         expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
@@ -3473,7 +3475,7 @@ class DataSourceTool(OutputParameterJSONTool):
             self.inputs["GALAXY_URL"] = self._build_GALAXY_URL_parameter()
             self.inputs_by_page[0]["GALAXY_URL"] = self.inputs["GALAXY_URL"]
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         if param_dict is None:
             param_dict = {}
         dbkey = param_dict.get("dbkey")

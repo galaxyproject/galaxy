@@ -23,6 +23,11 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.managers.credentials import UserCredentialsEnvironmentBuilder
+from galaxy.model import (
+    InpDataDictT,
+    OutCollectionsDictT,
+    OutDataDictT,
+)
 from galaxy.model.deferred import (
     materialize_collection_input,
     materializer_factory,
@@ -216,7 +221,7 @@ class ToolEvaluator:
                 output_collections=out_collections,
             )
 
-    def execute_tool_hooks(self, inp_data, out_data, incoming):
+    def execute_tool_hooks(self, inp_data: InpDataDictT, out_data: OutDataDictT, incoming):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job(self.app, inp_data, out_data, self.param_dict)
@@ -225,7 +230,13 @@ class ToolEvaluator:
             "exec_before_job", self.app, inp_data=inp_data, out_data=out_data, tool=self.tool, param_dict=incoming
         )
 
-    def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
+    def build_param_dict(
+        self,
+        incoming,
+        input_datasets: InpDataDictT,
+        output_datasets: OutDataDictT,
+        output_collections: OutCollectionsDictT,
+    ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -374,7 +385,7 @@ class ToolEvaluator:
 
     def _deferred_objects(
         self,
-        input_datasets: dict[str, Optional[model.DatasetInstance]],
+        input_datasets: InpDataDictT,
         incoming: dict,
     ) -> dict[str, DeferrableObjectsT]:
         """Collect deferred objects required for execution.
@@ -1047,10 +1058,16 @@ class UserToolEvaluator(ToolEvaluator):
     def __sanitize_param_dict(self, param_dict):
         pass
 
-    def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
+    def build_param_dict(
+        self,
+        incoming,
+        input_datasets: InpDataDictT,
+        output_datasets: OutDataDictT,
+        output_collections: OutCollectionsDictT,
+    ):
         """
         Build the dictionary of parameters for substituting into the command
-        line. We're effecively building the CWL job object here.
+        line. We're effectively building the CWL job object here.
         """
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()

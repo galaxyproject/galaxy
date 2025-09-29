@@ -410,7 +410,7 @@ class ExecutionTracker:
         self.implicit_collections = {}
 
     @property
-    def param_combinations(self):
+    def param_combinations(self) -> list[ToolStateJobInstancePopulatedT]:
         return self.mapping_params.param_combinations
 
     @property
