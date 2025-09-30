@@ -124,7 +124,8 @@ mypy-extensions==1.1.0
 networkx==3.2.1 ; python_full_version < '3.10'
 networkx==3.4.2 ; python_full_version == '3.10.*'
 networkx==3.5 ; python_full_version >= '3.11'
-nodejs-wheel==22.13.0
+nodejs-wheel==22.20.0
+nodejs-wheel-binaries==22.20.0
 numpy==2.0.2 ; python_full_version < '3.10'
 numpy==2.2.6 ; python_full_version == '3.10.*'
 numpy==2.3.3 ; python_full_version >= '3.11'
