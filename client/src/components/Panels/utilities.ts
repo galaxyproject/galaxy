@@ -2,10 +2,21 @@
  * Utilities file for Panel Searches (panel/client search + advanced/backend search)
  * Note: Any mention of "DL" in this file refers to the Demerau-Levenshtein distance algorithm
  */
+import {
+    faFilter,
+    faGraduationCap,
+    faNewspaper,
+    faProjectDiagram,
+    faSitemap,
+    faUndo,
+    type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 import { orderBy } from "lodash";
 
 import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
+
+export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
 
 const FILTER_KEYS = {
     id: ["id", "tool_id"],
@@ -23,21 +34,17 @@ const UNSECTIONED_SECTION = {
     description: "Tools that don't appear under any section in the unsearched panel",
 };
 
-/** These are keys used to order/sort results in `ToolSearch`.
- * The value for each is the sort order, higher number = higher rank.
- * Must include some `Tool` properties (like name, description, id etc.)
- * to check against query, and any other keys below are special, used for
- * specific cases (like `combined` for name+description).
- */
-export interface ToolSearchKeys {
-    [key: string | keyof Tool]: number | undefined;
+export interface SearchCommonKeys {
+    [key: string]: number | undefined;
+    /** The `name` key must exist on the objects */
+    name?: number;
     /** property has exact match with query */
     exact?: number;
     /** property starts with query */
     startsWith?: number;
-    /** query contains matches `Tool.name + Tool.description` */
+    /** query contains matches of combined keys (e.g.: `Tool.name + Tool.description`) */
     combined?: number;
-    /** `Tool.name + Tool.description` contains at least
+    /** e.g.: `Tool.name + Tool.description` contains at least
      * `MINIMUM_WORD_MATCH` words from query
      */
     wordMatch?: number;
@@ -49,15 +56,25 @@ interface SearchMatch {
     order: number;
 }
 
+const TOOL_SEARCH_KEYS: SearchCommonKeys = {
+    exact: 5,
+    startsWith: 4,
+    name: 3,
+    description: 2,
+    combined: 1,
+    wordMatch: 0,
+};
+const TOOL_SECTION_SEARCH_KEYS: SearchCommonKeys = { exact: 4, startsWith: 3, name: 2, wordMatch: 1, description: 0 };
+
 /** Returns icon for tool panel `view_type` */
 export const types_to_icons = {
-    default: "undo",
-    generic: "filter",
-    ontology: "sitemap",
-    activity: "project-diagram",
-    publication: "newspaper",
-    training: "graduation-cap",
-};
+    default: faUndo,
+    generic: faFilter,
+    ontology: faSitemap,
+    activity: faProjectDiagram,
+    publication: faNewspaper,
+    training: faGraduationCap,
+} as const satisfies Record<string, IconDefinition>;
 
 // Converts filterSettings { key: value } to query = "key:value"
 export function createWorkflowQuery(filterSettings: Record<string, string | boolean>) {
@@ -235,34 +252,77 @@ export function getValidPanelItems(
 /**
  * Given toolbox, keys to sort/search results by and a search query,
  * Does a direct string.match() comparison to find results,
- * If that produces nothing, runs DL distance alg to allow misspells
+ * If that produces nothing, runs Damerau-Levenshtein distance algorithm to allow misspells
  *
  * @param tools - toolbox
- * @param keys - keys to sort and search results by
  * @param query - a search query
- * @param panelView - panel view, to find section_id for each tool
  * @param currentPanel - current ToolPanel with { section_id: { tools: [tool ids] }, ... }
- * @param usesDL - Optional: used for recursive call with DL if no string.match()
  * @returns an object containing
  * - results: array of tool ids that match the query
- * - resultPanel: a ToolPanel with only the results for the current panelView
+ * - resultPanel: a ToolPanel with only the results for the currentPanel
  * - closestTerm: Optional: closest matching term for DL (in case no match with query)
  *
  * all sorted by order of keys that are being searched (+ closest matching term if DL)
  */
-export function searchToolsByKeys(
+export function searchTools(
     tools: Tool[],
-    keys: ToolSearchKeys,
     query: string,
-    panelView = "default",
     currentPanel: Record<string, Tool | ToolSection>,
-    usesDL = false,
 ): {
     results: string[];
     resultPanel: Record<string, Tool | ToolSection>;
     closestTerm: string | null;
 } {
-    const matchedTools: SearchMatch[] = [];
+    const { matchedResults, closestTerm } = searchObjectsByKeys<Tool>(tools, TOOL_SEARCH_KEYS, query, [
+        "name",
+        "description",
+    ]);
+    const { idResults, resultPanel } = createSortedResultPanel(matchedResults, currentPanel);
+    return { results: idResults, resultPanel: resultPanel, closestTerm: closestTerm };
+}
+
+export function searchSections(sections: ToolSection[], query: string) {
+    const sectionsById = sections.reduce(
+        (acc, section) => {
+            acc[section.id] = section;
+            return acc;
+        },
+        {} as Record<string, ToolSection>,
+    );
+
+    const { matchedResults, closestTerm } = searchObjectsByKeys<ToolSection>(sections, TOOL_SECTION_SEARCH_KEYS, query);
+
+    const filteredSectionEntries = orderBy(matchedResults, ["order"], ["desc"])
+        .map((match) => sectionsById[match.id])
+        .filter((section) => section !== undefined);
+
+    return { sections: filteredSectionEntries, closestTerm };
+}
+
+/**
+ * Given an array of typed objects, searches for matches based on specified keys and a query.
+ *
+ * @param objects Array of objects to search through
+ * @param keys Keys of the object to search by (and some other special keys), ordered by result priority
+ * @param query The search query _(will be sanitized in this method)_
+ * @param nameKeys Keys to use for name matching and DL algorithm _(values for keys will be concatenated if a `combined` key is provided)_
+ * @param usesDL Boolean used for a recursive call with Damerau-Levenshtein distance check activated
+ * @returns An object containing results with sort order, as well as a _"Did you mean?"_ `closestTerm`
+ */
+export function searchObjectsByKeys<T extends { id: string }>(
+    objects: T[],
+    keys: SearchCommonKeys,
+    query: string,
+    nameKeys: string[] = ["name"],
+    usesDL = false,
+): {
+    /** An object containing the ids and sort `order` of each result.
+     * @example [{ id: "tool1", order: 1 }, { id: "tool2", order: 2 }]
+     */
+    matchedResults: SearchMatch[];
+    closestTerm: string | null;
+} {
+    const matchedResults: SearchMatch[] = [];
     let closestTerm = null;
 
     // check if query is of the form "property:value" and then ONLY filter on that property
@@ -274,25 +334,29 @@ export function searchToolsByKeys(
 
     const queryWords = query.trim().toLowerCase().split(" ");
     const queryValue = sanitizeString(query.trim().toLowerCase(), STRING_REPLACEMENTS);
-    for (const tool of tools) {
+    for (const searchedObj of objects) {
         for (const key of Object.keys(keys)) {
-            if (tool[key as keyof Tool] || key === "combined") {
+            if (searchedObj[key as keyof T] || key === "combined") {
                 let actualValue = "";
-                // key = "combined" is a special case for searching name + description
-                if (key === "combined") {
-                    actualValue = `${tool.name.trim()} ${tool.description.trim()}`.toLowerCase();
+                // key = "combined" is a special case (e.g.: for searching name + description)
+                if (key === "combined" && nameKeys.length > 1) {
+                    actualValue = nameKeys
+                        .map((k) => searchedObj[k as keyof T])
+                        .join(" ")
+                        .trim()
+                        .toLowerCase();
                 } else {
-                    const toolVal = tool[key as keyof Tool];
-                    if (typeof toolVal === "string") {
-                        actualValue = toolVal.trim().toLowerCase();
-                    } else if (Array.isArray(toolVal)) {
-                        actualValue = toolVal.join(" ").trim().toLowerCase();
-                    } else if (typeof toolVal === "number") {
-                        actualValue = toolVal.toString().trim().toLowerCase();
+                    const valAtKey = searchedObj[key as keyof T];
+                    if (typeof valAtKey === "string") {
+                        actualValue = valAtKey.trim().toLowerCase();
+                    } else if (Array.isArray(valAtKey)) {
+                        actualValue = valAtKey.join(" ").trim().toLowerCase();
+                    } else if (typeof valAtKey === "number") {
+                        actualValue = valAtKey.toString().trim().toLowerCase();
                     }
                 }
 
-                // get all (space separated) words in actualValue for tool (for DL)
+                // get all (space separated) words in actualValue for searchedObj (for DL)
                 const actualValueWords = actualValue.split(" ");
                 actualValue = sanitizeString(actualValue, STRING_REPLACEMENTS);
 
@@ -313,8 +377,8 @@ export function searchToolsByKeys(
                 const wordMatches = Array.from(new Set(actualValueWords.filter((word) => queryWords.includes(word))));
                 if (!usesDL) {
                     if (actualValue.match(queryValue)) {
-                        // if string.match() returns true, matching tool found
-                        matchedTools.push({ id: tool.id, order });
+                        // if string.match() returns true, matching searchedObj found
+                        matchedResults.push({ id: searchedObj.id, order });
                         break;
                     } else if (
                         key === "combined" &&
@@ -322,23 +386,23 @@ export function searchToolsByKeys(
                         wordMatches.length >= MINIMUM_WORD_MATCH
                     ) {
                         // we are looking at combined name+description, and there are enough word matches
-                        matchedTools.push({ id: tool.id, order: keys.wordMatch });
+                        matchedResults.push({ id: searchedObj.id, order: keys.wordMatch });
                         break;
                     }
                 } else if (usesDL) {
                     // if string.match() returns false, try DL distance once to see if there is a closestSubstring
                     let substring = null;
-                    if ((key == "name" || key == "description") && queryValue.length >= MINIMUM_DL_LENGTH) {
+                    if (nameKeys.includes(key) && queryValue.length >= MINIMUM_DL_LENGTH) {
                         substring = closestSubstring(queryValue, actualValue);
                     }
-                    // there is a closestSubstring: matching tool found
+                    // there is a closestSubstring: matching searchedObj found
                     if (substring) {
                         // get the closest matching term for substring
                         const foundTerm = matchingTerm(actualValueWords, substring);
                         if (foundTerm && (!closestTerm || (closestTerm && foundTerm.length < closestTerm.length))) {
                             closestTerm = foundTerm;
                         }
-                        matchedTools.push({ id: tool.id, order });
+                        matchedResults.push({ id: searchedObj.id, order });
                         break;
                     }
                 }
@@ -346,25 +410,24 @@ export function searchToolsByKeys(
         }
     }
     // no results with string.match(): recursive call with usesDL
-    if (!filteredQuery && !usesDL && matchedTools.length == 0) {
-        return searchToolsByKeys(tools, keys, query, panelView, currentPanel, true);
+    if (!filteredQuery && !usesDL && matchedResults.length == 0) {
+        return searchObjectsByKeys(objects, keys, query, nameKeys, true);
     }
-    const { idResults, resultPanel } = createSortedResultObject(matchedTools, currentPanel);
-    return { results: idResults, resultPanel: resultPanel, closestTerm: closestTerm };
+    return {
+        matchedResults,
+        closestTerm,
+    };
 }
 
 /**
  * Orders the matchedTools by order of keys that are being searched, and creates a resultPanel
- * @param matchedTools containing { id: tool id, sections: [section ids], order: order }
+ * @param matchedTools containing { id: tool id, order: order }
  * @param currentPanel current ToolPanel for current view
  * @returns an object containing
  * - idResults: array of tool ids that match the query
  * - resultPanel: a ToolPanel with only the results
  */
-export function createSortedResultObject(
-    matchedTools: SearchMatch[],
-    currentPanel: Record<string, Tool | ToolSection>,
-) {
+export function createSortedResultPanel(matchedTools: SearchMatch[], currentPanel: Record<string, Tool | ToolSection>) {
     const idResults: string[] = [];
     // creating a sectioned results object ({section_id: [tool ids], ...}), keeping
     // track unique ids of each tool, and also sorting by indexed order of keys

@@ -1,152 +1,96 @@
-<template>
-    <div
-        v-infinite-scroll="loadTools"
-        class="tools-list-table"
-        infinite-scroll-distance="200"
-        infinite-scroll-disabled="busy">
-        <ToolsListItem
-            v-for="item of buffer"
-            :id="item.id"
-            :key="item.id"
-            :name="item.name"
-            :section="item.panel_section_name"
-            :ontologies="item.ontologies"
-            :description="item.description"
-            :summary="item.summary"
-            :help="item.help"
-            :local="item.target === 'galaxy_main'"
-            :link="item.link"
-            :owner="item.tool_shed_repository && item.tool_shed_repository.owner"
-            :workflow-compatible="item.is_workflow_compatible"
-            :version="item.version"
-            @open="() => onOpen(item)" />
-        <div>
-            <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>
-            <b-overlay :show="busy" opacity="0.5" />
-        </div>
-    </div>
-</template>
+<script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { watchEffect } from "vue";
 
-<script>
-import { useGlobalUploadModal } from "composables/globalUploadModal";
-import Vue from "vue";
-import infiniteScroll from "vue-infinite-scroll";
+import { type Tool, useToolStore } from "@/stores/toolStore";
 
-import { fetchData } from "./services";
-import ToolsListItem from "./ToolsListItem";
+import LoadingSpan from "../LoadingSpan.vue";
+import ScrollList from "../ScrollList/ScrollList.vue";
+import ToolsListCard from "./ToolsListCard.vue";
 
-const defaultBufferLen = 4;
-const loadTimeout = 100;
+/** Number of tools to fetch the help data for at a time. */
+const FETCH_LIMIT = 4;
 
-export default {
-    components: { ToolsListItem },
-    directives: { infiniteScroll },
-    props: {
-        tools: {
-            type: Array,
-            default: null,
-        },
-    },
-    setup() {
-        const { openGlobalUploadModal } = useGlobalUploadModal();
-        return { openGlobalUploadModal };
-    },
-    data() {
-        return {
-            allLoaded: false,
-            bufferLen: 0,
-            busy: false,
-        };
-    },
-    computed: {
-        buffer() {
-            return this.tools.slice(0, this.bufferLen).map((tool) => {
-                return {
-                    ...tool,
-                    ontologies: tool.edam_operations.concat(tool.edam_topics),
-                };
-            });
-        },
-    },
-    created() {
-        this.loadTools();
-    },
-    methods: {
-        onOpen(tool) {
-            if (tool.id === "upload1") {
-                this.openGlobalUploadModal();
-            } else if (tool.form_style === "regular") {
-                // encode spaces in tool.id
-                const toolId = tool.id;
-                const toolVersion = tool.version;
-                this.$router.push({ path: `/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}` });
-            }
-        },
-        loadTools() {
-            if (this.tools && !this.busy && this.bufferLen < this.tools.length) {
-                this.busy = true;
-                setTimeout(() => {
-                    this.bufferLen += defaultBufferLen;
-                    this.tools.slice(this.bufferLen - defaultBufferLen, this.bufferLen).forEach(async (tool) => {
-                        await this.fetchHelp(tool);
-                    });
-                    this.busy = false;
-                }, loadTimeout);
-            } else if (this.bufferLen >= this.tools.length) {
-                this.allLoaded = true;
-            }
-        },
-        async fetchHelp(tool) {
-            await fetchData(`api/tools/${encodeURIComponent(tool.id)}/build`).then((response) => {
-                const help = response.help;
-                Vue.set(tool, "_showDetails", false); // maybe not needed
-                if (help && help != "\n") {
-                    Vue.set(tool, "help", help);
-                    Vue.set(tool, "summary", this.parseHelp(help));
-                } else {
-                    Vue.set(tool, "help", ""); // for cases where helpText == '\n'
-                }
-            });
-        },
-        parseHelp(help) {
-            let summary = "";
-            const parser = new DOMParser();
-            const helpDoc = parser.parseFromString(help, "text/html");
-            const xpaths = [
-                "//strong[text()='What it does']/../following-sibling::*",
-                "//strong[text()='What It Does']/../following-sibling::*",
-                "//h1[text()='Synopsis']/following-sibling::*",
-                "//strong[text()='Syntax']/../following-sibling::*",
-            ];
-            const matches = [];
-            xpaths.forEach((xpath) => {
-                matches.push(
-                    helpDoc.evaluate(xpath, helpDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue,
-                );
-            });
-            matches.forEach((match) => {
-                if (match) {
-                    summary += match.innerHTML + "\n";
-                }
-            });
-            return summary;
-        },
-    },
-};
+/** Number of tools to prefetch help data for beyond the current offset. */
+const PREFETCH_AHEAD = 8;
+
+const props = defineProps<{
+    tools: Tool[];
+    loading?: boolean;
+    hasOwnerFilter?: boolean;
+    gridView?: boolean;
+}>();
+
+const toolStore = useToolStore();
+const { helpDataCached } = storeToRefs(toolStore);
+
+async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]; total: number }> {
+    const items = props.tools.slice(offset, offset + limit);
+
+    // Fetch help data for the latest batch
+    const helpPromises = items.map((tool) => toolStore.fetchHelpForId(tool.id));
+    await Promise.all(helpPromises);
+
+    // We prefetch help data for the next PREFETCH_AHEAD tools, so it's already ready when the user scrolls
+    const nextOffset = offset + limit;
+    const nextItems = props.tools.slice(nextOffset, nextOffset + PREFETCH_AHEAD);
+    if (nextItems.length > 0) {
+        Promise.all(nextItems.map((tool) => toolStore.fetchHelpForId(tool.id)));
+    }
+
+    return { items, total: props.tools.length };
+}
+
+// Watch for changes in tools array to preload initial help data
+watchEffect(() => {
+    if (props.tools.length > 0) {
+        const initialItems = props.tools.slice(0, FETCH_LIMIT + PREFETCH_AHEAD);
+        Promise.all(initialItems.map((tool) => toolStore.fetchHelpForId(tool.id)));
+    }
+});
 </script>
 
-<style lang="scss" scoped>
-@import "theme/blue.scss";
+<template>
+    <ScrollList
+        ref="root"
+        :loader="loadTools"
+        :limit="FETCH_LIMIT"
+        :item-key="(tool) => tool.id"
+        :prop-total-count="props.tools.length"
+        :prop-busy="props.loading"
+        name="tool"
+        name-plural="tools"
+        :load-disabled="!props.tools.length"
+        show-count-in-footer
+        :grid-view="props.gridView"
+        no-footer>
+        <template v-slot:loading>
+            <BAlert v-if="props.tools.length" show>
+                <LoadingSpan message="Loading tools" />
+            </BAlert>
+        </template>
 
-.tools-list-table {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-
-    .list-end {
-        width: 100%;
-        text-align: center;
-        color: $text-light;
-    }
-}
-</style>
+        <template v-slot:item="{ item }">
+            <ToolsListCard
+                :id="item.id"
+                :key="item.id"
+                :name="item.name"
+                :section="item.panel_section_name || undefined"
+                :edam-operations="item.edam_operations"
+                :edam-topics="item.edam_topics"
+                :description="item.description"
+                :fetching="!helpDataCached[item.id]"
+                :form-style="item.form_style"
+                :summary="helpDataCached[item.id]?.summary"
+                :help="helpDataCached[item.id]?.help"
+                :local="item.target === 'galaxy_main'"
+                :link="item.link"
+                :owner="props.hasOwnerFilter && item.tool_shed_repository ? item.tool_shed_repository.owner : undefined"
+                :workflow-compatible="item.is_workflow_compatible"
+                :version="item.version"
+                :grid-view="props.gridView"
+                @apply-filter="(filter, value) => $emit('apply-filter', filter, value)" />
+        </template>
+    </ScrollList>
+</template>

@@ -1,19 +1,18 @@
-<script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import { faCheck, faCube, faCubes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
-library.add(faCheck, faCubes, faCube);
-const props = defineProps({
-    version: {
-        type: String,
-        required: true,
-    },
-    versions: {
-        type: Array,
-        default: null,
-    },
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+interface Props {
+    version: string;
+    versions: string[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    versions: () => [],
 });
 
 const emit = defineEmits(["onChangeVersion"]);
@@ -22,28 +21,29 @@ const availableVersions = computed(() => [...props.versions].reverse());
 </script>
 
 <template>
-    <b-dropdown
-        v-b-tooltip.hover
+    <BDropdown
         no-caret
         right
         role="button"
-        title="Versions"
         variant="link"
         aria-label="Select Versions"
         class="tool-versions"
+        toggle-class="p-0"
         size="sm">
         <template v-slot:button-content>
-            <FontAwesomeIcon icon="fas fa-cubes" />
+            <GButton class="d-block" color="blue" transparent size="small" tooltip title="Versions">
+                <FontAwesomeIcon :icon="faCubes" />
+            </GButton>
         </template>
-        <b-dropdown-item
+        <BDropdownItem
             v-for="v of availableVersions"
             :key="v"
             :active="v === props.version"
             @click="() => emit('onChangeVersion', v)">
             <span v-if="v !== props.version">
-                <FontAwesomeIcon icon="fas fa-cube" /> <span v-localize>Switch to</span> {{ v }}
+                <FontAwesomeIcon :icon="faCube" /> <span v-localize>Switch to</span> {{ v }}
             </span>
-            <span v-else> <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>Selected</span> {{ v }} </span>
-        </b-dropdown-item>
-    </b-dropdown>
+            <span v-else> <FontAwesomeIcon :icon="faCheck" /> <span v-localize>Selected</span> {{ v }} </span>
+        </BDropdownItem>
+    </BDropdown>
 </template>

@@ -7,6 +7,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: "input", value: string | null): void;
+    (e: "keydown", event: KeyboardEvent): void;
 }>();
 
 const inputValue = computed({
@@ -20,7 +21,7 @@ const inputValue = computed({
 </script>
 
 <template>
-    <input v-model="inputValue" class="g-form-input" />
+    <input v-model="inputValue" class="g-form-input" @keydown="(event) => emit('keydown', event)" />
 </template>
 
 <style scoped lang="scss">

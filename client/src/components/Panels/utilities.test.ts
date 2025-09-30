@@ -1,13 +1,16 @@
-import toolsList from "components/ToolsView/testData/toolsList";
-import toolsListInPanel from "components/ToolsView/testData/toolsListInPanel";
+// eslint-disable-next-line simple-import-sort/imports
+import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
+import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
 
 import {
-    createSortedResultObject,
+    createSortedResultPanel,
     createWhooshQuery,
     determineWidth,
     filterTools,
-    searchToolsByKeys,
+    searchObjectsByKeys,
+    type SearchCommonKeys,
 } from "./utilities";
+import type { Tool, ToolSection } from "@/stores/toolStore";
 
 describe("test helpers in tool searching utilities and panel handling", () => {
     it("panel width determination", () => {
@@ -17,6 +20,9 @@ describe("test helpers in tool searching utilities and panel handling", () => {
         expect(widthB).toBe(340);
     });
 });
+
+const toolsList = toolsListUntyped as unknown as Tool[];
+const toolsListInPanel = toolsListInPanelUntyped as unknown as Record<string, Tool | ToolSection>;
 
 const tempToolPanel = {
     default: {
@@ -45,10 +51,27 @@ const tempToolsList = {
             id: "umi_tools_reduplicate",
             name: "UMI-tools reduplicate",
         },
-    },
+    } as unknown as Record<string, Tool>,
 };
 
 describe("test helpers in tool searching utilities", () => {
+    // Intentionally did not import the `searchTools` function from the util file
+    // to be able to test different key sort orders here.
+    function searchToolsByKeys(
+        tools: Tool[],
+        keys: SearchCommonKeys,
+        query: string,
+        currentPanel: Record<string, Tool | ToolSection>,
+    ): {
+        results: string[];
+        resultPanel: Record<string, Tool | ToolSection>;
+        closestTerm: string | null;
+    } {
+        const { matchedResults, closestTerm } = searchObjectsByKeys<Tool>(tools, keys, query, ["name", "description"]);
+        const { idResults, resultPanel } = createSortedResultPanel(matchedResults, currentPanel);
+        return { results: idResults, resultPanel: resultPanel, closestTerm: closestTerm };
+    }
+
     it("test parsing helper that converts settings to whoosh query", async () => {
         const settings = {
             name: "Filter",
@@ -56,7 +79,7 @@ describe("test helpers in tool searching utilities", () => {
             help: "downstream",
             owner: "devteam",
         };
-        const q = createWhooshQuery(settings, "default", []);
+        const q = createWhooshQuery(settings);
 
         // OrGroup (at backend) on name, name_exact, description
         expect(q).toContain("name:(Filter) name_exact:(Filter) description:(Filter)");
@@ -69,7 +92,13 @@ describe("test helpers in tool searching utilities", () => {
     });
 
     it("test tool search helper that searches for tools given keys", async () => {
-        const searches = [
+        const searches: {
+            q: string;
+            expectedResults: string[];
+            keys: SearchCommonKeys;
+            tools: Tool[];
+            panel: Record<string, Tool | ToolSection>;
+        }[] = [
             {
                 // description prioritized
                 q: "collection",
@@ -165,7 +194,7 @@ describe("test helpers in tool searching utilities", () => {
             },
         ];
         searches.forEach((search) => {
-            const { results } = searchToolsByKeys(search.tools, search.keys, search.q, "default", search.panel);
+            const { results } = searchToolsByKeys(search.tools, search.keys, search.q, search.panel);
             expect(results).toEqual(search.expectedResults);
         });
     });
@@ -176,20 +205,20 @@ describe("test helpers in tool searching utilities", () => {
         // Testing if just names work with DL search
         const filterQueries = ["Fillter", "FILYER", " Fitler", " filtr"];
         filterQueries.forEach((q) => {
-            const { results, closestTerm } = searchToolsByKeys(toolsList, keys, q, "default", toolsListInPanel);
+            const { results, closestTerm } = searchToolsByKeys(toolsList, keys, q, toolsListInPanel);
             expect(results).toEqual(expectedResults);
             expect(closestTerm).toEqual("filter");
         });
         // Testing if names and description function with DL search
         let queries = ["datases from a collection", "from a colleection", "from a colleection"];
         queries.forEach((q) => {
-            const { results } = searchToolsByKeys(toolsList, keys, q, "default", toolsListInPanel);
+            const { results } = searchToolsByKeys(toolsList, keys, q, toolsListInPanel);
             expect(results).toEqual(expectedResults);
         });
         // Testing if different length queries correctly trigger changes in max DL distance
         queries = ["datae", "ppasetsfrom", "datass from a cppollection"];
         queries.forEach((q) => {
-            const { results } = searchToolsByKeys(toolsList, keys, q, "default", toolsListInPanel);
+            const { results } = searchToolsByKeys(toolsList, keys, q, toolsListInPanel);
             expect(results).toEqual(expectedResults);
         });
     });
@@ -197,16 +226,17 @@ describe("test helpers in tool searching utilities", () => {
     it("test tool filtering helpers on toolsList given list of ids", async () => {
         const ids = ["__FILTER_FAILED_DATASETS__", "liftOver1"];
         // check length of first section from imported const toolsList
-        expect(toolsListInPanel["collection_operations"].tools).toHaveLength(4);
+        const collectionOperationsSection = toolsListInPanel["collection_operations"] as ToolSection;
+        expect(collectionOperationsSection.tools).toHaveLength(4);
         // check length of same section from filtered toolsList
         const matchedTools = ids.map((id) => {
             return { id: id, sections: [], order: 0 };
         });
-        const toolResultsPanel = createSortedResultObject(matchedTools, toolsListInPanel);
-        const toolResultsSection = toolResultsPanel.resultPanel["collection_operations"];
+        const toolResultsPanel = createSortedResultPanel(matchedTools, toolsListInPanel);
+        const toolResultsSection = toolResultsPanel.resultPanel["collection_operations"] as ToolSection;
         expect(toolResultsSection.tools).toHaveLength(1);
         // check length of filtered tools (regardless of sections)
-        const toolsById = toolsList.reduce((acc, item) => {
+        const toolsById = toolsList.reduce<Record<string, Tool>>((acc, item) => {
             acc[item.id] = item;
             return acc;
         }, {});

@@ -2,11 +2,12 @@
  * Requests tools, and various panel views
  */
 
-import axios from "axios";
+import axios, { type AxiosResponse } from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
-import { createWhooshQuery, filterTools, type types_to_icons } from "@/components/Panels/utilities";
+import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
+import { parseHelpForSummary } from "@/components/ToolsList/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -51,6 +52,12 @@ export interface Tool {
     form_style: string;
     disabled?: boolean;
     icon?: string;
+    tool_shed_repository?: {
+        name: string;
+        owner: string;
+        changeset_revision: string;
+        tool_shed: string;
+    };
 }
 
 export interface ToolSection {
@@ -74,6 +81,11 @@ export interface ToolSectionLabel {
     links?: Record<string, string> | null;
 }
 
+export type ToolHelpData = {
+    help?: string;
+    summary?: string;
+};
+
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const defaultPanelView: Ref<string> = ref("");
@@ -83,6 +95,8 @@ export const useToolStore = defineStore("toolStore", () => {
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, Tool | ToolSection>>>({});
+    const fetchedHelpIds = ref<Set<string>>(new Set());
+    const helpDataCached = ref<Record<string, ToolHelpData>>({});
 
     const currentToolSections = computed(() => {
         const effectiveView = currentPanelView.value;
@@ -90,11 +104,10 @@ export const useToolStore = defineStore("toolStore", () => {
     });
 
     const getToolsById = computed(() => {
-        return (filterSettings: FilterSettings) => {
-            if (Object.keys(filterSettings).length === 0) {
+        return (q?: string) => {
+            if (!q?.trim()) {
                 return toolsById.value;
             } else {
-                const q = createWhooshQuery(filterSettings);
                 return filterTools(toolsById.value, toolResults.value[q] || []);
             }
         };
@@ -137,7 +150,7 @@ export const useToolStore = defineStore("toolStore", () => {
                     sec.id !== "builtin_converters" &&
                     sec.name !== undefined
                 );
-            });
+            }) as ToolSection[];
         };
     });
 
@@ -151,7 +164,7 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function fetchToolSections(panelView: string) {
         try {
-            if (!toolSections.value[panelView]) {
+            if (panelView && !toolSections.value[panelView]) {
                 loading.value = true;
                 const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
                 saveToolSections(panelView, data);
@@ -184,12 +197,14 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    async function fetchTools(filterSettings?: FilterSettings) {
+    async function fetchTools(q?: string) {
         try {
+            loading.value = true;
             // Backend search
-            if (filterSettings && Object.keys(filterSettings).length !== 0) {
-                const q = createWhooshQuery(filterSettings);
-                if (!toolResults.value[q]) {
+            if (q?.trim()) {
+                // We have either cached the backend search result,
+                // or it is a favorites search (which we always repeat for changes)
+                if (!toolResults.value[q] || FAVORITES_KEYS.includes(q.trim())) {
                     const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
                     saveToolResults(q, data);
                 }
@@ -197,7 +212,6 @@ export const useToolStore = defineStore("toolStore", () => {
 
             // Fetch all tools by IDs if not already fetched
             if (Object.keys(toolsById.value).length === 0) {
-                loading.value = true;
                 const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
                 saveAllTools(data as Tool[]);
             }
@@ -205,6 +219,33 @@ export const useToolStore = defineStore("toolStore", () => {
             rethrowSimple(e);
         } finally {
             loading.value = false;
+        }
+    }
+
+    async function fetchHelpForId(toolId: string) {
+        try {
+            if (!helpDataCached.value[toolId] && !fetchedHelpIds.value.has(toolId)) {
+                fetchedHelpIds.value.add(toolId);
+
+                const toolHelpData: ToolHelpData = {};
+
+                const { data } = (await axios.get(
+                    `${getAppRoot()}api/tools/${encodeURIComponent(toolId)}/build`,
+                )) as AxiosResponse<ToolHelpData>;
+
+                const help = data.help;
+                if (help && help !== "\n") {
+                    toolHelpData.help = help;
+                    toolHelpData.summary = parseHelpForSummary(help);
+                } else {
+                    toolHelpData.help = ""; // for cases where helpText == '\n'
+                }
+
+                Vue.set(helpDataCached.value, toolId, toolHelpData);
+            }
+        } catch (error) {
+            console.error("Error fetching help:", error);
+            fetchedHelpIds.value.delete(toolId); // Allow retrying on next request
         }
     }
 
@@ -252,10 +293,13 @@ export const useToolStore = defineStore("toolStore", () => {
         currentPanelView,
         currentToolSections,
         defaultPanelView,
+        fetchHelpForId,
+        fetchedHelpIds,
         fetchToolSections,
         fetchPanels,
         fetchToolForId,
         fetchTools,
+        helpDataCached,
         initializePanel,
         isPanelPopulated,
         loading,
@@ -264,10 +308,10 @@ export const useToolStore = defineStore("toolStore", () => {
         getToolsById,
         getInteractiveTools,
         panels,
+        panelSections,
         saveAllTools,
         saveToolForId,
         saveToolResults,
-        saveToolSections,
         searchWorker,
         sectionDatalist,
         setPanel,

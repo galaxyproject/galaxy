@@ -275,3 +275,29 @@ galaxy:
         Enabling this option allows you to select and send outputs and intermediate datasets to different storage
         locations independently of each other.
 
+  tools:
+    ontologies:
+      # Note: This description is directly copied from https://edamontology.org/
+      description: |
+        EDAM is a comprehensive ontology of well-established, familiar concepts that are prevalent within computational biology,
+        bioinformatics, and bioimage informatics.
+
+        EDAM includes types of data and data identifiers, data formats, operations, and topics related to data analysis in life
+        sciences. It provides a set of concepts with preferred terms and synonyms, related terms, definitions, and other
+        information—organized into a simple and intuitive hierarchy for convenient use.
+
+        More information about EDAM can be found at [the official EDAM website](https://edamontology.org/).
+      topic: |
+        An EDAM topic represents a broad scientific domain or field of study which can be used to categorize Galaxy tools.
+
+        In Galaxy, tools annotated with topic EDAM ids are automatically grouped together in the topic-based `EDAM Topics`
+        panel view, helping users discover tools relevant to their research area (e.g., sequence analysis, proteomics, phylogenetics).
+
+        Topics have no clearly defined borders and can overlap between different research domains.
+      operation: |
+        An EDAM operation describes the specific computational function that a tool can perform.
+
+        Operations define what a tool does by processing inputs to produce outputs (e.g., sequence alignment, format conversion, statistical analysis).
+
+        In Galaxy, tools annotated with operation terms are automatically organized in the operation-based `EDAM Operations`
+        panel view, allowing users to find tools based on the type of analysis they want to perform.

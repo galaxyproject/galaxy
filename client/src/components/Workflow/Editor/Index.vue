@@ -42,12 +42,7 @@
             :hide-panel="reportActive"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
-                <ToolPanel
-                    v-if="isActiveSideBar('workflow-editor-tools')"
-                    workflow
-                    @onInsertTool="onInsertTool"
-                    @onInsertWorkflow="onInsertWorkflow"
-                    @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
                 <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
