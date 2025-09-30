@@ -28,7 +28,7 @@ jobs:
             return response.data;
       - name: Add area labels
         if: ${{ ! contains(join(fromJSON(steps.get_pr_labels.outputs.result).*.name, ', '), 'area/') }}
-        uses: actions/labeler@v5
+        uses: actions/labeler@v6
       - name: Assign milestone
         if: |
           ! github.event.pull_request.milestone &&
