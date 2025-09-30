@@ -41,6 +41,7 @@ from galaxy.structured_app import (
     StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tool_util.parameters import JobInternalToolState
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
@@ -214,11 +215,13 @@ class ToolEvaluator:
             self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
         else:
+            tool_state = JobInternalToolState(job.tool_state)
             self.param_dict = self.build_param_dict(
                 incoming,
                 inp_data,
                 out_data,
                 output_collections=out_collections,
+                validated_tool_state=tool_state,
             )
 
     def execute_tool_hooks(self, inp_data: InpDataDictT, out_data: OutDataDictT, incoming):
@@ -236,6 +239,7 @@ class ToolEvaluator:
         input_datasets: InpDataDictT,
         output_datasets: OutDataDictT,
         output_collections: OutCollectionsDictT,
+        validated_tool_state: Optional[JobInternalToolState] = None,
     ):
         """
         Build the dictionary of parameters for substituting into the command
@@ -1064,6 +1068,7 @@ class UserToolEvaluator(ToolEvaluator):
         input_datasets: InpDataDictT,
         output_datasets: OutDataDictT,
         output_collections: OutCollectionsDictT,
+        validated_tool_state: Optional[JobInternalToolState] = None,
     ):
         """
         Build the dictionary of parameters for substituting into the command
@@ -1071,10 +1076,14 @@ class UserToolEvaluator(ToolEvaluator):
         """
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
-        from galaxy.workflow.modules import to_cwl
+        from galaxy.tool_util.parameters.convert import runtimeify
+        from galaxy.tools.runtime import setup_for_runtimeify
 
-        hda_references: list[model.HistoryDatasetAssociation] = []
-        cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
+        hda_references, adapt_datasets = setup_for_runtimeify(self.app, compute_environment, input_datasets)
+        job_runtime_state = runtimeify(validated_tool_state, self.tool, adapt_datasets)
+        print(job_runtime_state.input_state)
+        print(json.dumps(job_runtime_state.input_state, indent=4))
+        cwl_style_inputs = job_runtime_state.input_state
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 
     def _build_command_line(self):

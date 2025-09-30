@@ -25,6 +25,8 @@ from galaxy.tool_util_models.parameters import (
     DataRequestInternalHda,
     DataRequestInternalHdca,
     DataRequestUri,
+    DataRequestInternalDereferencedT,
+    DataInternalJson,
     DiscriminatorType,
     DrillDownParameterModel,
     FloatParameterModel,
@@ -44,6 +46,7 @@ from galaxy.tool_util_models.tool_source import (
 )
 from .state import (
     JobInternalToolState,
+    JobRuntimeToolState,
     LandingRequestInternalToolState,
     LandingRequestToolState,
     RelaxedRequestToolState,
@@ -525,3 +528,35 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
             return VISITOR_NO_REPLACEMENT
 
     return decode_callback
+
+
+DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
+
+
+def runtimeify(
+    internal_state: JobInternalToolState,
+    input_models: ToolParameterBundle,
+    adapt_dataset: DatasetToRuntimeJson,
+) -> JobRuntimeToolState:
+
+    def to_runtime_callback(parameter: ToolParameterT, value: Any):
+        if isinstance(parameter, DataParameterModel):
+            if parameter.multiple and isinstance(value, list):
+                return list(map(adapt_dataset, value))
+            else:
+                assert isinstance(value, dict), str(value)
+                return adapt_dataset(value)
+        elif isinstance(parameter, DataCollectionParameterModel):
+            assert isinstance(value, dict), str(value)
+            raise NotImplementedError("Moocow...")
+        else:
+            return VISITOR_NO_REPLACEMENT
+
+    runtime_state_dict = visit_input_values(
+        input_models,
+        internal_state,
+        to_runtime_callback,
+    )
+    runtime_state = JobRuntimeToolState(runtime_state_dict)
+    runtime_state.validate(input_models)
+    return runtime_state
