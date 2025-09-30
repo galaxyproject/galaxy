@@ -14259,7 +14259,7 @@ export interface components {
              */
             name?: string | null;
             /**
-             * Precreate Directory
+             * precreate_directory
              * @default false
              */
             precreate_directory: boolean | null;

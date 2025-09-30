@@ -3181,7 +3181,7 @@ export interface components {
              */
             name: string
             /**
-             * Precreate Directory
+             * precreate_directory
              * @default false
              */
             precreate_directory: boolean | null
