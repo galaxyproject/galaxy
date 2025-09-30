@@ -1394,6 +1394,7 @@ class ToolSource(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
     source: Mapped[dict] = mapped_column(JSONType)
+    source_class: Mapped[str] = mapped_column(TrimmedString(255))
 
 
 class ToolRequest(Base, Dictifiable, RepresentById):
@@ -1403,7 +1404,7 @@ class ToolRequest(Base, Dictifiable, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tool_source_id: Mapped[int] = mapped_column(ForeignKey("tool_source.id"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=False)
     request: Mapped[dict] = mapped_column(JSONType)
     state: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True)
     state_message: Mapped[Optional[str]] = mapped_column(JSONType, index=True)
@@ -1619,6 +1620,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
     object_store_id_overrides: Mapped[Optional[dict[str, Optional[str]]]] = mapped_column(JSONType)
     tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
+    tool_state: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
 
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     tool_request: Mapped[Optional["ToolRequest"]] = relationship(back_populates="jobs")
@@ -1764,6 +1766,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.exit_code = job.exit_code
         self.job_runner_name = job.job_runner_name
         self.job_runner_external_id = job.job_runner_external_id
+        self.tool_state = job.tool_state
         if copy_outputs:
             assert self.history
             requires_addition_to_history = False
@@ -2205,6 +2208,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_attrs["create_time"] = self.create_time.isoformat()
         job_attrs["update_time"] = self.update_time.isoformat()
         job_attrs["job_messages"] = self.job_messages
+        job_attrs["tool_state"] = self.tool_state
 
         # Get the job's parameters
         param_dict = self.raw_param_dict()
@@ -2317,11 +2321,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def set_final_state(self, final_state):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
-        statement = text("""
+        statement = text(
+            """
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
-        """)
+        """
+        )
         sa_session = required_object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
@@ -2351,15 +2357,18 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = [
-            text("""
+            text(
+                """
             UPDATE dataset
             SET
                 state = :state,
                 update_time = :update_time
             WHERE
                 dataset.job_id = :job_id
-        """),
-            text("""
+        """
+            ),
+            text(
+                """
             UPDATE history_dataset_association
             SET
                 info = :info,
@@ -2368,8 +2377,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             WHERE
                 history_dataset_association.dataset_id = dataset.id
                 AND dataset.job_id = :job_id;
-        """),
-            text("""
+        """
+            ),
+            text(
+                """
             UPDATE library_dataset_dataset_association
             SET
                 info = :info,
@@ -2378,7 +2389,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             WHERE
                 library_dataset_dataset_association.dataset_id = dataset.id
                 AND dataset.job_id = :job_id;
-        """),
+        """
+            ),
         ]
         sa_session = required_object_session(self)
         update_time = now()
@@ -6464,8 +6476,10 @@ class LibraryDataset(Base, Serializable):
     )
     expired_datasets: Mapped[list["LibraryDatasetDatasetAssociation"]] = relationship(
         foreign_keys=[id, library_dataset_dataset_association_id],
-        primaryjoin=("and_(LibraryDataset.id == LibraryDatasetDatasetAssociation.library_dataset_id, \
-             not_(LibraryDataset.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.id))"),
+        primaryjoin=(
+            "and_(LibraryDataset.id == LibraryDatasetDatasetAssociation.library_dataset_id, \
+             not_(LibraryDataset.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.id))"
+        ),
         viewonly=True,
         uselist=True,
     )
@@ -6716,7 +6730,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         # sets the update_time for all continaing folders up the tree
         ldda = self
 
-        sql = text("""
+        sql = text(
+            """
                 WITH RECURSIVE parent_folders_of(folder_id) AS
                     (SELECT folder_id
                     FROM library_dataset
@@ -6732,7 +6747,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
                     WHERE id = :ldda_id)
                 WHERE exists (SELECT 1 FROM parent_folders_of
                     WHERE library_folder.id = parent_folders_of.folder_id)
-            """)
+            """
+        )
 
         with required_object_session(self).bind.connect() as conn, conn.begin():
             ret = conn.execute(sql, {"library_dataset_id": ldda.library_dataset_id, "ldda_id": ldda.id})
