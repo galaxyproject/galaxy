@@ -1,6 +1,5 @@
 const path = require("path");
 const fs = require("fs-extra");
-const del = require("del");
 const { parallel, series } = require("gulp");
 const child_process = require("child_process");
 const { globSync } = require("glob");
@@ -51,7 +50,7 @@ function stageLibs(callback) {
             const p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
             const p2 = path.resolve(path.join("src", "libs", PATHS.stagedLibraries[lib][1]));
             if (fs.existsSync(p1)) {
-                del.sync(p2);
+                fs.removeSync(p2);
                 fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
             } else {
                 throw new Error(
