@@ -611,17 +611,9 @@ class WorkflowProgress:
             outputs[invocation_step.output_value.workflow_output.output_name] = invocation_step.output_value.value
         self.outputs[step.id] = outputs
         if not already_persisted:
-            workflow_outputs_by_name = {wo.output_name: wo for wo in step.workflow_outputs}
             for output_name, output_object in outputs.items():
                 if hasattr(output_object, "history_content_type"):
                     invocation_step.add_output(output_name, output_object)
-                else:
-                    # Add this non-data, non workflow-output output to the workflow outputs.
-                    # This is required for recovering the output in the next scheduling iteration,
-                    # and should be replaced with a WorkflowInvocationStepOutputValue ASAP.
-                    if not workflow_outputs_by_name.get(output_name) and output_object is not NO_REPLACEMENT:
-                        workflow_output = model.WorkflowOutput(step, output_name=output_name)
-                        step.workflow_outputs.append(workflow_output)
             for workflow_output in step.workflow_outputs:
                 assert workflow_output.output_name
                 output_name = workflow_output.output_name
