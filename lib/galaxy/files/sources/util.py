@@ -115,65 +115,6 @@ def _get_access_info(obj_url: str, access_method: dict, headers: Optional[dict] 
     return url, headers_as_dict
 
 
-def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict] = None) -> None:
-    """Download file from S3 URL directly using s3fs or requests (for signed URLs)."""
-    try:
-        # If the URL has query parameters (signed URL), use requests directly
-        if "?" in s3_url and ("X-Amz-Algorithm" in s3_url or "Signature" in s3_url):
-            log.debug(f"Using requests for signed S3 URL")
-            response = requests.get(s3_url, headers=headers or {}, timeout=DEFAULT_SOCKET_TIMEOUT, stream=True)
-            response.raise_for_status()
-
-            with open(target_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
-                    f.write(chunk)
-            return
-
-        # For raw S3 URLs, try s3fs with different access patterns
-        log.debug(f"Using s3fs for S3 URL: {s3_url}")
-        import s3fs
-
-        s3_path = s3_url[5:]  # Remove 's3://' prefix
-
-        # Try different S3 access methods in order of preference
-        access_methods = [
-            ("anonymous", lambda: s3fs.S3FileSystem(anon=True)),
-            ("authenticated", lambda: s3fs.S3FileSystem()),
-            ("requester_pays", lambda: s3fs.S3FileSystem(requester_pays=True)),
-        ]
-
-        last_error = None
-        for method_name, fs_factory in access_methods:
-            try:
-                fs = fs_factory()
-                with fs.open(s3_path, "rb") as s3_file:
-                    with open(target_path, "wb") as local_file:
-                        while True:
-                            chunk = s3_file.read(CHUNK_SIZE)
-                            if not chunk:
-                                break
-                            local_file.write(chunk)
-                log.debug(f"S3 download successful using {method_name} access")
-                return
-            except Exception as e:
-                log.debug(f"S3 {method_name} access failed: {e}")
-                last_error = e
-                continue
-
-        # If all methods failed, raise the last error
-        if last_error:
-            raise last_error
-
-    except ImportError as e:
-        raise ImportError("s3fs package is required for S3 URL support") from e
-    except requests.exceptions.RequestException as e:
-        log.debug(f"S3 HTTP download failed: {e}")
-        raise
-    except Exception as e:
-        log.debug(f"S3 download failed: {e}")
-        raise
-
-
 class CompactIdentifierResolver:
     _instance: Optional["CompactIdentifierResolver"] = None
     _initialized: bool = False

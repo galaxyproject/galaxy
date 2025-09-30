@@ -162,8 +162,14 @@ class ConfiguredFileSources:
             _ensure_loaded("base64")
             _ensure_loaded("drs")
             _ensure_loaded("remoteZip")
-            # Do we actually want to do this here, if we're doing drs+s3fs?
-            _ensure_loaded("s3fs")
+            # Load s3fs with anonymous access for public DRS S3 URLs
+            s3fs_configured = False
+            for file_source in file_sources:
+                if file_source.plugin_type == "s3fs":
+                    s3fs_configured = True
+                    break
+            if not s3fs_configured:
+                stock_file_source_conf_dict.append({"type": "s3fs", "id": "stock_s3fs", "anon": True})
 
             if file_sources_config.ftp_upload_dir is not None:
                 _ensure_loaded("gxftp")
