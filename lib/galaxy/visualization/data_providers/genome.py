@@ -1630,8 +1630,8 @@ def package_gff_feature(feature, no_detail=False, filter_cols=None) -> PAYLOAD_L
     ]
 
     # Add blocks.
-    block_sizes = [(interval.end - interval.start) for interval in feature_intervals]
-    block_starts = [(interval.start - feature.start) for interval in feature_intervals]
+    block_sizes = [(interval.end - interval.start) for interval in feature.intervals]
+    block_starts = [(interval.start - feature.start) for interval in feature.intervals]
     blocks = list(zip(block_sizes, block_starts))
     payload.append([(feature.start + block[1], feature.start + block[1] + block[0]) for block in blocks])
 
