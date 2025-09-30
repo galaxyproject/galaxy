@@ -596,14 +596,14 @@ class DataInternalJson(StrictModel):
     ]
     location: str
     path: Annotated[str, Field(description="The absolute path to the file on disk.")]
-    listing: Optional[List[str]]  # Should be recursive
+    listing: Optional[List[str]] = None  # Should be recursive
     nameroot: Annotated[Optional[str], Field(description="The basename root such that nameroot + nameext == basename")]
     nameext: Annotated[
         Optional[str], Field(description="The basename extension such that nameroot + nameext == basename")
     ]
     format: Annotated[str, Field(description="The datatype extension of the file, e.g. 'txt', 'bam', 'fastq.gz'.")]
     # "secondaryFiles": List[Any],
-    checksum: Optional[str]
+    checksum: Optional[str] = None
     size: int
 
 
@@ -638,9 +638,10 @@ DataRequestInternal: Type = cast(
         Field(discriminator=MultiDataInstanceDiscriminator),
     ],
 )
+DataRequestInternalDereferencedT = Union[DataRequestInternalHda, DataRequestInternalLdda]
 DataRequestInternalDereferenced: Type = cast(
     Type,
-    Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")],
+    Annotated[DataRequestInternalDereferencedT, Field(discriminator="src")],
 )
 DataJobInternal = DataRequestInternalDereferenced
 

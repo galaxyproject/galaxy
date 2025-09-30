@@ -1394,6 +1394,7 @@ class ToolSource(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
     source: Mapped[dict] = mapped_column(JSONType)
+    source_class: Mapped[str] = mapped_column(TrimmedString(255))
 
 
 class ToolRequest(Base, Dictifiable, RepresentById):
@@ -1403,7 +1404,7 @@ class ToolRequest(Base, Dictifiable, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tool_source_id: Mapped[int] = mapped_column(ForeignKey("tool_source.id"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=False)
     request: Mapped[dict] = mapped_column(JSONType)
     state: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True)
     state_message: Mapped[Optional[str]] = mapped_column(JSONType, index=True)
@@ -1619,6 +1620,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
     object_store_id_overrides: Mapped[Optional[dict[str, Optional[str]]]] = mapped_column(JSONType)
     tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
+    tool_state: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType)
 
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     tool_request: Mapped[Optional["ToolRequest"]] = relationship(back_populates="jobs")
@@ -1764,6 +1766,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.exit_code = job.exit_code
         self.job_runner_name = job.job_runner_name
         self.job_runner_external_id = job.job_runner_external_id
+        self.tool_state = job.tool_state
         if copy_outputs:
             assert self.history
             requires_addition_to_history = False
@@ -2205,6 +2208,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_attrs["create_time"] = self.create_time.isoformat()
         job_attrs["update_time"] = self.update_time.isoformat()
         job_attrs["job_messages"] = self.job_messages
+        job_attrs["tool_state"] = self.tool_state
 
         # Get the job's parameters
         param_dict = self.raw_param_dict()

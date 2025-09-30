@@ -303,6 +303,11 @@ def test_convert_to_requests():
 
 def _validate_path(tool_path: str):
     tool_source = get_tool_source(tool_path)
+
+    tool_source_class = type(tool_source).__name__
+    raw_tool_source = tool_source.to_string()
+    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+
     tool_id = tool_source.parse_id()
     model_name = f"{tool_id} (test case model)"
     parsed_tool = parse_tool(tool_source)

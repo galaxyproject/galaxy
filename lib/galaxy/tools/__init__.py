@@ -20,7 +20,6 @@ from typing import (
     cast,
     NamedTuple,
     Optional,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -440,7 +439,7 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
-    ToolClass: Optional[Type[Tool]] = None
+    ToolClass: Optional[type[Tool]] = None
     if tool_source.parse_class() == "GalaxyUserTool":
         ToolClass = UserDefinedTool
     elif (tool_module := tool_source.parse_tool_module()) is not None:
@@ -2461,6 +2460,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             rval = self._execute(
                 trans,
                 incoming=execution_slice.param_combination,
+                validated_parameters=execution_slice.validated_param_combination,
                 history=history,
                 rerun_remap_job_id=rerun_remap_job_id,
                 execution_cache=execution_cache,
@@ -2578,6 +2578,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self,
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        validated_parameters: Optional[JobInternalToolState] = None,
         history: Optional[History] = None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
