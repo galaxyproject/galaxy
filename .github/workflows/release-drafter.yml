@@ -6,8 +6,7 @@ on:
       - dev
       - master
       - 'release_*'
-  pull_request:
-    types: [opened, reopened, synchronize]
+      - 'release-drafter-integration'
   pull_request_target:
     types: [opened, reopened, synchronize]
 
@@ -19,21 +18,26 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    if: github.repository == 'dannon/galaxy'
     runs-on: ubuntu-latest
     steps:
-      - name: Calculate Year Version
-        id: year
-        run: |
-          # Get current year in YY format
-          YEAR=$(date +%y)
-          echo "year=${YEAR}" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          sparse-checkout: |
+            lib/galaxy/version.py
 
-          # Get the latest release to check if year transition is needed
-          # This is optional and can be enhanced with actual API calls
+      - name: Read Galaxy version
+        id: galaxy-version
+        run: |
+          # Extract VERSION_MAJOR from version.py
+          VERSION_MAJOR=$(grep "VERSION_MAJOR" lib/galaxy/version.py | cut -d'"' -f2)
+          echo "version=${VERSION_MAJOR}.0" >> $GITHUB_OUTPUT
+          echo "Galaxy version: ${VERSION_MAJOR}.0"
 
       - uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yml
-          disable-autolabeler: false
+          version: ${{ steps.galaxy-version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

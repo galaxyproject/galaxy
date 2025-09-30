@@ -1,26 +1,15 @@
 # Release Drafter Configuration for Galaxy
 # Implements YY.N.P versioning scheme using existing Galaxy labels
+#
+# IMPORTANT: Galaxy's versioning scheme is YY.N.P where:
+# - YY = Two-digit year (25 for 2025)
+# - N = Feature release number (0, 1, 2... - typically 2-3 per year)
+# - P = Patch/point release number (0, 1, 2, 3...)
+#
+# Year transitions (24→25) must be handled manually when creating releases.
 
-# Version configuration
-version-template: '$MAJOR.$MINOR.$PATCH'
 name-template: 'Galaxy $RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
-
-# Version resolver based on existing Galaxy labels
-version-resolver:
-  major:
-    labels:
-      - 'major'
-  minor:
-    labels:
-      - 'minor'
-      - 'kind/feature'
-      - 'kind/enhancement'
-  patch:
-    labels:
-      - 'kind/bug'
-      - 'kind/refactoring'
-  default: patch
 
 # Categories for organizing release notes using existing Galaxy labels
 categories:
@@ -28,154 +17,67 @@ categories:
     labels:
       - 'major'
       - 'highlight'
-    collapse-after: 5
   - title: '🚀 New Features'
     labels:
       - 'kind/feature'
-    collapse-after: 10
   - title: '🔧 Enhancements'
     labels:
       - 'kind/enhancement'
-    collapse-after: 10
   - title: '🐛 Bug Fixes'
     labels:
       - 'kind/bug'
-    collapse-after: 15
   - title: '🔒 Security Updates'
     labels:
       - 'area/security'
-    collapse-after: 5
   - title: '⚡ Performance'
     labels:
       - 'area/performance'
-    collapse-after: 10
   - title: '🧰 Refactoring'
     labels:
       - 'kind/refactoring'
-    collapse-after: 15
   - title: '📚 Documentation'
     labels:
       - 'area/documentation'
-    collapse-after: 10
   - title: '🔧 Admin & Configuration'
     labels:
       - 'area/admin'
       - 'area/configuration'
-    collapse-after: 10
   - title: '🛠️ API Changes'
     labels:
       - 'area/API'
-    collapse-after: 10
   - title: '🧪 Testing'
     labels:
       - 'area/testing'
       - 'area/testing/api'
       - 'area/testing/integration'
       - 'area/testing/selenium'
-    collapse-after: 15
   - title: '🏗️ Infrastructure & Dependencies'
     labels:
       - 'area/dependencies'
       - 'area/client-build'
-    collapse-after: 10
-  - title: '🔬 Tools & Datatypes'
-    labels:
-      - 'area/tools'
-      - 'area/datatypes'
-      - 'area/tool-framework'
-      - 'area/tool-dependencies'
-    collapse-after: 15
-  - title: '📊 Workflows'
-    labels:
-      - 'area/workflows'
-      - 'area/workflows/editor'
-      - 'area/workflows/reports'
-      - 'area/workflows/subworkflows'
-    collapse-after: 10
-  - title: '🎨 UI/UX'
-    labels:
-      - 'area/UI-UX'
-    collapse-after: 10
-  - title: '📂 Histories & Libraries'
-    labels:
-      - 'area/histories'
-      - 'area/libraries'
-    collapse-after: 10
 
 # Exclude certain labels from release notes
 exclude-labels:
   - 'triage'
   - 'procedures'
   - 'planning'
-  - 'minor'
   - 'merge'
   - 'status/needs feedback'
   - 'status/planning'
 
 # Template for each change line
-change-template: '- $TITLE (@$AUTHOR) (#$NUMBER)'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 
 # Characters to escape in titles
 change-title-escapes: '\<*_&'
 
-# Sort configuration
-sort-by: 'merged_at'
-sort-direction: 'descending'
+# Version is read from lib/galaxy/version.py by the workflow
+# No version-resolver needed since Galaxy manages versions manually
 
 # Template for the release body
 template: |
-  ## What's Changed
+  ## Changes in $RESOLVED_VERSION
 
   $CHANGES
 
-  ## Contributors
-
-  $CONTRIBUTORS
-
-  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
-
-# Auto-labeler configuration to help with Galaxy's labeling system
-autolabeler:
-  - label: 'area/documentation'
-    files:
-      - '*.md'
-      - '*.rst'
-      - 'doc/**/*'
-      - 'docs/**/*'
-  - label: 'area/dependencies'
-    files:
-      - 'requirements*.txt'
-      - '*requirements.txt'
-      - 'setup.py'
-      - 'setup.cfg'
-      - 'pyproject.toml'
-      - 'packages/*/requirements.txt'
-  - label: 'area/client-build'
-    files:
-      - 'client/package.json'
-      - 'client/yarn.lock'
-      - 'client/package-lock.json'
-      - 'client/webpack.config.js'
-      - 'client/.babelrc'
-  - label: 'area/testing'
-    files:
-      - 'test/**/*'
-      - 'tests/**/*'
-      - '**/test_*.py'
-      - '**/*_test.py'
-      - 'client/tests/**/*'
-  - label: 'area/API'
-    files:
-      - 'lib/galaxy/webapi/**/*'
-      - 'lib/galaxy/web/api/**/*'
-  - label: 'area/workflows'
-    files:
-      - 'lib/galaxy/workflow/**/*'
-      - 'client/src/components/Workflow/**/*'
-  - label: 'area/tools'
-    files:
-      - 'tools/**/*'
-      - 'lib/galaxy/tools/**/*'
-  - label: 'area/datatypes'
-    files:
-      - 'lib/galaxy/datatypes/**/*'
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
