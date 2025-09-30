@@ -4584,7 +4584,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get details of a given data table
+         * Get details of a data table. For non-administrators, base directories in the path column are stripped, leaving only the basename.
          * @description Get details of a given tool data table.
          */
         get: operations["show_api_tool_data__table_name__get"];
@@ -4609,7 +4609,7 @@ export interface paths {
         };
         /**
          * Get information about a particular field in a tool data table
-         * @description Reloads a data table and return its details.
+         * @description Displays information about a data table field.
          */
         get: operations["show_field_api_tool_data__table_name__fields__field_name__get"];
         put?: never;
@@ -4628,7 +4628,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get information about a particular field in a tool data table
+         * Get files associated with a particular field in a tool data table
          * @description Download a file associated with the data table field.
          */
         get: operations["download_field_file_api_tool_data__table_name__fields__field_name__files__file_name__get"];
@@ -38069,7 +38069,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A description of the given data table and its content */
+            /** @description A description of the given data table and its content. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -38211,7 +38211,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Information about a data table field */
+            /** @description Request file associated with tool data table entry */
             200: {
                 headers: {
                     [name: string]: unknown;

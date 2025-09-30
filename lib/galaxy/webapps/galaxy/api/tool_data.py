@@ -10,6 +10,7 @@ from pydantic import (
 )
 
 from galaxy.celery.tasks import import_data_bundle
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.tool_data import ToolDataManager
 from galaxy.schema.schema import (
     AsyncTaskResultSummary,
@@ -25,6 +26,7 @@ from galaxy.webapps.base.api import GalaxyFileResponse
 from galaxy.webapps.galaxy.services.base import async_task_summary
 from . import (
     depends,
+    DependsOnTrans,
     Router,
 )
 
@@ -41,6 +43,12 @@ ToolDataTableFieldName = Path(
     ...,  # Mark this field as required
     title="Field name",
     description="The name of the tool data table field",
+)
+
+ToolDataTableFieldFileName = Path(
+    ...,
+    title="File name",
+    description="The name of a file associated with this data table field",
 )
 
 
@@ -77,13 +85,15 @@ class FastAPIToolData:
 
     @router.get(
         "/api/tool_data/{table_name}",
-        summary="Get details of a given data table",
-        response_description="A description of the given data table and its content",
-        require_admin=True,
+        summary="Get details of a data table. For non-administrators, base directories in the path column are stripped, leaving only the basename.",
+        response_description="A description of the given data table and its content.",
+        public=True,
     )
-    async def show(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
+    async def show(
+        self, trans: ProvidesUserContext = DependsOnTrans, table_name: str = ToolDataTableName
+    ) -> ToolDataDetails:
         """Get details of a given tool data table."""
-        return self.tool_data_manager.show(table_name)
+        return self.tool_data_manager.show(trans, table_name)
 
     @router.get(
         "/api/tool_data/{table_name}/reload",
@@ -106,28 +116,25 @@ class FastAPIToolData:
         table_name: str = ToolDataTableName,
         field_name: str = ToolDataTableFieldName,
     ) -> ToolDataField:
-        """Reloads a data table and return its details."""
+        """Displays information about a data table field."""
         return self.tool_data_manager.show_field(table_name, field_name)
 
     @router.get(
         "/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}",
-        summary="Get information about a particular field in a tool data table",
-        response_description="Information about a data table field",
+        summary="Get files associated with a particular field in a tool data table",
+        response_description="Request file associated with tool data table entry",
         response_class=GalaxyFileResponse,
-        require_admin=True,
+        public=True,
     )
     def download_field_file(
         self,
+        trans: ProvidesUserContext = DependsOnTrans,
         table_name: str = ToolDataTableName,
         field_name: str = ToolDataTableFieldName,
-        file_name: str = Path(
-            ...,  # Mark this field as required
-            title="File name",
-            description="The name of a file associated with this data table field",
-        ),
+        file_name: str = ToolDataTableFieldFileName,
     ):
         """Download a file associated with the data table field."""
-        path = self.tool_data_manager.get_field_file_path(table_name, field_name, file_name)
+        path = self.tool_data_manager.get_field_file_path(trans, table_name, field_name, file_name)
         return GalaxyFileResponse(str(path))
 
     @router.delete(
