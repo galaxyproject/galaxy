@@ -73,8 +73,8 @@ class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCas
                 assert_ok=True,
             )
 
-            # output_content = self.dataset_populator.get_history_dataset_content(history_id)
-            # assert output_content == "abc\n"
+            output_content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert output_content == "abc\n"
             with self._different_user(email="udt@galaxy.org"):
                 destination_params = self._get(f"/api/jobs/{response['jobs'][0]['id']}/destination_params").json()
 
