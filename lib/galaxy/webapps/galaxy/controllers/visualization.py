@@ -19,7 +19,6 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.genomes import GenomeRegion
 from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,

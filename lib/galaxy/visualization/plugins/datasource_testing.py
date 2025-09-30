@@ -40,7 +40,6 @@ def is_object_applicable(trans, target_object, data_source_tests):
     for test in data_source_tests:
         test_attr = test["attr"]
         test_type = test["type"]
-        result_type = test["result_type"]
         test_result = test["result"]
         supported_protocols = test.get("allow_uri_if_protocol", [])
         if test_attr == "ext" and test_type == "eq":
