@@ -78,13 +78,22 @@ function stagePlugins(callback) {
     fs.ensureDirSync(path.join(staticPluginDir));
 
     // Get visualization directories
-    const visualizationDirs = [
-        path.join(PATHS.pluginBaseDir, "visualizations/*/static"),
-        path.join(PATHS.pluginBaseDir, "visualizations/*/*/static"),
-    ];
+    const visualizationDirs = path.join(PATHS.pluginBaseDir, "visualizations/*/static");
 
     // Flatten the glob patterns to actual directory paths
-    const dirs = [...globSync(visualizationDirs)];
+    const dirs = globSync(visualizationDirs);
+
+    // Remove stale target dirs (only first-level static dirs)
+    const expectedTargets = dirs.map((sourceDir) =>
+        path.join(staticPluginDir, `visualizations/${path.basename(path.dirname(sourceDir))}`)
+    );
+    const existingTargets = globSync(path.join(staticPluginDir, "visualizations/*"));
+    for (const dir of existingTargets) {
+        if (!expectedTargets.includes(dir)) {
+            console.log(`Removing stale plugin dir ${dir}`);
+            fs.removeSync(dir);
+        }
+    }
 
     // Process each directory
     const copyPromises = dirs.map((sourceDir) => {
