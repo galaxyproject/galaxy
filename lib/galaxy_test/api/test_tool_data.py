@@ -41,7 +41,7 @@ class TestToolDataApi(ApiTestCase):
         first_entry = data_table["fields"][0]
         assert first_entry[0] == "data1"
         assert first_entry[1] == "data1name"
-        assert first_entry[2].endswith("/.../entry.txt")
+        assert first_entry[2].endswith("entry.txt")
 
     def test_show_field(self):
         show_field_response = self._get("tool_data/testalpha/fields/data1", admin=True)

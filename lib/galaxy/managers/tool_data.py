@@ -57,7 +57,7 @@ class ToolDataManager:
             path_index = element_view["columns"].index("path") if "path" in element_view["columns"] else None
             if path_index is not None:
                 element_view["fields"] = [
-                    [f"/.../{basename(field[path_index])}" if i == path_index else field[i] for i in range(len(field))]
+                    [basename(field[path_index]) if i == path_index else field[i] for i in range(len(field))]
                     for field in element_view["fields"]
                 ]
         return ToolDataDetails.model_construct(**element_view)

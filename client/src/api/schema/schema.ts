@@ -4584,7 +4584,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get details of a data table. For non-administrators, base directories in the path column are masked as '/.../'.
+         * Get details of a data table. For non-administrators, base directories in the path column are stripped, leaving only the basename.
          * @description Get details of a given tool data table.
          */
         get: operations["show_api_tool_data__table_name__get"];

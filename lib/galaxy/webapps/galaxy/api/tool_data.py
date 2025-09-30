@@ -85,7 +85,7 @@ class FastAPIToolData:
 
     @router.get(
         "/api/tool_data/{table_name}",
-        summary="Get details of a data table. For non-administrators, base directories in the path column are masked as '/.../'.",
+        summary="Get details of a data table. For non-administrators, base directories in the path column are stripped, leaving only the basename.",
         response_description="A description of the given data table and its content.",
         public=True,
     )
