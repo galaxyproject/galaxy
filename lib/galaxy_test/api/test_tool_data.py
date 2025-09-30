@@ -19,7 +19,6 @@ class TestToolDataApi(ApiTestCase):
     def test_list(self):
         index_response = self._get("tool_data", admin=True)
         self._assert_status_code_is(index_response, 200)
-        print(index_response.content)
         index = index_response.json()
         assert "testalpha" in [operator.itemgetter("name")(_) for _ in index]
 
@@ -60,15 +59,18 @@ class TestToolDataApi(ApiTestCase):
     def test_download_field_file_anon_raises_404(self):
         show_field_response = self._get("tool_data/twobit/fields/data1/files/entry.txt")
         self._assert_status_code_is(show_field_response, 404)
+        err_msg = show_field_response.json()["err_msg"]
+        assert err_msg == "No such field data1 in data table twobit."
 
     def test_download_field_file_anon_raises_403(self):
         show_field_response = self._get("tool_data/testalpha/fields/data1/files/entry.txt")
         self._assert_status_code_is(show_field_response, 403)
+        err_msg = show_field_response.json()["err_msg"]
+        assert err_msg == "Only administrators can download files from data table testalpha."
 
     def test_reload(self):
         show_response = self._get("tool_data/test_fasta_indexes/reload", admin=True)
         self._assert_status_code_is(show_response, 200)
-        print(show_response.content)
         data_table = show_response.json()
         assert data_table["columns"] == ["value", "dbkey", "name", "path"]
 

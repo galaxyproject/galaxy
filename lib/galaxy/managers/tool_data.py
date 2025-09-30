@@ -77,7 +77,9 @@ class ToolDataManager:
         """Get the absolute path to a given file name in the table field"""
         field_value = self._data_table_field(table_name, field_name)
         if table_name not in PUBLIC_TABLES and not trans.user_is_admin:
-            raise exceptions.AdminRequiredException(f"Only administrators can download files from '{table_name}'.")
+            raise exceptions.AdminRequiredException(
+                f"Only administrators can download files from data table {table_name}."
+            )
         base_dir = Path(field_value.get_base_dir())
         full_path = base_dir / file_name
         if str(full_path) not in field_value.get_files():
