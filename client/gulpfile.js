@@ -69,22 +69,29 @@ async function icons() {
     await buildIcons("./src/assets/icons.json");
 }
 
+function cleanPlugins(callback) {
+    if (SKIP_VIZ) {
+        console.log("Skipping plugin cleanup (SKIP_VIZ is set)");
+        return callback();
+    }
+
+    const vizStagingDir = path.join(staticPluginDir, "visualizations");
+    console.log(`Cleaning visualization staging directory: ${vizStagingDir}`);
+    fs.removeSync(vizStagingDir);
+    callback();
+}
+
 function stagePlugins(callback) {
     if (SKIP_VIZ) {
         console.log("Skipping plugin staging (SKIP_VIZ is set)");
         return callback();
     }
 
-    fs.ensureDirSync(path.join(staticPluginDir));
+    fs.ensureDirSync(path.join(staticPluginDir, "visualizations"));
 
     // Get visualization directories
-    const visualizationDirs = [
-        path.join(PATHS.pluginBaseDir, "visualizations/*/static"),
-        path.join(PATHS.pluginBaseDir, "visualizations/*/*/static"),
-    ];
-
-    // Flatten the glob patterns to actual directory paths
-    const dirs = [...globSync(visualizationDirs)];
+    const visualizationDirs = path.join(PATHS.pluginBaseDir, "visualizations/*/static");
+    const dirs = globSync(visualizationDirs);
 
     // Process each directory
     const copyPromises = dirs.map((sourceDir) => {
@@ -201,11 +208,12 @@ function forceInstallVisualizations(callback) {
 }
 
 const client = parallel(stageLibs, icons);
-const plugins = series(installVisualizations, stagePlugins);
-const pluginsRebuild = series(forceInstallVisualizations, stagePlugins);
+const plugins = series(installVisualizations, cleanPlugins, stagePlugins);
+const pluginsRebuild = series(forceInstallVisualizations, cleanPlugins, stagePlugins);
 
 module.exports.client = client;
 module.exports.plugins = plugins;
 module.exports.default = parallel(client, plugins);
 module.exports.installVisualizations = installVisualizations;
+module.exports.cleanPlugins = cleanPlugins;
 module.exports.pluginsRebuild = pluginsRebuild;
