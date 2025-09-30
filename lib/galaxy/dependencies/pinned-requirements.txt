@@ -147,7 +147,7 @@ proto-plus==1.26.1
 protobuf==6.32.1
 prov==1.5.1
 psutil==7.1.0
-pulsar-galaxy-lib==0.15.10
+pulsar-galaxy-lib==0.15.11
 pyasn1==0.6.1
 pyasn1-modules==0.4.2
 pycparser==2.23 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
