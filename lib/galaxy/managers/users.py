@@ -94,7 +94,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Register a new user.
         """
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+        if not trans.app.config.allow_local_account_creation and not trans.user_is_admin:
             message = "User registration is disabled.  Please contact your local Galaxy administrator for an account."
             if trans.app.config.error_email_to is not None:
                 message += f" Contact: {trans.app.config.error_email_to}"

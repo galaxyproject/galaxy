@@ -119,7 +119,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
         kwargs = dict(
             admin_users="test@bx.psu.edu",
             bootstrap_admin_api_key=get_admin_api_key(),
-            allow_user_creation=True,
+            allow_local_account_creation=True,
             allow_user_deletion=True,
             datatype_converters_config_file="datatype_converters_conf.xml.sample",
             file_path=shed_file_path,

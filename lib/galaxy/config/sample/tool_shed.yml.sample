@@ -166,7 +166,7 @@ tool_shed:
 
   # Allow unregistered users to create new accounts (otherwise, they
   # will have to be created by an admin).
-  #allow_user_creation: true
+  #allow_local_account_creation: true
 
   # Allow administrators to delete accounts.
   #allow_user_deletion: false

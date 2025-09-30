@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
-import { BAlert, BButton, BButtonGroup, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BAlert, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
+import {
+    getFilteredOIDCIdps,
+    getNeedShowCilogonInstitutionList,
+    type OIDCConfig,
+    submitCILogon,
+    submitOIDCLogon,
+} from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import VerticalSeparator from "@/components/Common/VerticalSeparator.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -18,25 +27,19 @@ interface Idp {
     OrganizationName: string;
     RandS: boolean;
 }
-type OIDCConfig = Record<
-    string,
-    {
-        icon?: string;
-        label?: string;
-        custom_button_text?: string;
-    }
->;
 
 interface Props {
     loginPage?: boolean;
     excludeIdps?: string[];
     columnDisplay?: boolean;
+    disableLocalAccounts?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     loginPage: false,
     excludeIdps: () => [],
     columnDisplay: true,
+    disableLocalAccounts: false,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -52,20 +55,9 @@ const toggleCilogon = ref(false);
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
 
-const filteredOIDCIdps = computed(() => {
-    const exclude = ["cilogon", "custos"].concat(props.excludeIdps);
-    const filtered = Object.assign({}, oIDCIdps.value);
+const filteredOIDCIdps = computed(() => getFilteredOIDCIdps(oIDCIdps.value, props.excludeIdps));
 
-    exclude.forEach((idp) => {
-        delete filtered[idp];
-    });
-
-    return filtered;
-});
-
-const cilogonListShow = computed(() => {
-    return oIDCIdps.value.cilogon || oIDCIdps.value.custos;
-});
+const cilogonListShow = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
 
 const cILogonEnabled = computed(() => oIDCIdps.value.cilogon);
 const custosEnabled = computed(() => oIDCIdps.value.custos);
@@ -86,21 +78,18 @@ function toggleCILogon(idp: "cilogon" | "custos") {
     cilogonOrCustos.value = toggleCilogon.value ? idp : null;
 }
 
-async function submitOIDCLogin(idp: string) {
+async function clickOIDCLogin(idp: string) {
+    if (loading.value) {
+        return;
+    }
     loading.value = true;
 
     try {
-        const loginUrl = withPrefix(`/authnz/${idp}/login`);
         const urlParams = new URLSearchParams(window.location.search);
         const redirectParam = urlParams.get("redirect");
-
-        const formData = new FormData();
-        formData.append("next", redirectParam || "");
-
-        const { data } = await axios.post(loginUrl, formData, { withCredentials: true });
-
-        if (data.redirect_uri) {
-            window.location = data.redirect_uri;
+        const redirectUri = await submitOIDCLogon(idp, redirectParam);
+        if (redirectUri) {
+            window.location.href = redirectUri;
         }
     } catch (e) {
         messageVariant.value = "danger";
@@ -110,7 +99,10 @@ async function submitOIDCLogin(idp: string) {
     }
 }
 
-async function submitCILogon(idp: string | null) {
+async function clickCILogin(idp: string | null) {
+    if (loading.value) {
+        return;
+    }
     if (props.loginPage) {
         setIdpPreference();
     }
@@ -124,12 +116,12 @@ async function submitCILogon(idp: string | null) {
     loading.value = true;
 
     try {
-        const { data } = await axios.post(withPrefix(`/authnz/${idp}/login/?idphint=${selected.value.EntityID}`));
+        const redirectUri = await submitCILogon(idp, true, selected.value.EntityID);
 
         localStorage.setItem("galaxy-provider", idp);
 
-        if (data.redirect_uri) {
-            window.location = data.redirect_uri;
+        if (redirectUri) {
+            window.location.href = redirectUri;
         }
     } catch (e) {
         messageVariant.value = "danger";
@@ -190,9 +182,9 @@ function getIdpPreference() {
             {{ messageText }}
         </BAlert>
 
-        <BForm id="externalLogin" :class="{ 'd-flex h-100': !props.columnDisplay }">
+        <div :class="{ 'd-flex h-100': !props.columnDisplay }">
             <!-- OIDC login-->
-            <div v-if="cilogonListShow" class="cilogon">
+            <BForm v-if="cilogonListShow" id="externalLogin" class="cilogon">
                 <div v-if="props.loginPage">
                     <!--Only Display if CILogon/Custos is configured-->
                     <BFormGroup label="Use existing institutional login">
@@ -213,39 +205,39 @@ function getIdpPreference() {
                         </BFormCheckbox>
                     </BFormGroup>
 
-                    <BButton
+                    <GButton
                         v-if="cILogonEnabled"
                         :disabled="loading || selected === null"
-                        @click="submitCILogon('cilogon')">
+                        @click="clickCILogin('cilogon')">
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Institutional Credentials*</span>
-                    </BButton>
+                    </GButton>
                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
-                    <BButton
+                    <GButton
                         v-if="Object.prototype.hasOwnProperty.call(oIDCIdps, 'custos')"
                         :disabled="loading || selected === null"
-                        @click="submitCILogon('custos')">
+                        @click="clickCILogin('custos')">
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Custos*</span>
-                    </BButton>
+                    </GButton>
                 </div>
 
                 <div v-else>
-                    <BButtonGroup class="w-100">
-                        <BButton
+                    <GButtonGroup class="w-100">
+                        <GButton
                             v-if="cILogonEnabled"
                             :pressed="cilogonOrCustos === 'cilogon'"
                             @click="toggleCILogon('cilogon')">
                             Sign in with Institutional Credentials*
-                        </BButton>
+                        </GButton>
 
-                        <BButton
+                        <GButton
                             v-if="custosEnabled"
                             :pressed="cilogonOrCustos === 'custos'"
                             @click="toggleCILogon('custos')">
                             Sign in with Custos*
-                        </BButton>
-                    </BButtonGroup>
+                        </GButton>
+                    </GButtonGroup>
 
                     <BFormGroup v-if="toggleCilogon" class="mt-1">
                         <Multiselect
@@ -258,13 +250,13 @@ function getIdpPreference() {
                             :allow-empty="false"
                             track-by="EntityID" />
 
-                        <BButton
+                        <GButton
                             v-if="toggleCilogon"
                             class="mt-1"
                             :disabled="loading || selected === null"
-                            @click="submitCILogon(cilogonOrCustos)">
+                            @click="clickCILogin(cilogonOrCustos)">
                             Login via {{ cilogonOrCustos === "cilogon" ? "CILogon" : "Custos" }} *
-                        </BButton>
+                        </GButton>
                     </BFormGroup>
                 </div>
 
@@ -276,7 +268,7 @@ function getIdpPreference() {
                         share your username, email address, and affiliation with CILogon, Custos, and Galaxy.
                     </small>
                 </p>
-            </div>
+            </BForm>
 
             <template v-if="cilogonListShow && Object.keys(filteredOIDCIdps).length > 0">
                 <VerticalSeparator v-if="!props.columnDisplay">
@@ -286,33 +278,35 @@ function getIdpPreference() {
                 <hr v-else class="w-100" />
             </template>
 
-            <span
+            <div
                 v-if="isConfigLoaded"
                 :class="!props.columnDisplay && props.loginPage ? 'oidc-idps-column' : 'oidc-idps-grid'">
                 <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp">
-                    <BButton
+                    <GButton
                         v-if="iDPInfo['icon']"
-                        variant="link"
-                        class="d-block oidc-button p-0 text-decoration-none"
+                        transparent
+                        class="d-block oidc-button p-0"
                         :disabled="loading"
-                        @click="submitOIDCLogin(idp)">
+                        @click="clickOIDCLogin(idp)">
                         <img :src="iDPInfo['icon']" height="35" :alt="`Sign in with ${capitalizeFirstLetter(idp)}`" />
-                    </BButton>
-                    <BButton
+                    </GButton>
+                    <GButton
                         v-else-if="iDPInfo['custom_button_text']"
-                        variant="outline-primary"
+                        color="blue"
+                        outline
                         class="d-block oidc-button"
                         :disabled="loading"
-                        @click="submitOIDCLogin(idp)">
+                        @click="clickOIDCLogin(idp)">
                         <i :class="oIDCIdps[idp]" />
                         Sign in with {{ iDPInfo["custom_button_text"] }}
-                    </BButton>
-                    <BButton
+                    </GButton>
+                    <GButton
                         v-else
-                        variant="outline-primary"
+                        color="blue"
+                        outline
                         class="d-block oidc-button"
                         :disabled="loading"
-                        @click="submitOIDCLogin(idp)">
+                        @click="clickOIDCLogin(idp)">
                         <i :class="oIDCIdps[idp]" />
                         Sign in with
                         <span v-if="iDPInfo['label']">
@@ -321,10 +315,10 @@ function getIdpPreference() {
                         <span v-else>
                             {{ capitalizeFirstLetter(idp) }}
                         </span>
-                    </BButton>
+                    </GButton>
                 </div>
-            </span>
-        </BForm>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -341,6 +335,8 @@ function getIdpPreference() {
     justify-content: center;
     .oidc-button {
         width: 100%;
+        display: flex !important;
+        justify-content: center;
     }
 }
 /* Flexible grid for idps */

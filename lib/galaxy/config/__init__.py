@@ -654,6 +654,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "activation_email": "email_from",
         "ga4gh_service_organization_name": "organization_name",
         "ga4gh_service_organization_url": "organization_url",
+        "allow_user_creation": "allow_local_account_creation",
     }
 
     deprecated_options = list(renamed_options.keys()) + [
@@ -709,6 +710,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "tool_config_file",
     }
 
+    allow_local_account_creation: bool
     allowed_origin_hostnames: list[str]
     builds_file_path: str
     container_resolvers_config_file: str
@@ -1117,6 +1119,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                     f"Config file ({self.user_preferences_extra_conf_path}) could not be found or is malformed."
                 )
             self.user_preferences_extra = {"preferences": {}}
+
+        # default allow_local_account_creation to false if disable_local_accounts is true
+        if "disable_local_accounts" in kwargs and self.disable_local_accounts:
+            if self.allow_local_account_creation:
+                log.warning(
+                    "allow_local_account_creation is enabled, but disable_local_accounts is "
+                    "enabled as well. Setting allow_local_account_creation to false"
+                )
+            self.allow_local_account_creation = False
 
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.

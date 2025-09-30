@@ -152,7 +152,7 @@
                 from markupsafe import escape
                 # Menu for user who is not logged in.
                 menu_options = [ [ "Login", h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
-                if app.config.allow_user_creation:
+                if app.config.allow_local_account_creation:
                     menu_options.append( [ "Register", h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] )
                 extra_class = "loggedout-only"
                 visible = ( trans.user == None )

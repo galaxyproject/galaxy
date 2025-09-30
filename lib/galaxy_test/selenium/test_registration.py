@@ -20,7 +20,7 @@ class TestRegistration(SeleniumTestCase):
     @selenium_test
     def test_registration_accessibility(self):
         self.home()
-        self.components.masthead.register_or_login.wait_for_and_click()
+        self.components.masthead.login_masthead_button.wait_for_and_click()
         registration = self.components.registration
         registration.toggle.wait_for_and_click()
         registration.form.wait_for_visible()

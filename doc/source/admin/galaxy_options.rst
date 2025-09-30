@@ -3828,14 +3828,29 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``allow_user_creation``
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``allow_local_account_creation``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Allow unregistered users to create new accounts (otherwise, they
-    will have to be created by an admin).
+    Allow unregistered users to create new local (non-OIDC) accounts
+    (otherwise, they will have to be created by an admin). This option
+    will be overridden to false in case disable_local_accounts  is set
+    to true.
 :Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``disable_local_accounts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Disable local accounts. If this option is set to true, at least
+    one OIDC provider needs  to be configured and will serve as the
+    account provider. If this option is set to true,
+    allow_local_account creation will be overridden with false.
+:Default: ``false``
 :Type: bool
 
 
