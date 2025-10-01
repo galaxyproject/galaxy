@@ -481,6 +481,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
             run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
+            host_port_cmd=self.prop("host_port_cmd", None),
             container_name=self.container_name,
             **docker_host_props,
         )
