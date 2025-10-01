@@ -1,7 +1,14 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { type CollectionEntry, type DCESummary, type HDCASummary, type HistoryContentItemBase, isHDCA } from "@/api";
+import {
+    type CollectionEntry,
+    type DCESummary,
+    type HDCADetailed,
+    type HDCASummary,
+    type HistoryContentItemBase,
+    isHDCA,
+} from "@/api";
 import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
 import { ensureDefined } from "@/utils/assertions";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
@@ -35,6 +42,7 @@ const FETCH_LIMIT = 50;
 
 export const useCollectionElementsStore = defineStore("collectionElementsStore", () => {
     const storedCollections = ref<{ [key: string]: HDCASummary }>({});
+    const storedCollectionsDetailed = ref<{ [key: string]: HDCADetailed }>({});
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
     const loadingCollectionElementsErrors = ref<{ [key: string]: Error }>({});
     const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
@@ -158,12 +166,19 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         });
     }
 
+    function saveCollection(collection: HDCASummary | HDCADetailed) {
+        set<HDCASummary>(storedCollections.value, collection.id, collection);
+        if ("elements" in collection) {
+            set<HDCADetailed>(storedCollectionsDetailed.value, collection.id, collection);
+        }
+    }
+
     function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
         const collectionsInHistory = historyContentsPayload.filter(
             (entry) => entry.history_content_type === "dataset_collection",
         ) as HDCASummary[];
         for (const collection of collectionsInHistory) {
-            set<HDCASummary>(storedCollections.value, collection.id, collection);
+            saveCollection(collection);
         }
     }
 
@@ -178,11 +193,24 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         };
     });
 
+    const getDetailedCollectionById = computed(() => {
+        return (collectionId: string) => {
+            if (
+                !storedCollectionsDetailed.value[collectionId] &&
+                !loadingCollectionElementsErrors.value[collectionId]
+            ) {
+                // TODO: Try to remove this as it can cause computed side effects (use keyedCache in this store instead?)
+                fetchCollection({ id: collectionId });
+            }
+            return storedCollectionsDetailed.value[collectionId] ?? null;
+        };
+    });
+
     async function fetchCollection(params: { id: string }) {
         set(loadingCollectionElements.value, params.id, true);
         try {
             const collection = await fetchCollectionDetails({ hdca_id: params.id });
-            set(storedCollections.value, collection.id, collection);
+            saveCollection(collection);
             return collection;
         } catch (error) {
             set(loadingCollectionElementsErrors.value, params.id, error);
@@ -216,6 +244,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         getLoadingCollectionElementsError,
         loadingCollectionElementsErrors,
         getCollectionById,
+        getDetailedCollectionById,
         fetchCollection,
         invalidateCollectionElements,
         saveCollections,

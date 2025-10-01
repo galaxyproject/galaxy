@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faDownload, faInfoCircle, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faInfoCircle, faRedo, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -21,6 +21,10 @@ const showCollectionDetailsUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null,
 );
 const disableDownload = props.dsc.populated_state !== "ok";
+
+const sheetUrl = computed(() => {
+    return `${getAppRoot()}collection/${props.dsc.id}/sheet`;
+});
 
 function onDownload() {
     window.location.href = downloadUrl.value;
@@ -62,6 +66,16 @@ function onDownload() {
                     @click.prevent.stop="router.push(rerunUrl)">
                     <FontAwesomeIcon class="mr-1" :icon="faRedo" />
                     <span>Run Job Again</span>
+                </b-button>
+                <b-button
+                    v-if="sheetUrl"
+                    class="rounded-0 text-decoration-none"
+                    size="sm"
+                    variant="link"
+                    :href="sheetUrl"
+                    @click.prevent.stop="router.push(sheetUrl)">
+                    <FontAwesomeIcon class="mr-1" :icon="faTable" />
+                    <span>View Sheet</span>
                 </b-button>
             </b-button-group>
         </nav>
