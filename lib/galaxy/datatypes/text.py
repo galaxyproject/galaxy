@@ -707,7 +707,7 @@ class AuspiceJson(Json):
     It uses JSON format to represent the tree structure and metadata.
     """
 
-    file_ext = "auspicejson"
+    file_ext = "auspice.json"
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         super().set_peek(dataset)
