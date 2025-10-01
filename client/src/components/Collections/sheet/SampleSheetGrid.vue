@@ -550,6 +550,7 @@ async function attemptCreateViaExistingObjects() {
         rows[elementIdentifierFromRow(row)] = elementRow;
     }
     payload.rows = rows;
+    payload.column_definitions = props.columnDefinitions;
     emit("on-collection-create-payload", payload);
 }
 
