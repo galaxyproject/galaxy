@@ -250,7 +250,11 @@ class TestsParamInInputs(Linter):
                 name = name.split("|")[-1]
                 xpaths = [f"@name='{name}'", f"@argument='{name}'", f"@argument='-{name}'", f"@argument='--{name}'"]
                 if "_" in name:
-                    xpaths += [f"@argument='-{name.replace('_', '-')}'", f"@argument='--{name.replace('_', '-')}'"]
+                    xpaths += [
+                        f"@argument='{name.replace('_', '-')}'",
+                        f"@argument='-{name.replace('_', '-')}'",
+                        f"@argument='--{name.replace('_', '-')}'",
+                    ]
                 found = False
                 for xp in xpaths:
                     inxpath = f".//inputs//param[{xp}]"
