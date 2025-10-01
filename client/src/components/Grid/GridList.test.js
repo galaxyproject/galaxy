@@ -140,7 +140,7 @@ describe("GridList", () => {
         const wrapper = createTarget({
             gridConfig: testGrid,
         });
-        await wrapper.vm.$nextTick();
+        await flushPromises();
         for (const [fieldIndex, field] of Object.entries(testGrid.fields)) {
             expect(wrapper.find(`[data-description='grid header ${fieldIndex}']`).text()).toBe(field.title);
         }
@@ -150,7 +150,7 @@ describe("GridList", () => {
         const wrapper = createTarget({
             gridConfig: testGrid,
         });
-        await wrapper.vm.$nextTick();
+        await flushPromises();
         const dropdown = wrapper.find("[data-description='grid cell 0-2']");
         const dropdownItems = dropdown.findAll(".dropdown-item");
         expect(dropdownItems.at(0).text()).toBe("operation-title-1");
@@ -186,7 +186,7 @@ describe("GridList", () => {
             gridConfig: testGrid,
             limit: 2,
         });
-        await wrapper.vm.$nextTick();
+        await flushPromises();
         const pageLinks = wrapper.findAll(".page-link");
         await pageLinks.at(4).trigger("click");
         expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-5");
