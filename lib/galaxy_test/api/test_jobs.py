@@ -772,12 +772,12 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=copied_inputs)
         self._search(search_payload, expected_search_count=1)
         # Now we delete the original input HDA that was used -- we should still be able to find the job
-        delete_respone = self._delete(f"histories/{history_id}/contents/{dataset_id}")
-        self._assert_status_code_is_ok(delete_respone)
+        delete_response = self._delete(f"histories/{history_id}/contents/{dataset_id}")
+        self._assert_status_code_is_ok(delete_response)
         self._search(search_payload, expected_search_count=1)
         # Now we also delete the copy -- we shouldn't find a job
-        delete_respone = self._delete(f"histories/{new_history_id}/contents/{new_dataset_id}")
-        self._assert_status_code_is_ok(delete_respone)
+        delete_response = self._delete(f"histories/{new_history_id}/contents/{new_dataset_id}")
+        self._assert_status_code_is_ok(delete_response)
         self._search(search_payload, expected_search_count=0)
 
     @pytest.mark.require_new_history
@@ -802,8 +802,8 @@ steps:
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
         tool_response = self._job_search(tool_id="cat1", history_id=history_id, inputs=inputs)
         output_id = tool_response.json()["outputs"][0]["id"]
-        delete_respone = self._delete(f"histories/{history_id}/contents/{output_id}")
-        self._assert_status_code_is_ok(delete_respone)
+        delete_response = self._delete(f"histories/{history_id}/contents/{output_id}")
+        self._assert_status_code_is_ok(delete_response)
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
@@ -846,8 +846,8 @@ steps:
         # We delete the ouput (this is a HDA, as multi_data_param reduces collections)
         # and use the correct input job definition, the job should not be found
         output_id = tool_response.json()["outputs"][0]["id"]
-        delete_respone = self._delete(f"histories/{history_id}/contents/{output_id}")
-        self._assert_status_code_is_ok(delete_respone)
+        delete_response = self._delete(f"histories/{history_id}/contents/{output_id}")
+        self._assert_status_code_is_ok(delete_response)
         search_payload = self._search_payload(history_id=history_id, tool_id="multi_data_param", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
@@ -868,7 +868,7 @@ steps:
         self._search(search_payload, expected_search_count=1)
         # We delete a single tool output, no job should be returned
         delete_response = self._delete(f"histories/{history_id}/contents/datasets/{output_id}")
-        self._assert_status_code_is_ok(delete_respone)
+        self._assert_status_code_is_ok(delete_response)
         search_payload = self._search_payload(history_id=history_id, tool_id="collection_creates_list", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
         tool_response = self._job_search(tool_id="collection_creates_list", history_id=history_id, inputs=inputs)
@@ -906,12 +906,12 @@ steps:
         )
         self._search(search_payload, expected_search_count=1)
         # Now we delete the original input HDCA that was used -- we should still be able to find the job
-        delete_respone = self._delete(f"histories/{history_id}/contents/dataset_collections/{list_id_a}")
-        self._assert_status_code_is_ok(delete_respone)
+        delete_response = self._delete(f"histories/{history_id}/contents/dataset_collections/{list_id_a}")
+        self._assert_status_code_is_ok(delete_response)
         self._search(search_payload, expected_search_count=1)
         # Now we also delete the copy -- we shouldn't find a job
-        delete_respone = self._delete(f"histories/{history_id}/contents/dataset_collections/{new_list_a}")
-        self._assert_status_code_is_ok(delete_respone)
+        delete_response = self._delete(f"histories/{history_id}/contents/dataset_collections/{new_list_a}")
+        self._assert_status_code_is_ok(delete_response)
         self._search(search_payload, expected_search_count=0)
 
     @pytest.mark.require_new_history
