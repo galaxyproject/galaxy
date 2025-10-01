@@ -567,12 +567,14 @@ class _BamOrSam:
                         for read_group in dataset.metadata.bam_header.get("RG", [])
                         if "ID" in read_group
                     ]
+                else:
+                    dataset.metadata.metadata_incomplete = True
                 dataset.metadata.sort_order = bam_file.header.get("HD", {}).get("SO", None)  # type: ignore [attr-defined]
                 dataset.metadata.bam_version = bam_file.header.get("HD", {}).get("VN", None)  # type: ignore [attr-defined]
         except Exception:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
-            pass
+            dataset.metadata.metadata_incomplete = True
 
 
 class BamNative(CompressedArchive, _BamOrSam):
@@ -660,6 +662,16 @@ class BamNative(CompressedArchive, _BamOrSam):
         visible=False,
         optional=True,
         no_value={},
+    )
+    MetadataElement(
+        name="metadata_incomplete",
+        default=False,
+        desc="Indicates if metadata is incomplete",
+        param=MetadataParameter,
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=False,
     )
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
