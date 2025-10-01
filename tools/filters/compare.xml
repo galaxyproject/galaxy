@@ -2,13 +2,14 @@
   <description>to find common or distinct rows</description>
   <requirements>
     <requirement type="package" version="8.31">coreutils</requirement>
+    <requirement type="package" version="5.3.1">gawk</requirement>
   </requirements>
   <command><![CDATA[
     join --nocheck-order -t \$'\t'
       #if $mode == "V":
         -v 1
       #end if
-      -o "\$(seq -s, -f '1.%g' 1 \$(head -n1 '$input1' | tr '\t' '\n' | wc -l))"
+      -o "\$(seq -s, -f '1.%g' 1 \$(head -n1 '$input1' | awk -F'\t' '{print NF}'))"
       -1 '$field1' -2 '$field2'
       <(sort -t \$'\t' -k '${field1},${field1}' '$input1')
       <(sort -t \$'\t' -k '${field2},${field2}' '$input2')
