@@ -30,7 +30,7 @@ from galaxy.model.dataset_collections.structure import (
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.execution_helpers import (
     filter_output,
-    on_text_for_names,
+    on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
 from galaxy.tools.parameters.workflow_utils import is_runtime_value
@@ -319,20 +319,30 @@ class ExecutionTracker:
         self.execution_errors.append(error)
 
     @staticmethod
-    def label_for_item(item: Union[model.DatasetCollectionElement, model.HistoryDatasetCollectionAssociation]) -> str:
-        if isinstance(item, model.DatasetCollectionElement):
-            assert item.element_identifier is not None
-            return item.element_identifier
-        else:
-            return f"collection {item.hid}"
+    def _collection_info_to_collection_hids_element_ids(
+        items: list[Union[model.DatasetCollectionElement, model.HistoryDatasetCollectionAssociation]],
+    ) -> tuple[list[int], list[str]]:
+        element_ids = []
+        collection_hids = []
+        for item in items:
+            if isinstance(item, model.DatasetCollectionElement):
+                assert item.element_identifier is not None
+                element_ids.append(item.element_identifier)
+            else:
+                assert item.hid is not None
+                collection_hids.append(item.hid)
+        return collection_hids, element_ids
 
     @property
     def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
-            collection_names = [self.label_for_item(c) for c in collection_info.collections.values()]
-            self._on_text = on_text_for_names(collection_names)
-
+            collection_hids, element_ids = self._collection_info_to_collection_hids_element_ids(
+                collection_info.collections.values()
+            )
+            self._on_text = on_text_for_dataset_and_collections(
+                collection_hids=collection_hids, element_ids=element_ids
+            )
         return self._on_text
 
     def output_name(self, trans, history, params, output):

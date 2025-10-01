@@ -282,7 +282,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
         latest_hda = self.latest_history_item()
         assert latest_hda["hid"] == 3
-        assert latest_hda["name"] == "Select first on data 1"
+        assert latest_hda["name"] == "Select first on dataset 1"
 
     @selenium_test
     def test_bibtex_rendering(self):
@@ -363,7 +363,7 @@ class TestLoggedInToolForm(SeleniumTestCase):
 
         latest_hda = self.latest_history_item()
         assert latest_hda["hid"] == 3
-        assert latest_hda["name"] == "Select first on data 1"
+        assert latest_hda["name"] == "Select first on dataset 1"
 
     @selenium_test
     def test_run_apply_rules_1(self):

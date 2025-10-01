@@ -30,6 +30,7 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     Job,
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
@@ -52,7 +53,7 @@ from galaxy.tools.execute import (
 )
 from galaxy.tools.execution_helpers import (
     filter_output,
-    on_text_for_names,
+    on_text_for_dataset_and_collections,
     ToolExecutionCache,
 )
 from galaxy.tools.parameters import update_dataset_ids
@@ -464,7 +465,7 @@ class DefaultToolAction(ToolAction):
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         assert history  # tell type system we've set history and it is no longer optional
         # Build name for output datasets based on tool name and input names
-        on_text = self._get_on_text(inp_data)
+        on_text = self._get_on_text(inp_data, inp_dataset_collections)
 
         # format='input" previously would give you a random extension from
         # the input extensions, now it should just give "input" as the output
@@ -904,13 +905,22 @@ class DefaultToolAction(ToolAction):
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
         return wrapped_params
 
-    def _get_on_text(self, inp_data):
-        input_names = []
-        for data in reversed(list(inp_data.values())):
-            if getattr(data, "hid", None):
-                input_names.append(f"data {data.hid}")
+    def _get_on_text(self, inp_data, inp_dataset_collections):
+        input_hids = []
+        collection_hids = []
+        for collections in inp_dataset_collections.values():
+            for dataset_collection, _ in collections:
+                if isinstance(dataset_collection, HistoryDatasetCollectionAssociation):
+                    assert dataset_collection.hid
+                    collection_hids.append(dataset_collection.hid)
 
-        return on_text_for_names(input_names)
+        for input_name in inp_data:
+            data = inp_data[input_name]
+            if input_name in inp_dataset_collections:
+                continue
+            if getattr(data, "hid", None):
+                input_hids.append(data.hid)
+        return on_text_for_dataset_and_collections(dataset_hids=input_hids, collection_hids=collection_hids)
 
     def _new_job_for_session(
         self, trans, tool: "Tool", history: Optional[History]

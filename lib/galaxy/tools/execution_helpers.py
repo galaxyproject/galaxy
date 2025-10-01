@@ -5,7 +5,9 @@ tool execution code, and tool action code.
 """
 
 import logging
-from collections.abc import Collection
+from typing import Optional
+
+from more_itertools import consecutive_groups
 
 log = logging.getLogger(__name__)
 
@@ -48,25 +50,67 @@ def filter_output(tool, output, incoming):
     return False
 
 
-def on_text_for_names(input_names: Collection[str]) -> str:
-    # input_names may contain duplicates... this is because the first value in
-    # multiple input dataset parameters will appear twice once as param_name
-    # and once as param_name1.
-    unique_names = []
-    for name in input_names:
-        if name not in unique_names:
-            unique_names.append(name)
-    input_names = unique_names
+def on_text_for_names(names: Optional[list[str]], prefix: Optional[str] = None) -> str:
+    if names is None or len(names) == 0:
+        return ""
 
     # Build name for output datasets based on tool name and input names
-    if len(input_names) == 0:
-        on_text = ""
-    elif len(input_names) == 1:
-        on_text = input_names[0]
-    elif len(input_names) == 2:
-        on_text = "{} and {}".format(*input_names)
-    elif len(input_names) == 3:
-        on_text = "{}, {}, and {}".format(*input_names)
+    on_text = ""
+    if len(names) == 1:
+        on_text = f"{names[0]}"
+    elif len(names) == 2:
+        on_text = f"{names[0]} and {names[1]}"
+    elif len(names) == 3:
+        on_text = f"{names[0]}, {names[1]}, and {names[2]}"
     else:
-        on_text = "{}, {}, and others".format(*input_names[:2])
+        on_text = f"{names[0]}, {names[1]}, and others"
+
+    if prefix:
+        on_text = f"{prefix} {on_text}"
+
     return on_text
+
+
+def on_text_for_numeric_ids(ids: Optional[list[int]], prefix: Optional[str] = None) -> str:
+    if ids is None or len(ids) == 0:
+        return ""
+    # ids may contain duplicates... this is because the first value in
+    # multiple input dataset parameters will appear twice once as param_name
+    # and once as param_name1.
+    groups = []
+    unique_ids = sorted(set(ids))
+    for group in consecutive_groups(unique_ids):
+        group = list(group)
+        if len(group) == 1:
+            groups.append(str(group[0]))
+        elif len(group) == 2:
+            groups.extend([str(group[0]), str(group[1])])
+        else:
+            groups.append(f"{group[0]}-{group[-1]}")
+
+    return on_text_for_names(groups, prefix)
+
+
+def on_text_for_dataset_and_collections(
+    dataset_hids: Optional[list[int]] = None,
+    collection_hids: Optional[list[int]] = None,
+    element_ids: Optional[list[str]] = None,
+) -> str:
+    on_text_datasets = on_text_for_numeric_ids(dataset_hids, "dataset")
+    on_text_collection = on_text_for_numeric_ids(collection_hids, "collection")
+    on_text_elements = on_text_for_names(element_ids)
+
+    on_text = []
+    if on_text_datasets:
+        on_text.append(on_text_datasets)
+    if on_text_collection:
+        on_text.append(on_text_collection)
+    if on_text_elements:
+        on_text.append(on_text_elements)
+
+    if len(on_text) == 0:
+        return ""
+    elif len(on_text) == 1:
+        return on_text[0]
+    else:
+        return ", ".join(on_text[:-1]) + " and " + on_text[-1]
