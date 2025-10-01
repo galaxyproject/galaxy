@@ -1,7 +1,7 @@
 """add user credentials table
 
 Revision ID: c8c9bd29810d
-Revises: c0959ad462b2
+Revises: e382f8eb5e12
 Create Date: 2025-07-18 13:38:09.608283
 
 """
@@ -28,7 +28,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "c8c9bd29810d"
-down_revision = "c0959ad462b2"
+down_revision = "e382f8eb5e12"
 branch_labels = None
 depends_on = None
 
