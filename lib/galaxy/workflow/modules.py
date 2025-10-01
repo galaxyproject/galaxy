@@ -1620,21 +1620,13 @@ class InputParameterModule(WorkflowModule):
         ]
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self,
+        trans,
+        progress: "WorkflowProgress",
+        invocation_step: "WorkflowInvocationStep",
+        use_cached_job: bool = False,
     ) -> Optional[bool]:
-        step = invocation_step.workflow_step
-        if step.id in progress.inputs_by_step_id:
-            input_value = progress.inputs_by_step_id[step.id]
-        else:
-            input_value = step.state.inputs["input"]
-        if input_value is NO_REPLACEMENT:
-            default_value = step.get_input_default_value(NO_REPLACEMENT)
-            # TODO: look at parameter type and infer if value should be a dictionary
-            # instead. Guessing only field parameter types in CWL branch would have
-            # default as dictionary like this.
-            if not isinstance(default_value, dict):
-                default_value = {"value": default_value}
-            input_value = default_value.get("value", NO_REPLACEMENT)
+        input_value = self.get_input_value(progress, invocation_step)
         input_param = self.get_runtime_inputs(self)["input"]
         # TODO: raise DelayedWorkflowEvaluation if replacement not ready ? Need test
         try:
@@ -1654,12 +1646,36 @@ class InputParameterModule(WorkflowModule):
         except ValueError as e:
             raise FailWorkflowEvaluation(
                 why=InvocationFailureWorkflowParameterInvalid(
-                    reason=FailureReason.workflow_parameter_invalid, workflow_step_id=step.id, details=str(e)
+                    reason=FailureReason.workflow_parameter_invalid,
+                    workflow_step_id=invocation_step.workflow_step_id,
+                    details=str(e),
                 )
             )
         step_outputs = dict(output=input_value)
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
+
+    def get_input_value(self, progress: "WorkflowProgress", invocation_step: "WorkflowInvocationStep"):
+        step = invocation_step.workflow_step
+        if step.id in progress.inputs_by_step_id:
+            input_value = progress.inputs_by_step_id[step.id]
+        else:
+            assert step.state
+            input_value = step.state.inputs["input"]
+        if input_value is NO_REPLACEMENT:
+            default_value = step.get_input_default_value(NO_REPLACEMENT)
+            # TODO: look at parameter type and infer if value should be a dictionary
+            # instead. Guessing only field parameter types in CWL branch would have
+            # default as dictionary like this.
+            if not isinstance(default_value, dict):
+                default_value = {"value": default_value}
+            input_value = default_value.get("value", NO_REPLACEMENT)
+        return input_value
+
+    def recover_mapping(self, invocation_step: "WorkflowInvocationStep", progress: "WorkflowProgress"):
+        input_value = self.get_input_value(progress, invocation_step)
+        step_outputs = dict(output=input_value)
+        progress.set_outputs_for_input(invocation_step, step_outputs, already_persisted=True)
 
     def step_state_to_tool_state(self, state):
         state = safe_loads(state)
