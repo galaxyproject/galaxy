@@ -2030,14 +2030,13 @@ class DirectoryModelExportStore(ModelExportStore):
                 as_dict["extra_files_path"] = extra_files_path
             return
 
+        conversion = self.dataset_implicit_conversions.get(dataset)
+        conversion_key = self.serialization_options.get_identifier(self.security, conversion) if conversion else None
+
         if file_name:
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
-            conversion = self.dataset_implicit_conversions.get(dataset)
-            conversion_key = (
-                self.serialization_options.get_identifier(self.security, conversion) if conversion else None
-            )
             target_filename = get_export_dataset_filename(
                 as_dict["name"], as_dict["extension"], as_dict["encoded_id"], conversion_key=conversion_key
             )
