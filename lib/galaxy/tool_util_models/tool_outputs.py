@@ -95,6 +95,7 @@ class GenericToolOutputDataset(
             description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
         ),
     ] = None
+    precreate_directory: Optional[bool] = False
 
 
 class ToolOutputDataset(GenericToolOutputDataset[bool, str]): ...

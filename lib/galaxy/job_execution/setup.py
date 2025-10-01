@@ -288,12 +288,18 @@ class JobIO(UsesDictVisibleKeys):
             if da_false_path and not os.path.exists(da_false_path):
                 with open(da_false_path, "ab"):
                     pass
+            real_path = da.dataset.get_file_name(sync_cache=False)
+            false_extra_files_path = os.path.join(
+                os.path.dirname(da_false_path or real_path), da.dataset.dataset.extra_files_path_name
+            )
+
             mutable = da.dataset.dataset.external_filename is None
             dataset_path = DatasetPath(
                 da.dataset.dataset.id,
-                da.dataset.get_file_name(sync_cache=False),
+                real_path,
                 false_path=da_false_path,
                 mutable=mutable,
+                false_extra_files_path=false_extra_files_path,
             )
             job_outputs.append(JobOutput(da.name, da.dataset, dataset_path))
 

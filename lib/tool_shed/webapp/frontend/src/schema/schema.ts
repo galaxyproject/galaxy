@@ -3181,6 +3181,11 @@ export interface components {
              */
             name: string
             /**
+             * precreate_directory
+             * @default false
+             */
+            precreate_directory: boolean | null
+            /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */

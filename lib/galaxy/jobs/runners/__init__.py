@@ -373,11 +373,13 @@ class BaseJobRunner:
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
         output_paths = {}
+        output_extra_paths = {}
         for dataset_path in job_wrapper.job_io.get_output_fnames():
             path = dataset_path.real_path
             if asbool(job_wrapper.get_destination_configuration("outputs_to_working_directory", False)):
                 path = dataset_path.false_path
             output_paths[dataset_path.dataset_id] = path
+            output_extra_paths[dataset_path.dataset_id] = dataset_path.false_extra_files_path
 
         output_pairs = []
         # Walk job's output associations to find and use from_work_dir attributes.
@@ -397,9 +399,15 @@ class BaseJobRunner:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
                     source_file = os.path.join(tool_working_directory, hda_tool_output.from_work_dir)
-                    destination = job_wrapper.get_output_destination(output_paths[dataset.dataset_id])
+                    if hda_tool_output.precreate_directory:
+                        # precreate directory, allows using `-d` check to avoid copying data to purged outputs
+                        dataset.dataset.create_extra_files_path()
+                        output_path = output_extra_paths[dataset.dataset_id]
+                        os.makedirs(output_path, exist_ok=True)
+                    else:
+                        output_path = output_paths[dataset.dataset_id]
                     if in_directory(source_file, tool_working_directory):
-                        output_pairs.append((source_file, destination))
+                        output_pairs.append((source_file, job_wrapper.get_output_destination(output_path)))
                     else:
                         # Security violation.
                         log.exception(
