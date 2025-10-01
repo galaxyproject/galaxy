@@ -1,7 +1,7 @@
 <tool id="CONVERTER_archive_to_directory" name="Unpack archive to directory" version="1.0.0" profile="21.09">
     <!-- Use compression_utils instead of shell commands (tar/unzip) so we can verify safety of results -->
     <requirements>
-        <requirement type="package" version="25.0">galaxy-util</requirement>
+        <requirement type="package" version="25.1">galaxy-util</requirement>
     </requirements>
     <command><![CDATA[
         mkdir '$output1.files_path' &&
@@ -31,7 +31,44 @@
         <test>
             <param name="input1" ftype="tar" value="testdir1.tar"/>
             <param name="__target_datatype__" value="directory"/>
-            <output name="output1" ftype="directory" value="testdir1.tar.directory"/>
+            <output name="output1" ftype="directory" value="testdir1.tar.directory">
+                <extra_files name="testdir1/file1">
+                    <assert_contents>
+                        <has_text text="hello"/>
+                    </assert_contents>
+                </extra_files>
+                <extra_files name="testdir1/file2">
+                    <assert_contents>
+                        <has_text text="world"/>
+                    </assert_contents>
+                </extra_files>
+                <extra_files name="testdir1/dir1/file3">
+                    <assert_contents>
+                        <has_text text="subdirfile"/>
+                    </assert_contents>
+                </extra_files>
+            </output>
+        </test>
+        <test>
+            <param name="input1" ftype="tar" value="testdir1_flat.zip"/>
+            <param name="__target_datatype__" value="directory"/>
+            <output name="output1" ftype="directory" value="testdir1.tar.directory">
+                <extra_files name="file1">
+                    <assert_contents>
+                        <has_text text="hello"/>
+                    </assert_contents>
+                </extra_files>
+                <extra_files name="file2">
+                    <assert_contents>
+                        <has_text text="world"/>
+                    </assert_contents>
+                </extra_files>
+                <extra_files name="dir1/file3">
+                    <assert_contents>
+                        <has_text text="subdirfile"/>
+                    </assert_contents>
+                </extra_files>
+            </output>
         </test>
     </tests>
     <help>

@@ -253,10 +253,6 @@ class CompressedFile:
                     members_z = cast(Iterable[str], self.safemembers())
                     self.archive.extractall(extraction_path, members=members_z)
         else:
-            if not common_prefix_dir:
-                extraction_path = os.path.join(path, self.file_name)
-                if not os.path.exists(extraction_path):
-                    os.makedirs(extraction_path)
             if isinstance(self.archive, tarfile.TarFile):
                 members_t = cast(Iterable[tarfile.TarInfo], self.safemembers())
                 self.archive.extractall(extraction_path, members=members_t)
