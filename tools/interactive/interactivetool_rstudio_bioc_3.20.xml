@@ -55,6 +55,9 @@
                 #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
                 echo "[`date`] - Linking '$file' to '/home/rstudio/galaxy_inputs/${cleaned_name}.${file.ext}'" &&
                 ln -sf '$file' '/home/rstudio/galaxy_inputs/${cleaned_name}.${file.ext}' &&
+                #for $metadata_ext, $metadata_path in $file.all_metadata_files
+                    ln -s '${metadata_path}' '/home/rstudio/galaxy_inputs/${cleaned_name}.${file.ext}.${metadata_ext}' &&
+                #end for
             #end for
         #else
             echo "[`date`] - No input files provided, skipping file linking step." &&
