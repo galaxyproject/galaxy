@@ -4935,6 +4935,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/unprivileged_tools/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate */
+        post: operations["generate_api_unprivileged_tools_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/unprivileged_tools/runtime_model": {
         parameters: {
             query?: never;
@@ -18571,6 +18588,11 @@ export interface components {
              * @default tar.gz
              */
             model_store_format: components["schemas"]["ModelStoreFormat"];
+        };
+        /** Prompt */
+        Prompt: {
+            /** Prompt */
+            prompt: string;
         };
         /** QuotaDetails */
         QuotaDetails: {
@@ -39031,6 +39053,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    generate_api_unprivileged_tools_generate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Prompt"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserToolSource-Output"];
                 };
             };
             /** @description Request Error */

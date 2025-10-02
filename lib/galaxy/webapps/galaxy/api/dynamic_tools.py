@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from typing import (
     Any,
@@ -6,6 +7,7 @@ from typing import (
     Union,
 )
 
+import yaml
 from pydantic import BaseModel
 
 from galaxy.exceptions import (
@@ -41,11 +43,28 @@ from galaxy.webapps.galaxy.api import (
     Router,
 )
 
+try:
+    from pydantic_ai import Agent
+    from pydantic_ai.models.anthropic import AnthropicModel
+    from pydantic_ai.providers.anthropic import AnthropicProvider
+except ImportError:
+    Agent = None
+    AnthropicModel = None
+    AnthropicProvider = None
+
 log = logging.getLogger(__name__)
 
 router = Router(tags=["dynamic_tools"])
 
 DatabaseIdOrUUID = Union[DecodedDatabaseIdField, str]
+
+
+try:
+    model = AnthropicModel("claude-sonnet-4-5", provider=AnthropicProvider(api_key=os.getenv("ANTHROPIC_API_KEY")))
+    agent = Agent(model, output_type=UserToolSource)
+except Exception:
+    model = None
+    agent = None
 
 
 class UnprivilegedToolResponse(BaseModel):
@@ -57,6 +76,10 @@ class UnprivilegedToolResponse(BaseModel):
     tool_format: Optional[str]
     create_time: datetime
     representation: UserToolSource
+
+
+class Prompt(BaseModel):
+    prompt: str
 
 
 @router.cbv
@@ -120,6 +143,33 @@ class UnprivilegedToolsApi:
         if not dynamic_tool:
             raise ObjectNotFound()
         self.dynamic_tools_manager.deactivate_unprivileged_tool(user, dynamic_tool)
+
+    @router.post("/api/unprivileged_tools/generate", response_model_exclude_defaults=True)
+    def generate(self, prompt: Prompt, trans: ProvidesUserContext = DependsOnTrans) -> UserToolSource:
+        if agent:
+            result = agent.run_sync(prompt.prompt)
+            return result.output
+
+        return UserToolSource(
+            **yaml.safe_load(
+                """class: GalaxyUserTool
+id: resource-demo
+version: "0.2"
+name: demo resource this time with resource
+description: sets core
+container: busybox
+requirements:
+  - type: resource
+    cores_min: 3
+    ram_min: null
+shell_command: echo $GALAXY_SLOTS > out.txt
+outputs:
+  - name: output1
+    type: data
+    format: txt
+    from_work_dir: out.txt"""
+            )
+        )
 
 
 @router.cbv
