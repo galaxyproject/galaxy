@@ -1790,7 +1790,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def wait_on_task(self, async_task_response: Response):
         response_json = async_task_response.json()
-        self.wait_on_task_object(response_json)
+        return self.wait_on_task_object(response_json)
 
     def wait_on_task_object(self, async_task_json: dict[str, Any]):
         assert "id" in async_task_json, f"Task response {async_task_json} does not contain expected 'id' field."
