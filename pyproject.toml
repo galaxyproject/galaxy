@@ -261,3 +261,4 @@ default-groups = []
 extra-index-url = ["https://wheels.galaxyproject.org/simple"]
 index-strategy = "unsafe-best-match"
 package = false
+required-version = ">=0.5.0"  # Minimum uv version for fast package management

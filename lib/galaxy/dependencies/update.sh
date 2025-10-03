@@ -28,22 +28,29 @@ do
 done
 shift $((OPTIND - 1))
 
-# Create a virtual environment in a tmp directory and install uv into it
-uv_venv=$(mktemp -d "${TMPDIR:-/tmp}/uv_venv.XXXXXXXXXX")
-python3 -m venv "${uv_venv}"
-"${uv_venv}/bin/python" -m pip install uv
-uv="${uv_venv}/bin/uv"
+# Install uv for fast operation
+if ! command -v uv >/dev/null; then
+    echo "Installing uv..."
+    if command -v curl >/dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh || python3 -m pip install uv
+    elif command -v wget >/dev/null; then
+        wget -qO- https://astral.sh/uv/install.sh | sh || python3 -m pip install uv
+    else
+        python3 -m pip install uv
+    fi
+    export PATH="$HOME/.local/bin:$PATH"
+fi
 
 # Run uv (this may update pyproject.toml and uv.lock).
 if [ -n "$pkg" ]; then
-    ${uv} lock --upgrade-package "$pkg"
+    uv lock --upgrade-package "$pkg"
 else
-    ${uv} lock --upgrade
+    uv lock --upgrade
 fi
 
 # Update pinned requirements files.
 UV_EXPORT_OPTIONS='--frozen --no-annotate --no-hashes'
-${uv} export ${UV_EXPORT_OPTIONS} --no-dev > "$this_directory/pinned-requirements.txt"
-${uv} export ${UV_EXPORT_OPTIONS} --only-group=test > "$this_directory/pinned-test-requirements.txt"
-${uv} export ${UV_EXPORT_OPTIONS} --only-group=dev > "$this_directory/dev-requirements.txt"
-${uv} export ${UV_EXPORT_OPTIONS} --only-group=typecheck > "$this_directory/pinned-typecheck-requirements.txt"
+uv export ${UV_EXPORT_OPTIONS} --no-dev > "$this_directory/pinned-requirements.txt"
+uv export ${UV_EXPORT_OPTIONS} --only-group=test > "$this_directory/pinned-test-requirements.txt"
+uv export ${UV_EXPORT_OPTIONS} --only-group=dev > "$this_directory/dev-requirements.txt"
+uv export ${UV_EXPORT_OPTIONS} --only-group=typecheck > "$this_directory/pinned-typecheck-requirements.txt"

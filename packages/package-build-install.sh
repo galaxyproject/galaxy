@@ -11,6 +11,21 @@ set -euo pipefail
 : ${PIP_EXTRA_ARGS:=--extra-index-url https://wheels.galaxyproject.org}
 #: ${SETUP_VENV:=true}
 
+# Ensure uv is installed
+ensure_uv() {
+    if ! command -v uv >/dev/null; then
+        echo "Installing uv..."
+        if command -v curl >/dev/null; then
+            curl -LsSf https://astral.sh/uv/install.sh | sh || python3 -m pip install uv
+        elif command -v wget >/dev/null; then
+            wget -qO- https://astral.sh/uv/install.sh | sh || python3 -m pip install uv
+        else
+            python3 -m pip install uv
+        fi
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+}
+
 INSTALL=true
 EDITABLE=false
 META=false
@@ -37,7 +52,7 @@ do
         h)
             echo "usage: $0 [-bem] [up_to_package]"
             echo "  -b  build only, no install"
-            echo "  -e  install packages in \"editable\" mode (pip install -e)"
+            echo "  -e  install packages in \"editable\" mode (uv pip install -e)"
             echo "  -m  install galaxy metapackage, installing pinned deps in meta/requirements.txt"
             exit 0
             ;;
@@ -65,15 +80,21 @@ while read package; do
     printf "\n========= PACKAGE %s =========\n\n" "$package"
     pushd $package
     if $EDITABLE; then
-        pip install -e .
+        # Install package in editable mode using uv (much faster than pip)
+        ensure_uv
+        uv pip install -e .
     else
         if [ ! -d "$VENV" ]; then
-            python3 -m venv "$VENV"
-            "${VENV}/bin/pip" install -r <(grep -v test-requirements.txt dev-requirements.txt)
+            # Install uv for fast venv creation and package management
+            ensure_uv
+            
+            # Use uv venv for fast virtual environment creation
+            uv venv "$VENV" --python python3
+            "${VENV}/bin/uv" pip install -r <(grep -v test-requirements.txt dev-requirements.txt)
         fi
         make dist
         if $INSTALL && ! $META; then
-            pip install dist/*.whl
+            uv pip install dist/*.whl
         fi
     fi
     popd
@@ -83,5 +104,5 @@ done < "$PACKAGE_LIST_FILE"
 if $INSTALL && $META && ! $EDITABLE; then
     WHEELHOUSE=$(mktemp -d -t gxpkgwheelhouseXXXXXX)
     cp */dist/*.whl "$WHEELHOUSE"
-    pip install $PIP_EXTRA_ARGS --find-links "$WHEELHOUSE" meta/dist/*.whl
+    uv pip install $PIP_EXTRA_ARGS --find-links "$WHEELHOUSE" meta/dist/*.whl
 fi

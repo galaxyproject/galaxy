@@ -36,12 +36,27 @@ cd "$(dirname "$0")"
 TEST_PYTHON=${TEST_PYTHON:-"python3"}
 TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
-"$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
+# Install uv for fast package installation
+if ! command -v uv >/dev/null; then
+    echo "Installing uv..."
+    if command -v curl >/dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh || "$TEST_PYTHON" -m pip install uv
+    elif command -v wget >/dev/null; then
+        wget -qO- https://astral.sh/uv/install.sh | sh || "$TEST_PYTHON" -m pip install uv
+    else
+        "$TEST_PYTHON" -m pip install uv
+    fi
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# Use uv venv for much faster virtual environment creation
+uv venv "$TEST_ENV_DIR" --python "$TEST_PYTHON"
 # shellcheck disable=SC1091
 . "${TEST_ENV_DIR}/bin/activate"
-pip install --upgrade pip setuptools wheel
+
+# Note: No need to upgrade pip anymore since we're using uv exclusively
 if [ $FOR_PULSAR -eq 0 ]; then
-    pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+    uv pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 fi
 
 # Ensure ordered by dependency DAG
@@ -65,13 +80,13 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        pip install '.[image-util,template,jstree,config-template,test]'
+        uv pip install '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
-        pip install '.[cwl,mulled,edam,extended-assertions,test]'
+        uv pip install '.[cwl,mulled,edam,extended-assertions,test]'
     elif grep -q 'test =' setup.cfg 2>/dev/null; then
-        pip install '.[test]'
+        uv pip install '.[test]'
     else
-        pip install .
+        uv pip install .
     fi
 
     if [ $FOR_PULSAR -eq 0 ]; then
