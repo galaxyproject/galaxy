@@ -79,7 +79,7 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    editorView: {
+    allowEditingCredentials: {
         type: Boolean,
         default: false,
     },
@@ -207,15 +207,15 @@ onBeforeMount(() => {
             <slot name="buttons" />
         </template>
 
-        <template v-slot>
+        <template v-if="props.options.credentials?.length" v-slot>
             <ToolCredentials
-                v-if="props.options.credentials?.length && !props.editorView"
+                v-if="!props.allowEditingCredentials"
                 class="mt-2"
                 :tool-id="props.id"
                 :tool-version="props.version"
                 :job-credentials-context="props.options.job_credentials_context" />
             <BAlert
-                v-else-if="props.options.credentials?.length && props.editorView"
+                v-else-if="props.allowEditingCredentials"
                 v-b-tooltip.hover
                 variant="info"
                 class="mt-2"

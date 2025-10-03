@@ -8,7 +8,7 @@
         :options="configForm"
         :message-text="messageText"
         :message-variant="messageVariant"
-        editor-view
+        allow-editing-credentials
         @onChangeVersion="onChangeVersion"
         @onUpdateFavorites="onUpdateFavorites">
         <FormElement
