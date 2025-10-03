@@ -113,7 +113,7 @@ venn:
     version: 0.0.8
 vitessce:
     package: "@galaxyproject/vitessce"
-    version: 0.0.3
+    version: 0.0.5
 vizarr:
     package: "@galaxyproject/vizarr"
     version: 0.1.8
