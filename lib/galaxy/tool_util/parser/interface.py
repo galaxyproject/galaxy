@@ -453,6 +453,9 @@ class ToolSource(metaclass=ABCMeta):
         """Return the tool source as a string"""
 
 
+InputsStyleT = Literal["cheetah", "cwl", "none"]
+
+
 class PagesSource:
     """Contains a list of Pages - each a list of InputSources -
     each item in the outer list representing a page of inputs.
@@ -460,12 +463,17 @@ class PagesSource:
     be exactly a singleton.
     """
 
-    def __init__(self, page_sources):
+    def __init__(self, page_sources, inputs_style: InputsStyleT = "cheetah"):
         self.page_sources = page_sources
+        self._inputs_style = inputs_style
 
     @property
-    def inputs_defined(self):
-        return True
+    def inputs_defined(self) -> bool:
+        return self._inputs_style != "none"
+
+    @property
+    def inputs_style(self) -> InputsStyleT:
+        return self._inputs_style
 
 
 class DynamicOptions(metaclass=ABCMeta):

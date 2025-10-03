@@ -56,6 +56,7 @@ from .interface import (
     DrillDownDynamicOptions,
     DynamicOptions,
     InputSource,
+    InputsStyleT,
     PageSource,
     PagesSource,
     RequiredFiles,
@@ -1353,11 +1354,13 @@ class XmlPagesSource(PagesSource):
     def __init__(self, root):
         self.input_elem = root.find("inputs")
         page_sources = []
+        inputs_style: InputsStyleT = "none"
         if self.input_elem is not None:
+            inputs_style = "cheetah"
             pages_elem = self.input_elem.findall("page")
             for page in pages_elem or [self.input_elem]:
                 page_sources.append(XmlPageSource(page))
-        super().__init__(page_sources)
+        super().__init__(page_sources, inputs_style)
 
     @property
     def inputs_defined(self):

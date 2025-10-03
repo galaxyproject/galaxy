@@ -174,7 +174,7 @@ class YamlToolSource(ToolSource):
     def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
-        return PagesSource([page_source])
+        return PagesSource([page_source], "cwl")
 
     def parse_strict_shell(self):
         # TODO: Add ability to disable this.
