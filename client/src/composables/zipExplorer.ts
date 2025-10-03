@@ -310,7 +310,7 @@ export function validateLocalZipFile(file?: File | null): string {
 }
 
 export function isLocalZipFile(file?: File | null): boolean {
-    return Boolean(file) && file?.type === "application/zip";
+    return Boolean(file) && (file?.type === "application/zip" || file?.type === "application/x-zip-compressed");
 }
 
 export async function isRemoteZipFile(url: string): Promise<boolean> {
