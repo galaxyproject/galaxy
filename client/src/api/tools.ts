@@ -72,3 +72,12 @@ export function fetchJobErrorMessage(jobDetails: ShowFullJobResponse): string | 
     }
     return errorMessage;
 }
+
+export async function getToolInputs(tool_id: string, tool_version: string) {
+    return GalaxyApi().GET(`/api/tools/{tool_id}/inputs`, {
+        params: {
+            query: { tool_version },
+            path: { tool_id },
+        },
+    });
+}
