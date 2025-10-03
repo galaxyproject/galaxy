@@ -6,9 +6,10 @@ participant     "Job Service" as service
 database    Database    as database
 queue       TaskQueue   as queue
 apireq -> api : HTTP JSON
-api -> service : To boundary
-service -> service : Build RequestToolState
-service -> service : Validate RequestToolState (pydantic)
+api -> service : create()
+service -> service : If not strict, build and \nverify RelaxedRequestToolState
+service -> service : If not strict, strictify() RelaxedRequestToolState \ninto RequestToolState
+service -> service : If strict, build and validate \nRequestToolState from request
 service -> service : decode() RequestToolState \ninto RequestInternalToolState
 service -> database : Serialize RequestInternalToolState
 service -> queue : Queue QueueJobs with reference to\npersisted RequestInternalToolState

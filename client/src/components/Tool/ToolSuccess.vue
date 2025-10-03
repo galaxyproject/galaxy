@@ -20,6 +20,8 @@ const router = useRouter();
 
 const jobDef = computed(() => latestResponse.value?.jobDef);
 const jobResponse = computed(() => latestResponse.value?.jobResponse);
+const responseVal = computed(() => jobStore.latestResponse);
+const usedToolRequest = computed(() => responseVal.value?.usedToolRequest);
 const showRecommendation = computed(() => config.value.enable_tool_recommendations);
 const toolName = computed(() => latestResponse.value?.toolName);
 
@@ -38,7 +40,10 @@ if (!latestResponse.value || Object.keys(latestResponse.value).length === 0) {
             <div v-if="jobResponse?.produces_entry_points">
                 <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
             </div>
-            <ToolSuccessMessage :job-response="jobResponse" :tool-name="toolName || '...'" />
+            <ToolSuccessMessage
+                :job-response="jobResponse"
+                :tool-name="toolName || '...'"
+                :used-tool-request="usedToolRequest || false" />
             <Webhook v-if="jobDef" type="tool" :tool-id="jobDef.tool_id" />
             <ToolRecommendation v-if="showRecommendation && jobDef" :tool-id="jobDef.tool_id" />
         </div>

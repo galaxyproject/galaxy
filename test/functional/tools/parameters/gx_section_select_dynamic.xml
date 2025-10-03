@@ -1,0 +1,42 @@
+<tool id="gx_section_select_dynamic" name="gx_section_select_dynamic" version="1.0.0">
+    <command><![CDATA[
+echo '$section_parameter.parameter' >> '$output'
+    ]]></command>
+    <code file="gx_select_dynamic_options.py"/>
+    <inputs>
+        <section name="section_parameter">
+            <param name="ref_parameter" type="data" ext="txt" >
+            </param>
+            <param name="parameter" type="select" dynamic_options="every_other_word(ref_parameter.dataset.get_file_name())">
+            </param>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <section name="section_parameter">
+                <param name="ref_parameter" value="simple_line.txt" />
+                <param name="parameter" value="of" />
+            </section>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="of" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- Selects implicitly default to the first option as the default option.
+            -->
+            <section name="section_parameter">
+                <param name="ref_parameter" value="simple_line.txt" />
+            </section>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="This" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

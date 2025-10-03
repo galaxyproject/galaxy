@@ -288,13 +288,15 @@ def test_convert_to_requests():
 
 def _validate_path(tool_path: str):
     tool_source = get_tool_source(tool_path)
+    tool_id = tool_source.parse_id()
+    model_name = f"{tool_id} (test case model)"
     parsed_tool = parse_tool(tool_source)
     profile = tool_source.parse_profile()
     test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     for test_case in test_cases:
         if test_case.get("expect_failure"):
             continue
-        test_case_state_and_warnings = case_state(test_case, parsed_tool.inputs, profile)
+        test_case_state_and_warnings = case_state(test_case, parsed_tool.inputs, profile, name=model_name)
         tool_state = test_case_state_and_warnings.tool_state
         assert tool_state.state_representation == "test_case_xml"
 

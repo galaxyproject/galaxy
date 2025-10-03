@@ -22,13 +22,20 @@ from galaxy.managers.base import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.model_stores import create_objects_from_store
-from galaxy.model import User
+from galaxy.model import (
+    ToolRequest,
+    User,
+)
 from galaxy.model.store import (
     get_export_store_factory,
     ModelExportStore,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.schema.schema import AsyncTaskResultSummary
+from galaxy.schema.schema import (
+    AsyncTaskResultSummary,
+    ToolRequestDetailedModel,
+    ToolRequestModel,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import (
     ShortTermStorageAllocator,
@@ -192,3 +199,31 @@ def async_task_summary(async_result: AsyncResult) -> AsyncTaskResultSummary:
         name=name,
         queue=queue,
     )
+
+
+def tool_request_to_model(tool_request: ToolRequest) -> ToolRequestModel:
+    as_dict = {
+        "id": tool_request.id,
+        "request": tool_request.request,
+        "state": tool_request.state,
+        "state_message": tool_request.state_message,
+    }
+    return ToolRequestModel.model_validate(as_dict)
+
+
+def tool_request_detailed_to_model(tool_request: ToolRequest) -> ToolRequestDetailedModel:
+    jobs = [{"src": "job", "id": job.id} for job in tool_request.jobs]
+    implicit_collections = [
+        {"src": "hdca", "id": assoc.dataset_collection.id, "output_name": assoc.output_name}
+        for assoc in tool_request.implicit_collections
+    ]
+    as_dict = {
+        "id": tool_request.id,
+        "request": tool_request.request,
+        "state": tool_request.state,
+        "state_message": tool_request.state_message,
+        "jobs": jobs,
+        "implicit_collections": implicit_collections,
+    }
+    model = ToolRequestDetailedModel.model_validate(as_dict)
+    return model

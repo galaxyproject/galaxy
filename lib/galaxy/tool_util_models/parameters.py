@@ -47,7 +47,7 @@ from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
     expand_annotation,
-    is_optional,
+    is_optional as is_python_type_optional,
     list_type,
     optional,
     optional_if_needed,
@@ -75,6 +75,7 @@ from .tool_source import (
 # + request_internal: This is a pydantic model to validate what Galaxy expects to find in the database,
 # in particular dataset and collection references should be decoded integers.
 StateRepresentationT = Literal[
+    "relaxed_request",
     "request",
     "request_internal",
     "request_internal_dereferenced",
@@ -121,6 +122,7 @@ def allow_batching(job_template: DynamicModelInformation, batch_type: Optional[T
     class BatchRequest(StrictModel):
         meta_class: Literal["Batch"] = Field(..., alias="__class__")
         values: List[batch_type]  # type: ignore[valid-type]
+        linked: Optional[bool] = None  # maybe True instead?
 
     request_type = union_type([job_py_type, BatchRequest])
 
@@ -161,7 +163,7 @@ def dynamic_model_information_from_py_type(
     if requires_value is None:
         requires_value = param_model.request_requires_value
     initialize = ... if requires_value else None
-    py_type_is_optional = is_optional(py_type)
+    py_type_is_optional = is_python_type_optional(py_type)
     validators = validators or {}
     if not py_type_is_optional and not requires_value:
         validators["not_null"] = field_validator(name)(Validators.validate_not_none)
@@ -272,8 +274,17 @@ class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type(self) -> Type:
         return optional_if_needed(StrictStr, self.optional)
 
+    @property
+    def py_type_relaxed_request(self) -> Type:
+        # such a hack but explicit nulls are always allowed in the API even for non-optional
+        # parameters - it becomes "" in the internal state.
+        return optional(StrictStr)
+
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        py_type = decorate_type_with_validators_if_needed(self.py_type, self.validators)
+        py_type = self.py_type
+        if state_representation == "relaxed_request":
+            py_type = self.py_type_relaxed_request
+        py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
         requires_value = self.request_requires_value
@@ -657,9 +668,9 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(base_model, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        if state_representation == "request":
+        if state_representation in ["request", "relaxed_request"]:
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type), BatchDataInstance)
-        if state_representation == "landing_request":
+        elif state_representation == "landing_request":
             return allow_batching(
                 dynamic_model_information_from_py_type(self, self.py_type, requires_value=False), BatchDataInstance
             )
@@ -687,6 +698,10 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
+        else:
+            raise NotImplementedError(
+                f"Have not implemented data collection parameter models for state representation {state_representation}"
+            )
 
     @property
     def request_requires_value(self) -> bool:
@@ -816,7 +831,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(base_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        if state_representation == "request":
+        if state_representation in ["request", "relaxed_request"]:
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type))
         elif state_representation == "landing_request":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type, requires_value=False))
@@ -1127,7 +1142,7 @@ class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
         py_type: Type = StrictStr
         if self.multiple:
             py_type = list_type(py_type)
-        return optional_if_needed(py_type, self.optional)
+        return optional_if_needed(py_type, self.optional or self.multiple)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         requires_value = self.request_requires_value
@@ -1756,6 +1771,14 @@ RepeatParameterModel.model_rebuild()
 CwlUnionParameterModel.model_rebuild()
 
 
+def is_optional(tool_parameter: ToolParameterT):
+    if isinstance(tool_parameter, BaseGalaxyToolParameterModelDefinition):
+        return tool_parameter.optional
+    else:
+        # refine CWL logic in CWL branch...
+        return False
+
+
 class ToolParameterBundle(Protocol):
     """An object having a dictionary of input models (i.e. a 'Tool')"""
 
@@ -1779,7 +1802,7 @@ def simple_input_models(parameters: Union[List[ToolParameterModel], List[ToolPar
 
 
 def create_model_strict(*args, **kwd) -> Type[BaseModel]:
-    # proteted_namespaces here prevents tool with model_ parameter names from issueing warnings
+    # protected_namespaces here prevents tool with model_ parameter names from issuing warnings
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
     return create_model(*args, __config__=model_config, **kwd)
@@ -1793,6 +1816,7 @@ def create_model_factory(state_representation: StateRepresentationT):
     return create_method
 
 
+create_relaxed_request_model = create_model_factory("relaxed_request")
 create_request_model = create_model_factory("request")
 create_request_internal_model = create_model_factory("request_internal")
 create_request_internal_dereferenced_model = create_model_factory("request_internal_dereferenced")

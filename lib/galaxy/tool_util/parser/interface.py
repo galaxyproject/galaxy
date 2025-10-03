@@ -446,6 +446,9 @@ class ToolSource(metaclass=ABCMeta):
         """Return the tool source as a string"""
 
 
+InputsStyleT = Literal["cheetah", "cwl", "none"]
+
+
 class PagesSource:
     """Contains a list of Pages - each a list of InputSources -
     each item in the outer list representing a page of inputs.
@@ -453,12 +456,17 @@ class PagesSource:
     be exactly a singleton.
     """
 
-    def __init__(self, page_sources):
+    def __init__(self, page_sources, inputs_style: InputsStyleT = "cheetah"):
         self.page_sources = page_sources
+        self._inputs_style = inputs_style
 
     @property
-    def inputs_defined(self):
-        return True
+    def inputs_defined(self) -> bool:
+        return self._inputs_style != "none"
+
+    @property
+    def inputs_style(self) -> InputsStyleT:
+        return self._inputs_style
 
 
 class DynamicOptions(metaclass=ABCMeta):
@@ -719,6 +727,8 @@ class TestCollectionDef:
         test_format_dict = JsonTestCollectionDefDict(**self._test_format_to_dict())
         if self.name:
             test_format_dict["name"] = self.name
+        if self.fields is not None:
+            test_format_dict["fields"] = self.fields
         return test_format_dict
 
     def to_dict(self) -> XmlTestCollectionDefDict:
@@ -788,6 +798,7 @@ class TestCollectionDef:
                 name=json_as_dict.get("name") or "Unnamed Collection",
                 elements=elements,
                 collection_type=json_as_dict["collection_type"],
+                fields=json_as_dict.get("fields", None),
             )
 
     def collect_inputs(self):

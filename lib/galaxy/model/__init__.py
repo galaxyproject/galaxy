@@ -1405,6 +1405,28 @@ class ToolRequest(Base, Dictifiable, RepresentById):
 
     tool_source: Mapped["ToolSource"] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")
+    jobs: Mapped[list["Job"]] = relationship(back_populates="tool_request", order_by=lambda: asc(Job.id))
+    implicit_collections: Mapped[list["ToolRequestImplicitCollectionAssociation"]] = relationship(
+        back_populates="tool_request"
+    )
+
+
+class ToolRequestImplicitCollectionAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_request_implicit_collection_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tool_request_id: Mapped[int] = mapped_column(ForeignKey("tool_request.id", name="fk_trica_tri"), index=True)
+    dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_collection_association.id", name="fk_trica_dci"), index=True
+    )
+    output_name: Mapped[str] = mapped_column(String(255))
+
+    tool_request: Mapped["ToolRequest"] = relationship(back_populates="implicit_collections")
+    dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(
+        back_populates="tool_request_association", uselist=False
+    )
+
+    dict_collection_visible_keys = ["id", "tool_request_id", "dataset_collection_id", "output_name"]
 
 
 class UserDynamicToolAssociation(Base, Dictifiable, RepresentById):
@@ -1588,9 +1610,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
     object_store_id_overrides: Mapped[Optional[dict[str, Optional[str]]]] = mapped_column(JSONType)
     tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
+    tool_state: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType)
 
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
-    tool_request: Mapped[Optional["ToolRequest"]] = relationship()
+    tool_request: Mapped[Optional["ToolRequest"]] = relationship(back_populates="jobs")
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="jobs")
@@ -1701,6 +1724,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.exit_code = job.exit_code
         self.job_runner_name = job.job_runner_name
         self.job_runner_external_id = job.job_runner_external_id
+        self.tool_state = job.tool_state
         if copy_outputs:
             assert self.history
             requires_addition_to_history = False
@@ -2128,6 +2152,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_attrs["create_time"] = self.create_time.isoformat()
         job_attrs["update_time"] = self.update_time.isoformat()
         job_attrs["job_messages"] = self.job_messages
+        job_attrs["tool_state"] = self.tool_state
 
         # Get the job's parameters
         param_dict = self.raw_param_dict()
@@ -7470,6 +7495,9 @@ class HistoryDatasetCollectionAssociation(
         back_populates="dataset_collection",
     )
     creating_job_associations: Mapped[list["JobToOutputDatasetCollectionAssociation"]] = relationship(viewonly=True)
+    tool_request_association: Mapped[Optional["ToolRequestImplicitCollectionAssociation"]] = relationship(
+        back_populates="dataset_collection"
+    )
 
     dict_dbkeysandextensions_visible_keys = ["dbkeys", "extensions"]
     editable_keys = ("name", "deleted", "visible")
