@@ -38,10 +38,22 @@ def test_file_source_drs_http():
         }
         return (200, {}, json.dumps(data))
 
+    def access_handler(request):
+        assert request.headers["Authorization"] == "Bearer IBearTokens"
+        access_data = {"url": "https://my.respository.org/myfile.txt", "headers": ["Authorization: Basic Z2E0Z2g6ZHJz"]}
+        return (200, {}, json.dumps(access_data))
+
     responses.add_callback(
         responses.GET,
         "https://drs.example.org/ga4gh/drs/v1/objects/314159",
         callback=drs_repo_handler,
+        content_type="application/json",
+    )
+
+    responses.add_callback(
+        responses.GET,
+        "https://drs.example.org/ga4gh/drs/v1/objects/314159/access/1234",
+        callback=access_handler,
         content_type="application/json",
     )
 
@@ -86,10 +98,22 @@ def test_file_source_drs_s3():
         }
         return (200, {}, json.dumps(data))
 
+    def access_handler(request):
+        assert request.headers["Authorization"] == "Bearer IBearTokens"
+        access_data = {"url": "s3://ga4gh-demo-data/phenopackets/Cao-2018-TGFBR2-Patient_4.json", "headers": []}
+        return (200, {}, json.dumps(access_data))
+
     responses.add_callback(
         responses.GET,
         "https://drs.example.org/ga4gh/drs/v1/objects/314160",
         callback=drs_repo_handler,
+        content_type="application/json",
+    )
+
+    responses.add_callback(
+        responses.GET,
+        "https://drs.example.org/ga4gh/drs/v1/objects/314160/access/1234",
+        callback=access_handler,
         content_type="application/json",
     )
 
@@ -101,6 +125,16 @@ def test_file_source_drs_s3():
     assert file_source_pair.path == test_url
     assert file_source_pair.file_source.id == "test1"
 
-    assert_realizes_contains(
-        file_sources, test_url, "PMID:30101859-Cao-2018-TGFBR2-Patient_4", user_context=user_context
-    )
+    # Mock the S3 file source realize_to method to return test content
+    def mock_s3_realize_to(source_path, native_path, user_context=None, opts=None):
+        with open(native_path, "w") as f:
+            f.write("PMID:30101859-Cao-2018-TGFBR2-Patient_4 test data")
+
+    # Find the S3 file source and patch it
+    for fs in file_sources._file_sources:
+        if fs.plugin_type == "s3fs":
+            with mock.patch.object(fs, "realize_to", side_effect=mock_s3_realize_to):
+                assert_realizes_contains(
+                    file_sources, test_url, "PMID:30101859-Cao-2018-TGFBR2-Patient_4", user_context=user_context
+                )
+            break
