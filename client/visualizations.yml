@@ -36,6 +36,9 @@ h5web:
 heatmap:
     package: "@galaxyproject/heatmap"
     version: 0.0.15
+hivtrace:
+    package: "@galaxyproject/hivtrace"
+    version: 0.0.0
 igv:
     package: "@galaxyproject/igv"
     version: 0.0.14
