@@ -155,8 +155,7 @@ onMounted(async () => {
         <BreadcrumbHeading :items="breadcrumbItems" />
 
         <Heading h2 size="sm">
-            This page allows you to manage your user preferences. You can change your email address, password, and other
-            settings here.
+            Manage your user preferences on this page, including email address, password, and other settings.
         </Heading>
 
         <BAlert :variant="messageVariant" :show="!!message">
