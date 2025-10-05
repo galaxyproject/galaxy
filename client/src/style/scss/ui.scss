@@ -49,6 +49,12 @@
     word-wrap: normal;
 }
 
+.word-wrap-break {
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: break-word;
+}
+
 // utility class to set white space wrapping to normal
 .white-space-normal {
     white-space: normal;

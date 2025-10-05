@@ -53,7 +53,7 @@ const element = computed(() => {
 </script>
 
 <template>
-    <div v-if="props.separator" class="separator heading">
+    <div v-if="props.separator" class="separator heading word-wrap-break">
         <GButton v-if="collapsible" transparent size="small" icon-only inline @click="$emit('click')">
             <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
             <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
@@ -75,7 +75,7 @@ const element = computed(() => {
     <component
         :is="element"
         v-else
-        class="heading"
+        class="heading word-wrap-break"
         :class="[
             sizeClass,
             props.bold ? 'font-weight-bold' : '',
@@ -95,12 +95,6 @@ const element = computed(() => {
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
-
-.heading {
-    overflow-wrap: break-word;
-    white-space: normal;
-    word-break: break-word;
-}
 
 // prettier-ignore
 h1, h2, h3, h4, h5, h6 {
