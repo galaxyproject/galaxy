@@ -547,8 +547,6 @@ class TabularToolDataTable(ToolDataTable):
                 if empty_field_value is not None:
                     self.empty_field_values[name] = empty_field_value
         assert "value" in self.columns, "Required 'value' column missing from column def"
-        if "name" not in self.columns:
-            self.columns["name"] = self.columns["value"]
 
     def extend_data_with(self, filename: str, errors: Optional[ErrorListT] = None) -> None:
         here = os.path.dirname(os.path.abspath(filename))
