@@ -37,4 +37,4 @@ jobs:
         working-directory: client
       - name: Run vue-tsc
         working-directory: client
-        run: npx vue-tsc --noEmit
+        run: yarn type-check
