@@ -97,7 +97,9 @@ const element = computed(() => {
 @import "scss/theme/blue.scss";
 
 .heading {
-    word-break: break-all;
+    overflow-wrap: break-word;
+    white-space: normal;
+    word-break: break-word;
 }
 
 // prettier-ignore
