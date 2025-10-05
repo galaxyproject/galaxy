@@ -154,7 +154,7 @@ onMounted(async () => {
     <div class="d-flex flex-column">
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <Heading h2 size="md">
+        <Heading h2 size="sm">
             This page allows you to manage your user preferences. You can change your email address, password, and other
             settings here.
         </Heading>
