@@ -56,7 +56,7 @@ def is_filtered(filters, trans, tool):
     return not all(_(context, tool) for _ in filters)
 
 
-def mock_tool(require_login=False, hidden=False, trackster_conf=False, allow_access=True):
+def mock_tool(require_login=False, hidden=False, allow_access=True):
     def allow_user_access(user, attempting_access):
         assert not attempting_access
         return allow_access
@@ -64,7 +64,6 @@ def mock_tool(require_login=False, hidden=False, trackster_conf=False, allow_acc
     tool = Bunch(
         require_login=require_login,
         hidden=hidden,
-        trackster_conf=trackster_conf,
         allow_user_access=allow_user_access,
     )
     return tool

@@ -281,11 +281,6 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
         assert baz_tool.handler == "special_handlers"
         assert baz_tool.destination == "bigmem"
 
-    def test_load_tool_params(self):
-        self._with_advanced_config()
-        foo_tool = self.job_config.tools["foo"][0]
-        assert foo_tool.params["source"] == "trackster"
-
     def test_limit_overrides(self):
         self._with_advanced_config()
         limits = self.job_config.limits
@@ -343,7 +338,6 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
 
     def test_tool_mapping_parameters(self):
         self._with_advanced_config()
-        assert self.job_config.tools["foo"][-1].params["source"] == "trackster"
         assert self.job_config.tools["longbar"][-1].destination == "dynamic"
         assert self.job_config.tools["longbar"][-1].resources == "all"
         assert "resources" not in self.job_config.tools["longbar"][-1].params
