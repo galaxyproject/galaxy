@@ -10,7 +10,7 @@ const container = Object.assign(document.createElement("div"), {
         position: relative;
         padding: 1rem;
         background-image: url(${root + visualization_plugin.logo});
-        background-size: 50px;
+        background-size: 10px;
         background-repeat: repeat;
         background-position: center;
         opacity: 0.5;
