@@ -1,1 +1,7 @@
-../package-pyproject.toml
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version", "dependencies", "description", "readme", "requires-python", "optional-dependencies"]
+name = "galaxy-schema"
