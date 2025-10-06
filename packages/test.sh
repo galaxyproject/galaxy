@@ -36,27 +36,23 @@ cd "$(dirname "$0")"
 TEST_PYTHON=${TEST_PYTHON:-"python3"}
 TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
-# Install uv for fast package installation
-if ! command -v uv >/dev/null; then
-    echo "Installing uv..."
-    if command -v curl >/dev/null; then
-        curl -LsSf https://astral.sh/uv/install.sh | sh || "$TEST_PYTHON" -m pip install uv
-    elif command -v wget >/dev/null; then
-        wget -qO- https://astral.sh/uv/install.sh | sh || "$TEST_PYTHON" -m pip install uv
-    else
-        "$TEST_PYTHON" -m pip install uv
-    fi
-    export PATH="$HOME/.local/bin:$PATH"
+if command -v uv >/dev/null; then
+    uv venv "$TEST_ENV_DIR" --python "$TEST_PYTHON"
+else
+    "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
 fi
 
-# Use uv venv for much faster virtual environment creation
-uv venv "$TEST_ENV_DIR" --python "$TEST_PYTHON"
 # shellcheck disable=SC1091
 . "${TEST_ENV_DIR}/bin/activate"
-
-# Note: No need to upgrade pip anymore since we're using uv exclusively
+if ! command -v uv >/dev/null; then
+    pip install --upgrade pip setuptools wheel
+fi
 if [ $FOR_PULSAR -eq 0 ]; then
-    uv pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+    if command -v uv >/dev/null; then
+        uv pip install -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+    else
+        pip install -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+    fi
 fi
 
 # Ensure ordered by dependency DAG
@@ -80,13 +76,29 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        uv pip install '.[image-util,template,jstree,config-template,test]'
+        if command -v uv >/dev/null; then
+            uv pip install '.[image-util,template,jstree,config-template,test]'
+        else
+            pip install '.[image-util,template,jstree,config-template,test]'
+        fi
     elif [ "$package_dir" = "tool_util" ]; then
-        uv pip install '.[cwl,mulled,edam,extended-assertions,test]'
+        if command -v uv >/dev/null; then
+            uv pip install '.[cwl,mulled,edam,extended-assertions,test]'
+        else
+            pip install '.[cwl,mulled,edam,extended-assertions,test]'
+        fi
     elif grep -q 'test =' setup.cfg 2>/dev/null; then
-        uv pip install '.[test]'
+        if command -v uv >/dev/null; then
+            uv pip install '.[test]'
+        else
+            pip install '.[test]'
+        fi
     else
-        uv pip install .
+        if command -v uv >/dev/null; then
+            uv pip install .
+        else
+            pip install .
+        fi
     fi
 
     if [ $FOR_PULSAR -eq 0 ]; then

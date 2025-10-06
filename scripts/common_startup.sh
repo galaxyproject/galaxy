@@ -4,22 +4,6 @@ set -e
 # The caller may do this as well, but since common_startup.sh can be called independently, we need to do it here
 . ./scripts/common_startup_functions.sh
 
-# Ensure uv is installed (used throughout this script)
-ensure_uv() {
-    if ! command -v uv >/dev/null; then
-        echo "Installing uv..."
-        local python_cmd="${1:-python3}"
-        if command -v curl >/dev/null; then
-            curl -LsSf https://astral.sh/uv/install.sh | sh || "$python_cmd" -m pip install "uv>=${MIN_UV_VERSION}"
-        elif command -v wget >/dev/null; then
-            wget -qO- https://astral.sh/uv/install.sh | sh || "$python_cmd" -m pip install "uv>=${MIN_UV_VERSION}"
-        else
-            "$python_cmd" -m pip install "uv>=${MIN_UV_VERSION}"
-        fi
-        export PATH="$HOME/.local/bin:$PATH"
-    fi
-}
-
 DEV_WHEELS=0
 FETCH_WHEELS=1
 CREATE_VENV=1
@@ -54,7 +38,7 @@ RMFILES="
 "
 
 MIN_PYTHON_VERSION=3.9
-MIN_UV_VERSION=0.5.0
+MIN_PIP_VERSION=20.3
 
 # return true if $1 is in $2 else false
 in_dir() {
@@ -128,15 +112,16 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    # Note: uv will be installed via standalone installer, not conda
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${GALAXY_CONDA_PYTHON_VERSION}"
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${GALAXY_CONDA_PYTHON_VERSION}" "pip>=${MIN_PIP_VERSION}"
                     unset __CONDA_INFO
                 fi
                 conda_activate
             fi
-            # Install uv first if not available, then use uv venv for fast virtual environment creation
-            ensure_uv python
-            uv venv "$GALAXY_VIRTUAL_ENV" --python python3
+            if command -v uv >/dev/null; then
+                uv venv "$GALAXY_VIRTUAL_ENV"
+            else
+                python3 -m venv "$GALAXY_VIRTUAL_ENV"
+            fi
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
 
@@ -147,35 +132,36 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "using Python: $GALAXY_PYTHON"
             echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_VIRTUAL_ENV to an"
             echo "existing environment before starting Galaxy."
-            
-            # Install uv first if not available, then use uv venv for fast virtual environment creation
-            ensure_uv "$GALAXY_PYTHON"
-            
-            # Use uv venv for much faster virtual environment creation
-            if ! uv venv "$GALAXY_VIRTUAL_ENV" --python "$GALAXY_PYTHON"; then
-                echo "Creating the Python virtual environment using uv failed."
-                echo "Trying with virtualenv now as fallback."
-                if command -v virtualenv >/dev/null; then
-                    virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
-                else
-                    # Download virtualenv zipapp as last resort
-                    vurl="https://bootstrap.pypa.io/virtualenv/${MIN_PYTHON_VERSION}/virtualenv.pyz"
-                    vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
-                    vsrc="$vtmp/$(basename $vurl)"
-                    echo "Fetching $vurl"
-                    if command -v curl >/dev/null; then
-                        curl -L -o "$vsrc" "$vurl"
-                    elif command -v wget >/dev/null; then
-                        wget -O "$vsrc" "$vurl"
+            if command -v uv >/dev/null; then
+                uv venv "$GALAXY_VIRTUAL_ENV" --python "$GALAXY_PYTHON"
+            else
+                # First try to use the venv standard library module, although it is
+                # not always installed by default on Linux distributions.
+                if ! "$GALAXY_PYTHON" -m venv "$GALAXY_VIRTUAL_ENV"; then
+                    echo "Creating the Python virtual environment using the venv standard library module failed."
+                    echo "Trying with virtualenv now."
+                    if command -v virtualenv >/dev/null; then
+                        virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
                     else
-                        "$GALAXY_PYTHON" -c "try:
-        from urllib import urlretrieve
-    except:
-        from urllib.request import urlretrieve
-    urlretrieve('$vurl', '$vsrc')"
+                        # Download virtualenv zipapp
+                        vurl="https://bootstrap.pypa.io/virtualenv/${MIN_PYTHON_VERSION}/virtualenv.pyz"
+                        vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
+                        vsrc="$vtmp/$(basename $vurl)"
+                        echo "Fetching $vurl"
+                        if command -v curl >/dev/null; then
+                            curl -L -o "$vsrc" "$vurl"
+                        elif command -v wget >/dev/null; then
+                            wget -O "$vsrc" "$vurl"
+                        else
+                            "$GALAXY_PYTHON" -c "try:
+            from urllib import urlretrieve
+        except:
+            from urllib.request import urlretrieve
+        urlretrieve('$vurl', '$vsrc')"
+                        fi
+                        "$GALAXY_PYTHON" "$vsrc" "$GALAXY_VIRTUAL_ENV"
+                        rm -rf "$vtmp"
                     fi
-                    "$GALAXY_PYTHON" "$vsrc" "$GALAXY_VIRTUAL_ENV"
-                    rm -rf "$vtmp"
                 fi
             fi
         fi
@@ -202,22 +188,30 @@ fi
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    # Ensure uv is installed - uv is much faster than pip (10-100x)
-    ensure_uv python
-    
-    # Use uv pip install for fast package installation
-    # Note: uv pip install is significantly faster than pip install
     # shellcheck disable=SC2086
-    uv pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    if command -v uv >/dev/null; then
+        uv pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    else
+        python -m pip install "pip>=$MIN_PIP_VERSION" wheel
+        pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    fi
 
     set_galaxy_config_file_var
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
-        if uv pip list | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
-            echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
-            uv pip uninstall psycopg2 psycopg2-binary
+        if command -v uv >/dev/null; then
+            if uv pip list | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
+                echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
+                uv pip uninstall psycopg2 psycopg2-binary
+            fi
+            echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | uv pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+        else
+            if pip list | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
+                echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
+                pip uninstall -y psycopg2 psycopg2-binary
+            fi
+            echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | uv pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     fi
 fi
 

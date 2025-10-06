@@ -131,21 +131,12 @@ function make_forks() {
 
 function create_venv() {
     if [ ! -d "$VENV" ]; then
-        # Install uv for fast venv creation and package management
-        if ! command -v uv >/dev/null; then
-            echo "Installing uv..."
-            if command -v curl >/dev/null; then
-                curl -LsSf https://astral.sh/uv/install.sh | sh || python3 -m pip install uv
-            elif command -v wget >/dev/null; then
-                wget -qO- https://astral.sh/uv/install.sh | sh || python3 -m pip install uv
-            else
-                python3 -m pip install uv
-            fi
-            export PATH="$HOME/.local/bin:$PATH"
+        if command -v uv >/dev/null; then
+            log_exec uv venv "$VENV"
+        else
+            log_exec python3 -m venv "$VENV"
+            log_exec "${VENV}/bin/pip" install wheel packaging
         fi
-        
-        log_exec uv venv "$VENV"
-        log_exec "${VENV}/bin/uv" pip install wheel packaging
     fi
     . "${VENV}/bin/activate"
 }
