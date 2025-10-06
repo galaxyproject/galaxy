@@ -33,8 +33,8 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: 'galaxy root/requirements.txt'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
       - name: Get full Python version
         id: full-python-version
         shell: bash
@@ -45,7 +45,7 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-reports-startup
       - name: Install tox
-        run: pip install tox
+        run: uv tool install tox --with tox-uv
       - name: Run tests
         run: tox -e reports_startup
         working-directory: 'galaxy root'

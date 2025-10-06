@@ -31,21 +31,16 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: 'galaxy root/requirements.txt'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
-      - name: Cache tox env
-        uses: actions/cache@v4
-        with:
-          path: .tox
-          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-mulled
       - name: Install Apptainer's singularity
         uses: eWaterCycle/setup-apptainer@v2
       - name: Install tox
-        run: pip install tox
+        run: uv tool install tox --with tox-uv
       - name: Run tests
         run: tox -e mulled
         working-directory: 'galaxy root'
