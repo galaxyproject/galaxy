@@ -1,0 +1,63 @@
+[project]
+name = "galaxy-meta-package"
+version = "0.0.0"
+description = "Meta package"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.uv.sources]
+galaxy-auth = { workspace = true }
+galaxy-config = { workspace = true }
+galaxy-data = { workspace = true }
+galaxy-files = { workspace = true }
+galaxy-job-execution = { workspace = true }
+galaxy-job-metrics = { workspace = true }
+galaxy-navigation = { workspace = true }
+galaxy-objectstore = { workspace = true }
+galaxy-schema = { workspace = true }
+galaxy-selenium = { workspace = true }
+galaxy-test-api = { workspace = true }
+galaxy-test-base = { workspace = true }
+galaxy-test-driver = { workspace = true }
+galaxy-test-selenium = { workspace = true }
+galaxy-tool-shed = { workspace = true }
+galaxy-tool-shed-schema = { workspace = true }
+galaxy-tours = { workspace = true }
+galaxy-web-apps = { workspace = true }
+galaxy-web-client = { workspace = true }
+galaxy-web-framework = { workspace = true }
+galaxy-web-stack = { workspace = true }
+galaxy-util = { workspace = true }
+galaxy-tool-util-models = { workspace = true }
+galaxy-tool-util = { workspace = true }
+galaxy-app = { workspace = true }
+galaxy = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+  "tool_util_models",
+  "util",
+  "config",
+  "files",
+  "job_metrics",
+  "navigation",
+  "objectstore",
+  "schema",
+  "tool_shed_schema",
+  "tool_util",
+  "data",
+  "selenium",
+  "tours",
+  "test_base",
+  "test_driver",
+  "auth",
+  "job_execution",
+  "test_api",
+  "web_framework",
+  "web_stack",
+  "app",
+  "web_apps",
+  "tool_shed",
+  "web_client",
+  "meta",
+]
