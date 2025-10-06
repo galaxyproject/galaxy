@@ -44,15 +44,16 @@
     overflow-y: auto !important;
 }
 
-// utility class to set word wrap to normal
-.word-wrap-normal {
-    word-wrap: normal;
-}
-
+// utility class to wrap words or break if necessary
 .word-wrap-break {
     overflow-wrap: break-word;
     white-space: normal;
     word-break: break-word;
+}
+
+// utility class to set word wrap to normal
+.word-wrap-normal {
+    word-wrap: normal;
 }
 
 // utility class to set white space wrapping to normal

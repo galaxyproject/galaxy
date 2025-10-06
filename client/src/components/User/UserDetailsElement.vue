@@ -45,8 +45,8 @@ const getStoragePercentageClass = (percentage: number) => {
                     <FontAwesomeIcon :icon="faAt" class="user-details-icon p-2" />
                     <span
                         id="user-preferences-current-email"
-                        class="word-wrap-break"
                         v-b-tooltip.hover.noninteractive
+                        class="word-wrap-break"
                         title="Your email address">
                         {{ userEmail }}
                     </span>
