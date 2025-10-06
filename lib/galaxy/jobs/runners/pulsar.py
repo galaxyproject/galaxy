@@ -498,8 +498,17 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 compute_environment = PulsarComputeEnvironment(client, job_wrapper, remote_job_config)
                 prepare_kwds["compute_environment"] = compute_environment
 
-            if job_wrapper.prepare(**prepare_kwds) is False:
+            try:
+                if job_wrapper.prepare(**prepare_kwds) is False:
+                    return command_line, client, remote_job_config, compute_environment, remote_container
+            except Exception as e:
+                # If we fail here the error isn't recoverable and we fail the job.
+                log.exception("failure preparing job %d", job_wrapper.job_id)
+                job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
+                job_state.fail_message = str(e)
+                self.work_queue.put((self.fail_job, job_state))
                 return command_line, client, remote_job_config, compute_environment, remote_container
+
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)
