@@ -82,7 +82,9 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     # Ignore exit code 5 (no tests ran)
     pytest "${marker_args[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
-        make mypy
+        # make mypy uses uv now and so this legacy code should just run mypy
+        # directly to use the venv we have already activated
+        mypy .
     fi
     cd ..
 done < $PACKAGE_LIST_FILE
