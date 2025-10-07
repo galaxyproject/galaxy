@@ -11,6 +11,7 @@ from pydantic import (
 )
 from sqlalchemy import select
 
+from galaxy.config.url_headers import UrlHeadersConfig
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     ItemAlreadyClaimedException,
@@ -89,6 +90,7 @@ class LandingRequestManager:
         self.workflow_contents_manager = workflow_contents_manager
         self.app = app
         self.vault = vault
+        self.url_headers_config = UrlHeadersConfig(app.config.url_headers_config_file)
 
     def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload, user_id=None) -> ToolLandingRequest:
         tool_id = payload.tool_id
@@ -362,19 +364,18 @@ class LandingRequestManager:
 
     def _encrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str) -> Optional[dict]:
         if request_state is not None:
-            if has_sensitive_headers(request_state):
-                # Sensitive headers found - vault is required
+            if has_sensitive_headers(request_state, self.url_headers_config):
                 if not self.vault:
                     raise InvalidVaultConfigException(
                         "Sensitive headers detected in landing request but no vault is configured. "
                         "Configure a vault to securely store sensitive header information."
                     )
-                # Encrypt the sensitive headers
                 return encrypt_headers_in_data(
                     request_state,
                     landing_uuid,
                     self.vault,
                     key_prefix="landing_request/headers",
+                    url_headers_config=self.url_headers_config,
                 )
         return request_state
 
@@ -385,5 +386,6 @@ class LandingRequestManager:
                 landing_uuid,
                 self.vault,
                 key_prefix="landing_request/headers",
+                url_headers_config=self.url_headers_config,
             )
         return request_state
