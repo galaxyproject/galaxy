@@ -739,6 +739,57 @@ class VitessceJson(Json):
 
 
 @build_sniff_from_prefix
+class AuspiceJson(Json):
+    """
+    Auspice is a visualization tool for phylogenetic trees and associated data.
+    It uses JSON format to represent the tree structure and metadata.
+    """
+
+    file_ext = "auspice.json"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "AuspiceJSON"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in Auspice v2 JSON by looking for keys
+        like "version", "meta" and "updated" that are both required by the
+        https://docs.nextstrain.org/projects/auspice/en/stable/releases/v2.html format
+        and also will be in the first part of the file
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.json' )
+        >>> AuspiceJson().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.auspicejson' )
+        >>> AuspiceJson().sniff( fname )
+        True
+        """
+        is_auspicejson = False
+        if self._looks_like_json(file_prefix):
+            is_auspicejson = self._looks_like_is_auspicejson(file_prefix)
+        return is_auspicejson
+
+    def _looks_like_is_auspicejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
+        """
+        Expects JSON to start with { and 'meta', 'tree', 'updated' and 'nodes' to be present as keys in the JSON structure.
+        """
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+
+                if segment_str.startswith("{") and all(
+                    x in segment_str for x in ["version", "meta", "updated", "panels"]
+                ):
+                    return True
+        except Exception:
+            pass
+        return False
+
+
+@build_sniff_from_prefix
 class Obo(Text):
     """
     OBO file format description
