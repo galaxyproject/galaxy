@@ -65,14 +65,14 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        pip install '.[image-util,template,jstree,config-template]'
+        pip install '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
-        pip install '.[cwl,mulled,edam,extended-assertions]'
+        pip install '.[cwl,mulled,edam,extended-assertions,test]'
+    elif grep -q 'test =' setup.cfg 2>/dev/null; then
+        pip install '.[test]'
     else
         pip install .
     fi
-
-    pip install -r test-requirements.txt
 
     if [ $FOR_PULSAR -eq 0 ]; then
         marker_args=(-m 'not external_dependency_management')
