@@ -69,20 +69,6 @@ const okButtonText = computed(() => {
         return `${props.actionButtonText} ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
     }
 });
-const fields = computed(() => {
-    if (datasetsVisible.value) {
-        return [
-            { key: "label", label: "Name", sortable: true },
-            { key: "update_time", label: "Last Updated", sortable: true },
-        ];
-    } else {
-        return [
-            { key: "label", label: "History Name" },
-            { key: "size", label: "Datasets", sortable: false },
-            { key: "update_time", label: "Last Updated" },
-        ];
-    }
-});
 const selectAllIcon = computed(() => {
     if (allSelected.value) {
         return SELECTION_STATES.SELECTED;
@@ -115,7 +101,7 @@ function datasetEntryToRecord(entry: HDASummary): DatasetRecord {
         details: "",
         isLeaf: true,
         url: entry.url,
-        update_time: entry.update_time,
+        update_time: entry.update_time || "",
         entry: entry,
     };
 
@@ -306,7 +292,6 @@ function onCancel() {
         ref="selectionDialog"
         options-show
         :disable-ok="!hasValue || submitting"
-        :fields="fields"
         :ok-button-text="okButtonText"
         :modal-show="modalShow"
         :file-mode="false"
