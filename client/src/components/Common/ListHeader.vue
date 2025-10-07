@@ -81,13 +81,13 @@ defineExpose({
         </div>
 
         <div class="list-header-filters">
-            <div v-if="showSortOptions">
-                <BFormCheckbox
-                    v-if="showSelectAll"
-                    :checked="allSelected"
-                    :intermediate="intermediateSelected"
-                    @change="emit('select-all')" />
+            <BFormCheckbox
+                v-if="showSelectAll"
+                :checked="allSelected"
+                :intermediate="intermediateSelected"
+                @change="emit('select-all')" />
 
+            <slot v-if="showSortOptions && sortKeys.length > 0">
                 Sort by:
                 <GButtonGroup>
                     <GButton
@@ -105,9 +105,9 @@ defineExpose({
                         {{ sortKey.label }}
                     </GButton>
                 </GButtonGroup>
+            </slot>
 
-                <slot name="extra-filter" />
-            </div>
+            <slot name="extra-filter" />
 
             <div v-if="showViewToggle">
                 Display:
