@@ -1,12 +1,16 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard
-            :title="model.fixed_title"
-            :icon="icon"
-            :collapsible="true"
-            :expanded.sync="expanded"
-            :credential-info="credentialInfo">
+        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
+            <template v-slot:title>
+                <span v-if="credentialInfo?.toolId" v-b-tooltip.hover title="Uses credentials">
+                    <FontAwesomeIcon :icon="faKey" fixed-width />
+                </span>
+            </template>
             <template v-slot:body>
+                <ToolCredentials
+                    v-if="credentialInfo?.toolId"
+                    :tool-id="credentialInfo.toolId"
+                    :tool-version="credentialInfo.toolVersion" />
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
                     :inputs="modelInputs"
@@ -27,7 +31,8 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faKey, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
@@ -39,10 +44,14 @@ import { useHistoryItemsStore } from "stores/historyItemsStore";
 
 import { getTool } from "./services";
 
+import ToolCredentials from "@/components/Tool/ToolCredentials.vue";
+
 library.add(faEdit, faUndo);
 
 export default {
     components: {
+        FontAwesomeIcon,
+        ToolCredentials,
         FormDisplay,
         FormCard,
         FormMessage,
@@ -67,6 +76,7 @@ export default {
     },
     data() {
         return {
+            faKey,
             expanded: this.model.expanded,
             errorText: null,
             modelData: {},
