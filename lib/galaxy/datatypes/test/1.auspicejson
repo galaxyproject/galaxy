@@ -1,0 +1,14 @@
+{
+  "version": "v2",
+  "meta": {
+    "title": "Minimal AuspiceJSON",
+    "updated": "2025-02-05",
+    "panels": ["tree"]
+  },
+  "tree": {
+    "name": "1",
+    "node_attrs": {
+      "div": 1
+    }
+  }
+}
