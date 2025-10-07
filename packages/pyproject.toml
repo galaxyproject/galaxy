@@ -1,9 +1,12 @@
 [project]
 name = "galaxy-meta-package"
 version = "0.0.0"
-description = "Meta package"
+description = "Meta package stub (not a real package)"
 requires-python = ">=3.9"
 dependencies = []
+
+[tool.uv]
+package = false
 
 [tool.uv.sources]
 galaxy-auth = { workspace = true }
