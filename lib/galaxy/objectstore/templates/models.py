@@ -14,6 +14,7 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     Literal,
+    TypeAlias,
 )
 
 from galaxy.objectstore.badges import (
@@ -39,7 +40,7 @@ from galaxy.util.config_templates import (
 )
 
 ObjectStoreTemplateVariableType = TemplateVariableType
-ObjectStoreTemplateVariableValueType = TemplateVariableValueType
+ObjectStoreTemplateVariableValueType: TypeAlias = TemplateVariableValueType
 ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3", "onedata", "rucio", "irods"]
 
 
