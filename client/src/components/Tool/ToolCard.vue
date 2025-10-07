@@ -207,36 +207,38 @@ onBeforeMount(() => {
             <slot name="buttons" />
         </template>
 
-        <template v-if="props.options.credentials?.length" v-slot>
-            <ToolCredentials
-                v-if="!props.allowEditingCredentials"
-                class="mt-2"
-                :tool-id="props.id"
-                :tool-version="props.version"
-                :job-credentials-context="props.options.job_credentials_context" />
-            <BAlert
-                v-else-if="props.allowEditingCredentials"
-                v-b-tooltip.hover
-                variant="info"
-                class="mt-2"
-                show
-                :title="credentialToolTip">
-                <FontAwesomeIcon :icon="faKey" />
-                Requires credentials to run this tool.
+        <template v-slot>
+            <template v-if="props.options.credentials?.length">
+                <ToolCredentials
+                    v-if="!props.allowEditingCredentials"
+                    class="mt-2"
+                    :tool-id="props.id"
+                    :tool-version="props.version"
+                    :job-credentials-context="props.options.job_credentials_context" />
+                <BAlert
+                    v-else-if="props.allowEditingCredentials"
+                    v-b-tooltip.hover
+                    variant="info"
+                    class="mt-2"
+                    show
+                    :title="credentialToolTip">
+                    <FontAwesomeIcon :icon="faKey" />
+                    Requires credentials to run this tool.
 
-                <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
-                <BPopover target="target" triggers="hover" boundary="window">
-                    <div class="d-flex flex-column">
-                        <span
-                            v-for="(service, index) in props.options.credentials"
-                            :key="index"
-                            class="d-flex flex-column">
-                            <b> {{ service.label }}: </b>
-                            {{ service.description }}
-                        </span>
-                    </div>
-                </BPopover>
-            </BAlert>
+                    <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
+                    <BPopover target="target" triggers="hover" boundary="window">
+                        <div class="d-flex flex-column">
+                            <span
+                                v-for="(service, index) in props.options.credentials"
+                                :key="index"
+                                class="d-flex flex-column">
+                                <b> {{ service.label }}: </b>
+                                {{ service.description }}
+                            </span>
+                        </div>
+                    </BPopover>
+                </BAlert>
+            </template>
 
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
             <FormMessage :variant="props.messageVariant" :message="props.messageText" />
