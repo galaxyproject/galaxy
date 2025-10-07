@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { onMounted, type Ref, ref, watch } from "vue";
-import Vue from "vue";
+import Vue, { onMounted, ref, watch } from "vue";
 
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
@@ -53,7 +52,7 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 
 const errorMessage = ref("");
 const filter = ref("");
-const items: Ref<Array<Record>> = ref([]);
+const items = ref<SelectionItem[]>([]);
 const hasValue = ref(false);
 const modalShow = ref(true);
 const optionsShow = ref(true);
@@ -196,7 +195,6 @@ watch(
     <SelectionDialog
         :error-message="errorMessage"
         :disable-ok="!hasValue"
-        :fields="fields"
         :items="items"
         :total-items="items.length"
         :modal-show="modalShow"
