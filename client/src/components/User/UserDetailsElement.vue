@@ -35,17 +35,18 @@ const getStoragePercentageClass = (percentage: number) => {
         <div class="user-details d-flex flex-gapx-1 flex-gapy-1 w-100 justify-content-between">
             <div class="d-flex align-items-center flex-gapx-1">
                 <div class="d-flex align-items-center flex-gapx-1 mr-5">
-                    <FontAwesomeIcon :icon="faUser" class="user-details-icon" />
+                    <FontAwesomeIcon :icon="faUser" class="user-details-icon p-2" />
                     <span v-b-tooltip.hover.noninteractive title="Your username (public name)">
                         {{ userUsername }}
                     </span>
                 </div>
 
                 <div class="d-flex align-items-center flex-gapx-1">
-                    <FontAwesomeIcon :icon="faAt" class="user-details-icon" />
+                    <FontAwesomeIcon :icon="faAt" class="user-details-icon p-2" />
                     <span
                         id="user-preferences-current-email"
                         v-b-tooltip.hover.noninteractive
+                        class="word-wrap-break"
                         title="Your email address">
                         {{ userEmail }}
                     </span>
@@ -95,10 +96,10 @@ const getStoragePercentageClass = (percentage: number) => {
 
         .user-details-icon {
             color: $brand-primary;
-            font-size: 1rem;
-            border: 1px solid $brand-primary;
-            border-radius: 0.75rem;
-            padding: 0.5rem;
+            font-size: $h5-font-size;
+            border: $border-default;
+            border-color: $brand-primary;
+            border-radius: $border-radius-extralarge;
         }
     }
 }
