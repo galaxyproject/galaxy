@@ -49,7 +49,7 @@ setup-venv:
 _test: 
 	uv run pytest $(TESTS)
 
-test: setupt-venv _test
+test: setup-venv _test
 
 _dist:
 	uv build --out-dir $(DIST)
@@ -67,8 +67,27 @@ mypy: _setup-mypy-venv _mypy
 
 _twine-exists: ; @which twine > /dev/null
 
+_setup-lint-venv: setup-venv
+	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
+
+_lint:
+	uv run ruff check .
+
+lint: _setup-lint-venv _lint
+
 lint-dist: _twine-exists dist
 	$(IN_VENV) twine check dist/*
+
+# black doesn't actually work on symlinked files because they are outside
+# the current directory
+
+#_setup-format-venv: setup-venv
+#	uv pip install isort black
+#_isort:
+#	uv run isort --sp ../../.isort.cfg . 
+#_black:
+#	uv run black --config ../pyproject.toml .
+#format: _setup-format-venv _isort _black
 
 _release-test-artifacts:
 	$(IN_VENV) twine upload -r test dist/*

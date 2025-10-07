@@ -52,7 +52,23 @@ The ``Makefile`` can also be used for typechecking.
     $ make _mypy  # a shortcut to just run mypy on an existing updated environment
 
 This is equivalent to syncing the uv environment and then adding
-Galaxy's type dependencies to it.
+Galaxy's type checking dependencies to it.
 
+    $ uv sync --all-extras
     $ uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
     $ uv run mypy .
+
+The ``Makefile`` can also be used for linting.
+
+    $ git clone https://github.com/galaxyproject/galaxy.git
+    $ cd galaxy/packages
+    $ cd auth
+    $ make lint
+    $ make _lint  # a shortcut to just run ruff on an existing updated environment
+
+This is equivalent to syncing the uv environment and then adding
+Galaxy's linting dependencies to it.
+
+    $ uv sync --all-extras
+    $ uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
+    $ uv run ruff check .
