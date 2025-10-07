@@ -13,6 +13,7 @@ PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
+DIST=dist
 TESTS?=$(SOURCE_DIR) $(TEST_DIR)
 
 .PHONY: clean-pyc clean-build docs clean
@@ -43,15 +44,26 @@ clean-tests:
 	rm -fr .tox/
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then python -m venv $(VENV); exit; fi;
-	$(IN_VENV) pip install -r dev-requirements.txt
+	uv sync --all-extras
 
-test:
-	$(IN_VENV) pytest $(TESTS)
+_test: 
+	uv run pytest $(TESTS)
 
-dist: clean
-	$(IN_VENV) python -m build
-	ls -l dist
+test: setupt-venv _test
+
+_dist:
+	uv build --out-dir $(DIST)
+	ls -l $(DIST)
+
+dist: setup-venv clean _dist
+
+_setup-mypy-venv: setup-venv
+	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+
+_mypy:
+	uv run mypy .
+
+mypy: _setup-mypy-venv _mypy
 
 _twine-exists: ; @which twine > /dev/null
 
@@ -88,6 +100,3 @@ push-release:
 	echo "Makefile doesn't manually push release."
 
 release: release-local push-release
-
-mypy:
-	mypy .

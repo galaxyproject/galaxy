@@ -29,3 +29,30 @@ after setting up a virtual environment for that package.
 
 When switching between projects it is just important to remember
 to rerun the sync command for that project.
+
+The package ``Makefile`` has been updated to use ux also, so the above can
+be simplified to just:
+
+    $ git clone https://github.com/galaxyproject/galaxy.git
+    $ cd galaxy/packages
+    $ cd auth
+    $ make test
+
+If the environment has already been setup and you wish to just re-run
+the tests. The ``make _test`` command be used to just do the testing in
+the existing environment without messing with ``sync`` and adjusting
+dependencies.
+
+The ``Makefile`` can also be used for typechecking.
+
+    $ git clone https://github.com/galaxyproject/galaxy.git
+    $ cd galaxy/packages
+    $ cd auth
+    $ make mypy
+    $ make _mypy  # a shortcut to just run mypy on an existing updated environment
+
+This is equivalent to syncing the uv environment and then adding
+Galaxy's type dependencies to it.
+
+    $ uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+    $ uv run mypy .
