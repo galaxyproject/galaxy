@@ -2402,6 +2402,7 @@ class Tool(UsesDictVisibleKeys):
         history: Optional[model.History] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
+        completed_job: Optional[Job] = None,
     ):
         """
         Execute the tool using parameter values in `incoming`. This just
@@ -2419,6 +2420,7 @@ class Tool(UsesDictVisibleKeys):
             history=history,
             set_output_hid=set_output_hid,
             flush_job=flush_job,
+            completed_job=completed_job,
         )
 
     def _execute(
