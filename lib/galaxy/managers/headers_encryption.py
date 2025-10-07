@@ -2,38 +2,23 @@
 Utilities for encrypting sensitive headers using Galaxy's Vault system.
 
 This module provides functionality to:
-1. Identify sensitive headers that should be encrypted
+1. Identify sensitive headers that should be encrypted based on configuration
 2. Encrypt/decrypt headers using the vault
 3. Transform data structures to use vault references for sensitive headers
 
 This can be used for any scenario where HTTP headers containing sensitive information
 (like authorization tokens, API keys, etc.) need to be stored securely in the database.
+Header sensitivity is determined by the URL headers configuration file.
 """
 
 import logging
-import re
 from typing import (
     Any,
     Optional,
 )
 
+from galaxy.config.url_headers import UrlHeadersConfig
 from galaxy.security.vault import Vault
-
-# Headers that should always be encrypted when stored in the database
-SENSITIVE_HEADER_PATTERNS = [
-    # Auth patterns (covers authorization, authentication, auth, oauth, x-auth, etc.)
-    re.compile(r".*auth.*", re.IGNORECASE),
-    # Key patterns (API-Key, Auth-Key, X-API-Key, etc.)
-    re.compile(r".*key$", re.IGNORECASE),
-    # Token patterns (Bearer-Token, API-Token, X-TOKEN, etc.)
-    re.compile(r".*token$", re.IGNORECASE),
-    # Secret patterns (Client-Secret, API-Secret, etc.)
-    re.compile(r".*secret$", re.IGNORECASE),
-    # Cookie patterns
-    re.compile(r".*cookie.*", re.IGNORECASE),
-    # Bearer (standalone)
-    re.compile(r"^bearer$", re.IGNORECASE),
-]
 
 # Default vault key prefix for headers
 DEFAULT_VAULT_KEY_PREFIX = "headers"
@@ -41,39 +26,118 @@ DEFAULT_VAULT_KEY_PREFIX = "headers"
 log = logging.getLogger(__name__)
 
 
-def is_sensitive_header(header_name: str) -> bool:
-    for pattern in SENSITIVE_HEADER_PATTERNS:
-        if pattern.match(header_name):
-            return True
+def is_sensitive_header(
+    header_name: str, url_headers_config: Optional[UrlHeadersConfig] = None, url: Optional[str] = None
+) -> bool:
+    """
+    Check if a header contains sensitive information and should be encrypted.
+
+    Args:
+        header_name: The header name to check
+        url_headers_config: URL headers configuration. This is required to determine
+                           sensitivity as we no longer use hardcoded patterns.
+        url: Optional target URL for URL-specific header validation
+
+    Returns:
+        True if the header should be encrypted, False otherwise
+    """
+    if url_headers_config:
+        if url:
+            return url_headers_config.is_header_sensitive_for_url(header_name, url)
+        else:
+            # No URL provided - cannot perform URL-specific sensitivity checking
+            # In our pattern-based system, headers without URLs cannot be properly validated
+            # Default to not sensitive (individual header checking should not fail fast)
+            log.debug(f"No URL provided for sensitivity check of header '{header_name}' - defaulting to not sensitive")
+            return False
+
+    # No configuration provided - default to not sensitive for security
+    # (better to not encrypt than to encrypt everything without knowing)
+    log.debug(
+        f"No URL headers configuration provided for sensitivity check of header '{header_name}' - defaulting to not sensitive"
+    )
     return False
 
 
-def has_sensitive_headers(data: dict) -> bool:
+def has_sensitive_headers(
+    data: dict, url_headers_config: Optional[UrlHeadersConfig] = None, url: Optional[str] = None
+) -> bool:
     """
     Check if the data structure contains any sensitive headers that would require encryption.
 
     This function recursively searches through a dictionary structure to detect
     if any sensitive headers are present that would need to be encrypted.
 
+    IMPORTANT: This function fails fast if headers are found but no configuration
+    is provided.
+
     Args:
         data: The data dictionary structure to check for sensitive headers
+        url_headers_config: URL headers configuration for sensitivity checks (required if headers present)
+        url: Optional target URL for URL-specific header validation
 
     Returns:
         True if sensitive headers are found, False otherwise
+
+    Raises:
+        ValueError: If headers are present but no configuration is provided
     """
-    for key, value in data.items():
-        if key == "headers" and isinstance(value, dict):
-            for header_name in value.keys():
-                if is_sensitive_header(header_name):
-                    return True
-        elif isinstance(value, dict):
-            if has_sensitive_headers(value):
-                return True
-        elif isinstance(value, list):
-            for item in value:
-                if isinstance(item, dict) and has_sensitive_headers(item):
-                    return True
-    return False
+    if not url_headers_config:
+        # Without configuration, headers are not allowed at all
+        # Fail fast if any headers are found anywhere in the data structure
+        def check_for_headers(obj):
+            if isinstance(obj, dict):
+                for key, value in obj.items():
+                    if key == "headers" and isinstance(value, dict) and value:
+                        header_names = list(value.keys())
+                        raise ValueError(
+                            f"Headers are not allowed without proper URL headers configuration. "
+                            f"Found headers: {header_names}. "
+                            f"Please configure url_headers_config_file in Galaxy configuration to enable header usage."
+                        )
+                    elif isinstance(value, (dict, list)):
+                        check_for_headers(value)
+            elif isinstance(obj, list):
+                for item in obj:
+                    if isinstance(item, (dict, list)):
+                        check_for_headers(item)
+
+        check_for_headers(data)
+        return False
+
+    # Configuration exists - check for sensitive headers recursively
+    def check_sensitivity(obj, inherited_url=None):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key == "headers" and isinstance(value, dict) and value:
+                    # Look for a URL at the same level as the headers (e.g., in UrlDataElement)
+                    element_url = obj.get("url") if "url" in obj else inherited_url
+
+                    if not element_url:
+                        # No URL available - cannot perform URL-specific sensitivity checking
+                        # In a pattern-based system, headers without URLs cannot be properly validated
+                        # This should fail fast for security
+                        header_names = list(value.keys())
+                        raise ValueError(
+                            f"URL is required for header validation in pattern-based configuration. "
+                            f"Found headers: {header_names}. "
+                            f"Cannot validate headers without knowing the target URL."
+                        )
+
+                    for header_name in value.keys():
+                        if is_sensitive_header(header_name, url_headers_config, element_url):
+                            return True
+                elif isinstance(value, (dict, list)):
+                    if check_sensitivity(value, inherited_url):
+                        return True
+        elif isinstance(obj, list):
+            for item in obj:
+                if isinstance(item, (dict, list)):
+                    if check_sensitivity(item, inherited_url):
+                        return True
+        return False
+
+    return check_sensitivity(data, url)
 
 
 def create_vault_key(context_id: str, header_name: str, key_prefix: Optional[str] = None) -> str:
