@@ -173,7 +173,12 @@ def create_vault_reference(header_name: str, reference_prefix: str = "VAULT_HEAD
 
 
 def encrypt_headers_in_data(
-    data: dict, context_id: str, vault: Vault, key_prefix: Optional[str] = None, reference_prefix: str = "VAULT_HEADER"
+    data: dict,
+    context_id: str,
+    vault: Vault,
+    key_prefix: Optional[str] = None,
+    reference_prefix: str = "VAULT_HEADER",
+    url_headers_config: Optional[UrlHeadersConfig] = None,
 ) -> dict:
     """
     Recursively process data structure to encrypt sensitive headers.
@@ -189,22 +194,36 @@ def encrypt_headers_in_data(
         vault: Vault instance for encryption
         key_prefix: Optional custom prefix for vault keys. Defaults to DEFAULT_VAULT_KEY_PREFIX
         reference_prefix: Prefix for vault references. Defaults to "VAULT_HEADER"
+        url_headers_config: Optional URL headers configuration for sensitivity checks
 
     Returns:
         Modified data structure with sensitive headers encrypted
+
+    Raises:
+        ValueError: If headers are present but proper configuration or URL is not provided
     """
+    # Validate headers before processing - this will fail fast if headers are found
+    # but configuration or URLs are missing
+    has_sensitive_headers(data, url_headers_config)
+
     # Make a deep copy to avoid modifying the original
     encrypted_data: dict[str, Any] = {}
 
     for key, value in data.items():
         if key == "headers" and isinstance(value, dict):
-            encrypted_data[key] = _encrypt_headers_dict(value, context_id, vault, key_prefix, reference_prefix)
+            # Look for a URL at the same level as the headers (e.g., in UrlDataElement)
+            element_url = data.get("url") if "url" in data else None
+            encrypted_data[key] = _encrypt_headers_dict(
+                value, context_id, vault, key_prefix, reference_prefix, url_headers_config, element_url
+            )
         elif isinstance(value, dict):
-            encrypted_data[key] = encrypt_headers_in_data(value, context_id, vault, key_prefix, reference_prefix)
+            encrypted_data[key] = encrypt_headers_in_data(
+                value, context_id, vault, key_prefix, reference_prefix, url_headers_config
+            )
         elif isinstance(value, list):
             encrypted_data[key] = [
                 (
-                    encrypt_headers_in_data(item, context_id, vault, key_prefix, reference_prefix)
+                    encrypt_headers_in_data(item, context_id, vault, key_prefix, reference_prefix, url_headers_config)
                     if isinstance(item, dict)
                     else item
                 )
@@ -217,7 +236,12 @@ def encrypt_headers_in_data(
 
 
 def decrypt_headers_in_data(
-    data: dict, context_id: str, vault: Vault, key_prefix: Optional[str] = None, reference_prefix: str = "VAULT_HEADER"
+    data: dict,
+    context_id: str,
+    vault: Vault,
+    key_prefix: Optional[str] = None,
+    reference_prefix: str = "VAULT_HEADER",
+    url_headers_config: Optional[UrlHeadersConfig] = None,
 ) -> dict:
     """
     Recursively process data structure to decrypt sensitive headers from vault.
@@ -233,6 +257,7 @@ def decrypt_headers_in_data(
         vault: Vault instance for decryption
         key_prefix: Optional custom prefix for vault keys. Defaults to DEFAULT_VAULT_KEY_PREFIX
         reference_prefix: Prefix for vault references. Defaults to "VAULT_HEADER"
+        url_headers_config: Optional URL headers configuration for sensitivity checks
 
     Returns:
         Modified data structure with actual header values restored
@@ -244,11 +269,13 @@ def decrypt_headers_in_data(
         if key == "headers" and isinstance(value, dict):
             decrypted_data[key] = _decrypt_headers_dict(value, context_id, vault, key_prefix, reference_prefix)
         elif isinstance(value, dict):
-            decrypted_data[key] = decrypt_headers_in_data(value, context_id, vault, key_prefix, reference_prefix)
+            decrypted_data[key] = decrypt_headers_in_data(
+                value, context_id, vault, key_prefix, reference_prefix, url_headers_config
+            )
         elif isinstance(value, list):
             decrypted_data[key] = [
                 (
-                    decrypt_headers_in_data(item, context_id, vault, key_prefix, reference_prefix)
+                    decrypt_headers_in_data(item, context_id, vault, key_prefix, reference_prefix, url_headers_config)
                     if isinstance(item, dict)
                     else item
                 )
@@ -266,6 +293,8 @@ def _encrypt_headers_dict(
     vault: Vault,
     key_prefix: Optional[str] = None,
     reference_prefix: str = "VAULT_HEADER",
+    url_headers_config: Optional[UrlHeadersConfig] = None,
+    url: Optional[str] = None,
 ) -> dict[str, str]:
     """
     Encrypt sensitive headers in a headers dictionary.
@@ -276,13 +305,15 @@ def _encrypt_headers_dict(
         vault: Vault instance for encryption
         key_prefix: Optional custom prefix for vault keys
         reference_prefix: Prefix for vault references
+        url_headers_config: Optional URL headers configuration for sensitivity checks
+        url: Optional target URL for URL-specific header validation
 
     Returns:
         Dictionary with sensitive headers replaced by vault references
     """
     encrypted_headers = {}
     for header_name, header_value in headers.items():
-        if is_sensitive_header(header_name):
+        if is_sensitive_header(header_name, url_headers_config, url):
             # Encrypt sensitive header
             vault_key = create_vault_key(context_id, header_name, key_prefix)
             vault.write_secret(vault_key, header_value)
