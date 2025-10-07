@@ -3,5 +3,5 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["version", "dependencies", "description", "readme", "requires-python", "optional-dependencies"]
+dynamic = ["version", "dependencies", "description", "readme", "requires-python", "optional-dependencies", "license", "authors"]
 name = "galaxy-web-apps"
