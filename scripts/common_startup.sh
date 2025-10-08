@@ -188,25 +188,27 @@ fi
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    # shellcheck disable=SC2086
     if command -v uv >/dev/null; then
         uv pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-    else
-        python -m pip install "pip>=$MIN_PIP_VERSION" wheel
-        pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-    fi
 
-    set_galaxy_config_file_var
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
-    if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
-        if command -v uv >/dev/null; then
-            if uv pip list | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
+        set_galaxy_config_file_var
+        GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
+        if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
+            if uv pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
                 echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
                 uv pip uninstall psycopg2 psycopg2-binary
             fi
             echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | uv pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-        else
-            if pip list | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
+        fi
+    else
+        python -m pip install "pip>=$MIN_PIP_VERSION" wheel
+        # shellcheck disable=SC2086
+        pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+
+        set_galaxy_config_file_var
+        GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
+        if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
+            if pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
                 echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
                 pip uninstall -y psycopg2 psycopg2-binary
             fi
