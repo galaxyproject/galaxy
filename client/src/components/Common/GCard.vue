@@ -549,16 +549,15 @@ function onKeyDown(event: KeyboardEvent) {
                         </div>
                     </div>
 
-                    <div :id="getElementId(props.id, 'description')">
+                    <div :id="getElementId(props.id, 'description')" class="g-card-description">
                         <slot name="description">
-                            <TextSummary
-                                v-if="props.description && !props.fullDescription"
-                                :id="getElementId(props.id, 'text-summary')"
-                                :description="props.description" />
-                            <div
-                                v-else-if="props.description && props.fullDescription"
-                                class="mb-2"
-                                v-html="renderMarkdown(props.description)" />
+                            <template v-if="props.description">
+                                <TextSummary
+                                    v-if="!props.fullDescription"
+                                    :id="getElementId(props.id, 'text-summary')"
+                                    :description="props.description" />
+                                <div v-else v-html="renderMarkdown(props.description)" />
+                            </template>
                         </slot>
                     </div>
                 </div>
@@ -598,9 +597,13 @@ function onKeyDown(event: KeyboardEvent) {
                             </div>
                         </slot>
 
-                        <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto mt-1">
+                        <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
                             <slot name="secondary-actions">
-                                <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
+                                <BButtonGroup
+                                    v-if="props.secondaryActions?.length"
+                                    :id="getElementId(props.id, 'secondary-actions')"
+                                    size="sm"
+                                    class="mt-1">
                                     <template v-for="sa in props.secondaryActions">
                                         <BButton
                                             v-if="sa.visible ?? true"
@@ -630,30 +633,33 @@ function onKeyDown(event: KeyboardEvent) {
 
                             <div :id="getElementId(props.id, 'primary-actions')" class="d-flex flex-gapx-1">
                                 <slot name="primary-actions">
-                                    <template v-for="pa in props.primaryActions">
-                                        <BButton
-                                            v-if="pa.visible ?? true"
-                                            :id="getActionId(props.id, pa.id)"
-                                            :key="pa.id"
-                                            v-b-tooltip.hover.noninteractive
-                                            :disabled="pa.disabled"
-                                            :title="localize(pa.title)"
-                                            :variant="pa.variant || 'primary'"
-                                            :size="pa.size || 'sm'"
-                                            :to="pa.to"
-                                            :href="pa.href"
-                                            :class="{
-                                                'inline-icon-button': pa.inline,
-                                                [String(pa.class)]: pa.class,
-                                            }"
-                                            @click.stop="pa.handler">
-                                            <FontAwesomeIcon
-                                                v-if="pa.icon"
-                                                :icon="pa.icon"
-                                                :size="pa.size || undefined"
-                                                fixed-width />
-                                            {{ localize(pa.label) }}
-                                        </BButton>
+                                    <template v-if="props.primaryActions?.length">
+                                        <template v-for="pa in props.primaryActions">
+                                            <BButton
+                                                v-if="pa.visible ?? true"
+                                                :id="getActionId(props.id, pa.id)"
+                                                :key="pa.id"
+                                                v-b-tooltip.hover.noninteractive
+                                                class="mt-1"
+                                                :disabled="pa.disabled"
+                                                :title="localize(pa.title)"
+                                                :variant="pa.variant || 'primary'"
+                                                :size="pa.size || 'sm'"
+                                                :to="pa.to"
+                                                :href="pa.href"
+                                                :class="{
+                                                    'inline-icon-button': pa.inline,
+                                                    [String(pa.class)]: pa.class,
+                                                }"
+                                                @click.stop="pa.handler">
+                                                <FontAwesomeIcon
+                                                    v-if="pa.icon"
+                                                    :icon="pa.icon"
+                                                    :size="pa.size || undefined"
+                                                    fixed-width />
+                                                {{ localize(pa.label) }}
+                                            </BButton>
+                                        </template>
                                     </template>
                                 </slot>
                             </div>
@@ -739,6 +745,12 @@ function onKeyDown(event: KeyboardEvent) {
             line-height: 1.2;
             white-space: normal;
             text-overflow: unset;
+        }
+
+        .g-card-description {
+            :deep(p) {
+                margin-bottom: 0;
+            }
         }
 
         .g-card-secondary-action-label {
