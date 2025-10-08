@@ -368,6 +368,8 @@ class JobManager:
 class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
 
+    IGNORED_NON_JOB_PARAMETERS = ("__use_cached_job__", "__workflow_invocation_uuid__", "__when_value__")
+
     def __init__(
         self,
         sa_session: galaxy_scoped_session,
@@ -559,7 +561,7 @@ class JobSearch:
                         continue
                     elif k == "chromInfo" and "?.len" in v:
                         continue
-                    elif k == "__when_value__":
+                    elif k in self.IGNORED_NON_JOB_PARAMETERS:
                         continue
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(
@@ -646,7 +648,7 @@ class JobSearch:
                 continue
             elif k == "chromInfo" and "?.len" in v:
                 continue
-            elif k == "__when_value__":
+            elif k in self.IGNORED_NON_JOB_PARAMETERS:
                 # TODO: really need to separate this.
                 continue
             value_dump = None if v is None else json.dumps(v, sort_keys=True)
