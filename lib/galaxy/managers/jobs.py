@@ -368,7 +368,7 @@ class JobManager:
 class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
 
-    IGNORED_NON_JOB_PARAMETERS = ("__use_cached_job__", "__workflow_invocation_uuid__", "__when_value__")
+    IGNORED_NON_JOB_PARAMETERS = ("__use_cached_job__", "__workflow_invocation_uuid__", "__when_value__", "__input_ext")
 
     def __init__(
         self,
