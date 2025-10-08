@@ -8431,3 +8431,96 @@ steps:
                 ).strip()
                 == "2"
             )
+
+    def test_run_workflow_use_cached_job_implicit_conversion_send_to_new_history(self):
+        wf = """class: GalaxyWorkflow
+inputs:
+  fastq_input:
+    type: data
+steps:
+  grep:
+    # Grep1 requires fastqsanger, so fastqsanger.gz will be implicitly converted
+    tool_id: Grep1
+    in:
+      input: fastq_input
+"""
+        with self.dataset_populator.test_history() as history_id:
+            # Create a fastqsanger.gz dataset
+            compressed_path = self.test_data_resolver.get_filename("1.fastqsanger.gz")
+            with open(compressed_path, "rb") as fh:
+                dataset = self.dataset_populator.new_dataset(
+                    history_id, content=fh, file_type="fastqsanger.gz", wait=True
+                )
+
+            # Upload workflow
+            workflow_id = self.workflow_populator.upload_yaml_workflow(wf)
+
+            # Run workflow first time
+            workflow_request: Dict[str, Any] = {
+                "inputs": json.dumps({"fastq_input": self._ds_entry(dataset)}),
+                "history": f"hist_id={history_id}",
+                "inputs_by": "name",
+            }
+            first_invocation_summary = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request
+            ).json()
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=first_invocation_summary["history_id"],
+                workflow_id=workflow_id,
+                invocation_id=first_invocation_summary["id"],
+                assert_ok=True,
+            )
+            first_invocation = self.workflow_populator.get_invocation(first_invocation_summary["id"], step_details=True)
+            first_job_id = first_invocation["steps"][1]["jobs"][0]["id"]
+            first_job_details = self.dataset_populator.get_job_details(first_job_id, full=True).json()
+            assert first_job_details["state"] == "ok"
+            assert not first_job_details["copied_from_job_id"]
+
+            # Verify implicit conversion happened (input to Grep1 should be fastqsanger, not fastqsanger.gz)
+            grep_input_id = first_job_details["inputs"]["input"]["id"]
+            grep_input = self.dataset_populator.get_history_dataset_details(
+                history_id=first_job_details["history_id"], content_id=grep_input_id
+            )
+            assert grep_input["extension"] == "fastqsanger", "Expected implicit conversion to fastqsanger"
+            assert grep_input_id != dataset["id"], "Input should be implicitly converted dataset"
+
+            # Run workflow second time with use_cached_job and new_history_name
+            # Remove history parameter since we're specifying new_history_name
+            workflow_request.pop("history", None)
+            workflow_request["use_cached_job"] = True
+            workflow_request["new_history_name"] = self.dataset_populator.get_random_name()
+            second_invocation_response = self.workflow_populator.invoke_workflow(workflow_id, request=workflow_request)
+            second_invocation_summary = second_invocation_response.json()
+            second_history_id = second_invocation_summary["history_id"]
+            # Wait for the workflow to complete
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=second_history_id,
+                workflow_id=workflow_id,
+                invocation_id=second_invocation_summary["id"],
+                assert_ok=True,
+            )
+            second_invocation = self.workflow_populator.get_invocation(
+                second_invocation_summary["id"], step_details=True
+            )
+            second_job_id = second_invocation["steps"][1]["jobs"][0]["id"]
+            second_job_details = self.dataset_populator.get_job_details(second_job_id, full=True).json()
+
+            # Verify job was cached
+            assert second_job_details["state"] == "ok"
+            assert second_job_details["copied_from_job_id"] == first_job_id, "Second job should be cached from first"
+
+            # Verify the second invocation is in a different history
+            assert (
+                second_job_details["history_id"] != first_job_details["history_id"]
+            ), "Second invocation should be in a new history"
+
+            # Verify implicit conversion dataset was copied to the new history
+            cached_grep_input_id = second_job_details["inputs"]["input"]["id"]
+            cached_grep_input = self.dataset_populator.get_history_dataset_details(
+                history_id=second_job_details["history_id"], content_id=cached_grep_input_id
+            )
+            assert cached_grep_input["extension"] == "fastqsanger"
+            # The implicitly converted dataset should have a different HDA ID but same underlying dataset
+            assert (
+                cached_grep_input_id != grep_input_id
+            ), "Cached run should have copied the implicitly converted dataset to the new history"

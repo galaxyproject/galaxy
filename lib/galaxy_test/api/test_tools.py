@@ -2622,7 +2622,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     history_id, content=fh, file_type="fastqsanger.gz", wait=True
                 )
             outputs = self._run(
-                "Grep1", history_id=history_id, inputs={"data": {"src": "hda", "id": dataset["id"]}}, assert_ok=True
+                "Grep1", history_id=history_id, inputs={"input": {"src": "hda", "id": dataset["id"]}}, assert_ok=True
             )
             job_details = self.dataset_populator.get_job_details(outputs["jobs"][0]["id"], full=True).json()
             assert job_details["inputs"]["input"]["id"] != dataset["id"]
@@ -2630,6 +2630,17 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 history_id=history_id, content_id=job_details["inputs"]["input"]["id"]
             )
             assert converted_input["extension"] == "fastqsanger"
+
+            outputs = self._run(
+                "Grep1",
+                history_id=history_id,
+                inputs={"input": {"src": "hda", "id": dataset["id"]}},
+                use_cached_job=True,
+                wait_for_job=True,
+                assert_ok=True,
+            )
+            job_details = self.dataset_populator.get_job_details(outputs["jobs"][0]["id"], full=True).json()
+            assert job_details["copied_from_job_id"]
 
     @skip_without_tool("column_multi_param")
     def test_implicit_conversion_and_reduce(self):
