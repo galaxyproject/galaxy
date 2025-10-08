@@ -1,6 +1,7 @@
 try:
     from fs_gcsfs import GCSFS
     from google.cloud.storage import Client
+    from google.oauth2 import service_account
     from google.oauth2.credentials import Credentials
 except ImportError:
     GCSFS = None
@@ -24,6 +25,7 @@ class GoogleCloudStorageFileSourceTemplateConfiguration(BaseFileSourceTemplateCo
     root_path: Union[str, TemplateExpansion, None] = None
     project: Union[str, TemplateExpansion, None] = None
     anonymous: Union[bool, TemplateExpansion, None] = True
+    service_account_json: Union[str, TemplateExpansion, None] = None
     token: Union[str, TemplateExpansion, None] = None
     token_uri: Union[str, TemplateExpansion, None] = None
     client_id: Union[str, TemplateExpansion, None] = None
@@ -36,6 +38,7 @@ class GoogleCloudStorageFileSourceConfiguration(BaseFileSourceConfiguration):
     root_path: Optional[str] = None
     project: Optional[str] = None
     anonymous: Optional[bool] = True
+    service_account_json: Optional[str] = None
     token: Optional[str] = None
     token_uri: Optional[str] = None
     client_id: Optional[str] = None
@@ -62,6 +65,9 @@ class GoogleCloudStorageFilesSource(
         config = context.config
         if config.anonymous:
             client = Client.create_anonymous_client()
+        elif config.service_account_json:
+            credentials = service_account.Credentials.from_service_account_file(config.service_account_json)
+            client = Client(project=config.project, credentials=credentials)
         elif config.token:
             client = Client(
                 project=config.project,
