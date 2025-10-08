@@ -30,6 +30,7 @@ import ToolsList from "components/ToolsList/ToolsList";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import TourList from "components/Tour/TourList";
 import { APIKey } from "components/User/APIKey";
+import CredentialsManagement from "components/User/Credentials/CredentialsManagement";
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import NotificationsPreferences from "components/User/Notifications/NotificationsPreferences";
@@ -605,6 +606,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/api_key",
                         component: APIKey,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/credentials",
+                        component: CredentialsManagement,
                         redirect: redirectAnon(),
                     },
                     {

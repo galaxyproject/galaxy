@@ -1636,6 +1636,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     workflow_invocation_step: Mapped[Optional["WorkflowInvocationStep"]] = relationship(
         back_populates="job", uselist=False
     )
+    credentials_context_associations: Mapped[list["JobCredentialsContextAssociation"]] = relationship(
+        back_populates="job"
+    )
 
     dict_collection_visible_keys = ["id", "state", "exit_code", "update_time", "create_time", "galaxy_version"]
     dict_element_visible_keys = [
@@ -2719,6 +2722,42 @@ class JobStateHistory(Base, RepresentById):
         self.job_id = job.id
         self.state = job.state
         self.info = job.info
+
+
+class JobCredentialsContextAssociation(Base, RepresentById):
+    __tablename__ = "job_credentials_context"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
+    user_credentials_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("user_credentials.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    service_name: Mapped[str] = mapped_column(String(255))
+    service_version: Mapped[str] = mapped_column(String(255))
+    selected_group_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("credentials_group.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    selected_group_name: Mapped[str] = mapped_column(String(255))
+
+    job: Mapped["Job"] = relationship(back_populates="credentials_context_associations")
+    user_credentials: Mapped[Optional["UserCredentials"]] = relationship()
+    selected_group: Mapped[Optional["CredentialsGroup"]] = relationship()
+
+    def __init__(
+        self,
+        job: "Job",
+        user_credentials_id: Optional[int],
+        service_name: str,
+        service_version: str,
+        selected_group_id: Optional[int],
+        selected_group_name: str,
+    ):
+        self.job = job
+        self.user_credentials_id = user_credentials_id
+        self.service_name = service_name
+        self.service_version = service_version
+        self.selected_group_id = selected_group_id
+        self.selected_group_name = selected_group_name
 
 
 class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
@@ -12131,6 +12170,59 @@ class CeleryUserRateLimit(Base):
             f"CeleryUserRateLimit(id_type={self.id_type!r}, "
             f"id={self.id!r}, last_scheduled_time={self.last_scheduled_time!r})"
         )
+
+
+class UserCredentials(Base):
+    """
+    Represents a credential associated with a user for a specific service.
+    """
+
+    __tablename__ = "user_credentials"
+    __table_args__ = (UniqueConstraint("user_id", "source_type", "source_id", "source_version", "name", "version"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    source_type: Mapped[str] = mapped_column()
+    source_id: Mapped[str] = mapped_column()
+    source_version: Mapped[str] = mapped_column()
+    name: Mapped[str] = mapped_column()
+    version: Mapped[str] = mapped_column()
+    current_group_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
+    )
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+
+
+class CredentialsGroup(Base):
+    """
+    Represents a group of credentials associated with a user for a specific service.
+    """
+
+    __tablename__ = "credentials_group"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_credentials_id: Mapped[int] = mapped_column(ForeignKey("user_credentials.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column()
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+
+
+class Credential(Base):
+    """
+    Represents a credential (variable or secret) associated with a user for a specific service.
+    """
+
+    __tablename__ = "credential"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column()
+    is_secret: Mapped[bool] = mapped_column(Boolean)
+    is_set: Mapped[bool] = mapped_column(Boolean)
+    value: Mapped[Optional[str]] = mapped_column(nullable=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)

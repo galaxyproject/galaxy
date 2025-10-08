@@ -105,7 +105,13 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0"/>
         <xs:element name="creator" type="Creator" minOccurs="0"/>
-        <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="requirements" type="Requirements" minOccurs="0">
+          <!-- Ensure unique credentials names across all credentials elements -->
+          <xs:unique name="uniqueCredentialsNames">
+            <xs:selector xpath="credentials"/>
+            <xs:field xpath="@name"/>
+          </xs:unique>
+        </xs:element>
         <xs:element name="required_files" type="RequiredFiles" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
@@ -611,10 +617,10 @@ practice.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container tag set for the ``requirement``, ``resource`` and ``container`` tags
-described in greater detail below. ``requirement``s describe software packages
-and other individual computing requirements required to execute a tool, while
-``container``s describe Docker or Singularity containers that should be able to
+This is a container tag set for the ``requirement``, ``resource``, ``container`` and
+``credentials`` tags described in greater detail below. ``requirement``s describe
+software packages and other individual computing requirements required to execute a tool,
+while ``container``s describe Docker or Singularity containers that should be able to
 serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
@@ -623,6 +629,18 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded">
+        <!-- Ensure unique credential names across variables and secrets -->
+        <xs:unique name="uniqueCredentialNames">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@name"/>
+        </xs:unique>
+        <!-- Ensure unique inject_as_env values across variables and secrets -->
+        <xs:unique name="uniqueInjectAsEnv">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@inject_as_env"/>
+        </xs:unique>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="Requirement">
@@ -735,6 +753,173 @@ Read more about configuring Galaxy to run Docker jobs
         </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Credentials">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+The ``credentials`` element allows tools to securely access external services by defining
+a set of authentication credentials. These credentials are managed separately from the tool
+configuration and are injected into the tool's execution environment as environment variables.
+
+Credentials consist of:
+- **Variables**: Non-sensitive configuration values (e.g., server URLs, usernames)
+- **Secrets**: Sensitive authentication data (e.g., passwords, API keys, tokens)
+
+The credentials system provides secure credential management while keeping sensitive
+information separate from tool definitions. Multiple credentials sets can be defined
+within a single ``requirements`` block, each with a unique name. Before executing a tool
+that requires credentials, users must provide the necessary credentials through the Galaxy UI.
+
+### Example
+
+```xml
+<requirements>
+    <credentials name="aws_s3" version="1.0" label="AWS S3 Access" description="Credentials for accessing AWS S3 buckets">
+        <variable name="region" inject_as_env="AWS_REGION" optional="false" label="AWS Region" description="The AWS region where your S3 bucket is located" />
+        <secret name="access_key" inject_as_env="AWS_ACCESS_KEY_ID" optional="false" label="Access Key ID" description="Your AWS access key ID" />
+        <secret name="secret_key" inject_as_env="AWS_SECRET_ACCESS_KEY" optional="false" label="Secret Access Key" description="Your AWS secret access key" />
+    </credentials>
+    <credentials name="database" version="2.1" label="Database Connection" description="Database connection credentials">
+        <variable name="host" inject_as_env="DB_HOST" optional="false" label="Database Host" description="The hostname or IP address of the database server" />
+        <variable name="port" inject_as_env="DB_PORT" optional="true" label="Database Port" description="The port number (default: 5432)" />
+        <secret name="password" inject_as_env="DB_PASSWORD" optional="false" label="Database Password" description="The password for database authentication" />
+    </credentials>
+</requirements>
+```
+
+### Tool Access
+
+Within your tool, access the injected credentials using the specified environment variable names:
+
+```bash
+# Access AWS credentials
+aws s3 ls s3://my-bucket --region $AWS_REGION --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY
+
+# Access database credentials
+psql -h $DB_HOST -p $DB_PORT -U myuser -d mydb -W $DB_PASSWORD
+```
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="variable" type="CredentialsVariable" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="secret" type="CredentialsSecret" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the credential set.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="version" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The version of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If true, tools can run without credentials; if false, credentials must be provided before execution.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsVariable">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a variable for credentials. The variable is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the variable.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the variable is optional for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsSecret">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a secret for credentials. The secret is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the secret.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the secret is optional for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:simpleType name="HelpFormatType">
     <xs:annotation>

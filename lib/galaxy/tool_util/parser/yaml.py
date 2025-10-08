@@ -133,7 +133,7 @@ class YamlToolSource(ToolSource):
     def parse_version_command_interpreter(self):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
-    def parse_requirements_and_containers(self):
+    def parse_requirements(self):
         mixed_requirements = self.root_dict.get("requirements", [])
         container = self.root_dict.get("container")
         containers = self.root_dict.get("containers")
@@ -150,6 +150,7 @@ class YamlToolSource(ToolSource):
             containers=containers,
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
             javascript_requirements=[r for r in mixed_requirements if r.get("type") == "javascript"],
+            credentials=self.root_dict.get("credentials", []),
         )
 
     def parse_input_pages(self) -> PagesSource:
