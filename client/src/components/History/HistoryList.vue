@@ -32,7 +32,10 @@ import {
     getPublishedHistories,
     getSharedHistories,
 } from "@/api/histories";
+import type HistoryCard from "@/components/History/HistoryCard.vue";
+import { useHistoryCardActions } from "@/components/History/useHistoryCardActions";
 import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { updateHistoryFields } from "@/stores/services/history.services";
@@ -98,7 +101,6 @@ const bulkTagsLoading = ref(false);
 const bulkDeleteOrRestoreLoading = ref(false);
 const bulkPurgeLoading = ref(false);
 const historiesLoaded = ref<AnyHistoryEntry[]>([]);
-const selectedHistories = ref<SelectedHistory[]>([]);
 
 /** Computed property that determines if the current view is "My Histories" */
 const myView = computed(() => props.activeList === "my");
@@ -149,6 +151,49 @@ const validFilters = computed(() => historyListFilters.value.getValidFilters(raw
 const invalidFilters = computed(() => historyListFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
+
+const selectedHistories = computed<SelectedHistory[]>(() => {
+    const ids = Array.from(selectedItems.value.keys());
+    const matchingHistories = historiesLoaded.value.filter((h) => ids.includes(h.id));
+    return matchingHistories.map((h) => ({
+        id: h.id,
+        name: h.name,
+        published: h.published,
+        purged: h.purged,
+    }));
+});
+
+const {
+    selectedItems,
+    selectAllInCurrentQuery,
+    isSelected,
+    setSelected,
+    resetSelection,
+    itemRefs,
+    initSelectedItem,
+    onClick,
+    onKeyDown,
+} = useSelectedItems<AnyHistoryEntry, typeof HistoryCard>({
+    scopeKey: computed(() => `${props.activeList}-histories-${filterText.value}`),
+    getItemKey: (item) => item.id,
+    filterText: filterText,
+    totalItemsInQuery: computed(() => totalHistories.value ?? 0),
+    allItems: historiesLoaded,
+    filterClass: historyListFilters.value,
+    selectable: computed(() => myView.value),
+    onDelete: async (item) => {
+        const { onDeleteHistory } = useHistoryCardActions(
+            computed(() => item),
+            false,
+            () => load(true),
+        );
+        await onDeleteHistory();
+    },
+    expectedKeyDownClass: "history-card",
+    getAttributeForRangeSelection(item) {
+        return `g-card-${item.id}`;
+    },
+});
 
 /**
  * Updates a specific filter value in the current filter text
@@ -252,16 +297,10 @@ function validatedFilterText(): string {
 
 /**
  * Toggles selection of a specific history item
- * @param {SelectedHistory} h - The history object to toggle selection for
+ * @param {AnyHistoryEntry} h - The history object to toggle selection for
  */
-function onSelectHistory(h: SelectedHistory) {
-    const index = selectedHistories.value.findIndex((selected) => selected.id === h.id);
-
-    if (index === -1) {
-        selectedHistories.value.push(h);
-    } else {
-        selectedHistories.value.splice(index, 1);
-    }
+function onSelectHistory(h: AnyHistoryEntry) {
+    setSelected(h, !isSelected(h));
 }
 
 /**
@@ -270,14 +309,9 @@ function onSelectHistory(h: SelectedHistory) {
  */
 function onSelectAllHistories() {
     if (selectedHistories.value.length === historiesLoaded.value.length) {
-        selectedHistories.value = [];
+        resetSelection();
     } else {
-        selectedHistories.value = historiesLoaded.value.map((h) => ({
-            id: h.id,
-            name: h.name,
-            published: h.published,
-            purged: h.purged,
-        }));
+        selectAllInCurrentQuery();
     }
 }
 
@@ -326,14 +360,12 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
 
             Toast.success(`${purge ? "Purged" : "Deleted"} ${totalSelected} histories.`);
 
-            selectedHistories.value = [];
+            resetSelection();
         } catch (e) {
             Toast.error(`Failed to ${purge ? "purge" : "delete"} some histories.`);
         } finally {
             bulkPurgeLoading.value = false;
             bulkDeleteOrRestoreLoading.value = false;
-
-            selectedHistories.value = tmpSelected;
 
             await load(true);
         }
@@ -374,13 +406,11 @@ async function onBulkRestore() {
 
             Toast.success(`Restored ${totalSelected} histories.`);
 
-            selectedHistories.value = [];
+            resetSelection();
         } catch (e) {
             Toast.error(`Failed to restore some histories.`);
         } finally {
             bulkDeleteOrRestoreLoading.value = false;
-
-            selectedHistories.value = tmpSelected;
 
             await load(true);
         }
@@ -423,8 +453,6 @@ async function onBulkTagsAdd(tags: string[]) {
     } finally {
         bulkTagsLoading.value = false;
 
-        selectedHistories.value = tmpSelected;
-
         await load(true);
     }
 }
@@ -436,7 +464,7 @@ async function onBulkTagsAdd(tags: string[]) {
 watch([filterText, sortBy, sortDesc], async () => {
     offset.value = 0;
 
-    selectedHistories.value = [];
+    resetSelection();
 
     await load(true);
 });
@@ -597,8 +625,13 @@ onMounted(async () => {
                 :grid-view="currentListViewMode === 'grid'"
                 :selectable="myView"
                 :selected-history-ids="selectedHistories"
+                :item-refs="itemRefs"
+                :range-select-anchor="initSelectedItem"
+                :clickable="true"
                 @refreshList="load"
                 @select="onSelectHistory"
+                @on-key-down="onKeyDown"
+                @on-history-card-click="onClick"
                 @updateFilter="updateFilterValue"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)" />
         </BOverlay>
