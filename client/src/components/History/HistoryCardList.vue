@@ -167,8 +167,8 @@ const emit = defineEmits<{
             :selectable="props.selectable"
             :selected="props.selectedHistoryIds.some((selected) => selected.id === history.id)"
             :clickable="props.clickable"
+            :highlighted="props.rangeSelectAnchor?.id === history.id"
             class="history-card-in-list"
-            :class="{ 'range-select-anchor-history': props.rangeSelectAnchor?.id === history.id }"
             @select="isMyHistory(history) && emit('select', history)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
@@ -183,13 +183,5 @@ const emit = defineEmits<{
 
 .history-card-list {
     container: cards-list / inline-size;
-
-    .history-card-in-list {
-        &.range-select-anchor-history {
-            &:deep(.g-card-content) {
-                box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
-            }
-        }
-    }
 }
 </style>

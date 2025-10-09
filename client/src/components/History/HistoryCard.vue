@@ -100,6 +100,13 @@ interface Props {
      * @default false
      */
     clickable?: boolean;
+
+    /**
+     * Whether this card is highlighted (for example, as a range selection anchor)
+     * @type {boolean}
+     * @default false
+     */
+    highlighted?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -110,6 +117,7 @@ const props = withDefaults(defineProps<Props>(), {
     selected: false,
     sharedView: false,
     clickable: false,
+    highlighted: false,
 });
 
 const router = useRouter();
@@ -260,6 +268,7 @@ function onKeyDown(event: KeyboardEvent) {
         :max-visible-tags="props.gridView ? 2 : 8"
         :update-time="history.update_time"
         :clickable="props.clickable"
+        :highlighted="props.highlighted"
         @titleClick="onTitleClick"
         @rename="() => router.push(`/histories/rename?id=${history.id}`)"
         @select="isMyHistory(history) && emit('select', history)"
