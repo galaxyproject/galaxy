@@ -317,3 +317,13 @@ const buttonElementRef = useResolveElement(buttonRef);
     }
 }
 </style>
+
+<style lang="scss">
+// Fix for GButton inside Bootstrap input-group-append
+// Prevents horizontal scrolling issues caused by flex layout conflicts
+// This must be unscoped to target Bootstrap's input-group-append
+.input-group-append .g-button {
+    flex-shrink: 0;
+    overflow: hidden;
+}
+</style>
