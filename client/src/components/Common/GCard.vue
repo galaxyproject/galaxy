@@ -289,8 +289,10 @@ const allowedTitleLines = computed(() => props.titleNLines);
 
 function onKeyDown(event: KeyboardEvent) {
     if ((props.clickable && event.key === "Enter") || event.key === " ") {
+        event.stopPropagation();
         emit("click", event);
     } else if (props.clickable) {
+        event.stopPropagation();
         emit("keydown", event);
     }
 }
