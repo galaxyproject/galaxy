@@ -266,7 +266,7 @@ async function toggleBookmark() {
     bookmarkLoading.value = false;
 }
 
-const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+const { renderMarkdown } = useMarkdown({ noMargin: true, openLinksInNewPage: true });
 
 /**
  * Helper functions for generating consistent element IDs
@@ -745,12 +745,6 @@ function onKeyDown(event: KeyboardEvent) {
             line-height: 1.2;
             white-space: normal;
             text-overflow: unset;
-        }
-
-        .g-card-description {
-            :deep(p) {
-                margin-bottom: 0;
-            }
         }
 
         .g-card-secondary-action-label {
