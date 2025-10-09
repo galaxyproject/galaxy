@@ -516,7 +516,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             <BButton
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
-                                                :key="indicator.id"
+                                                :key="`${indicator.id}-button`"
                                                 v-b-tooltip.hover.noninteractive
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
@@ -536,7 +536,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             <FontAwesomeIcon
                                                 v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
-                                                :key="indicator.id"
+                                                :key="`${indicator.id}-icon`"
                                                 v-b-tooltip.hover.noninteractive
                                                 :title="localize(indicator.title)"
                                                 :icon="indicator.icon"
