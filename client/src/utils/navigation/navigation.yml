@@ -697,6 +697,16 @@ visualization:
   selectors:
     activity: '#activity-visualizations'
     matched_plugin: '#center [data-plugin-name*="${id}"]'
+    show_all_button: '[data-description="visualizations show list"]'
+
+igv:
+  selectors:
+    _: ".igv-container"
+    shadow_host: '#app .grid .overflow-hidden .overflow-auto div'
+    current_genome: '.igv-current-genome'
+    settings_button: button.n-button
+    save_button: '[data-description="sidepanel save button"]'
+    name_input: '.n-input__input input'
 
 trs_search:
   selectors:

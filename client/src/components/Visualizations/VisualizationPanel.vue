@@ -95,6 +95,7 @@ onMounted(() => {
         :is="props.datasetId ? 'div' : ActivityPanel"
         title="Visualizations"
         :go-to-all-title="datasetId ? undefined : 'Saved Visualizations'"
+        go-to-all-data-description="visualizations show list"
         href="/visualizations/list">
         <template v-slot:header>
             <DelayedInput :delay="100" class="my-2" placeholder="search visualizations" @change="query = $event" />

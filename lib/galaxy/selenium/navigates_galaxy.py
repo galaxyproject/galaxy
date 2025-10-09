@@ -83,7 +83,7 @@ class WAIT_TYPES:
     # Creating a new history and loading it into the panel.
     DATABASE_OPERATION = WaitType("database_operation", 10)
     # Wait time for jobs to complete in default environment.
-    JOB_COMPLETION = WaitType("job_completion", 30)
+    JOB_COMPLETION = WaitType("job_completion", 45)
     # Wait time for a GIE to spawn.
     GIE_SPAWN = WaitType("gie_spawn", 30)
     # Wait time for toolshed search
@@ -668,6 +668,15 @@ class NavigatesGalaxy(HasDriver):
         action_chains = self.action_chains()
         action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
         action_chains.move_to_element(action_selector).click().perform()
+
+    def edit_dataset_dbkey(self, dbkey_text):
+        # precondition: need to be on the dataset edit component
+        self.components.edit_dataset_attributes.dbkey_dropdown.wait_for_and_click()
+        # choose database option from 'Database/Build' dropdown, that equals to dbkey_text
+        self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(
+            dbkey_text=dbkey_text
+        ).wait_for_and_click()
+        self.components.edit_dataset_attributes.save_button.wait_for_and_click()
 
     def get_history_card(self, card_name):
         card_list = self.components.histories.history_cards.all()
@@ -1478,6 +1487,12 @@ class NavigatesGalaxy(HasDriver):
         self.components.histories.activity.wait_for_and_click()
         self.components.histories.history_cards.wait_for_present()
 
+    def navigate_to_saved_visualizations(self):
+        self.home()
+        visualizations = self.components.visualization
+        visualizations.activity.wait_for_and_click()
+        visualizations.show_all_button.wait_for_and_click()
+
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
         self.components.histories.activity.wait_for_and_click()
@@ -2111,7 +2126,7 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_rename(self, new_name):
         editable_text_input_element = self.history_panel_name_input()
         # a simple .clear() doesn't work here since we perform a .blur because of that
-        self.driver.execute_script("arguments[0].value = '';", editable_text_input_element)
+        self.aggressive_clear(editable_text_input_element)
         editable_text_input_element.send_keys(new_name)
         editable_text_input_element.send_keys(self.keys.ENTER)
         return editable_text_input_element
@@ -2200,6 +2215,12 @@ class NavigatesGalaxy(HasDriver):
         )
         visualize_tab_button.click()
 
+    def show_dataset_visualization(self, hid: int, visualization_id: str, screenshot_name: Optional[str] = None):
+        self.show_dataset_visualizations(hid)
+        self.components.visualization.matched_plugin(id=visualization_id).wait_for_visible()
+        self.screenshot_if(screenshot_name)
+        self.components.visualization.matched_plugin(id=visualization_id).wait_for_and_click()
+
     def history_panel_item_view_dataset_details(self, hid):
         self.display_dataset(hid)
         self.show_dataset_details(hid)
@@ -2278,7 +2299,9 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_ensure_showing_item_details(self, hid):
         if not self.history_panel_item_showing_details(hid):
-            self.history_panel_click_item_title(hid=hid, wait=True)
+            return self.history_panel_click_item_title(hid=hid, wait=True)
+        else:
+            return self.history_panel_item_component(hid=hid)
 
     def history_panel_item_showing_details(self, hid):
         item_component = self.history_panel_item_component(hid=hid)

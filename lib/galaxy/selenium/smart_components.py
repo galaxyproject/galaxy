@@ -148,6 +148,11 @@ class SmartTarget:
         dom_element.clear()
         dom_element.send_keys(*text)
 
+    def wait_for_and_clear_aggressive_and_send_keys(self, *text):
+        dom_element = self.wait_for_visible()
+        self._has_driver.aggressive_clear(dom_element)
+        dom_element.send_keys(*text)
+
     def axe_eval(self) -> AxeResults:
         return self._has_driver.axe_eval(context=self._target.element_locator[1])
 

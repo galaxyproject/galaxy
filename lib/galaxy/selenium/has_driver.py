@@ -244,6 +244,12 @@ class HasDriver:
     def send_backspace(self, element: Optional[WebElement] = None):
         self._send_key(Keys.BACKSPACE, element)
 
+    def aggressive_clear(self, element: WebElement) -> None:
+        # for when a simple .clear() doesn't work
+        self.driver.execute_script("arguments[0].value = '';", element)
+        for _ in range(25):
+            element.send_keys(Keys.BACKSPACE)
+
     def _send_key(self, key: str, element: Optional[WebElement] = None):
         if element is None:
             self.action_chains().send_keys(key)
