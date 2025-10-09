@@ -23,6 +23,7 @@ interface Props {
     selected?: boolean;
     selectable?: boolean;
     clickable?: boolean;
+    highlighted?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
     selected: false,
     selectable: false,
     clickable: false,
+    highlighted: false,
 });
 
 const emit = defineEmits<{
@@ -126,7 +128,6 @@ function onKeyDown(event: KeyboardEvent) {
 </script>
 
 <template>
-    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
     <GCard
         :id="workflow.id"
         class="workflow-card"
@@ -151,6 +152,7 @@ function onKeyDown(event: KeyboardEvent) {
         :update-time="workflow.update_time"
         :bookmarked="!!workflow.show_in_tool_panel"
         :clickable="props.clickable"
+        :highlighted="props.highlighted"
         @bookmark="() => toggleBookmark(!workflow?.show_in_tool_panel)"
         @rename="emit('rename', props.workflow.id, props.workflow.name)"
         @select="emit('select', workflow)"
