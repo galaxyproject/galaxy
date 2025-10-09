@@ -92,7 +92,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 </script>
 
 <template>
-    <div class="workflow-card-list d-flex flex-wrap overflow-auto">
+    <div class="workflow-card-list d-flex flex-wrap overflow-auto pt-1">
         <WorkflowCard
             v-for="workflow in workflows"
             :ref="props.itemRefs[workflow.id]"
