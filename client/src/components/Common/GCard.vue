@@ -335,35 +335,34 @@ function onKeyDown(event: KeyboardEvent) {
                                             :id="getElementId(props.id, 'title')"
                                             bold
                                             inline
+                                            class="d-block"
                                             :size="props.titleSize">
-                                            <div class="d-flex">
-                                                <FontAwesomeIcon
-                                                    v-if="props.titleIcon?.icon"
-                                                    class="mr-1"
-                                                    :class="props.titleIcon.class"
-                                                    :icon="props.titleIcon.icon"
-                                                    :title="props.titleIcon.title"
-                                                    :size="props.titleIcon.size"
-                                                    fixed-width />
-                                                <BLink
-                                                    v-if="typeof title === 'object'"
-                                                    :id="getElementId(props.id, 'title-link')"
+                                            <FontAwesomeIcon
+                                                v-if="props.titleIcon?.icon"
+                                                class="mr-1"
+                                                :class="props.titleIcon.class"
+                                                :icon="props.titleIcon.icon"
+                                                :title="props.titleIcon.title"
+                                                :size="props.titleIcon.size"
+                                                fixed-width />
+                                            <BLink
+                                                v-if="typeof title === 'object'"
+                                                :id="getElementId(props.id, 'title-link')"
+                                                v-b-tooltip.hover.noninteractive
+                                                :title="localize(title.title)"
+                                                :class="{ 'g-card-title-truncate': props.titleNLines }"
+                                                @click.stop.prevent="title.handler">
+                                                {{ title.label }}
+                                            </BLink>
+                                            <template v-else>
+                                                <span
+                                                    :id="getElementId(props.id, 'title-text')"
                                                     v-b-tooltip.hover.noninteractive
-                                                    :title="localize(title.title)"
-                                                    :class="{ 'g-card-title-truncate': props.titleNLines }"
-                                                    @click.stop.prevent="title.handler">
-                                                    {{ title.label }}
-                                                </BLink>
-                                                <template v-else>
-                                                    <span
-                                                        :id="getElementId(props.id, 'title-text')"
-                                                        v-b-tooltip.hover.noninteractive
-                                                        :title="localize(title)"
-                                                        :class="{ 'g-card-title-truncate': props.titleNLines }">
-                                                        {{ title }}
-                                                    </span>
-                                                </template>
-                                            </div>
+                                                    :title="localize(title)"
+                                                    :class="{ 'g-card-title-truncate': props.titleNLines }">
+                                                    {{ title }}
+                                                </span>
+                                            </template>
 
                                             <slot name="titleActions">
                                                 <BButton
