@@ -12,7 +12,7 @@ import { useAgGrid } from "@/composables/useAgGrid";
 import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 import localize from "@/utils/localization";
 
-import type { GenericPair } from "../History/adapters/buildCollectionModal";
+import type { GenericPair } from "../Collections/common/buildCollectionModal";
 import { stripExtension, useUpdateIdentifiersForRemoveExtensions } from "./common/stripExtension";
 import {
     type SupportedPairedOrPairedBuilderCollectionTypes,

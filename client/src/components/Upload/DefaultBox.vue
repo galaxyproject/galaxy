@@ -5,7 +5,7 @@ import Vue, { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import type { HDASummary } from "@/api";
-import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";

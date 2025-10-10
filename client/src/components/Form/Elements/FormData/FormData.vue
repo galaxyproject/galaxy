@@ -20,7 +20,7 @@ import { getGalaxyInstance } from "@/app";
 import {
     COLLECTION_TYPE_TO_LABEL,
     type CollectionBuilderType,
-} from "@/components/History/adapters/buildCollectionModal";
+} from "@/components/Collections/common/buildCollectionModal";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";

@@ -5,7 +5,7 @@ import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
-import { COLLECTION_TYPE_TO_LABEL } from "@/components/History/adapters/buildCollectionModal";
+import { COLLECTION_TYPE_TO_LABEL } from "@/components/Collections/common/buildCollectionModal";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import localize from "@/utils/localization";
 

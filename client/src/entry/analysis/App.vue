@@ -49,7 +49,6 @@
 <script>
 import { getGalaxyInstance } from "app";
 import ConfirmDialog from "components/ConfirmDialog";
-import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
 import Toast from "components/Toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
@@ -197,7 +196,6 @@ export default {
     mounted() {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
-            this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
             this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
             if (this.Galaxy.config.interactivetools_enable) {

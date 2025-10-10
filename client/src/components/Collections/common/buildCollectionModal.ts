@@ -54,10 +54,14 @@ export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
 
 export type DatasetPair = GenericPair<HDASummary>;
 
-export async function buildCollectionFromRules(selection: any, historyId : string | null = null, fromRulesInput = false) {
+export async function buildCollectionFromRules(
+    selection: any,
+    historyId: string | null = null,
+    fromRulesInput = false,
+) {
     let selectionContent: any = null;
     const { loadCurrentHistoryId } = useHistoryStore();
-    historyId = historyId || await loadCurrentHistoryId();
+    historyId = historyId || (await loadCurrentHistoryId());
 
     if (fromRulesInput) {
         selectionContent = selection;

@@ -9,7 +9,7 @@ import type { CollectionType } from "@/api/datasetCollections";
 import {
     COLLECTION_TYPE_TO_LABEL,
     type CollectionBuilderType,
-} from "@/components/History/adapters/buildCollectionModal";
+} from "@/components/Collections/common/buildCollectionModal";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";

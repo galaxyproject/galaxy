@@ -1,11 +1,11 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Backbone from "backbone";
+import { buildCollectionFromRules } from "components/Collections/common/buildCollectionModal";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { useHistoryStore } from "stores/historyStore";
 import _ from "underscore";
-import { buildCollectionFromRules } from "components/Collections/common/buildCollectionModal";
 
 import mod_library_model from "../library-model";
 

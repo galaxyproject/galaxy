@@ -3,9 +3,9 @@ import { BCardGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
 import { attemptCreate, type CollectionCreatorComponent } from "@/components/Collections/common/useCollectionCreator";
 import { useWorkbookDropHandling } from "@/components/Collections/common/useWorkbooks";
-import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
 import { rawToTable } from "@/components/Collections/tables";
 import { forBuilder, type ForBuilderResponse } from "@/components/Collections/wizard/fetchWorkbooks";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
