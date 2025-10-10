@@ -66,15 +66,14 @@ import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import Alert from "@/components/Alert.vue";
 import DragGhost from "@/components/DragGhost.vue";
+import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
-import Masthead from "components/Masthead/Masthead.vue";
-import UploadModal from "components/Upload/UploadModal.vue";
-
-import { startWatchingHistory } from "watch/watchHistoryProvided";
+import UploadModal from "@/components/Upload/UploadModal.vue";
 
 export default {
     components: {
