@@ -13,7 +13,6 @@ import { prependInitialization } from "../initQueue";
 // specific initialization functions
 import { addIframeClass, adjustIframeLinks } from "./iframesAreTerrible";
 import { init_refresh_on_change } from "./init_refresh_on_change";
-import { initModals } from "./initModals";
 import { initSentry } from "./initSentry";
 import { initTooltips } from "./initTooltips";
 import { onloadWebhooks } from "./onloadWebhooks";
@@ -25,7 +24,6 @@ export function globalInits() {
         initSentry,
         addIframeClass,
         adjustIframeLinks,
-        initModals,
         initTooltips,
         init_refresh_on_change,
         () => replace_big_select_inputs(20, 1500),
