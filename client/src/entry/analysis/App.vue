@@ -63,7 +63,6 @@ import { useRoute } from "vue-router/composables";
 import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
 import { useEntryPointStore } from "@/stores/entryPointStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
@@ -74,6 +73,8 @@ import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsO
 import TourRunner from "@/components/Tour/TourRunner.vue";
 import Masthead from "components/Masthead/Masthead.vue";
 import UploadModal from "components/Upload/UploadModal.vue";
+
+import { startWatchingHistory } from "watch/watchHistoryProvided";
 
 export default {
     components: {
@@ -197,6 +198,8 @@ export default {
             if (this.Galaxy.config.enable_notification_system) {
                 this.startWatchingNotifications();
             }
+            // start watching the history with continuous queries
+            startWatchingHistory();
         }
     },
     created() {
