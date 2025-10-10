@@ -635,6 +635,8 @@ import _ from "underscore";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import { useHistoryStore } from "stores/historyStore";
+
 import { errorMessageAsString } from "@/utils/simple-error";
 import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
@@ -1528,7 +1530,7 @@ export default {
         attemptCreate() {
             this.createCollection();
         },
-        createCollection() {
+        async createCollection() {
             const asJson = {
                 rules: this.rules,
                 mapping: this.mapping,
@@ -1578,7 +1580,8 @@ export default {
                 }
             } else {
                 const Galaxy = getGalaxyInstance();
-                const historyId = Galaxy.currHistoryPanel.model.id;
+                const { loadCurrentHistoryId } = useHistoryStore();
+                const historyId = await loadCurrentHistoryId();
                 let elements;
                 let targets;
                 if (collectionType) {

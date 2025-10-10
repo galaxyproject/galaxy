@@ -148,6 +148,7 @@ import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
+import { useHistoryStore } from "stores/historyStore";
 
 import BreadcrumbHeading from "components/Common/BreadcrumbHeading.vue";
 
@@ -212,9 +213,9 @@ export default {
             return value;
         },
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        const historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+    async created() {
+        const { loadCurrentHistoryId } = useHistoryStore();
+        const historyId = await loadCurrentHistoryId();
         this.loadCustomBuilds();
         if (historyId) {
             this.loadCustomBuildsMetadata(historyId);
