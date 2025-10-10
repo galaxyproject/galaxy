@@ -95,7 +95,6 @@ export default {
 
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
-        const { currentHistory } = storeToRefs(useHistoryStore());
 
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
@@ -145,7 +144,6 @@ export default {
             confirmDialogRef,
             uploadModal,
             currentTheme,
-            currentHistory,
             embedded,
             currentTour,
         };
@@ -186,11 +184,6 @@ export default {
         confirmation() {
             console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
-        },
-        currentHistory() {
-            if (!this.embedded) {
-                this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
-            }
         },
     },
     mounted() {
