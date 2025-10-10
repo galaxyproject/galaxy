@@ -102,7 +102,7 @@ var ImportCollectionModal = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 });
         } else {
-            this.select_collection_history = this.modal.el.querySelector("#library-collection-history-select")
+            this.select_collection_history = this.modal.el.querySelector("#library-collection-history-select");
             const selected_history_id = this.select_collection_history.value;
             this.collectionImport(collection_elements, selected_history_id);
         }

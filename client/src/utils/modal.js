@@ -14,7 +14,7 @@ export default class {
             xlarge: false,
             closing_events: false,
             closing_callback: null,
-            title_separator: true
+            title_separator: true,
         };
         this.buttonList = {};
         this.options = Object.assign({}, this.optionsDefault, options);
