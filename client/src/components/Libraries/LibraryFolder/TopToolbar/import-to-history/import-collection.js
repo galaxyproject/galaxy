@@ -5,6 +5,8 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 
+import { useHistoryStore } from "stores/historyStore";
+
 import mod_library_model from "../library-model";
 
 var ImportCollectionModal = Backbone.View.extend({
@@ -29,7 +31,8 @@ var ImportCollectionModal = Backbone.View.extend({
     },
     async createNewHistory(new_history_name) {
         const { data } = await axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
-        getGalaxyInstance().currHistoryPanel.switchToHistory(data.id);
+        const { setCurrentHistory } = useHistoryStore();
+        await setCurrentHistory(data.id);
         return data;
     },
     showCollectionSelect: function (e) {
