@@ -299,7 +299,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function loadCurrentHistoryId() : Promise<string | null> {
-        await loadCurrentHistory();
+        if (!currentHistoryId.value) {
+            await loadCurrentHistory();
+        }
         return currentHistoryId.value;
     }
 
