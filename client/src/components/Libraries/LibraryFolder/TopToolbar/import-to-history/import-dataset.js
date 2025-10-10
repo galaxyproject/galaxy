@@ -1,10 +1,10 @@
-import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import { Toast } from "composables/toast";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 import _l from "utils/localization";
+import Modal from "utils/modal";
 
 import { updateProgress } from "../delete-selected";
 import mod_library_model from "../library-model";
@@ -24,7 +24,6 @@ var ImportDatasetModal = Backbone.View.extend({
         return this.options.selected;
     },
     importToHistoryModal: function () {
-        const Galaxy = getGalaxyInstance();
         var $checkedValues = this.findCheckedItems();
         var template = this.templateImportIntoHistoryModal();
         if ($checkedValues.length === 0) {
@@ -33,7 +32,7 @@ var ImportDatasetModal = Backbone.View.extend({
             var promise = this.fetchUserHistories();
             promise
                 .done(() => {
-                    this.modal = Galaxy.modal;
+                    this.modal = new Modal();
                     this.modal.show({
                         closing_events: true,
                         title: _l("Import into History"),
@@ -45,7 +44,7 @@ var ImportDatasetModal = Backbone.View.extend({
                                 this.importAllIntoHistory();
                             },
                             Close: () => {
-                                Galaxy.modal.hide();
+                                this.modal.hide();
                             },
                         },
                     });
@@ -149,7 +148,6 @@ var ImportDatasetModal = Backbone.View.extend({
      * @param  {str} history_name     name of the history to import to
      */
     chainCallImportingIntoHistory: function (history_item_set, history_name, history_id) {
-        const Galaxy = getGalaxyInstance();
         var popped_item = history_item_set.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
@@ -167,7 +165,7 @@ var ImportDatasetModal = Backbone.View.extend({
                     `${getAppRoot()}histories/view?id=${history_id}`,
                 );
             }
-            Galaxy.modal.hide();
+            this.modal.hide();
             return true;
         }
         var promise = $.when(

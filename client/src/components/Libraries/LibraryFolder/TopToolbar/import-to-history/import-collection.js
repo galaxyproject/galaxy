@@ -1,4 +1,3 @@
-import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Backbone from "backbone";
 import { buildCollectionFromRules } from "components/Collections/common/buildCollectionModal";
@@ -6,6 +5,8 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { useHistoryStore } from "stores/historyStore";
 import _ from "underscore";
+
+import Modal from "utils/modal";
 
 import mod_library_model from "../library-model";
 
@@ -36,7 +37,6 @@ var ImportCollectionModal = Backbone.View.extend({
         return data;
     },
     showCollectionSelect: function (e) {
-        const Galaxy = getGalaxyInstance();
         var checked_items = this.findCheckedItems();
         if (checked_items.length === 0) {
             Toast.info("You must select some datasets first.");
@@ -46,7 +46,7 @@ var ImportCollectionModal = Backbone.View.extend({
             var promise = this.fetchUserHistories();
             promise
                 .done(() => {
-                    this.modal = Galaxy.modal;
+                    this.modal = new Modal();
                     this.modal.show({
                         closing_events: true,
                         title: "Create History Collection from Datasets",
@@ -57,10 +57,10 @@ var ImportCollectionModal = Backbone.View.extend({
                         buttons: {
                             Continue: () => {
                                 this.showCollectionBuilder(checked_items.dataset_ids);
-                                Galaxy.modal.hide();
+                                this.modal.hide();
                             },
                             Close: () => {
-                                Galaxy.modal.hide();
+                                this.modal.hide();
                             },
                         },
                     });
