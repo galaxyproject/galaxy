@@ -1,5 +1,5 @@
-import Modal from "utils/modal";
 import _l from "utils/localization";
+import Modal from "utils/modal";
 
 export function collectionCreatorModalSetup(options, Galaxy = null) {
     const modal = new Modal();

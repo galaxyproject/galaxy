@@ -5,7 +5,6 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { useHistoryStore } from "stores/historyStore";
 import _ from "underscore";
-
 import Modal from "utils/modal";
 
 import mod_library_model from "../library-model";
