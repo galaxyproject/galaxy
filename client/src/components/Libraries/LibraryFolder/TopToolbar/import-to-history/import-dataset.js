@@ -9,6 +9,8 @@ import Modal from "utils/modal";
 import { updateProgress } from "../delete-selected";
 import mod_library_model from "../library-model";
 
+var modal = new Modal();
+
 var ImportDatasetModal = Backbone.View.extend({
     options: null,
 
@@ -32,8 +34,7 @@ var ImportDatasetModal = Backbone.View.extend({
             var promise = this.fetchUserHistories();
             promise
                 .done(() => {
-                    this.modal = new Modal();
-                    this.modal.show({
+                    modal.show({
                         closing_events: true,
                         title: _l("Import into History"),
                         body: template({
@@ -44,7 +45,7 @@ var ImportDatasetModal = Backbone.View.extend({
                                 this.importAllIntoHistory();
                             },
                             Close: () => {
-                                this.modal.hide();
+                                modal.hide();
                             },
                         },
                     });
@@ -68,8 +69,8 @@ var ImportDatasetModal = Backbone.View.extend({
     },
 
     importAllIntoHistory: function () {
-        this.modal.disableButton("Import");
-        var new_history_name = this.modal.$("input[name=history_name]").val();
+        modal.disableButton("Import");
+        var new_history_name = modal.el.querySelector('input[name="history_name"]').value;
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .done((new_history) => {
@@ -79,13 +80,13 @@ var ImportDatasetModal = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 })
                 .always(() => {
-                    this.modal.disableButton("Import");
+                    modal.enableButton("Import");
                 });
         } else {
             var history_id = $("select[name=import_to_history] option:selected").val();
             var history_name = $("select[name=import_to_history] option:selected").text();
             this.processImportToHistory(history_id, history_name);
-            this.modal.disableButton("Import");
+            modal.enableButton("Import");
         }
     },
 
@@ -132,10 +133,8 @@ var ImportDatasetModal = Backbone.View.extend({
     initChainCallControlToHistory: function (options) {
         var template;
         template = this.templateImportIntoHistoryProgressBar();
-        this.modal.$el.find(".modal-body").html(template({ history_name: options.history_name }));
+        modal.$body.innerHTML = template({ history_name: options.history_name });
 
-        // var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
-        // this.modal.$el.find( '.modal-body' ).html( progress_bar_tmpl( { folder_name : this.options.folder_name } ) );
         this.progress = 0;
         this.progressStep = 100 / options.length;
         this.options.chain_call_control.total_number = options.length;
@@ -165,7 +164,7 @@ var ImportDatasetModal = Backbone.View.extend({
                     `${getAppRoot()}histories/view?id=${history_id}`,
                 );
             }
-            this.modal.hide();
+            modal.hide();
             return true;
         }
         var promise = $.when(

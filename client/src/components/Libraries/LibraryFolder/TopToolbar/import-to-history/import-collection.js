@@ -9,6 +9,8 @@ import Modal from "utils/modal";
 
 import mod_library_model from "../library-model";
 
+var modal = new Modal();
+
 var ImportCollectionModal = Backbone.View.extend({
     options: null,
 
@@ -45,8 +47,7 @@ var ImportCollectionModal = Backbone.View.extend({
             var promise = this.fetchUserHistories();
             promise
                 .done(() => {
-                    this.modal = new Modal();
-                    this.modal.show({
+                    modal.show({
                         closing_events: true,
                         title: "Create History Collection from Datasets",
                         body: template({
@@ -56,10 +57,10 @@ var ImportCollectionModal = Backbone.View.extend({
                         buttons: {
                             Continue: () => {
                                 this.showCollectionBuilder(checked_items.dataset_ids);
-                                this.modal.hide();
+                                modal.hide();
                             },
                             Close: () => {
-                                this.modal.hide();
+                                modal.hide();
                             },
                         },
                     });
@@ -90,7 +91,7 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_item.src = "ldda";
             collection_elements.push(collection_item);
         }
-        const new_history_name = this.modal.el.querySelector('input[name="history_name"]').value;
+        const new_history_name = modal.el.querySelector('input[name="history_name"]').value;
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .then((new_history) => {
@@ -102,13 +103,13 @@ var ImportCollectionModal = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 });
         } else {
-            this.select_collection_history = this.modal.el.querySelector("#library-collection-history-select");
+            this.select_collection_history = modal.el.querySelector("#library-collection-history-select");
             const selected_history_id = this.select_collection_history.value;
             this.collectionImport(collection_elements, selected_history_id);
         }
     },
     collectionImport: function (collectionElements, historyId) {
-        const collectionType = this.modal.el.querySelector("#library-collection-type-select").value;
+        const collectionType = modal.el.querySelector("#library-collection-type-select").value;
         let selection = {};
         if (collectionType == "rules") {
             selection.selectionType = "library_datasets";
