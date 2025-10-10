@@ -610,7 +610,6 @@
 import HotTable from "@handsontable/vue";
 import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
 import { fetch, fetchJobErrorMessage } from "api/tools";
-import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ColumnSelector from "components/RuleBuilder/ColumnSelector";
@@ -1579,7 +1578,6 @@ export default {
                     }
                 }
             } else {
-                const Galaxy = getGalaxyInstance();
                 const { loadCurrentHistoryId } = useHistoryStore();
                 const historyId = await loadCurrentHistoryId();
                 let elements;
