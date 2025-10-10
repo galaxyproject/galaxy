@@ -64,9 +64,25 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
         self.url = from_dict.get("local_galaxy_url", "http://localhost:8080")
         self.target_url_from_selenium = from_dict.get("selenium_galaxy_url", self.url)
         self.timeout_multiplier = from_dict.get("timeout_multiplier", 1)
+        # Optional properties...
+        self.login_email = from_dict.get("login_email", "")
+        self.login_password = from_dict.get("login_password", "")
 
     def _screenshot_path(self, label, extension=".png"):
         return label + extension
+
+    # mirror TestWithSelenium method for doing this but use the config.
+    def login(self):
+        if self.login_email:
+            assert self.login_password, "If login_email is set, a password must be set also with login_password"
+            self.home()
+            self.submit_login(
+                email=self.login_email,
+                password=self.login_password,
+                assert_valid=True,
+            )
+        else:
+            self.register()
 
 
 def init(config=None, clazz=GalaxySeleniumContextImpl) -> GalaxySeleniumContext:
