@@ -91,7 +91,7 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_item.src = "ldda";
             collection_elements.push(collection_item);
         }
-        const new_history_name = this.modal.$("input[name=history_name]").val();
+        const new_history_name = this.modal.el.querySelector('input[name="history_name"]').value;
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .then((new_history) => {
@@ -103,13 +103,13 @@ var ImportCollectionModal = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 });
         } else {
-            this.select_collection_history = this.modal.$el.find("#library-collection-history-select");
-            const selected_history_id = this.select_collection_history.val();
+            this.select_collection_history = this.modal.el.querySelector("#library-collection-history-select")
+            const selected_history_id = this.select_collection_history.value;
             this.collectionImport(collection_elements, selected_history_id);
         }
     },
     collectionImport: function (collectionElements, historyId) {
-        const collectionType = this.modal.$el.find("#library-collection-type-select").val();
+        const collectionType = this.modal.el.querySelector("#library-collection-type-select").value;
         let selection = {};
         if (collectionType == "rules") {
             selection.selectionType = "library_datasets";

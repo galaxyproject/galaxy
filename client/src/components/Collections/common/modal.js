@@ -1,10 +1,8 @@
-import { getGalaxyInstance } from "app";
-import UI_MODAL from "mvc/ui/ui-modal";
+import Modal from "utils/modal";
 import _l from "utils/localization";
 
 export function collectionCreatorModalSetup(options, Galaxy = null) {
-    Galaxy = Galaxy || getGalaxyInstance();
-    const modal = Galaxy.modal || new UI_MODAL.View();
+    const modal = new Modal();
     const promise = new Promise((then, reject) => {
         options.oncancel = function () {
             modal.hide();
