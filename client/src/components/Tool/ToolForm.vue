@@ -110,7 +110,6 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import Heading from "components/Common/Heading";
 import FormDisplay from "components/Form/FormDisplay";
@@ -296,8 +295,7 @@ export default {
             return config.server_mail_configured && !user.isAnonymous;
         },
         onHistoryChange() {
-            const Galaxy = getGalaxyInstance();
-            if (this.initialized && Galaxy && Galaxy.currHistoryPanel) {
+            if (this.initialized) {
                 console.debug(`ToolForm::onHistoryChange - Loading history changes. [${this.id}]`);
                 this.onUpdate();
             }
