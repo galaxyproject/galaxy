@@ -363,6 +363,7 @@ export default {
                 error: null,
                 isBusy: false,
                 folder_metadata: {},
+                renderedReadme: "",
                 fields: fields,
                 selectMode: "multi",
                 perPage: DEFAULT_PER_PAGE,
@@ -379,9 +380,6 @@ export default {
                 .map((item, index) => ({ item, index }))
                 .filter(({ item }) => this.isRowSelected(item))
                 .map(({ index }) => index);
-        },
-        renderedReadme() {
-            return this.folder_metadata.readme_rendered;
         },
     },
     watch: {
@@ -400,10 +398,9 @@ export default {
         sortDesc() {
             this.fetchFolderContents();
         },
-        folderReadme() {
+        "folder_metadata.readme_raw"() {
             this.renderReadme();
         },
-        
     },
     created() {
         this.services = new Services({ root: this.root });
@@ -421,6 +418,7 @@ export default {
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
+            this.renderedReadme = "";
             // Restore perPage from localStorage after reset
             if (this.perPageRef) {
                 this.perPage = this.perPageRef.value;
@@ -447,6 +445,7 @@ export default {
                     this.folder_metadata = response.metadata;
                     this.canAddLibraryItem = response.metadata.can_add_library_item;
                     this.total_rows = response.metadata.total_rows;
+                    this.renderReadme();
                     if (this.isAllSelectedMode) {
                         this.selected = [];
                         this.selectAllRenderedRows();
@@ -673,9 +672,9 @@ export default {
         },
         renderReadme() {
             if (this.folder_metadata.readme_raw) {
-                this.folder_metadata.readme_rendered = renderMarkdown(this.folder_metadata.readme_raw);
+                this.renderedReadme = renderMarkdown(this.folder_metadata.readme_raw);
             } else {
-                this.folder_metadata.readme_rendered = "";
+                this.renderedReadme = "";
             }
         },
         /*
