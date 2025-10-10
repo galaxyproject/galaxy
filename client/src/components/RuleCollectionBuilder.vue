@@ -630,11 +630,10 @@ import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import { useHistoryStore } from "stores/historyStore";
 import _ from "underscore";
 import _l from "utils/localization";
 import Vue from "vue";
-
-import { useHistoryStore } from "stores/historyStore";
 
 import { errorMessageAsString } from "@/utils/simple-error";
 import { startWatchingHistory } from "@/watch/watchHistoryProvided";

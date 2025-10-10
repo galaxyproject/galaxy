@@ -1,10 +1,8 @@
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
-
 import { FilesDialog } from "components/FilesDialog";
-
 import { useHistoryStore } from "stores/historyStore";
-
 import { appendVueComponent } from "utils/mountVueComponent";
+
+import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 
 /**
  * Opens a modal dialog for dataset collection selection
@@ -16,7 +14,7 @@ export async function datasetCollectionDialog(callback, options = {}) {
 
     Object.assign(options, {
         callback: callback,
-        history: history_id,
+        history: historyId,
     });
 
     appendVueComponent(DatasetCollectionDialog, options);
