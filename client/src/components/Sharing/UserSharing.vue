@@ -225,6 +225,7 @@ defineExpose({
             no-close-on-backdrop
             scrollable
             dialog-class="user-sharing-modal"
+            data-description="sharing permissions change required"
             @ok="onUpdatePermissions"
             @cancel="onCancel"
             @close="onCancel">
@@ -250,7 +251,7 @@ defineExpose({
                 header-bg-variant="primary"
                 header-text-variant="white"
                 class="mb-4">
-                <BFormSelect v-model="selectedSharingOption">
+                <BFormSelect v-model="selectedSharingOption" data-description="sharing permissions change required how">
                     <BFormSelectOption value="make_public"> Make datasets public </BFormSelectOption>
                     <BFormSelectOption value="make_accessible_to_shared">
                         Make datasets private to me and users this {{ modelClass }} is shared with
