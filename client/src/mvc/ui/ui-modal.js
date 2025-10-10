@@ -1,7 +1,10 @@
+let globalModalInstance = null;
 export class View {
     constructor(options = {}) {
+        if (globalModalInstance) {
+            return globalModalInstance;
+        }
         this.optionsDefault = {
-            container: "body",
             title: "ui-modal",
             cls: "ui-modal",
             body: "",
@@ -17,10 +20,11 @@ export class View {
         this.options = Object.assign({}, this.optionsDefault, options);
         this.el = document.createElement("div");
         this.el.className = "ui-modal";
-        document.querySelector(this.options.container).prepend(this.el);
+        document.body.prepend(this.el);
         if (options) {
             this.render();
         }
+        globalModalInstance = this;
     }
     show(options) {
         if (options) {
