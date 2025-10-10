@@ -54,7 +54,6 @@ import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { setToastComponentRef } from "composables/toast";
 import { WindowManager } from "layout/window-manager";
-import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
