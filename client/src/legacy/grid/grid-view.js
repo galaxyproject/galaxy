@@ -76,17 +76,6 @@ export default Backbone.View.extend({
         }
     },
 
-    // refresh frames
-    handle_refresh: function (refresh_frames) {
-        if (refresh_frames) {
-            if ($.inArray("history", refresh_frames) > -1) {
-                if (window.top.Galaxy && window.top.Galaxy.currHistoryPanel) {
-                    window.top.Galaxy.currHistoryPanel.loadCurrentHistory();
-                }
-            }
-        }
-    },
-
     // Initialize
     init_grid: function (grid_config) {
         this.grid.set(grid_config);
@@ -97,8 +86,6 @@ export default Backbone.View.extend({
         if (this.allow_title_display && options.title) {
             setWindowTitle(options.title);
         }
-        // handle refresh requests
-        this.handle_refresh(options.refresh_frames);
 
         // strip protocol and domain
         var url = this.grid.get("url_base");
