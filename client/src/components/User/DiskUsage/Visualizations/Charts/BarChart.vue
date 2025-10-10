@@ -151,7 +151,8 @@ function drawChart() {
         .attr("y", (d) => yScale(d.value) - xAxisHeight)
         .attr("width", xScale.bandwidth())
         .attr("height", (d) => chartHeight - yScale(d.value))
-        .attr("fill", (d) => entryColor(d));
+        .attr("fill", (d) => entryColor(d))
+        .attr("data-label", (d) => d.label);
 
     return bars;
 }
