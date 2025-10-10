@@ -1,7 +1,6 @@
 import logging
 import shutil
 import tempfile
-import markdown
 from typing import (
     Annotated,
     cast,
@@ -118,26 +117,7 @@ class LibraryContentsService(ServiceBase, LibraryActions, UsesLibraryMixinItems,
         class_name, content_id = self._decode_library_content_id(id)
         if class_name == "LibraryFolder":
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
-            folder_dict = content.to_dict(view="element")
-            readme_ldda = None
-            for ld in content.datasets:
-                if ld.name.strip().lower() == "readme.md" and not ld.deleted:
-                    ldda = ld.library_dataset_dataset_association
-                    if ldda and ldda.dataset and ldda.dataset.has_data():
-                        if ldda.extension in {"md","txt"}:
-                            readme_ldda = ldda
-                            break
-
-            if readme_ldda:        
-                try:
-                    with open(readme_ldda.dataset.get_file_name(), "r", encoding="utf-8") as f:
-                        raw_md = f.read()
-                    folder_dict["readme_raw"] = raw_md
-                    folder_dict["readme_rendered"] = markdown.markdown(raw_md)
-                except Exception as e:
-                    log.warning(f"Error reading readme file for folder {content_id}: {e}")
-
-            return LibraryContentsShowFolderResponse(**folder_dict)
+            return LibraryContentsShowFolderResponse(**content.to_dict(view="element"))
         else:
             content = self.get_library_dataset(trans, content_id, check_ownership=False, check_accessible=True)
             rval_dict = content.to_dict(view="element")

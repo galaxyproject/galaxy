@@ -85,14 +85,14 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
         # Find and load README
         readme_raw = ""
-        README_FILENAMES = {"readme.md", "readme.txt", "readme"}
+        README_FILENAMES = {"readme.md", "readme.markdown", "readme.txt", "readme"}
         for content_item in contents:
             if isinstance(content_item, model.LibraryDataset):
                 name = content_item.name.strip().lower()
                 if name in README_FILENAMES and not content_item.deleted:
                     ldda = content_item.library_dataset_dataset_association
                     if ldda and ldda.dataset and ldda.dataset.has_data():
-                        if ldda.extension in {"txt", "md"}:
+                        if ldda.extension in {"txt", "md", "markdown"}:
                             try:
                                 with open(ldda.dataset.get_file_name(), "r", encoding="utf-8") as f:
                                     readme_raw = f.read()
