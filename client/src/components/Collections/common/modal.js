@@ -14,7 +14,7 @@ export function collectionCreatorModalSetup(options, Galaxy = null) {
         };
     });
     const showEl = function (el) {
-        const close_event = options.closing_events === undefined || options.closing_events;
+        const closing_events = options.closing_events === undefined || options.closing_events;
         const title = options.title || _l("Create a collection");
         const titleSuffix = options.historyName ? `From history: <b>${options.historyName}</b>` : "";
         const titleHtml = `<div class='d-flex justify-content-between unselectable'>
@@ -26,8 +26,7 @@ export function collectionCreatorModalSetup(options, Galaxy = null) {
             body: el,
             width: "85%",
             height: "100%",
-            xlarge: true,
-            closing_events: close_event,
+            closing_events: closing_events,
         });
     };
     return { promise, options, showEl };

@@ -7,10 +7,8 @@ export default class {
         this.optionsDefault = {
             title: "",
             body: "",
-            backdrop: true,
             height: null,
             width: null,
-            xlarge: false,
             closing_events: false,
             closing_callback: null,
         };
@@ -41,9 +39,10 @@ export default class {
                 }
             };
             document.addEventListener("keyup", this._keyupHandler);
-            this.$backdrop.addEventListener("click", () => {
+            this._backdropHandler = () => {
                 this.hide(true);
-            });
+            };
+            this.$backdrop.addEventListener("click", this._backdropHandler);
         }
         this.$header.querySelector(".title").focus();
     }
@@ -62,7 +61,8 @@ export default class {
             this._keyupHandler = null;
         }
         if (this.$backdrop) {
-            this.$backdrop.replaceWith(this.$backdrop.cloneNode(true));
+            this.$backdrop.removeEventListener("click", this._backdropHandler);
+            this._backdropHandler = null;
         }
     }
     render() {
@@ -112,9 +112,6 @@ export default class {
         if (this.options.width) {
             this.$dialog.style.width = this.options.width;
         }
-        if (this.options.xlarge) {
-            this.$dialog.style.maxWidth = "3000px";
-        }
     }
     getButton(name) {
         return this.buttonList[name];
@@ -130,21 +127,6 @@ export default class {
         if (btn) {
             btn.disabled = true;
         }
-    }
-    showButton(name) {
-        const btn = this.getButton(name);
-        if (btn) {
-            btn.style.display = "";
-        }
-    }
-    hideButton(name) {
-        const btn = this.getButton(name);
-        if (btn) {
-            btn.style.display = "none";
-        }
-    }
-    scrollTop() {
-        return this.$body.scrollTop;
     }
     _template() {
         return `
