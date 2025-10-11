@@ -5198,6 +5198,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = self.metadata.make_dict_copy(bunch)
 
+    def get_metadata(self) -> "galaxy.model.metadata.MetadataCollection":
+        # Alias for backwards compatibility with .get_metadata() calls in jbrowse/jbrowse2
+        # https://github.com/galaxyproject/tools-iuc/blob/4095773348da6faeb6096f58785b66898b09befa/tools/jbrowse2/jbrowse2.xml#L88
+        return self.metadata
+
     @property
     def set_metadata_requires_flush(self):
         return self.metadata.requires_dataset_id
