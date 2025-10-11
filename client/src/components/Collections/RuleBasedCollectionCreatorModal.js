@@ -5,7 +5,7 @@ import { rawToTable } from "@/components/Collections/tables";
 
 import { collectionCreatorModalSetup } from "./common/modal";
 
-function ruleBasedCollectionCreatorModal(elements, elementsType, importType, options) {
+async function ruleBasedCollectionCreatorModal(elements, elementsType, importType, options) {
     // importType in [datasets, collection]
     // elementsType in [raw, ftp, datasets]
     let title;
@@ -45,7 +45,7 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
         },
     );
 }
-function createCollectionViaRules(selection, defaultHideSourceItems = true) {
+export function createCollectionViaRules(selection, defaultHideSourceItems = true) {
     let elements;
     let elementsType;
     let importType;
@@ -73,8 +73,3 @@ function createCollectionViaRules(selection, defaultHideSourceItems = true) {
     });
     return promise;
 }
-
-export default {
-    ruleBasedCollectionCreatorModal: ruleBasedCollectionCreatorModal,
-    createCollectionViaRules: createCollectionViaRules,
-};
