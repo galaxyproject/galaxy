@@ -188,5 +188,29 @@ class GoogleCloudStorageFilesSource(
 
             return entries, total_count
 
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[GoogleCloudStorageFileSourceConfiguration],
+    ):
+        """
+        Override to download files directly from GCS, bypassing fs_gcsfs's directory marker checks.
+        """
+        with self._open_fs(context) as fs_handle:
+            bucket = fs_handle.bucket
+
+            # Convert path to GCS blob key
+            normalized_path = source_path.strip("/")
+
+            # Get the blob
+            blob = bucket.get_blob(normalized_path)
+            if not blob:
+                raise Exception(f"File not found: {source_path}")
+
+            # Download directly to file
+            with open(native_path, "wb") as write_file:
+                blob.download_to_file(write_file)
+
 
 __all__ = ("GoogleCloudStorageFilesSource",)
