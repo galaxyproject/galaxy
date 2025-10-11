@@ -212,5 +212,25 @@ class GoogleCloudStorageFilesSource(
             with open(native_path, "wb") as write_file:
                 blob.download_to_file(write_file)
 
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[GoogleCloudStorageFileSourceConfiguration],
+    ):
+        """
+        Override to upload files directly to GCS, bypassing fs_gcsfs's directory marker checks.
+        """
+        with self._open_fs(context) as fs_handle:
+            bucket = fs_handle.bucket
+
+            # Convert path to GCS blob key
+            normalized_path = target_path.strip("/")
+
+            # Create blob and upload
+            blob = bucket.blob(normalized_path)
+            with open(native_path, "rb") as read_file:
+                blob.upload_from_file(read_file)
+
 
 __all__ = ("GoogleCloudStorageFilesSource",)
