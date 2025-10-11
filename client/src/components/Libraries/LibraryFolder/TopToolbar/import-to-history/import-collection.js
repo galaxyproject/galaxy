@@ -57,7 +57,6 @@ var ImportCollectionModal = Backbone.View.extend({
                         buttons: {
                             Continue: () => {
                                 this.showCollectionBuilder(checked_items.dataset_ids);
-                                modal.hide();
                             },
                             Close: () => {
                                 modal.hide();

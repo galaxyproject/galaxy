@@ -1,12 +1,11 @@
 let globalModalInstance = null;
 export default class {
-    constructor(options = {}) {
+    constructor() {
         if (globalModalInstance) {
             return globalModalInstance;
         }
         this.optionsDefault = {
-            title: "ui-modal",
-            cls: "ui-modal",
+            title: "",
             body: "",
             backdrop: true,
             height: null,
@@ -14,16 +13,11 @@ export default class {
             xlarge: false,
             closing_events: false,
             closing_callback: null,
-            title_separator: true,
         };
         this.buttonList = {};
-        this.options = Object.assign({}, this.optionsDefault, options);
         this.el = document.createElement("div");
-        this.el.className = "ui-modal";
+        this.el.className = "modal ui-modal";
         document.body.prepend(this.el);
-        if (options) {
-            this.render();
-        }
         globalModalInstance = this;
     }
     show(options) {
@@ -75,9 +69,6 @@ export default class {
         this.el.innerHTML = this._template();
         this.$header = this.el.querySelector(".modal-header");
         this.$dialog = this.el.querySelector(".modal-dialog");
-        if (this.options.extra_class) {
-            this.$dialog.classList.add(this.options.extra_class);
-        }
         this.$body = this.el.querySelector(".modal-body");
         this.$footer = this.el.querySelector(".modal-footer");
         this.$backdrop = this.el.querySelector(".modal-backdrop");
@@ -88,7 +79,6 @@ export default class {
             div.innerHTML = '<div class="progress-bar progress-bar-info" style="width:100%"></div>';
             this.options.body = div;
         }
-        this.el.className = "modal " + this.options.cls;
         this.$header.querySelector(".title").innerHTML = this.options.title;
         if (typeof this.options.body === "string") {
             this.$body.innerHTML = this.options.body;
@@ -111,16 +101,6 @@ export default class {
             }
         } else {
             this.$footer.style.display = "none";
-        }
-        if (this.options.backdrop) {
-            this.$backdrop.classList.add("in");
-        } else {
-            this.$backdrop.classList.remove("in");
-        }
-        if (!this.options.title_separator) {
-            this.$header.classList.add("no-separator");
-        } else {
-            this.$header.classList.remove("no-separator");
         }
         this.$body.removeAttribute("style");
         if (this.options.height) {
@@ -167,19 +147,18 @@ export default class {
         return this.$body.scrollTop;
     }
     _template() {
-        return (
-            '<div class="modal-backdrop fade"></div>' +
-            '<div class="modal-dialog">' +
-            '<div class="modal-content">' +
-            '<div class="modal-header">' +
-            '<h4 class="title" tabindex="0"></h4>' +
-            "</div>" +
-            '<div class="modal-body"></div>' +
-            '<div class="modal-footer">' +
-            '<div class="buttons"></div>' +
-            "</div>" +
-            "</div>" +
-            "</div>"
-        );
+        return `
+            <div class="modal-backdrop fade in"></div>
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="title" tabindex="0"></h4>
+                    </div>
+                    <div class="modal-body"></div>
+                    <div class="modal-footer">
+                        <div class="buttons"></div>
+                    </div>
+                </div>
+            </div>`;
     }
 }
