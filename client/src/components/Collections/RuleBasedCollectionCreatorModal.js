@@ -18,10 +18,7 @@ async function ruleBasedCollectionCreatorModal(elements, elementsType, importTyp
     } else {
         title = _l("Build Rules for Uploading Collections");
     }
-    options.title = title;
-    // Prevents user from accidentally closing the modal by clicking outside the bounds
-    options.closing_events = false;
-    const { promise, showEl } = collectionCreatorModalSetup(options);
+    const { promise, showEl } = collectionCreatorModalSetup({ ...options, title });
     return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
         (module) => {
             var ruleCollectionBuilderInstance = Vue.extend(module.default);
