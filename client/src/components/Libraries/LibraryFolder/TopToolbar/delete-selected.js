@@ -11,6 +11,8 @@ let items_total = 0;
 let progressStep = 0;
 const chain_call_control = {};
 
+const modal = new Modal();
+
 /**
  * Delete the selected items. Atomic. One by one.
  */
@@ -21,7 +23,6 @@ export function deleteSelectedItems(checkedRows, onRemove, refreshTable, refresh
         Toast.info("You must select at least one item for deletion.");
     } else {
         var template = templateDeletingItemsProgressBar();
-        const modal = new Modal();
         modal.show({
             closing_events: true,
             title: _l("Deleting selected items"),

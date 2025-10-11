@@ -10,7 +10,6 @@ export default class {
             height: null,
             width: null,
             closing_events: false,
-            closing_callback: null,
         };
         this.buttonList = {};
         this.el = document.createElement("div");
@@ -46,16 +45,13 @@ export default class {
         }
         this.$header.querySelector(".title").focus();
     }
-    hide(canceled) {
+    hide() {
         this.visible = false;
         this.el.style.transition = "opacity 0.15s";
         this.el.style.opacity = 0;
         setTimeout(() => {
             this.el.style.display = "none";
         }, 150);
-        if (this.options.closing_callback) {
-            this.options.closing_callback(canceled);
-        }
         if (this._keyupHandler) {
             document.removeEventListener("keyup", this._keyupHandler);
             this._keyupHandler = null;
