@@ -628,7 +628,7 @@ export default {
         },
 
         /*
-         Former Backbone code, adopted to work with Vue
+         Former code, adopted to work with Vue
         */
         saveChanges(folder) {
             let is_changed = false;
