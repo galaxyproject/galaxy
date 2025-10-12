@@ -331,6 +331,51 @@ class HasDriver:
         else:
             return element
 
+    def wait_for_and_click(self, selector_template: Target, **kwds) -> WebElement:
+        """
+        Wait for element to be clickable and then click it.
+
+        Args:
+            selector_template: Target selector for the element
+            **kwds: Additional keyword arguments for wait (e.g., timeout)
+
+        Returns:
+            The clicked WebElement
+        """
+        element = self.wait_for_clickable(selector_template, **kwds)
+        element.click()
+        return element
+
+    def wait_for_and_double_click(self, selector_template: Target, **kwds) -> WebElement:
+        """
+        Wait for element to be clickable and then double-click it.
+
+        Args:
+            selector_template: Target selector for the element
+            **kwds: Additional keyword arguments for wait (e.g., timeout)
+
+        Returns:
+            The double-clicked WebElement
+        """
+        element = self.wait_for_clickable(selector_template, **kwds)
+        action_chains = self.action_chains()
+        action_chains.move_to_element(element).double_click().perform()
+        return element
+
+    def assert_absent_or_hidden_after_transitions(self, selector_template: Target, **kwds) -> None:
+        """
+        Assert element is absent or hidden (convenience method for subclasses to override with retry logic).
+
+        This is a basic implementation that calls assert_absent_or_hidden.
+        Subclasses may decorate or override this method with retry logic for handling
+        transitions where elements may become stale.
+
+        Args:
+            selector_template: Target selector for the element
+            **kwds: Additional keyword arguments
+        """
+        return self.assert_absent_or_hidden(selector_template, **kwds)
+
 
 def exception_indicates_click_intercepted(exception):
     return "click intercepted" in str(exception)

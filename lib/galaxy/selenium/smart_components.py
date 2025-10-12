@@ -16,7 +16,7 @@ from .axe_results import (
 
 if TYPE_CHECKING:
     # TODO: ideally this after refactoring things this should be galaxy.selenium.has_driver.HasDriver -John
-    from galaxy.selenium.navigates_galaxy import NavigatesGalaxy
+    from galaxy.selenium.has_driver import HasDriver
 
 
 class SmartComponent:
@@ -27,7 +27,7 @@ class SmartComponent:
     click themselves, etc.... More "magic", but much cleaner usage.
     """
 
-    def __init__(self, component, has_driver: "NavigatesGalaxy"):
+    def __init__(self, component, has_driver: "HasDriver"):
         self._component = component
         self._has_driver = has_driver
 
@@ -49,7 +49,7 @@ class SmartComponent:
 class SmartTarget:
     """Wrap a Target with driver aware methods."""
 
-    def __init__(self, target, has_driver: "NavigatesGalaxy"):
+    def __init__(self, target, has_driver: "HasDriver"):
         self._target = target
         self._has_driver = has_driver
 
