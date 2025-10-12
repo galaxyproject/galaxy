@@ -408,8 +408,8 @@ class TestActionChainsAndKeys:
 class TestFrameSwitching:
     """Tests for frame switching functionality."""
 
-    def test_switch_to_frame(self, has_driver_instance, base_url):
-        """Test switching to iframe."""
+    def test_switch_to_frame_by_name(self, has_driver_instance, base_url):
+        """Test switching to iframe by name."""
         has_driver_instance.driver.get(f"{base_url}/basic.html")
         has_driver_instance.switch_to_frame("frame")
 
@@ -417,8 +417,56 @@ class TestFrameSwitching:
         frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
         assert frame_header.text == "Inside Frame"
 
+        # Switch back using new method
+        has_driver_instance.switch_to_default_content()
+
+    def test_switch_to_frame_by_id(self, has_driver_instance, base_url):
+        """Test switching to iframe by id (frame has name='frame' and id could be different)."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        # The frame has name="frame" - the method should work for both name and id
+        has_driver_instance.switch_to_frame("frame")
+
+        # Verify we're in the frame
+        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
+        assert frame_header.text == "Inside Frame"
+
         # Switch back
-        has_driver_instance.driver.switch_to.default_content()
+        has_driver_instance.switch_to_default_content()
+
+    def test_switch_to_frame_by_element(self, has_driver_instance, base_url):
+        """Test switching to iframe by element reference."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+
+        # Find the frame element first
+        frame_element = has_driver_instance.driver.find_element(By.NAME, "frame")
+
+        # Switch to it by element
+        has_driver_instance.switch_to_frame(frame_element)
+
+        # Verify we're in the frame
+        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
+        assert frame_header.text == "Inside Frame"
+
+        # Switch back
+        has_driver_instance.switch_to_default_content()
+
+    def test_switch_to_default_content(self, has_driver_instance, base_url):
+        """Test switching back to default content."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+
+        # Switch to frame
+        has_driver_instance.switch_to_frame("frame")
+
+        # Verify we're in the frame
+        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
+        assert frame_header.text == "Inside Frame"
+
+        # Switch back to default content
+        has_driver_instance.switch_to_default_content()
+
+        # Verify we're back in main content (frame-header shouldn't be accessible now)
+        header = has_driver_instance.driver.find_element(By.ID, "header")
+        assert header.text == "Test Page"
 
 
 class TestAlertHandling:
