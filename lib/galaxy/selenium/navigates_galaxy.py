@@ -259,7 +259,7 @@ class NavigatesGalaxy(HasDriver):
     def get(self, url: str = ""):
         """Expand supplied relative URL and navigate to page using Selenium driver."""
         full_url = self.build_url(url)
-        return self.driver.get(full_url)
+        return self.navigate_to(full_url)
 
     @property
     def navigation(self) -> Component:
@@ -314,28 +314,28 @@ class NavigatesGalaxy(HasDriver):
         path = f"workflow_landings/{uuid}?public={public}"
         if client_secret:
             path = f"{path}&client_secret={client_secret}"
-        self.driver.get(self.build_url(path))
+        self.navigate_to(self.build_url(path))
         self.components.workflow_run.run_workflow.wait_for_visible()
 
     def go_to_trs_search(self) -> None:
-        self.driver.get(self.build_url("workflows/trs_search"))
+        self.navigate_to(self.build_url("workflows/trs_search"))
         self.components.masthead._.wait_for_visible()
 
     def go_to_trs_by_id(self) -> None:
-        self.driver.get(self.build_url("workflows/trs_import"))
+        self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
 
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
-        self.driver.get(self.build_url(f"workflows/sharing?id={workflow_id}"))
+        self.navigate_to(self.build_url(f"workflows/sharing?id={workflow_id}"))
 
     def go_to_workflow_export(self, workflow_id: str) -> None:
-        self.driver.get(self.build_url(f"workflows/export?id={workflow_id}"))
+        self.navigate_to(self.build_url(f"workflows/export?id={workflow_id}"))
 
     def go_to_history_sharing(self, history_id: str) -> None:
-        self.driver.get(self.build_url(f"histories/sharing?id={history_id}"))
+        self.navigate_to(self.build_url(f"histories/sharing?id={history_id}"))
 
     def go_to_import_zip(self) -> None:
-        self.driver.get(self.build_url("import/zip"))
+        self.navigate_to(self.build_url("import/zip"))
         self.components.masthead._.wait_for_visible()
 
     def switch_to_main_panel(self):

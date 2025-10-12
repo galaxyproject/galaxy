@@ -56,6 +56,15 @@ class HasDriver:
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
 
+    def navigate_to(self, url: str) -> None:
+        """
+        Navigate to a URL.
+
+        Args:
+            url: The URL to navigate to
+        """
+        self.driver.get(url)
+
     def re_get_with_query_params(self, params_str: str):
         driver = self.driver
         new_url = driver.current_url
