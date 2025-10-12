@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Test Page</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+        .visible {
+            display: block;
+        }
+        .delayed-visible {
+            display: none;
+        }
+        #disabled-button {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="header">Test Page</h1>
+
+    <!-- Elements for testing finding methods -->
+    <div id="test-div" class="test-class">Test Div</div>
+    <p class="test-paragraph">Test Paragraph</p>
+    <span data-testid="test-span">Test Span</span>
+
+    <!-- Link for testing -->
+    <a href="#" id="test-link">Test Link</a>
+
+    <!-- Elements for visibility testing -->
+    <div id="visible-element" class="visible">I am visible</div>
+    <div id="hidden-element" class="hidden">I am hidden</div>
+    <div id="delayed-element" class="delayed-visible">I will become visible</div>
+
+    <!-- Form elements -->
+    <form id="test-form" action="/submit" method="post">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" />
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" />
+
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" />
+
+        <button type="button" id="clickable-button">Click Me</button>
+        <button type="button" id="disabled-button" disabled>Disabled Button</button>
+        <input type="submit" value="Submit" />
+    </form>
+
+    <!-- Elements for xpath testing -->
+    <div class="xpath-container">
+        <ul>
+            <li class="item">Item 1</li>
+            <li class="item">Item 2</li>
+            <li class="item">Item 3</li>
+        </ul>
+    </div>
+
+    <!-- Alert button -->
+    <button id="alert-button" onclick="alert('Test Alert')">Show Alert</button>
+
+    <!-- Frame for iframe testing -->
+    <iframe name="frame" id="test-frame" src="frame.html" style="width: 300px; height: 200px;"></iframe>
+
+    <script>
+        // Make element visible after delay
+        setTimeout(() => {
+            document.getElementById('delayed-element').classList.remove('delayed-visible');
+            document.getElementById('delayed-element').classList.add('visible');
+        }, 1000);
+
+        // Button click handler
+        document.getElementById('clickable-button').addEventListener('click', function() {
+            this.textContent = 'Clicked!';
+            this.classList.add('was-clicked');
+        });
+
+        // Form submission handler
+        document.getElementById('test-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const result = document.createElement('div');
+            result.id = 'form-result';
+            result.textContent = 'Form submitted!';
+            document.body.appendChild(result);
+        });
+    </script>
+</body>
+</html>
