@@ -18,6 +18,21 @@
             pointer-events: none;
             opacity: 0.5;
         }
+        #hover-target {
+            width: 200px;
+            height: 100px;
+            background-color: blue;
+            transition: background-color 0.1s;
+        }
+        #hover-target:hover {
+            background-color: red;
+        }
+        #hover-indicator {
+            display: none;
+        }
+        #hover-target:hover + #hover-indicator {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -63,6 +78,10 @@
 
     <!-- Alert button -->
     <button id="alert-button" onclick="alert('Test Alert')">Show Alert</button>
+
+    <!-- Hover testing elements -->
+    <div id="hover-target">Hover over me</div>
+    <div id="hover-indicator">Hover detected!</div>
 
     <!-- Frame for iframe testing -->
     <iframe name="frame" id="test-frame" src="frame.html" style="width: 300px; height: 200px;"></iframe>

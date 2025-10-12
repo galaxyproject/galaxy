@@ -18,6 +18,11 @@ class TestHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         """Suppress log messages during tests."""
         pass
 
+    def end_headers(self):
+        """Override to add test cookies to all responses."""
+        self.send_header("Set-Cookie", "test_cookie=test_value; Path=/")
+        super().end_headers()
+
 
 class TestHTTPServer:
     """Simple HTTP server for serving test HTML pages."""

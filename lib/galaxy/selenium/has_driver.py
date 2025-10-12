@@ -23,6 +23,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
+from seletools.actions import drag_and_drop as seletools_drag_and_drop
 
 from galaxy.navigation.components import Target
 from galaxy.util import requests
@@ -155,6 +156,15 @@ class HasDriver:
         """
         self.driver.switch_to.default_content()
 
+    def get_cookies(self) -> list[dict]:
+        """
+        Get all cookies for the current domain.
+
+        Returns:
+            List of cookie dictionaries with keys like 'name', 'value', 'domain', 'path', etc.
+        """
+        return self.driver.get_cookies()
+
     def wait_for_xpath(self, xpath: str, **kwds) -> WebElement:
         element = self._wait_on(
             ec.presence_of_element_located((By.XPATH, xpath)), f"XPATH selector [{xpath}] to become present", **kwds
@@ -273,6 +283,38 @@ class HasDriver:
 
     def action_chains(self):
         return ActionChains(self.driver)
+
+    def drag_and_drop(self, source: WebElement, target: WebElement) -> None:
+        """
+        Drag and drop from source element to target element.
+
+        Uses JavaScript-based drag and drop implementation for reliability.
+
+        Args:
+            source: The element to drag
+            target: The element to drop onto
+        """
+        seletools_drag_and_drop(self.driver, source, target)
+
+    def move_to_and_click(self, element: WebElement) -> None:
+        """
+        Move to an element and click it using ActionChains.
+
+        This is useful when a simple click doesn't work due to element positioning.
+
+        Args:
+            element: The element to move to and click
+        """
+        self.action_chains().move_to_element(element).click().perform()
+
+    def hover(self, element: WebElement) -> None:
+        """
+        Hover over an element (move mouse to element without clicking).
+
+        Args:
+            element: The element to hover over
+        """
+        self.action_chains().move_to_element(element).perform()
 
     def send_enter(self, element: Optional[WebElement] = None):
         self._send_key(Keys.ENTER, element)

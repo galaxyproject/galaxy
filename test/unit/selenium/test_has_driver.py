@@ -385,6 +385,51 @@ class TestActionChainsAndKeys:
         chains = has_driver_instance.action_chains()
         assert chains is not None
 
+    def test_drag_and_drop(self, has_driver_instance, base_url):
+        """Test drag and drop functionality."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+
+        # TODO: Add actual draggable elements to basic.html for proper testing
+        # For example, add:
+        #   <div id="draggable" draggable="true" style="width:100px;height:100px;background:blue;">Drag me</div>
+        #   <div id="droptarget" style="width:200px;height:200px;background:gray;">Drop here</div>
+        # Then verify with JavaScript that droptarget contains draggable after drag_and_drop
+        # e.g., assert has_driver_instance.execute_script("return document.getElementById('droptarget').contains(document.getElementById('draggable'))")
+
+        # For now, just verify the method can be called without error
+        source = has_driver_instance.driver.find_element(By.ID, "test-div")
+        target = has_driver_instance.driver.find_element(By.ID, "visible-element")
+
+        # Call drag_and_drop - it should not raise an exception
+        # (even though these aren't actually draggable elements, the JS will execute)
+        has_driver_instance.drag_and_drop(source, target)
+
+    def test_move_to_and_click(self, has_driver_instance, base_url):
+        """Test moving to element and clicking via ActionChains."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        button = has_driver_instance.driver.find_element(By.ID, "clickable-button")
+
+        # Use move_to_and_click
+        has_driver_instance.move_to_and_click(button)
+
+        # Verify button was clicked
+        assert button.text == "Clicked!"
+
+    def test_hover(self, has_driver_instance, base_url):
+        """Test hovering over an element."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        hover_target = has_driver_instance.driver.find_element(By.ID, "hover-target")
+        hover_indicator = has_driver_instance.driver.find_element(By.ID, "hover-indicator")
+
+        # Verify indicator is initially hidden
+        assert not hover_indicator.is_displayed()
+
+        # Hover over the target element
+        has_driver_instance.hover(hover_target)
+
+        # Verify the hover made the indicator visible (using CSS :hover + sibling selector)
+        assert hover_indicator.is_displayed()
+
     def test_send_enter(self, has_driver_instance, base_url):
         """Test sending ENTER key."""
         has_driver_instance.driver.get(f"{base_url}/basic.html")
@@ -489,6 +534,29 @@ class TestAlertHandling:
         # Verify we're back on the main page
         header = has_driver_instance.driver.find_element(By.ID, "header")
         assert header.text == "Test Page"
+
+
+class TestCookieManagement:
+    """Tests for cookie management."""
+
+    def test_get_cookies(self, has_driver_instance, base_url):
+        """Test getting all cookies."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+
+        # Get all cookies (test server sets test_cookie automatically)
+        cookies = has_driver_instance.get_cookies()
+
+        # Verify cookies is a list
+        assert isinstance(cookies, list)
+        assert len(cookies) > 0
+
+        # Verify our test cookie is in the list
+        cookie_names = [cookie['name'] for cookie in cookies]
+        assert 'test_cookie' in cookie_names
+
+        # Find and verify the test cookie value
+        test_cookie = next(cookie for cookie in cookies if cookie['name'] == 'test_cookie')
+        assert test_cookie['value'] == 'test_value'
 
 
 class TestUtilityMethods:

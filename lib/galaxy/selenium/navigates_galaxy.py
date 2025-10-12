@@ -31,7 +31,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as ec
-from seletools.actions import drag_and_drop
 
 from galaxy.navigation.components import (
     Component,
@@ -399,7 +398,7 @@ class NavigatesGalaxy(HasDriver):
             return response.json() if response.content else None
 
     def get_galaxy_session(self):
-        for cookie in self.driver.get_cookies():
+        for cookie in self.get_cookies():
             if cookie["name"] == "galaxysession":
                 return cookie["value"]
 
@@ -665,9 +664,8 @@ class NavigatesGalaxy(HasDriver):
         if is_in_extra:
             target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
 
-        action_chains = self.action_chains()
         action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
-        action_chains.move_to_element(action_selector).click().perform()
+        self.move_to_and_click(action_selector)
 
     def get_history_card(self, card_name):
         card_list = self.components.histories.history_cards.all()
@@ -875,13 +873,11 @@ class NavigatesGalaxy(HasDriver):
                 raise NotLoggedInException(e, user_info, dom_message)
 
     def click_center(self):
-        action_chains = self.action_chains()
         center_element = self.driver.find_element(By.CSS_SELECTOR, "#center")
-        action_chains.move_to_element(center_element).click().perform()
+        self.move_to_and_click(center_element)
 
     def hover_over(self, target):
-        action_chains = self.action_chains()
-        action_chains.move_to_element(target).perform()
+        self.hover(target)
 
     def perform_single_upload(self, test_path, **kwd) -> HistoryEntry:
         before_latest_history_item = self.latest_history_entry()
@@ -1312,7 +1308,7 @@ class NavigatesGalaxy(HasDriver):
             ac.perform()
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_partial)
-        drag_and_drop(self.driver, source_element, sink_element)
+        self.drag_and_drop(source_element, sink_element)
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor
@@ -1462,8 +1458,7 @@ class NavigatesGalaxy(HasDriver):
         self.sleep_for(self.wait_types.UX_RENDER)
         if column_definition.optional:
             elem = editor.column_definition_optional_by_index(index=index).wait_for_present()
-            action_chains = self.action_chains()
-            action_chains.move_to_element(elem).click().perform()
+            self.move_to_and_click(elem)
             self.sleep_for(self.wait_types.UX_RENDER)
 
         if column_definition.default_value is not None:
@@ -2656,8 +2651,7 @@ class NavigatesGalaxy(HasDriver):
             else:
                 # Pick first match. We're replacing select2 anyway ...
                 select_elem = candidate_elements[0]
-            action_chains = self.action_chains()
-            action_chains.move_to_element(select_elem).click().perform()
+            self.move_to_and_click(select_elem)
         self.wait_for_selector_absent_or_hidden("#select2-drop")
 
     def snapshot(self, description):
