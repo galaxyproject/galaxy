@@ -493,6 +493,84 @@ class TestUtilityMethods:
         assert "original message" in new_exception.msg
 
 
+class TestJavaScriptExecution:
+    """Tests for JavaScript execution methods."""
+
+    def test_execute_script_returns_value(self, has_driver_instance, base_url):
+        """Test executing JavaScript and returning value."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        result = has_driver_instance.execute_script("return 42;")
+        assert result == 42
+
+    def test_execute_script_with_arguments(self, has_driver_instance, base_url):
+        """Test executing JavaScript with arguments."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        result = has_driver_instance.execute_script("return arguments[0] + arguments[1];", 10, 20)
+        assert result == 30
+
+    def test_execute_script_with_element(self, has_driver_instance, base_url):
+        """Test executing JavaScript with element argument."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        element = has_driver_instance.driver.find_element(By.ID, "test-div")
+        result = has_driver_instance.execute_script("return arguments[0].textContent;", element)
+        assert result == "Test Div"
+
+    def test_set_local_storage(self, has_driver_instance, base_url):
+        """Test setting localStorage value."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.set_local_storage("testKey", '"testValue"')
+
+        # Verify localStorage was set
+        result = has_driver_instance.execute_script('return window.localStorage.getItem("testKey");')
+        assert result == "testValue"
+
+    def test_remove_local_storage(self, has_driver_instance, base_url):
+        """Test removing localStorage value."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        # First set a value
+        has_driver_instance.execute_script('window.localStorage.setItem("testKey", "testValue");')
+
+        # Now remove it
+        has_driver_instance.remove_local_storage("testKey")
+
+        # Verify it was removed
+        result = has_driver_instance.execute_script('return window.localStorage.getItem("testKey");')
+        assert result is None
+
+    def test_scroll_into_view(self, has_driver_instance, base_url):
+        """Test scrolling element into view."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        element = has_driver_instance.driver.find_element(By.ID, "test-div")
+
+        # Scroll into view (should not raise exception)
+        has_driver_instance.scroll_into_view(element)
+
+        # Verify element is visible
+        assert element.is_displayed()
+
+    def test_set_element_value(self, has_driver_instance, base_url):
+        """Test setting element value directly."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        input_element = has_driver_instance.driver.find_element(By.ID, "username")
+
+        # Set value using JavaScript
+        has_driver_instance.set_element_value(input_element, "newvalue")
+
+        # Verify value was set
+        assert input_element.get_attribute("value") == "newvalue"
+
+    def test_execute_script_click(self, has_driver_instance, base_url):
+        """Test clicking element via JavaScript."""
+        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        button = has_driver_instance.driver.find_element(By.ID, "clickable-button")
+
+        # Click using JavaScript
+        has_driver_instance.execute_script_click(button)
+
+        # Verify button was clicked
+        assert button.text == "Clicked!"
+
+
 class TestExceptionHelpers:
     """Tests for exception helper functions."""
 
