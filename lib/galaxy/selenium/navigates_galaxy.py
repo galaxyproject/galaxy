@@ -340,7 +340,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead._.wait_for_visible()
 
     def switch_to_main_panel(self):
-        self.driver.switch_to.frame(GALAXY_MAIN_FRAME_ID)
+        self.switch_to_frame(GALAXY_MAIN_FRAME_ID)
 
     @contextlib.contextmanager
     def local_storage(self, key: str, value: Union[float, str]):
@@ -358,16 +358,16 @@ class NavigatesGalaxy(HasDriver):
             self.switch_to_main_panel()
             yield
         finally:
-            self.driver.switch_to.default_content()
+            self.switch_to_default_content()
 
     @contextlib.contextmanager
     def visualization_panel(self):
         """Decorator to operate within the context of Galaxy's visualization frame."""
         try:
-            self.driver.switch_to.frame(GALAXY_VISUALIZATION_FRAME_ID)
+            self.switch_to_frame(GALAXY_VISUALIZATION_FRAME_ID)
             yield
         finally:
-            self.driver.switch_to.default_content()
+            self.switch_to_default_content()
 
     def api_get(self, endpoint, data=None, raw=False):
         data = data or {}

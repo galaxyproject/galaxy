@@ -122,8 +122,38 @@ class HasDriver:
     def element_absent(self, selector_template: Target) -> bool:
         return len(self.find_elements(selector_template)) == 0
 
-    def switch_to_frame(self, name: str = "frame"):
-        return self._wait_on(ec.frame_to_be_available_and_switch_to_it((By.NAME, name)))
+    def switch_to_frame(self, frame_reference: Union[str, int, WebElement] = "frame"):
+        """
+        Switch to an iframe or frame.
+
+        Args:
+            frame_reference: Can be:
+                - str: frame name or id (will wait for frame to be available)
+                - int: frame index
+                - WebElement: frame element
+
+        Returns:
+            The result of the switch operation
+        """
+        if isinstance(frame_reference, str):
+            # Try to switch by name first, if that fails, try by ID
+            # We use NAME as the locator because frame_to_be_available_and_switch_to_it
+            # checks both name and id attributes
+            return self._wait_on(ec.frame_to_be_available_and_switch_to_it((By.NAME, frame_reference)))
+        elif isinstance(frame_reference, int):
+            # Switch by index
+            return self.driver.switch_to.frame(frame_reference)
+        else:
+            # Assume it's a WebElement
+            return self.driver.switch_to.frame(frame_reference)
+
+    def switch_to_default_content(self):
+        """
+        Switch back to the default content (main page context).
+
+        This exits any iframe/frame context and returns to the top-level page.
+        """
+        self.driver.switch_to.default_content()
 
     def wait_for_xpath(self, xpath: str, **kwds) -> WebElement:
         element = self._wait_on(
