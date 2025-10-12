@@ -2490,7 +2490,7 @@ class NavigatesGalaxy(HasDriver):
 
         See details above for more information about this.
         """
-        return self.assert_absent_or_hidden(selector)
+        return super().assert_absent_or_hidden_after_transitions(selector)
 
     def assert_tooltip_text(self, element, expected: Union[str, HasText], sleep: int = 0, click_away: bool = True):
         if hasattr(expected, "text"):
@@ -2581,16 +2581,11 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def wait_for_and_click(self, selector_template):
-        element = self.wait_for_clickable(selector_template)
-        element.click()
-        return element
+        return super().wait_for_and_click(selector_template)
 
     @retry_during_transitions
     def wait_for_and_double_click(self, selector_template):
-        element = self.wait_for_clickable(selector_template)
-        action_chains = self.action_chains()
-        action_chains.move_to_element(element).double_click().perform()
-        return element
+        return super().wait_for_and_double_click(selector_template)
 
     def set_history_annotation(self, annotation, clear_text=False):
         toggle = self.history_element("editor toggle")
