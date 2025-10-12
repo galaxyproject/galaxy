@@ -446,6 +446,25 @@ class TestAlertHandling:
 class TestUtilityMethods:
     """Tests for utility methods."""
 
+    def test_navigate_to(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
+        """Test navigating to a URL and changing pages."""
+        # Navigate to first page
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        assert "basic.html" in has_driver_instance.driver.current_url
+        # Verify first page loaded by checking for expected element
+        header = has_driver_instance.driver.find_element(By.ID, "header")
+        assert header.text == "Test Page"
+
+        # Navigate to second page
+        has_driver_instance.navigate_to(f"{base_url}/frame.html")
+        assert "frame.html" in has_driver_instance.driver.current_url
+        # Verify we actually navigated to a different page
+        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
+        assert frame_header.text == "Inside Frame"
+
+        # Verify the original element is no longer present
+        assert len(has_driver_instance.driver.find_elements(By.ID, "header")) == 0
+
     def test_re_get_with_query_params_adds_question_mark(
         self, has_driver_instance, base_url
     ):
