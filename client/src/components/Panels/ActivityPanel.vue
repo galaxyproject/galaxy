@@ -6,11 +6,13 @@ interface Props {
     title: string;
     goToAllTitle?: string;
     href?: string;
+    goToAllDataDescription?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     goToAllTitle: undefined,
     href: undefined,
+    goToAllDataDescription: undefined,
 });
 
 const emit = defineEmits(["goToAll"]);
@@ -38,7 +40,7 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
                 v-if="hasGoToAll"
                 class="activity-panel-footer"
                 variant="primary"
-                :data-description="`props.mainButtonText button`"
+                :data-description="goToAllDataDescription"
                 :to="props.href"
                 size="sm"
                 @click="emit('goToAll')">
