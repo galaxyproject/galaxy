@@ -403,6 +403,15 @@ class HasDriver(WaitMethodsMixin):
             axe.write_results(results, write_to)
         return RealAxeResults(results)
 
+    def save_screenshot(self, path: str) -> None:
+        """
+        Save a screenshot to the specified path.
+
+        Args:
+            path: File path where the screenshot should be saved
+        """
+        self.driver.save_screenshot(path)
+
     def _locator_aware(self, element: Optional[WebElement] = None) -> HasFindElement:
         if element is None:
             return self.driver

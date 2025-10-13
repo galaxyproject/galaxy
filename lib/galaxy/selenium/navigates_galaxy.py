@@ -2763,8 +2763,8 @@ class NavigatesGalaxy(HasDriver):
 
     def mouse_drag(
         self,
-        from_element: WebElement,
-        to_element: Optional[WebElement] = None,
+        from_element: WebElementProtocol,
+        to_element: Optional[WebElementProtocol] = None,
         from_offset=(0, 0),
         to_offset=(0, 0),
         via_offsets: Optional[list[tuple[int, int]]] = None,

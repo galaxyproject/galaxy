@@ -711,6 +711,32 @@ class TestExceptionHelpers:
         assert not exception_indicates_stale_element(exc)
 
 
+class TestScreenshots:
+    """Tests for screenshot functionality."""
+
+    def test_save_screenshot(self, has_driver_instance, base_url, tmp_path):
+        """Test saving a screenshot to a file."""
+        import os
+
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Save screenshot to temp file
+        screenshot_path = str(tmp_path / "test_screenshot.png")
+        has_driver_instance.save_screenshot(screenshot_path)
+
+        # Verify file was created
+        assert os.path.exists(screenshot_path)
+
+        # Verify it's a PNG file (check magic bytes)
+        with open(screenshot_path, "rb") as f:
+            header = f.read(8)
+            # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+            assert header == b"\x89PNG\r\n\x1a\n"
+
+        # Verify file has content
+        assert os.path.getsize(screenshot_path) > 0
+
+
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""
 

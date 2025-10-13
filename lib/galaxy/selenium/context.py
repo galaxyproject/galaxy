@@ -1,18 +1,12 @@
 import os
 from abc import abstractmethod
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import Optional
 from urllib.parse import urljoin
 
 import yaml
 
 from .driver_factory import ConfiguredDriver
 from .navigates_galaxy import NavigatesGalaxy
-
-if TYPE_CHECKING:
-    from selenium.webdriver.remote.webdriver import WebDriver
 
 
 class GalaxySeleniumContext(NavigatesGalaxy):
@@ -27,10 +21,6 @@ class GalaxySeleniumContext(NavigatesGalaxy):
             base = self.url
         return urljoin(base, url)
 
-    @property
-    def driver(self) -> "WebDriver":  # type: ignore[override]
-        return self.configured_driver.driver
-
     def screenshot(self, label: str):
         """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
 
@@ -43,7 +33,7 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         if target is None:
             return
 
-        self.driver.save_screenshot(target)
+        self.save_screenshot(target)
         return target
 
     @abstractmethod
