@@ -7,6 +7,7 @@ attribute.
 import abc
 import threading
 from typing import (
+    Literal,
     Optional,
     Union,
 )
@@ -33,6 +34,7 @@ from .axe_results import (
     RealAxeResults,
 )
 from .wait_methods_mixin import WaitMethodsMixin
+from .web_element_protocol import WebElementProtocol
 
 UNSPECIFIED_TIMEOUT = object()
 
@@ -51,12 +53,72 @@ def get_axe_script(script_url: str) -> str:
     return AXE_SCRIPT_HASH[script_url]
 
 
+class Cookie(TypedDict, total=False):
+    """Cookie dictionary structure compatible with both Selenium and Playwright."""
+
+    name: str
+    value: str
+    domain: str
+    path: str
+    expires: float
+    httpOnly: bool
+    secure: bool
+    sameSite: Literal["Lax", "None", "Strict"]
+
+
+def _webelement_to_protocol(element: WebElement) -> WebElementProtocol:
+    """
+    Convert Selenium WebElement to WebElementProtocol type.
+
+    Selenium's WebElement satisfies WebElementProtocol at runtime, but mypy
+    doesn't recognize this because:
+    1. WebElement.find_element() has parameters typed as (by: Any, value: Any)
+       while our protocol requires (by: str, value: str | None)
+    2. WebElement.find_element() returns WebElement instead of WebElementProtocol
+
+    Since WebElement actually implements all required protocol methods correctly
+    at runtime, this cast is safe.
+    """
+    return element  # type: ignore[return-value]
+
+
+def _webelements_to_protocol(elements: list[WebElement]) -> list[WebElementProtocol]:
+    """
+    Convert list of Selenium WebElements to list of WebElementProtocol.
+
+    See _webelement_to_protocol for why this type conversion is necessary.
+    """
+    return elements  # type: ignore[return-value]
+
+
+def _cookies_to_typed(cookies: list[dict]) -> list[Cookie]:
+    """
+    Convert Selenium's list[dict] cookies to list[Cookie].
+
+    Selenium's get_cookies() returns list[dict[Any, Any]], but the actual
+    dictionaries at runtime contain the correct Cookie keys. We use a TypedDict
+    to provide better type safety for cookie access. This cast is safe because
+    Selenium's cookie dictionaries contain all the keys defined in Cookie.
+    """
+    return cookies  # type: ignore[return-value]
+
+
 class HasDriver(WaitMethodsMixin):
     by: type[By] = By
     keys: type[Keys] = Keys
     driver: WebDriver
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
+
+    @property
+    def current_url(self) -> str:
+        """
+        Get the current page URL.
+
+        Returns:
+            The current URL
+        """
+        return self.driver.current_url
 
     def navigate_to(self, url: str) -> None:
         """
@@ -108,8 +170,8 @@ class HasDriver(WaitMethodsMixin):
     def assert_selector_absent(self, selector: str):
         assert len(self.driver.find_elements(By.CSS_SELECTOR, selector)) == 0
 
-    def find_elements(self, selector_template: Target) -> list[WebElement]:
-        return self.driver.find_elements(*selector_template.element_locator)
+    def find_elements(self, selector_template: Target) -> list[WebElementProtocol]:
+        return _webelements_to_protocol(self.driver.find_elements(*selector_template.element_locator))
 
     def find_element(self, selector_template: Target) -> WebElementProtocol:
         """Find first element matching Target (no waiting)."""
@@ -161,14 +223,14 @@ class HasDriver(WaitMethodsMixin):
         """
         self.driver.switch_to.default_content()
 
-    def get_cookies(self) -> list[dict]:
+    def get_cookies(self) -> list[Cookie]:
         """
         Get all cookies for the current domain.
 
         Returns:
             List of cookie dictionaries with keys like 'name', 'value', 'domain', 'path', etc.
         """
-        return self.driver.get_cookies()
+        return _cookies_to_typed(self.driver.get_cookies())
 
     # Implementation of WaitMethodsMixin abstract methods for Selenium
     def _wait_on_condition_present(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
@@ -215,7 +277,7 @@ class HasDriver(WaitMethodsMixin):
     def action_chains(self):
         return ActionChains(self.driver)
 
-    def drag_and_drop(self, source: WebElement, target: WebElement) -> None:
+    def drag_and_drop(self, source: WebElementProtocol, target: WebElementProtocol) -> None:
         """
         Drag and drop from source element to target element.
 
@@ -227,7 +289,7 @@ class HasDriver(WaitMethodsMixin):
         """
         seletools_drag_and_drop(self.driver, source, target)
 
-    def move_to_and_click(self, element: WebElement) -> None:
+    def move_to_and_click(self, element: WebElementProtocol) -> None:
         """
         Move to an element and click it using ActionChains.
 
@@ -332,7 +394,7 @@ class HasDriver(WaitMethodsMixin):
         """
         return self.driver.execute_script(script, *args)
 
-    def set_local_storage(self, key: str, value: str) -> None:
+    def set_local_storage(self, key: str, value: Union[str, float]) -> None:
         """
         Set a value in the browser's localStorage.
 
@@ -383,17 +445,17 @@ class HasDriver(WaitMethodsMixin):
         """
         self.execute_script("arguments[0].click();", element)
 
-    def find_element_by_link_text(self, text: str, element: Optional[WebElement] = None) -> WebElement:
-        return self._locator_aware(element).find_element(By.LINK_TEXT, text)
+    def find_element_by_link_text(self, text: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+        return _webelement_to_protocol(self._locator_aware(element).find_element(By.LINK_TEXT, text))
 
-    def find_element_by_xpath(self, xpath: str, element: Optional[WebElement] = None) -> WebElement:
-        return self._locator_aware(element).find_element(By.XPATH, xpath)
+    def find_element_by_xpath(self, xpath: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+        return _webelement_to_protocol(self._locator_aware(element).find_element(By.XPATH, xpath))
 
-    def find_element_by_id(self, id: str, element: Optional[WebElement] = None) -> WebElement:
-        return self._locator_aware(element).find_element(By.ID, id)
+    def find_element_by_id(self, id: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+        return _webelement_to_protocol(self._locator_aware(element).find_element(By.ID, id))
 
-    def find_element_by_selector(self, selector: str, element: Optional[WebElement] = None) -> WebElement:
-        return self._locator_aware(element).find_element(By.CSS_SELECTOR, selector)
+    def find_element_by_selector(self, selector: str, element: Optional[WebElement] = None) -> WebElementProtocol:
+        return _webelement_to_protocol(self._locator_aware(element).find_element(By.CSS_SELECTOR, selector))
 
     def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
         if self.axe_skip:

@@ -5,7 +5,10 @@ that implements the WebElementProtocol interface, making it compatible with code
 written for Selenium's WebElement.
 """
 
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from playwright.sync_api import ElementHandle
 
@@ -68,7 +71,7 @@ class PlaywrightElement:
         """
         self._element.fill("")
 
-    def get_attribute(self, name: str) -> str | None:
+    def get_attribute(self, name: str) -> Optional[str]:
         """
         Get the value of an element attribute.
 
@@ -115,7 +118,7 @@ class PlaywrightElement:
         """
         self._element.evaluate("(el) => el.form ? el.form.submit() : el.submit()")
 
-    def find_element(self, by: str = "id", value: str | None = None) -> "WebElementProtocol":
+    def find_element(self, by: str = "id", value: Optional[str] = None) -> "WebElementProtocol":
         """
         Find a child element within this element.
 
@@ -143,7 +146,7 @@ class PlaywrightElement:
 
         raise NotImplementedError("find_element within element not yet fully implemented")
 
-    def find_elements(self, by: str = "id", value: str | None = None) -> list["WebElementProtocol"]:
+    def find_elements(self, by: str = "id", value: Optional[str] = None) -> list["WebElementProtocol"]:
         """
         Find all child elements matching the locator within this element.
 

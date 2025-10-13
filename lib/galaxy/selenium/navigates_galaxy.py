@@ -881,7 +881,7 @@ class NavigatesGalaxy(HasDriver):
                 raise NotLoggedInException(e, user_info, dom_message)
 
     def click_center(self):
-        center_element = self.driver.find_element(By.CSS_SELECTOR, "#center")
+        center_element = self.find_element_by_selector("#center")
         self.move_to_and_click(center_element)
 
     def hover_over(self, target):

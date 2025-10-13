@@ -20,12 +20,6 @@ from galaxy.selenium.has_playwright_driver import (
     HasPlaywrightDriver,
     PlaywrightTimeoutException,
 )
-from .test_helpers import (
-    element_get_value,
-    element_is_displayed,
-    element_send_keys,
-    element_text,
-)
 
 
 class SimpleTarget(Target):
@@ -154,19 +148,19 @@ class TestElementFinding:
         """Test finding element by ID."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_id("test-div")
-        assert element_text(element) == "Test Div"
+        assert element.text == "Test Div"
 
     def test_find_element_by_xpath(self, has_driver_instance, base_url: str) -> None:
         """Test finding element by XPath."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_xpath("//p[@class='test-paragraph']")
-        assert element_text(element) == "Test Paragraph"
+        assert element.text == "Test Paragraph"
 
     def test_find_element_by_selector(self, has_driver_instance, base_url: str) -> None:
         """Test finding element by CSS selector."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_selector("[data-testid='test-span']")
-        assert element_text(element) == "Test Span"
+        assert element.text == "Test Span"
 
     def test_find_element_by_link_text(self, has_driver_instance, base_url: str) -> None:
         """Test finding element by link text."""
@@ -249,19 +243,19 @@ class TestWaitMethods:
         """Test waiting for element by XPath."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_xpath("//h1[@id='header']")
-        assert element_text(element) == "Test Page"
+        assert element.text == "Test Page"
 
     def test_wait_for_xpath_visible(self, has_driver_instance, base_url):
         """Test waiting for visible element by XPath."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_xpath_visible("//div[@id='visible-element']")
-        assert element_is_displayed(element)
+        assert element.is_displayed()
 
     def test_wait_for_selector(self, has_driver_instance, base_url):
         """Test waiting for element by CSS selector."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_selector("#test-div")
-        assert element_text(element) == "Test Div"
+        assert element.text == "Test Div"
 
     def test_wait_for_present_with_target(self, has_driver_instance, base_url):
         """Test wait_for_present with Target."""
@@ -275,13 +269,13 @@ class TestWaitMethods:
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "visible-element"), description="visible element")
         element = has_driver_instance.wait_for_visible(target)
-        assert element_is_displayed(element)
+        assert element.is_displayed()
 
     def test_wait_for_selector_visible(self, has_driver_instance, base_url):
         """Test waiting for visible element by CSS selector."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_selector_visible("#visible-element")
-        assert element_is_displayed(element)
+        assert element.is_displayed()
 
     def test_wait_for_selector_clickable(self, has_driver_instance, base_url):
         """Test waiting for clickable element by CSS selector."""
@@ -348,7 +342,7 @@ class TestWaitMethods:
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         # Element becomes visible after 1 second
         element = has_driver_instance.wait_for_selector_visible("#delayed-element", timeout=3)
-        assert element_is_displayed(element)
+        assert element.is_displayed()
 
 
 class TestClickAndInteraction:
@@ -359,14 +353,14 @@ class TestClickAndInteraction:
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.click_xpath("//button[@id='clickable-button']")
         button = has_driver_instance.find_element_by_id("clickable-button")
-        assert element_text(button) == "Clicked!"
+        assert button.text == "Clicked!"
 
     def test_click_selector(self, has_driver_instance, base_url):
         """Test clicking element by CSS selector."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.click_selector("#clickable-button")
         button = has_driver_instance.find_element_by_id("clickable-button")
-        assert element_text(button) == "Clicked!"
+        assert button.text == "Clicked!"
 
     def test_click_label(self, has_driver_instance, base_url):
         """Test clicking link by text."""
@@ -380,7 +374,7 @@ class TestClickAndInteraction:
         target = SimpleTarget(element_locator=(By.ID, "clickable-button"), description="clickable button")
         has_driver_instance.click(target)
         button = has_driver_instance.find_element_by_id("clickable-button")
-        assert element_text(button) == "Clicked!"
+        assert button.text == "Clicked!"
 
 
 class TestFormInteraction:
@@ -452,7 +446,7 @@ class TestActionChainsAndKeys:
         has_driver_instance.move_to_and_click(button)
 
         # Verify button was clicked
-        assert element_text(button) == "Clicked!"
+        assert button.text == "Clicked!"
 
     def test_hover(self, has_driver_instance, base_url):
         """Test hovering over an element."""
@@ -461,13 +455,13 @@ class TestActionChainsAndKeys:
         hover_indicator = has_driver_instance.find_element_by_id("hover-indicator")
 
         # Verify indicator is initially hidden
-        assert not element_is_displayed(hover_indicator)
+        assert not hover_indicator.is_displayed()
 
         # Hover over the target element
         has_driver_instance.hover(hover_target)
 
         # Verify the hover made the indicator visible (using CSS :hover + sibling selector)
-        assert element_is_displayed(hover_indicator)
+        assert hover_indicator.is_displayed()
 
     def test_send_enter(self, has_driver_instance, base_url):
         """Test sending ENTER key."""
@@ -492,7 +486,7 @@ class TestActionChainsAndKeys:
         """Test sending BACKSPACE key."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_id("username")
-        element_send_keys(element, "test")
+        element.send_keys("test")
         has_driver_instance.send_backspace(element)
         # Verify one character was deleted
         # TODO: Playwright ElementHandle.get_property("value") returns None/undefined
@@ -500,7 +494,7 @@ class TestActionChainsAndKeys:
         # For now, skip value verification for Playwright
         if not hasattr(has_driver_instance, 'page'):
             # Selenium - can verify value normally
-            assert element_get_value(element) == "tes"
+            assert element.get_attribute("value") == "tes"
         # For Playwright: the key press executed without error (implicit success)
 
 
@@ -514,7 +508,7 @@ class TestFrameSwitching:
 
         # Verify we're in the frame by finding frame-specific element
         frame_header = has_driver_instance.find_element_by_id("frame-header")
-        assert element_text(frame_header) == "Inside Frame"
+        assert frame_header.text == "Inside Frame"
 
         # Switch back using new method
         has_driver_instance.switch_to_default_content()
@@ -527,7 +521,7 @@ class TestFrameSwitching:
 
         # Verify we're in the frame
         frame_header = has_driver_instance.find_element_by_id("frame-header")
-        assert element_text(frame_header) == "Inside Frame"
+        assert frame_header.text == "Inside Frame"
 
         # Switch back
         has_driver_instance.switch_to_default_content()
@@ -544,7 +538,7 @@ class TestFrameSwitching:
 
         # Verify we're in the frame
         frame_header = has_driver_instance.find_element_by_id("frame-header")
-        assert element_text(frame_header) == "Inside Frame"
+        assert frame_header.text == "Inside Frame"
 
         # Switch back
         has_driver_instance.switch_to_default_content()
@@ -558,14 +552,14 @@ class TestFrameSwitching:
 
         # Verify we're in the frame
         frame_header = has_driver_instance.find_element_by_id("frame-header")
-        assert element_text(frame_header) == "Inside Frame"
+        assert frame_header.text == "Inside Frame"
 
         # Switch back to default content
         has_driver_instance.switch_to_default_content()
 
         # Verify we're back in main content (frame-header shouldn't be accessible now)
         header = has_driver_instance.find_element_by_id("header")
-        assert element_text(header) == "Test Page"
+        assert header.text == "Test Page"
 
 
 class TestAlertHandling:
@@ -614,14 +608,14 @@ class TestUtilityMethods:
         """Test navigating to a URL and changing pages."""
         # Navigate to first page
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
-        assert "basic.html" in has_driver_instance.driver.current_url
+        assert "basic.html" in has_driver_instance.current_url
         # Verify first page loaded by checking for expected element
         header = has_driver_instance.find_element_by_id("header")
         assert header.text == "Test Page"
 
         # Navigate to second page
         has_driver_instance.navigate_to(f"{base_url}/frame.html")
-        assert "frame.html" in has_driver_instance.driver.current_url
+        assert "frame.html" in has_driver_instance.current_url
         # Verify we actually navigated to a different page
         frame_header = has_driver_instance.find_element_by_id("frame-header")
         assert frame_header.text == "Inside Frame"
@@ -635,13 +629,13 @@ class TestUtilityMethods:
         """Test adding query params to URL without existing params."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.re_get_with_query_params("foo=bar")
-        assert "?foo=bar" in has_driver_instance.driver.current_url
+        assert "?foo=bar" in has_driver_instance.current_url
 
     def test_re_get_with_query_params_appends_to_existing(self, has_driver_instance, base_url):
         """Test adding query params to URL with existing params."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html?existing=param")
         has_driver_instance.re_get_with_query_params("foo=bar")
-        current_url = has_driver_instance.driver.current_url
+        current_url = has_driver_instance.current_url
         assert "existing=param" in current_url
         assert "foo=bar" in current_url
 
@@ -680,7 +674,7 @@ class TestJavaScriptExecution:
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_id("test-div")
         result = has_driver_instance.execute_script("return arguments[0].textContent;", element)
-        assert element_text(element) == "Test Div"
+        assert result == "Test Div"
 
     def test_set_local_storage(self, has_driver_instance, base_url):
         """Test setting localStorage value."""
@@ -713,7 +707,7 @@ class TestJavaScriptExecution:
         has_driver_instance.scroll_into_view(element)
 
         # Verify element is visible
-        assert element_is_displayed(element)
+        assert element.is_displayed()
 
     def test_set_element_value(self, has_driver_instance, base_url):
         """Test setting element value directly."""
@@ -731,7 +725,7 @@ class TestJavaScriptExecution:
         from galaxy.selenium.playwright_element import PlaywrightElement
         if isinstance(input_element, PlaywrightElement):
             pytest.skip("Playwright ElementHandle.get_property('value') issue - see test_send_backspace")
-        assert element_get_value(input_element) == "newvalue"
+        assert input_element.get_attribute("value") == "newvalue"
 
     def test_execute_script_click(self, has_driver_instance, base_url):
         """Test clicking element via JavaScript."""
@@ -742,7 +736,7 @@ class TestJavaScriptExecution:
         has_driver_instance.execute_script_click(button)
 
         # Verify button was clicked
-        assert element_text(button) == "Clicked!"
+        assert button.text == "Clicked!"
 
 
 class TestExceptionHelpers:
