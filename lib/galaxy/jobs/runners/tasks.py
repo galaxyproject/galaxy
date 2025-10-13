@@ -2,10 +2,18 @@ import errno
 import logging
 import os
 from time import sleep
+from typing import TYPE_CHECKING
 
 from galaxy import model
-from galaxy.jobs import TaskWrapper
+from galaxy.jobs import (
+    JobWrapper,
+    TaskWrapper,
+)
 from galaxy.jobs.runners import BaseJobRunner
+
+if TYPE_CHECKING:
+    from galaxy.app import GalaxyManagerApplication
+    from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
 
@@ -19,12 +27,12 @@ class TaskedJobRunner(BaseJobRunner):
 
     runner_name = "TaskRunner"
 
-    def __init__(self, app, nworkers):
+    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         """Start the job runner with 'nworkers' worker threads"""
-        super().__init__(app, nworkers)
+        super().__init__(app, nworkers, **kwargs)
         self._init_worker_threads()
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         # prepare the job
         if not self.prepare_job(job_wrapper):
             return
@@ -70,6 +78,7 @@ class TaskedJobRunner(BaseJobRunner):
             self.sa_session.commit()
             # Must flush prior to the creation and queueing of task wrappers.
             assert self.app.job_manager.job_handler.dispatcher
+            assert isinstance(job_wrapper, JobWrapper)
             for task in tasks:
                 tw = TaskWrapper(task, job_wrapper.queue)
                 task_wrappers.append(tw)
@@ -160,7 +169,7 @@ class TaskedJobRunner(BaseJobRunner):
                 return
             self._stop_pid(pid, job.id)
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         # DBTODO Task Recovery, this should be possible.
         job_wrapper.change_state(
             model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job."
