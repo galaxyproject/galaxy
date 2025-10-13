@@ -18,6 +18,10 @@ from typing import (
 )
 
 from galaxy.config.url_headers import UrlHeadersConfig
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    RequestParameterMissingException,
+)
 from galaxy.security.vault import Vault
 
 # Default vault key prefix for headers
@@ -80,7 +84,7 @@ def has_sensitive_headers(
         True if sensitive headers are found, False otherwise
 
     Raises:
-        ValueError: If headers are present but no configuration is provided
+        ConfigDoesNotAllowException: If headers are present but no configuration is provided
     """
     if not url_headers_config:
         # Without configuration, headers are not allowed at all
@@ -90,10 +94,10 @@ def has_sensitive_headers(
                 for key, value in obj.items():
                     if key == "headers" and isinstance(value, dict) and value:
                         header_names = list(value.keys())
-                        raise ValueError(
-                            f"Headers are not allowed without proper URL headers configuration. "
+                        raise ConfigDoesNotAllowException(
+                            "Headers are not allowed without proper URL headers configuration. "
                             f"Found headers: {header_names}. "
-                            f"Please configure url_headers_config_file in Galaxy configuration to enable header usage."
+                            "If you need to use headers, please contact your Galaxy administrator to whitelist them."
                         )
                     elif isinstance(value, (dict, list)):
                         check_for_headers(value)
@@ -110,15 +114,11 @@ def has_sensitive_headers(
         if isinstance(obj, dict):
             for key, value in obj.items():
                 if key == "headers" and isinstance(value, dict) and value:
-                    # Look for a URL at the same level as the headers (e.g., in UrlDataElement)
                     element_url = obj.get("url") if "url" in obj else inherited_url
 
                     if not element_url:
-                        # No URL available - cannot perform URL-specific sensitivity checking
-                        # In a pattern-based system, headers without URLs cannot be properly validated
-                        # This should fail fast for security
                         header_names = list(value.keys())
-                        raise ValueError(
+                        raise RequestParameterMissingException(
                             f"URL is required for header validation in pattern-based configuration. "
                             f"Found headers: {header_names}. "
                             f"Cannot validate headers without knowing the target URL."
@@ -200,7 +200,7 @@ def encrypt_headers_in_data(
         Modified data structure with sensitive headers encrypted
 
     Raises:
-        ValueError: If headers are present but proper configuration or URL is not provided
+        ConfigDoesNotAllowException: If headers are present but proper configuration or URL is not provided
     """
     # Validate headers before processing - this will fail fast if headers are found
     # but configuration or URLs are missing
