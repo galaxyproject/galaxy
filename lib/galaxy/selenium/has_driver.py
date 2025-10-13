@@ -452,7 +452,9 @@ def exception_indicates_click_intercepted(exception):
 
 
 def exception_indicates_not_clickable(exception):
-    return "not clickable" in str(exception)
+    selenium_not_clickable = "not clickable" in str(exception)
+    playwright_not_enabled = "element is not enabled" in str(exception)
+    return selenium_not_clickable or playwright_not_enabled
 
 
 def exception_indicates_stale_element(exception):

@@ -50,11 +50,12 @@
     <div id="visible-element" class="visible">I am visible</div>
     <div id="hidden-element" class="hidden">I am hidden</div>
     <div id="delayed-element" class="delayed-visible">I will become visible</div>
+    <div id="enter-element" class="hidden">I clicked enter.</div>
 
     <!-- Form elements -->
     <form id="test-form" action="/submit" method="post">
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username" />
+        <input type="text" id="username" name="username" onkeydown="if(event.key === 'Enter'){ document.getElementById('enter-element').classList.remove('hidden'); }" />
 
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" />

@@ -2045,14 +2045,7 @@ class NavigatesGalaxy(HasDriver):
         self.click_history_options()
 
         if isinstance(option_label_or_component, str):
-            option_label = option_label_or_component
-            # Click labeled option
-            self.wait_for_visible(self.navigation.history_panel.options_menu)
-            menu_item_sizzle_selector = self.navigation.history_panel.options_menu_item(
-                option_label=option_label
-            ).selector
-            menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
-            menu_selection_element.click()
+            raise AssertionError("option_label_or_component must be a component, strings no longer supported")
         else:
             option_component = option_label_or_component
             option_component.wait_for_and_click()

@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures for selenium unit tests."""
 
 import pytest
+from playwright.sync_api import sync_playwright
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -70,3 +71,33 @@ def base_url(test_server):
         str: Base URL of the test server
     """
     return test_server.get_url()
+
+
+@pytest.fixture(scope="function")
+def playwright_browser():
+    """
+    Create a Playwright browser instance for each test.
+
+    Yields:
+        Browser: Playwright Browser instance
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        yield browser
+        browser.close()
+
+
+@pytest.fixture(scope="function")
+def playwright_page(playwright_browser):
+    """
+    Create a Playwright page instance for each test.
+
+    Args:
+        playwright_browser: Playwright browser fixture
+
+    Yields:
+        Page: Playwright Page instance
+    """
+    page = playwright_browser.new_page()
+    yield page
+    page.close()
