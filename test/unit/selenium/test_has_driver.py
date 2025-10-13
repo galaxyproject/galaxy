@@ -95,7 +95,7 @@ class TestElementFinding:
 
     def test_assert_xpath(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
         """Test finding element by XPath assertion."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.assert_xpath("//h1[@id='header']")
 
     def test_assert_xpath_fails_when_not_found(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
@@ -106,7 +106,7 @@ class TestElementFinding:
 
     def test_assert_selector(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
         """Test finding element by CSS selector assertion."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.assert_selector("#test-div")
 
     def test_assert_selector_fails_when_not_found(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
@@ -117,31 +117,31 @@ class TestElementFinding:
 
     def test_find_element_by_id(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
         """Test finding element by ID."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_id("test-div")
-        assert element.text == "Test Div"
+        assert element_text(element) == "Test Div"
 
     def test_find_element_by_xpath(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
         """Test finding element by XPath."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_xpath("//p[@class='test-paragraph']")
-        assert element.text == "Test Paragraph"
+        assert element_text(element) == "Test Paragraph"
 
     def test_find_element_by_selector(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
         """Test finding element by CSS selector."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_selector("[data-testid='test-span']")
-        assert element.text == "Test Span"
+        assert element_text(element) == "Test Span"
 
     def test_find_element_by_link_text(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
         """Test finding element by link text."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.find_element_by_link_text("Test Link")
         assert element.get_attribute("id") == "test-link"
 
     def test_find_elements_with_target(self, has_driver_instance: TestHasDriverImpl, base_url: str) -> None:
         """Test finding multiple elements using Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.CLASS_NAME, "item"), description="list items")
         elements = has_driver_instance.find_elements(target)
         assert len(elements) == 3
@@ -152,57 +152,57 @@ class TestVisibilityAndPresence:
 
     def test_selector_is_displayed_visible_element(self, has_driver_instance, base_url):
         """Test checking if visible element is displayed."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         assert has_driver_instance.selector_is_displayed("#visible-element")
 
     def test_selector_is_displayed_hidden_element(self, has_driver_instance, base_url):
         """Test checking if hidden element is not displayed."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         assert not has_driver_instance.selector_is_displayed("#hidden-element")
 
     def test_is_displayed_with_target(self, has_driver_instance, base_url):
         """Test is_displayed with Target selector."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "visible-element"), description="visible element")
         assert has_driver_instance.is_displayed(target)
 
     def test_assert_selector_absent_or_hidden(self, has_driver_instance, base_url):
         """Test asserting element is absent or hidden."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.assert_selector_absent_or_hidden("#hidden-element")
 
     def test_assert_absent_or_hidden_with_target(self, has_driver_instance, base_url):
         """Test assert_absent_or_hidden with Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "hidden-element"), description="hidden element")
         has_driver_instance.assert_absent_or_hidden(target)
 
     def test_assert_selector_absent(self, has_driver_instance, base_url):
         """Test asserting element is completely absent from DOM."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.assert_selector_absent("#nonexistent-element")
 
     def test_assert_absent_with_target(self, has_driver_instance, base_url):
         """Test assert_absent with Target when element doesn't exist."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "nonexistent"), description="nonexistent element")
         has_driver_instance.assert_absent(target)
 
     def test_element_absent_returns_true(self, has_driver_instance, base_url):
         """Test element_absent returns True when element not in DOM."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "nonexistent"), description="nonexistent element")
         assert has_driver_instance.element_absent(target)
 
     def test_element_absent_returns_false(self, has_driver_instance, base_url):
         """Test element_absent returns False when element exists."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "test-div"), description="test div")
         assert not has_driver_instance.element_absent(target)
 
     def test_assert_disabled(self, has_driver_instance, base_url):
         """Test asserting element is disabled."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "disabled-button"), description="disabled button")
         has_driver_instance.assert_disabled(target)
 
@@ -212,81 +212,81 @@ class TestWaitMethods:
 
     def test_wait_for_xpath(self, has_driver_instance, base_url):
         """Test waiting for element by XPath."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_xpath("//h1[@id='header']")
-        assert element.text == "Test Page"
+        assert element_text(element) == "Test Page"
 
     def test_wait_for_xpath_visible(self, has_driver_instance, base_url):
         """Test waiting for visible element by XPath."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_xpath_visible("//div[@id='visible-element']")
-        assert element.is_displayed()
+        assert element_is_displayed(element)
 
     def test_wait_for_selector(self, has_driver_instance, base_url):
         """Test waiting for element by CSS selector."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_selector("#test-div")
-        assert element.text == "Test Div"
+        assert element_text(element) == "Test Div"
 
     def test_wait_for_present_with_target(self, has_driver_instance, base_url):
         """Test wait_for_present with Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "test-div"), description="test div")
         element = has_driver_instance.wait_for_present(target)
         assert element is not None
 
     def test_wait_for_visible_with_target(self, has_driver_instance, base_url):
         """Test wait_for_visible with Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "visible-element"), description="visible element")
         element = has_driver_instance.wait_for_visible(target)
-        assert element.is_displayed()
+        assert element_is_displayed(element)
 
     def test_wait_for_selector_visible(self, has_driver_instance, base_url):
         """Test waiting for visible element by CSS selector."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_selector_visible("#visible-element")
-        assert element.is_displayed()
+        assert element_is_displayed(element)
 
     def test_wait_for_selector_clickable(self, has_driver_instance, base_url):
         """Test waiting for clickable element by CSS selector."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_selector_clickable("#clickable-button")
         assert element.is_enabled()
 
     def test_wait_for_clickable_with_target(self, has_driver_instance, base_url):
         """Test wait_for_clickable with Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "clickable-button"), description="clickable button")
         element = has_driver_instance.wait_for_clickable(target)
         assert element.is_enabled()
 
     def test_wait_for_selector_absent(self, has_driver_instance, base_url):
         """Test waiting for element to be absent."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         # Element doesn't exist, so wait should succeed immediately
         has_driver_instance.wait_for_selector_absent("#nonexistent-element")
 
     def test_wait_for_absent_with_target(self, has_driver_instance, base_url):
         """Test wait_for_absent with Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "nonexistent"), description="nonexistent element")
         has_driver_instance.wait_for_absent(target)
 
     def test_wait_for_selector_absent_or_hidden(self, has_driver_instance, base_url):
         """Test waiting for element to be absent or hidden."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.wait_for_selector_absent_or_hidden("#hidden-element")
 
     def test_wait_for_absent_or_hidden_with_target(self, has_driver_instance, base_url):
         """Test wait_for_absent_or_hidden with Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "hidden-element"), description="hidden element")
         has_driver_instance.wait_for_absent_or_hidden(target)
 
     def test_wait_for_id(self, has_driver_instance, base_url):
         """Test waiting for element by ID."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         element = has_driver_instance.wait_for_id("test-div")
         assert element.get_attribute("id") == "test-div"
 
@@ -306,10 +306,10 @@ class TestWaitMethods:
 
     def test_wait_for_delayed_element_becomes_visible(self, has_driver_instance, base_url):
         """Test waiting for element that becomes visible after delay."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         # Element becomes visible after 1 second
         element = has_driver_instance.wait_for_selector_visible("#delayed-element", timeout=3)
-        assert element.is_displayed()
+        assert element_is_displayed(element)
 
 
 class TestClickAndInteraction:
@@ -317,31 +317,31 @@ class TestClickAndInteraction:
 
     def test_click_xpath(self, has_driver_instance, base_url):
         """Test clicking element by XPath."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.click_xpath("//button[@id='clickable-button']")
-        button = has_driver_instance.driver.find_element(By.ID, "clickable-button")
-        assert button.text == "Clicked!"
+        button = has_driver_instance.find_element_by_id("clickable-button")
+        assert element_text(button) == "Clicked!"
 
     def test_click_selector(self, has_driver_instance, base_url):
         """Test clicking element by CSS selector."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.click_selector("#clickable-button")
-        button = has_driver_instance.driver.find_element(By.ID, "clickable-button")
-        assert button.text == "Clicked!"
+        button = has_driver_instance.find_element_by_id("clickable-button")
+        assert element_text(button) == "Clicked!"
 
     def test_click_label(self, has_driver_instance, base_url):
         """Test clicking link by text."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.click_label("Test Link")
         # Link was clicked (href="#" so stays on same page)
 
     def test_click_with_target(self, has_driver_instance, base_url):
         """Test click method with Target."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.ID, "clickable-button"), description="clickable button")
         has_driver_instance.click(target)
-        button = has_driver_instance.driver.find_element(By.ID, "clickable-button")
-        assert button.text == "Clicked!"
+        button = has_driver_instance.find_element_by_id("clickable-button")
+        assert element_text(button) == "Clicked!"
 
 
 class TestFormInteraction:
@@ -349,26 +349,26 @@ class TestFormInteraction:
 
     def test_fill_form(self, has_driver_instance, base_url):
         """Test filling form fields."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
-        form = has_driver_instance.driver.find_element(By.ID, "test-form")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        form = has_driver_instance.find_element_by_id("test-form")
 
         form_data = {"username": "testuser", "password": "testpass", "email": "test@example.com"}
         has_driver_instance.fill(form, form_data)
 
         # Verify fields were filled
-        username = has_driver_instance.driver.find_element(By.ID, "username")
+        username = has_driver_instance.find_element_by_id("username")
         assert username.get_attribute("value") == "testuser"
 
-        password = has_driver_instance.driver.find_element(By.ID, "password")
+        password = has_driver_instance.find_element_by_id("password")
         assert password.get_attribute("value") == "testpass"
 
-        email = has_driver_instance.driver.find_element(By.ID, "email")
+        email = has_driver_instance.find_element_by_id("email")
         assert email.get_attribute("value") == "test@example.com"
 
     def test_click_submit(self, has_driver_instance, base_url):
         """Test clicking submit button on form."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
-        form = has_driver_instance.driver.find_element(By.ID, "test-form")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        form = has_driver_instance.find_element_by_id("test-form")
         has_driver_instance.click_submit(form)
 
         # Verify form was submitted (result div appears)
@@ -381,13 +381,13 @@ class TestActionChainsAndKeys:
 
     def test_action_chains(self, has_driver_instance, base_url):
         """Test creating action chains."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         chains = has_driver_instance.action_chains()
         assert chains is not None
 
     def test_drag_and_drop(self, has_driver_instance, base_url):
         """Test drag and drop functionality."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
 
         # TODO: Add actual draggable elements to basic.html for proper testing
         # For example, add:
@@ -397,8 +397,8 @@ class TestActionChainsAndKeys:
         # e.g., assert has_driver_instance.execute_script("return document.getElementById('droptarget').contains(document.getElementById('draggable'))")
 
         # For now, just verify the method can be called without error
-        source = has_driver_instance.driver.find_element(By.ID, "test-div")
-        target = has_driver_instance.driver.find_element(By.ID, "visible-element")
+        source = has_driver_instance.find_element_by_id("test-div")
+        target = has_driver_instance.find_element_by_id("visible-element")
 
         # Call drag_and_drop - it should not raise an exception
         # (even though these aren't actually draggable elements, the JS will execute)
@@ -461,63 +461,63 @@ class TestFrameSwitching:
 
     def test_switch_to_frame_by_name(self, has_driver_instance, base_url):
         """Test switching to iframe by name."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.switch_to_frame("frame")
 
         # Verify we're in the frame by finding frame-specific element
-        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
-        assert frame_header.text == "Inside Frame"
+        frame_header = has_driver_instance.find_element_by_id("frame-header")
+        assert element_text(frame_header) == "Inside Frame"
 
         # Switch back using new method
         has_driver_instance.switch_to_default_content()
 
     def test_switch_to_frame_by_id(self, has_driver_instance, base_url):
         """Test switching to iframe by id (frame has name='frame' and id could be different)."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         # The frame has name="frame" - the method should work for both name and id
         has_driver_instance.switch_to_frame("frame")
 
         # Verify we're in the frame
-        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
-        assert frame_header.text == "Inside Frame"
+        frame_header = has_driver_instance.find_element_by_id("frame-header")
+        assert element_text(frame_header) == "Inside Frame"
 
         # Switch back
         has_driver_instance.switch_to_default_content()
 
     def test_switch_to_frame_by_element(self, has_driver_instance, base_url):
         """Test switching to iframe by element reference."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
 
         # Find the frame element first
-        frame_element = has_driver_instance.driver.find_element(By.NAME, "frame")
+        frame_element = has_driver_instance.find_element_by_selector("[name='frame']")
 
         # Switch to it by element
         has_driver_instance.switch_to_frame(frame_element)
 
         # Verify we're in the frame
-        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
-        assert frame_header.text == "Inside Frame"
+        frame_header = has_driver_instance.find_element_by_id("frame-header")
+        assert element_text(frame_header) == "Inside Frame"
 
         # Switch back
         has_driver_instance.switch_to_default_content()
 
     def test_switch_to_default_content(self, has_driver_instance, base_url):
         """Test switching back to default content."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
 
         # Switch to frame
         has_driver_instance.switch_to_frame("frame")
 
         # Verify we're in the frame
-        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
-        assert frame_header.text == "Inside Frame"
+        frame_header = has_driver_instance.find_element_by_id("frame-header")
+        assert element_text(frame_header) == "Inside Frame"
 
         # Switch back to default content
         has_driver_instance.switch_to_default_content()
 
         # Verify we're back in main content (frame-header shouldn't be accessible now)
-        header = has_driver_instance.driver.find_element(By.ID, "header")
-        assert header.text == "Test Page"
+        header = has_driver_instance.find_element_by_id("header")
+        assert element_text(header) == "Test Page"
 
 
 class TestAlertHandling:
@@ -525,14 +525,14 @@ class TestAlertHandling:
 
     def test_accept_alert(self, has_driver_instance, base_url):
         """Test accepting browser alert."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.click_selector("#alert-button")
 
         # Accept the alert
         has_driver_instance.accept_alert()
 
         # Verify we're back on the main page
-        header = has_driver_instance.driver.find_element(By.ID, "header")
+        header = has_driver_instance.find_element_by_id("header")
         assert header.text == "Test Page"
 
 
@@ -541,7 +541,7 @@ class TestCookieManagement:
 
     def test_get_cookies(self, has_driver_instance, base_url):
         """Test getting all cookies."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
 
         # Get all cookies (test server sets test_cookie automatically)
         cookies = has_driver_instance.get_cookies()
@@ -568,22 +568,24 @@ class TestUtilityMethods:
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         assert "basic.html" in has_driver_instance.driver.current_url
         # Verify first page loaded by checking for expected element
-        header = has_driver_instance.driver.find_element(By.ID, "header")
+        header = has_driver_instance.find_element_by_id("header")
         assert header.text == "Test Page"
 
         # Navigate to second page
         has_driver_instance.navigate_to(f"{base_url}/frame.html")
         assert "frame.html" in has_driver_instance.driver.current_url
         # Verify we actually navigated to a different page
-        frame_header = has_driver_instance.driver.find_element(By.ID, "frame-header")
+        frame_header = has_driver_instance.find_element_by_id("frame-header")
         assert frame_header.text == "Inside Frame"
 
         # Verify the original element is no longer present
-        assert len(has_driver_instance.driver.find_elements(By.ID, "header")) == 0
+        target = SimpleTarget((has_driver_instance.by.ID, "header"), "header element")
+        elements = has_driver_instance.find_elements(target)
+        assert len(elements) == 0
 
     def test_re_get_with_query_params_adds_question_mark(self, has_driver_instance, base_url):
         """Test adding query params to URL without existing params."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.re_get_with_query_params("foo=bar")
         assert "?foo=bar" in has_driver_instance.driver.current_url
 
@@ -608,26 +610,26 @@ class TestJavaScriptExecution:
 
     def test_execute_script_returns_value(self, has_driver_instance, base_url):
         """Test executing JavaScript and returning value."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         result = has_driver_instance.execute_script("return 42;")
         assert result == 42
 
     def test_execute_script_with_arguments(self, has_driver_instance, base_url):
         """Test executing JavaScript with arguments."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         result = has_driver_instance.execute_script("return arguments[0] + arguments[1];", 10, 20)
         assert result == 30
 
     def test_execute_script_with_element(self, has_driver_instance, base_url):
         """Test executing JavaScript with element argument."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
-        element = has_driver_instance.driver.find_element(By.ID, "test-div")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
         result = has_driver_instance.execute_script("return arguments[0].textContent;", element)
-        assert result == "Test Div"
+        assert element_text(element) == "Test Div"
 
     def test_set_local_storage(self, has_driver_instance, base_url):
         """Test setting localStorage value."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         has_driver_instance.set_local_storage("testKey", '"testValue"')
 
         # Verify localStorage was set
@@ -636,7 +638,7 @@ class TestJavaScriptExecution:
 
     def test_remove_local_storage(self, has_driver_instance, base_url):
         """Test removing localStorage value."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
         # First set a value
         has_driver_instance.execute_script('window.localStorage.setItem("testKey", "testValue");')
 
@@ -649,19 +651,19 @@ class TestJavaScriptExecution:
 
     def test_scroll_into_view(self, has_driver_instance, base_url):
         """Test scrolling element into view."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
-        element = has_driver_instance.driver.find_element(By.ID, "test-div")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
 
         # Scroll into view (should not raise exception)
         has_driver_instance.scroll_into_view(element)
 
         # Verify element is visible
-        assert element.is_displayed()
+        assert element_is_displayed(element)
 
     def test_set_element_value(self, has_driver_instance, base_url):
         """Test setting element value directly."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
-        input_element = has_driver_instance.driver.find_element(By.ID, "username")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        input_element = has_driver_instance.find_element_by_id("username")
 
         # Set value using JavaScript
         has_driver_instance.set_element_value(input_element, "newvalue")
@@ -671,14 +673,14 @@ class TestJavaScriptExecution:
 
     def test_execute_script_click(self, has_driver_instance, base_url):
         """Test clicking element via JavaScript."""
-        has_driver_instance.driver.get(f"{base_url}/basic.html")
-        button = has_driver_instance.driver.find_element(By.ID, "clickable-button")
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        button = has_driver_instance.find_element_by_id("clickable-button")
 
         # Click using JavaScript
         has_driver_instance.execute_script_click(button)
 
         # Verify button was clicked
-        assert button.text == "Clicked!"
+        assert element_text(button) == "Clicked!"
 
 
 class TestExceptionHelpers:
