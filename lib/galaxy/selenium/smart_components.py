@@ -88,7 +88,8 @@ class SmartTarget:
         return self._has_driver.wait_for_visible(self._target, **kwds).text
 
     def wait_for_value(self, **kwds):
-        return self._has_driver.wait_for_visible(self._target, **kwds).get_attribute("value")
+        element = self._has_driver.wait_for_visible(self._target, **kwds)
+        return self._has_driver.get_input_value(element)
 
     @property
     def is_displayed(self):

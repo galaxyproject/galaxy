@@ -175,6 +175,50 @@ class TestElementFinding:
         elements = has_driver_instance.find_elements(target)
         assert len(elements) == 3
 
+    def test_find_elements_by_selector(self, has_driver_instance, base_url: str) -> None:
+        """Test finding multiple elements by CSS selector."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        elements = has_driver_instance.find_elements_by_selector(".item")
+        assert len(elements) == 3
+        # Verify we got actual elements
+        assert all(hasattr(el, "text") for el in elements)
+
+    def test_find_elements_by_selector_no_matches(self, has_driver_instance, base_url: str) -> None:
+        """Test finding elements when selector matches nothing."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        elements = has_driver_instance.find_elements_by_selector(".nonexistent-class")
+        assert len(elements) == 0
+        assert elements == []
+
+    def test_find_elements_by_selector_single_match(self, has_driver_instance, base_url: str) -> None:
+        """Test finding elements when selector matches single element."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        elements = has_driver_instance.find_elements_by_selector("#test-div")
+        assert len(elements) == 1
+        assert elements[0].text == "Test Div"
+
+    def test_find_element_with_target(self, has_driver_instance, base_url: str) -> None:
+        """Test finding single element using Target (no waiting)."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        target = SimpleTarget(element_locator=(By.ID, "test-div"), description="test div")
+        element = has_driver_instance.find_element(target)
+        assert element.text == "Test Div"
+
+    def test_find_element_with_target_by_class(self, has_driver_instance, base_url: str) -> None:
+        """Test find_element returns first element when multiple matches exist."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        target = SimpleTarget(element_locator=(By.CLASS_NAME, "item"), description="first item")
+        element = has_driver_instance.find_element(target)
+        # Should get the first item
+        assert element.text in ["Item 1", "Item 2", "Item 3"]
+
+    def test_find_element_with_target_fails_when_not_found(self, has_driver_instance, base_url: str) -> None:
+        """Test find_element raises exception when element not found."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        target = SimpleTarget(element_locator=(By.ID, "nonexistent"), description="nonexistent element")
+        with pytest.raises((NoSuchElementException, Exception)):
+            has_driver_instance.find_element(target)
+
 
 class TestVisibilityAndPresence:
     """Tests for visibility and presence checking methods."""
@@ -409,6 +453,67 @@ class TestFormInteraction:
         assert result.text == "Form submitted!"
 
 
+class TestInputValueAbstraction:
+    """Tests for get_input_value abstraction."""
+
+    def test_get_input_value_basic(self, has_driver_instance, base_url):
+        """Test getting input value from a text input."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        username_input = has_driver_instance.find_element_by_id("username")
+
+        # Set a value
+        username_input.send_keys("testuser")
+
+        # Get the value using the abstraction
+        value = has_driver_instance.get_input_value(username_input)
+        assert value == "testuser"
+
+    def test_get_input_value_empty(self, has_driver_instance, base_url):
+        """Test getting input value from an empty input."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        username_input = has_driver_instance.find_element_by_id("username")
+
+        # Get value from empty input
+        value = has_driver_instance.get_input_value(username_input)
+        assert value == ""
+
+    def test_get_input_value_after_js_modification(self, has_driver_instance, base_url):
+        """Test getting input value after JavaScript modification."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        username_input = has_driver_instance.find_element_by_id("username")
+
+        # Set value using JavaScript
+        has_driver_instance.set_element_value(username_input, "jsvalue")
+
+        # Get the value - this is the problematic case for Playwright
+        value = has_driver_instance.get_input_value(username_input)
+        assert value == "jsvalue"
+
+    def test_get_input_value_password_field(self, has_driver_instance, base_url):
+        """Test getting value from password input."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        password_input = has_driver_instance.find_element_by_id("password")
+
+        # Set a value
+        password_input.send_keys("secret123")
+
+        # Get the value
+        value = has_driver_instance.get_input_value(password_input)
+        assert value == "secret123"
+
+    def test_get_input_value_email_field(self, has_driver_instance, base_url):
+        """Test getting value from email input."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        email_input = has_driver_instance.find_element_by_id("email")
+
+        # Set a value
+        email_input.send_keys("test@example.com")
+
+        # Get the value
+        value = has_driver_instance.get_input_value(email_input)
+        assert value == "test@example.com"
+
+
 class TestActionChainsAndKeys:
     """Tests for action chains and key sending methods."""
 
@@ -496,6 +601,20 @@ class TestActionChainsAndKeys:
             # Selenium - can verify value normally
             assert element.get_attribute("value") == "tes"
         # For Playwright: the key press executed without error (implicit success)
+
+    def test_aggressive_clear(self, has_driver_instance, base_url):
+        """Test aggressive_clear() method for clearing input fields."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("username")
+
+        # Type some text
+        element.send_keys("test value that needs clearing")
+
+        # Use aggressive_clear
+        has_driver_instance.aggressive_clear(element)
+
+        # Verify the field is cleared
+        assert element.get_attribute("value") == ""
 
 
 class TestFrameSwitching:

@@ -457,6 +457,38 @@ class HasDriver(WaitMethodsMixin):
     def find_element_by_selector(self, selector: str, element: Optional[WebElement] = None) -> WebElementProtocol:
         return _webelement_to_protocol(self._locator_aware(element).find_element(By.CSS_SELECTOR, selector))
 
+    def find_elements_by_selector(
+        self, selector: str, element: Optional[WebElement] = None
+    ) -> list[WebElementProtocol]:
+        """
+        Find multiple elements by CSS selector.
+
+        Args:
+            selector: CSS selector string
+            element: Optional parent element to search within
+
+        Returns:
+            List of WebElementProtocol elements
+        """
+        elements = self._locator_aware(element).find_elements(By.CSS_SELECTOR, selector)
+        return [_webelement_to_protocol(el) for el in elements]
+
+    def get_input_value(self, element: WebElementProtocol) -> str:
+        """
+        Get the value of an input element.
+
+        This provides a unified interface for getting input values across both
+        Selenium and Playwright backends. For Selenium, this uses get_attribute("value").
+
+        Args:
+            element: The input element to get the value from
+
+        Returns:
+            The current value of the input element, or empty string if no value
+        """
+        value = element.get_attribute("value")
+        return value if value is not None else ""
+
     def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
         if self.axe_skip:
             return NullAxeResults()

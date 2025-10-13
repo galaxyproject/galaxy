@@ -1626,7 +1626,7 @@ class NavigatesGalaxy(HasDriver):
         search_box = self.libraries_index_click_search()
         search_box.clear()
         search_box.send_keys(text)
-        value = search_box.get_attribute("value")
+        value = self.get_input_value(search_box)
         assert value == text, value
 
     def libraries_folder_create(self, name):
@@ -1693,7 +1693,7 @@ class NavigatesGalaxy(HasDriver):
 
     def clear_tooltips(self, selector_to_move="#center"):
         action_chains = self.action_chains()
-        center_element = self.driver.find_element(By.CSS_SELECTOR, selector_to_move)
+        center_element = self.find_element_by_selector(selector_to_move)
         action_chains.move_to_element(center_element).perform()
         self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
 
@@ -1740,7 +1740,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_get_current_filter(self):
         filter_element = self.components.workflows.search_box.wait_for_and_click()
-        return filter_element.get_attribute("value")
+        return self.get_input_value(filter_element)
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
@@ -2213,7 +2213,7 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_item_available_visualizations_elements(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
         viz_menu_selectors = f"{self.history_panel_item_selector(hid)} a.visualization-link"
-        return self.driver.find_elements(By.CSS_SELECTOR, viz_menu_selectors)
+        return self.find_elements_by_selector(viz_menu_selectors)
 
     def history_panel_item_get_tags(self, hid):
         item_component = self.history_panel_item_component(hid=hid)
