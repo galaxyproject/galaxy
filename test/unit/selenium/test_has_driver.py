@@ -15,6 +15,12 @@ from galaxy.selenium.has_driver import (
     exception_indicates_not_clickable,
     exception_indicates_stale_element,
 )
+from .test_helpers import (
+    element_get_value,
+    element_is_displayed,
+    element_send_keys,
+    element_text,
+)
 
 
 class SimpleTarget(Target):

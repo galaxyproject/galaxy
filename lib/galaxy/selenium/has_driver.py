@@ -32,6 +32,7 @@ from .axe_results import (
     NullAxeResults,
     RealAxeResults,
 )
+from .wait_methods_mixin import WaitMethodsMixin
 
 UNSPECIFIED_TIMEOUT = object()
 
@@ -50,7 +51,7 @@ def get_axe_script(script_url: str) -> str:
     return AXE_SCRIPT_HASH[script_url]
 
 
-class HasDriver:
+class HasDriver(WaitMethodsMixin):
     by: type[By] = By
     keys: type[Keys] = Keys
     driver: WebDriver
@@ -165,108 +166,34 @@ class HasDriver:
         """
         return self.driver.get_cookies()
 
-    def wait_for_xpath(self, xpath: str, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.presence_of_element_located((By.XPATH, xpath)), f"XPATH selector [{xpath}] to become present", **kwds
-        )
-        return element
+    # Implementation of WaitMethodsMixin abstract methods for Selenium
+    def _wait_on_condition_present(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
+        """Wait for element to be present in DOM."""
+        return self._wait_on(ec.presence_of_element_located(locator_tuple), message, **kwds)
 
-    def wait_for_xpath_visible(self, xpath: str, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.visibility_of_element_located((By.XPATH, xpath)), f"XPATH selector [{xpath}] to become visible", **kwds
-        )
-        return element
+    def _wait_on_condition_visible(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
+        """Wait for element to be visible."""
+        return self._wait_on(ec.visibility_of_element_located(locator_tuple), message, **kwds)
 
-    def wait_for_selector(self, selector: str, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.presence_of_element_located((By.CSS_SELECTOR, selector)),
-            f"CSS selector [{selector}] to become present",
-            **kwds,
-        )
-        return element
+    def _wait_on_condition_clickable(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
+        """Wait for element to be clickable."""
+        return self._wait_on(ec.element_to_be_clickable(locator_tuple), message, **kwds)
 
-    def wait_for_present(self, selector_template: Target, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.presence_of_element_located(selector_template.element_locator),
-            f"{selector_template.description} to become present",
-            **kwds,
-        )
-        return element
+    def _wait_on_condition_invisible(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
+        """Wait for element to be invisible or absent."""
+        return self._wait_on(ec.invisibility_of_element_located(locator_tuple), message, **kwds)
 
-    def wait_for_visible(self, selector_template: Target, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.visibility_of_element_located(selector_template.element_locator),
-            f"{selector_template.description} to become visible",
-            **kwds,
-        )
-        return element
+    def _wait_on_condition_absent(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
+        """Wait for element to be completely absent from DOM."""
+        return self._wait_on(lambda driver: len(driver.find_elements(*locator_tuple)) == 0, message, **kwds)
 
-    def wait_for_selector_visible(self, selector: str, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.visibility_of_element_located((By.CSS_SELECTOR, selector)),
-            f"CSS selector [{selector}] to become visible",
-            **kwds,
-        )
-        return element
+    def _wait_on_condition_count(self, locator_tuple: tuple, n: int, message: str, **kwds) -> WebElement:
+        """Wait for at least N elements."""
+        return self._wait_on(lambda driver: len(driver.find_elements(*locator_tuple)) >= n, message, **kwds)
 
-    def wait_for_selector_clickable(self, selector: str, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.element_to_be_clickable((By.CSS_SELECTOR, selector)),
-            f"CSS selector [{selector}] to become clickable",
-            **kwds,
-        )
-        return element
-
-    def wait_for_clickable(self, selector_template: Target, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.element_to_be_clickable(selector_template.element_locator),
-            f"{selector_template.description} to become clickable",
-            **kwds,
-        )
-        return element
-
-    def wait_for_selector_absent_or_hidden(self, selector: str, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.invisibility_of_element_located((By.CSS_SELECTOR, selector)),
-            f"CSS selector [{selector}] to become absent or hidden",
-            **kwds,
-        )
-        return element
-
-    def wait_for_selector_absent(self, selector: str, **kwds) -> WebElement:
-        element = self._wait_on(
-            lambda driver: len(driver.find_elements(By.CSS_SELECTOR, selector)) == 0,
-            f"CSS selector [{selector}] to become absent",
-            **kwds,
-        )
-        return element
-
-    def wait_for_element_count_of_at_least(self, selector_template: Target, n: int, **kwds) -> WebElement:
-        element = self._wait_on(
-            lambda driver: len(driver.find_elements(*selector_template.element_locator)) >= n,
-            f"{selector_template.description} to become visible",
-            **kwds,
-        )
-        return element
-
-    def wait_for_absent(self, selector_template: Target, **kwds) -> WebElement:
-        element = self._wait_on(
-            lambda driver: len(driver.find_elements(*selector_template.element_locator)) == 0,
-            f"{selector_template.description} to become absent",
-            **kwds,
-        )
-        return element
-
-    def wait_for_absent_or_hidden(self, selector_template: Target, **kwds) -> WebElement:
-        element = self._wait_on(
-            ec.invisibility_of_element_located(selector_template.element_locator),
-            f"{selector_template.description} to become absent or hidden",
-            **kwds,
-        )
-        return element
-
-    def wait_for_id(self, id: str, **kwds) -> WebElement:
-        return self._wait_on(ec.presence_of_element_located((By.ID, id)), f"presence of DOM ID [{id}]", **kwds)
+    def _wait_on_custom(self, condition_func, message: str, **kwds) -> WebElement:
+        """Wait on custom condition function."""
+        return self._wait_on(condition_func, message, **kwds)
 
     def click(self, selector_template: Target):
         element = self.driver.find_element(*selector_template.element_locator)
@@ -482,36 +409,15 @@ class HasDriver:
         else:
             return element
 
-    def wait_for_and_click(self, selector_template: Target, **kwds) -> WebElement:
+    def double_click(self, element: WebElement) -> None:
         """
-        Wait for element to be clickable and then click it.
+        Double-click an element using ActionChains.
 
         Args:
-            selector_template: Target selector for the element
-            **kwds: Additional keyword arguments for wait (e.g., timeout)
-
-        Returns:
-            The clicked WebElement
+            element: The element to double-click
         """
-        element = self.wait_for_clickable(selector_template, **kwds)
-        element.click()
-        return element
-
-    def wait_for_and_double_click(self, selector_template: Target, **kwds) -> WebElement:
-        """
-        Wait for element to be clickable and then double-click it.
-
-        Args:
-            selector_template: Target selector for the element
-            **kwds: Additional keyword arguments for wait (e.g., timeout)
-
-        Returns:
-            The double-clicked WebElement
-        """
-        element = self.wait_for_clickable(selector_template, **kwds)
         action_chains = self.action_chains()
         action_chains.move_to_element(element).double_click().perform()
-        return element
 
     def assert_absent_or_hidden_after_transitions(self, selector_template: Target, **kwds) -> None:
         """
