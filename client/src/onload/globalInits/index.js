@@ -7,7 +7,6 @@
  * will more properly be run inside a lifecycle handler inside of a component.
  */
 
-import { make_popup_menus } from "ui/popupmenu";
 import { monitorInit } from "utils/installMonitor";
 
 import { prependInitialization } from "../initQueue";
@@ -30,7 +29,6 @@ export function globalInits() {
         initTooltips,
         init_refresh_on_change,
         () => replace_big_select_inputs(20, 1500),
-        make_popup_menus,
         onloadWebhooks,
     );
 }

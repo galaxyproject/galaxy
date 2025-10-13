@@ -1494,7 +1494,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             self.edam_operations = None
             self.edam_topics = None
 
-        self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths
         self.ports = tool_source.parse_interactivetool()
@@ -1554,15 +1553,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.config_files.extend(tool_source.parse_input_configfiles())
         self.config_files.extend(tool_source.parse_template_configfiles())
         self.config_files.extend(tool_source.parse_file_sources())
-
-    def __parse_trackster_conf(self, tool_source):
-        self.trackster_conf = None
-        if not hasattr(tool_source, "root"):
-            return
-
-        # Trackster configuration.
-        if (trackster_conf := tool_source.root.find("trackster_conf")) is not None:
-            self.trackster_conf = TracksterConfig.parse(trackster_conf)
 
     def parse_tests(self):
         if self.tool_source:
@@ -4596,20 +4586,6 @@ def _rerun_remap_job_id(trans, incoming, tool_id: Optional[str]) -> Optional[int
                 "Failure executing tool with id '%s' (attempting to rerun invalid job).", tool_id
             )
     return rerun_remap_job_id
-
-
-class TracksterConfig:
-    """Trackster configuration encapsulation."""
-
-    def __init__(self, actions):
-        self.actions = actions
-
-    @staticmethod
-    def parse(root):
-        actions = []
-        for action_elt in root.findall("action"):
-            actions.append(SetParamAction.parse(action_elt))
-        return TracksterConfig(actions)
 
 
 class SetParamAction:

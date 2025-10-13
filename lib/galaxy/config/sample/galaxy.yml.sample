@@ -855,8 +855,7 @@ galaxy:
   # <tool_data_path>.
   #builds_file_path: shared/ucsc/builds.txt
 
-  # Directory where chrom len files are kept, currently mainly used by
-  # trackster.
+  # Directory where chrom len files are kept.
   # The value of this option will be resolved with respect to
   # <tool_data_path>.
   #len_file_path: shared/ucsc/chrom

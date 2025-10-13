@@ -36,8 +36,6 @@ class VisualizationsRegistry:
     BASE_DIR = "static/plugins/visualizations"
     #: base url to controller endpoint
     BASE_URL = "visualizations"
-    #: built-in visualizations
-    BUILT_IN_VISUALIZATIONS = ["trackster"]
 
     def __str__(self):
         return self.__class__.__name__

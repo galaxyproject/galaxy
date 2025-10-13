@@ -127,8 +127,6 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         }
 
     def _get_url(self):
-        if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
-            return url_for(controller="visualization", action=self.name)
         return url_for("visualization_plugin", visualization_name=self.name)
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs) -> dict[str, Any]:

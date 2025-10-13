@@ -310,8 +310,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :param in_panel: if true, tools are returned in panel structure,
                          including sections and labels
         :param view: ToolBox view to apply (default is 'default')
-        :param trackster: if true, only tools that are compatible with
-                          Trackster are returned
         :param q: if present search on the given query will be performed
         :param tool_id: if present the given tool_id will be searched for
                         all installed versions
@@ -319,7 +317,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Read params.
         in_panel = util.string_as_bool(kwds.get("in_panel", "True"))
-        trackster = util.string_as_bool(kwds.get("trackster", "False"))
         q = kwds.get("q", "")
         tool_id = kwds.get("tool_id", "")
         tool_help = util.string_as_bool(kwds.get("tool_help", "False"))
@@ -355,9 +352,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(
-                trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view
-            )
+            return self.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
         except exceptions.MessageException:
             raise
         except Exception:
@@ -384,16 +379,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         returns a dictionary of tools and tool sections for the given view
 
-        :param trackster: if true, only tools that are compatible with
-                          Trackster are returned
         """
-
-        # Read param.
-        trackster = util.string_as_bool(kwds.get("trackster", "False"))
 
         # Return panel view.
         try:
-            return self.app.toolbox.to_panel_view(trans, trackster=trackster, view=view)
+            return self.app.toolbox.to_panel_view(trans, view=view)
         except exceptions.MessageException:
             raise
         except Exception:

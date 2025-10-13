@@ -1157,11 +1157,6 @@ tools:
   handler: special_handlers
   environment: bigmem
 -
-  # legacy trackerster parameter for tool mapping
-  id: foo
-  handler: handler0
-  source: trackster
--
   # Classes can be used to map groups of tools - the current classes include
   # - local (these special tools that aren't parameterized for remote execution - expression tools, upload, etc..)
   # - requires_galaxy (these special tools require Galaxy's Python environment during execution)

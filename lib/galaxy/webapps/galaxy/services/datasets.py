@@ -414,8 +414,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             rval = self._search_features(trans, dataset, query=extra_params.get("query", None))
         elif data_type == RequestDataType.raw_data:
             rval = self._raw_data(trans, dataset, **extra_params)
-        elif data_type == RequestDataType.track_config:
-            rval = self.get_new_track_config(trans, dataset)
         elif data_type == RequestDataType.genome_data:
             rval = self._get_genome_data(trans, dataset, dbkey=extra_params.get("dbkey", None))
         elif data_type == RequestDataType.in_use_state:
