@@ -56,6 +56,7 @@ var ImportCollectionModal = Backbone.View.extend({
                         }),
                         buttons: {
                             Continue: () => {
+                                modal.hide();
                                 this.showCollectionBuilder(checked_items.dataset_ids);
                             },
                             Close: () => {
@@ -125,6 +126,21 @@ var ImportCollectionModal = Backbone.View.extend({
     templateCollectionSelectModal: function () {
         return _.template(
             `<div> <!-- elements selection -->
+                <!-- history selection/creation -->
+                <div class="library-modal-item">
+                    <h4>Select history</h4>
+                    <div class="form-group">
+                        <select id="library-collection-history-select" name="library-collection-history-select" class="form-control">
+                            <% _.each(histories, function(history) { %> <!-- history select box -->
+                                <option value="<%= _.escape(history.get("id")) %>">
+                                    <%= _.escape(history.get("name")) %>
+                                </option>
+                            <% }); %>
+                        </select>
+                        <label>or create new:</label>
+                        <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
+                    </div>
+                </div>
                 <!-- type selection -->
                 <div class="library-modal-item">
                     <h4>Collection type</h4>
@@ -150,21 +166,6 @@ var ImportCollectionModal = Backbone.View.extend({
                         <dt class="col-sm-3">From Rules</dt>
                         <dd class="col-sm-9">Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.</dd>
                     </dl>
-                </div>
-                <!-- history selection/creation -->
-                <div class="library-modal-item">
-                    <h4>Select history</h4>
-                    <div class="form-group">
-                        <select id="library-collection-history-select" name="library-collection-history-select" class="form-control">
-                            <% _.each(histories, function(history) { %> <!-- history select box -->
-                                <option value="<%= _.escape(history.get("id")) %>">
-                                    <%= _.escape(history.get("name")) %>
-                                </option>
-                            <% }); %>
-                        </select>
-                        <label>or create new:</label>
-                        <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
-                    </div>
                 </div>
             </div>`,
         );
