@@ -1,7 +1,4 @@
-from galaxy_test.base.decorators import (
-    requires_admin,
-)
-
+from galaxy_test.base.decorators import requires_admin
 from .framework import (
     selenium_test,
     SeleniumTestCase,
