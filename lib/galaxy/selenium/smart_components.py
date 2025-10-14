@@ -67,7 +67,7 @@ class SmartTarget:
             return simple_object
 
     def all(self):
-        return self._has_driver.driver.find_elements(*self._target.element_locator)
+        return self._has_driver.find_elements(self._target)
 
     def wait_for_element_count_of_at_least(self, n: int, **kwds):
         self._has_driver.wait_for_element_count_of_at_least(self._target, n, **kwds)
@@ -121,9 +121,8 @@ class SmartTarget:
 
     def data_value(self, attribute: str):
         full_attribute = f"data-{attribute}"
-        attribute_value = (
-            self._has_driver.driver.find_element(*self._target.element_locator).get_attribute(full_attribute) or ""
-        )
+        element = self._has_driver.find_element(self._target)
+        attribute_value = element.get_attribute(full_attribute) or ""
         return attribute_value
 
     def assert_data_value(self, attribute: str, expected_value: str):
@@ -132,7 +131,8 @@ class SmartTarget:
             raise AssertionError(message)
 
     def has_class(self, class_name):
-        classes_str = self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class") or ""
+        element = self._has_driver.find_element(self._target)
+        classes_str = element.get_attribute("class") or ""
         return class_name in classes_str.split(" ")
 
     def wait_for_and_send_keys(self, *text):

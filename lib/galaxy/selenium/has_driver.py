@@ -111,6 +111,10 @@ class HasDriver(WaitMethodsMixin):
     def find_elements(self, selector_template: Target) -> list[WebElement]:
         return self.driver.find_elements(*selector_template.element_locator)
 
+    def find_element(self, selector_template: Target) -> WebElementProtocol:
+        """Find first element matching Target (no waiting)."""
+        return _webelement_to_protocol(self.driver.find_element(*selector_template.element_locator))
+
     def assert_absent(self, selector_template: Target) -> None:
         elements = self.find_elements(selector_template)
         if len(elements) != 0:
