@@ -11,7 +11,8 @@ from pydantic import (
 )
 from sqlalchemy import select
 
-from galaxy.config.url_headers import UrlHeadersConfig
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.config.url_headers import UrlHeadersConfigFactory
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     ItemAlreadyClaimedException,
@@ -83,6 +84,7 @@ class LandingRequestManager:
         security: IdEncodingHelper,
         workflow_contents_manager: WorkflowContentsManager,
         app: MinimalManagerApp,
+        config: GalaxyAppConfiguration,
         vault: Optional[Vault] = None,
     ):
         self.sa_session = sa_session
@@ -90,7 +92,7 @@ class LandingRequestManager:
         self.workflow_contents_manager = workflow_contents_manager
         self.app = app
         self.vault = vault
-        self.url_headers_config = UrlHeadersConfig(app.config.url_headers_config_file)
+        self.url_headers_config = UrlHeadersConfigFactory.from_app_config(config)
 
     def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload, user_id=None) -> ToolLandingRequest:
         tool_id = payload.tool_id
