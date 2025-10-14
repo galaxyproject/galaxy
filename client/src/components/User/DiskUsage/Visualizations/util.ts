@@ -61,6 +61,7 @@ export function useDatasetsToDisplay() {
                 okVariant: "danger",
                 okTitle: localize("Permanently delete"),
                 cancelTitle: localize("Cancel"),
+                dialogClass: "confirm-delete-dataset-dialog",
             },
         );
         if (!confirmed) {

@@ -142,6 +142,7 @@ function onUndelete(datasetId: string) {
         <div v-else>
             <BarChart
                 v-if="topNDatasetsBySizeData"
+                data-description="chart history top datasets by size"
                 :description="
                     localize(
                         `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`,
@@ -223,6 +224,7 @@ function onUndelete(datasetId: string) {
 
             <BarChart
                 v-if="activeVsDeletedTotalSizeData"
+                data-description="chart history datasets by active"
                 :title="localize('Active vs Deleted Total Size')"
                 :description="
                     localize(
