@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import "ui/hoverhighlight";
 
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
