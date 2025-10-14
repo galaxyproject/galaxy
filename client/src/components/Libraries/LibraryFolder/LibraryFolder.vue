@@ -693,5 +693,122 @@ export default {
 </script>
 
 <style scoped>
-@import "library-folder-table.css";
+/* Table and pagination styles */
+th:focus {
+    outline: none !important;
+}
+
+.pagination-input-field {
+    max-width: 60px;
+}
+
+.pagination-total-pages-text {
+    margin-left: 0.25rem;
+}
+
+.more-text-btn {
+    margin-left: 0.25rem;
+    font-size: 60%;
+    color: grey;
+}
+
+.description-field {
+    width: 40rem;
+}
+
+.empty-folder-message {
+    text-align: center;
+}
+
+.select-checkbox {
+    color: navy;
+}
+
+.deleted-item {
+    color: grey;
+}
+
+.lib-btn {
+    margin-bottom: 2%;
+}
+
+/* Library README section - GitHub-flavored markdown styles */
+.library-readme-section {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fdfdfd;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.readme-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e1e4e8;
+    padding-bottom: 0.5rem;
+}
+
+/* Markdown content styling */
+.library-readme-section :deep(div) {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    color: #24292f;
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+.library-readme-section :deep(h1),
+.library-readme-section :deep(h2),
+.library-readme-section :deep(h3) {
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+}
+
+.library-readme-section :deep(p) {
+    margin: 0.75em 0;
+}
+
+.library-readme-section :deep(ul),
+.library-readme-section :deep(ol) {
+    padding-left: 2em;
+    margin: 1em 0;
+}
+
+.library-readme-section :deep(code) {
+    background-color: rgba(27, 31, 35, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 85%;
+}
+
+.library-readme-section :deep(pre) {
+    background-color: #f6f8fa;
+    padding: 1em;
+    overflow-x: auto;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.library-readme-section :deep(a) {
+    color: #0366d6;
+    text-decoration: none;
+}
+
+.library-readme-section :deep(a:hover) {
+    text-decoration: underline;
+}
+
+.library-readme-section :deep(blockquote) {
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    color: #6a737d;
+    background-color: #f6f8fa;
+    border-left: 0.25em solid #dfe2e5;
+}
 </style>
