@@ -26,8 +26,34 @@ from galaxy_test.driver import integration_util
 
 TEST_URL = "base64://eyJ0ZXN0IjogInRlc3QifQ=="  # base64 encoded {"test": "test"}
 
+# URL headers configuration for tests - allows both sensitive and non-sensitive headers
+ALLOW_URL_HEADERS_CONF = """
+patterns:
+  # Match all URLs (including base64://) for testing
+  - url_pattern: "^.*"
+    headers:
+      # Sensitive headers - will be encrypted when vault is configured
+      - name: Authorization
+        sensitive: true
+      - name: X-API-Key
+        sensitive: true
+      # Non-sensitive headers
+      - name: Content-Type
+        sensitive: false
+      - name: Accept
+        sensitive: false
+      - name: Accept-Language
+        sensitive: false
+      - name: Accept-Encoding
+        sensitive: false
+      - name: Cache-Control
+        sensitive: false
+      - name: X-Custom-Header
+        sensitive: false
+"""
 
-class BaseLandingRequestTest(integration_util.IntegrationTestCase):
+
+class BaseLandingRequestTest(integration_util.IntegrationTestCase, integration_util.ConfigureAllowedUrlHeaders):
     """Base class with common setup for landing request tests."""
 
     dataset_populator: DatasetPopulator
@@ -132,6 +158,7 @@ class TestLandingRequestsIntegration(BaseLandingRequestTest, integration_util.Co
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         cls._configure_database_vault(config)
+        cls._configure_allowed_url_headers(ALLOW_URL_HEADERS_CONF, config)
 
     def test_data_landing_with_encrypted_headers(self):
         """Test that sensitive headers are encrypted in the vault when stored in landing requests.
@@ -144,7 +171,7 @@ class TestLandingRequestsIntegration(BaseLandingRequestTest, integration_util.Co
         headers = {
             "Authorization": "Bearer data-test-token-should-be-encrypted",
             "X-API-Key": "data-test-api-key-123456",
-            "User-Agent": "Galaxy-Test/1.0",
+            "Accept": "application/json",
             "Content-Type": "application/json",
             "X-Custom-Header": "custom-value",
         }
@@ -175,12 +202,13 @@ class TestLandingRequestsIntegration(BaseLandingRequestTest, integration_util.Co
         input1_headers = {
             "Authorization": "Bearer workflow-test-token-should-be-encrypted",
             "X-API-Key": "workflow-test-api-key-123456",
-            "User-Agent": "Galaxy-Workflow-Test/1.0",
+            "Accept": "application/json",
             "Content-Type": "application/json",
         }
         input2_headers = {
             "Authorization": "Bearer workflow-test-token-should-be-encrypted",
             "X-API-Key": "workflow-test-api-key-123456",
+            "Accept-Language": "en-US",
             "X-Custom-Header": "custom-value",
         }
 
@@ -216,25 +244,30 @@ class TestLandingRequestsIntegration(BaseLandingRequestTest, integration_util.Co
 
 
 class TestLandingRequestsWithoutVaultIntegration(BaseLandingRequestTest):
-    """Test landing requests when vault is not configured.
+    """Test landing requests when headers are configured but vault is not configured.
 
-    This class tests the behavior when no vault is configured but sensitive headers
-    are present in the request. The system should fail fast rather than storing
-    sensitive information in plain text.
+    This class tests the behavior when headers configuration exists but no vault is configured.
+    When sensitive headers are present, the system should fail because it cannot encrypt them.
     """
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        # Configure headers but NOT vault - this tests the vault requirement for sensitive headers
+        cls._configure_allowed_url_headers(ALLOW_URL_HEADERS_CONF, config)
 
     def test_data_landing_fails_without_vault_when_sensitive_headers_present(self):
         """Test that data landing requests fail when vault is not configured but sensitive headers are present.
 
         This test verifies that when sensitive headers (like Authorization, API keys, etc.) are present
-        in a landing request but no vault is configured, the system fails fast rather than storing
-        the sensitive information in plain text in the database.
+        in a landing request but no vault is configured, the system fails with a 500 error rather than
+        storing the sensitive information in plain text in the database.
         """
         # Create headers with sensitive values
         headers = {
             "Authorization": "Bearer no-vault-test-token-should-fail",
             "X-API-Key": "no-vault-test-api-key-should-fail",
-            "User-Agent": "Galaxy-Test/1.0",
+            "Accept": "application/json",
         }
 
         # Create data landing request with sensitive headers
@@ -254,7 +287,7 @@ class TestLandingRequestsWithoutVaultIntegration(BaseLandingRequestTest):
         """
         # Create only non-sensitive headers
         headers = {
-            "User-Agent": "Galaxy-Test/1.0",
+            "Accept": "application/json",
             "Content-Type": "application/json",
             "X-Custom-Header": "custom-value",
         }
@@ -278,7 +311,7 @@ class TestLandingRequestsWithoutVaultIntegration(BaseLandingRequestTest):
         headers = {
             "Authorization": "Bearer workflow-no-vault-token-should-fail",
             "X-API-Key": "workflow-no-vault-api-key-should-fail",
-            "User-Agent": "Galaxy-Workflow-Test/1.0",
+            "Accept": "application/json",
         }
         workflow_request_state = self._create_workflow_input_with_headers(headers)
 
@@ -297,3 +330,66 @@ class TestLandingRequestsWithoutVaultIntegration(BaseLandingRequestTest):
         json = payload.model_dump(mode="json")
         response = self.dataset_populator._post(create_url, json, json=True, anon=True)
         assert response.status_code == 500
+
+
+class TestLandingRequestsWithoutHeadersConfigIntegration(BaseLandingRequestTest):
+    """Test landing requests when no headers configuration exists.
+
+    This class tests the behavior when no URL headers configuration file is present.
+    The system should fail fast with any headers (sensitive or not) because headers
+    require explicit configuration to be allowed.
+    """
+
+    def test_data_landing_fails_without_config(self):
+        """Test that data landing requests fail when no URL headers configuration exists.
+
+        This test verifies the fail-fast behavior: when no URL headers configuration file
+        exists, ANY attempt to use headers (sensitive or not) will fail immediately with
+        a clear error message, rather than silently allowing or denying headers.
+        """
+        # Create only non-sensitive headers
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Custom-Header": "custom-value",
+        }
+
+        # Create data landing request with headers
+        request_state = self._create_data_landing_request_state(headers)
+        payload = CreateDataLandingPayload(request_state=request_state, public=True)
+
+        # Should fail with 403 because no URL headers configuration is available (fail-fast)
+        response = self.dataset_populator.create_data_landing_raw(payload)
+        assert response.status_code == 403
+        assert "No URL headers configuration is available" in response.json()["err_msg"]
+
+    def test_workflow_landing_fails_without_config(self):
+        """Test that workflow landing requests fail when no URL headers configuration exists.
+
+        This test verifies the fail-fast behavior for workflow landings: when no URL headers
+        configuration file exists, any attempt to use headers will fail immediately.
+        """
+        # Create workflow input with headers
+        headers = {
+            "Authorization": "Bearer workflow-no-vault-token-should-fail",
+            "X-API-Key": "workflow-no-vault-api-key-should-fail",
+            "Accept": "application/json",
+        }
+        workflow_request_state = self._create_workflow_input_with_headers(headers)
+
+        # Create workflow and landing request
+        workflow_id = self._create_and_make_public_workflow("test_landing_no_config")
+        payload = CreateWorkflowLandingRequestPayload(
+            workflow_id=workflow_id,
+            workflow_target_type="stored_workflow",
+            request_state=workflow_request_state,
+            public=True,
+        )
+
+        # Should return 403 status code when trying to create the workflow landing request
+        # because no URL headers configuration is available
+        create_url = "workflow_landings"
+        json = payload.model_dump(mode="json")
+        response = self.dataset_populator._post(create_url, json, json=True, anon=True)
+        assert response.status_code == 403
+        assert "No URL headers configuration is available" in response.json()["err_msg"]
