@@ -176,6 +176,11 @@ interface Props {
      * @default "Last updated"
      */
     updateTimeTitle?: string;
+
+    /** Whether this card is highlighted (for example, as a range selection anchor)
+     * @default false
+     */
+    highlighted?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -207,6 +212,7 @@ const props = withDefaults(defineProps<Props>(), {
     updateTime: "",
     updateTimeIcon: () => faEdit,
     updateTimeTitle: "Last updated",
+    highlighted: false,
 });
 
 /**
@@ -283,8 +289,10 @@ const allowedTitleLines = computed(() => props.titleNLines);
 
 function onKeyDown(event: KeyboardEvent) {
     if ((props.clickable && event.key === "Enter") || event.key === " ") {
+        event.stopPropagation();
         emit("click", event);
     } else if (props.clickable) {
+        event.stopPropagation();
         emit("keydown", event);
     }
 }
@@ -310,7 +318,7 @@ function onKeyDown(event: KeyboardEvent) {
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
-            :class="contentClass">
+            :class="[{ 'g-card-highlighted': props.highlighted }, contentClass]">
             <slot>
                 <div class="d-flex flex-column flex-gapy-1">
                     <div
@@ -706,6 +714,10 @@ function onKeyDown(event: KeyboardEvent) {
 
     &.g-card-published .g-card-content {
         border-left: 0.25rem solid $brand-primary;
+    }
+
+    &.g-card-highlighted .g-card-content {
+        box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
     }
 
     &.g-card-clickable {

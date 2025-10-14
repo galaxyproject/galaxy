@@ -333,7 +333,7 @@ export function useSelectedItems<T, ComponentType extends ComponentInstanceExten
                     initKeySelection();
                 } else if (
                     item &&
-                    event.key === "Delete" &&
+                    (event.key === "Delete" || event.key === "Backspace") &&
                     !isSelected(item) &&
                     typeof item === "object" &&
                     "deleted" in item &&
