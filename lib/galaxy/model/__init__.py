@@ -10802,10 +10802,14 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
     provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
-    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)  # type:ignore[assignment]
+    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(  # type:ignore[assignment, unused-ignore]
+        MutableJSONType
+    )
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
-    user: Mapped[Optional["User"]] = relationship(back_populates="social_auth")
+    user: Mapped[Optional["User"]] = relationship(  # type:ignore[assignment, unused-ignore]
+        back_populates="social_auth"
+    )
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
