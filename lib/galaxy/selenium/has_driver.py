@@ -316,6 +316,70 @@ class HasDriver:
         finally:
             self.driver.switch_to.default_content()
 
+    def execute_script(self, script: str, *args):
+        """
+        Execute JavaScript in the current browser context.
+
+        Args:
+            script: JavaScript code to execute
+            *args: Optional arguments to pass to the script (accessible as arguments[0], arguments[1], etc.)
+
+        Returns:
+            The return value of the script execution
+        """
+        return self.driver.execute_script(script, *args)
+
+    def set_local_storage(self, key: str, value: str) -> None:
+        """
+        Set a value in the browser's localStorage.
+
+        Args:
+            key: The localStorage key
+            value: The value to store (will be JSON-stringified if not a string)
+        """
+        self.execute_script(f"""window.localStorage.setItem("{key}", {value});""")
+
+    def remove_local_storage(self, key: str) -> None:
+        """
+        Remove a key from the browser's localStorage.
+
+        Args:
+            key: The localStorage key to remove
+        """
+        self.execute_script(f"""window.localStorage.removeItem("{key}");""")
+
+    def scroll_into_view(self, element: WebElement) -> None:
+        """
+        Scroll an element into view using JavaScript.
+
+        Args:
+            element: The element to scroll into view
+        """
+        self.execute_script("arguments[0].scrollIntoView(true);", element)
+
+    def set_element_value(self, element: WebElement, value: str) -> None:
+        """
+        Set an element's value property directly using JavaScript.
+
+        This is useful for contenteditable elements or when .clear() doesn't work.
+
+        Args:
+            element: The element to modify
+            value: The value to set
+        """
+        self.execute_script(f"arguments[0].value = '{value}';", element)
+
+    def execute_script_click(self, element: WebElement) -> None:
+        """
+        Click an element using JavaScript instead of Selenium's native click.
+
+        This is useful when Selenium's click is intercepted or the element is not clickable.
+
+        Args:
+            element: The element to click
+        """
+        self.execute_script("arguments[0].click();", element)
+
     def find_element_by_link_text(self, text: str, element: Optional[WebElement] = None) -> WebElement:
         return self._locator_aware(element).find_element(By.LINK_TEXT, text)
 

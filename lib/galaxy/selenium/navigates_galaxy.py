@@ -344,11 +344,11 @@ class NavigatesGalaxy(HasDriver):
     @contextlib.contextmanager
     def local_storage(self, key: str, value: Union[float, str]):
         """Method decorator to modify localStorage for the scope of the supplied context."""
-        self.driver.execute_script(f"""window.localStorage.setItem("{key}", {value});""")
+        self.set_local_storage(key, value)
         try:
             yield
         finally:
-            self.driver.execute_script(f"""window.localStorage.removeItem("{key}");""")
+            self.remove_local_storage(key)
 
     @contextlib.contextmanager
     def main_panel(self):
@@ -726,13 +726,13 @@ class NavigatesGalaxy(HasDriver):
             if card_name in item_names:
                 checkbox = card.find_element(self.by.CSS_SELECTOR, 'input[id^="g-card-select-history-"]')
                 # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
-                self.driver.execute_script("$(arguments[0]).click();", checkbox)
+                self.execute_script("$(arguments[0]).click();", checkbox)
 
     def check_advanced_search_filter(self, filter_name):
         filter_div = self.wait_for_selector(f"[data-description='filter {filter_name}']")
         checkbox = filter_div.find_element(self.by.CSS_SELECTOR, "input")
         # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
-        self.driver.execute_script("$(arguments[0]).click();", checkbox)
+        self.execute_script("$(arguments[0]).click();", checkbox)
 
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
@@ -1939,13 +1939,13 @@ class NavigatesGalaxy(HasDriver):
         else:
             tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
         tool_element = tool_link.wait_for_present()
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", tool_element)
+        self.scroll_into_view(tool_element)
         tool_link.wait_for_and_click()
 
     def datasource_tool_open(self, tool_id):
         tool_link = self.components.tool_panel.data_source_tool_link(tool_id=tool_id)
         tool_element = tool_link.wait_for_present()
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", tool_element)
+        self.scroll_into_view(tool_element)
         tool_link.wait_for_and_click()
 
     def run_environment_test_tool(self, inttest_value="42", select_storage: Optional[str] = None):
@@ -2571,7 +2571,7 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def _tour_wait_for_and_click_element(self, selector):
         element = self.tour_wait_for_clickable_element(selector)
-        self.driver.execute_script("arguments[0].click();", element)
+        self.execute_script_click(element)
 
     @retry_during_transitions
     def wait_for_and_click_selector(self, selector):
