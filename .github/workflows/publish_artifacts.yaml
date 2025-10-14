@@ -20,7 +20,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - name: Install script dependencies
-        run: uv pip install --system galaxy-release-util
+        run: uv tool install galaxy-release-util
       - name: Build and publish to PyPI
         run: |
           galaxy-release-util build-and-upload --no-confirm

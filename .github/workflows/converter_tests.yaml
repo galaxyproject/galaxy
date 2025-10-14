@@ -48,7 +48,7 @@ jobs:
       - name: Move test data
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo
-        run: uv pip install --system planemo
+        run: uv tool install planemo
       - name: Determine converters to check
         run: |
           ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -v -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
