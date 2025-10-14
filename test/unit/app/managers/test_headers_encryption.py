@@ -2,10 +2,10 @@ from typing import Optional
 
 import pytest
 
-from galaxy.config.url_headers import (
-    HeaderConfig,
-    UrlHeadersConfig,
-    UrlPatternConfig,
+from galaxy.config.url_headers import UrlHeadersConfigFactory
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    RequestParameterMissingException,
 )
 from galaxy.managers.headers_encryption import (
     create_vault_key,
@@ -35,52 +35,37 @@ class MockVault(Vault):
 
 
 def create_test_url_headers_config():
-    config = UrlHeadersConfig()
+    config_dict = {
+        "patterns": [
+            {
+                "url_pattern": r"^https://api\.github\.com/.*",
+                "headers": [
+                    {"name": "Authorization", "sensitive": True},
+                    {"name": "Accept", "sensitive": False},
+                    {"name": "Accept-Encoding", "sensitive": False},
+                ],
+            },
+            {
+                "url_pattern": r"^https://api\.example\.com/.*",
+                "headers": [
+                    {"name": "Authorization", "sensitive": True},
+                    {"name": "X-API-Key", "sensitive": True},
+                    {"name": "Content-Type", "sensitive": False},
+                    {"name": "Accept", "sensitive": False},
+                ],
+            },
+            {
+                "url_pattern": r"^https://.*",
+                "headers": [
+                    {"name": "Accept", "sensitive": False},
+                    {"name": "Accept-Language", "sensitive": False},
+                    {"name": "Content-Type", "sensitive": False},
+                ],
+            },
+        ]
+    }
 
-    # GitHub API pattern - allows auth headers
-    github_pattern = UrlPatternConfig(
-        url_pattern=r"^https://api\.github\.com/.*",
-        headers=[
-            HeaderConfig(name="Authorization", sensitive=True),
-            HeaderConfig(name="Accept", sensitive=False),
-            HeaderConfig(name="Accept-Encoding", sensitive=False),
-        ],
-    )
-
-    # Generic HTTPS pattern - only basic headers
-    https_pattern = UrlPatternConfig(
-        url_pattern=r"^https://.*",
-        headers=[
-            HeaderConfig(name="Accept", sensitive=False),
-            HeaderConfig(name="Accept-Language", sensitive=False),
-            HeaderConfig(name="Content-Type", sensitive=False),
-        ],
-    )
-
-    # Test API pattern - for testing sensitive headers
-    test_api_pattern = UrlPatternConfig(
-        url_pattern=r"^https://api\.example\.com/.*",
-        headers=[
-            HeaderConfig(name="Authorization", sensitive=True),
-            HeaderConfig(name="X-API-Key", sensitive=True),
-            HeaderConfig(name="Content-Type", sensitive=False),
-            HeaderConfig(name="Accept", sensitive=False),
-        ],
-    )
-
-    # Set up the patterns in the config
-    config._patterns = [github_pattern, test_api_pattern, https_pattern]
-
-    # Set up compiled patterns
-    import re
-
-    config._compiled_patterns = [
-        (re.compile(github_pattern.url_pattern), github_pattern),
-        (re.compile(test_api_pattern.url_pattern), test_api_pattern),
-        (re.compile(https_pattern.url_pattern), https_pattern),
-    ]
-
-    return config
+    return UrlHeadersConfigFactory.from_dict(config_dict)
 
 
 class TestSensitiveHeaderDetection:
@@ -157,19 +142,23 @@ class TestHasSensitiveHeaders:
         config = create_test_url_headers_config()
         # Without URL, headers should fail fast since we can't validate them
         data = {"headers": {"Content-Type": "application/json"}}
-        with pytest.raises(ValueError, match="URL is required for header validation"):
+        with pytest.raises(RequestParameterMissingException, match="URL is required for header validation"):
             has_sensitive_headers(data, url_headers_config=config)
 
     def test_fails_without_config(self):
         """Test that function fails fast when no configuration is provided."""
 
-        # Should raise ValueError when headers exist but no config
-        with pytest.raises(ValueError, match="Headers are not allowed without proper URL headers configuration"):
+        # Should raise ConfigDoesNotAllowException when headers exist but no config
+        with pytest.raises(
+            ConfigDoesNotAllowException, match="Headers are not allowed without proper URL headers configuration"
+        ):
             has_sensitive_headers({"headers": {"Authorization": "Bearer token"}})
 
-        # Should raise ValueError for nested headers too
+        # Should raise ConfigDoesNotAllowException for nested headers too
         nested_data = {"request_json": {"targets": [{"elements": [{"headers": {"X-API-Key": "secret"}}]}]}}
-        with pytest.raises(ValueError, match="Headers are not allowed without proper URL headers configuration"):
+        with pytest.raises(
+            ConfigDoesNotAllowException, match="Headers are not allowed without proper URL headers configuration"
+        ):
             has_sensitive_headers(nested_data)
 
         # Should NOT raise error when no headers present
@@ -239,7 +228,7 @@ class TestHeaderEncryptionDecryption:
         headers = encrypted["headers"]
         assert headers["Authorization"] == "__VAULT_HEADER_AUTHORIZATION__"  # Encrypted (sensitive)
         assert headers["X-API-Key"] == "__VAULT_HEADER_X_API_KEY__"  # Encrypted (sensitive)
-        assert headers["Accept"] == "application/json"  # Not encrypted (not sensitive)
+        assert headers["Accept"] == "application/json"
 
         # Check vault has the encrypted headers
         assert len(vault.storage) == 2
@@ -366,8 +355,10 @@ class TestHeaderEncryptionDecryption:
             }
         }
 
-        # Should raise ValueError when trying to encrypt without config
-        with pytest.raises(ValueError, match="Headers are not allowed without proper URL headers configuration"):
+        # Should raise ConfigDoesNotAllowException when trying to encrypt without config
+        with pytest.raises(
+            ConfigDoesNotAllowException, match="Headers are not allowed without proper URL headers configuration"
+        ):
             encrypt_headers_in_data(data, context_id, vault)
 
     def test_encrypt_headers_with_url_pattern_checking(self):
@@ -385,7 +376,7 @@ class TestHeaderEncryptionDecryption:
             }
         }
 
-        with pytest.raises(ValueError, match="URL is required for header validation"):
+        with pytest.raises(RequestParameterMissingException, match="URL is required for header validation"):
             encrypt_headers_in_data(data_no_url, context_id, vault, url_headers_config=config)
 
         # Test: Headers WITH URL - pattern-based checking works
