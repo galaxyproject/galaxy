@@ -6,7 +6,6 @@ This is capturing code shared by file source templates and object store template
 import logging
 import os
 from collections.abc import Iterable
-from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -33,6 +32,7 @@ from pydantic import (
 )
 from pydantic.fields import FieldInfo
 from typing_extensions import (
+    Annotated,
     Literal,
     NotRequired,
     Protocol,
@@ -618,6 +618,31 @@ class ImplicitConfigurationParameters(TypedDict):
 M = TypeVar("M", bound="BaseModel")
 
 
+# Implementation copied from https://github.com/pydantic/pydantic/issues/12329#issuecomment-3382159312
+def _make_field_optional(field_info: FieldInfo):
+    """Returns the field's definition to be used in a `create_model()` call to make the field optional."""
+    annotation = field_info.annotation
+    assert annotation is not None
+    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        annotation = make_model_with_all_fields_optional(annotation)
+    if field_info.is_required():
+        return Annotated[Union[annotation, None], field_info], None
+    else:
+        return Annotated[annotation, field_info]
+
+
+def make_model_with_all_fields_optional(model: Type[M], fields=None) -> Type[M]:
+    """Returns a new Pydantic model based on `model`, but with all fields optional."""
+    if fields is None:
+        fields = model.model_fields.items()
+    return create_model(
+        model.__name__,
+        __doc__=model.__doc__,
+        __base__=model,
+        **{field_name: _make_field_optional(field_info) for field_name, field_info in fields},
+    )
+
+
 # TODO: This is a workaround to make all fields optional.
 #       It should be removed when Python/pydantic supports this feature natively.
 # https://github.com/pydantic/pydantic/issues/1673
@@ -630,26 +655,14 @@ def partial_model(
         exclude = []
 
     def decorator(model: Type[M]) -> Type[M]:
-        def make_optional(field: FieldInfo, default: Any = None) -> tuple[Any, FieldInfo]:
-            new = deepcopy(field)
-            new.default = default
-            new.annotation = Optional[field.annotation or Any]  # type:ignore[assignment]
-            return new.annotation, new
-
         if include is None:
             fields: Iterable[tuple[str, FieldInfo]] = model.model_fields.items()
         else:
             fields = ((k, v) for k, v in model.model_fields.items() if k in include)
 
-        return create_model(
-            model.__name__,
-            __base__=model,
-            __module__=model.__module__,
-            **{
-                field_name: make_optional(field_info)
-                for field_name, field_info in fields
-                if exclude is None or field_name not in exclude
-            },
-        )  # type:ignore[call-overload]
+        if exclude is not None:
+            fields = ((k, v) for k, v in fields if k not in exclude)
+
+        return make_model_with_all_fields_optional(model, fields)
 
     return decorator

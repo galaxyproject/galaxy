@@ -1795,7 +1795,7 @@ class CreateNewCollectionPayload(Model):
     column_definitions: Optional[SampleSheetColumnDefinitions] = Field(
         default=None,
         title="Column Definitions",
-        description="Specify definitions for row data if collection_type if sample_sheet",
+        description="Specify definitions for row data if collection_type is sample_sheet",
     )
     rows: Optional[SampleSheetRows] = Field(
         default=None,

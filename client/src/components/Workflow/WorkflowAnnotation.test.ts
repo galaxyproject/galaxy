@@ -27,6 +27,7 @@ const SAMPLE_RUN_COUNT = 100;
 const TEST_HISTORY_ID = "test-history-id";
 const TEST_HISTORY = {
     id: TEST_HISTORY_ID,
+    genome_build: "?",
     name: "fake-history-name",
 };
 

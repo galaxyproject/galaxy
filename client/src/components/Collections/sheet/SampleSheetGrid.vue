@@ -372,7 +372,7 @@ if ("name" in props.initialElements) {
 
 initialize();
 
-type ColumnDefinition = components["schemas"]["SampleSheetColumnDefinition"];
+type ColumnDefinition = components["schemas"]["SampleSheetColumnDefinition-Input"];
 
 function uriFromRow(row: AgRowData): string {
     return row["url"] as string as string;
