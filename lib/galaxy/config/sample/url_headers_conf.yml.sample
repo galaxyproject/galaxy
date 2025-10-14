@@ -1,0 +1,108 @@
+# Allowed URL Headers Configuration
+#
+# This file defines which HTTP headers are allowed in URL fetch requests based
+# on URL patterns, and whether they should be treated as sensitive (encrypted
+# in the vault) or not.
+#
+# If no allow-list is specified or this file is empty/missing, NO headers will
+# be allowed in URL requests.
+#
+# Configuration structure:
+# patterns:
+#   - url_pattern: A regular expression pattern to match URLs
+#     headers:
+#       - name: The exact header name (case-insensitive)
+#         sensitive: Whether this header contains sensitive information that should
+#                    be encrypted when stored in the database (requires vault configuration)
+#
+# IMPORTANT:
+# ------------------------------------
+# When a URL matches MULTIPLE patterns, the union of all allowed headers is used.
+# This means you can compose permissions from multiple patterns for flexibility.
+#
+# Example: A URL matching both pattern A (allows headers X, Y) and pattern B
+# (allows headers Y, Z) will allow headers X, Y, and Z.
+#
+# Security: If ANY matching pattern marks a header as sensitive, it will be
+# treated as sensitive (secure-by-default).
+#
+# Examples:
+
+patterns:
+  # GitHub API access - allow authentication headers for GitHub URLs
+  - url_pattern: "^https://api\\.github\\.com/.*"
+    headers:
+      - name: Authorization
+        sensitive: true
+      - name: Accept
+        sensitive: false
+      - name: X-GitHub-Api-Version
+        sensitive: false
+
+  # Generic GitHub content (raw files, releases) - no auth needed
+  - url_pattern: "^https://(raw\\.githubusercontent\\.com|github\\.com/.*/releases/download)/.*"
+    headers:
+      - name: Accept
+        sensitive: false
+      - name: Accept-Encoding
+        sensitive: false
+
+  # AWS S3 buckets - allow AWS authentication headers
+  - url_pattern: "^https://.*\\.s3\\..+\\.amazonaws\\.com/.*"
+    headers:
+      - name: Authorization
+        sensitive: true
+      - name: X-Amz-Date
+        sensitive: false
+      - name: X-Amz-Content-Sha256
+        sensitive: false
+      - name: X-Amz-Security-Token
+        sensitive: true
+
+  # Generic cloud storage APIs
+  - url_pattern: "^https://.*\\.(googleapis\\.com|azure\\.com|digitaloceanspaces\\.com)/.*"
+    headers:
+      - name: Authorization
+        sensitive: true
+      - name: X-API-Key
+        sensitive: true
+      - name: Accept
+        sensitive: false
+
+  # FTP over HTTP services
+  - url_pattern: "^https?://ftp\\..*/.*"
+    headers:
+      - name: Authorization
+        sensitive: true
+      - name: Accept
+        sensitive: false
+
+  # Academic/research data repositories
+  - url_pattern: "^https://.*(zenodo\\.org|figshare\\.com|dryad\\.org|dataverse\\.org)/.*"
+    headers:
+      - name: Authorization
+        sensitive: true
+      - name: X-API-Key
+        sensitive: true
+      - name: Accept
+        sensitive: false
+
+  # HTTPS URLs - basic headers only (most restrictive for unknown sources)
+  - url_pattern: "^https://.*"
+    headers:
+      - name: Accept
+        sensitive: false
+      - name: Accept-Language
+        sensitive: false
+      - name: Accept-Encoding
+        sensitive: false
+      - name: Cache-Control
+        sensitive: false
+
+# Security notes:
+# - All matching patterns contribute their allowed headers (union of permissions)
+# - If ANY pattern marks a header as sensitive, it's treated as sensitive
+# - Only add headers that are absolutely necessary for your use case
+# - When in doubt, mark headers as sensitive to ensure encryption
+# - Patterns are order-independent, making configuration more composable
+# - HTTP (non-HTTPS) URLs are generally not recommended and may be blocked
