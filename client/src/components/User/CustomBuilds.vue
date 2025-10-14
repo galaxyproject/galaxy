@@ -146,6 +146,7 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import { useHistoryStore } from "stores/historyStore";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -212,9 +213,9 @@ export default {
             return value;
         },
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        const historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+    async created() {
+        const { loadCurrentHistoryId } = useHistoryStore();
+        const historyId = await loadCurrentHistoryId();
         this.loadCustomBuilds();
         if (historyId) {
             this.loadCustomBuildsMetadata(historyId);

@@ -14,7 +14,7 @@ import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 import { stateIsTerminal } from "@/utils/utils";
 
-import type { CollectionBuilderType } from "../History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "../Collections/common/buildCollectionModal";
 import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
 
 import ListCollectionCreator from "./ListCollectionCreator.vue";

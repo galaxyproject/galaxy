@@ -298,6 +298,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
+    async function loadCurrentHistoryId(): Promise<string | null> {
+        if (!currentHistoryId.value) {
+            await loadCurrentHistory();
+        }
+        return currentHistoryId.value;
+    }
+
     /**
      * This function handles the cases where a history has been created
      * or removed (to set pagination offset and fetch updated history count)
@@ -476,6 +483,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         restoreHistories,
         handleTotalCountChange,
         loadCurrentHistory,
+        loadCurrentHistoryId,
         loadHistories,
         loadHistoryById,
         secureHistory,

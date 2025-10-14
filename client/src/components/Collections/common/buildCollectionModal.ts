@@ -14,6 +14,8 @@ import jQuery from "jquery";
 import type { HDASummary, HistoryItemSummary } from "@/api";
 import type { CollectionType } from "@/api/datasetCollections";
 import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
+import { createDatasetCollection } from "@/components/History/model/queries";
+import { useHistoryStore } from "@/stores/historyStore";
 
 // This is type describes builders we know about - not valid "collection type"s
 // as the backend/model layer of Galaxy would understand them. Rules is a collection
@@ -51,6 +53,32 @@ export const COLLECTION_TYPE_TO_LABEL: Record<string, string> = {
 };
 
 export type DatasetPair = GenericPair<HDASummary>;
+
+export async function buildCollectionFromRules(
+    selection: any,
+    historyId: string | null = null,
+    fromRulesInput = false,
+) {
+    let selectionContent: any = null;
+    const { loadCurrentHistoryId } = useHistoryStore();
+    historyId = historyId || (await loadCurrentHistoryId());
+
+    if (fromRulesInput) {
+        selectionContent = selection;
+    } else {
+        selectionContent = new Map();
+        selection.models.forEach((obj: any) => {
+            selectionContent.set(obj.id, obj);
+        });
+    }
+    if (historyId) {
+        const modalResult = await buildRuleCollectionModal(selectionContent, historyId, fromRulesInput);
+        if (modalResult) {
+            console.debug("Submitting collection build request.", modalResult);
+            await createDatasetCollection({ id: historyId } as any, modalResult);
+        }
+    }
+}
 
 // stand-in for buildCollection from history-view-edit.js
 export async function buildRuleCollectionModal(

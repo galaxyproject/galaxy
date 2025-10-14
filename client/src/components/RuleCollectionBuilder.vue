@@ -610,7 +610,6 @@
 import HotTable from "@handsontable/vue";
 import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
 import { fetch, fetchJobErrorMessage } from "api/tools";
-import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ColumnSelector from "components/RuleBuilder/ColumnSelector";
@@ -631,6 +630,7 @@ import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import { useHistoryStore } from "stores/historyStore";
 import _ from "underscore";
 import _l from "utils/localization";
 import Vue from "vue";
@@ -1528,7 +1528,7 @@ export default {
         attemptCreate() {
             this.createCollection();
         },
-        createCollection() {
+        async createCollection() {
             const asJson = {
                 rules: this.rules,
                 mapping: this.mapping,
@@ -1577,8 +1577,8 @@ export default {
                     }
                 }
             } else {
-                const Galaxy = getGalaxyInstance();
-                const historyId = Galaxy.currHistoryPanel.model.id;
+                const { loadCurrentHistoryId } = useHistoryStore();
+                const historyId = await loadCurrentHistoryId();
                 let elements;
                 let targets;
                 if (collectionType) {

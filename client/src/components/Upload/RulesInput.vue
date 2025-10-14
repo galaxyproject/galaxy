@@ -4,6 +4,7 @@ import { faEdit, faFile, faFolderOpen, faLock } from "@fortawesome/free-solid-sv
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import { BAlert, BButton } from "bootstrap-vue";
+import { buildCollectionFromRules } from "components/Collections/common/buildCollectionModal";
 import { getRemoteEntries, getRemoteEntriesAt } from "components/Upload/utils";
 import { filesDialog } from "utils/dataModals";
 import { urlData } from "utils/url";
@@ -47,7 +48,6 @@ const uris = ref([]);
 const isDisabled = computed(() => selectionType.value !== "raw");
 
 function eventBuild() {
-    const Galaxy = getGalaxyInstance();
     const entry = {
         dataType: dataType.value,
         selectionType: selectionType.value,
@@ -60,7 +60,7 @@ function eventBuild() {
     } else if (entry.selectionType == "remote_files") {
         entry.elements = uris.value;
     }
-    Galaxy.currHistoryPanel.buildCollectionFromRules(entry, null, true);
+    buildCollectionFromRules(entry, null, true);
     emit("dismiss");
 }
 

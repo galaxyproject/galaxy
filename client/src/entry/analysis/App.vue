@@ -49,7 +49,6 @@
 <script>
 import { getGalaxyInstance } from "app";
 import ConfirmDialog from "components/ConfirmDialog";
-import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
 import Toast from "components/Toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
@@ -64,17 +63,17 @@ import { useRoute } from "vue-router/composables";
 import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
 import { useEntryPointStore } from "@/stores/entryPointStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import Alert from "@/components/Alert.vue";
 import DragGhost from "@/components/DragGhost.vue";
+import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
-import Masthead from "components/Masthead/Masthead.vue";
-import UploadModal from "components/Upload/UploadModal.vue";
+import UploadModal from "@/components/Upload/UploadModal.vue";
 
 export default {
     components: {
@@ -96,7 +95,6 @@ export default {
 
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
-        const { currentHistory } = storeToRefs(useHistoryStore());
 
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
@@ -146,7 +144,6 @@ export default {
             confirmDialogRef,
             uploadModal,
             currentTheme,
-            currentHistory,
             embedded,
             currentTour,
         };
@@ -188,16 +185,10 @@ export default {
             console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
         },
-        currentHistory() {
-            if (!this.embedded) {
-                this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
-            }
-        },
     },
     mounted() {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
-            this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
             this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
             if (this.Galaxy.config.interactivetools_enable) {
@@ -206,6 +197,8 @@ export default {
             if (this.Galaxy.config.enable_notification_system) {
                 this.startWatchingNotifications();
             }
+            // start watching the history with continuous queries
+            startWatchingHistory();
         }
     },
     created() {

@@ -14,10 +14,6 @@
  * tagging_common.mako: show_in_overlay
  */
 
-/* jquery and _ are exposed via expose-loader while several external plugins rely on these */
-import $ from "jquery"; // eslint-disable-line no-unused-vars
-import _ from "underscore"; // eslint-disable-line no-unused-vars
-
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";

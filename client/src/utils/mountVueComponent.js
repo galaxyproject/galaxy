@@ -31,6 +31,15 @@ function getOrCreatePinia() {
     return getActivePinia() || createPinia();
 }
 
+export function appendVueComponent(ComponentDefinition, options) {
+    const instance = Vue.extend(ComponentDefinition);
+    const vm = document.createElement("div");
+    document.body.appendChild(vm);
+    new instance({
+        propsData: options,
+    }).$mount(vm);
+}
+
 export function mountVueComponent(ComponentDefinition) {
     const component = Vue.extend(ComponentDefinition);
     return function (propsData, el) {

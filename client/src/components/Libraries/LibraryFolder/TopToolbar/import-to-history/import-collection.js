@@ -1,8 +1,10 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Backbone from "backbone";
+import { buildCollectionFromRules } from "components/Collections/common/buildCollectionModal";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
+import { useHistoryStore } from "stores/historyStore";
 import _ from "underscore";
 
 import mod_library_model from "../library-model";
@@ -29,7 +31,8 @@ var ImportCollectionModal = Backbone.View.extend({
     },
     async createNewHistory(new_history_name) {
         const { data } = await axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
-        getGalaxyInstance().currHistoryPanel.switchToHistory(data.id);
+        const { setCurrentHistory } = useHistoryStore();
+        await setCurrentHistory(data.id);
         return data;
     },
     showCollectionSelect: function (e) {
@@ -115,8 +118,7 @@ var ImportCollectionModal = Backbone.View.extend({
             models: collectionElements,
         };
         if (collectionType === "rules") {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.buildCollectionFromRules(selection, historyId);
+            buildCollectionFromRules(selection, historyId);
         } else if (this.options.onCollectionImport) {
             this.options.onCollectionImport(collectionType, selection, historyId);
         }

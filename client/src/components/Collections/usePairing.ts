@@ -1,6 +1,6 @@
 import { ref } from "vue";
 
-import type { GenericPair } from "@/components/History/adapters/buildCollectionModal";
+import type { GenericPair } from "@/components/Collections/common/buildCollectionModal";
 
 import { autoPairWithCommonFilters, type HasName } from "./pairing";
 
