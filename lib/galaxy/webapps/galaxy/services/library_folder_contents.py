@@ -1,5 +1,4 @@
 import logging
-import markdown
 from dataclasses import dataclass
 
 from galaxy import (
@@ -84,7 +83,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 )
 
         # Find and load README
-        readme_raw = ""
+        readme_raw = None
         README_FILENAMES = {"readme.md", "readme.markdown", "readme.txt", "readme"}
         for content_item in contents:
             if isinstance(content_item, model.LibraryDataset):
@@ -230,7 +229,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         folder: model.LibraryFolder,
         user_permissions: UserFolderPermissions,
         total_rows: int,
-        readme_raw: str,
+        readme_raw: str | None,
     ) -> LibraryFolderMetadata:
         full_path = self.folder_manager.build_folder_path(trans.sa_session, folder)
         parent_library_id = folder.parent_library.id if folder.parent_library else None
