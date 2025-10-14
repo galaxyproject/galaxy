@@ -1,16 +1,4 @@
-"""
-Configuration and management for URL request headers allow-list with URL pattern matching.
-
-This module provides functionality to:
-1. Load and parse URL headers configuration from YAML with URL patterns
-2. Validate whether headers are allowed for specific URLs based on patterns
-3. Determine if headers should be treated as sensitive (encrypted)
-
-This is a security feature to control what headers can be sent when Galaxy
-fetches external URLs on behalf of users, with fine-grained control based
-on the target URL.
-"""
-
+import abc
 import logging
 import re
 from typing import Optional
@@ -21,7 +9,16 @@ from pydantic import (
     field_validator,
 )
 
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions import ConfigDoesNotAllowException
+
 log = logging.getLogger(__name__)
+
+
+class UrlHeadersConfigurationException(Exception):
+    """Raised when there is an error in the URL headers configuration."""
+
+    pass
 
 
 class HeaderConfig(BaseModel):
@@ -52,89 +49,125 @@ class UrlPatternConfig(BaseModel):
         return v.strip()
 
 
-class UrlHeadersConfig:
+class UrlHeadersConfig(abc.ABC):
     """
     Manages the configuration for allowed URL request headers with pattern matching.
-
-    This class loads and manages the allow-list of headers that can be included
-    in URL fetch requests based on URL patterns, along with their sensitivity settings.
     """
 
-    def __init__(self, config_file: Optional[str] = None):
-        """
-        Initialize the URL headers configuration.
+    @abc.abstractmethod
+    def is_header_allowed_for_url(self, header_name: str, url: str) -> bool:
+        pass
 
-        Args:
-            config_file: Path to the YAML configuration file. If None or file
-                        doesn't exist, no headers will be allowed.
+    @abc.abstractmethod
+    def is_header_sensitive_for_url(self, header_name: str, url: str) -> bool:
+        pass
+
+    @abc.abstractmethod
+    def find_all_matching(self, url: str) -> list[UrlPatternConfig]:
+        pass
+
+
+class NullUrlHeadersConfiguration(UrlHeadersConfig):
+    """
+    Default configuration when there is no real configuration for allowing URL request headers.
+
+    This configuration raises exceptions when any method is called, providing fail-fast
+    behavior to clearly indicate that headers require configuration.
+    """
+
+    _ERROR_MESSAGE = (
+        "No URL headers configuration is available. "
+        "Headers require explicit configuration to be allowed. "
+        "Please contact your Galaxy administrator to configure URL headers."
+    )
+
+    def is_header_allowed_for_url(self, header_name: str, url: str) -> bool:
         """
+        Raises an exception - headers require configuration.
+
+        Raises:
+            ConfigDoesNotAllowException: Always raised to indicate missing configuration
+        """
+        raise ConfigDoesNotAllowException(f"Cannot check if header '{header_name}' is allowed: {self._ERROR_MESSAGE}")
+
+    def is_header_sensitive_for_url(self, header_name: str, url: str) -> bool:
+        """
+        Raises an exception - headers require configuration.
+
+        Raises:
+            ConfigDoesNotAllowException: Always raised to indicate missing configuration
+        """
+        raise ConfigDoesNotAllowException(f"Cannot check if header '{header_name}' is sensitive: {self._ERROR_MESSAGE}")
+
+    def find_all_matching(self, url: str) -> list[UrlPatternConfig]:
+        """
+        Raises an exception - no patterns are configured.
+
+        Raises:
+            ConfigDoesNotAllowException: Always raised to indicate missing configuration
+        """
+        raise ConfigDoesNotAllowException(f"Cannot find matching patterns for URL '{url}': {self._ERROR_MESSAGE}")
+
+
+class UrlHeadersConfiguration(UrlHeadersConfig):
+    """Contains valid configuration to allow URL request headers."""
+
+    def __init__(self):
         self._patterns: list[UrlPatternConfig] = []
         self._compiled_patterns: list[tuple[re.Pattern[str], UrlPatternConfig]] = []
-        self._config_file = config_file
 
-        if config_file:
-            self._load_config(config_file)
-
-    def _load_config(self, config_file: str) -> None:
-        """Load configuration from YAML file."""
+    def _add_pattern(self, pattern_config: UrlPatternConfig) -> None:
+        self._patterns.append(pattern_config)
         try:
-            with open(config_file, "r") as f:
-                config_data = yaml.safe_load(f)
+            compiled_pattern = re.compile(pattern_config.url_pattern)
+            self._compiled_patterns.append((compiled_pattern, pattern_config))
+        except re.error as e:
+            raise UrlHeadersConfigurationException(
+                f"Invalid regex pattern '{pattern_config.url_pattern}' in URL headers configuration: {e}"
+            ) from e
 
-            if not config_data:
-                log.info(f"URL headers config file {config_file} is empty - no headers will be allowed")
-                return
-
-            # Load patterns
-            patterns_data = config_data.get("patterns", [])
-            if patterns_data:
-                for pattern_data in patterns_data:
-                    try:
-                        pattern_config = UrlPatternConfig(**pattern_data)
-                        self._patterns.append(pattern_config)
-
-                        # Compile regex pattern
-                        try:
-                            compiled_pattern = re.compile(pattern_config.url_pattern)
-                            self._compiled_patterns.append((compiled_pattern, pattern_config))
-                            log.debug(
-                                f"Loaded URL pattern: {pattern_config.url_pattern} "
-                                f"({len(pattern_config.headers)} headers)"
-                            )
-                        except re.error as e:
-                            log.warning(f"Invalid regex pattern '{pattern_config.url_pattern}' in {config_file}: {e}")
-
-                    except Exception as e:
-                        log.warning(f"Invalid pattern configuration in {config_file}: {pattern_data} - {e}")
-
-            log.info(f"Loaded {len(self._patterns)} URL patterns from {config_file}")
-
-        except FileNotFoundError:
-            log.info(f"URL headers config file {config_file} not found - no headers will be allowed")
-        except yaml.YAMLError as e:
-            log.error(f"Error parsing URL headers config file {config_file}: {e}")
-        except Exception as e:
-            log.error(f"Error loading URL headers config file {config_file}: {e}")
-
-    def _find_matching_pattern(self, url: str) -> Optional[UrlPatternConfig]:
+    def find_all_matching(self, url: str) -> list[UrlPatternConfig]:
         """
-        Find the first URL pattern that matches the given URL.
+        Find all URL patterns that match the given URL.
 
         Args:
             url: The URL to match against patterns
 
         Returns:
-            The first matching UrlPatternConfig, or None if no pattern matches
+            List of all matching UrlPatternConfig objects (may be empty)
         """
+        matching_patterns = []
         for compiled_pattern, pattern_config in self._compiled_patterns:
             if compiled_pattern.match(url):
-                log.debug(f"URL '{url}' matched pattern: {pattern_config.url_pattern}")
-                return pattern_config
+                matching_patterns.append(pattern_config)
+        return matching_patterns
+
+    def _find_header_in_patterns(
+        self, header_name: str, matching_patterns: list[UrlPatternConfig]
+    ) -> Optional[tuple[HeaderConfig, UrlPatternConfig]]:
+        """
+        Find a header configuration in matching patterns.
+
+        Args:
+            header_name: The header name to find (case-insensitive)
+            matching_patterns: List of patterns to search
+
+        Returns:
+            Tuple of (HeaderConfig, UrlPatternConfig) for first match, or None if not found
+        """
+        header_name_lower = header_name.lower()
+        for pattern_config in matching_patterns:
+            for header_config in pattern_config.headers:
+                if header_config.name.lower() == header_name_lower:
+                    return (header_config, pattern_config)
         return None
 
     def is_header_allowed_for_url(self, header_name: str, url: str) -> bool:
         """
         Check if a header is allowed for a specific URL.
+
+        If multiple patterns match the URL, the header is allowed if it appears
+        in ANY of the matching patterns.
 
         Args:
             header_name: The header name to check (case-insensitive)
