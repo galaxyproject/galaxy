@@ -139,6 +139,12 @@
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576"/>
     <datatype extension="gz" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576"/>
+    <datatype extension="las" type="galaxy.datatypes.binary:Binary" mimetype="application/vnd.las" description="The LAS (LASer) format is a file format designed for the interchange and archiving of Lidar point cloud data." description_url="https://www.loc.gov/preservation/digital/formats/fdd/fdd000418.shtml">
+        <infer_from suffix="las" />
+    </datatype>
+    <datatype extension="laz" type="galaxy.datatypes.binary:Binary" mimetype="application/vnd.las" description="LAZ is an open format for lossless compression of LAS." description_url="https://downloads.rapidlasso.de/doc/laszip.pdf">
+        <infer_from suffix="laz" />
+    </datatype>
     <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="cytoscapejson" type="galaxy.datatypes.text:CytoscapeJson" mimetype="application/json" display_in_upload="true" description="Cytoscape JSON format for network visualization, typically containing 'nodes' and 'edges' in a JSON object." description_url="https://js.cytoscape.org/#notation/elements-json" />
     <datatype extension="imgt.json" type="galaxy.datatypes.text:ImgtJson" mimetype="application/json" display_in_upload="True"/>
