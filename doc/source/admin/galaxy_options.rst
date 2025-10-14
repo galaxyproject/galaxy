@@ -1051,8 +1051,7 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Directory where chrom len files are kept, currently mainly used by
-    trackster.
+    Directory where chrom len files are kept.
     The value of this option will be resolved with respect to
     <tool_data_path>.
 :Default: ``shared/ucsc/chrom``
@@ -1126,9 +1125,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_generated_tours``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Allow tools to show the option of and create interactive tours
@@ -5892,6 +5891,3 @@
     is ``true``. Runs in a Celery task.
 :Default: ``86400``
 :Type: int
-
-
-
