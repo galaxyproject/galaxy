@@ -383,3 +383,15 @@ class ConfiguresWorkflowScheduling:
 </workflow_schedulers>
 """
         cls._configure_workflow_schedulers(noop_schedulers_conf, config)
+
+
+class ConfigureAllowedUrlHeaders:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_allowed_url_headers(cls, allowed_url_headers_conf: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        url_headers_conf_path = os.path.join(temp_directory, "url_headers_conf.yml")
+        with open(url_headers_conf_path, "w") as f:
+            f.write(allowed_url_headers_conf)
+        config["url_headers_config_file"] = url_headers_conf_path
