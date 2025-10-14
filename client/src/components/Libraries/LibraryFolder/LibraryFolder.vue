@@ -643,7 +643,9 @@ export default {
         },
         renderReadme() {
             if (this.folder_metadata.readme_raw) {
-                this.renderedReadme = renderMarkdown(this.folder_metadata.readme_raw);
+                const rawHtml = renderMarkdown(this.folder_metadata.readme_raw);
+                // Sanitize the rendered markdown to prevent XSS attacks
+                this.renderedReadme = this.sanitize(rawHtml);
             } else {
                 this.renderedReadme = "";
             }
