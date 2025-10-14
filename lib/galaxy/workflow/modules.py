@@ -2015,7 +2015,9 @@ class ToolModule(WorkflowModule):
         else:
             step.tool_version = self.tool_version
         if tool_uuid := getattr(self, "tool_uuid", None):
-            step.dynamic_tool = self.trans.app.dynamic_tool_manager.get_tool_by_uuid(tool_uuid)
+            tool = self.trans.app.toolbox.get_tool(tool_uuid=tool_uuid, user=self.trans.user)
+            if tool:
+                step.dynamic_tool = tool.dynamic_tool
         if not detached:
             for k, v in self.post_job_actions.items():
                 pja = self.__to_pja(k, v, step)

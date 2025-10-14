@@ -26,8 +26,10 @@ from requests import (
 )
 
 from galaxy.exceptions import error_codes
+from galaxy.tool_util_models import UserToolSource
 from galaxy.util import UNKNOWN
 from galaxy.util.unittest_utils import skip_if_github_down
+from galaxy_test.api.test_tools import TOOL_WITH_SHELL_COMMAND
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -8084,6 +8086,33 @@ outer_input:
                     test_data={"input1": "hello world", "text_input": {"value": "A text variable", "type": "raw"}},
                     history_id=history_id,
                 )
+
+    def test_user_defined_workflow_update(self):
+        with self.dataset_populator.user_tool_execute_permissions():
+            unprivileged_tool = self.dataset_populator.create_unprivileged_tool(
+                UserToolSource(**TOOL_WITH_SHELL_COMMAND)
+            )
+            # Workflow doesn't matter, we're replacing it in the update
+            workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
+            workflow_id = self.workflow_populator.create_workflow(workflow)
+            update_response = self._update_workflow(
+                workflow_id,
+                {
+                    "steps": {
+                        "0": {
+                            "content_id": "cat_user_defined",
+                            "id": 1,
+                            "input_connections": {"datasets": []},
+                            "name": "Concatenate Files",
+                            "tool_uuid": unprivileged_tool["uuid"],
+                            "type": "tool",
+                        }
+                    },
+                },
+            )
+            assert update_response.status_code == 200, update_response.text
+            workflow = self.workflow_populator.download_workflow(workflow_id)
+            assert workflow["steps"]["0"]["tool_representation"]["class"] == "GalaxyUserTool"
 
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
