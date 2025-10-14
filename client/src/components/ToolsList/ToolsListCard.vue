@@ -240,7 +240,11 @@ const {
                 </GLink>
 
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <div v-if="showHelp" class="mt-2" v-html="formattedToolHelp"></div>
+                <div
+                    v-if="showHelp"
+                    data-description="tools list tool help"
+                    class="mt-2"
+                    v-html="formattedToolHelp"></div>
             </div>
         </template>
 

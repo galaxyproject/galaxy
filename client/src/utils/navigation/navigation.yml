@@ -412,7 +412,18 @@ tool_panel:
     views_button: '.tool-panel-dropdown'
     views_menu_item: '[data-panel-id="${panel_id}"]'
     panel_labels: '.tool-panel-label'
+    discover_tools_link: '[data-description="toolbox discover tools"]'
 
+tools_list:
+  selectors:
+    _: '.tools-list'
+    search_input: '.tools-list [data-description="filter text input"]'
+    tool_card: '#g-card-content-${tool_id}'
+    version_button: '#tools-list-${tool_id}'
+    favorite_tool_button: '#g-card-action-favorite-tool-${tool_id}'
+    toggle_help: '#g-card-description-${tool_id} .g-link.g-unselectable'
+    tool_help: '#g-card-content-${tool_id} [data-description="tools list tool help"]'
+    open_tool_button: '#g-card-action-open-tool-${tool_id}'
 
 multi_history_panel:
   selectors:
