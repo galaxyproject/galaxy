@@ -14,6 +14,10 @@ it at this time.
 import logging
 import os
 import subprocess
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -29,31 +33,60 @@ from galaxy.jobs.runners.util.condor import (
 )
 from galaxy.util import asbool
 
+if TYPE_CHECKING:
+    from galaxy.jobs import (
+        JobDestination,
+        MinimalJobWrapper,
+    )
+
 log = logging.getLogger(__name__)
 
 __all__ = ("CondorJobRunner",)
 
 
 class CondorJobState(AsynchronousJobState):
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        job_wrapper: "MinimalJobWrapper",
+        job_destination: "JobDestination",
+        user_log: str,
+        *,
+        files_dir=None,
+        job_id: Union[str, None] = None,
+        job_file=None,
+        output_file=None,
+        error_file=None,
+        exit_code_file=None,
+        job_name=None,
+    ) -> None:
         """
         Encapsulates state related to a job that is being run via the DRM and
         that we need to monitor.
         """
-        super().__init__(**kwargs)
+        super().__init__(
+            job_wrapper,
+            job_destination,
+            files_dir=files_dir,
+            job_id=job_id,
+            job_file=job_file,
+            output_file=output_file,
+            error_file=error_file,
+            exit_code_file=exit_code_file,
+            job_name=job_name,
+        )
         self.failed = False
-        self.user_log = None
+        self.user_log = user_log
         self.user_log_size = 0
 
 
-class CondorJobRunner(AsynchronousJobRunner):
+class CondorJobRunner(AsynchronousJobRunner[CondorJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
 
     runner_name = "CondorRunner"
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Create job script and submit it to the DRM"""
 
         # prepare the job
@@ -83,9 +116,12 @@ class CondorJobRunner(AsynchronousJobRunner):
             galaxy_slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
         # define job attributes
-        cjs = CondorJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-
-        cjs.user_log = os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log")
+        cjs = CondorJobState(
+            job_wrapper=job_wrapper,
+            job_destination=job_destination,
+            user_log=os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log"),
+            files_dir=job_wrapper.working_directory,
+        )
         cjs.register_cleanup_file_attribute("user_log")
         submit_file = os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.desc")
         executable = cjs.job_file
@@ -152,12 +188,11 @@ class CondorJobRunner(AsynchronousJobRunner):
 
         # Store DRM related state information for job
         cjs.job_id = external_job_id
-        cjs.job_destination = job_destination
 
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(cjs)
 
-    def check_watched_items(self):
+    def check_watched_items(self) -> None:
         """
         Called by the monitor thread to look at each watched job and deal
         with state changes.
@@ -167,6 +202,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
             try:
+                assert cjs.job_wrapper.tool is not None
                 if (
                     cjs.job_wrapper.tool.tool_type != "interactive"
                     and os.stat(cjs.user_log).st_size == cjs.user_log_size
@@ -213,7 +249,7 @@ class CondorJobRunner(AsynchronousJobRunner):
                 cjs.failed = True
                 self.work_queue.put((self.fail_job, cjs))
                 continue
-            cjs.runnning = job_running
+            cjs.running = job_running
             new_watched.append(cjs)
         # Replace the watch list with the updated version
         self.watched = new_watched
@@ -260,7 +296,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             if failure_message:
                 log.debug(f"({external_id}). Failed to stop condor {failure_message}")
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO Check if we need any changes here
         job_id = job.get_job_runner_external_id()
@@ -268,12 +304,13 @@ class CondorJobRunner(AsynchronousJobRunner):
         if job_id is None:
             self.put(job_wrapper)
             return
-        cjs = CondorJobState(job_wrapper=job_wrapper, files_dir=job_wrapper.working_directory)
-        cjs.job_id = str(job_id)
-        cjs.command_line = job.get_command_line()
-        cjs.job_wrapper = job_wrapper
-        cjs.job_destination = job_wrapper.job_destination
-        cjs.user_log = os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log")
+        cjs = CondorJobState(
+            job_wrapper=job_wrapper,
+            job_destination=job_wrapper.job_destination,
+            user_log=os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log"),
+            files_dir=job_wrapper.working_directory,
+            job_id=str(job_id),
+        )
         cjs.register_cleanup_file_attribute("user_log")
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(

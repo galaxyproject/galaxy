@@ -3,6 +3,7 @@ import os
 import time
 import traceback
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 try:
     import pbs
@@ -26,6 +27,9 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
 )
 from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +90,7 @@ JOB_EXIT_STATUS = {
 }
 
 
-class PBSJobRunner(AsynchronousJobRunner):
+class PBSJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -197,7 +201,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             return None
         return job_destination_params["destination"].split("@")[-1]
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Create PBS script for a job and submit it to the PBS queue"""
         # prepare the job
         if not self.prepare_job(job_wrapper, include_metadata=not (self.app.config.pbs_stage_path)):
@@ -265,6 +269,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             ]
 
         # define PBS job options
+        assert job_wrapper.tool is not None
         attrs.append(dict(name=pbs.ATTR_N, value=str(f"{job_wrapper.job_id}_{job_wrapper.tool.id}_{job_wrapper.user}")))
         job_attrs = pbs.new_attropl(len(attrs) + len(pbs_options))
         for i, attr in enumerate(attrs + pbs_options):
@@ -299,7 +304,6 @@ class PBSJobRunner(AsynchronousJobRunner):
             log.debug(f"Job {job_wrapper.job_id} deleted/stopped by user before it entered the PBS queue")
             pbs.pbs_disconnect(c)
             if job_wrapper.cleanup_job in ("always", "onsuccess"):
-                self.cleanup((ofile, efile, ecfile, job_file))
                 job_wrapper.cleanup()
             return
 
@@ -335,20 +339,20 @@ class PBSJobRunner(AsynchronousJobRunner):
         # Store PBS related state information for job
         job_state = AsynchronousJobState(
             job_wrapper=job_wrapper,
+            job_destination=job_destination,
             job_id=job_id,
             exit_code_file=ecfile,
-            job_destination=job_destination,
             job_file=job_file,
             output_file=ofile,
             error_file=efile,
         )
-        job_state.old_state = "N"
+        job_state.old_state = model.Job.states.NEW
         job_state.running = False
 
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(job_state)
 
-    def check_watched_items(self):
+    def check_watched_items(self) -> None:
         """
         Called by the monitor thread to look at each watched job and deal
         with state changes.
@@ -530,31 +534,30 @@ class PBSJobRunner(AsynchronousJobRunner):
             if None is not c:
                 pbs.pbs_disconnect(c)
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = job.get_job_runner_external_id()
         pbs_job_state = AsynchronousJobState(
             job_wrapper=job_wrapper,
+            job_destination=job_wrapper.job_destination,
             job_id=job_id,
             job_file=f"{job_wrapper.working_directory}/{job.id}.sh",
             output_file=f"{job_wrapper.working_directory}/{job.id}.o",
             error_file=f"{job_wrapper.working_directory}/{job.id}.e",
             exit_code_file=f"{job_wrapper.working_directory}/{job.id}.ec",
-            job_destination=job_wrapper.job_destination,
         )
-        pbs_job_state.runner_url = job_wrapper.get_job_runner_url()
         job_wrapper.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the PBS queue"
             )
-            pbs_job_state.old_state = "R"
+            pbs_job_state.old_state = model.Job.states.RUNNING
             pbs_job_state.running = True
             self.monitor_queue.put(pbs_job_state)
         elif job.state == model.Job.states.QUEUED:
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in PBS queued state, adding to the PBS queue"
             )
-            pbs_job_state.old_state = "Q"
+            pbs_job_state.old_state = model.Job.states.QUEUED
             pbs_job_state.running = False
             self.monitor_queue.put(pbs_job_state)

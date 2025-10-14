@@ -4,6 +4,7 @@ Job control via a command line interface (e.g. qsub/qstat), possibly over a remo
 
 import logging
 import time
+from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs import JobDestination
@@ -18,6 +19,9 @@ from .util.cli import (
     split_params,
 )
 
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
+
 log = logging.getLogger(__name__)
 
 __all__ = ("ShellJobRunner",)
@@ -26,7 +30,7 @@ DEFAULT_EMBED_METADATA_IN_JOB = True
 MAX_SUBMIT_RETRY = 3
 
 
-class ShellJobRunner(AsynchronousJobRunner):
+class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -57,7 +61,7 @@ class ShellJobRunner(AsynchronousJobRunner):
     def parse_destination_params(self, params):
         return split_params(params)
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Create job script and submit it to the DRM"""
         # prepare the job
         include_metadata = asbool(
@@ -75,7 +79,9 @@ class ShellJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = job_wrapper.get_id_tag()
 
         # define job attributes
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
+        ajs = AsynchronousJobState(
+            job_wrapper=job_wrapper, job_destination=job_destination, files_dir=job_wrapper.working_directory
+        )
 
         job_file_kwargs = job_interface.job_script_kwargs(ajs.output_file, ajs.error_file, ajs.job_name)
         script = self.get_job_file(
@@ -118,8 +124,7 @@ class ShellJobRunner(AsynchronousJobRunner):
 
         # Store state information for job
         ajs.job_id = external_job_id
-        ajs.old_state = "new"
-        ajs.job_destination = job_destination
+        ajs.old_state = model.Job.states.NEW
 
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(ajs)
@@ -152,7 +157,7 @@ class ShellJobRunner(AsynchronousJobRunner):
             log.error(stderr)
             return returncode, cmd_out.stdout
 
-    def check_watched_items(self):
+    def check_watched_items(self) -> None:
         """
         Called by the monitor thread to look at each watched job and deal
         with state changes.
@@ -272,19 +277,18 @@ class ShellJobRunner(AsynchronousJobRunner):
                 f"({job.id}/{job.job_runner_external_id}) User killed running job, but error encountered during termination: {e}"
             )
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = job.get_job_runner_external_id()
         if job_id is None:
             self.put(job_wrapper)
             return
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
-            job_id=job_id,
             job_destination=job_wrapper.job_destination,
+            files_dir=job_wrapper.working_directory,
+            job_id=job_id,
         )
-        ajs.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 f"({job.id}/{job.job_runner_external_id}) is still in {job.state} state, adding to the runner monitor queue"

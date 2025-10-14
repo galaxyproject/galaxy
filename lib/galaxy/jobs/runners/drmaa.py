@@ -8,7 +8,12 @@ import os
 import shlex
 import string
 import time
-from typing import Union
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
+
+from typing_extensions import TypeAlias
 
 from galaxy import model
 from galaxy.jobs import JobDestination
@@ -23,6 +28,12 @@ from galaxy.util import (
     unicodify,
 )
 
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
+
+    # Type alias for drmaa.JobState, since drmaa import is delayed
+    drmaa_JobState: TypeAlias = str
+
 drmaa = None
 
 log = logging.getLogger(__name__)
@@ -32,7 +43,11 @@ __all__ = ("DRMAAJobRunner",)
 RETRY_EXCEPTIONS_LOWER = frozenset({"invalidjobexception", "internalexception"})
 
 
-class DRMAAJobRunner(AsynchronousJobRunner):
+class DRMAAJobState(AsynchronousJobState):
+    old_state: Union["drmaa_JobState", None]  # type: ignore[assignment]
+
+
+class DRMAAJobRunner(AsynchronousJobRunner[DRMAAJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -121,8 +136,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except Exception:
             return None
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Create job script and submit it to the DRM"""
+        assert drmaa is not None
         # prepare the job
 
         # external_runJob_script can be None, in which case it's not used.
@@ -139,7 +155,12 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = job_wrapper.get_id_tag()
 
         job_name = self._job_name(job_wrapper)
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_name=job_name)
+        ajs = DRMAAJobState(
+            job_wrapper=job_wrapper,
+            job_destination=job_destination,
+            files_dir=job_wrapper.working_directory,
+            job_name=job_name,
+        )
 
         # set up the drmaa job template
         jt = dict(
@@ -230,12 +251,11 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         # Store DRM related state information for job
         ajs.job_id = external_job_id
         ajs.old_state = "new"
-        ajs.job_destination = job_destination
 
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(ajs)
 
-    def _complete_terminal_job(self, ajs: AsynchronousJobState, drmaa_state: str, **kwargs):
+    def _complete_terminal_job(self, ajs: DRMAAJobState, drmaa_state: str, **kwargs) -> Union[bool, None]:
         """
         Handle a job upon its termination in the DRM. This method is meant to
         be overridden by subclasses to improve post-mortem and reporting of
@@ -259,10 +279,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
             if job_state != model.Job.states.DELETED:
                 self.work_queue.put((self.finish_job, ajs))
+        return None
 
-    def check_watched_item_drmaa(
-        self, ajs: AsynchronousJobState, new_watched: list[AsynchronousJobState]
-    ) -> Union[str, None]:
+    def check_watched_item_drmaa(self, ajs: DRMAAJobState, new_watched: list[DRMAAJobState]) -> Union[str, None]:
         """
         look at a single watched job, determine its state, and deal with errors
         that could happen in this process. to be called from check_watched_items()
@@ -337,12 +356,13 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return None
         return state
 
-    def check_watched_items(self):
+    def check_watched_items(self) -> None:
         """
         Called by the monitor thread to look at each watched job and deal
         with state changes.
         """
-        new_watched: list[AsynchronousJobState] = []
+        assert drmaa is not None
+        new_watched: list[DRMAAJobState] = []
         for ajs in self.watched:
             external_job_id = ajs.job_id
             galaxy_id_tag = ajs.job_wrapper.get_id_tag()
@@ -400,19 +420,19 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except Exception:
             log.exception(f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue")
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        assert drmaa is not None
         job_id = job.get_job_runner_external_id()
         if job_id is None:
             self.put(job_wrapper)
             return
-        ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
+        ajs = DRMAAJobState(
             job_wrapper=job_wrapper,
-            job_id=job_id,
             job_destination=job_wrapper.job_destination,
+            files_dir=job_wrapper.working_directory,
+            job_id=job_id,
         )
-        ajs.command_line = job.get_command_line()
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue"

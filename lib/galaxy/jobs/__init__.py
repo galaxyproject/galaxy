@@ -26,6 +26,7 @@ from typing import (
     Callable,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 
 import yaml
@@ -1019,7 +1020,7 @@ class MinimalJobWrapper(HasResourceParameters):
         app: MinimalManagerApp,
         use_persisted_destination: bool = False,
         tool: Optional["Tool"] = None,
-    ):
+    ) -> None:
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
@@ -1029,7 +1030,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.extra_filenames: list[str] = []
         self.environment_variables: list[dict[str, str]] = []
         self.interactivetools: list[dict[str, Any]] = []
-        self.command_line = None
+        self.command_line: Union[str, None] = None
         self.version_command_line = None
         self._dependency_shell_commands = None
         # Tool versioning variables
@@ -2826,25 +2827,18 @@ class TaskWrapper(JobWrapper):
 
     is_task = True
 
-    def __init__(self, task, queue):
+    def __init__(self, task: Task, queue: "BaseJobHandlerQueue") -> None:
         self.task_id = task.id
         super().__init__(task.job, queue)
-        if task.prepare_input_files_cmd is not None:
-            self.prepare_input_files_cmds = [task.prepare_input_files_cmd]
-        else:
-            self.prepare_input_files_cmds = None
+        self.prepare_input_files_cmds = (
+            [task.prepare_input_files_cmd] if task.prepare_input_files_cmd is not None else None
+        )
         self.status = task.states.NEW
 
     def can_split(self):
         # Should the job handler split this job up? TaskWrapper should
         # always return False as the job has already been split.
         return False
-
-    def get_job(self):
-        if self.job_id:
-            return self.sa_session.get(Job, self.job_id)
-        else:
-            return None
 
     def get_task(self):
         return self.sa_session.get(Task, self.task_id)
