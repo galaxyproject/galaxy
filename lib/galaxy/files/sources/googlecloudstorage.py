@@ -7,7 +7,6 @@ except ImportError:
     GCSFS = None
 
 import os
-from datetime import datetime
 from typing import (
     Optional,
     Union,
@@ -71,9 +70,7 @@ class GoogleCloudStorageFilesSource(
         if config.anonymous:
             client = Client.create_anonymous_client()
         elif config.service_account_json:
-            credentials = service_account.Credentials.from_service_account_file(
-                config.service_account_json
-            )
+            credentials = service_account.Credentials.from_service_account_file(config.service_account_json)
             client = Client(project=config.project, credentials=credentials)
         elif config.token:
             client = Client(
@@ -136,15 +133,11 @@ class GoogleCloudStorageFilesSource(
             for page in page_iterator_dirs.pages:
                 for dir_prefix in page.prefixes:
                     # Remove the parent prefix and trailing slash to get just the dir name
-                    dir_name = dir_prefix[len(prefix):].rstrip("/")
+                    dir_name = dir_prefix[len(prefix) :].rstrip("/")
                     if dir_name:
                         full_path = os.path.join("/", normalized_path, dir_name) if normalized_path else f"/{dir_name}"
                         uri = self.uri_from_path(full_path)
-                        entries.append(RemoteDirectory(
-                            name=dir_name,
-                            uri=uri,
-                            path=full_path
-                        ))
+                        entries.append(RemoteDirectory(name=dir_name, uri=uri, path=full_path))
 
             # Second iterator: Get files from blobs
             page_iterator_files = bucket.list_blobs(prefix=prefix, delimiter=delimiter)
@@ -154,7 +147,7 @@ class GoogleCloudStorageFilesSource(
                     continue
 
                 # Get just the filename (remove prefix)
-                file_name = blob.name[len(prefix):]
+                file_name = blob.name[len(prefix) :]
                 if file_name:
                     full_path = os.path.join("/", normalized_path, file_name) if normalized_path else f"/{file_name}"
                     uri = self.uri_from_path(full_path)
@@ -164,13 +157,9 @@ class GoogleCloudStorageFilesSource(
                     if blob.time_created:
                         ctime = blob.time_created.isoformat()
 
-                    entries.append(RemoteFile(
-                        name=file_name,
-                        size=blob.size or 0,
-                        ctime=ctime,
-                        uri=uri,
-                        path=full_path
-                    ))
+                    entries.append(
+                        RemoteFile(name=file_name, size=blob.size or 0, ctime=ctime, uri=uri, path=full_path)
+                    )
 
             # Apply query filter if provided
             if query:
