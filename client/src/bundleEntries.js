@@ -18,7 +18,6 @@ export { getGalaxyInstance, setGalaxyInstance } from "app";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 export { create_chart, create_histogram } from "reports/run_stats";
-export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
 
 // Previously wandering around as window.thing = thing in the onload script
 export { show_in_overlay } from "layout/modal";
