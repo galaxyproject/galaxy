@@ -24,6 +24,7 @@ from json import loads
 from typing import (
     Any,
     Callable,
+    cast,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -38,6 +39,7 @@ from sqlalchemy import (
     select,
     update,
 )
+from sqlalchemy.engine import CursorResult
 
 from galaxy import (
     model,
@@ -1777,7 +1779,7 @@ class MinimalJobWrapper(HasResourceParameters):
             )
         )
 
-        result = self.sa_session.execute(update_stmt)
+        result = cast(CursorResult, self.sa_session.execute(update_stmt))
         self.sa_session.commit()
         state_updated = result.rowcount > 0
         if state_updated:

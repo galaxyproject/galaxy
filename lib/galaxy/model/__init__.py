@@ -99,6 +99,7 @@ from sqlalchemy import (
     VARCHAR,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import (
     CompileError,
     OperationalError,
@@ -2013,8 +2014,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         session = object_session(self)
         if session and self.id and state not in Job.finished_states:
             # Do not update if job is in a terminal state
-            rval = session.execute(
-                update(Job).where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states))).values(state=state)
+            rval = cast(  # https://docs.sqlalchemy.org/en/20/changelog/changelog_20.html#change-0651b868cdc88d28c57469affceaf05f
+                CursorResult,
+                session.execute(
+                    update(Job)
+                    .where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states)))
+                    .values(state=state)
+                ),
             )
             if rval.rowcount == 1:
                 # Need to expire state since we just updated it, but ORM doesn't know about it.
