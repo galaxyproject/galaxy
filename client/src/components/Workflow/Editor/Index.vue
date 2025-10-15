@@ -224,7 +224,6 @@ import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
-import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
@@ -733,7 +732,6 @@ export default {
         this.services = new Services();
         this.lastQueue = new LastQueue();
         await this._loadCurrent(this.id, this.version);
-        hide_modal();
         this.initialLoading = false;
     },
     methods: {
@@ -786,7 +784,6 @@ export default {
             this.messageTitle = null;
             this.messageBody = null;
             this.messageIsError = false;
-            hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
             await this.resetStores();
