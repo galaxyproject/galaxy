@@ -4,7 +4,15 @@ from .framework import (
 )
 
 
-class TestHistoryExport(SeleniumIntegrationTestCase):
+class TestLegacyHistoryExport(SeleniumIntegrationTestCase):
+    """Test legacy history export for when celery is disabled.
+
+    If Celery is enabled, a wizard will be setup and STS will serve downloads,
+    this is tested in test_history_export.py in the main selenium test suite.
+
+    This current test needs to disable celery in order for the test to work
+    so it is an integration test and we disable celery in handle_galaxy_config_kwds.
+    """
     ensure_registered = True
 
     @classmethod
