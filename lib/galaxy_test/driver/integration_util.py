@@ -8,6 +8,7 @@ testing configuration.
 import os
 import re
 import string
+import subprocess
 import sys
 from collections.abc import Iterator
 from typing import (
@@ -47,6 +48,56 @@ AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
 POSTGRES_CONFIGURED = "postgres" in os.environ.get("GALAXY_TEST_DBURI", "")
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
+
+
+def docker_run(image, name, *args, detach=True, remove=True, ports=None, env_vars: Optional[dict[str, str]] = None):
+    cmd = ["docker", "run"]
+
+    if ports:
+        for host_port, container_port in ports:
+            cmd.extend(["-p", f"{host_port}:{container_port}"])
+
+    if detach:
+        cmd.append("-d")
+
+    cmd.extend(["--name", name])
+
+    if remove:
+        cmd.append("--rm")
+    if env_vars:
+        for key, value in env_vars.items():
+            cmd.extend(["-e", f"{key}={value}"])
+
+    cmd.append(image)
+    cmd.extend(args)
+    print("Running docker command:", " ".join(cmd))
+
+    subprocess.check_call(cmd)
+
+
+def docker_exec(container_name, *args, output=True):
+    cmd = ["docker", "exec", container_name]
+    cmd.extend(args)
+
+    if output:
+        return subprocess.check_output(cmd)
+    else:
+        subprocess.check_call(cmd)
+
+
+def docker_ip_address(container_name):
+    cmd = [
+        "docker",
+        "inspect",
+        "-f",
+        "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+        container_name,
+    ]
+    return subprocess.check_output(cmd).decode("utf-8").strip()
+
+
+def docker_rm(container_name):
+    subprocess.check_call(["docker", "rm", "-f", container_name])
 
 
 def skip_if_jenkins(cls):

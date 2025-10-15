@@ -197,6 +197,18 @@ PULSAR_PARAM_SPECS = dict(
         map=int,
         default=None,
     ),
+    relay_url=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_username=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_password=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
 )
 
 
@@ -260,7 +272,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             client_manager_kwargs[kwd] = self.runner_params[kwd]
 
         for kwd in self.runner_params.keys():
-            if kwd.startswith("amqp_") or kwd.startswith("transport_"):
+            if kwd.startswith("amqp_") or kwd.startswith("transport_") or kwd.startswith("relay_"):
                 client_manager_kwargs[kwd] = self.runner_params[kwd]
 
         return client_manager_kwargs

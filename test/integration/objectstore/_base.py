@@ -6,6 +6,12 @@ import time
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.integration_util import (
+    docker_exec,
+    docker_ip_address,
+    docker_rm,
+    docker_run,
+)
 
 OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_HOST", "127.0.0.1")
 OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 9000))
@@ -377,49 +383,3 @@ def await_oneprovider_demo_readiness(op_container_name):
 
 def get_onedata_access_token(oz_container_name):
     return docker_exec(oz_container_name, "demo-access-token").decode("utf-8").strip()
-
-
-def docker_run(image, name, *args, detach=True, remove=True, ports=None):
-    cmd = ["docker", "run"]
-
-    if ports:
-        for container_port, host_port in ports:
-            cmd.extend(["-p", f"{container_port}:{host_port}"])
-
-    if detach:
-        cmd.append("-d")
-
-    cmd.extend(["--name", name])
-
-    if remove:
-        cmd.append("--rm")
-
-    cmd.append(image)
-    cmd.extend(args)
-
-    subprocess.check_call(cmd)
-
-
-def docker_exec(container_name, *args, output=True):
-    cmd = ["docker", "exec", container_name]
-    cmd.extend(args)
-
-    if output:
-        return subprocess.check_output(cmd)
-    else:
-        subprocess.check_call(cmd)
-
-
-def docker_ip_address(container_name):
-    cmd = [
-        "docker",
-        "inspect",
-        "-f",
-        "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
-        container_name,
-    ]
-    return subprocess.check_output(cmd).decode("utf-8").strip()
-
-
-def docker_rm(container_name):
-    subprocess.check_call(["docker", "rm", "-f", container_name])
