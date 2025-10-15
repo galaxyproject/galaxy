@@ -82,22 +82,30 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
                 )
 
-        # Find and load README
+        # Find and load README - query directly for README files to avoid pagination issues
         readme_raw = None
         README_FILENAMES = {"readme.md", "readme.markdown", "readme.txt", "readme"}
-        for content_item in contents:
-            if isinstance(content_item, model.LibraryDataset):
-                name = content_item.name.strip().lower()
-                if name in README_FILENAMES and not content_item.deleted:
-                    ldda = content_item.library_dataset_dataset_association
-                    if ldda and ldda.dataset and ldda.dataset.has_data():
-                        if ldda.extension in {"txt", "md", "markdown"}:
-                            try:
-                                with open(ldda.dataset.get_file_name(), "r", encoding="utf-8") as f:
-                                    readme_raw = f.read()
-                            except Exception as e:
-                                log.warning(f"Could not render README for folder {folder_id}: {e}")
-                            break
+
+        # Query for README file in folder (independent of pagination)
+        from sqlalchemy import select, func
+        readme_stmt = (
+            select(model.LibraryDataset)
+            .where(model.LibraryDataset.folder_id == folder.id)
+            .where(model.LibraryDataset.deleted.is_(False))
+            .where(func.lower(func.trim(model.LibraryDataset._name)).in_(README_FILENAMES))
+            .limit(1)
+        )
+        readme_dataset = trans.sa_session.scalars(readme_stmt).first()
+
+        if readme_dataset:
+            ldda = readme_dataset.library_dataset_dataset_association
+            if ldda and ldda.dataset and ldda.dataset.has_data():
+                if ldda.extension in {"txt", "md", "markdown"}:
+                    try:
+                        with open(ldda.dataset.get_file_name(), "r", encoding="utf-8") as f:
+                            readme_raw = f.read()
+                    except Exception as e:
+                        log.warning(f"Could not render README for folder {folder_id}: {e}")
 
         base_metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme_raw=readme_raw)
         return LibraryFolderContentsIndexResult(
