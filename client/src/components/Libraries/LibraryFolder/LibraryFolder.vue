@@ -259,9 +259,7 @@
         </BContainer>
         <section v-if="renderedReadme" class="library-readme-section">
             <hr />
-            <b-card class="readme-content">
-                <div v-html="renderedReadme"></div>
-            </b-card>
+            <div v-html="renderedReadme"></div>
         </section>
     </div>
 </template>
