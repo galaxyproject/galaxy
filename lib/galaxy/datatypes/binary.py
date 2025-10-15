@@ -5034,8 +5034,8 @@ class SpatialData(CompressedZarrZipArchive):
                 # Find the root zarr directory
                 root_zarr = None
                 for file in zf.namelist():
-                    if file.endswith('.zarr/.zattrs'):
-                        root_zarr = file.replace('/.zattrs', '')
+                    if file.endswith(".zarr/.zattrs"):
+                        root_zarr = file.replace("/.zattrs", "")
                         break
 
                 # Read root attributes for version info
@@ -5044,9 +5044,9 @@ class SpatialData(CompressedZarrZipArchive):
                     try:
                         with zf.open(root_attrs_path) as f:
                             root_attrs = json.load(f)
-                            if 'spatialdata_attrs' in root_attrs:
-                                spatialdata_attrs = root_attrs['spatialdata_attrs']
-                                spatialdata_version = spatialdata_attrs.get('spatialdata_software_version', '')
+                            if "spatialdata_attrs" in root_attrs:
+                                spatialdata_attrs = root_attrs["spatialdata_attrs"]
+                                spatialdata_version = spatialdata_attrs.get("spatialdata_software_version", "")
                     except Exception:
                         pass
 
@@ -5054,60 +5054,60 @@ class SpatialData(CompressedZarrZipArchive):
                 for file in zf.namelist():
                     # Extract elements based on directory structure
                     # Expected structure: <root>.zarr/<element_type>/<element_name>/...
-                    if root_zarr and file.startswith(root_zarr + '/'):
-                        rel_parts = file[len(root_zarr) + 1:].split('/')
+                    if root_zarr and file.startswith(root_zarr + "/"):
+                        rel_parts = file[len(root_zarr) + 1 :].split("/")
                         if len(rel_parts) >= 2:
                             element_type = rel_parts[0]
                             element_name = rel_parts[1]
 
                             # Skip metadata files and empty names
-                            if element_name and not element_name.startswith('.'):
-                                if element_type == 'images':
+                            if element_name and not element_name.startswith("."):
+                                if element_type == "images":
                                     images.add(element_name)
-                                elif element_type == 'labels':
+                                elif element_type == "labels":
                                     labels.add(element_name)
-                                elif element_type == 'shapes':
+                                elif element_type == "shapes":
                                     shapes.add(element_name)
-                                elif element_type == 'points':
+                                elif element_type == "points":
                                     points.add(element_name)
-                                elif element_type == 'tables':
+                                elif element_type == "tables":
                                     tables.add(element_name)
 
                     # Extract coordinate system information from .zattrs files
-                    if file.endswith('.zattrs'):
+                    if file.endswith(".zattrs"):
                         try:
                             with zf.open(file) as f:
                                 attrs = json.load(f)
 
                                 # Check for coordinate transformations
-                                if 'coordinateTransformations' in attrs:
-                                    transforms = attrs['coordinateTransformations']
+                                if "coordinateTransformations" in attrs:
+                                    transforms = attrs["coordinateTransformations"]
                                     if isinstance(transforms, list):
                                         for transform in transforms:
-                                            if isinstance(transform, dict) and 'output' in transform:
-                                                output = transform['output']
-                                                if isinstance(output, dict) and 'name' in output:
-                                                    coordinate_systems.add(output['name'])
+                                            if isinstance(transform, dict) and "output" in transform:
+                                                output = transform["output"]
+                                                if isinstance(output, dict) and "name" in output:
+                                                    coordinate_systems.add(output["name"])
                                                 elif isinstance(output, str):
                                                     coordinate_systems.add(output)
 
                                 # Check for multiscales (images/labels)
-                                if 'multiscales' in attrs:
-                                    multiscales = attrs['multiscales']
+                                if "multiscales" in attrs:
+                                    multiscales = attrs["multiscales"]
                                     if isinstance(multiscales, list):
                                         for ms in multiscales:
-                                            if isinstance(ms, dict) and 'coordinateTransformations' in ms:
-                                                for ct in ms['coordinateTransformations']:
-                                                    if isinstance(ct, dict) and 'output' in ct:
-                                                        output = ct['output']
-                                                        if isinstance(output, dict) and 'name' in output:
-                                                            coordinate_systems.add(output['name'])
+                                            if isinstance(ms, dict) and "coordinateTransformations" in ms:
+                                                for ct in ms["coordinateTransformations"]:
+                                                    if isinstance(ct, dict) and "output" in ct:
+                                                        output = ct["output"]
+                                                        if isinstance(output, dict) and "name" in output:
+                                                            coordinate_systems.add(output["name"])
                                                         elif isinstance(output, str):
                                                             coordinate_systems.add(output)
 
                                 # Check for spatialdata transform attribute (legacy)
-                                if 'transform' in attrs:
-                                    transform_dict = attrs['transform']
+                                if "transform" in attrs:
+                                    transform_dict = attrs["transform"]
                                     if isinstance(transform_dict, dict):
                                         coordinate_systems.update(transform_dict.keys())
                         except Exception:
@@ -5127,12 +5127,12 @@ class SpatialData(CompressedZarrZipArchive):
                         if obs_index_path in zf.namelist():
                             with zf.open(obs_index_path) as f:
                                 obs_array = json.load(f)
-                                n_obs = obs_array.get('shape', [None])[0]
+                                n_obs = obs_array.get("shape", [None])[0]
 
                         if var_index_path in zf.namelist():
                             with zf.open(var_index_path) as f:
                                 var_array = json.load(f)
-                                n_vars = var_array.get('shape', [None])[0]
+                                n_vars = var_array.get("shape", [None])[0]
 
                         if n_obs is not None and n_vars is not None:
                             table_shapes[table_name] = (n_obs, n_vars)
@@ -5179,17 +5179,14 @@ class SpatialData(CompressedZarrZipArchive):
                 for file in zf.namelist():
                     # Look for .zattrs file at the root of the zarr store
                     # The zarr store can be at root or one level deeper
-                    parts = file.split('/')
+                    parts = file.split("/")
                     # Root level: .zattrs or one level deep: <name>.zarr/.zattrs
-                    if (
-                        file == '.zattrs'
-                        or (len(parts) == 2 and parts[0].endswith('.zarr') and parts[1] == '.zattrs')
-                    ):
+                    if file == ".zattrs" or (len(parts) == 2 and parts[0].endswith(".zarr") and parts[1] == ".zattrs"):
                         try:
                             with zf.open(file) as f:
                                 attrs = json.load(f)
                                 # Check for SpatialData-specific metadata
-                                if 'spatialdata_attrs' in attrs:
+                                if "spatialdata_attrs" in attrs:
                                     return True
                         except Exception:
                             pass
