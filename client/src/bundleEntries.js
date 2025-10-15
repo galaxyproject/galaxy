@@ -13,10 +13,17 @@
  * webapps/reports/run_stats.mako: window.bundleEntries.create_histogram
  */
 
+import _ from "underscore";
+import { replaceChildrenWithComponent } from "utils/mountVueComponent";
+import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
+
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
-export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 export { create_chart, create_histogram } from "reports/run_stats";
+
+export const createTabularDatasetChunkedView = (options) => {
+    return replaceChildrenWithComponent(options.parent_elt, TabularChunkedView, { options });
+};
 
 // Used in common.mako
 export { default as store } from "storemodern";
