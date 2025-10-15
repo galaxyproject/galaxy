@@ -1244,18 +1244,15 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         ), f"Could not get a job tool configuration for Tool {self.id} with job_params {job_params}, this is a bug"
         return rval
 
-    def get_configured_job_handler(self, job_params=None):
-        """Get the configured job handler for this `Tool` given the provided `job_params`.
+    def get_configured_job_handler(self):
+        """Get the configured job handler for this `Tool`.
 
         Unlike the former ``get_job_handler()`` method, this does not perform "preassignment" (random selection of
         a configured handler ID from a tag).
 
-        :param job_params: Any params specific to this job (e.g. the job source)
-        :type job_params: dict or None
-
         :returns: str or None -- The configured handler for a job run of this `Tool`
         """
-        return self.__get_job_tool_configuration(job_params=job_params).handler
+        return self.__get_job_tool_configuration().handler
 
     def get_job_destination(self, job_params=None):
         """
