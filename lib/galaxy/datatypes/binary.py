@@ -490,6 +490,12 @@ class CompressedZarrZipArchive(CompressedZipArchive):
                     dataset.metadata.zarr_format = format_version
 
     def sniff(self, filename: str) -> bool:
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Images.zarr.zip')
+        >>> CompressedZarrZipArchive().sniff(fname)
+        True
+        """
         # Check if the zip file contains a zarr store.
         # In theory, the zarr store must be in the root of the zip file.
         # See: https://github.com/zarr-developers/zarr-python/issues/756#issuecomment-852134901
@@ -5163,7 +5169,7 @@ class SpatialData(CompressedZarrZipArchive):
         >>> fname = get_test_fname('subsampled_visium.spatialdata.zip')
         >>> SpatialData().sniff(fname)
         True
-        >>> fname = get_test_fname('OMEzarrImages.ome_zarr.zip')
+        >>> fname = get_test_fname('Images.zarr.zip')
         >>> SpatialData().sniff(fname)
         False
         """
