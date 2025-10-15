@@ -11,7 +11,6 @@ import GridModel from "legacy/grid/grid-model";
 import Templates from "legacy/grid/grid-template";
 import PopupMenu from "./popup-menu";
 import { setWindowTitle } from "./utils";
-import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
 
 var $ = jQuery;
 
@@ -114,10 +113,6 @@ export default Backbone.View.extend({
         // configure elements
         this.init_grid_elements();
         this.init_grid_controls();
-
-        // attach global event handler
-        // TODO: redundant (the onload/standard page handlers do this) - but needed because these are constructed after page ready
-        init_refresh_on_change();
     },
 
     // Initialize grid controls
