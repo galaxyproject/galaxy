@@ -4917,6 +4917,47 @@ class SpatialData(CompressedZarrZipArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with zipfile.ZipFile(dataset.get_file_name()) as zf:
+                # Look for SpatialData structure
+                elements = []
+                coordinate_systems = set()
+
+                for file in zf.namelist():
+                    # SpatialData elements are stored in zarr groups
+                    # Common element types: images, labels, shapes, points, tables
+                    parts = file.split('/')
+                    if len(parts) > 1:
+                        element_type = parts[0]
+                        if element_type in ['images', 'labels', 'shapes', 'points', 'tables']:
+                            if len(parts) > 1 and parts[1] not in elements:
+                                elements.append(parts[1])
+
+                    # Look for coordinate system information in zarr metadata
+                    if file.endswith('.zattrs') or file.endswith('zarr.json'):
+                        try:
+                            with zf.open(file) as f:
+                                attrs = json.load(f)
+                                # Check for coordinate transformations
+                                if 'coordinateTransformations' in attrs:
+                                    for transform in attrs['coordinateTransformations']:
+                                        if 'output' in transform:
+                                            coordinate_systems.add(transform['output'])
+                                # Check for spatialdata transform attribute
+                                if 'transform' in attrs:
+                                    transform_dict = attrs['transform']
+                                    if isinstance(transform_dict, dict):
+                                        coordinate_systems.update(transform_dict.keys())
+                        except Exception:
+                            pass
+
+                dataset.metadata.elements = sorted(elements)
+                dataset.metadata.coordinate_systems = sorted(list(coordinate_systems))
+        except Exception:
+            pass
+
     def sniff(self, filename: str) -> bool:
         """
         Check if the file is a valid SpatialData zarr archive.
