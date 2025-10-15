@@ -17,6 +17,9 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder" />
+        <section v-if="renderedReadme" class="library-readme-section">
+            <div v-html="renderedReadme"></div>
+        </section>
         <b-table
             id="folder_list_body"
             ref="folder_content_table"
@@ -258,10 +261,6 @@
                 </b-col>
             </b-row>
         </b-container>
-        <section v-if="renderedReadme" class="library-readme-section">
-            <hr />
-            <div v-html="renderedReadme"></div>
-        </section>
     </div>
 </template>
 
