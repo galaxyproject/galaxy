@@ -86,8 +86,8 @@ How to use this tool
 
 Running input lists through this tool produces new list structures (described in detail below) that when using
 the same natural element-wise matching "map over" semantics described above produce every combination of the
-elements of the two lists compared against each other. Running a tool with these two outputs instead of the inital
-two input produces a nested list structure where the jth element of the inner list of the ith element of the outer
+elements of the two lists compared against each other. Running a tool with these two outputs instead of the initial
+two inputs produces a nested list structure where the jth element of the inner list of the ith element of the outer
 list is a comparison of the ith element of the first list to the jth element of the second list. 
 Put more simply, the result is a nested list where the identifiers of an element describe which inputs were
 matched to produce the comparison output found at that element. 
@@ -105,9 +105,9 @@ has length ``n`` and dataset elements identified as ``a1``, ``a2``, ... ``an`` a
 has length ``m`` and dataset elements identified as ``b1``, ``b2``, ... ``bm``, then this tool
 produces a pair of output nested lists (specifically of the ``list:list`` collection type) where
 the outer list is of length ``n`` and each inner list has a length of ``m`` (a ``n X m`` nested list). The jth element
-inside the outer list's ith element is a pseudo copy of the ith dataset of ``inputa``. One
+inside the outer list's ith element is a pseudo copy of the ith dataset of ``input_a``. One
 way to think about the output nested lists is as matrices. Here is a diagram of the first output
-showing the element identifiers of the outer and inner lists along with the what dataset is being
+showing the element identifiers of the outer and inner lists along with dataset identifiers being
 "copied" into this new collection.
 
 .. image:: ${static_path}/images/tools/collection_ops/nested_cross_product_out_1.png
@@ -116,8 +116,8 @@ showing the element identifiers of the outer and inner lists along with the what
 
 The second output is a nested list of pseudo copies of the elements of ``input_b`` instead of 
 ``input_a``. In particular the outer list is again of length ``n`` and each inner list is again
-of lenth ``m`` but this time the jth element inside the outer list's ith element is a pseudo copy
-of the jth dataset of ``inputb``. Here is the matrix of these outputs.
+of length ``m`` but this time the jth element inside the outer list's ith element is a pseudo copy
+of the jth dataset of ``input_b``. Here is the matrix of these outputs.
 
 .. image:: ${static_path}/images/tools/collection_ops/nested_cross_product_out_2.png
   :alt: Nested Cross Product Second Output
