@@ -451,6 +451,15 @@ $ui-margin-horizontal-large: $margin-v * 2;
         background-color: $brand-primary !important;
         color: white !important;
     }
+
+    &.badge-warning {
+        border-color: $brand-warning;
+        color: $brand-warning;
+
+        &:hover {
+            background-color: $brand-warning !important;
+        }
+    }
 }
 
 .card-container {

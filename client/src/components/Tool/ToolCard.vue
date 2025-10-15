@@ -1,16 +1,17 @@
 <script setup>
-import { faHdd } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
+import { BAlert, BModal, BPopover } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeMount, ref, watch } from "vue";
 
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useConfigStore } from "@/stores/configurationStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
@@ -18,6 +19,7 @@ import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectSt
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
+import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -77,9 +79,15 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    allowEditingCredentials: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
+
+const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
 
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
@@ -93,6 +101,17 @@ watch(
         errorText.value = null;
     },
 );
+
+const credentialToolTip = computed(() => {
+    const credentialNames = props.options.credentials?.map((service) => service.name);
+    if (!credentialNames.value) {
+        return "";
+    }
+
+    return `This tool requires the following credentials when running the workflow: ${credentialNames.value.join(
+        ", ",
+    )}`;
+});
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
@@ -126,6 +145,12 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 const canGenerateTours = computed(() =>
     Boolean(props.allowGeneratedTours && isConfigLoaded.value && config.value.enable_tool_generated_tours),
 );
+
+onBeforeMount(() => {
+    if (props.options.credentials) {
+        setToolServiceCredentialsDefinitionFor(props.id, props.version, props.options.credentials);
+    }
+});
 </script>
 
 <template>
@@ -183,6 +208,38 @@ const canGenerateTours = computed(() =>
         </template>
 
         <template v-slot>
+            <template v-if="props.options.credentials?.length">
+                <ToolCredentials
+                    v-if="!props.allowEditingCredentials"
+                    class="mt-2"
+                    :tool-id="props.id"
+                    :tool-version="props.version"
+                    :job-credentials-context="props.options.job_credentials_context" />
+                <BAlert
+                    v-else-if="props.allowEditingCredentials"
+                    v-b-tooltip.hover
+                    variant="info"
+                    class="mt-2"
+                    show
+                    :title="credentialToolTip">
+                    <FontAwesomeIcon :icon="faKey" />
+                    Requires credentials to run this tool.
+
+                    <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
+                    <BPopover target="target" triggers="hover" boundary="window">
+                        <div class="d-flex flex-column">
+                            <span
+                                v-for="(service, index) in props.options.credentials"
+                                :key="index"
+                                class="d-flex flex-column">
+                                <b> {{ service.label }}: </b>
+                                {{ service.description }}
+                            </span>
+                        </div>
+                    </BPopover>
+                </BAlert>
+            </template>
+
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
             <FormMessage :variant="props.messageVariant" :message="props.messageText" />
             <slot name="default" />

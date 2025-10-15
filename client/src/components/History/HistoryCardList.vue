@@ -23,6 +23,8 @@
  *   @tagClick="onTagClick" />
  */
 
+import type { Ref } from "vue";
+
 import type { AnyHistoryEntry, MyHistory } from "@/api/histories";
 import { isMyHistory } from "@/api/histories";
 
@@ -76,6 +78,26 @@ interface Props {
      * @default []
      */
     selectedHistoryIds?: { id: string }[];
+
+    /**
+     * Whether cards are clickable for navigation
+     * @type {boolean}
+     * @default false
+     */
+    clickable?: boolean;
+
+    /**
+     * Item refs for keyboard navigation
+     * @type {Record<string, Ref<InstanceType<typeof HistoryCard> | null>>}
+     * @default {}
+     */
+    itemRefs?: Record<string, Ref<InstanceType<typeof HistoryCard> | null>>;
+
+    /**
+     * Range select anchor for keyboard navigation
+     * @type {AnyHistoryEntry | undefined}
+     */
+    rangeSelectAnchor?: AnyHistoryEntry;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -83,6 +105,9 @@ const props = withDefaults(defineProps<Props>(), {
     publishedView: false,
     selectable: false,
     selectedHistoryIds: () => [],
+    clickable: false,
+    itemRefs: () => ({}),
+    rangeSelectAnchor: undefined,
 });
 
 /**
@@ -112,14 +137,28 @@ const emit = defineEmits<{
      * @event updateFilter
      */
     (e: "updateFilter", key: string, value: any): void;
+
+    /**
+     * Emitted when a keyboard event occurs on a history card
+     * @event on-key-down
+     */
+    (e: "on-key-down", history: AnyHistoryEntry, event: KeyboardEvent): void;
+
+    /**
+     * Emitted when a history card is clicked
+     * @event on-history-card-click
+     */
+    (e: "on-history-card-click", history: AnyHistoryEntry, event: Event): void;
 }>();
 </script>
 
 <template>
-    <div class="history-card-list d-flex flex-wrap overflow-auto">
+    <div class="history-card-list d-flex flex-wrap overflow-auto pt-1">
         <HistoryCard
             v-for="history in props.histories"
+            :ref="props.itemRefs[history.id]"
             :key="history.id"
+            tabindex="0"
             :history="history"
             :grid-view="props.gridView"
             :shared-view="props.sharedView"
@@ -127,14 +166,21 @@ const emit = defineEmits<{
             :archived-view="props.archivedView"
             :selectable="props.selectable"
             :selected="props.selectedHistoryIds.some((selected) => selected.id === history.id)"
+            :clickable="props.clickable"
+            :highlighted="props.rangeSelectAnchor?.id === history.id"
+            class="history-card-in-list"
             @select="isMyHistory(history) && emit('select', history)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
-            @updateFilter="(...args) => emit('updateFilter', ...args)" />
+            @updateFilter="(...args) => emit('updateFilter', ...args)"
+            @on-key-down="(...args) => emit('on-key-down', ...args)"
+            @on-history-card-click="(...args) => emit('on-history-card-click', ...args)" />
     </div>
 </template>
 
 <style lang="scss" scoped>
+@import "theme/blue.scss";
+
 .history-card-list {
     container: cards-list / inline-size;
 }

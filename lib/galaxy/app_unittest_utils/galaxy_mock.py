@@ -118,6 +118,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     workflow_manager: WorkflowsManager
     history_manager: HistoryManager
     job_metrics: JobMetrics
+    vault: Optional[Vault] = None
     stop: bool
     is_webapp: bool = True
 

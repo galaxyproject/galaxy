@@ -21,6 +21,7 @@ from typing_extensions import (
 from galaxy.tool_util_models.tool_source import JavascriptRequirement
 from galaxy.util import (
     asbool,
+    string_as_bool,
     xml_text,
 )
 from galaxy.util.oset import OrderedSet
@@ -308,29 +309,145 @@ def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> L
     return rr
 
 
+class BaseCredential:
+    def __init__(
+        self,
+        name: str,
+        inject_as_env: str,
+        optional: bool = False,
+        label: str = "",
+        description: str = "",
+    ) -> None:
+        self.name = name
+        self.inject_as_env = inject_as_env
+        self.optional = optional
+        self.label = label
+        self.description = description
+
+        if not self.name:
+            raise ValueError("Missing credential (secret/variable) name")
+        if not self.inject_as_env:
+            raise ValueError("Missing inject_as_env")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "optional": self.optional,
+            "label": self.label,
+            "description": self.description,
+        }
+
+
+class Secret(BaseCredential):
+    @classmethod
+    def from_element(cls, elem) -> "Secret":
+        return cls(
+            name=elem.get("name"),
+            inject_as_env=elem.get("inject_as_env"),
+            optional=string_as_bool(elem.get("optional", "false")),
+            label=elem.get("label", ""),
+            description=elem.get("description", ""),
+        )
+
+
+class Variable(BaseCredential):
+    @classmethod
+    def from_element(cls, elem) -> "Variable":
+        return cls(
+            name=elem.get("name"),
+            inject_as_env=elem.get("inject_as_env"),
+            optional=string_as_bool(elem.get("optional", "false")),
+            label=elem.get("label", ""),
+            description=elem.get("description", ""),
+        )
+
+
+class CredentialsRequirement:
+    def __init__(
+        self,
+        name: str,
+        version: str,
+        label: str = "",
+        description: str = "",
+        optional: bool = False,
+        secrets: Optional[List[Secret]] = None,
+        variables: Optional[List[Variable]] = None,
+    ) -> None:
+        self.name = name
+        self.version = version
+        self.label = label
+        self.description = description
+        self.optional = optional
+        self.secrets = secrets if secrets is not None else []
+        self.variables = variables if variables is not None else []
+
+        if not self.name:
+            raise ValueError("Missing user credentials name")
+        if not self.version:
+            raise ValueError("Missing version")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "version": self.version,
+            "label": self.label,
+            "description": self.description,
+            "optional": self.optional,
+            "secrets": [s.to_dict() for s in self.secrets],
+            "variables": [v.to_dict() for v in self.variables],
+        }
+
+    @classmethod
+    def from_dict(cls, dict: Dict[str, Any]) -> "CredentialsRequirement":
+        name = dict["name"]
+        version = dict["version"]
+        label = dict.get("label", "")
+        description = dict.get("description", "")
+        optional = dict.get("optional", False)
+        secrets = [Secret.from_element(s) for s in dict.get("secrets", [])]
+        variables = [Variable.from_element(v) for v in dict.get("variables", [])]
+        return cls(
+            name=name,
+            version=version,
+            label=label,
+            description=description,
+            optional=optional,
+            secrets=secrets,
+            variables=variables,
+        )
+
+
 def parse_requirements_from_lists(
     software_requirements: List[Union[ToolRequirement, Dict[str, Any]]],
     containers: Iterable[Dict[str, Any]],
     resource_requirements: Iterable[Dict[str, Any]],
     javascript_requirements: List[Dict[str, Any]],
-) -> Tuple[ToolRequirements, List[ContainerDescription], List[ResourceRequirement], List[JavascriptRequirement]]:
+    credentials: Iterable[Dict[str, Any]],
+) -> Tuple[
+    ToolRequirements,
+    List[ContainerDescription],
+    List[ResourceRequirement],
+    List[JavascriptRequirement],
+    List[CredentialsRequirement],
+]:
     return (
         ToolRequirements.from_list(software_requirements),
         [ContainerDescription.from_dict(c) for c in containers],
         resource_requirements_from_list(resource_requirements),
         [JavascriptRequirement(**r) for r in javascript_requirements],
+        [CredentialsRequirement.from_dict(s) for s in credentials],
     )
 
 
-def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
+def parse_requirements_from_xml(xml_root, parse_resources_and_credentials: bool = False):
     """
     Parses requirements, containers and optionally resource requirements from Xml tree.
 
     >>> from galaxy.util import parse_xml_string
-    >>> def load_requirements(contents, parse_resources=False):
+    >>> def load_requirements(contents, parse_resources_and_credentials=False):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = parse_xml_string(contents_document % contents)
-    ...     return parse_requirements_from_xml(root, parse_resources=parse_resources)
+    ...     return parse_requirements_from_xml(root, parse_resources_and_credentials=parse_resources_and_credentials)
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'
@@ -349,8 +466,10 @@ def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
     requirements_elem = xml_root.find("requirements")
 
     requirement_elems = []
+    container_elems = []
     if requirements_elem is not None:
         requirement_elems = requirements_elem.findall("requirement")
+        container_elems = requirements_elem.findall("container")
 
     requirements = ToolRequirements()
     for requirement_elem in requirement_elems:
@@ -360,16 +479,14 @@ def parse_requirements_from_xml(xml_root, parse_resources: bool = False):
         requirement = ToolRequirement(name=name, type=type, version=version)
         requirements.append(requirement)
 
-    container_elems = []
-    if requirements_elem is not None:
-        container_elems = requirements_elem.findall("container")
-
     containers = [container_from_element(c) for c in container_elems]
-    if parse_resources:
+    if parse_resources_and_credentials:
         resource_elems = requirements_elem.findall("resource") if requirements_elem is not None else []
         resources = [resource_from_element(r) for r in resource_elems]
         javascript_requirements: List[Dict[str, Any]] = []
-        return requirements, containers, resources, javascript_requirements
+        credentials_elems = requirements_elem.findall("credentials") if requirements_elem is not None else []
+        credentials = [credentials_from_element(s) for s in credentials_elems]
+        return requirements, containers, resources, javascript_requirements, credentials
 
     return requirements, containers
 
@@ -392,3 +509,22 @@ def container_from_element(container_elem) -> ContainerDescription:
         shell=shell,
     )
     return container
+
+
+def credentials_from_element(credentials_elem) -> CredentialsRequirement:
+    name = credentials_elem.get("name")
+    version = credentials_elem.get("version")
+    label = credentials_elem.get("label", "")
+    description = credentials_elem.get("description", "")
+    optional = string_as_bool(credentials_elem.get("optional", "false"))
+    secrets = [Secret.from_element(elem) for elem in credentials_elem.findall("secret")]
+    variables = [Variable.from_element(elem) for elem in credentials_elem.findall("variable")]
+    return CredentialsRequirement(
+        name=name,
+        version=version,
+        label=label,
+        description=description,
+        optional=optional,
+        secrets=secrets,
+        variables=variables,
+    )

@@ -24,6 +24,16 @@
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
+                <BButton
+                    v-if="credentials.length > 0"
+                    v-b-tooltip.hover
+                    class="node-credentials py-0 inline-icon-button"
+                    variant="primary"
+                    size="sm"
+                    aria-label="tool has credentials"
+                    title="Tool requires credentials">
+                    <FontAwesomeIcon :icon="faKey" />
+                </BButton>
                 <b-button
                     v-if="!readonly"
                     v-b-tooltip.hover
@@ -149,7 +159,7 @@
 
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
+import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
@@ -238,6 +248,8 @@ useNodePosition(
     stateStore,
     computed(() => props.scale),
 );
+
+const credentials = computed(() => props.step.config_form?.credentials || []);
 
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);

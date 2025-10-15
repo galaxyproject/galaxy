@@ -140,6 +140,36 @@
                     </span>
 
                     <b-button-group>
+                        <BDropdown
+                            v-if="credentialSteps.length > 0"
+                            no-caret
+                            right
+                            variant="link"
+                            style="z-index: 60000"
+                            title="Workflow contains steps that require credentials"
+                            @show="() => (showDropdown = true)"
+                            @hide="() => (showDropdown = false)">
+                            <template v-slot:button-content>
+                                <FontAwesomeIcon :icon="faKey" fixed-width />
+                            </template>
+
+                            <BDropdownText style="min-width: 25rem">
+                                This workflow contains the following steps that require credentials:
+                            </BDropdownText>
+
+                            <BDropdownDivider />
+
+                            <BDropdownItem
+                                v-for="cs in credentialSteps"
+                                :key="cs.id"
+                                title="Click to go to step"
+                                class="mr-0"
+                                @click="onToolClick(cs.id)">
+                                <FontAwesomeIcon :icon="faWrench" fixed-width />
+                                {{ cs.id + 1 }}: {{ cs.label ?? cs.name }}
+                            </BDropdownItem>
+                        </BDropdown>
+
                         <b-button
                             :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
                             :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
@@ -209,10 +239,20 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight, faCog, faHistory, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowLeft,
+    faArrowRight,
+    faCog,
+    faHistory,
+    faKey,
+    faSave,
+    faTimes,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
+import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
@@ -284,6 +324,10 @@ export default {
         InputPanel,
         UserToolPanel,
         SearchPanel,
+        BDropdownItem,
+        BDropdown,
+        BDropdownText,
+        BDropdownDivider,
     },
     props: {
         workflowId: {
@@ -577,6 +621,12 @@ export default {
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
+        const credentialSteps = computed(() => {
+            return Object.values(steps.value).filter(
+                (step) => step.type === "tool" && step.config_form?.credentials?.length > 0,
+            );
+        });
+
         const unprivilegedToolStore = useUnprivilegedToolStore();
         const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
         const workflowActivities = computed(() =>
@@ -589,10 +639,17 @@ export default {
             workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
         }
 
+        function onToolClick(toolId) {
+            stateStore.activeNodeId = toolId;
+            this.onScrollTo(toolId);
+        }
+
         return {
             id,
+            onToolClick,
             name,
             parameters,
+            credentialSteps,
             workflowGraph,
             onSearchResultClicked,
             ensureParametersSet,
@@ -651,6 +708,9 @@ export default {
             confirm,
             inputs,
             workflowActivities,
+            faKey,
+            faWrench,
+            showDropdown: false,
         };
     },
     data() {

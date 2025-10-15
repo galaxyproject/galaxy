@@ -121,10 +121,12 @@ import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 
 import { canMutateHistory } from "@/api";
+import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import ToolRecommendation from "../ToolRecommendation";
@@ -171,7 +173,10 @@ export default {
     },
     setup() {
         const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
-        return { config, isConfigLoaded };
+
+        const { getCredentialsExecutionContextForTool } = useUserToolsServiceCredentialsStore();
+
+        return { config, isConfigLoaded, getCredentialsExecutionContextForTool };
     },
     data() {
         return {
@@ -238,6 +243,9 @@ export default {
             if (this.hasConfigOrValErrors) {
                 return "Please resolve highlighted issues before running the tool.";
             }
+            if (this.hasCredentialsErrors) {
+                return "Please provide all required credentials before running the tool.";
+            }
             if (this.showExecuting) {
                 return "Tool is being executed...";
             }
@@ -266,8 +274,18 @@ export default {
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
+        hasCredentialsErrors() {
+            if (this.formConfig.credentials?.length) {
+                const { hasUserProvidedAllRequiredServiceCredentials } = useUserToolCredentials(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
+                return !hasUserProvidedAllRequiredServiceCredentials.value;
+            }
+            return false;
+        },
         runButtonDisabled() {
-            return this.disabled || !this.canMutateHistory || this.hasConfigOrValErrors;
+            return this.disabled || !this.canMutateHistory || this.hasConfigOrValErrors || this.hasCredentialsErrors;
         },
         /** If there are any backend returned `formConfig.errors` or internal/client checked validation errors. */
         hasConfigOrValErrors() {
@@ -394,6 +412,12 @@ export default {
             }
             if (this.dataManagerMode === "bundle") {
                 jobDef.data_manager_mode = this.dataManagerMode;
+            }
+            if (this.formConfig.credentials?.length) {
+                jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
             }
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;

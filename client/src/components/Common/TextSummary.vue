@@ -13,7 +13,7 @@ interface Props {
     oneLineSummary?: boolean;
     /** If `true`, doesn't show expand/collapse buttons */
     noExpand?: boolean;
-    /** The component to use for the summary, default = `<p>` */
+    /** The component to use for the summary, default = `<span>` */
     component?: string;
     /** If `true`, shows the full text */
     showExpandText?: boolean;

@@ -22,6 +22,7 @@ from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.managers.credentials import UserCredentialsEnvironmentBuilder
 from galaxy.model.deferred import (
     materialize_collection_input,
     materializer_factory,
@@ -32,6 +33,7 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
     MinimalToolApp,
+    StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parser.output_objects import ToolOutput
@@ -849,6 +851,8 @@ class ToolEvaluator:
                 environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
 
+        self._inject_credentials()
+
     def get_oidc_token(self, inject):
         if not self._user:
             return "token-unavailable"
@@ -954,6 +958,27 @@ class ToolEvaluator:
         compat.
         """
         return self.compute_environment.sep().join(args)
+
+    def _inject_credentials(self):
+        """Inject credentials as environment variables if the tool has any service credentials defined.
+
+        Prerequisites:
+        - The tool must have credentials defined.
+        - The app must have a vault set up.
+        """
+        if not self.tool.credentials:
+            return
+        if not isinstance(self.app, StructuredApp):
+            log.warning("Tool credentials specified but app is not a StructuredApp, cannot set environment variables")
+            return
+
+        if self._user is not None:
+            user_credential_env_vars = UserCredentialsEnvironmentBuilder(
+                self.app.vault, self.app.model.session, self._user
+            ).build_from_job_context(
+                requirements=self.tool.credentials, context=self.job.credentials_context_associations
+            )
+            self.environment_variables.extend(user_credential_env_vars)
 
     @property
     def _history(self):

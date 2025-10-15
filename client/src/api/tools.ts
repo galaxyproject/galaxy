@@ -11,6 +11,15 @@ export type NestedElementItem = NestedElementItems[number];
 export type FetchTargets = FetchDataPayload["targets"];
 export type AnyFetchTarget = FetchTargets[number];
 
+export interface ToolIdentifier {
+    toolId: string;
+    toolVersion: string;
+}
+
+export function getToolKey(toolId: string, toolVersion: string): string {
+    return `${toolId}@${toolVersion}`;
+}
+
 export function urlDataElement(identifier: string, uri: string): UrlDataElement {
     const element: UrlDataElement = {
         src: "url",

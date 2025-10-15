@@ -17,6 +17,7 @@
             <span class="portlet-title">
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
+                <slot name="title" />
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>
             </span>
         </div>
@@ -25,6 +26,7 @@
         </div>
     </div>
 </template>
+
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";

@@ -21,11 +21,13 @@
                 <ButtonSpinner
                     id="run-workflow"
                     title="Run Workflow"
-                    :disabled="!canRunOnHistory"
+                    :tooltip="runButtonTooltip"
+                    :disabled="!canRunOnHistory || hasCredentialErrors"
                     :wait="showExecuting"
                     @onClick="onExecute" />
             </div>
         </div>
+
         <BAlert v-if="disableSimpleFormReason" show variant="warning">
             This is the legacy workflow run form.
             <span v-if="disableSimpleFormReason === 'hasReplacementParameters'">
@@ -41,6 +43,9 @@
                 workflows with resource options.
             </span>
         </BAlert>
+
+        <WorkflowCredentials v-if="credentialTools.length" :tool-identifiers="credentialTools" />
+
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
                 <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
@@ -92,13 +97,17 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import { mapState } from "pinia";
 
+import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { getReplacements } from "./model";
 import { invokeWorkflow } from "./services";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
+
+import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 export default {
     components: {
@@ -107,6 +116,7 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
+        WorkflowCredentials,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
     },
@@ -173,6 +183,19 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId"]),
+        credentialTools() {
+            return this.model.steps
+                .filter((step) => step.step_type === "tool" && step.credentials?.length)
+                .map((step) => {
+                    const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+                    setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
+
+                    return {
+                        toolId: step.id,
+                        toolVersion: step.version,
+                    };
+                });
+        },
         resourceInputsAvailable() {
             return this.resourceInputs.length > 0;
         },
@@ -190,6 +213,21 @@ export default {
         },
         canRunOnHistory() {
             return this.shouldRunOnNewHistory || this.canMutateCurrentHistory;
+        },
+        hasCredentialErrors() {
+            if (this.credentialTools.length) {
+                const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+                    this.credentialTools,
+                );
+                return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+            }
+            return false;
+        },
+        runButtonTooltip() {
+            if (this.hasCredentialErrors) {
+                return "Please provide all required credentials before running the workflow.";
+            }
+            return "Run workflow";
         },
     },
     methods: {

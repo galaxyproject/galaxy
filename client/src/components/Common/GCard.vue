@@ -176,6 +176,11 @@ interface Props {
      * @default "Last updated"
      */
     updateTimeTitle?: string;
+
+    /** Whether this card is highlighted (for example, as a range selection anchor)
+     * @default false
+     */
+    highlighted?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -207,6 +212,7 @@ const props = withDefaults(defineProps<Props>(), {
     updateTime: "",
     updateTimeIcon: () => faEdit,
     updateTimeTitle: "Last updated",
+    highlighted: false,
 });
 
 /**
@@ -266,7 +272,7 @@ async function toggleBookmark() {
     bookmarkLoading.value = false;
 }
 
-const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+const { renderMarkdown } = useMarkdown({ noMargin: true, openLinksInNewPage: true });
 
 /**
  * Helper functions for generating consistent element IDs
@@ -283,8 +289,10 @@ const allowedTitleLines = computed(() => props.titleNLines);
 
 function onKeyDown(event: KeyboardEvent) {
     if ((props.clickable && event.key === "Enter") || event.key === " ") {
+        event.stopPropagation();
         emit("click", event);
     } else if (props.clickable) {
+        event.stopPropagation();
         emit("keydown", event);
     }
 }
@@ -310,7 +318,7 @@ function onKeyDown(event: KeyboardEvent) {
         <div
             :id="`g-card-content-${props.id}`"
             class="g-card-content d-flex flex-column justify-content-between h-100 p-2"
-            :class="contentClass">
+            :class="[{ 'g-card-highlighted': props.highlighted }, contentClass]">
             <slot>
                 <div class="d-flex flex-column flex-gapy-1">
                     <div
@@ -335,12 +343,13 @@ function onKeyDown(event: KeyboardEvent) {
                                             :id="getElementId(props.id, 'title')"
                                             bold
                                             inline
-                                            class="align-items-baseline"
+                                            class="d-block"
                                             :size="props.titleSize">
                                             <FontAwesomeIcon
                                                 v-if="props.titleIcon?.icon"
-                                                :icon="props.titleIcon.icon"
+                                                class="mr-1"
                                                 :class="props.titleIcon.class"
+                                                :icon="props.titleIcon.icon"
                                                 :title="props.titleIcon.title"
                                                 :size="props.titleIcon.size"
                                                 fixed-width />
@@ -516,7 +525,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             <BButton
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
-                                                :key="indicator.id"
+                                                :key="`${indicator.id}-button`"
                                                 v-b-tooltip.hover.noninteractive
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
@@ -536,7 +545,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             <FontAwesomeIcon
                                                 v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
-                                                :key="indicator.id"
+                                                :key="`${indicator.id}-icon`"
                                                 v-b-tooltip.hover.noninteractive
                                                 :title="localize(indicator.title)"
                                                 :icon="indicator.icon"
@@ -549,16 +558,15 @@ function onKeyDown(event: KeyboardEvent) {
                         </div>
                     </div>
 
-                    <div :id="getElementId(props.id, 'description')">
+                    <div :id="getElementId(props.id, 'description')" class="g-card-description">
                         <slot name="description">
-                            <TextSummary
-                                v-if="props.description && !props.fullDescription"
-                                :id="getElementId(props.id, 'text-summary')"
-                                :description="props.description" />
-                            <div
-                                v-else-if="props.description && props.fullDescription"
-                                class="mb-2"
-                                v-html="renderMarkdown(props.description)" />
+                            <template v-if="props.description">
+                                <TextSummary
+                                    v-if="!props.fullDescription"
+                                    :id="getElementId(props.id, 'text-summary')"
+                                    :description="props.description" />
+                                <div v-else v-html="renderMarkdown(props.description)" />
+                            </template>
                         </slot>
                     </div>
                 </div>
@@ -598,9 +606,13 @@ function onKeyDown(event: KeyboardEvent) {
                             </div>
                         </slot>
 
-                        <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto mt-1">
+                        <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
                             <slot name="secondary-actions">
-                                <BButtonGroup :id="getElementId(props.id, 'secondary-actions')" size="sm">
+                                <BButtonGroup
+                                    v-if="props.secondaryActions?.length"
+                                    :id="getElementId(props.id, 'secondary-actions')"
+                                    size="sm"
+                                    class="mt-1">
                                     <template v-for="sa in props.secondaryActions">
                                         <BButton
                                             v-if="sa.visible ?? true"
@@ -630,30 +642,33 @@ function onKeyDown(event: KeyboardEvent) {
 
                             <div :id="getElementId(props.id, 'primary-actions')" class="d-flex flex-gapx-1">
                                 <slot name="primary-actions">
-                                    <template v-for="pa in props.primaryActions">
-                                        <BButton
-                                            v-if="pa.visible ?? true"
-                                            :id="getActionId(props.id, pa.id)"
-                                            :key="pa.id"
-                                            v-b-tooltip.hover.noninteractive
-                                            :disabled="pa.disabled"
-                                            :title="localize(pa.title)"
-                                            :variant="pa.variant || 'primary'"
-                                            :size="pa.size || 'sm'"
-                                            :to="pa.to"
-                                            :href="pa.href"
-                                            :class="{
-                                                'inline-icon-button': pa.inline,
-                                                [String(pa.class)]: pa.class,
-                                            }"
-                                            @click.stop="pa.handler">
-                                            <FontAwesomeIcon
-                                                v-if="pa.icon"
-                                                :icon="pa.icon"
-                                                :size="pa.size || undefined"
-                                                fixed-width />
-                                            {{ localize(pa.label) }}
-                                        </BButton>
+                                    <template v-if="props.primaryActions?.length">
+                                        <template v-for="pa in props.primaryActions">
+                                            <BButton
+                                                v-if="pa.visible ?? true"
+                                                :id="getActionId(props.id, pa.id)"
+                                                :key="pa.id"
+                                                v-b-tooltip.hover.noninteractive
+                                                class="mt-1"
+                                                :disabled="pa.disabled"
+                                                :title="localize(pa.title)"
+                                                :variant="pa.variant || 'primary'"
+                                                :size="pa.size || 'sm'"
+                                                :to="pa.to"
+                                                :href="pa.href"
+                                                :class="{
+                                                    'inline-icon-button': pa.inline,
+                                                    [String(pa.class)]: pa.class,
+                                                }"
+                                                @click.stop="pa.handler">
+                                                <FontAwesomeIcon
+                                                    v-if="pa.icon"
+                                                    :icon="pa.icon"
+                                                    :size="pa.size || undefined"
+                                                    fixed-width />
+                                                {{ localize(pa.label) }}
+                                            </BButton>
+                                        </template>
                                     </template>
                                 </slot>
                             </div>
@@ -699,6 +714,10 @@ function onKeyDown(event: KeyboardEvent) {
 
     &.g-card-published .g-card-content {
         border-left: 0.25rem solid $brand-primary;
+    }
+
+    &.g-card-highlighted .g-card-content {
+        box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
     }
 
     &.g-card-clickable {
