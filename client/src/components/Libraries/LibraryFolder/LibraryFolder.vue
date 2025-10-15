@@ -17,9 +17,20 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder" />
-        <section v-if="renderedReadme" class="library-readme-section">
-            <div v-html="renderedReadme"></div>
-        </section>
+        <div v-if="renderedReadme" class="readme-toggle-container">
+            <b-button
+                v-b-toggle.readme-collapse
+                variant="link"
+                class="readme-toggle-btn">
+                <FontAwesomeIcon :icon="readmeCollapsed ? 'chevron-right' : 'chevron-down'" />
+                README
+            </b-button>
+            <b-collapse id="readme-collapse" v-model="readmeCollapsed" class="readme-collapse">
+                <section class="library-readme-section">
+                    <div v-html="renderedReadme"></div>
+                </section>
+            </b-collapse>
+        </div>
         <b-table
             id="folder_list_body"
             ref="folder_content_table"
@@ -337,6 +348,7 @@ export default {
                 isBusy: false,
                 folder_metadata: {},
                 renderedReadme: "",
+                readmeCollapsed: false,
                 fields: fields,
                 selectMode: "multi",
                 perPage: DEFAULT_PER_PAGE,
@@ -731,10 +743,29 @@ th:focus {
     margin-bottom: 2%;
 }
 
+/* README toggle and collapse */
+.readme-toggle-container {
+    margin-bottom: 1rem;
+}
+
+.readme-toggle-btn {
+    padding: 0.5rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.readme-toggle-btn:hover {
+    text-decoration: none;
+}
+
+.readme-collapse {
+    margin-top: 0.5rem;
+}
+
 /* Library README section - GitHub-flavored markdown styles */
 .library-readme-section {
     max-width: 900px;
-    margin: 2rem auto;
+    margin: 0 auto 1.5rem;
     padding: 2rem;
     background-color: #fdfdfd;
     border: 1px solid #d0d7de;
