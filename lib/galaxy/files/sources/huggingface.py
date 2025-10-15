@@ -104,7 +104,7 @@ class HuggingFaceFilesSource(
 
     def _extract_timestamp(self, info: dict) -> Optional[str]:
         """Extract timestamp from Hugging Face file info to use it in the RemoteFile entry."""
-        last_commit: dict = info.get("last_commit", {})
+        last_commit: dict = info.get("last_commit") or {}
         return last_commit.get("date")
 
     def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
