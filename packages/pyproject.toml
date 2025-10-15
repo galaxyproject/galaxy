@@ -53,6 +53,8 @@ members = [
   "tours",
   "test_base",
   "test_driver",
+  "test_api",
+  "test_selenium",
   "auth",
   "job_execution",
   "test_api",
