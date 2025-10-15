@@ -66,6 +66,61 @@ try:
 except ImportError:
     GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
+
+def _load_config_file() -> None:
+    """
+    Load test configuration from YAML file if GALAXY_TEST_END_TO_END_CONFIG is set.
+
+    This matches the configuration format used for Jupyter-based testing.
+    Explicit environment variables take precedence over config file values.
+    """
+    config_file = os.environ.get("GALAXY_TEST_END_TO_END_CONFIG")
+    if not config_file:
+        return
+
+    # Expand user paths like ~/config.yml
+    config_file = os.path.expanduser(config_file)
+
+    if not os.path.exists(config_file):
+        raise FileNotFoundError(
+            f"GALAXY_TEST_END_TO_END_CONFIG is set to '{config_file}' but file does not exist. "
+            f"Please check the path or unset GALAXY_TEST_END_TO_END_CONFIG."
+        )
+
+    try:
+        with open(config_file) as f:
+            config = yaml.safe_load(f)
+    except Exception as e:
+        raise ValueError(f"Failed to load GALAXY_TEST_END_TO_END_CONFIG '{config_file}': {e}") from e
+
+    if not isinstance(config, dict):
+        raise ValueError(
+            f"GALAXY_TEST_END_TO_END_CONFIG '{config_file}' must contain a YAML dictionary, got {type(config)}"
+        )
+
+    # Map config keys to environment variables
+    # Only set if not already present (explicit env vars take precedence)
+    key_mapping = {
+        "local_galaxy_url": "GALAXY_TEST_EXTERNAL",
+        "login_email": "GALAXY_TEST_SELENIUM_USER_EMAIL",
+        "login_password": "GALAXY_TEST_SELENIUM_USER_PASSWORD",
+        "admin_api_key": "GALAXY_TEST_SELENIUM_ADMIN_API_KEY",
+        "admin_email": "GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL",
+        "admin_password": "GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD",
+        "selenium_galaxy_url": "GALAXY_TEST_EXTERNAL_FROM_SELENIUM",
+    }
+
+    for config_key, env_var in key_mapping.items():
+        if config_key in config and config[config_key] is not None:
+            if env_var not in os.environ:
+                os.environ[env_var] = str(config[config_key])
+
+    os.environ["GALAXY_TEST_ENVIRONMENT_CONFIGURED"] = "1"
+
+
+# Load config file before reading environment variables
+_load_config_file()
+
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
 DEFAULT_SELENIUM_HEADLESS = "auto"
