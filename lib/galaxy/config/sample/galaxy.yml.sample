@@ -3048,6 +3048,18 @@ galaxy:
   # <config_dir>.
   #vault_config_file: vault_conf.yml
 
+  # Configuration file for URL request headers allow-list with URL
+  # pattern matching. This file defines which HTTP headers are allowed
+  # in URL fetch requests based on URL patterns, and whether they should
+  # be treated as sensitive (encrypted in the vault) or not. If no
+  # allow-list is specified, no headers will be allowed in URL requests.
+  # This provides fine-grained security control over what headers can be
+  # sent when Galaxy fetches external URLs on behalf of users, allowing
+  # different headers for different target domains or services.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #url_headers_config_file: url_headers_conf.yml
+
   # Display built-in converters in the tool panel.
   #display_builtin_converters: true
 
