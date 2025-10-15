@@ -53,7 +53,7 @@ import Toast from "components/Toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { setToastComponentRef } from "composables/toast";
-import { WindowManager } from "layout/window-manager";
+import { WindowManager } from "./window-manager";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
