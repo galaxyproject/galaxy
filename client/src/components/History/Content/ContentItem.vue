@@ -236,18 +236,19 @@ function onDisplay() {
         // vue-router 4 supports a native force push with clean URLs,
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
+        const hidInfo = props.item.hid ? `${props.item.hid}: ` : "";
         if (route.path === itemUrls.value.display) {
             const options: RouterPushOptions = {
                 force: true,
                 preventWindowManager: !isWindowManagerActive,
-                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+                title: isWindowManagerActive ? `${hidInfo} ${props.name}` : undefined,
             };
             // @ts-ignore - monkeypatched router, drop with migration.
             router.push(displayUrl, options);
         } else if (displayUrl) {
             const options: RouterPushOptions = {
                 preventWindowManager: !isWindowManagerActive,
-                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+                title: isWindowManagerActive ? `${hidInfo} ${props.name}` : undefined,
             };
             // @ts-ignore - monkeypatched router, drop with migration.
             router.push(displayUrl, options);
