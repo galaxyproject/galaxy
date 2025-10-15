@@ -4885,6 +4885,26 @@ class SpatialData(CompressedZarrZipArchive):
 
     file_ext = "spatialdata.zip"
 
+    MetadataElement(
+        name="elements",
+        desc="SpatialData elements",
+        default=None,
+        param=metadata.SelectParameter,
+        multiple=True,
+        readonly=True,
+        visible=False,
+    )
+
+    MetadataElement(
+        name="coordinate_systems",
+        desc="SpatialData coordinate systems",
+        default=None,
+        param=metadata.SelectParameter,
+        multiple=True,
+        readonly=True,
+        visible=False,
+    )
+
     def sniff(self, filename: str) -> bool:
         """
         Check if the file is a valid SpatialData zarr archive.
