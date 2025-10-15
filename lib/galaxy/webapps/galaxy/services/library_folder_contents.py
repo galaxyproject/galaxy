@@ -87,7 +87,11 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         README_FILENAMES = {"readme.md", "readme.markdown", "readme.txt", "readme"}
 
         # Query for README file in folder (independent of pagination)
-        from sqlalchemy import select, func
+        from sqlalchemy import (
+            func,
+            select,
+        )
+
         readme_stmt = (
             select(model.LibraryDataset)
             .where(model.LibraryDataset.folder_id == folder.id)
@@ -107,7 +111,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     except Exception as e:
                         log.warning(f"Could not render README for folder {folder_id}: {e}")
 
-        base_metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows, readme_raw=readme_raw)
+        base_metadata = self._serialize_library_folder_metadata(
+            trans, folder, user_permissions, total_rows, readme_raw=readme_raw
+        )
         return LibraryFolderContentsIndexResult(
             metadata=base_metadata,
             folder_contents=folder_contents,

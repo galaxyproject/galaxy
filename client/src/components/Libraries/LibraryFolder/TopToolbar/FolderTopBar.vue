@@ -324,8 +324,8 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                 <FontAwesomeIcon :icon="faHome" />
             </BButton>
 
-            <div>
-                <div class="form-inline">
+            <div class="flex-grow-1">
+                <div class="form-inline d-flex w-100">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
 
                     <BButton
@@ -418,12 +418,12 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         v-if="props.showReadme"
                         v-b-tooltip.top.noninteractive
                         :title="!props.readmeVisible ? 'Show README' : 'Hide README'"
-                        variant="outline-primary"
-                        size="sm"
                         :pressed="props.readmeVisible"
-                        class="mr-1"
+                        class="primary-button ml-auto"
+                        type="button"
                         @click="$emit('toggleReadme')">
                         <FontAwesomeIcon :icon="faReadme" fixed-width />
+                        README
                     </BButton>
                 </div>
             </div>
