@@ -10,15 +10,9 @@
 import { monitorInit } from "utils/installMonitor";
 
 import { prependInitialization } from "../initQueue";
-
 import { initSentry } from "./initSentry";
-
 import { onloadWebhooks } from "./onloadWebhooks";
 
 export function globalInits() {
-    prependInitialization(
-        monitorInit,
-        initSentry,
-        onloadWebhooks,
-    );
+    prependInitialization(monitorInit, initSentry, onloadWebhooks);
 }
