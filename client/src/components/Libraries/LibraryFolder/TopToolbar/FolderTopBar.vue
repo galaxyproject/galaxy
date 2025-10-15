@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
+import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
@@ -415,10 +415,16 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                     </div>
 
                     <BButton
-                        v-if="props.showReadme"
                         v-b-tooltip.top.noninteractive
-                        :title="!props.readmeVisible ? 'Show README' : 'Hide README'"
+                        :title="
+                            props.showReadme
+                                ? !props.readmeVisible
+                                    ? 'Show README'
+                                    : 'Hide README'
+                                : 'No README available'
+                        "
                         :pressed="props.readmeVisible"
+                        :disabled="!props.showReadme"
                         class="primary-button ml-auto"
                         type="button"
                         @click="$emit('toggleReadme')">
