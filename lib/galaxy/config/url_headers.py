@@ -369,13 +369,3 @@ class UrlHeadersConfigFactory:
 
         log.info(f"Loaded {len(config._patterns)} URL patterns from dictionary")
         return config
-
-    @staticmethod
-    def create_null_config() -> NullUrlHeadersConfiguration:
-        """
-        Create a null configuration that doesn't allow any headers.
-
-        Returns:
-            NullUrlHeadersConfiguration instance
-        """
-        return NullUrlHeadersConfiguration()
