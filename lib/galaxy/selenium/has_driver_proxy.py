@@ -93,6 +93,16 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Get the current page URL."""
         return self._driver_impl.current_url
 
+    @property
+    def page_source(self) -> str:
+        """Get the HTML source of the current page."""
+        return self._driver_impl.page_source
+
+    @property
+    def page_title(self) -> str:
+        """Get the title of the current page."""
+        return self._driver_impl.page_title
+
     def navigate_to(self, url: str) -> None:
         """Navigate to the specified URL."""
         self._driver_impl.navigate_to(url)
@@ -397,6 +407,15 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
     def save_screenshot(self, path: str) -> None:
         """Save a screenshot to the specified path."""
         self._driver_impl.save_screenshot(path)
+
+    def get_screenshot_as_png(self) -> bytes:
+        """
+        Capture a screenshot and return it as PNG bytes.
+
+        Returns:
+            PNG image data as bytes
+        """
+        return self._driver_impl.get_screenshot_as_png()
 
     # Timeout utilities
 

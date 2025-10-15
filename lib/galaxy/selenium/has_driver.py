@@ -134,6 +134,26 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         return self.driver.current_url
 
+    @property
+    def page_source(self) -> str:
+        """
+        Get the HTML source of the current page.
+
+        Returns:
+            The page HTML as a string
+        """
+        return self.driver.page_source
+
+    @property
+    def page_title(self) -> str:
+        """
+        Get the title of the current page.
+
+        Returns:
+            The page title as a string
+        """
+        return self.driver.title
+
     def navigate_to(self, url: str) -> None:
         """
         Navigate to a URL.
@@ -221,9 +241,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             # Try to switch by name first, if that fails, try by ID
             # We use NAME as the locator because frame_to_be_available_and_switch_to_it
             # checks both name and id attributes
-            return self._wait_on_selenium_condition(
-                ec.frame_to_be_available_and_switch_to_it((By.NAME, frame_reference))
-            )
+            return self._wait_on_selenium_condition(ec.frame_to_be_available_and_switch_to_it(frame_reference))
         elif isinstance(frame_reference, int):
             # Switch by index
             return self.driver.switch_to.frame(frame_reference)
@@ -529,6 +547,15 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             path: File path where the screenshot should be saved
         """
         self.driver.save_screenshot(path)
+
+    def get_screenshot_as_png(self) -> bytes:
+        """
+        Capture a screenshot and return it as PNG bytes.
+
+        Returns:
+            PNG image data as bytes
+        """
+        return self.driver.get_screenshot_as_png()
 
     def quit(self) -> None:
         """

@@ -291,6 +291,26 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         return self.page.url
 
+    @property
+    def page_source(self) -> str:
+        """
+        Get the HTML source of the current page.
+
+        Returns:
+            The page HTML as a string
+        """
+        return self.page.content()
+
+    @property
+    def page_title(self) -> str:
+        """
+        Get the title of the current page.
+
+        Returns:
+            The page title as a string
+        """
+        return self.page.title()
+
     def navigate_to(self, url: str) -> None:
         """
         Navigate to a URL.
@@ -1058,6 +1078,15 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
             path: File path where the screenshot should be saved
         """
         self.page.screenshot(path=path)
+
+    def get_screenshot_as_png(self) -> bytes:
+        """
+        Capture a screenshot and return it as PNG bytes.
+
+        Returns:
+            PNG image data as bytes
+        """
+        return self.page.screenshot()
 
     def quit(self) -> None:
         """

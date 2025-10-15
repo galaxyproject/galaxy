@@ -95,6 +95,18 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         """Get the current page URL."""
         ...
 
+    @property
+    @abstractmethod
+    def page_source(self) -> str:
+        """Get the HTML source of the current page."""
+        ...
+
+    @property
+    @abstractmethod
+    def page_title(self) -> str:
+        """Get the title of the current page."""
+        ...
+
     @abstractmethod
     def navigate_to(self, url: str) -> None:
         """Navigate to the specified URL."""
@@ -443,6 +455,16 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
     @abstractmethod
     def save_screenshot(self, path: str) -> None:
         """Save a screenshot to the specified path."""
+        ...
+
+    @abstractmethod
+    def get_screenshot_as_png(self) -> bytes:
+        """
+        Capture a screenshot and return it as PNG bytes.
+
+        Returns:
+            PNG image data as bytes
+        """
         ...
 
     # Timeout utilities

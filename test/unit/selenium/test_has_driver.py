@@ -948,6 +948,23 @@ class TestScreenshots:
         # Verify file has content
         assert os.path.getsize(screenshot_path) > 0
 
+    def test_get_screenshot_as_png(self, has_driver_instance, base_url):
+        """Test getting a screenshot as PNG bytes."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Get screenshot as bytes
+        screenshot_bytes = has_driver_instance.get_screenshot_as_png()
+
+        # Verify it's bytes
+        assert isinstance(screenshot_bytes, bytes)
+
+        # Verify it's non-empty
+        assert len(screenshot_bytes) > 0
+
+        # Verify it's a PNG file (check magic bytes)
+        # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
+        assert screenshot_bytes[:8] == b"\x89PNG\r\n\x1a\n"
+
 
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""
@@ -1026,3 +1043,65 @@ class TestAccessibility:
         results.assert_passes("any-rule")
         results.assert_does_not_violate("any-rule")
         results.assert_no_violations_with_impact_of_at_least("critical")
+
+
+class TestPageSource:
+    """Test page_source property."""
+
+    def test_page_source_contains_content(self, has_driver_instance, base_url):
+        """Test that page_source contains actual page content."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        source = has_driver_instance.page_source
+
+        # Should contain the test div with known ID
+        assert 'id="test-div"' in source
+
+        # Should contain some visible text content
+        assert "Test Div" in source
+
+    def test_page_source_updates_after_navigation(self, has_driver_instance, base_url):
+        """Test that page_source updates when navigating to different pages."""
+        # Navigate to first page
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        source1 = has_driver_instance.page_source
+
+        # Navigate to different page
+        has_driver_instance.navigate_to(f"{base_url}/accessibility.html")
+        source2 = has_driver_instance.page_source
+
+        # Sources should be different
+        assert source1 != source2
+
+        # Second source should contain content from accessibility page
+        assert "good-section" in source2 or "bad-section" in source2
+
+
+class TestPageTitle:
+    """Test page_title property."""
+
+    def test_page_title_basic(self, has_driver_instance, base_url):
+        """Test that page_title returns the page title."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        title = has_driver_instance.page_title
+
+        # Should match the title from basic.html
+        assert title == "Basic Test Page"
+
+    def test_page_title_updates_after_navigation(self, has_driver_instance, base_url):
+        """Test that page_title updates when navigating to different pages."""
+        # Navigate to first page
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        title1 = has_driver_instance.page_title
+
+        # Navigate to different page
+        has_driver_instance.navigate_to(f"{base_url}/accessibility.html")
+        title2 = has_driver_instance.page_title
+
+        # Titles should be different
+        assert title1 != title2
+
+        # Verify titles match expected values
+        assert title1 == "Basic Test Page"
+        assert title2 == "Accessibility Test Page"
