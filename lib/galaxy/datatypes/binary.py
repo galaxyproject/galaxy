@@ -4905,6 +4905,18 @@ class SpatialData(CompressedZarrZipArchive):
         visible=False,
     )
 
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "SpatialData file"
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            if dataset.metadata.zarr_format:
+                dataset.blurb += f"\nZarr Format v{dataset.metadata.zarr_format}"
+            if dataset.metadata.elements:
+                dataset.blurb += f"\nElements: {len(dataset.metadata.elements)}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
     def sniff(self, filename: str) -> bool:
         """
         Check if the file is a valid SpatialData zarr archive.
