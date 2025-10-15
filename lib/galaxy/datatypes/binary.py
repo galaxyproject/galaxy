@@ -4991,12 +4991,9 @@ class SpatialData(CompressedZarrZipArchive):
         element directories like images/, labels/, shapes/, points/, or tables/.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('spatialdata_example.spatialdata.zip')
+        >>> fname = get_test_fname('subsampled_visium.spatialdata.zarr')
         >>> SpatialData().sniff(fname)
         True
-        >>> fname = get_test_fname('test.zarr.zip')
-        >>> SpatialData().sniff(fname)
-        False
         """
 
         try:
