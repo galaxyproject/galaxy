@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
@@ -51,6 +52,8 @@ interface Props {
     includeDeleted: boolean;
     isAllSelectedMode: boolean;
     canAddLibraryItem?: boolean;
+    showReadme?: boolean;
+    readmeVisible?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -64,6 +67,7 @@ const emit = defineEmits<{
     (e: "deleteFromTable", item: any): void;
     (e: "updateSearch", value: string): void;
     (e: "update:includeDeleted", value: boolean): void;
+    (e: "toggleReadme"): void;
 }>();
 
 const { config, isConfigLoaded } = useConfig();
@@ -409,6 +413,18 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                             include deleted
                         </BFormCheckbox>
                     </div>
+
+                    <BButton
+                        v-if="props.showReadme"
+                        v-b-tooltip.top.noninteractive
+                        :title="!props.readmeVisible ? 'Show README' : 'Hide README'"
+                        variant="outline-primary"
+                        size="sm"
+                        :pressed="props.readmeVisible"
+                        class="mr-1"
+                        @click="$emit('toggleReadme')">
+                        <FontAwesomeIcon :icon="faReadme" fixed-width />
+                    </BButton>
                 </div>
             </div>
         </div>

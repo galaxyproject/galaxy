@@ -10,28 +10,19 @@
             :metadata="folder_metadata"
             :unselected="unselected"
             :is-all-selected-mode="isAllSelectedMode"
+            :show-readme="renderedReadme"
+            :readme-visible="showReadme"
             @updateSearch="updateSearchValue($event)"
             @refreshTable="refreshTable"
             @refreshTableContent="refreshTableContent"
             @fetchFolderContents="fetchFolderContents($event)"
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
-            @newFolder="newFolder" />
-        <div v-if="renderedReadme" class="readme-toggle-container">
-            <b-button
-                v-b-toggle.readme-collapse
-                variant="link"
-                class="readme-toggle-btn">
-                <FontAwesomeIcon :icon="readmeCollapsed ? 'chevron-right' : 'chevron-down'" />
-                README
-            </b-button>
-            <b-collapse id="readme-collapse" v-model="readmeCollapsed" class="readme-collapse">
-                <section class="library-readme-section">
-                    <div v-html="renderedReadme"></div>
-                </section>
-            </b-collapse>
-        </div>
-        <b-table
+            @newFolder="newFolder"
+            @toggleReadme="showReadme = !showReadme" />
+        <div class="library-content-container">
+            <div :class="showReadme ? 'library-main-content with-readme' : 'library-main-content'">
+                <b-table
             id="folder_list_body"
             ref="folder_content_table"
             striped
@@ -272,6 +263,13 @@
                 </b-col>
             </b-row>
         </b-container>
+            </div>
+            <div v-if="showReadme" class="readme-panel">
+                <div class="readme-panel-content">
+                    <div v-html="renderedReadme"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -348,7 +346,7 @@ export default {
                 isBusy: false,
                 folder_metadata: {},
                 renderedReadme: "",
-                readmeCollapsed: false,
+                showReadme: false,
                 fields: fields,
                 selectMode: "multi",
                 perPage: DEFAULT_PER_PAGE,
@@ -743,55 +741,55 @@ th:focus {
     margin-bottom: 2%;
 }
 
-/* README toggle and collapse */
-.readme-toggle-container {
-    margin-bottom: 1rem;
+/* Library content container with split pane */
+.library-content-container {
+    display: flex;
+    gap: 1rem;
 }
 
-.readme-toggle-btn {
-    padding: 0.5rem;
-    font-weight: 500;
-    text-decoration: none;
+.library-main-content {
+    flex: 1;
+    min-width: 0;
 }
 
-.readme-toggle-btn:hover {
-    text-decoration: none;
+.library-main-content.with-readme {
+    flex: 2;
+    min-width: 0;
 }
 
-.readme-collapse {
-    margin-top: 0.5rem;
+/* Make table responsive within flex container */
+.library-main-content :deep(table) {
+    table-layout: auto;
+    width: 100%;
 }
 
-/* Library README section - GitHub-flavored markdown styles */
-.library-readme-section {
-    max-width: 900px;
-    margin: 0 auto 1.5rem;
-    padding: 2rem;
-    background-color: #fdfdfd;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+.library-main-content :deep(.description-field) {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.readme-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid #e1e4e8;
-    padding-bottom: 0.5rem;
+/* README panel */
+.readme-panel {
+    flex: 1;
+    min-width: 400px;
+    border-left: 1px solid #d0d7de;
+    padding-left: 1rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
 }
 
-/* Markdown content styling */
-.library-readme-section :deep(div) {
+.readme-panel-content {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     color: #24292f;
     line-height: 1.6;
-    font-size: 16px;
+    font-size: 14px;
 }
 
-.library-readme-section :deep(h1),
-.library-readme-section :deep(h2),
-.library-readme-section :deep(h3) {
+/* Markdown content styling */
+.readme-panel-content :deep(h1),
+.readme-panel-content :deep(h2),
+.readme-panel-content :deep(h3) {
     margin-top: 1.25em;
     margin-bottom: 0.5em;
     font-weight: 600;
@@ -799,17 +797,29 @@ th:focus {
     padding-bottom: 0.3em;
 }
 
-.library-readme-section :deep(p) {
+.readme-panel-content :deep(h1) {
+    font-size: 1.5rem;
+}
+
+.readme-panel-content :deep(h2) {
+    font-size: 1.25rem;
+}
+
+.readme-panel-content :deep(h3) {
+    font-size: 1.1rem;
+}
+
+.readme-panel-content :deep(p) {
     margin: 0.75em 0;
 }
 
-.library-readme-section :deep(ul),
-.library-readme-section :deep(ol) {
+.readme-panel-content :deep(ul),
+.readme-panel-content :deep(ol) {
     padding-left: 2em;
     margin: 1em 0;
 }
 
-.library-readme-section :deep(code) {
+.readme-panel-content :deep(code) {
     background-color: rgba(27, 31, 35, 0.05);
     padding: 0.2em 0.4em;
     border-radius: 3px;
@@ -817,7 +827,7 @@ th:focus {
     font-size: 85%;
 }
 
-.library-readme-section :deep(pre) {
+.readme-panel-content :deep(pre) {
     background-color: #f6f8fa;
     padding: 1em;
     overflow-x: auto;
@@ -825,16 +835,16 @@ th:focus {
     font-size: 14px;
 }
 
-.library-readme-section :deep(a) {
+.readme-panel-content :deep(a) {
     color: #0366d6;
     text-decoration: none;
 }
 
-.library-readme-section :deep(a:hover) {
+.readme-panel-content :deep(a:hover) {
     text-decoration: underline;
 }
 
-.library-readme-section :deep(blockquote) {
+.readme-panel-content :deep(blockquote) {
     margin: 1em 0;
     padding: 0.5em 1em;
     color: #6a737d;
