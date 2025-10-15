@@ -12,6 +12,7 @@ from functools import (
 )
 from typing import (
     Any,
+    cast,
     Optional,
     TYPE_CHECKING,
 )
@@ -28,6 +29,10 @@ from galaxy.selenium import driver_factory
 from galaxy.selenium.axe_results import assert_baseline_accessible
 from galaxy.selenium.context import GalaxySeleniumContext
 from galaxy.selenium.has_driver import DEFAULT_AXE_SCRIPT_URL
+from galaxy.selenium.has_driver_protocol import (
+    BackendType,
+    HasDriverProtocol,
+)
 from galaxy.selenium.navigates_galaxy import (
     exception_seems_to_indicate_transition,
     galaxy_timeout_handler,
@@ -220,9 +225,9 @@ def dump_test_information(self, name_prefix):
         # Try to use the Selenium driver to recover more debug information, but don't
         # throw an exception if the connection is broken in some way.
         try:
-            self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
-            write_file("page_source.txt", self.driver.page_source)
-            write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
+            self.save_screenshot(os.path.join(target_directory, "last.png"))
+            write_file("page_source.txt", self.page_source)
+            write_file("DOM.txt", self.execute_script("return document.documentElement.outerHTML"))
         except Exception:
             formatted_exception = traceback.format_exc()
             print(f"Failed to use test driver to recover debug information from Selenium: {formatted_exception}")
@@ -299,8 +304,8 @@ retry_assertion_during_transitions = partial(
 class TestSnapshot:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, driver, index: int, description: str):
-        self.screenshot_binary = driver.get_screenshot_as_png()
+    def __init__(self, has_driver: HasDriverProtocol, index: int, description: str):
+        self.screenshot_binary = has_driver.get_screenshot_as_png()
         self.description = description
         self.index = index
         self.exc = traceback.format_exc()
@@ -403,7 +408,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         This information will be automatically written to a per-test directory created for all
         failed tests.
         """
-        self.snapshots.append(TestSnapshot(self.driver, len(self.snapshots), description))
+        self.snapshots.append(TestSnapshot(self, len(self.snapshots), description))
 
     def get_download_path(self):
         """Returns default download path"""
@@ -455,7 +460,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 
     def _setup_galaxy_logging(self):
         self.home()
-        self.driver.execute_script(SETUP_LOGGING_JS)
+        self.execute_script(SETUP_LOGGING_JS)
 
     def login(self):
         if GALAXY_TEST_SELENIUM_USER_EMAIL:
@@ -474,7 +479,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def tear_down_driver(self):
         exception = None
         try:
-            self.driver.close()
+            self.quit()
         except Exception as e:
             if "cannot kill Chrome" in str(e):
                 print(f"Ignoring likely harmless error in Selenium shutdown {e}")
@@ -761,6 +766,8 @@ def default_web_host_for_selenium_tests():
 
 
 def get_configured_driver():
+    backend_type = GALAXY_TEST_DRIVER_BACKEND
+    assert backend_type in ["selenium", "playwright"], f"Unknown GALAXY_TEST_DRIVER_BACKEND [{backend_type}]"
     return driver_factory.ConfiguredDriver(
         galaxy_timeout_handler(TIMEOUT_MULTIPLIER),
         browser=GALAXY_TEST_SELENIUM_BROWSER,
@@ -768,6 +775,7 @@ def get_configured_driver():
         remote_host=GALAXY_TEST_SELENIUM_REMOTE_HOST,
         remote_port=GALAXY_TEST_SELENIUM_REMOTE_PORT,
         headless=headless_selenium(),
+        backend_type=cast(BackendType, backend_type),
     )
 
 
@@ -788,19 +796,21 @@ def headless_selenium():
 
 
 def use_virtual_display():
+    using_selenium = GALAXY_TEST_DRIVER_BACKEND == "selenium"
     if asbool(GALAXY_TEST_SELENIUM_REMOTE):
         return False
 
     if GALAXY_TEST_SELENIUM_HEADLESS == "auto":
         if (
-            driver_factory.is_virtual_display_available()
+            using_selenium
+            and driver_factory.is_virtual_display_available()
             and not driver_factory.get_local_browser(GALAXY_TEST_SELENIUM_BROWSER) == "CHROME"
         ):
             return True
         else:
             return False
     else:
-        return asbool(GALAXY_TEST_SELENIUM_HEADLESS)
+        return using_selenium and asbool(GALAXY_TEST_SELENIUM_HEADLESS)
 
 
 class SeleniumSessionGetPostMixin:
