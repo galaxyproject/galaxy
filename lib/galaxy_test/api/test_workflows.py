@@ -28,13 +28,13 @@ from galaxy.exceptions import error_codes
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util import UNKNOWN
 from galaxy.util.unittest_utils import skip_if_github_down
-from galaxy_test.api.test_tools import TOOL_WITH_SHELL_COMMAND
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     RunJobsSummary,
     skip_without_tool,
+    TOOL_WITH_SHELL_COMMAND,
     wait_on,
     workflow_str,
     WorkflowPopulator,
