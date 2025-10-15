@@ -1,6 +1,5 @@
 import logging
 import os
-from json import dumps
 from typing import (
     Any,
     Optional,
@@ -144,8 +143,6 @@ class SetMetadataToolAction(ToolAction):
         job.tool_id = tool.id
         if user:
             job.user_id = user.id
-        if job_params:
-            job.params = dumps(job_params)
         start_job_state = job.state  # should be job.states.NEW
         try:
             # For backward compatibility, some tools may not have versions yet.

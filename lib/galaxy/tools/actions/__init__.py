@@ -7,7 +7,6 @@ from collections.abc import (
     Mapping,
     MutableMapping,
 )
-from json import dumps
 from typing import (
     Any,
     cast,
@@ -738,8 +737,6 @@ class DefaultToolAction(ToolAction):
         # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
         if job_callback:
             job_callback(job)
-        if job_params:
-            job.params = dumps(job_params)
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
