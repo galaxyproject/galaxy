@@ -4886,33 +4886,120 @@ class SpatialData(CompressedZarrZipArchive):
     file_ext = "spatialdata.zip"
 
     MetadataElement(
-        name="elements",
-        desc="SpatialData elements",
-        default=None,
+        name="images",
+        desc="SpatialData image elements",
+        default=[],
         param=metadata.SelectParameter,
         multiple=True,
         readonly=True,
-        visible=False,
+        visible=True,
+    )
+
+    MetadataElement(
+        name="labels",
+        desc="SpatialData label elements",
+        default=[],
+        param=metadata.SelectParameter,
+        multiple=True,
+        readonly=True,
+        visible=True,
+    )
+
+    MetadataElement(
+        name="shapes",
+        desc="SpatialData shape elements",
+        default=[],
+        param=metadata.SelectParameter,
+        multiple=True,
+        readonly=True,
+        visible=True,
+    )
+
+    MetadataElement(
+        name="points",
+        desc="SpatialData point elements",
+        default=[],
+        param=metadata.SelectParameter,
+        multiple=True,
+        readonly=True,
+        visible=True,
+    )
+
+    MetadataElement(
+        name="tables",
+        desc="SpatialData table elements",
+        default=[],
+        param=metadata.SelectParameter,
+        multiple=True,
+        readonly=True,
+        visible=True,
     )
 
     MetadataElement(
         name="coordinate_systems",
         desc="SpatialData coordinate systems",
-        default=None,
+        default=[],
         param=metadata.SelectParameter,
         multiple=True,
         readonly=True,
-        visible=False,
+        visible=True,
+    )
+
+    MetadataElement(
+        name="spatialdata_version",
+        desc="SpatialData software version",
+        default="",
+        readonly=True,
+        visible=True,
+        no_value="",
     )
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "SpatialData file"
-            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            # Try to make a metadata like spatialdata file itself
+            peek_lines = ["SpatialData object"]
+
+            # Show zarr format if available
             if dataset.metadata.zarr_format:
-                dataset.blurb += f"\nZarr Format v{dataset.metadata.zarr_format}"
-            if dataset.metadata.elements:
-                dataset.blurb += f"\nElements: {len(dataset.metadata.elements)}"
+                peek_lines[0] += f" (Zarr Format v{dataset.metadata.zarr_format})"
+
+            # Show each element type if present
+            if dataset.metadata.images:
+                peek_lines.append(f"├── Images ({len(dataset.metadata.images)})")
+                for img in dataset.metadata.images:
+                    peek_lines.append(f"│     └── '{img}'")
+
+            if dataset.metadata.labels:
+                peek_lines.append(f"├── Labels ({len(dataset.metadata.labels)})")
+                for lbl in dataset.metadata.labels:
+                    peek_lines.append(f"│     └── '{lbl}'")
+
+            if dataset.metadata.shapes:
+                peek_lines.append(f"├── Shapes ({len(dataset.metadata.shapes)})")
+                for shp in dataset.metadata.shapes:
+                    peek_lines.append(f"│     └── '{shp}'")
+
+            if dataset.metadata.points:
+                peek_lines.append(f"├── Points ({len(dataset.metadata.points)})")
+                for pts in dataset.metadata.points:
+                    peek_lines.append(f"│     └── '{pts}'")
+
+            if dataset.metadata.tables:
+                peek_lines.append(f"└── Tables ({len(dataset.metadata.tables)})")
+                for tbl in dataset.metadata.tables:
+                    peek_lines.append(f"      └── '{tbl}'")
+
+            # Show coordinate systems if available
+            if dataset.metadata.coordinate_systems:
+                peek_lines.append("")
+                peek_lines.append("with coordinate systems:")
+                for cs in dataset.metadata.coordinate_systems:
+                    peek_lines.append(f"  • {cs}")
+
+            dataset.peek = "\n".join(peek_lines)
+            dataset.blurb = f"SpatialData file ({nice_size(dataset.get_size())})"
+            if dataset.metadata.spatialdata_version:
+                dataset.blurb += f"\nVersion: {dataset.metadata.spatialdata_version}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -4921,31 +5008,90 @@ class SpatialData(CompressedZarrZipArchive):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with zipfile.ZipFile(dataset.get_file_name()) as zf:
-                # Look for SpatialData structure
-                elements = []
+                # Initialize element dictionaries to track elements by type
+                images = set()
+                labels = set()
+                shapes = set()
+                points = set()
+                tables = set()
                 coordinate_systems = set()
+                spatialdata_version = ""
 
+                # Find the root zarr directory
+                root_zarr = None
                 for file in zf.namelist():
-                    # SpatialData elements are stored in zarr groups
-                    # Common element types: images, labels, shapes, points, tables
-                    parts = file.split('/')
-                    if len(parts) > 1:
-                        element_type = parts[0]
-                        if element_type in ['images', 'labels', 'shapes', 'points', 'tables']:
-                            if len(parts) > 1 and parts[1] not in elements:
-                                elements.append(parts[1])
+                    if file.endswith('.zarr/.zattrs'):
+                        root_zarr = file.replace('/.zattrs', '')
+                        break
 
-                    # Look for coordinate system information in zarr metadata
-                    if file.endswith('.zattrs') or file.endswith('zarr.json'):
+                # Read root attributes for version info
+                if root_zarr:
+                    root_attrs_path = f"{root_zarr}/.zattrs"
+                    try:
+                        with zf.open(root_attrs_path) as f:
+                            root_attrs = json.load(f)
+                            if 'spatialdata_attrs' in root_attrs:
+                                spatialdata_attrs = root_attrs['spatialdata_attrs']
+                                spatialdata_version = spatialdata_attrs.get('spatialdata_software_version', '')
+                    except Exception:
+                        pass
+
+                # Parse all files to extract elements and coordinate systems
+                for file in zf.namelist():
+                    # Extract elements based on directory structure
+                    # Expected structure: <root>.zarr/<element_type>/<element_name>/...
+                    if root_zarr and file.startswith(root_zarr + '/'):
+                        rel_parts = file[len(root_zarr) + 1:].split('/')
+                        if len(rel_parts) >= 2:
+                            element_type = rel_parts[0]
+                            element_name = rel_parts[1]
+
+                            # Skip metadata files and empty names
+                            if element_name and not element_name.startswith('.'):
+                                if element_type == 'images':
+                                    images.add(element_name)
+                                elif element_type == 'labels':
+                                    labels.add(element_name)
+                                elif element_type == 'shapes':
+                                    shapes.add(element_name)
+                                elif element_type == 'points':
+                                    points.add(element_name)
+                                elif element_type == 'tables':
+                                    tables.add(element_name)
+
+                    # Extract coordinate system information from .zattrs files
+                    if file.endswith('.zattrs'):
                         try:
                             with zf.open(file) as f:
                                 attrs = json.load(f)
+
                                 # Check for coordinate transformations
                                 if 'coordinateTransformations' in attrs:
-                                    for transform in attrs['coordinateTransformations']:
-                                        if 'output' in transform:
-                                            coordinate_systems.add(transform['output'])
-                                # Check for spatialdata transform attribute
+                                    transforms = attrs['coordinateTransformations']
+                                    if isinstance(transforms, list):
+                                        for transform in transforms:
+                                            if isinstance(transform, dict) and 'output' in transform:
+                                                output = transform['output']
+                                                if isinstance(output, dict) and 'name' in output:
+                                                    coordinate_systems.add(output['name'])
+                                                elif isinstance(output, str):
+                                                    coordinate_systems.add(output)
+
+                                # Check for multiscales (images/labels)
+                                if 'multiscales' in attrs:
+                                    multiscales = attrs['multiscales']
+                                    if isinstance(multiscales, list):
+                                        for ms in multiscales:
+                                            if isinstance(ms, dict) and 'coordinateTransformations' in ms:
+                                                for ct in ms['coordinateTransformations']:
+                                                    if isinstance(ct, dict) and 'output' in ct:
+                                                        output = ct['output']
+                                                        if isinstance(output, dict) and 'name' in output:
+                                                            coordinate_systems.add(output['name'])
+                                                        elif isinstance(output, str):
+                                                            coordinate_systems.add(output)
+
+                                # Check for spatialdata transform attribute (legacy)
                                 if 'transform' in attrs:
                                     transform_dict = attrs['transform']
                                     if isinstance(transform_dict, dict):
@@ -4953,8 +5099,14 @@ class SpatialData(CompressedZarrZipArchive):
                         except Exception:
                             pass
 
-                dataset.metadata.elements = sorted(elements)
+                # Set metadata
+                dataset.metadata.images = sorted(list(images))
+                dataset.metadata.labels = sorted(list(labels))
+                dataset.metadata.shapes = sorted(list(shapes))
+                dataset.metadata.points = sorted(list(points))
+                dataset.metadata.tables = sorted(list(tables))
                 dataset.metadata.coordinate_systems = sorted(list(coordinate_systems))
+                dataset.metadata.spatialdata_version = spatialdata_version
         except Exception:
             pass
 
