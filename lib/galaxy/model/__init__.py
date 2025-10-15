@@ -1584,7 +1584,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     destination_params: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     object_store_id: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     imported: Mapped[Optional[bool]] = mapped_column(default=False, index=True)
-    params: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
     object_store_id_overrides: Mapped[Optional[dict[str, Optional[str]]]] = mapped_column(JSONType)
@@ -1849,9 +1848,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def get_handler(self):
         return self.handler
 
-    def get_params(self):
-        return self.params
-
     def get_user(self):
         # This is defined in the SQL Alchemy mapper as a relation to the User.
         return self.user
@@ -1937,9 +1933,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_handler(self, handler):
         self.handler = handler
-
-    def set_params(self, params):
-        self.params = params
 
     def add_parameter(self, name, value):
         self.parameters.append(JobParameter(name, value))
