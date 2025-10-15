@@ -47,11 +47,7 @@ export default class {
     }
     hide() {
         this.visible = false;
-        this.el.style.transition = "opacity 0.15s";
-        this.el.style.opacity = 0;
-        setTimeout(() => {
-            this.el.style.display = "none";
-        }, 150);
+        this.el.style.display = "none";
         if (this._keyupHandler) {
             document.removeEventListener("keyup", this._keyupHandler);
             this._keyupHandler = null;
