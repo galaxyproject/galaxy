@@ -5199,6 +5199,7 @@ class SpatialData(CompressedZarrZipArchive):
             # Any exception during parsing means it's not a valid spatialdata file
             return False
 
+
 @build_sniff_from_prefix
 class Safetensors(Binary):
     """
