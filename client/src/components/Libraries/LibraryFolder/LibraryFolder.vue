@@ -10,7 +10,7 @@
             :metadata="folder_metadata"
             :unselected="unselected"
             :is-all-selected-mode="isAllSelectedMode"
-            :show-readme="renderedReadme"
+            :show-readme="!!renderedReadme"
             :readme-visible="showReadme.value"
             @updateSearch="updateSearchValue($event)"
             @refreshTable="refreshTable"
@@ -263,7 +263,7 @@
             </BRow>
         </BContainer>
             </div>
-            <div v-if="showReadme.value" class="readme-panel">
+            <div v-if="showReadme.value && renderedReadme" class="readme-panel">
                 <div class="readme-panel-content">
                     <div v-html="renderedReadme"></div>
                 </div>
