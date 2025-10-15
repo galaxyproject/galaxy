@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -51,7 +53,7 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
         len_type_select = self.wait_for_selector('select[id="type"]')
         len_type_select.click()
 
-        option = self.wait_for_sizzle_selector_clickable('option[value="text"]')
+        option = self.wait_for_selector_clickable('option[value="text"]')
         option.click()
         content_area = self.wait_for_and_click_selector('textarea[id="len-file-text-area"]')
         content_area.send_keys("content")
@@ -61,11 +63,11 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
     def delete_custom_build(self, build_name):
         delete_button = None
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
-            td = row.find_elements(self.by.TAG_NAME, "td")
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element(self.by.CSS_SELECTOR, ".fa-trash-o")
+                delete_button = td[3].find_element(By.CSS_SELECTOR, ".fa-trash-o")
                 break
 
         if delete_button is None:
@@ -77,8 +79,8 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
-            name = row.find_elements(self.by.TAG_NAME, "td")[0].text
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            name = row.find_elements(By.TAG_NAME, "td")[0].text
             builds.append(name)
         return builds
 

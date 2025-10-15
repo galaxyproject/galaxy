@@ -42,7 +42,6 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
-from . import sizzle
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
@@ -2034,13 +2033,6 @@ class NavigatesGalaxy(HasDriver):
 
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
-
-    def wait_for_sizzle_selector_clickable(self, selector):
-        element = self._wait_on(
-            sizzle.sizzle_selector_clickable(selector),
-            f"sizzle/jQuery selector [{selector}] to become clickable",
-        )
-        return element
 
     @retry_during_transitions
     def click_history_options(self):
