@@ -291,6 +291,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.monitor_thread_join_timeout = 1
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get("vault_config_file")
+        self.url_headers_config_file = None
         self.max_discovered_files = 10000
         self.display_builtin_converters = True
         self.enable_notification_system = True
