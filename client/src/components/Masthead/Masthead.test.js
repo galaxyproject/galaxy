@@ -2,11 +2,11 @@ import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { WindowManager } from "@/entry/analysis/window-manager";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { setupMockConfig } from "tests/jest/mockConfig";
 
+import { WindowManager } from "@/entry/analysis/window-manager";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadMastheadWebhooks } from "./_webhooks";
