@@ -2007,7 +2007,7 @@ class ToolModule(WorkflowModule):
 
     # ---- Saving in various forms ------------------------------------------
 
-    def save_to_step(self, step, detached=False):
+    def save_to_step(self, step: WorkflowStep, detached=False):
         super().save_to_step(step, detached=detached)
         step.tool_id = self.tool_id
         if self.tool:
@@ -2017,7 +2017,7 @@ class ToolModule(WorkflowModule):
         if tool_uuid := getattr(self, "tool_uuid", None):
             tool = self.trans.app.toolbox.get_tool(tool_uuid=tool_uuid, user=self.trans.user)
             if tool:
-                step.dynamic_tool = tool.dynamic_tool
+                step.dynamic_tool_id = tool.dynamic_tool.id
         if not detached:
             for k, v in self.post_job_actions.items():
                 pja = self.__to_pja(k, v, step)
