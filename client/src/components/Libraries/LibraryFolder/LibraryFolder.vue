@@ -11,7 +11,7 @@
             :unselected="unselected"
             :is-all-selected-mode="isAllSelectedMode"
             :show-readme="renderedReadme"
-            :readme-visible="showReadme"
+            :readme-visible="showReadme.value"
             @updateSearch="updateSearchValue($event)"
             @refreshTable="refreshTable"
             @refreshTableContent="refreshTableContent"
@@ -19,10 +19,10 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder"
-            @toggleReadme="showReadme = !showReadme" />
+            @toggleReadme="toggleReadme" />
 
         <div class="library-content-container">
-            <div :class="showReadme ? 'library-main-content with-readme' : 'library-main-content'">
+            <div :class="showReadme.value ? 'library-main-content with-readme' : 'library-main-content'">
                 <GTable
             id="folder_list_body"
             ref="folderTable"
@@ -263,7 +263,7 @@
             </BRow>
         </BContainer>
             </div>
-            <div v-if="showReadme" class="readme-panel">
+            <div v-if="showReadme.value" class="readme-panel">
                 <div class="readme-panel-content">
                     <div v-html="renderedReadme"></div>
                 </div>
@@ -293,6 +293,7 @@ import { mapState } from "pinia";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 import { useMarkdown } from "@/composables/markdown";
 import { usePersistentRef } from "@/composables/persistentRef";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
@@ -378,7 +379,6 @@ export default {
                 isBusy: false,
                 folder_metadata: {},
                 renderedReadme: "",
-                showReadme: false,
                 fields: fields,
                 selectMode: "multi",
                 perPage: DEFAULT_PER_PAGE,
@@ -421,6 +421,9 @@ export default {
         this.services = new Services({ root: this.root });
         this.perPageRef = usePersistentRef("library-folder-per-page", DEFAULT_PER_PAGE);
         this.perPage = this.perPageRef.value;
+        const readmeToggle = usePersistentToggle("library-folder-readme");
+        this.showReadme = readmeToggle.toggled;
+        this.toggleReadme = readmeToggle.toggle;
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
