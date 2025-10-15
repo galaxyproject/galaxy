@@ -4936,6 +4936,15 @@ class SpatialData(CompressedZarrZipArchive):
     )
 
     MetadataElement(
+        name="table_shapes",
+        desc="SpatialData table shapes (n_obs, n_vars)",
+        default={},
+        param=metadata.DictParameter,
+        readonly=True,
+        visible=False,
+    )
+
+    MetadataElement(
         name="coordinate_systems",
         desc="SpatialData coordinate systems",
         default=[],
@@ -4987,7 +4996,12 @@ class SpatialData(CompressedZarrZipArchive):
             if dataset.metadata.tables:
                 peek_lines.append(f"└── Tables ({len(dataset.metadata.tables)})")
                 for tbl in dataset.metadata.tables:
-                    peek_lines.append(f"      └── '{tbl}'")
+                    # Add shape information if available
+                    if dataset.metadata.table_shapes and tbl in dataset.metadata.table_shapes:
+                        shape = dataset.metadata.table_shapes[tbl]
+                        peek_lines.append(f"      └── '{tbl}': AnnData {shape}")
+                    else:
+                        peek_lines.append(f"      └── '{tbl}'")
 
             # Show coordinate systems if available
             if dataset.metadata.coordinate_systems:
@@ -5099,12 +5113,39 @@ class SpatialData(CompressedZarrZipArchive):
                         except Exception:
                             pass
 
+                # Extract table shapes (n_obs, n_vars) from AnnData tables
+                table_shapes = {}
+                for table_name in tables:
+                    try:
+                        # Get obs shape from obs/_index/.zarray
+                        obs_index_path = f"{root_zarr}/tables/{table_name}/obs/_index/.zarray"
+                        var_index_path = f"{root_zarr}/tables/{table_name}/var/_index/.zarray"
+
+                        n_obs = None
+                        n_vars = None
+
+                        if obs_index_path in zf.namelist():
+                            with zf.open(obs_index_path) as f:
+                                obs_array = json.load(f)
+                                n_obs = obs_array.get('shape', [None])[0]
+
+                        if var_index_path in zf.namelist():
+                            with zf.open(var_index_path) as f:
+                                var_array = json.load(f)
+                                n_vars = var_array.get('shape', [None])[0]
+
+                        if n_obs is not None and n_vars is not None:
+                            table_shapes[table_name] = (n_obs, n_vars)
+                    except Exception:
+                        pass
+
                 # Set metadata
                 dataset.metadata.images = sorted(list(images))
                 dataset.metadata.labels = sorted(list(labels))
                 dataset.metadata.shapes = sorted(list(shapes))
                 dataset.metadata.points = sorted(list(points))
                 dataset.metadata.tables = sorted(list(tables))
+                dataset.metadata.table_shapes = table_shapes
                 dataset.metadata.coordinate_systems = sorted(list(coordinate_systems))
                 dataset.metadata.spatialdata_version = spatialdata_version
         except Exception:
