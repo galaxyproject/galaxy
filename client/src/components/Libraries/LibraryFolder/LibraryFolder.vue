@@ -17,6 +17,9 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder" />
+        <section v-if="renderedReadme" class="library-readme-section">
+            <div v-html="renderedReadme"></div>
+        </section>
 
         <GTable
             id="folder_list_body"
@@ -257,10 +260,6 @@
                 </BCol>
             </BRow>
         </BContainer>
-        <section v-if="renderedReadme" class="library-readme-section">
-            <hr />
-            <div v-html="renderedReadme"></div>
-        </section>
     </div>
 </template>
 
