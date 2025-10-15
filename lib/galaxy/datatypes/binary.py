@@ -4865,7 +4865,7 @@ class Hic(Binary):
             header_bytes = handle.read(8)
         dataset.metadata.version = struct.unpack("<i", header_bytes[4:8])[0]
 
-@build_sniff_from_prefix
+
 class SpatialData(CompressedZarrZipArchive):
     """
     Class for SpatialData file: https://spatialdata.scverse.org/
@@ -4963,7 +4963,8 @@ class SpatialData(CompressedZarrZipArchive):
         Check if the file is a valid SpatialData zarr archive.
 
         SpatialData files are Zarr archives with specific structure containing
-        element directories like images/, labels/, shapes/, points/, or tables/.
+        a root .zattrs file with spatialdata_attrs metadata and element directories
+        like images/, labels/, shapes/, points/, or tables/.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('subsampled_visium.spatialdata.zip')
@@ -4973,16 +4974,29 @@ class SpatialData(CompressedZarrZipArchive):
 
         try:
             with zipfile.ZipFile(filename) as zf:
-                # Look for SpatialData-specific structure
-                # SpatialData has element directories like images/, labels/, shapes/, points/, tables/
-                spatialdata_elements = {'images', 'labels', 'shapes', 'points', 'tables'}
+                # First, check if this is a zarr archive at all
+                if not super().sniff(filename):
+                    return False
+
+                # Look for the root .zattrs file with spatialdata_attrs.
+                # This can distinguish spatialdata from other zarr archives.
                 for file in zf.namelist():
+                    # Look for .zattrs file at the root of the zarr store
+                    # The zarr store can be at root or one level deeper
                     parts = file.split('/')
-                    # Check both root level and one level deeper
-                    if len(parts) > 1 and parts[1] in spatialdata_elements:
-                        return True
-                    if len(parts) > 0 and parts[0] in spatialdata_elements:
-                        return True
+                    # Root level: .zattrs or one level deep: <name>.zarr/.zattrs
+                    if (
+                        file == '.zattrs'
+                        or (len(parts) == 2 and parts[0].endswith('.zarr') and parts[1] == '.zattrs')
+                    ):
+                        try:
+                            with zf.open(file) as f:
+                                attrs = json.load(f)
+                                # Check for SpatialData-specific metadata
+                                if 'spatialdata_attrs' in attrs:
+                                    return True
+                        except Exception:
+                            pass
 
                 return False
         except Exception:
