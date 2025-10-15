@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
@@ -51,6 +52,8 @@ interface Props {
     includeDeleted: boolean;
     isAllSelectedMode: boolean;
     canAddLibraryItem?: boolean;
+    showReadme?: boolean;
+    readmeVisible?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -64,6 +67,7 @@ const emit = defineEmits<{
     (e: "deleteFromTable", item: any): void;
     (e: "updateSearch", value: string): void;
     (e: "update:includeDeleted", value: boolean): void;
+    (e: "toggleReadme"): void;
 }>();
 
 const { config, isConfigLoaded } = useConfig();
@@ -320,8 +324,8 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                 <FontAwesomeIcon :icon="faHome" />
             </BButton>
 
-            <div>
-                <div class="form-inline">
+            <div class="flex-grow-1">
+                <div class="form-inline d-flex w-100">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
 
                     <BButton
@@ -409,6 +413,24 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                             include deleted
                         </BFormCheckbox>
                     </div>
+
+                    <BButton
+                        v-b-tooltip.top.noninteractive
+                        :title="
+                            props.showReadme
+                                ? !props.readmeVisible
+                                    ? 'Show README'
+                                    : 'Hide README'
+                                : 'No README available'
+                        "
+                        :pressed="props.readmeVisible"
+                        :disabled="!props.showReadme"
+                        class="primary-button ml-auto"
+                        type="button"
+                        @click="$emit('toggleReadme')">
+                        <FontAwesomeIcon :icon="faReadme" fixed-width />
+                        README
+                    </BButton>
                 </div>
             </div>
         </div>

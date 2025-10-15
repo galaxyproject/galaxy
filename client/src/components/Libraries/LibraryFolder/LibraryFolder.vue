@@ -10,254 +10,278 @@
             :metadata="folder_metadata"
             :unselected="unselected"
             :is-all-selected-mode="isAllSelectedMode"
+            :show-readme="!!renderedReadme"
+            :readme-visible="showReadme.value"
             @updateSearch="updateSearchValue($event)"
             @refreshTable="refreshTable"
             @refreshTableContent="refreshTableContent"
             @fetchFolderContents="fetchFolderContents($event)"
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
-            @newFolder="newFolder" />
-        <b-table
-            id="folder_list_body"
-            ref="folder_content_table"
-            striped
-            hover
-            :busy.sync="isBusy"
-            :fields="fields"
-            :items="folderContents"
-            :per-page="perPage"
-            selectable
-            no-select-on-click
-            show-empty
-            @sort-changed="onSort"
-            @row-clicked="onRowClick">
-            <template v-slot:empty>
-                <div v-if="isBusy" class="text-center my-2">
-                    <b-spinner class="align-middle"></b-spinner>
-                    <strong>Loading...</strong>
-                </div>
-                <div v-else class="empty-folder-message">
-                    This folder is either empty or you do not have proper access permissions to see the contents. If you
-                    expected something to show up please consult the
-                    <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
-                        library security wikipage
-                    </a>
-                </div>
-            </template>
-            <template v-slot:head(selected)="">
-                <FontAwesomeIcon
-                    v-if="isAllSelectedMode && !isAllSelectedOnPage()"
-                    class="select-checkbox cursor-pointer"
-                    size="lg"
-                    title="Check to select all datasets"
-                    icon="minus-square"
-                    @click="toggleSelect" />
-                <FontAwesomeIcon
-                    v-else
-                    class="select-checkbox cursor-pointer"
-                    size="lg"
-                    title="Check to select all datasets"
-                    :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
-                    @click="toggleSelect" />
-            </template>
-            <template v-slot:cell(selected)="row">
-                <FontAwesomeIcon
-                    v-if="!row.item.isNewFolder && !row.item.deleted"
-                    class="select-checkbox lib-folder-checkbox"
-                    size="lg"
-                    :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']" />
-            </template>
-            <!-- Name -->
-            <template v-slot:cell(name)="row">
-                <div v-if="row.item.editMode">
-                    <textarea
-                        v-if="row.item.isNewFolder"
-                        :ref="'name' + row.item.id"
-                        v-model="row.item.name"
-                        class="form-control"
-                        name="input_folder_name"
-                        rows="3" />
-                    <textarea v-else :ref="'name' + row.item.id" class="form-control" :value="row.item.name" rows="3" />
-                </div>
-                <div v-else-if="!row.item.deleted">
-                    <b-link
-                        v-if="row.item.type === 'folder'"
-                        :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }">
-                        {{ row.item.name }}
-                    </b-link>
-
-                    <b-link
-                        v-else
-                        :to="{
-                            name: `LibraryDataset`,
-                            params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
-                        }">
-                        {{ row.item.name }}
-                    </b-link>
-                </div>
-                <!-- Deleted Item-->
-                <div v-else>
-                    <div class="deleted-item">{{ row.item.name }}</div>
-                </div>
-            </template>
-
-            <!-- Description -->
-            <template v-slot:cell(message)="row">
-                <div v-if="row.item.editMode">
-                    <textarea
-                        v-if="row.item.isNewFolder"
-                        :ref="'description' + row.item.id"
-                        v-model="row.item.description"
-                        class="form-control input_folder_description"
-                        rows="3"></textarea>
-                    <textarea
-                        v-else
-                        :ref="'description' + row.item.id"
-                        class="form-control input_folder_description"
-                        :value="row.item.description"
-                        rows="3"></textarea>
-                </div>
-                <div v-else>
-                    <div v-if="getMessage(row.item)" class="description-field">
-                        <div
-                            v-if="
-                                getMessage(row.item).length > maxDescriptionLength &&
-                                !expandedMessage.includes(row.item.id)
-                            ">
-                            <!-- eslint-disable vue/no-v-html -->
-                            <span
-                                class="shrinked-description"
-                                :title="getMessage(row.item)"
-                                v-html="linkify(sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
-                            </span>
-                            <!-- eslint-enable vue/no-v-html -->
-                            <span :title="getMessage(row.item)"> ...</span>
-                            <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)">
-                                (more)
+            @newFolder="newFolder"
+            @toggleReadme="toggleReadme" />
+        <div class="library-content-container">
+            <div :class="showReadme.value ? 'library-main-content with-readme' : 'library-main-content'">
+                <b-table
+                    id="folder_list_body"
+                    ref="folder_content_table"
+                    striped
+                    hover
+                    :busy.sync="isBusy"
+                    :fields="fields"
+                    :items="folderContents"
+                    :per-page="perPage"
+                    selectable
+                    no-select-on-click
+                    show-empty
+                    @sort-changed="onSort"
+                    @row-clicked="onRowClick">
+                    <template v-slot:empty>
+                        <div v-if="isBusy" class="text-center my-2">
+                            <b-spinner class="align-middle"></b-spinner>
+                            <strong>Loading...</strong>
+                        </div>
+                        <div v-else class="empty-folder-message">
+                            This folder is either empty or you do not have proper access permissions to see the
+                            contents. If you expected something to show up please consult the
+                            <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
+                                library security wikipage
                             </a>
                         </div>
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>
-                    </div>
-                </div>
-            </template>
-            <template v-slot:cell(type_icon)="row">
-                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
-                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
-            </template>
-            <template v-slot:cell(type)="row">
-                <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
-                <div v-else-if="row.item.type === 'file'">{{ row.item.file_ext }}</div>
-            </template>
-            <template v-slot:cell(raw_size)="row">
-                <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)"></div>
-            </template>
-            <template v-slot:cell(state)="row">
-                <div v-if="row.item.state != 'ok'">
-                    {{ row.item.state }}
-                </div>
-            </template>
-            <template v-slot:cell(update_time)="row">
-                <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
-            </template>
-            <template v-slot:cell(is_unrestricted)="row">
-                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
-                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" icon="ban"></FontAwesomeIcon>
-                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
-                <FontAwesomeIcon
-                    v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
-                    title="Restricted dataset"
-                    icon="shield-alt" />
-            </template>
+                    </template>
+                    <template v-slot:head(selected)="">
+                        <FontAwesomeIcon
+                            v-if="isAllSelectedMode && !isAllSelectedOnPage()"
+                            class="select-checkbox cursor-pointer"
+                            size="lg"
+                            title="Check to select all datasets"
+                            icon="minus-square"
+                            @click="toggleSelect" />
+                        <FontAwesomeIcon
+                            v-else
+                            class="select-checkbox cursor-pointer"
+                            size="lg"
+                            title="Check to select all datasets"
+                            :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
+                            @click="toggleSelect" />
+                    </template>
+                    <template v-slot:cell(selected)="row">
+                        <FontAwesomeIcon
+                            v-if="!row.item.isNewFolder && !row.item.deleted"
+                            class="select-checkbox lib-folder-checkbox"
+                            size="lg"
+                            :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']" />
+                    </template>
+                    <!-- Name -->
+                    <template v-slot:cell(name)="row">
+                        <div v-if="row.item.editMode">
+                            <textarea
+                                v-if="row.item.isNewFolder"
+                                :ref="'name' + row.item.id"
+                                v-model="row.item.name"
+                                class="form-control"
+                                name="input_folder_name"
+                                rows="3" />
+                            <textarea
+                                v-else
+                                :ref="'name' + row.item.id"
+                                class="form-control"
+                                :value="row.item.name"
+                                rows="3" />
+                        </div>
+                        <div v-else-if="!row.item.deleted">
+                            <b-link
+                                v-if="row.item.type === 'folder'"
+                                :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }">
+                                {{ row.item.name }}
+                            </b-link>
 
-            <template v-slot:cell(buttons)="row">
-                <div v-if="row.item.editMode">
-                    <button
-                        class="primary-button btn-sm permission_folder_btn save_folder_btn"
-                        :title="'save ' + row.item.name"
-                        @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
-                        <FontAwesomeIcon :icon="['far', 'save']" />
-                        Save
-                    </button>
-                    <button
-                        class="primary-button btn-sm permission_folder_btn"
-                        title="Discard Changes"
-                        @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon :icon="['fas', 'times']" />
-                        Cancel
-                    </button>
-                </div>
-                <div v-else>
-                    <b-button
-                        v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
-                        data-toggle="tooltip"
-                        data-placement="top"
-                        size="sm"
-                        class="lib-btn permission_folder_btn edit_folder_btn"
-                        :title="'Edit ' + row.item.name"
-                        @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon icon="pencil-alt" />
-                        Edit
-                    </b-button>
-                    <b-button
-                        v-if="currentUser.is_admin"
-                        size="sm"
-                        class="lib-btn permission_lib_btn"
-                        :title="`Permissions of ${row.item.name}`"
-                        :to="{ path: `${navigateToPermission(row.item)}` }">
-                        <FontAwesomeIcon icon="users" />
-                        Manage
-                    </b-button>
-                    <button
-                        v-if="row.item.deleted"
-                        :title="'Undelete ' + row.item.name"
-                        class="lib-btn primary-button btn-sm undelete_dataset_btn"
-                        type="button"
-                        @click="undelete(row.item, folder_id)">
-                        <FontAwesomeIcon icon="unlock" />
-                        Undelete
-                    </button>
-                </div>
-            </template>
-        </b-table>
-        <!-- hide pagination if the table is loading-->
-        <b-container>
-            <b-row align-v="center" class="justify-content-md-center">
-                <b-col md="auto">
-                    <div v-if="isBusy">
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
-                    </div>
-                    <b-pagination
-                        v-else
-                        :value="currentPage"
-                        :total-rows="total_rows"
-                        :per-page="perPage"
-                        aria-controls="folder_list_body"
-                        @input="changePage">
-                    </b-pagination>
-                </b-col>
+                            <b-link
+                                v-else
+                                :to="{
+                                    name: `LibraryDataset`,
+                                    params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
+                                }">
+                                {{ row.item.name }}
+                            </b-link>
+                        </div>
+                        <!-- Deleted Item-->
+                        <div v-else>
+                            <div class="deleted-item">{{ row.item.name }}</div>
+                        </div>
+                    </template>
 
-                <b-col cols="1.5">
-                    <table>
-                        <tr>
-                            <td class="m-0 p-0">
-                                <b-form-input
-                                    id="paginationPerPage"
-                                    v-model="perPage"
-                                    class="pagination-input-field"
-                                    autocomplete="off"
-                                    type="number" />
-                            </td>
-                            <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
-                            </td>
-                        </tr>
-                    </table>
-                </b-col>
-            </b-row>
-        </b-container>
+                    <!-- Description -->
+                    <template v-slot:cell(message)="row">
+                        <div v-if="row.item.editMode">
+                            <textarea
+                                v-if="row.item.isNewFolder"
+                                :ref="'description' + row.item.id"
+                                v-model="row.item.description"
+                                class="form-control input_folder_description"
+                                rows="3"></textarea>
+                            <textarea
+                                v-else
+                                :ref="'description' + row.item.id"
+                                class="form-control input_folder_description"
+                                :value="row.item.description"
+                                rows="3"></textarea>
+                        </div>
+                        <div v-else>
+                            <div v-if="getMessage(row.item)" class="description-field">
+                                <div
+                                    v-if="
+                                        getMessage(row.item).length > maxDescriptionLength &&
+                                        !expandedMessage.includes(row.item.id)
+                                    ">
+                                    <!-- eslint-disable vue/no-v-html -->
+                                    <span
+                                        class="shrinked-description"
+                                        :title="getMessage(row.item)"
+                                        v-html="
+                                            linkify(sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))
+                                        ">
+                                    </span>
+                                    <!-- eslint-enable vue/no-v-html -->
+                                    <span :title="getMessage(row.item)"> ...</span>
+                                    <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)">
+                                        (more)
+                                    </a>
+                                </div>
+                                <!-- eslint-disable-next-line vue/no-v-html -->
+                                <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>
+                            </div>
+                        </div>
+                    </template>
+                    <template v-slot:cell(type_icon)="row">
+                        <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
+                        <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
+                    </template>
+                    <template v-slot:cell(type)="row">
+                        <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
+                        <div v-else-if="row.item.type === 'file'">{{ row.item.file_ext }}</div>
+                    </template>
+                    <template v-slot:cell(raw_size)="row">
+                        <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)"></div>
+                    </template>
+                    <template v-slot:cell(state)="row">
+                        <div v-if="row.item.state != 'ok'">
+                            {{ row.item.state }}
+                        </div>
+                    </template>
+                    <template v-slot:cell(update_time)="row">
+                        <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
+                    </template>
+                    <template v-slot:cell(is_unrestricted)="row">
+                        <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
+                        <FontAwesomeIcon
+                            v-else-if="row.item.deleted"
+                            title="Marked deleted"
+                            icon="ban"></FontAwesomeIcon>
+                        <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
+                        <FontAwesomeIcon
+                            v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
+                            title="Restricted dataset"
+                            icon="shield-alt" />
+                    </template>
+
+                    <template v-slot:cell(buttons)="row">
+                        <div v-if="row.item.editMode">
+                            <button
+                                class="primary-button btn-sm permission_folder_btn save_folder_btn"
+                                :title="'save ' + row.item.name"
+                                @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
+                                <FontAwesomeIcon :icon="['far', 'save']" />
+                                Save
+                            </button>
+                            <button
+                                class="primary-button btn-sm permission_folder_btn"
+                                title="Discard Changes"
+                                @click="toggleEditMode(row.item)">
+                                <FontAwesomeIcon :icon="['fas', 'times']" />
+                                Cancel
+                            </button>
+                        </div>
+                        <div v-else>
+                            <b-button
+                                v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                size="sm"
+                                class="lib-btn permission_folder_btn edit_folder_btn"
+                                :title="'Edit ' + row.item.name"
+                                @click="toggleEditMode(row.item)">
+                                <FontAwesomeIcon icon="pencil-alt" />
+                                Edit
+                            </b-button>
+                            <b-button
+                                v-if="currentUser.is_admin"
+                                size="sm"
+                                class="lib-btn permission_lib_btn"
+                                :title="`Permissions of ${row.item.name}`"
+                                :to="{ path: `${navigateToPermission(row.item)}` }">
+                                <FontAwesomeIcon icon="users" />
+                                Manage
+                            </b-button>
+                            <button
+                                v-if="row.item.deleted"
+                                :title="'Undelete ' + row.item.name"
+                                class="lib-btn primary-button btn-sm undelete_dataset_btn"
+                                type="button"
+                                @click="undelete(row.item, folder_id)">
+                                <FontAwesomeIcon icon="unlock" />
+                                Undelete
+                            </button>
+                        </div>
+                    </template>
+                </b-table>
+                <!-- hide pagination if the table is loading-->
+                <b-container>
+                    <b-row align-v="center" class="justify-content-md-center">
+                        <b-col md="auto">
+                            <div v-if="isBusy">
+                                <b-spinner small type="grow"></b-spinner>
+                                <b-spinner small type="grow"></b-spinner>
+                                <b-spinner small type="grow"></b-spinner>
+                            </div>
+                            <b-pagination
+                                v-else
+                                :value="currentPage"
+                                :total-rows="total_rows"
+                                :per-page="perPage"
+                                aria-controls="folder_list_body"
+                                @input="changePage">
+                            </b-pagination>
+                        </b-col>
+
+                        <b-col cols="1.5">
+                            <table>
+                                <tr>
+                                    <td class="m-0 p-0">
+                                        <b-form-input
+                                            id="paginationPerPage"
+                                            v-model="perPage"
+                                            class="pagination-input-field"
+                                            autocomplete="off"
+                                            type="number" />
+                                    </td>
+                                    <td class="text-muted ml-1 paginator-text">
+                                        <span class="pagination-total-pages-text"
+                                            >per page, {{ total_rows }} total</span
+                                        >
+                                    </td>
+                                </tr>
+                            </table>
+                        </b-col>
+                    </b-row>
+                </b-container>
+            </div>
+            <div v-if="showReadme.value && renderedReadme" class="readme-panel">
+                <div class="readme-panel-content">
+                    <div v-html="renderedReadme"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -268,6 +292,7 @@ import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
 import { usePersistentRef } from "composables/persistentRef";
+import { usePersistentToggle } from "composables/persistentToggle";
 import { Toast } from "composables/toast";
 import { sanitize } from "dompurify";
 import linkifyHtml from "linkify-html";
@@ -276,6 +301,7 @@ import { mapState } from "pinia";
 import Utils from "utils/utils";
 import Vue from "vue";
 
+import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
@@ -285,6 +311,8 @@ import FolderTopBar from "./TopToolbar/FolderTopBar";
 initFolderTableIcons();
 
 Vue.use(BootstrapVue);
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 
 function initialFolderState() {
     return {
@@ -330,6 +358,7 @@ export default {
                 error: null,
                 isBusy: false,
                 folder_metadata: {},
+                renderedReadme: "",
                 fields: fields,
                 selectMode: "multi",
                 perPage: DEFAULT_PER_PAGE,
@@ -358,11 +387,17 @@ export default {
         sortDesc() {
             this.fetchFolderContents();
         },
+        "folder_metadata.readme_raw"() {
+            this.renderReadme();
+        },
     },
     created() {
         this.services = new Services({ root: this.root });
         this.perPageRef = usePersistentRef("library-folder-per-page", DEFAULT_PER_PAGE);
         this.perPage = this.perPageRef.value;
+        const readmeToggle = usePersistentToggle("library-folder-readme");
+        this.showReadme = readmeToggle.toggled;
+        this.toggleReadme = readmeToggle.toggle;
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
@@ -376,6 +411,7 @@ export default {
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
+            this.renderedReadme = "";
             // Restore perPage from localStorage after reset
             if (this.perPageRef) {
                 this.perPage = this.perPageRef.value;
@@ -402,6 +438,7 @@ export default {
                     this.folder_metadata = response.metadata;
                     this.canAddLibraryItem = response.metadata.can_add_library_item;
                     this.total_rows = response.metadata.total_rows;
+                    this.renderReadme();
                     if (this.isAllSelectedMode) {
                         this.selected = [];
                         Vue.nextTick(() => {
@@ -626,7 +663,15 @@ export default {
         changePage(page) {
             this.$router.push({ name: `LibraryFolder`, params: { folder_id: this.folder_id, page: page } });
         },
-
+        renderReadme() {
+            if (this.folder_metadata.readme_raw) {
+                const rawHtml = renderMarkdown(this.folder_metadata.readme_raw);
+                // Sanitize the rendered markdown to prevent XSS attacks
+                this.renderedReadme = this.sanitize(rawHtml);
+            } else {
+                this.renderedReadme = "";
+            }
+        },
         /*
          Former Backbone code, adopted to work with Vue
         */
@@ -672,5 +717,153 @@ export default {
 </script>
 
 <style scoped>
-@import "library-folder-table.css";
+/* Table and pagination styles */
+th:focus {
+    outline: none !important;
+}
+
+.pagination-input-field {
+    max-width: 60px;
+}
+
+.pagination-total-pages-text {
+    margin-left: 0.25rem;
+}
+
+.more-text-btn {
+    margin-left: 0.25rem;
+    font-size: 60%;
+    color: grey;
+}
+
+.description-field {
+    width: 40rem;
+}
+
+.empty-folder-message {
+    text-align: center;
+}
+
+.select-checkbox {
+    color: navy;
+}
+
+.deleted-item {
+    color: grey;
+}
+
+.lib-btn {
+    margin-bottom: 2%;
+}
+
+/* Library content container with split pane */
+.library-content-container {
+    display: flex;
+    gap: 1rem;
+}
+
+.library-main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.library-main-content.with-readme {
+    flex: 2;
+    min-width: 0;
+}
+
+/* Make table responsive within flex container */
+.library-main-content :deep(table) {
+    table-layout: auto;
+    width: 100%;
+}
+
+.library-main-content :deep(.description-field) {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* README panel */
+.readme-panel {
+    flex: 1;
+    min-width: 400px;
+    border-left: 1px solid #d0d7de;
+    padding-left: 1rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+.readme-panel-content {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    color: #24292f;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+/* Markdown content styling */
+.readme-panel-content :deep(h1),
+.readme-panel-content :deep(h2),
+.readme-panel-content :deep(h3) {
+    margin-top: 1.25em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+}
+
+.readme-panel-content :deep(h1) {
+    font-size: 1.5rem;
+}
+
+.readme-panel-content :deep(h2) {
+    font-size: 1.25rem;
+}
+
+.readme-panel-content :deep(h3) {
+    font-size: 1.1rem;
+}
+
+.readme-panel-content :deep(p) {
+    margin: 0.75em 0;
+}
+
+.readme-panel-content :deep(ul),
+.readme-panel-content :deep(ol) {
+    padding-left: 2em;
+    margin: 1em 0;
+}
+
+.readme-panel-content :deep(code) {
+    background-color: rgba(27, 31, 35, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 85%;
+}
+
+.readme-panel-content :deep(pre) {
+    background-color: #f6f8fa;
+    padding: 1em;
+    overflow-x: auto;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.readme-panel-content :deep(a) {
+    color: #0366d6;
+    text-decoration: none;
+}
+
+.readme-panel-content :deep(a:hover) {
+    text-decoration: underline;
+}
+
+.readme-panel-content :deep(blockquote) {
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    color: #6a737d;
+    background-color: #f6f8fa;
+    border-left: 0.25em solid #dfe2e5;
+}
 </style>
