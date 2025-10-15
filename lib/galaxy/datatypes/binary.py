@@ -5140,13 +5140,13 @@ class SpatialData(CompressedZarrZipArchive):
                         pass
 
                 # Set metadata
-                dataset.metadata.images = sorted(list(images))
-                dataset.metadata.labels = sorted(list(labels))
-                dataset.metadata.shapes = sorted(list(shapes))
-                dataset.metadata.points = sorted(list(points))
-                dataset.metadata.tables = sorted(list(tables))
+                dataset.metadata.images = sorted(images)
+                dataset.metadata.labels = sorted(labels)
+                dataset.metadata.shapes = sorted(shapes)
+                dataset.metadata.points = sorted(points)
+                dataset.metadata.tables = sorted(tables)
                 dataset.metadata.table_shapes = table_shapes
-                dataset.metadata.coordinate_systems = sorted(list(coordinate_systems))
+                dataset.metadata.coordinate_systems = sorted(coordinate_systems)
                 dataset.metadata.spatialdata_version = spatialdata_version
         except Exception:
             pass
