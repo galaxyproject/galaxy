@@ -1,9 +1,10 @@
 import _l from "utils/localization";
+import Modal from "utils/modal";
 import Vue from "vue";
 
 import { rawToTable } from "@/components/Collections/tables";
 
-import { collectionCreatorModalSetup } from "./common/modal";
+const modal = new Modal();
 
 async function ruleBasedCollectionCreatorModal(elements, elementsType, importType, options) {
     // importType in [datasets, collection]
@@ -18,12 +19,37 @@ async function ruleBasedCollectionCreatorModal(elements, elementsType, importTyp
     } else {
         title = _l("Build Rules for Uploading Collections");
     }
-    const { promise, showEl } = collectionCreatorModalSetup({ ...options, title });
+
+    const promise = new Promise((then, reject) => {
+        options.oncancel = function () {
+            modal.hide();
+            reject("cancelled");
+        };
+        options.oncreate = function (creator, response) {
+            modal.hide();
+            then(response);
+        };
+    });
+
     return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
         (module) => {
             var ruleCollectionBuilderInstance = Vue.extend(module.default);
             var vm = document.createElement("div");
-            showEl(vm);
+
+            // Prepare modal
+            const titleSuffix = options.historyName ? `From history: <b>${options.historyName}</b>` : "";
+            const titleHtml = `<div class='d-flex justify-content-between unselectable'>
+                <span>${title}</span>
+                <span>${titleSuffix}</span>
+            </div>`;
+            modal.show({
+                title: titleHtml,
+                body: vm,
+                width: "85%",
+                height: "100%",
+            });
+
+            // Inject rule builder component
             new ruleCollectionBuilderInstance({
                 propsData: {
                     initialElements: elements,
