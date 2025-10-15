@@ -4865,6 +4865,54 @@ class Hic(Binary):
             header_bytes = handle.read(8)
         dataset.metadata.version = struct.unpack("<i", header_bytes[4:8])[0]
 
+@build_sniff_from_prefix
+class SpatialData(CompressedZarrZipArchive):
+    """
+    Class for SpatialData file: https://spatialdata.scverse.org/
+
+    SpatialData: an open and universal framework for processing spatial omics data.
+    SpatialData aims at implementing a performant in-memory representation in Python
+    and an on-disk representation based on the Zarr and Parquet data formats
+    and following, when applicable, the OME-NGFF specification
+
+    The format stores multi-modal spatial omics datasets including:
+    - Images (2D/3D multi-scale)
+    - Labels (segmentation masks)
+    - Shapes (polygons, circles)
+    - Points (transcript locations, point clouds)
+    - Tables (annotations)
+    """
+
+    file_ext = "spatialdata.zip"
+
+    def sniff(self, filename: str) -> bool:
+        """
+        Check if the file is a valid SpatialData zarr archive.
+
+        SpatialData files are Zarr archives with specific structure containing
+        element directories like images/, labels/, shapes/, points/, or tables/.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('subsampled_visium.spatialdata.zip')
+        >>> SpatialData().sniff(fname)
+        True
+        """
+
+        try:
+            with zipfile.ZipFile(filename) as zf:
+                # Look for SpatialData-specific structure
+                # SpatialData has element directories like images/, labels/, shapes/, points/, tables/
+                spatialdata_elements = {'images', 'labels', 'shapes', 'points', 'tables'}
+                for file in zf.namelist():
+                    parts = file.split('/')
+                    # Check both root level and one level deeper
+                    if len(parts) > 1 and parts[1] in spatialdata_elements:
+                        return True
+                    if len(parts) > 0 and parts[0] in spatialdata_elements:
+                        return True
+
+                return False
+        except Exception:
 
 @build_sniff_from_prefix
 class Safetensors(Binary):
