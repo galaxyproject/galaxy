@@ -5163,6 +5163,9 @@ class SpatialData(CompressedZarrZipArchive):
         >>> fname = get_test_fname('subsampled_visium.spatialdata.zip')
         >>> SpatialData().sniff(fname)
         True
+        >>> fname = get_test_fname('OMEzarrImages.ome_zarr.zip')
+        >>> SpatialData().sniff(fname)
+        False
         """
 
         try:
