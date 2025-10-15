@@ -12,9 +12,8 @@
  * webapps/reports/run_stats.mako: window.bundleEntries.create_chart
  * webapps/reports/run_stats.mako: window.bundleEntries.create_histogram
  */
-
-import _ from "underscore";
 import { replaceChildrenWithComponent } from "utils/mountVueComponent";
+
 import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 
 export { getGalaxyInstance, setGalaxyInstance } from "app";
