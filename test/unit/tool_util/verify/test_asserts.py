@@ -8,6 +8,7 @@ try:
     import h5py
 except ImportError:
     h5py = None
+import pytest
 
 from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
 from galaxy.tool_util.verify import asserts
@@ -489,15 +490,17 @@ with tempfile.NamedTemporaryFile(mode="w", delete=False) as txttmp:
     GZA100 = gzip.compress(A100)
 
 
-def test_has_size_success():
+@pytest.mark.parametrize("size_attrib", ["size", "value"])
+def test_has_size_success(size_attrib):
     """test has_size"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="size", value=10), TEXT_DATA_HAS_TEXT)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib=size_attrib, value=10), TEXT_DATA_HAS_TEXT)
     assert len(a) == 0
 
 
-def test_has_size_failure():
+@pytest.mark.parametrize("size_attrib", ["size", "value"])
+def test_has_size_failure(size_attrib):
     """test has_size .. negative test"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="value", value="10"), TEXT_DATA_HAS_TEXT * 2)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib=size_attrib, value="10"), TEXT_DATA_HAS_TEXT * 2)
     assert "Expected file size of 10+-0 found 20" in a
     assert len(a) == 1
 
