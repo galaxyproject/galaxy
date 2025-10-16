@@ -504,7 +504,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self._try_setup_with_driver()
 
     def setup_driver_and_session(self):
-        self.display = driver_factory.virtual_display_if_enabled(use_virtual_display())
+        virtual_display_enabled = use_virtual_display()
+        self.display = driver_factory.virtual_display_if_enabled(virtual_display_enabled)
         self.configured_driver = get_configured_driver()
         self._setup_galaxy_logging()
 
