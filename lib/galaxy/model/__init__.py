@@ -99,6 +99,7 @@ from sqlalchemy import (
     VARCHAR,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import (
     CompileError,
     OperationalError,
@@ -2013,8 +2014,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         session = object_session(self)
         if session and self.id and state not in Job.finished_states:
             # Do not update if job is in a terminal state
-            rval = session.execute(
-                update(Job).where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states))).values(state=state)
+            rval = cast(  # https://docs.sqlalchemy.org/en/20/changelog/changelog_20.html#change-0651b868cdc88d28c57469affceaf05f
+                CursorResult,
+                session.execute(
+                    update(Job)
+                    .where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states)))
+                    .values(state=state)
+                ),
             )
             if rval.rowcount == 1:
                 # Need to expire state since we just updated it, but ORM doesn't know about it.
@@ -10796,10 +10802,14 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
     provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
-    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)  # type:ignore[assignment]
+    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(  # type:ignore[assignment, unused-ignore]
+        MutableJSONType
+    )
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
-    user: Mapped[Optional["User"]] = relationship(back_populates="social_auth")
+    user: Mapped[Optional["User"]] = relationship(  # type:ignore[assignment, unused-ignore]
+        back_populates="social_auth"
+    )
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None

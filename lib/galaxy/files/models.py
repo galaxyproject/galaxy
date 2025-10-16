@@ -251,7 +251,6 @@ class FilesSourceProperties(StrictModel):
     supports: Annotated[
         FileSourceSupports,
         Field(
-            default_factory=FileSourceSupports,
             description="Features supported by this file source.",
         ),
     ] = FileSourceSupports()

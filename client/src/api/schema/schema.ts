@@ -6655,7 +6655,11 @@ export interface components {
             state_ids: {
                 [key: string]: string[];
             };
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -6742,7 +6746,11 @@ export interface components {
              * @description Whether this item has been permanently removed.
              */
             purged: boolean;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -7956,9 +7964,9 @@ export interface components {
             collection_type?: string | null;
             /**
              * Column Definitions
-             * @description Specify definitions for row data if collection_type if sample_sheet
+             * @description Specify definitions for row data if collection_type is sample_sheet
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
             /**
              * Content
              * @description Depending on the `source` it can be:
@@ -8187,9 +8195,9 @@ export interface components {
             collection_type?: string | null;
             /**
              * Column Definitions
-             * @description Specify definitions for row data if collection_type if sample_sheet
+             * @description Specify definitions for row data if collection_type is sample_sheet
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
             /**
              * Copy Elements
              * @description Whether to create a copy of the source HDAs for the new collection.
@@ -8552,7 +8560,13 @@ export interface components {
             /** Message */
             message: string;
         };
-        /** CustomArchivedHistoryView */
+        /**
+         * CustomArchivedHistoryView
+         * @description Archived History Response with all optional fields.
+         *
+         *     It is used for serializing only specific attributes using the "keys"
+         *     query parameter.
+         */
         CustomArchivedHistoryView: {
             /**
              * Annotation
@@ -8604,8 +8618,9 @@ export interface components {
             /**
              * Genome Build
              * @description TODO
+             * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -8676,7 +8691,11 @@ export interface components {
             state_ids?: {
                 [key: string]: string[];
             } | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -8782,7 +8801,14 @@ export interface components {
              */
             installed_builds: components["schemas"]["LabelValuePair"][];
         };
-        /** CustomHistoryView */
+        /**
+         * CustomHistoryView
+         * @description History Response with all optional fields.
+         *
+         *     It is used for serializing only specific attributes using the "keys"
+         *     query parameter. Unfortunately, we cannot know the exact fields that
+         *     will be requested, so we have to allow all fields to be optional.
+         */
         CustomHistoryView: {
             /**
              * Annotation
@@ -8829,8 +8855,9 @@ export interface components {
             /**
              * Genome Build
              * @description TODO
+             * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -8901,7 +8928,11 @@ export interface components {
             state_ids?: {
                 [key: string]: string[];
             } | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -9544,7 +9575,11 @@ export interface components {
              * @constant
              */
             model_class: "HistoryDatasetCollectionAssociation";
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
         };
         /**
          * DatasetCollectionContentElements
@@ -11060,6 +11095,8 @@ export interface components {
             type:
                 | ("File" | "null" | "boolean" | "int" | "float" | "string")
                 | ("File" | "null" | "boolean" | "int" | "float" | "string")[];
+        } & {
+            [key: string]: unknown;
         };
         /** FileDataElement */
         FileDataElement: {
@@ -11238,7 +11275,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -11692,7 +11733,7 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             /** Column Definitions */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Ftp Path */
             ftp_path: string;
@@ -11978,7 +12019,10 @@ export interface components {
              */
             type: "group_tag";
         };
-        /** GroupUpdatePayload */
+        /**
+         * GroupUpdatePayload
+         * @description Payload schema for updating a group.
+         */
         GroupUpdatePayload: {
             /** name of the group */
             name?: string | null;
@@ -12018,7 +12062,13 @@ export interface components {
             /** Name */
             name: string;
         };
-        /** HDACustom */
+        /**
+         * HDACustom
+         * @description Can contain any serializable property of an HDA.
+         *
+         *     Allows arbitrary custom keys to be specified in the serialization
+         *     parameters without a particular view (predefined set of keys).
+         */
         HDACustom: {
             /**
              * Accessible
@@ -12034,8 +12084,10 @@ export interface components {
              * API Type
              * @deprecated
              * @description TODO
+             * @default file
+             * @constant
              */
-            api_type?: "file" | null;
+            api_type: "file";
             /**
              * Copied From History Dataset Association Id
              * @description ID of HDA this HDA was copied from.
@@ -12122,8 +12174,9 @@ export interface components {
             /**
              * Genome Build
              * @description TODO
+             * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * Hashes
              * @description The list of hashes associated with this dataset.
@@ -12132,8 +12185,9 @@ export interface components {
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             * @default hda
              */
-            hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
+            hda_ldda: components["schemas"]["DatasetSourceType"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -12225,12 +12279,18 @@ export interface components {
              * @description The current state of this dataset.
              */
             state?: components["schemas"]["DatasetState"] | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Type
              * @description This is always `file` for datasets.
+             * @default file
+             * @constant
              */
-            type?: "file" | null;
+            type: "file";
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
@@ -12488,7 +12548,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `file` for datasets.
@@ -12588,7 +12652,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description The type of this item.
@@ -12735,7 +12803,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description The type of this item.
@@ -12763,7 +12835,13 @@ export interface components {
              */
             visible: boolean;
         };
-        /** HDCACustom */
+        /**
+         * HDCACustom
+         * @description Can contain any serializable property of an HDCA.
+         *
+         *     Allows arbitrary custom keys to be specified in the serialization
+         *     parameters without a particular view (predefined set of keys).
+         */
         HDCACustom: {
             /**
              * Dataset Collection ID
@@ -12779,7 +12857,7 @@ export interface components {
              * Column Definitions
              * @description Column data associated with each element of this collection.
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Output"][] | null;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -12803,8 +12881,9 @@ export interface components {
             /**
              * Elements
              * @description The summary information of each of the elements inside the dataset collection.
+             * @default []
              */
-            elements?: components["schemas"]["DCESummary"][] | null;
+            elements: components["schemas"]["DCESummary"][];
             /**
              * Elements Datatypes
              * @description A set containing all the different element datatypes in the collection.
@@ -12872,7 +12951,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean | null;
+            populated?: boolean;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
@@ -12888,12 +12967,18 @@ export interface components {
              * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
              */
             store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Type
              * @description This is always `collection` for dataset collections.
+             * @default collection
+             * @constant
              */
-            type?: "collection" | null;
+            type: "collection";
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
@@ -12935,7 +13020,7 @@ export interface components {
              * Column Definitions
              * @description Column data associated with each element of this collection.
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Output"][] | null;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -13047,7 +13132,11 @@ export interface components {
              * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
              */
             store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `collection` for dataset collections.
@@ -13187,7 +13276,11 @@ export interface components {
              * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
              */
             store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `collection` for dataset collections.
@@ -13335,7 +13428,7 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             /** Column Definitions */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Ftp Path */
             ftp_path?: string | null;
@@ -13366,7 +13459,7 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             /** Column Definitions */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Elements */
             elements: (
@@ -13951,7 +14044,11 @@ export interface components {
             state_ids: {
                 [key: string]: string[];
             };
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -14036,7 +14133,11 @@ export interface components {
              * @description Whether this item has been permanently removed.
              */
             purged: boolean;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -15454,7 +15555,7 @@ export interface components {
              * Item tags
              * @description The list of tags that will replace the current tags associated with the item.
              */
-            item_tags?: components["schemas"]["TagCollection"] | null;
+            item_tags?: string[] | null;
         };
         /**
          * ItemTagsResponse
@@ -16510,7 +16611,11 @@ export interface components {
             peek: string | null;
             /** State */
             state: string;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /** Update Time */
             update_time: string;
             /** Uploaded By */
@@ -17803,7 +17908,11 @@ export interface components {
              * @description The identifying slug for the page URL, must be unique.
              */
             slug: string;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Title
              * @description The name of the page.
@@ -17884,7 +17993,11 @@ export interface components {
              * @description The identifying slug for the page URL, must be unique.
              */
             slug: string;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Title
              * @description The name of the page.
@@ -19387,7 +19500,35 @@ export interface components {
             type: "rules";
         };
         /** SampleSheetColumnDefinition */
-        SampleSheetColumnDefinition: {
+        "SampleSheetColumnDefinition-Input": {
+            /** Default Value */
+            default_value?: number | boolean | string | null;
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+            /** Restrictions */
+            restrictions?: (number | boolean | string | null)[] | null;
+            /** Suggestions */
+            suggestions?: (number | boolean | string | null)[] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "int" | "float" | "boolean" | "element_identifier";
+            /** Validators */
+            validators?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** SampleSheetColumnDefinition */
+        "SampleSheetColumnDefinition-Output": {
             /** Default Value */
             default_value?: number | boolean | string | null;
             /** Description */
@@ -20556,7 +20697,11 @@ export interface components {
                     | components["schemas"]["ToolStep"]
                     | components["schemas"]["SubworkflowStep"];
             };
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -20661,11 +20806,6 @@ export interface components {
          * @enum {string}
          */
         SupportedType: "None" | "BasicAuth" | "BearerAuth" | "PassportAuth";
-        /**
-         * TagCollection
-         * @description Represents the collection of tags associated with an item.
-         */
-        TagCollection: string[];
         /** TagOperationParams */
         TagOperationParams: {
             /** Tags */
@@ -21482,7 +21622,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags?: components["schemas"]["TagCollection"] | null;
+            tags?: string[] | null;
             /**
              * Visible
              * @description Whether this item is visible in the history.
@@ -21509,7 +21649,8 @@ export interface components {
             published?: boolean | null;
             /** Purged */
             purged?: boolean | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /** Tags */
+            tags?: string[] | null;
         };
         /** UpdateInstancePayload */
         UpdateInstancePayload: {
@@ -22647,7 +22788,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags?: components["schemas"]["TagCollection"] | null;
+            tags?: string[] | null;
             /**
              * Title
              * @description The name of the visualization.
@@ -22717,7 +22858,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags: components["schemas"]["TagCollection"] | null;
+            tags: string[] | null;
             /**
              * Title
              * @description The name of the visualization.

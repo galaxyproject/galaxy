@@ -22,6 +22,7 @@ from sqlalchemy import (
     union,
     update,
 )
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
@@ -371,7 +372,7 @@ class NotificationManager:
             stmt = stmt.values(seen_time=seen_time)
         if request.deleted is not None:
             stmt = stmt.values(deleted=request.deleted)
-        result = self.sa_session.execute(stmt)
+        result = cast(CursorResult, self.sa_session.execute(stmt))
         updated_row_count = result.rowcount
         self.sa_session.commit()
         return updated_row_count
@@ -395,7 +396,7 @@ class NotificationManager:
             stmt = stmt.values(expiration_time=request.expiration_time)
         if request.content is not None:
             stmt = stmt.values(content=request.content.json())
-        result = self.sa_session.execute(stmt)
+        result = cast(CursorResult, self.sa_session.execute(stmt))
         updated_row_count = result.rowcount
         self.sa_session.commit()
         return updated_row_count
@@ -449,11 +450,13 @@ class NotificationManager:
         delete_stmt = delete(UserNotificationAssociation).where(
             UserNotificationAssociation.notification_id.in_(expired_notifications_stmt)
         )
-        result = self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
+        result = cast(
+            CursorResult, self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
+        )
         deleted_associations_count = result.rowcount
 
         delete_stmt = delete(Notification).where(notification_has_expired)
-        result = self.sa_session.execute(delete_stmt)
+        result = cast(CursorResult, self.sa_session.execute(delete_stmt))
         deleted_notifications_count = result.rowcount
 
         self.sa_session.commit()
