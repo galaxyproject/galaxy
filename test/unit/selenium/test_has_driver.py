@@ -811,14 +811,15 @@ class TestAlertHandling:
     """Tests for alert handling."""
 
     def test_accept_alert(self, has_driver_instance, base_url):
-        """Test accepting browser alert."""
+        """Test accepting browser alert using context manager."""
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
-        has_driver_instance.click_selector("#alert-button")
 
-        # Accept the alert
-        has_driver_instance.accept_alert()
+        # Use context manager to handle alert
+        with has_driver_instance.accept_alert():
+            has_driver_instance.click_selector("#alert-button")
+        # Alert is automatically accepted here
 
-        # Verify we're back on the main page
+        # Verify we're back on the main page and can interact with it
         header = has_driver_instance.find_element_by_id("header")
         assert header.text == "Test Page"
 

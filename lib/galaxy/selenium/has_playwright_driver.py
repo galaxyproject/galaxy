@@ -1022,23 +1022,34 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         submit_button = form.find_element("css selector", "input[type='submit']")
         submit_button.click()
 
-    def accept_alert(self) -> None:
+    def accept_alert(self):
         """
-        Accept/confirm a browser alert dialog.
+        Return a context manager for accepting alerts.
 
-        Note: Playwright handles dialogs differently than Selenium.
-        You typically need to set up dialog handlers before triggering the dialog.
-        This implementation assumes a dialog handler is already in place.
+        For Playwright, the dialog handler must be set up before the alert is triggered,
+        so we set it up when entering the context.
+
+        Usage:
+            with driver.accept_alert():
+                driver.click_selector("#button-that-shows-alert")
+            # Alert is automatically accepted by the handler
         """
+        from contextlib import contextmanager
 
-        # Playwright requires setting up event handlers for dialogs
-        # This is a synchronous API, so we need to handle this differently
-        # For now, we'll use a temporary handler that accepts dialogs
-        def handle_dialog(dialog):
-            dialog.accept()
+        @contextmanager
+        def _accept_alert_context():
+            # Set up the dialog handler before yielding
+            def handle_dialog(dialog):
+                dialog.accept()
 
-        # Set up the handler
-        self.page.once("dialog", handle_dialog)
+            self.page.once("dialog", handle_dialog)
+            try:
+                yield
+            finally:
+                # Handler is automatically removed after one use (once())
+                pass
+
+        return _accept_alert_context()
 
     def prepend_timeout_message(
         self, timeout_exception: PlaywrightTimeoutException, message: str

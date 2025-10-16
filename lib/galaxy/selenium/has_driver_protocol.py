@@ -8,6 +8,7 @@ from abc import abstractmethod
 from typing import (
     Any,
     Callable,
+    ContextManager,
     Generic,
     Literal,
     Optional,
@@ -461,8 +462,15 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Alert handling
     @abstractmethod
-    def accept_alert(self):
-        """Accept browser alert dialog."""
+    def accept_alert(self) -> "ContextManager[None]":
+        """
+        Return a context manager for accepting browser alert dialogs.
+
+        Usage:
+            with driver.accept_alert():
+                driver.click_selector("#button-that-shows-alert")
+            # Alert is automatically accepted
+        """
         ...
 
     # Accessibility

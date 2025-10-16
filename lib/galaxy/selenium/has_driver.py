@@ -426,11 +426,32 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         )
 
     def accept_alert(self):
-        try:
-            alert = self.driver.switch_to.alert
-            alert.accept()
-        finally:
-            self.driver.switch_to.default_content()
+        """
+        Return a context manager for accepting alerts.
+
+        For Selenium, the alert must exist before it can be accepted,
+        so we wait until the context exits to accept it.
+
+        Usage:
+            with driver.accept_alert():
+                driver.click_selector("#button-that-shows-alert")
+            # Alert is automatically accepted here
+        """
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _accept_alert_context():
+            try:
+                yield
+            finally:
+                # Accept the alert after the context block completes
+                try:
+                    alert = self.driver.switch_to.alert
+                    alert.accept()
+                finally:
+                    self.driver.switch_to.default_content()
+
+        return _accept_alert_context()
 
     def execute_script(self, script: str, *args):
         """
