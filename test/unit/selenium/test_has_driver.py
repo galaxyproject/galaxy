@@ -1190,3 +1190,56 @@ class TestPageTitle:
         # Verify titles match expected values
         assert title1 == "Basic Test Page"
         assert title2 == "Accessibility Test Page"
+
+
+class TestCSSProperties:
+    """Test CSS property retrieval via value_of_css_property."""
+
+    def test_value_of_css_property_display(self, has_driver_instance, base_url):
+        """Test getting the display CSS property of a visible element."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("visible-element")
+
+        # Get the display property
+        display_value = element.value_of_css_property("display")
+
+        # Should be a valid display value (not "none" for visible element)
+        assert display_value != ""
+        assert display_value != "none"
+
+    def test_value_of_css_property_color(self, has_driver_instance, base_url):
+        """Test getting the color CSS property."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        # Get the color property
+        color_value = element.value_of_css_property("color")
+
+        # Should return some color value (format may vary between browsers)
+        assert color_value != ""
+        # Color could be in various formats: rgb(), rgba(), hex, or named color
+        assert isinstance(color_value, str)
+
+    def test_value_of_css_property_hidden_element(self, has_driver_instance, base_url):
+        """Test getting CSS property of a hidden element."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("hidden-element")
+
+        # Get the display property of hidden element
+        display_value = element.value_of_css_property("display")
+
+        # Hidden element should have display: none
+        assert display_value == "none"
+
+    def test_value_of_css_property_font_size(self, has_driver_instance, base_url):
+        """Test getting the font-size CSS property."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("header")
+
+        # Get the font-size property
+        font_size = element.value_of_css_property("font-size")
+
+        # Should return a font size (typically in px)
+        assert font_size != ""
+        # Font size should contain numeric value
+        assert any(char.isdigit() for char in font_size)

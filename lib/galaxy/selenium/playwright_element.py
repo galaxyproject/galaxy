@@ -179,6 +179,24 @@ class PlaywrightElement:
         """
         return self._element.content_frame()
 
+    def value_of_css_property(self, property_name: str) -> str:
+        """
+        Get the value of a CSS property for this element.
+
+        Uses JavaScript's window.getComputedStyle() to get the computed value
+        of the specified CSS property.
+
+        Args:
+            property_name: The CSS property name (e.g., "color", "display", "font-size")
+
+        Returns:
+            The computed CSS property value as a string
+        """
+        value = self._element.evaluate(
+            "(element, propName) => window.getComputedStyle(element).getPropertyValue(propName)", property_name
+        )
+        return str(value) if value is not None else ""
+
     # Expose the underlying ElementHandle for special cases
     @property
     def element_handle(self) -> ElementHandle:

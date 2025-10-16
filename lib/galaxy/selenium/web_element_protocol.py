@@ -74,5 +74,9 @@ class WebElementProtocol(Protocol):
         """Find all child elements matching the locator within this element."""
         ...
 
+    def value_of_css_property(self, property_name: str) -> str:
+        """Get the value of a CSS property for this element."""
+        ...
+
 
 __all__ = ("WebElementProtocol",)
