@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = "galaxy-oidc-state"
 NONCE_COOKIE_NAME = "galaxy-oidc-nonce"
 VERIFIER_COOKIE_NAME = "galaxy-oidc-verifier"
-KEYCLOAK_BACKENDS = {"custos", "cilogon", "keycloak"}
+KEYCLOAK_BACKENDS = {"cilogon", "keycloak"}
 
 
 class InvalidAuthnzConfigException(Exception):
@@ -84,7 +84,7 @@ class OIDCAuthnzBase(IdentityProvider):
             label=oidc_backend_config.get("label", provider.capitalize()),
             client_id=oidc_backend_config["client_id"],
             client_secret=oidc_backend_config["client_secret"],
-            require_create_confirmation=oidc_backend_config.get("require_create_confirmation", provider == "custos"),
+            require_create_confirmation=oidc_backend_config.get("require_create_confirmation", False),
             redirect_uri=oidc_backend_config["redirect_uri"],
             ca_bundle=oidc_backend_config.get("ca_bundle", None),
             pkce_support=oidc_backend_config.get("pkce_support", False),
@@ -604,9 +604,7 @@ class CustosAuthFactory:
                 return item.item
 
         auth_adapter: OIDCAuthnzBase
-        if provider.lower() == "custos":
-            auth_adapter = OIDCAuthnzBaseCustos(provider, oidc_config, oidc_backend_config, idphint)
-        elif provider.lower() == "keycloak":
+        if provider.lower() == "keycloak":
             auth_adapter = OIDCAuthnzBaseKeycloak(provider, oidc_config, oidc_backend_config, idphint)
         elif provider.lower() == "cilogon":
             auth_adapter = OIDCAuthnzBaseCiLogon(provider, oidc_config, oidc_backend_config, idphint)
@@ -626,36 +624,3 @@ class CustosAuthFactory:
             )
 
         return auth_adapter
-
-
-class OIDCAuthnzBaseCustos(OIDCAuthnzBase):
-    def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
-        super().__init__(provider, oidc_config, oidc_backend_config, idphint)
-        self.config.extra_params = {"kc_idp_hint": oidc_backend_config.get("idphint", "oidc")}
-        self._load_config_for_custos()
-
-    def _get_custos_credentials(self):
-        clientIdAndSec = f"{self.config.client_id}:{self.config.client_secret}"
-        if not self.config.credential_url:
-            raise Exception(
-                f"Error OIDC provider {self.config.provider} is of type Custos, but does not have the credential url set"
-            )
-        creds = requests.get(
-            self.config.credential_url,
-            headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},
-            verify=False,
-            params={"client_id": self.config.client_id},
-            timeout=util.DEFAULT_SOCKET_TIMEOUT,
-        )
-        credentials = creds.json()
-        self.config.iam_client_secret = credentials["iam_client_secret"]
-
-    def _load_config_for_custos(self):
-        self.config.credential_url = f"{self.config.url.rstrip('/')}/credentials"
-        self._get_custos_credentials()
-        # Set custos endpoints
-        clientIdAndSec = f"{self.config.client_id}:{self.config.client_secret}"
-        headers = {"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"}
-        params = {"client_id": self.config.client_id}
-
-        self._load_config(headers, params)

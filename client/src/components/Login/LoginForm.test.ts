@@ -42,7 +42,7 @@ describe("LoginForm", () => {
         axiosMock = new MockAdapter(axios);
         server.use(
             http.get("/api/configuration", ({ response }) => {
-                return response.untyped(HttpResponse.json({ oidc: { cilogon: false, custos: false } }));
+                return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
             }),
         );
     });

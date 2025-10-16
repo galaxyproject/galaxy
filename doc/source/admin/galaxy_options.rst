@@ -3817,11 +3817,11 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``prefer_custos_login``
+``prefer_oidc_login``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Controls the order of the login page to prefer Custos-based login
+    Controls the order of the login page to prefer OIDC-based login
     and registration.
 :Default: ``false``
 :Type: bool

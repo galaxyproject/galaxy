@@ -13,7 +13,7 @@ const configMock = {
     allow_local_account_creation: true,
     enable_oidc: true,
     mailing_join_addr: "mailing_join_addr",
-    prefer_custos_login: true,
+    prefer_oidc_login: true,
     registration_warning_message: "registration_warning_message",
     server_mail_configured: true,
     show_welcome_with_login: true,
@@ -61,7 +61,7 @@ describe("Register", () => {
         expect(props.sessionCsrfToken).toBe("session_csrf_token");
         expect(props.enableOidc).toBe(true);
         expect(props.mailingJoinAddr).toBe("mailing_join_addr");
-        expect(props.preferCustosLogin).toBe(true);
+        expect(props.preferOIDCLogin).toBe(true);
         expect(props.serverMailConfigured).toBe(true);
         expect(props.registrationWarningMessage).toBe("registration_warning_message");
         expect(props.termsUrl).toBe("terms_url");

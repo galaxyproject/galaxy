@@ -67,7 +67,7 @@ config/galaxy.yml.sample:galaxy
 -  mapping.galaxy.mapping.log_destination
 -  mapping.galaxy.mapping.log_rotate_count
 -  mapping.galaxy.mapping.log_rotate_size
--  mapping.galaxy.mapping.prefer_custos_login
+-  mapping.galaxy.mapping.prefer_oidc_login
 -  mapping.galaxy.mapping.short_term_storage_cleanup_interval
 -  mapping.galaxy.mapping.short_term_storage_default_duration
 -  mapping.galaxy.mapping.short_term_storage_dir
