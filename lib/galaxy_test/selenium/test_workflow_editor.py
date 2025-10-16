@@ -1,5 +1,8 @@
 import json
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+)
 
 import pytest
 import yaml
@@ -9,6 +12,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 
 from galaxy.selenium.navigates_galaxy import ColumnDefinition
+from galaxy.selenium.web_element_protocol import WebElementProtocol
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
@@ -1381,7 +1385,7 @@ steps:
         self.action_chains().send_keys("Hello World").perform()
 
         # check if all options were applied
-        comment_content: WebElement = editor.comment.text_inner.wait_for_visible()
+        comment_content: WebElementProtocol = editor.comment.text_inner.wait_for_visible()
         assert comment_content.text == "Hello World"
         comment_content_class = comment_content.get_attribute("class")
         assert comment_content_class
@@ -1406,7 +1410,7 @@ steps:
 
         editor.tool_bar.tool(tool="pointer").wait_for_and_click()
 
-        markdown_comment_content: WebElement = editor.comment.markdown_rendered.wait_for_visible()
+        markdown_comment_content: WebElementProtocol = editor.comment.markdown_rendered.wait_for_visible()
         assert markdown_comment_content.text == "Hello World"
         assert markdown_comment_content.find_element(By.TAG_NAME, "h2") is not None
 
@@ -1425,7 +1429,7 @@ steps:
         self.mouse_drag(from_element=canvas, from_offset=(-200, -150), to_offset=(400, 300))
         self.action_chains().send_keys("My Frame").perform()
 
-        title: WebElement = editor.comment.frame_title.wait_for_visible()
+        title: WebElementProtocol = editor.comment.frame_title.wait_for_visible()
         assert title.text == "My Frame"
 
         width, height = self.get_element_size(editor.comment._.wait_for_visible())
@@ -1466,7 +1470,7 @@ steps:
 
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
-        freehand_comment_a: WebElement = editor.comment.freehand_comment.wait_for_visible()
+        freehand_comment_a: WebElementProtocol = editor.comment.freehand_comment.wait_for_visible()
 
         # delete by clicking
         editor.tool_bar.tool(tool="freehand_eraser").wait_for_and_click()
@@ -1480,7 +1484,7 @@ steps:
 
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
-        freehand_comment_b: WebElement = editor.comment.freehand_comment.wait_for_visible()
+        freehand_comment_b: WebElementProtocol = editor.comment.freehand_comment.wait_for_visible()
 
         editor.tool_bar.tool(tool="freehand_eraser").wait_for_and_click()
         self.mouse_drag(
@@ -1622,7 +1626,7 @@ steps:
 
         return self.get_element_position(node)
 
-    def get_element_position(self, element: WebElement):
+    def get_element_position(self, element: WebElementProtocol):
         left = element.value_of_css_property("left")
         top = element.value_of_css_property("top")
 
@@ -1631,7 +1635,7 @@ steps:
 
         return (int(left_stripped), int(top_stripped))
 
-    def get_element_size(self, element: WebElement):
+    def get_element_size(self, element: WebElementProtocol):
         width = element.value_of_css_property("width")
         height = element.value_of_css_property("height")
 
@@ -1741,6 +1745,8 @@ steps:
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
 
     def move_center_of_canvas(self, xoffset=0, yoffset=0):
-        canvas = self.find_element_by_id("canvas-container")
+        _canvas = self.find_element_by_id("canvas-container")
+        assert self.backend_type == "selenium"
+        canvas = cast(WebElement, _canvas)
         chains = ActionChains(self.driver)
         chains.click_and_hold(canvas).move_by_offset(xoffset=xoffset, yoffset=yoffset).release().perform()

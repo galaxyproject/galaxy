@@ -1,5 +1,7 @@
 import time
 
+from selenium.webdriver.common.by import By
+
 from galaxy.selenium.navigates_galaxy import WAIT_TYPES
 from galaxy_test.base.api_asserts import assert_status_code_is
 from galaxy_test.base.populators import flakey
@@ -211,7 +213,7 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         assert len(dataset_elements) == 2, dataset_elements
         selector = ".title .name"
         selector = ".content-title"
-        titles = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
+        titles = [de.find_element(By.CSS_SELECTOR, selector).text for de in dataset_elements]
         assert titles == ["forward", "reverse"]
         self.screenshot("history_panel_collection_view_paired")
 
@@ -232,7 +234,7 @@ class TestHistoryPanelCollections(SeleniumTestCase):
             assert len(dataset_elements) == 4, dataset_elements
             selector = ".title .name"
             selector = ".content-title"
-            title_elements = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
+            title_elements = [de.find_element(By.CSS_SELECTOR, selector).text for de in dataset_elements]
             assert title_elements == ["data1", "data2", "data3", "data4"]
 
         check_four_datasets_shown()

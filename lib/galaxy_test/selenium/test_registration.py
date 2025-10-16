@@ -1,17 +1,15 @@
 from .framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestRegistration(SeleniumTestCase):
-    @selenium_only("title abstraction not yet implemented")
     @selenium_test
     def test_landing(self):
         # loading galaxy homepage
         self.home()
-        assert self.driver.title == "Galaxy", self.driver.title
+        assert self.page_title == "Galaxy", self.page_title
         self.components.masthead._.wait_for_visible()
 
     @selenium_test

@@ -1,6 +1,8 @@
 import os
 
 import pytest
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 from .framework import (
     selenium_only,
@@ -55,9 +57,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.history_panel_item_view_dataset_details(1)
-        param_values = self.driver.find_element(
-            self.by.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value .vjs-tree"
-        )
+        param_values = self.driver.find_element(By.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value .vjs-tree")
         request_json = param_values.get_attribute("data-request-json")
         assert request_json
         for data in paste_content:
@@ -254,7 +254,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element(self.by.CSS_SELECTOR, "input[type='number']")
+        filter_input = filter_editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_example_1_4_filter_header")
@@ -476,7 +476,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element(self.by.CSS_SELECTOR, "input[type='number']")
+        filter_input = filter_editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_deferred_datasets_4_filter_header")
@@ -541,14 +541,14 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder = self.components.rule_builder
         table_elem = rule_builder.table.wait_for_visible()
         # handsontable
-        # first_cell = table_elem.find_elements(self.by.CSS_SELECTOR, "td")[0]
+        # first_cell = table_elem.find_elements(By.CSS_SELECTOR, "td")[0]
         # aggrid
-        first_cell = table_elem.find_elements(self.by.CSS_SELECTOR, ".ag-cell")[0]
+        first_cell = table_elem.find_elements(By.CSS_SELECTOR, ".ag-cell")[0]
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)
         for _ in range(15):
-            action_chains.send_keys(self.keys.ARROW_RIGHT)
+            action_chains.send_keys(Keys.ARROW_RIGHT)
         action_chains.perform()
 
     def _setup_uniprot_example(self):
