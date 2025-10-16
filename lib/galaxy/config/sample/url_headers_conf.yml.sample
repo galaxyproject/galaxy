@@ -26,6 +26,7 @@
 # Security: If ANY matching pattern marks a header as sensitive, it will be
 # treated as sensitive (secure-by-default).
 #
+# The following examples are for illustration purposes only; please use only the minimum configuration for your needs.
 # Examples:
 
 patterns:
@@ -90,6 +91,12 @@ patterns:
   # HTTPS URLs - basic headers only (most restrictive for unknown sources)
   - url_pattern: "^https://.*"
     headers:
+      - name: Authorization
+        sensitive: true
+      - name: X-Auth-Token
+        sensitive: true
+      - name: X-API-Key
+        sensitive: true
       - name: Accept
         sensitive: false
       - name: Accept-Language
