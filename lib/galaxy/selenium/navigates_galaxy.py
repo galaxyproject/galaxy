@@ -1212,7 +1212,7 @@ class NavigatesGalaxy(HasDriver):
         with self.rule_builder_rule_editor("remove-columns") as filter_editor_element:
             column_elem = filter_editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
             for column_label in column_labels:
-                self.select_set_value(column_elem, column_label)
+                self.select_set_value(column_elem, column_label, multiple=True)
             self.screenshot_if(screenshot_name)
 
     def rule_builder_concatenate_columns(self, column_label_1, column_label_2, screenshot_name=None):
