@@ -21,7 +21,7 @@ const sessionCsrfToken = computed(() => {
             :enable-oidc="config.enable_oidc"
             :mailing-join-addr="config.mailing_join_addr"
             :oidc-idps="config.oidc"
-            :prefer-custos-login="config.prefer_custos_login"
+            :prefer-oidc-login="config.prefer_oidc_login"
             :registration-warning-message="config.registration_warning_message"
             :server-mail-configured="config.server_mail_configured"
             :session-csrf-token="sessionCsrfToken"

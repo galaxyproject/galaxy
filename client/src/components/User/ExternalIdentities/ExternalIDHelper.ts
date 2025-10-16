@@ -26,7 +26,7 @@ export type OIDCConfigWithRegistration = Record<
 
 /** Return the per-IDP config, minus anything the caller wants to hide. */
 export function getFilteredOIDCIdps(oidcConfig: OIDCConfig, exclude: string[] = []): OIDCConfig {
-    const blacklist = new Set(["cilogon", "custos", ...exclude]);
+    const blacklist = new Set(["cilogon", ...exclude]);
     const filtered: OIDCConfig = {};
     Object.entries(oidcConfig).forEach(([idp, cfg]) => {
         if (!blacklist.has(idp)) {
@@ -51,11 +51,11 @@ export function getOIDCIdpsWithRegistration(oidcConfig: OIDCConfig): OIDCConfigW
 
 /** Do we need to show the institution picker at all? */
 export const getNeedShowCilogonInstitutionList = (cfg: OIDCConfig): boolean => {
-    return Boolean(cfg.cilogon || cfg.custos);
+    return Boolean(cfg.cilogon);
 };
 
 /**
- * Generic OIDC login (all providers *except* CILogon/Custos).
+ * Generic OIDC login (all providers *except* CILogon).
  * Returns the redirect URI Galaxy gives back, or throws.
  */
 export async function submitOIDCLogon(idp: string, redirectParam: string | null = null): Promise<string | null> {
@@ -73,8 +73,8 @@ export async function submitOIDCLogon(idp: string, redirectParam: string | null 
 }
 
 /**
- * CILogon/Custos login.
- * @param idp        "cilogon" | "custos"
+ * CILogon login.
+ * @param idp        "cilogon"
  * @param useIDPHint If true, append ?idphint=
  * @param idpHint    The entityID to hint with (ignored when useIDPHint = false)
  */
@@ -108,7 +108,7 @@ export async function redirectToSingleProvider(config: OIDCConfig): Promise<stri
         throw new Error("OIDC provider key is undefined.");
     }
 
-    if (idp === "cilogon" || idp === "custos") {
+    if (idp === "cilogon") {
         const redirectUri = await submitCILogon(idp, false);
         return redirectUri;
     } else {

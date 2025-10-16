@@ -13,7 +13,7 @@ const configMock = {
     allow_local_account_creation: true,
     enable_oidc: true,
     mailing_join_addr: "mailing_join_addr",
-    prefer_custos_login: true,
+    prefer_oidc_login: true,
     registration_warning_message: "registration_warning_message",
     server_mail_configured: true,
     show_welcome_with_login: true,
