@@ -1231,14 +1231,14 @@ class NavigatesGalaxy(HasDriver):
         with self.rule_builder_rule_editor("split-columns") as filter_editor_element:
             clear = True
             for column_label_1 in column_labels_1:
-                column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
-                self.select_set_value(column_elems[0], column_label_1, clear_value=clear)
+                column_elem = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")[0]
+                self.select_set_value(column_elem, column_label_1, multiple=True, clear_value=clear)
                 clear = False
 
             clear = True
             for column_label_2 in column_labels_2:
-                column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
-                self.select_set_value(column_elems[1], column_label_2, clear_value=clear)
+                column_elem = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")[1]
+                self.select_set_value(column_elem, column_label_2, multiple=True, clear_value=clear)
                 clear = False
 
             self.screenshot_if(screenshot_name)
