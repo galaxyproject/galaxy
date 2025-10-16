@@ -3,11 +3,7 @@
         <div class="d-flex justify-content-end align-items-center">
             <span v-b-tooltip.hover class="mr-auto help-text" :title="help">{{ label }}</span>
             <div v-b-tooltip.hover class="mr-1" :title="title">
-                <SelectBasic
-                    :value="target"
-                    :multiple="multiple"
-                    :options="colHeaders.map((col, index) => ({ id: index, text: col }))"
-                    @input="handleInput" />
+                <SelectBasic :value="target" :multiple="multiple" :options="columnOptions" @input="handleInput" />
             </div>
             <slot></slot>
         </div>
@@ -30,10 +26,7 @@
                     <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
                 </span>
                 <span v-else class="rule-column-selector-target-select">
-                    <SelectBasic
-                        placeholder="Select a column"
-                        :options="remainingHeaders.map((col, index) => ({ id: index, text: col }))"
-                        @input="handleAdd" />
+                    <SelectBasic placeholder="Select a column" :options="remainingOptions" @input="handleAdd" />
                 </span>
             </li>
         </ol>
@@ -87,18 +80,15 @@ export default {
         },
     },
     computed: {
-        remainingHeaders() {
-            const colHeaders = this.colHeaders;
+        columnOptions() {
+            return this.colHeaders.map((col, index) => ({ id: index, text: col }));
+        },
+        remainingOptions() {
             if (!this.multiple) {
-                return colHeaders;
+                return this.columnOptions;
             }
-            const remaining = {};
-            for (const key in colHeaders) {
-                if (this.target.indexOf(parseInt(key)) === -1) {
-                    remaining[key] = colHeaders[key];
-                }
-            }
-            return remaining;
+            const exclude = new Set(this.target.map(Number));
+            return this.columnOptions.filter((opt) => !exclude.has(opt.id));
         },
         title() {
             return _l("Select a column");
