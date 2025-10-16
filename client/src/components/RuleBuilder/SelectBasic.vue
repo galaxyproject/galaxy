@@ -1,14 +1,20 @@
 <template>
-    <select class="select-basic" :value="value" :multiple="multiple" @change="onChange">
-        <option v-if="placeholder" value="" disabled selected>{{ placeholder }}</option>
-        <option v-for="option in options" :key="option.id" :value="option.id">
-            {{ option.text }}
-        </option>
-    </select>
+    <VueMultiselect
+        class="select-basic"
+        :value="selectedValue"
+        :options="options"
+        :multiple="multiple"
+        :placeholder="placeholder || 'Select an option'"
+        track-by="id"
+        label="text"
+        @input="onInput" />
 </template>
 
 <script>
+import VueMultiselect from "vue-multiselect";
+
 export default {
+    components: { VueMultiselect },
     props: {
         value: { required: false },
         multiple: { type: Boolean, default: false },
@@ -19,12 +25,23 @@ export default {
         },
         placeholder: { type: String, default: null },
     },
+    computed: {
+        selectedValue() {
+            if (!this.value) {
+                return this.multiple ? [] : null;
+            }
+            if (this.multiple) {
+                return this.options.filter((opt) => this.value.includes(opt.id));
+            }
+            // Handle both single value and array for single-select
+            const singleValue = Array.isArray(this.value) ? this.value[0] : this.value;
+            return this.options.find((opt) => opt.id === singleValue) || null;
+        },
+    },
     methods: {
-        onChange(event) {
-            const selected = this.multiple
-                ? Array.from(event.target.selectedOptions).map((o) => o.value)
-                : event.target.value;
-            this.$emit("input", selected);
+        onInput(selected) {
+            const value = this.multiple ? selected.map((opt) => opt.id) : selected ? selected.id : null;
+            this.$emit("input", value);
         },
     },
 };
