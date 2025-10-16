@@ -2263,7 +2263,9 @@ class DirectoryModelExportStore(ModelExportStore):
         for dataset in datasets:
             # Add a new "annotation" attribute so that the user annotation for the dataset can be serialized without needing the user
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)  # type: ignore[attr-defined]
-            should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
+            should_include_file = self._should_include_dataset(
+                dataset, include_hidden=include_hidden, include_deleted=include_deleted
+            )
             if not dataset.deleted and dataset.id in self.collection_datasets:
                 should_include_file = True
 
@@ -2301,25 +2303,44 @@ class DirectoryModelExportStore(ModelExportStore):
         for folder in library_folder.folders:
             self.export_library_folder_contents(folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
+    def _should_include_dataset(
+        self, dataset: model.DatasetInstance, include_hidden: bool = False, include_deleted: bool = False
+    ) -> bool:
+        return (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
+
     def export_workflow_invocation(
         self, workflow_invocation: model.WorkflowInvocation, include_hidden: bool = False, include_deleted: bool = False
     ) -> None:
         self.included_invocations.append(workflow_invocation)
         for input_dataset in workflow_invocation.input_datasets:
-            if input_dataset.dataset:
+            if input_dataset.dataset and self._should_include_dataset(
+                input_dataset.dataset, include_hidden, include_deleted
+            ):
                 self.add_dataset(input_dataset.dataset)
         for output_dataset in workflow_invocation.output_datasets:
-            self.add_dataset(output_dataset.dataset)
+            if self._should_include_dataset(output_dataset.dataset, include_hidden, include_deleted):
+                self.add_dataset(output_dataset.dataset)
         for input_dataset_collection in workflow_invocation.input_dataset_collections:
             if input_dataset_collection.dataset_collection:
-                self.export_collection(input_dataset_collection.dataset_collection)
+                self.export_collection(
+                    input_dataset_collection.dataset_collection,
+                    include_hidden=include_hidden,
+                    include_deleted=include_deleted,
+                )
         for output_dataset_collection in workflow_invocation.output_dataset_collections:
-            self.export_collection(output_dataset_collection.dataset_collection)
+            self.export_collection(
+                output_dataset_collection.dataset_collection,
+                include_hidden=include_hidden,
+                include_deleted=include_deleted,
+            )
         for workflow_invocation_step in workflow_invocation.steps:
             for assoc in workflow_invocation_step.output_datasets:
-                self.add_dataset(assoc.dataset)
+                if self._should_include_dataset(assoc.dataset, include_hidden, include_deleted):
+                    self.add_dataset(assoc.dataset)
             for assoc in workflow_invocation_step.output_dataset_collections:
-                self.export_collection(assoc.dataset_collection)
+                self.export_collection(
+                    assoc.dataset_collection, include_hidden=include_hidden, include_deleted=include_deleted
+                )
 
     def add_job_output_dataset_associations(
         self, job_id: int, name: str, dataset_instance: model.DatasetInstance
