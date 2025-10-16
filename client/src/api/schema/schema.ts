@@ -6655,7 +6655,11 @@ export interface components {
             state_ids: {
                 [key: string]: string[];
             };
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -6742,7 +6746,11 @@ export interface components {
              * @description Whether this item has been permanently removed.
              */
             purged: boolean;
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -8683,7 +8691,11 @@ export interface components {
             state_ids?: {
                 [key: string]: string[];
             } | null;
-            tags?: components["schemas"]["galaxy__util__config_templates__TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -8916,7 +8928,11 @@ export interface components {
             state_ids?: {
                 [key: string]: string[];
             } | null;
-            tags?: components["schemas"]["galaxy__util__config_templates__TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -9559,7 +9575,11 @@ export interface components {
              * @constant
              */
             model_class: "HistoryDatasetCollectionAssociation";
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
         };
         /**
          * DatasetCollectionContentElements
@@ -11255,7 +11275,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -12255,7 +12279,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state?: components["schemas"]["DatasetState"] | null;
-            tags?: components["schemas"]["galaxy__util__config_templates__TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Type
              * @description This is always `file` for datasets.
@@ -12520,7 +12548,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `file` for datasets.
@@ -12620,7 +12652,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description The type of this item.
@@ -12767,7 +12803,11 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description The type of this item.
@@ -12927,7 +12967,11 @@ export interface components {
              * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
              */
             store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
-            tags?: components["schemas"]["galaxy__util__config_templates__TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags?: string[] | null;
             /**
              * Type
              * @description This is always `collection` for dataset collections.
@@ -13088,7 +13132,11 @@ export interface components {
              * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
              */
             store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `collection` for dataset collections.
@@ -13228,7 +13276,11 @@ export interface components {
              * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
              */
             store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `collection` for dataset collections.
@@ -13992,7 +14044,11 @@ export interface components {
             state_ids: {
                 [key: string]: string[];
             };
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -14077,7 +14133,11 @@ export interface components {
              * @description Whether this item has been permanently removed.
              */
             purged: boolean;
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -15495,7 +15555,7 @@ export interface components {
              * Item tags
              * @description The list of tags that will replace the current tags associated with the item.
              */
-            item_tags?: components["schemas"]["TagCollection-Input"] | null;
+            item_tags?: string[] | null;
         };
         /**
          * ItemTagsResponse
@@ -16551,7 +16611,11 @@ export interface components {
             peek: string | null;
             /** State */
             state: string;
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /** Update Time */
             update_time: string;
             /** Uploaded By */
@@ -17844,7 +17908,11 @@ export interface components {
              * @description The identifying slug for the page URL, must be unique.
              */
             slug: string;
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Title
              * @description The name of the page.
@@ -17925,7 +17993,11 @@ export interface components {
              * @description The identifying slug for the page URL, must be unique.
              */
             slug: string;
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Title
              * @description The name of the page.
@@ -20625,7 +20697,11 @@ export interface components {
                     | components["schemas"]["ToolStep"]
                     | components["schemas"]["SubworkflowStep"];
             };
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -20730,11 +20806,6 @@ export interface components {
          * @enum {string}
          */
         SupportedType: "None" | "BasicAuth" | "BearerAuth" | "PassportAuth";
-        /**
-         * TagCollection
-         * @description Represents the collection of tags associated with an item.
-         */
-        "TagCollection-Input": string[];
         /** TagOperationParams */
         TagOperationParams: {
             /** Tags */
@@ -21551,7 +21622,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags?: components["schemas"]["TagCollection-Input"] | null;
+            tags?: string[] | null;
             /**
              * Visible
              * @description Whether this item is visible in the history.
@@ -21578,7 +21649,8 @@ export interface components {
             published?: boolean | null;
             /** Purged */
             purged?: boolean | null;
-            tags?: components["schemas"]["TagCollection-Input"] | null;
+            /** Tags */
+            tags?: string[] | null;
         };
         /** UpdateInstancePayload */
         UpdateInstancePayload: {
@@ -22716,7 +22788,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags?: components["schemas"]["galaxy__schema__schema__TagCollection"] | null;
+            tags?: string[] | null;
             /**
              * Title
              * @description The name of the visualization.
@@ -22786,7 +22858,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags: components["schemas"]["galaxy__schema__schema__TagCollection"] | null;
+            tags: string[] | null;
             /**
              * Title
              * @description The name of the visualization.
@@ -23399,16 +23471,6 @@ export interface components {
             /** URL */
             url?: string | null;
         };
-        /**
-         * TagCollection
-         * @description Represents the collection of tags associated with an item.
-         */
-        galaxy__schema__schema__TagCollection: string[];
-        /**
-         * TagCollection
-         * @description Represents the collection of tags associated with an item.
-         */
-        galaxy__util__config_templates__TagCollection: string[] | null;
     };
     responses: never;
     parameters: never;

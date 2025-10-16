@@ -31,6 +31,7 @@ from pydantic_core import core_schema
 from typing_extensions import (
     Literal,
     NotRequired,
+    TypeAlias,
     TypedDict,
 )
 
@@ -595,18 +596,15 @@ class HistoryContentSource(str, Enum):
 DatasetCollectionInstanceType = Literal["history", "library"]
 
 
-TagItem = Annotated[str, Field(..., pattern=TAG_ITEM_PATTERN)]
-
-
-class TagCollection(RootModel):
-    """Represents the collection of tags associated with an item."""
-
-    root: list[TagItem] = Field(
-        default=...,
+TagItem: TypeAlias = Annotated[str, Field(pattern=TAG_ITEM_PATTERN)]
+TagCollection: TypeAlias = Annotated[
+    list[TagItem],
+    Field(
         title="Tags",
         description="The collection of tags associated with an item.",
         examples=["COVID-19", "#myFancyTag", "covid19.galaxyproject.org"],
-    )
+    ),
+]
 
 
 class MetadataFile(Model):
