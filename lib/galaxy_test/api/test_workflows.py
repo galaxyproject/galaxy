@@ -41,6 +41,8 @@ from galaxy_test.base.workflow_fixtures import (
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
     WORKFLOW_FLAT_CROSS_PRODUCT,
     WORKFLOW_INPUTS_AS_OUTPUTS,
+    WORKFLOW_KEEP_SUCCESSFUL_DATASETS,
+    WORKFLOW_KEEP_SUCCESSFUL_DATASETS_TEST_DATA,
     WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
@@ -3790,36 +3792,8 @@ input_c:
     def test_keep_success_mapping_error(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
-                """
-class: GalaxyWorkflow
-inputs:
-  input_c: collection
-
-steps:
-  mixed_collection:
-    tool_id: exit_code_from_file
-    in:
-       input: input_c
-
-  filtered_collection:
-    tool_id: "__KEEP_SUCCESS_DATASETS__"
-    in:
-      input: mixed_collection/out_file1
-
-  cat:
-    tool_id: cat1
-    in:
-      input1: filtered_collection/output
-""",
-                test_data="""
-input_c:
-  collection_type: list
-  elements:
-    - identifier: i1
-      content: "0"
-    - identifier: i2
-      content: "1"
-""",
+                WORKFLOW_KEEP_SUCCESSFUL_DATASETS,
+                test_data=WORKFLOW_KEEP_SUCCESSFUL_DATASETS_TEST_DATA,
                 history_id=history_id,
                 wait=True,
                 assert_ok=False,

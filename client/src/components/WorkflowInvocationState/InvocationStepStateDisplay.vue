@@ -11,7 +11,11 @@ const props = defineProps<{
 </script>
 
 <template>
-    <span class="d-flex align-items-center">
+    <span
+        class="d-flex align-items-center"
+        data-description="invocation step state counter"
+        :data-state="state"
+        :data-count="jobCount">
         <FontAwesomeIcon
             v-if="iconClasses[props.state]"
             :icon="iconClasses[props.state]?.icon"
