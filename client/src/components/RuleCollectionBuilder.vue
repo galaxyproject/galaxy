@@ -520,17 +520,15 @@
                     <input v-if="elementsType == 'datasets'" v-model="hideSourceItems" type="checkbox" />
                     <div v-if="extension && showFileTypeSelector" class="rule-footer-extension-group">
                         <label>{{ l("Type") }}:</label>
-                        <SelectBasic v-model="extension" name="extension" class="extension-select">
-                            <option v-for="col in extensions" :key="col.id" :value="col['id']">
-                                {{ col["text"] }}
-                            </option>
-                        </SelectBasic>
+                        <SelectBasic
+                            v-model="extension"
+                            name="extension"
+                            class="extension-select"
+                            :options="extensions" />
                     </div>
                     <div v-if="genome && showGenomeSelector" class="rule-footer-genome-group">
                         <label>{{ l("Genome") }}:</label>
-                        <SelectBasic v-model="genome" class="genome-select">
-                            <option v-for="col in genomes" :key="col.id" :value="col['id']">{{ col["text"] }}</option>
-                        </SelectBasic>
+                        <SelectBasic v-model="genome" class="genome-select" :options="genomes" />
                     </div>
                     <label v-if="showAddNameTag">{{ l("Add nametag for name") }}:</label>
                     <input v-if="showAddNameTag" v-model="addNameTag" type="checkbox" />
