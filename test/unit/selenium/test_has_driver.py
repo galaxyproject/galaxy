@@ -560,6 +560,91 @@ class TestInputValueAbstraction:
         assert value == "test@example.com"
 
 
+class TestSelectByValue:
+    """Tests for select_by_value method."""
+
+    def test_select_by_value_basic(self, has_driver_instance, base_url):
+        """Test basic select by value functionality."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Select an option by value using Target
+        fruit_select = SimpleTarget(element_locator=(By.CSS_SELECTOR, "#fruit-select"), description="fruit select")
+        has_driver_instance.select_by_value(fruit_select, "banana")
+
+        # Verify the selection
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        selected_value = select_element.get_attribute("value")
+        assert selected_value == "banana"
+
+    def test_select_by_value_multiple_options(self, has_driver_instance, base_url):
+        """Test selecting different options sequentially."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        fruit_select = SimpleTarget(element_locator=(By.CSS_SELECTOR, "#fruit-select"), description="fruit select")
+
+        # Select first option
+        has_driver_instance.select_by_value(fruit_select, "apple")
+        assert select_element.get_attribute("value") == "apple"
+
+        # Select a different option
+        has_driver_instance.select_by_value(fruit_select, "cherry")
+        assert select_element.get_attribute("value") == "cherry"
+
+        # Select another option
+        has_driver_instance.select_by_value(fruit_select, "durian")
+        assert select_element.get_attribute("value") == "durian"
+
+    def test_select_by_value_with_tuple(self, has_driver_instance, base_url):
+        """Test select by value using a (locator_type, value) tuple."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Select using tuple (By.CSS_SELECTOR, selector)
+        has_driver_instance.select_by_value((By.CSS_SELECTOR, "#fruit-select"), "cherry")
+
+        # Verify the selection
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        assert select_element.get_attribute("value") == "cherry"
+
+    def test_select_by_value_with_id_tuple(self, has_driver_instance, base_url):
+        """Test select by value using a (By.ID, value) tuple."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Select using tuple (By.ID, id)
+        has_driver_instance.select_by_value((By.ID, "fruit-select"), "durian")
+
+        # Verify the selection
+        select_element = has_driver_instance.find_element_by_id("fruit-select")
+        assert select_element.get_attribute("value") == "durian"
+
+
+class TestFindElementWithTuple:
+    """Tests for find_element with tuple-based locators."""
+
+    def test_find_element_with_css_selector_tuple(self, has_driver_instance, base_url):
+        """Test finding element with (By.CSS_SELECTOR, selector) tuple."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Find element using tuple
+        element = has_driver_instance.find_element((By.CSS_SELECTOR, "#test-div"))
+        assert element.text == "Test Div"
+
+    def test_find_element_with_id_tuple(self, has_driver_instance, base_url):
+        """Test finding element with (By.ID, id) tuple."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Find element using tuple
+        element = has_driver_instance.find_element((By.ID, "test-div"))
+        assert element.text == "Test Div"
+
+    def test_find_element_with_xpath_tuple(self, has_driver_instance, base_url):
+        """Test finding element with (By.XPATH, xpath) tuple."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+
+        # Find element using tuple
+        element = has_driver_instance.find_element((By.XPATH, "//div[@id='test-div']"))
+        assert element.text == "Test Div"
+
+
 class TestActionChainsAndKeys:
     """Tests for action chains and key sending methods."""
 

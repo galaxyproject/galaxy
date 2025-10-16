@@ -21,6 +21,10 @@ from galaxy.navigation.components import Target
 from .axe_results import AxeResults
 from .web_element_protocol import WebElementProtocol
 
+# Type for element locators - can be either a Target or a Selenium-style (locator_type, value) tuple
+ElementLocatorTuple = tuple[str, str]  # e.g., ("css selector", "#id") or ("id", "test")
+HasElementLocator = Union[Target, ElementLocatorTuple]
+
 
 class Cookie(TypedDict, total=False):
     """Cookie dictionary structure compatible with both Selenium and Playwright."""
@@ -149,8 +153,13 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
-    def find_element(self, selector_template: Target) -> WebElementProtocol:
-        """Find first element matching the Target selector template (no waiting)."""
+    def find_element(self, selector_template: HasElementLocator) -> WebElementProtocol:
+        """
+        Find first element matching the selector template (no waiting).
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple
+        """
         ...
 
     # Wait methods - presence
@@ -391,6 +400,17 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         """
         ...
 
+    @abstractmethod
+    def select_by_value(self, selector_template: HasElementLocator, value: str) -> None:
+        """
+        Select an option from a <select> element by its value attribute.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            value: The value attribute of the option to select
+        """
+        ...
+
     # Frame switching
     @abstractmethod
     def switch_to_frame(self, frame_reference: Union[str, int, Any] = "frame"):
@@ -502,4 +522,13 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
 
-__all__ = ("HasDriverProtocol", "BackendType", "TimeoutCallback", "WaitTypeT", "Cookie", "fixed_timeout_handler")
+__all__ = (
+    "HasDriverProtocol",
+    "BackendType",
+    "TimeoutCallback",
+    "WaitTypeT",
+    "Cookie",
+    "fixed_timeout_handler",
+    "HasElementLocator",
+    "ElementLocatorTuple",
+)

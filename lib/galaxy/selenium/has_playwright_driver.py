@@ -155,6 +155,7 @@ from .has_driver import (
 from .has_driver_protocol import (
     BackendType,
     Cookie,
+    HasElementLocator,
     TimeoutCallback,
     WaitTypeT,
 )
@@ -406,9 +407,19 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         count = locator.count()
         return [PlaywrightElement(locator.nth(i).element_handle(), self) for i in range(count)]
 
-    def find_element(self, selector_template: Target) -> WebElementProtocol:
-        """Find first element matching Target (no waiting)."""
-        selector = self._target_to_playwright_selector(selector_template)
+    def find_element(self, selector_template: HasElementLocator) -> WebElementProtocol:
+        """
+        Find first element matching selector template (no waiting).
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple
+        """
+        # Dispatch on input type
+        if isinstance(selector_template, Target):
+            selector = self._target_to_playwright_selector(selector_template)
+        else:
+            # It's a tuple (locator_type, value)
+            selector = self._selenium_locator_to_playwright_selector(*selector_template)
         element_handle = self._frame_or_page.locator(selector).first.element_handle()
         return PlaywrightElement(element_handle, self)
 
@@ -497,6 +508,22 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         # special case of using input_value() for input elements
         value = element.get_attribute("value")
         return value if value is not None else ""
+
+    def select_by_value(self, selector_template: HasElementLocator, value: str) -> None:
+        """
+        Select an option from a <select> element by its value attribute.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            value: The value attribute of the option to select
+        """
+        # Dispatch on input type
+        if isinstance(selector_template, Target):
+            selector = self._target_to_playwright_selector(selector_template)
+        else:
+            # It's a tuple (locator_type, value)
+            selector = self._selenium_locator_to_playwright_selector(*selector_template)
+        self._frame_or_page.locator(selector).first.select_option(value=value)
 
     def _timeout_in_ms(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: Optional[WaitTypeT] = None, **kwds) -> float:
         """

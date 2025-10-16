@@ -7,6 +7,7 @@ attribute.
 import abc
 import threading
 from typing import (
+    cast,
     Generic,
     Literal,
     Optional,
@@ -36,6 +37,7 @@ from .axe_results import (
 )
 from .has_driver_protocol import (
     Cookie,
+    HasElementLocator,
     TimeoutCallback,
     WaitTypeT,
 )
@@ -207,9 +209,20 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
     def find_elements(self, selector_template: Target) -> list[WebElementProtocol]:
         return _webelements_to_protocol(self.driver.find_elements(*selector_template.element_locator))
 
-    def find_element(self, selector_template: Target) -> WebElementProtocol:
-        """Find first element matching Target (no waiting)."""
-        return _webelement_to_protocol(self.driver.find_element(*selector_template.element_locator))
+    def find_element(self, selector_template: HasElementLocator) -> WebElementProtocol:
+        """
+        Find first element matching selector template (no waiting).
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple
+        """
+        # Dispatch on input type
+        if isinstance(selector_template, Target):
+            locator = selector_template.element_locator
+        else:
+            # It's a tuple (locator_type, value)
+            locator = selector_template
+        return _webelement_to_protocol(self.driver.find_element(*locator))
 
     def assert_absent(self, selector_template: Target) -> None:
         elements = self.find_elements(selector_template)
@@ -526,6 +539,21 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         value = element.get_attribute("value")
         return value if value is not None else ""
+
+    def select_by_value(self, selector_template: HasElementLocator, value: str) -> None:
+        """
+        Select an option from a <select> element by its value attribute.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            value: The value attribute of the option to select
+        """
+        from selenium.webdriver.support.ui import Select
+
+        # Cast to WebElement - we know this is actually a WebElement in the Selenium backend
+        select_element = cast(WebElement, self.find_element(selector_template))
+        select = Select(select_element)
+        select.select_by_value(value)
 
     def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
         if self.axe_skip:

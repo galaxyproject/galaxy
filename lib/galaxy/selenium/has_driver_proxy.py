@@ -23,6 +23,7 @@ from .has_driver_protocol import (
     BackendType,
     Cookie,
     HasDriverProtocol,
+    HasElementLocator,
     TimeoutCallback,
     WaitTypeT,
 )
@@ -137,8 +138,13 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Find all elements matching the Target selector template."""
         return self._driver_impl.find_elements(selector_template)
 
-    def find_element(self, selector_template: Target) -> WebElementProtocol:
-        """Find first element matching the Target selector template (no waiting)."""
+    def find_element(self, selector_template: HasElementLocator) -> WebElementProtocol:
+        """
+        Find first element matching selector template (no waiting).
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple
+        """
         return self._driver_impl.find_element(selector_template)
 
     # Wait methods - presence
@@ -347,6 +353,16 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
             The current value of the input element, or empty string if no value
         """
         return self._driver_impl.get_input_value(element)
+
+    def select_by_value(self, selector_template: HasElementLocator, value: str) -> None:
+        """
+        Select an option from a <select> element by its value attribute.
+
+        Args:
+            selector_template: Either a Target or a (locator_type, value) tuple for the select element
+            value: The value attribute of the option to select
+        """
+        return self._driver_impl.select_by_value(selector_template, value)
 
     # Frame switching
 
