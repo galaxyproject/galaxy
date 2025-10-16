@@ -1,5 +1,5 @@
 import pytest
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
 
 from galaxy.util.unittest_utils import skip_if_site_down
 from .framework import (
@@ -22,7 +22,7 @@ class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
         self.datasource_tool_open("ucsc_table_direct1")
         self.screenshot("ucsc_table_browser_first_page")
         # only 4mb instead of 10 times that for human by default
-        Select(self.wait_for_selector("#org")).select_by_value("Tree shrew")
+        self.select_by_value((By.CSS_SELECTOR, "#org"), "Tree shrew")
         checkbox = self.wait_for_selector("#checkboxGalaxy")
         assert checkbox.get_attribute("checked") == "true"
         submit_button = self.wait_for_selector("#hgta_doTopSubmit")

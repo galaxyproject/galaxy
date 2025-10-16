@@ -1,14 +1,17 @@
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestHistoryOptions(SeleniumTestCase):
+    ensure_registered = True
+
     @selenium_test
+    @managed_history
     def test_options(self):
-        self.register()
-        self.perform_upload(self.get_filename("1.txt"))
+        self.perform_upload_of_pasted_content("text content")
         menu_selector = self.navigation.history_panel.selectors.options_menu
         self.wait_for_absent_or_hidden(menu_selector)
         self.click_history_options()

@@ -14,9 +14,14 @@ class TestPagesIndex(SeleniumTestCase):
         page_title = page_response["title"]
         self.navigate_to_pages()
         self._assert_showing_n_pages(1)
-        self.select_grid_operation(page_title, "Delete")
-        alert = self.driver.switch_to.alert
-        alert.accept()
+        if self.backend_type == "selenium":
+            self.select_grid_operation(page_title, "Delete")
+            self.accept_alert()
+        else:
+            self._driver_impl.page.on("dialog", lambda dialog: dialog.accept())
+            self.select_grid_operation(page_title, "Delete")
+            self.sleep_for(self.wait_types.UX_TRANSITION)
+
         self._assert_showing_n_pages(0)
 
     def new_page(self):

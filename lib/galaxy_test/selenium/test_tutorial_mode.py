@@ -19,7 +19,7 @@ class TestTutorialMode(SeleniumTestCase):
         self.screenshot("tutorial_mode_0_1")
 
         # Access inside the frame
-        self.driver.switch_to.frame("gtn-embed")
+        self.switch_to_frame("gtn-embed")
         self.wait_for_selector_visible("#top-navbar")
         self.screenshot("tutorial_mode_0_2")
 
