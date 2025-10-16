@@ -56,7 +56,7 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
-                            <label v-b-tooltip.hover :title="titleNumericSort">
+                            <label v-b-tooltip.hover.noninteractive :title="titleNumericSort">
                                 <input v-model="addSortingNumeric" type="checkbox" />
                                 {{ l("Numeric sorting.") }}
                             </label>
@@ -141,7 +141,7 @@
                                 {{ l("Replacement Expression") }}
                                 <input v-model="addColumnRegexReplacement" type="text" class="rule-replacement" />
                             </label>
-                            <label v-b-tooltip.hover>
+                            <label v-b-tooltip.hover.noninteractive>
                                 <input v-model="addColumnRegexAllowUnmatched" type="checkbox" />
                                 {{ l("Allow regular expression unmatched.") }}
                             </label>
@@ -401,7 +401,7 @@
                             <div class="rules-buttons btn-group">
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom
+                                        v-b-tooltip.hover.bottom.noninteractive
                                         type="button"
                                         :title="titleRulesMenu"
                                         class="rule-menu-rules-button primary-button dropdown-toggle"
@@ -425,7 +425,7 @@
                                 </div>
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom
+                                        v-b-tooltip.hover.bottom.noninteractive
                                         type="button"
                                         :title="titleFilterMenu"
                                         class="rule-menu-filter-button primary-button dropdown-toggle"
@@ -444,7 +444,7 @@
                                 </div>
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom
+                                        v-b-tooltip.hover.bottom.noninteractive
                                         type="button"
                                         :title="titleColumMenu"
                                         class="rule-menu-column-button primary-button dropdown-toggle"
