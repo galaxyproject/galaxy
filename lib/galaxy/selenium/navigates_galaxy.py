@@ -1138,7 +1138,7 @@ class NavigatesGalaxy(HasDriver):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def rule_builder_set_extension(self, extension):
-        self.select2_set_value(self.navigation.rule_builder.selectors.extension_select, extension)
+        self.select_set_value(self.navigation.rule_builder.selectors.extension_select, extension)
 
     def rule_builder_filter_count(self, count=1):
         rule_builder = self.components.rule_builder
@@ -1153,7 +1153,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("sort") as editor_element:
             column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select2_set_value(column_elem, column_label)
+            self.select_set_value(column_elem, column_label)
             self.screenshot_if(screenshot_name)
 
     def rule_builder_add_regex_groups(self, column_label, group_count, regex, screenshot_name):
@@ -1161,7 +1161,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-regex") as editor_element:
             column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select2_set_value(column_elem, column_label)
+            self.select_set_value(column_elem, column_label)
 
             groups_elem = editor_element.find_element(By.CSS_SELECTOR, "input[type='radio'][value='groups']")
             groups_elem.click()
@@ -1181,7 +1181,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-regex") as editor_element:
             column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select2_set_value(column_elem, column_label)
+            self.select_set_value(column_elem, column_label)
 
             groups_elem = editor_element.find_element(By.CSS_SELECTOR, "input[type='radio'][value='replacement']")
             groups_elem.click()
@@ -1212,7 +1212,7 @@ class NavigatesGalaxy(HasDriver):
         with self.rule_builder_rule_editor("remove-columns") as filter_editor_element:
             column_elem = filter_editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
             for column_label in column_labels:
-                self.select2_set_value(column_elem, column_label)
+                self.select_set_value(column_elem, column_label)
             self.screenshot_if(screenshot_name)
 
     def rule_builder_concatenate_columns(self, column_label_1, column_label_2, screenshot_name=None):
@@ -1220,9 +1220,9 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-concatenate") as filter_editor_element:
             column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select2_set_value(column_elems[0], column_label_1)
+            self.select_set_value(column_elems[0], column_label_1)
             column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select2_set_value(column_elems[1], column_label_2)
+            self.select_set_value(column_elems[1], column_label_2)
             self.screenshot_if(screenshot_name)
 
     def rule_builder_split_columns(self, column_labels_1, column_labels_2, screenshot_name=None):
@@ -1232,13 +1232,13 @@ class NavigatesGalaxy(HasDriver):
             column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             clear = True
             for column_label_1 in column_labels_1:
-                self.select2_set_value(column_elems[0], column_label_1, clear_value=clear)
+                self.select_set_value(column_elems[0], column_label_1, clear_value=clear)
                 clear = False
 
             column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             clear = True
             for column_label_2 in column_labels_2:
-                self.select2_set_value(column_elems[1], column_label_2, clear_value=clear)
+                self.select_set_value(column_elems[1], column_label_2, clear_value=clear)
                 clear = False
 
             self.screenshot_if(screenshot_name)
@@ -1248,9 +1248,9 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("swap-columns") as filter_editor_element:
             column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select2_set_value(column_elems[0], column_label_1)
+            self.select_set_value(column_elems[0], column_label_1)
             column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
-            self.select2_set_value(column_elems[1], column_label_2)
+            self.select_set_value(column_elems[1], column_label_2)
             self.screenshot_if(screenshot_name)
 
     @contextlib.contextmanager
@@ -1270,7 +1270,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.add_mapping_button(mapping_type=mapping_type).wait_for_and_click()
         if mapping_type != "list-identifiers" or not isinstance(column_label, list):
             mapping_elem = rule_builder.mapping_edit(mapping_type=mapping_type).wait_for_visible()
-            self.select2_set_value(mapping_elem, column_label)
+            self.select_set_value(mapping_elem, column_label)
             self.screenshot_if(screenshot_name)
         else:
             assert len(column_label) > 0
@@ -1279,7 +1279,7 @@ class NavigatesGalaxy(HasDriver):
                 if i > 0:
                     rule_builder.mapping_add_column(mapping_type=mapping_type).wait_for_and_click()
                 mapping_elem = rule_builder.mapping_edit(mapping_type=mapping_type).wait_for_visible()
-                self.select2_set_value(mapping_elem, column_label)
+                self.select_set_value(mapping_elem, column_label)
             self.screenshot_if(screenshot_name)
         rule_builder.mapping_ok.wait_for_and_click()
 
@@ -2616,7 +2616,7 @@ class NavigatesGalaxy(HasDriver):
         if annotation_area.is_absent or not annotation_area.is_displayed:
             annotation_icon.wait_for_and_click()
 
-    def select_set_value(self, container_selector_or_elem, value, multiple=False):
+    def select_set_value(self, container_selector_or_elem, value, multiple=False, clear_value=False):
         if hasattr(container_selector_or_elem, "selector"):
             container_selector_or_elem = container_selector_or_elem.selector
         if not hasattr(container_selector_or_elem, "find_element"):
@@ -2629,6 +2629,9 @@ class NavigatesGalaxy(HasDriver):
         except Exception:
             text_input = None
         if text_input:
+            if clear_value:
+                self.send_backspace(text_input)
+                self.send_backspace(text_input)
             text_input.send_keys(value)
             self.sleep_for(WAIT_TYPES.UX_RENDER)
             self.send_enter(text_input)
@@ -2646,47 +2649,6 @@ class NavigatesGalaxy(HasDriver):
                     elem.click()
                     found = True
             assert found, f"Failed to find specified select value [{value}] in browser options [{discovered_options}]"
-
-    def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
-        # There are two hacky was to select things from the select2 widget -
-        #   with_click=True: This simulates the mouse click after the suggestion contains
-        #                    only the selected value.
-        #   with_click=False: This presses enter on the selection. Not sure
-        #                     why.
-        # with_click seems to work in all situtations - the enter methods
-        # doesn't seem to work with the tool form for some reason.
-        if hasattr(container_selector_or_elem, "selector"):
-            container_selector_or_elem = container_selector_or_elem.selector
-        if not hasattr(container_selector_or_elem, "find_element"):
-            container_elem = self.wait_for_selector(container_selector_or_elem)
-        else:
-            container_elem = container_selector_or_elem
-
-        text_element = container_elem.find_element(By.CSS_SELECTOR, "input[type='text']")
-        if clear_value:
-            self.send_backspace(text_element)
-            self.send_backspace(text_element)
-        text_element.send_keys(value)
-        # Wait for select2 options to load and then click to add this one.
-        drop_elem = self.wait_for_selector_visible("#select2-drop")
-        # Sleep seems to be needed - at least for send_enter.
-        time.sleep(0.5)
-        if not with_click:
-            # Wait for select2 options to load and then click to add this one.
-            self.send_enter(text_element)
-        else:
-            candidate_elements = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")
-            # try to find exact match
-            for elem in candidate_elements:
-                if elem.text == value:
-                    select_elem = elem
-                    break
-            else:
-                # Pick first match. We're replacing select2 anyway ...
-                select_elem = candidate_elements[0]
-            action_chains = self.action_chains()
-            action_chains.move_to_element(select_elem).click().perform()
-        self.wait_for_selector_absent_or_hidden("#select2-drop")
 
     def snapshot(self, description):
         """Test case subclass overrides this to provide detailed logging."""
