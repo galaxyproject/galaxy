@@ -1495,25 +1495,6 @@ export default {
                 this.errorMessage = "Unknown error encountered: " + error;
             }
         },
-        swapOrientation() {
-            this.orientation = this.orientation == "horizontal" ? "vertical" : "horizontal";
-            const hotTable = this.$refs.hotTable.table;
-            if (this.orientation == "horizontal") {
-                this.$nextTick(function () {
-                    const fullWidth = $(".rule-builder-body").width();
-                    hotTable.updateSettings({
-                        width: fullWidth,
-                    });
-                });
-            } else {
-                this.$nextTick(function () {
-                    const fullWidth = $(".rule-builder-body").width();
-                    hotTable.updateSettings({
-                        width: fullWidth - 270,
-                    });
-                });
-            }
-        },
         attemptCreate() {
             this.createCollection();
         },
