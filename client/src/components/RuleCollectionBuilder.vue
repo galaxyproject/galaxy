@@ -520,17 +520,17 @@
                     <input v-if="elementsType == 'datasets'" v-model="hideSourceItems" type="checkbox" />
                     <div v-if="extension && showFileTypeSelector" class="rule-footer-extension-group">
                         <label>{{ l("Type") }}:</label>
-                        <Select2 v-model="extension" name="extension" class="extension-select">
+                        <SelectBasic v-model="extension" name="extension" class="extension-select">
                             <option v-for="col in extensions" :key="col.id" :value="col['id']">
                                 {{ col["text"] }}
                             </option>
-                        </Select2>
+                        </SelectBasic>
                     </div>
                     <div v-if="genome && showGenomeSelector" class="rule-footer-genome-group">
                         <label>{{ l("Genome") }}:</label>
-                        <Select2 v-model="genome" class="genome-select">
+                        <SelectBasic v-model="genome" class="genome-select">
                             <option v-for="col in genomes" :key="col.id" :value="col['id']">{{ col["text"] }}</option>
-                        </Select2>
+                        </SelectBasic>
                     </div>
                     <label v-if="showAddNameTag">{{ l("Add nametag for name") }}:</label>
                     <input v-if="showAddNameTag" v-model="addNameTag" type="checkbox" />
@@ -625,8 +625,8 @@ import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
 import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 import SaveRules from "components/RuleBuilder/SaveRules";
+import SelectBasic from "components/RuleBuilder/SelectBasic";
 import StateDiv from "components/RuleBuilder/StateDiv";
-import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { useHistoryStore } from "stores/historyStore";
@@ -661,7 +661,7 @@ export default {
         RuleModalHeader,
         RuleModalMiddle,
         RuleModalFooter,
-        Select2,
+        SelectBasic,
         GButton,
     },
     mixins: [SaveRules],
@@ -1837,15 +1837,15 @@ export default {
         },
         highlightColumn(n) {
             const headerSelection = document.querySelectorAll(`.htCore > thead > tr > th:nth-child(${n + 1})`);
-            headerSelection.forEach(el => el.classList.add("ht__highlight"));
+            headerSelection.forEach((el) => el.classList.add("ht__highlight"));
             const bodySelection = document.querySelectorAll(`.htCore > tbody > tr > td:nth-child(${n + 1})`);
-            bodySelection.forEach(el => el.classList.add("rule-highlight"));
+            bodySelection.forEach((el) => el.classList.add("rule-highlight"));
         },
         unhighlightColumn(n) {
             const headerSelection = document.querySelectorAll(`.htCore > thead > tr > th:nth-child(${n + 1})`);
-            headerSelection.forEach(el => el.classList.remove("ht__highlight"));
+            headerSelection.forEach((el) => el.classList.remove("ht__highlight"));
             const bodySelection = document.querySelectorAll(`.htCore > tbody > tr > td:nth-child(${n + 1})`);
-            bodySelection.forEach(el => el.classList.remove("rule-highlight"));
+            bodySelection.forEach((el) => el.classList.remove("rule-highlight"));
         },
         _datasetFor(dataIndex, data, mappingAsDict) {
             const res = {};
@@ -1956,7 +1956,7 @@ export default {
         width: 100%;
         overflow: hidden;
     }
-    .select2-container {
+    .select-basic {
         min-width: 60px;
     }
     .vertical #hot-table {
@@ -2052,7 +2052,7 @@ export default {
         padding-left: 20px;
         align-self: baseline;
     }
-    .rule-footer-inputs .select2-container {
+    .rule-footer-inputs .select-basic {
         align-self: baseline;
     }
     .rule-footer-inputs {
