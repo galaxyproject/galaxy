@@ -1353,7 +1353,7 @@ rule_builder:
     rule_editor_ok: '.rule-editor-ok'
     add_mapping_menu: '.rule-add-mapping'
     add_mapping_button: '.rule-add-mapping-${mapping_type}'
-    mapping_edit: '.rule-map-${mapping_type} .select2-container'
+    mapping_edit: '.rule-map-${mapping_type} .select-basic'
     mapping_remove_column: '.rule-map-${mapping_type} .rule-column-selector-target-remove'
     mapping_add_column: '.rule-map-${mapping_type} .rule-column-selector-target-add'
     mapping_ok: '.rule-mapping-ok'

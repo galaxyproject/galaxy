@@ -1,5 +1,5 @@
 <template>
-    <select class="basic-select" :value="value" :multiple="multiple" @change="onChange">
+    <select class="select-basic" :value="value" :multiple="multiple" @change="onChange">
         <slot></slot>
     </select>
 </template>
