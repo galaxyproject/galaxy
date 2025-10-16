@@ -654,7 +654,7 @@ class NavigatesGalaxy(HasDriver):
         popup_menu_button = target_item.find_element(By.CSS_SELECTOR, "button")
         popup_menu_button.click()
         popup_option = target_item.find_element(
-            By.CSS_SELECTOR, f"[data-description='grid operation {option_label.lower()}'"
+            By.CSS_SELECTOR, f"[data-description='grid operation {option_label.lower()}']"
         )
         popup_option.click()
 
