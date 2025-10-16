@@ -32,7 +32,7 @@ interface Props {
     enableOidc?: boolean;
     mailingJoinAddr?: string;
     oidcIdps?: OIDCConfig;
-    preferCustosLogin?: boolean;
+    preferOIDCLogin?: boolean;
     redirect?: string;
     registrationWarningMessage?: string;
     serverMailConfigured?: boolean;
@@ -58,8 +58,8 @@ const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announ
 
 const idpsWithRegistration = computed(() => (props.oidcIdps ? getOIDCIdpsWithRegistration(props.oidcIdps) : {}));
 
-const custosPreferred = computed(() => {
-    return props.enableOidc && props.preferCustosLogin;
+const oidcPreferred = computed(() => {
+    return props.enableOidc && props.preferOIDCLogin;
 });
 
 /** This decides if all register options should be displayed in column style
@@ -107,8 +107,8 @@ async function submit() {
 
                 <BForm id="registration" @submit.prevent="submit()">
                     <BCard no-body>
-                        <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
-                        <span v-if="custosPreferred">
+                        <!-- OIDC enabled and prioritized: encourage users to use it instead of local registration -->
+                        <span v-if="oidcPreferred">
                             <BCardHeader v-b-toggle.accordion-oidc role="button">
                                 Register using institutional account
                             </BCardHeader>
@@ -116,21 +116,21 @@ async function submit() {
                             <BCollapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
                                 <BCardBody>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
-                                    redirect you to your institutional login through Custos.
+                                    redirect you to your institutional login through OIDC.
                                     <ExternalLogin class="mt-2" />
                                 </BCardBody>
                             </BCollapse>
                         </span>
 
                         <!-- Local Galaxy Registration -->
-                        <BCardHeader v-if="!custosPreferred" v-localize>Create a Galaxy account</BCardHeader>
+                        <BCardHeader v-if="!oidcPreferred" v-localize>Create a Galaxy account</BCardHeader>
                         <BCardHeader v-else v-localize v-b-toggle.accordion-register role="button">
                             Or, register with email
                         </BCardHeader>
 
                         <BCollapse
                             id="accordion-register"
-                            :visible="!custosPreferred"
+                            :visible="!oidcPreferred"
                             role="tabpanel"
                             accordion="registration_acc">
                             <BCardBody :class="{ 'd-flex w-100': !registerColumnDisplay }">

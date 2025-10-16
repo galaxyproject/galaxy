@@ -121,7 +121,7 @@ export default {
             doomedItem: null,
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
-            cilogonOrCustos: null,
+            cilogonOrOIDC: null,
             userEmail: galaxy.user.get("email"),
         };
     },

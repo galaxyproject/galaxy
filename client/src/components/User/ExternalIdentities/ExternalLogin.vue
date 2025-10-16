@@ -50,7 +50,7 @@ const messageVariant = ref<string | null>(null);
 const cILogonIdps = ref<Idp[]>([]);
 const selected = ref<Idp | null>(null);
 const rememberIdp = ref(false);
-const cilogonOrCustos = ref<"cilogon" | "custos" | null>(null);
+const cilogon = ref<"cilogon" | null>(null);
 const toggleCilogon = ref(false);
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
@@ -60,22 +60,21 @@ const filteredOIDCIdps = computed(() => getFilteredOIDCIdps(oIDCIdps.value, prop
 const cilogonListShow = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
 
 const cILogonEnabled = computed(() => oIDCIdps.value.cilogon);
-const custosEnabled = computed(() => oIDCIdps.value.custos);
 
 onMounted(async () => {
     rememberIdp.value = getIdpPreference() !== null;
 
-    // Only fetch CILogonIDPs if custos/cilogon configured
+    // Only fetch CILogonIDPs if cilogon configured
     if (cilogonListShow.value) {
         await getCILogonIdps();
     }
 });
 
-function toggleCILogon(idp: "cilogon" | "custos") {
-    if (cilogonOrCustos.value === idp || cilogonOrCustos.value === null) {
+function toggleCILogon(idp: "cilogon") {
+    if (cilogon.value === idp || cilogon.value === null) {
         toggleCilogon.value = !toggleCilogon.value;
     }
-    cilogonOrCustos.value = toggleCilogon.value ? idp : null;
+    cilogon.value = toggleCilogon.value ? idp : null;
 }
 
 async function clickOIDCLogin(idp: string) {
@@ -186,7 +185,7 @@ function getIdpPreference() {
             <!-- OIDC login-->
             <BForm v-if="cilogonListShow" id="externalLogin" class="cilogon">
                 <div v-if="props.loginPage">
-                    <!--Only Display if CILogon/Custos is configured-->
+                    <!--Only Display if CILogon is configured-->
                     <BFormGroup label="Use existing institutional login">
                         <Multiselect
                             v-model="selected"
@@ -212,31 +211,18 @@ function getIdpPreference() {
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Institutional Credentials*</span>
                     </GButton>
-                    <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
-                    <GButton
-                        v-if="Object.prototype.hasOwnProperty.call(oIDCIdps, 'custos')"
-                        :disabled="loading || selected === null"
-                        @click="clickCILogin('custos')">
-                        <LoadingSpan v-if="loading" message="Signing In" />
-                        <span v-else>Sign in with Custos*</span>
-                    </GButton>
+
                 </div>
 
                 <div v-else>
                     <GButtonGroup class="w-100">
                         <GButton
                             v-if="cILogonEnabled"
-                            :pressed="cilogonOrCustos === 'cilogon'"
+                            :pressed="cilogon === 'cilogon'"
                             @click="toggleCILogon('cilogon')">
                             Sign in with Institutional Credentials*
                         </GButton>
 
-                        <GButton
-                            v-if="custosEnabled"
-                            :pressed="cilogonOrCustos === 'custos'"
-                            @click="toggleCILogon('custos')">
-                            Sign in with Custos*
-                        </GButton>
                     </GButtonGroup>
 
                     <BFormGroup v-if="toggleCilogon" class="mt-1">
@@ -254,18 +240,18 @@ function getIdpPreference() {
                             v-if="toggleCilogon"
                             class="mt-1"
                             :disabled="loading || selected === null"
-                            @click="clickCILogin(cilogonOrCustos)">
-                            Login via {{ cilogonOrCustos === "cilogon" ? "CILogon" : "Custos" }} *
+                            @click="clickCILogin(cilogon)">
+                            Login via CILogon *
                         </GButton>
                     </BFormGroup>
                 </div>
 
                 <p class="mt-3">
                     <small class="text-muted">
-                        * Galaxy uses CILogon via Custos to enable you to log in from this organization. By clicking
+                        * Galaxy uses CILogon to enable you to log in from this organization. By clicking
                         'Sign In', you agree to the
                         <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy and you agree to
-                        share your username, email address, and affiliation with CILogon, Custos, and Galaxy.
+                        share your username, email address, and affiliation with CILogon and Galaxy.
                     </small>
                 </p>
             </BForm>

@@ -68,7 +68,7 @@ class TestCustosAuthnz(TestCase):
             }
         )
         self.custos_authnz = custos_authnz.CustosAuthFactory.GetCustosBasedAuthProvider(
-            "Custos",
+            "keycloak",
             {"VERIFY_SSL": True},
             {
                 "url": self._get_idp_url(),
@@ -308,7 +308,7 @@ class TestCustosAuthnz(TestCase):
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
         self.custos_authnz = custos_authnz.CustosAuthFactory.GetCustosBasedAuthProvider(
-            "Custos",
+            "keycloak",
             {"VERIFY_SSL": True},
             {
                 "url": self._get_idp_url(),
@@ -661,7 +661,7 @@ class TestCustosAuthnz(TestCase):
 
     def test_disconnect_when_no_associated_provider(self):
         self.trans.user = User()
-        success, message, redirect_uri = self.custos_authnz.disconnect("Custos", self.trans, "/")
+        success, message, redirect_uri = self.custos_authnz.disconnect("keycloak", self.trans, "/")
         assert 0 == len(self.trans.sa_session.deleted)
         assert not self.trans.sa_session.commit_called
         assert not success
@@ -692,7 +692,7 @@ class TestCustosAuthnz(TestCase):
         )
         self.trans.user.custos_auth = [custos_authnz_token1, custos_authnz_token2]
 
-        success, message, redirect_uri = self.custos_authnz.disconnect("Custos", self.trans, "/")
+        success, message, redirect_uri = self.custos_authnz.disconnect("keycloak", self.trans, "/")
 
         assert 0 == len(self.trans.sa_session.deleted)
         assert not self.trans.sa_session.commit_called
