@@ -1,7 +1,7 @@
 <template>
     <VueMultiselect
         class="select-basic"
-        :close-on-select="!multiple"
+        :close-on-select="true"
         :options="options"
         :multiple="multiple"
         :placeholder="placeholder || 'Select an option'"
