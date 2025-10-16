@@ -101,8 +101,6 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         # Clear external ID (state change below flushes the change)
         job.job_runner_external_id = None
         # Allow the UI to query for resubmitted state
-        if job.params is None:
-            job.params = {}
         job_state.runner_state_handled = True
         info = f"This job was resubmitted to the queue because {MESSAGES[runner_state]} on its compute resource."
         job_runner.mark_as_resubmitted(job_state, info=info)
