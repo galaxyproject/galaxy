@@ -110,30 +110,3 @@ class TestDatabaseVault(AbstractTestCases.VaultTestBase):
         vault = VaultFactory.from_app(app)
         with self.assertRaises(InvalidToken):
             vault.read_secret("my/incorrect/secret")
-
-
-VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_custos.yml")
-
-
-@pytest.mark.skipif(
-    not os.environ.get("CUSTOS_CLIENT_ID") or not os.environ.get("CUSTOS_CLIENT_SECRET"),
-    reason="CUSTOS_CLIENT_ID and CUSTOS_CLIENT_SECRET env vars not set",
-)
-class TestCustosVault(AbstractTestCases.VaultTestBase):
-    def setUp(self) -> None:
-        with (
-            tempfile.NamedTemporaryFile(mode="w", prefix="vault_custos", delete=False) as tempconf,
-            open(VAULT_CONF_CUSTOS) as f,
-        ):
-            content = string.Template(f.read()).safe_substitute(
-                custos_client_id=os.environ.get("CUSTOS_CLIENT_ID"),
-                custos_client_secret=os.environ.get("CUSTOS_CLIENT_SECRET"),
-            )
-            tempconf.write(content)
-            self.vault_temp_conf = tempconf.name
-        config = GalaxyDataTestConfig(vault_config_file=self.vault_temp_conf)
-        app = GalaxyDataTestApp(config=config)
-        self.vault = VaultFactory.from_app(app)
-
-    def tearDown(self) -> None:
-        os.remove(self.vault_temp_conf)
