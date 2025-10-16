@@ -11,7 +11,6 @@ from typing import (
 
 from fastapi import routing
 from fastapi._compat import (
-    GenerateJsonSchema,
     get_compat_model_name_map,
     get_definitions,
 )
@@ -22,6 +21,7 @@ from fastapi.openapi.utils import (
     get_fields_from_routes,
     get_openapi_path,
 )
+from pydantic.json_schema import GenerateJsonSchema
 from starlette.routing import BaseRoute
 
 
