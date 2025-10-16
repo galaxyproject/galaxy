@@ -1210,8 +1210,8 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("remove-columns") as filter_editor_element:
-            column_elem = filter_editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
             for column_label in column_labels:
+                column_elem = filter_editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
                 self.select_set_value(column_elem, column_label, multiple=True)
             self.screenshot_if(screenshot_name)
 
@@ -1229,15 +1229,15 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("split-columns") as filter_editor_element:
-            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             clear = True
             for column_label_1 in column_labels_1:
+                column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
                 self.select_set_value(column_elems[0], column_label_1, clear_value=clear)
                 clear = False
 
-            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             clear = True
             for column_label_2 in column_labels_2:
+                column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
                 self.select_set_value(column_elems[1], column_label_2, clear_value=clear)
                 clear = False
 
@@ -2623,7 +2623,8 @@ class NavigatesGalaxy(HasDriver):
             container_elem = self.wait_for_selector(container_selector_or_elem)
         else:
             container_elem = container_selector_or_elem
-        container_elem.click()
+        trigger_elem = container_elem.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        trigger_elem.click()
         try:
             text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")
         except Exception:
