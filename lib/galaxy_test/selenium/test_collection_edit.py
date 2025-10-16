@@ -73,13 +73,13 @@ class TestCollectionEdit(SeleniumTestCase):
     def change_dbkey_value_and_click_submit(self, dataValue, dataNew):
         self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
         self._edit_attributes.genome_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.genome_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.genome_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_dbkey_btn.wait_for_and_click()
 
     def change_datatype_value_and_click_submit(self, dataValue, dataNew):
         self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
         self._edit_attributes.datatype_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.datatype_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.datatype_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_datatype_btn.wait_for_and_click()
 
     @property

@@ -138,6 +138,10 @@ class SmartTarget:
     def wait_for_and_send_keys(self, *text):
         self.wait_for_visible().send_keys(*text)
 
+    def wait_for_and_send_enter(self):
+        # TODO: add to unit test
+        self._has_driver.send_enter(self.wait_for_visible())
+
     def wait_for_and_clear_and_send_keys(self, *text):
         dom_element = self.wait_for_visible()
         dom_element.clear()
