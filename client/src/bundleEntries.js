@@ -11,9 +11,6 @@ import { replaceChildrenWithComponent } from "utils/mountVueComponent";
 
 import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 
-// webapps/reports/run_stats.mako
-export { create_chart, create_histogram } from "reports/run_stats";
-
 // webapps/galaxy/dataset/{ display | tabular_chunked }.mako
 export const createTabularDatasetChunkedView = (options) => {
     return replaceChildrenWithComponent(options.parent_elt, TabularChunkedView, { options });
