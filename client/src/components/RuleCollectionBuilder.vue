@@ -2044,10 +2044,9 @@ export default {
         font-style: italic;
         font-weight: bold;
     }
-    .rules-buttons {
-    }
     .rule-footer-inputs label {
-        padding-left: 20px;
+        margin-left: 1rem;
+        margin-right: 1rem;
         align-self: baseline;
     }
     .rule-footer-inputs .select-basic {
@@ -2058,19 +2057,20 @@ export default {
         justify-content: space-between;
         flex-wrap: wrap;
         align-items: baseline;
+        margin-top: 1rem;
     }
     .rule-footer-inputs input {
         align-self: baseline;
     }
     .extension-select {
         flex: 1;
-        max-width: 120px;
-        min-width: 60px;
+        max-width: 200px;
+        min-width: 200px;
     }
     .genome-select {
         flex: 1;
         max-width: 300px;
-        min-width: 120px;
+        min-width: 300px;
     }
     .collection-name {
         flex: 1;
