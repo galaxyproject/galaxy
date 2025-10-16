@@ -1,10 +1,14 @@
 from galaxy_test.selenium.framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestManageInformation(SeleniumTestCase):
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - AttributeError: 'PlaywrightElement' object has no attribute 'get_property'"
+    )
     @selenium_test
     def test_api_key(self):
         """
@@ -141,6 +145,7 @@ class TestManageInformation(SeleniumTestCase):
 
 
 class TestDeleteCurrentAccount(SeleniumTestCase):
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_account(self):
         email = self._get_random_email()

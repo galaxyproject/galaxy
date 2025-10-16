@@ -1,5 +1,6 @@
 from galaxy_test.base.decorators import requires_admin
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesLibraryAssertions,
@@ -19,21 +20,25 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
     def test_library_collection_export(self):
         self.collection_export()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_library_pair_export_new_history(self):
         self.collection_export(is_new_history=True, collection_option="paired")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_library_pair_export(self):
         self.collection_export(collection_option="paired")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_export_pairs_list_new_history(self):
         self.list_of_pairs_export(is_new_history=True)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_export_pairs_list(self):

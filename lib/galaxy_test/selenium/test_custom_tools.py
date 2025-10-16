@@ -6,6 +6,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -18,6 +19,7 @@ class TestCustomTools(SeleniumTestCase):
         """Skip accessibility checks for custom tools tests due to Monaco editor issues."""
         pass
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_create_custom_tool(self):
         """Test creating a new custom tool through the UI."""
@@ -26,6 +28,7 @@ class TestCustomTools(SeleniumTestCase):
             assert tool_uuid, "Tool UUID should be returned after saving."
             self.components.custom_tools.tool_link(tool_uuid=tool_uuid).wait_for_clickable()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_custom_tool(self):
         test_path = self.get_filename("1.fasta")

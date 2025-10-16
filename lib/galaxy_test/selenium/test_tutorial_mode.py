@@ -3,12 +3,14 @@ from unittest import SkipTest
 import pytest
 
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestTutorialMode(SeleniumTestCase):
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     def test_activate_tutorial_mode(self):

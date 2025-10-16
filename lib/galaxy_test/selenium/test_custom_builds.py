@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     retry_assertion_during_transitions,
+    selenium_only,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
@@ -14,6 +15,7 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
     build_key1: str
     build_key2: str
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_build_add(self):
         self._login()
@@ -21,6 +23,7 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
         self.add_custom_build(self.build_name1, self.build_key1)
         self.assert_custom_builds_in_grid([self.build_name1])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_build_delete(self):
         self._login()

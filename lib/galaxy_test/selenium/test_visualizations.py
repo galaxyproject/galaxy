@@ -4,6 +4,7 @@ from galaxy_test.base.populators import (
 )
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -30,6 +31,7 @@ class TestVisualizationsAnonymous(SeleniumTestCase):
             self.wait_for_selector("#image-annotate")
             self.screenshot("visualization_plugin_charts_image_annotate")
 
+    @selenium_only("Not yet migrated to support Playwright backend - need to implement shadow DOM absractions")
     @selenium_test
     @skip_without_visualization_plugin("tabulator")
     def test_charts_tabulator(self):
@@ -44,6 +46,7 @@ class TestVisualizationsAnonymous(SeleniumTestCase):
             self.wait_for_selector(".tabulator-table")
             self.screenshot("visualization_plugin_tabulator_landing")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @skip_without_visualization_plugin("h5web")
     def test_charts_h5web(self):
@@ -61,6 +64,7 @@ class TestVisualizationsAnonymous(SeleniumTestCase):
 class TestVisualizations(SeleniumTestCase):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend - need to implement shadow DOM absractions")
     @selenium_test
     @managed_history
     @skip_without_visualization_plugin("igv")

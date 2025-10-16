@@ -1,5 +1,6 @@
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -8,6 +9,9 @@ from .framework import (
 class TestCollectionEdit(SeleniumTestCase):
     ensure_registered = True
 
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
+    )
     @selenium_test
     @managed_history
     def test_change_dbkey_simple_list(self):
@@ -25,6 +29,9 @@ class TestCollectionEdit(SeleniumTestCase):
         self.navigate_to_database_tab()
         self.check_current_data_value(dataNew)
 
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
+    )
     @selenium_test
     @managed_history
     def test_change_datatype_simple_list(self):

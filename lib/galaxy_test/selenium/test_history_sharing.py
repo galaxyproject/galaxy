@@ -1,4 +1,5 @@
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -134,6 +135,7 @@ class TestHistorySharing(SeleniumTestCase):
 class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_share_history_login_redirect(self):
         user_email = self.get_user_email()

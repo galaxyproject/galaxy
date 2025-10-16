@@ -2,6 +2,7 @@ from seletools.actions import drag_and_drop
 
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -35,6 +36,7 @@ class TestHistoryMultiView(SeleniumTestCase):
         dataset_selector.wait_for_and_click()
         self.screenshot("multi_history_list_list")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_list_list_copy(self):

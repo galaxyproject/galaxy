@@ -1,10 +1,12 @@
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestRegistration(SeleniumTestCase):
+    @selenium_only("title abstraction not yet implemented")
     @selenium_test
     def test_landing(self):
         # loading galaxy homepage
