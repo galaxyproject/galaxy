@@ -14,17 +14,6 @@ from cryptography.fernet import (
 from sqlalchemy import select
 
 try:
-    from custos.clients.resource_secret_management_client import ResourceSecretManagementClient
-    from custos.clients.utils.exceptions.CustosExceptions import KeyDoesNotExist
-    from custos.transport.settings import CustosServerClientSettings
-
-    logging.getLogger("custos.clients.resource_secret_management_client").setLevel(logging.CRITICAL)
-
-    custos_sdk_available = True
-except ImportError:
-    custos_sdk_available = False
-
-try:
     import hvac
 except ImportError:
     hvac = None
@@ -184,34 +173,6 @@ class DatabaseVault(Vault):
         return self.sa_session.scalars(stmt).first()
 
 
-class CustosVault(Vault):
-    def __init__(self, config):
-        if not custos_sdk_available:
-            raise InvalidVaultConfigException(
-                "Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed."
-            )
-        custos_settings = CustosServerClientSettings(
-            custos_host=config.get("custos_host"),
-            custos_port=config.get("custos_port"),
-            custos_client_id=config.get("custos_client_id"),
-            custos_client_sec=config.get("custos_client_sec"),
-        )
-        self.client = ResourceSecretManagementClient(custos_settings)
-
-    def read_secret(self, key: str) -> Optional[str]:
-        try:
-            response = self.client.get_kv_credential(key=key)
-            return response.get("value")
-        except KeyDoesNotExist:
-            return None
-
-    def write_secret(self, key: str, value: str) -> None:
-        self.client.set_kv_credential(key=key, value=value)
-
-    def list_secrets(self, key: str) -> list[str]:
-        raise NotImplementedError()
-
-
 class UserVaultWrapper(Vault):
     def __init__(self, vault: Vault, user):
         self.vault = vault
@@ -300,8 +261,6 @@ class VaultFactory:
             vault = HashicorpVault(cfg)
         elif vault_type == "database":
             vault = DatabaseVault(app.model.context, cfg)
-        elif vault_type == "custos":
-            vault = CustosVault(cfg)
         else:
             raise InvalidVaultConfigException(f"Unknown vault type: {vault_type}")
         vault_prefix = cfg.get("path_prefix") or "/galaxy"

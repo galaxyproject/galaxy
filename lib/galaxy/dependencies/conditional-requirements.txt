@@ -37,7 +37,6 @@ huggingface_hub
 
 # Vault backend
 hvac
-custos-sdk
 
 # Chronos client
 chronos-python==1.2.1
