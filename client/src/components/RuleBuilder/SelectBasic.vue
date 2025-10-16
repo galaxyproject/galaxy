@@ -2,50 +2,43 @@
     <VueMultiselect
         class="select-basic"
         :close-on-select="!multiple"
-        :value="selectedValue"
-        :deselect-label="null"
-        :select-label="null"
         :options="options"
         :multiple="multiple"
         :placeholder="placeholder || 'Select an option'"
-        track-by="id"
+        :value="selectedValue"
+        deselect-label=""
         label="text"
+        select-label=""
+        track-by="id"
         @input="onInput" />
 </template>
 
-<script>
+<script setup>
+import { computed } from "vue";
 import VueMultiselect from "vue-multiselect";
 
-export default {
-    components: { VueMultiselect },
-    props: {
-        value: { required: false },
-        multiple: { type: Boolean, default: false },
-        options: {
-            type: Array,
-            default: () => [],
-            validator: (options) => options.every((opt) => "id" in opt && "text" in opt),
-        },
-        placeholder: { type: String, default: null },
-    },
-    computed: {
-        selectedValue() {
-            if (!this.value) {
-                return this.multiple ? [] : null;
-            }
-            if (this.multiple) {
-                return this.options.filter((opt) => this.value.includes(opt.id));
-            }
-            // Handle both single value and array for single-select
-            const singleValue = Array.isArray(this.value) ? this.value[0] : this.value;
-            return this.options.find((opt) => opt.id === singleValue) || null;
-        },
-    },
-    methods: {
-        onInput(selected) {
-            const value = this.multiple ? selected.map((opt) => opt.id) : selected ? selected.id : null;
-            this.$emit("input", value);
-        },
-    },
+const props = defineProps({
+    value: { required: false },
+    multiple: { type: Boolean, default: false },
+    options: { type: Array, default: () => [] },
+    placeholder: { type: String, default: null },
+});
+
+const emit = defineEmits(["input"]);
+
+const selectedValue = computed(() => {
+    if (!props.value) {
+        return props.multiple ? [] : null;
+    }
+    if (props.multiple) {
+        return props.options.filter((opt) => props.value.includes(opt.id));
+    }
+    const singleValue = Array.isArray(props.value) ? props.value[0] : props.value;
+    return props.options.find((opt) => opt.id === singleValue) || null;
+});
+
+const onInput = (selected) => {
+    const outputValue = props.multiple ? selected.map((opt) => opt.id) : selected ? selected.id : null;
+    emit("input", outputValue);
 };
 </script>

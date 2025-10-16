@@ -1,6 +1,6 @@
 <template>
     <div v-if="!multiple || !ordered" class="rule-column-selector">
-        <label class="d-flex justify-content-end align-items-center">
+        <div class="d-flex justify-content-end align-items-center">
             <span v-b-tooltip.hover class="mr-auto help-text" :title="help">{{ label }}</span>
             <div v-b-tooltip.hover class="mr-1" :title="title">
                 <SelectBasic
@@ -10,7 +10,7 @@
                     @input="handleInput" />
             </div>
             <slot></slot>
-        </label>
+        </div>
     </div>
     <div v-else class="rule-column-selector">
         <span class="help-text" :title="help">{{ label }}</span>
