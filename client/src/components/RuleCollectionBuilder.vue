@@ -628,7 +628,6 @@ import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
-import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { useHistoryStore } from "stores/historyStore";
 import _ from "underscore";
