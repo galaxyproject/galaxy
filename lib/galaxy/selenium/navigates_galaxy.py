@@ -627,8 +627,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def hid_to_history_item(self, hid, current_history_id=None):
         if current_history_id is None:
             current_history_id = self.current_history_id()
-        contents = self.api_get(f"histories/{current_history_id}/contents")
-        history_item = [d for d in contents if d["hid"] == hid][0]
+        contents = self.api_get(f"histories/{current_history_id}/contents", raw=True)
+        if contents.status_code != 200:
+            raise Exception(
+                f"Error getting history contents when searching for hid {hid}: {contents.status_code} {contents.content}"
+            )
+        contents_json = contents.json()
+        matching_history_items = [d for d in contents_json if d["hid"] == hid]
+        if len(matching_history_items) == 0:
+            raise Exception(f"Failed to find hid {hid} in history {current_history_id} contents: {contents}.")
+        history_item = matching_history_items[0]
         return history_item
 
     def history_item_wait_for(self, history_item_selector, allowed_force_refreshes):
