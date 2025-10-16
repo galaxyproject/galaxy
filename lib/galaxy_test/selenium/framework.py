@@ -171,6 +171,56 @@ window.localStorage && window.localStorage.setItem("galaxy:debug:flatten", true)
 """
 
 
+def selenium_only(reason: str = "Test requires Selenium-specific functionality"):
+    """Mark test as Selenium-only, skip if running with Playwright backend.
+
+    Args:
+        reason: Explanation for why this test requires Selenium
+
+    Usage:
+        @selenium_only("Uses Selenium Select class which requires tag_name attribute")
+        def test_custom_select_element(self):
+            ...
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            backend = os.environ.get("GALAXY_TEST_DRIVER_BACKEND", "selenium")
+            if backend == "playwright":
+                raise unittest.SkipTest(f"Selenium-only test: {reason}")
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def playwright_only(reason: str = "Test requires Playwright-specific functionality"):
+    """Mark test as Playwright-only, skip if running with Selenium backend.
+
+    Args:
+        reason: Explanation for why this test requires Playwright
+
+    Usage:
+        @playwright_only("Uses Playwright-specific network interception")
+        def test_network_request_logging(self):
+            ...
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            backend = os.environ.get("GALAXY_TEST_DRIVER_BACKEND", "selenium")
+            if backend == "selenium":
+                raise unittest.SkipTest(f"Playwright-only test: {reason}")
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 def managed_history(f):
     """Ensure a Selenium test has a distinct, named history.
 
