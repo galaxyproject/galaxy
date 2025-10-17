@@ -1265,13 +1265,34 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.themes = {}
 
         if "themes_config_file_by_host" in self.config_dict:
-            self.themes_by_host = {}
-            resolve_to_dir = self.schema.paths_to_resolve["themes_config_file"]
-            resolve_dir_path = getattr(self, resolve_to_dir)
-            for host, file_name in self.config_dict["themes_config_file_by_host"].items():
-                self.themes_by_host[host] = {}
-                file_path = self._in_dir(resolve_dir_path, file_name)
-                _load_theme(file_path, self.themes_by_host[host])
+            themes_by_host_value = self.config_dict["themes_config_file_by_host"]
+
+            # Handle case where it might be a string (e.g., "{ }" from Ansible template)
+            # This can happen when Jinja2 templates with folded scalars evaluate to strings
+            if isinstance(themes_by_host_value, str):
+                # If it's an empty/whitespace string or just braces, treat as empty dict
+                stripped = themes_by_host_value.strip()
+                if not stripped or stripped in ('{}', '{ }'):
+                    themes_by_host_value = {}
+                else:
+                    # Log a warning for unexpected string values
+                    log.warning(
+                        f"themes_config_file_by_host should be a mapping/dict but got string: {themes_by_host_value!r}. "
+                        "Treating as empty. Check your configuration."
+                    )
+                    themes_by_host_value = {}
+
+            if isinstance(themes_by_host_value, dict) and themes_by_host_value:
+                self.themes_by_host = {}
+                resolve_to_dir = self.schema.paths_to_resolve["themes_config_file"]
+                resolve_dir_path = getattr(self, resolve_to_dir)
+                for host, file_name in themes_by_host_value.items():
+                    self.themes_by_host[host] = {}
+                    file_path = self._in_dir(resolve_dir_path, file_name)
+                    _load_theme(file_path, self.themes_by_host[host])
+            else:
+                # If empty dict or invalid, fall back to default theme loading
+                _load_theme(self.themes_config_file, self.themes)
         else:
             _load_theme(self.themes_config_file, self.themes)
 
