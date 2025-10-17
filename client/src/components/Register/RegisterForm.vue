@@ -32,7 +32,7 @@ interface Props {
     enableOidc?: boolean;
     mailingJoinAddr?: string;
     oidcIdps?: OIDCConfig;
-    preferOIDCLogin?: boolean;
+    preferOidcLogin?: boolean;
     redirect?: string;
     registrationWarningMessage?: string;
     serverMailConfigured?: boolean;
@@ -59,7 +59,7 @@ const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announ
 const idpsWithRegistration = computed(() => (props.oidcIdps ? getOIDCIdpsWithRegistration(props.oidcIdps) : {}));
 
 const oidcPreferred = computed(() => {
-    return props.enableOidc && props.preferOIDCLogin;
+    return props.enableOidc && props.preferOidcLogin;
 });
 
 /** This decides if all register options should be displayed in column style
