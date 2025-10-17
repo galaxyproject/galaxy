@@ -211,7 +211,6 @@ function getIdpPreference() {
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Institutional Credentials*</span>
                     </GButton>
-
                 </div>
 
                 <div v-else>
@@ -222,7 +221,6 @@ function getIdpPreference() {
                             @click="toggleCILogon('cilogon')">
                             Sign in with Institutional Credentials*
                         </GButton>
-
                     </GButtonGroup>
 
                     <BFormGroup v-if="toggleCilogon" class="mt-1">
@@ -248,8 +246,8 @@ function getIdpPreference() {
 
                 <p class="mt-3">
                     <small class="text-muted">
-                        * Galaxy uses CILogon to enable you to log in from this organization. By clicking
-                        'Sign In', you agree to the
+                        * Galaxy uses CILogon to enable you to log in from this organization. By clicking 'Sign In', you
+                        agree to the
                         <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy and you agree to
                         share your username, email address, and affiliation with CILogon and Galaxy.
                     </small>
