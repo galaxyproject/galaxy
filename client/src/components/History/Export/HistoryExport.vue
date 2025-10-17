@@ -292,6 +292,7 @@ const breadcrumbItems = computed(() => [
                 :records="previousExportRecords"
                 class="mt-3"
                 @onDownload="downloadFromRecord"
+                @onCopyDownloadLink="copyDownloadLinkFromRecord"
                 @onReimport="reimportFromRecord" />
         </GModal>
     </div>
