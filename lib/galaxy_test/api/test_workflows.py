@@ -832,6 +832,33 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             assert initial_instance_download["workflow_id"] == first_instance_id
             assert initial_instance_download["name"] == original_name
 
+    def test_workflow_run_input_extension_restriction_applied(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  tabular_input:
+    type: data
+    format:
+     - tabular
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: tabular_input
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            # Upload a txt file that should NOT be available for the tabular input
+            self.dataset_populator.new_dataset(history_id, content="hello world", file_type="txt", wait=True)
+
+            # Download workflow in run style to get the form with available datasets
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            tabular_input_step = run_workflow["steps"][0]
+            input_options = tabular_input_step["inputs"][0]
+            assert input_options["extensions"] == ["tabular"]
+            assert not input_options["options"]["hda"]
+
     def test_update(self):
         original_workflow = self.workflow_populator.load_workflow(name="test_import")
         uuids = {}
