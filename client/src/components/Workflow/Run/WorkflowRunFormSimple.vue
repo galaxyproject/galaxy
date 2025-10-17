@@ -4,18 +4,22 @@ import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeMount, ref, watch } from "vue";
 
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
+import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
+import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
+import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -31,6 +35,7 @@ import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 interface Props {
     model: Record<string, any>;
@@ -56,6 +61,9 @@ const emit = defineEmits<{
     (e: "submissionError", error: string): void;
 }>();
 
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId, changingCurrentHistory } = storeToRefs(useHistoryStore());
+
 const { stateStore } = provideScopedWorkflowStores(props.model.workflowId);
 const { activeNodeId } = storeToRefs(stateStore);
 
@@ -79,8 +87,6 @@ const showHelp = computed(() => showRightPanel.value === "help");
 
 const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
     usePersistentToggle("workflow-run-settings-panel");
-
-const { changingCurrentHistory } = storeToRefs(useHistoryStore());
 
 // Workflow REAME/help panel setup
 const { workflow, loading: workflowLoading } = useWorkflowInstance(props.model.runData.workflow_id);
@@ -331,10 +337,55 @@ async function onExecute() {
         waitingForRequest.value = false;
     }
 }
+
+const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+
+const credentialTools = computed<ToolIdentifier[]>(() => {
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
+    );
+
+    const toolIdentifiers: ToolIdentifier[] = [];
+
+    credentialSteps.forEach((step: any) => {
+        setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
+        toolIdentifiers.push({
+            toolId: step.id,
+            toolVersion: step.version,
+        });
+    });
+
+    return toolIdentifiers;
+});
+
+const hasCredentialErrors = computed(() => {
+    if (credentialTools.value.length) {
+        const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+            credentialTools.value,
+        );
+        return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+    }
+    return false;
+});
+
+onBeforeMount(() => {
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
+    );
+    if (credentialSteps.length) {
+        const promises = credentialSteps.map((step: any) =>
+            setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials),
+        );
+        return Promise.all(promises);
+    }
+});
 </script>
 
 <template>
-    <div class="d-flex flex-column h-100 workflow-run-form-simple" data-galaxy-file-drop-target>
+    <div
+        v-if="currentUser && currentHistoryId"
+        class="d-flex flex-column h-100 workflow-run-form-simple"
+        data-galaxy-file-drop-target>
         <div v-if="!showRightPanel" class="ui-form-header-underlay sticky-top" />
         <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showRightPanel }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
@@ -346,7 +397,7 @@ async function onExecute() {
             <div class="mb-2">
                 <WorkflowNavigationTitle
                     :workflow-id="model.runData.workflow_id"
-                    :run-disabled="hasValidationErrors || !canRunOnHistory"
+                    :run-disabled="hasValidationErrors || !canRunOnHistory || hasCredentialErrors"
                     :run-waiting="waitingForRequest"
                     :valid-rerun="isValidRerun"
                     @on-execute="onExecute">
@@ -450,6 +501,8 @@ async function onExecute() {
             :history-id="model.historyId"
             show-details
             :hide-hr="Boolean(showRightPanel)" />
+
+        <WorkflowCredentials v-if="credentialTools?.length" :tool-identifiers="credentialTools" />
 
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">

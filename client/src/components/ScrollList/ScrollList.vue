@@ -223,13 +223,13 @@ watch(
                     </slot>
                     <component
                         :is="props.gridView ? 'div' : BListGroup"
+                        class="pt-1"
                         :class="{ 'card-list d-flex flex-wrap': props.gridView }">
                         <!-- Use component wrapper with v-for to provide proper keying while avoiding layout interference -->
                         <component
                             :is="'div'"
                             v-for="(item, index) in items"
                             :key="itemKey(item)"
-                            class=""
                             style="display: contents">
                             <slot name="item" :item="item" :index="index" />
                         </component>

@@ -281,7 +281,7 @@ def test_load_proxy_simple():
     outputs, output_collections = tool_source.parse_outputs(None)
     assert len(outputs) == 1
 
-    software_requirements, containers, resource_requirements, *_ = tool_source.parse_requirements_and_containers()
+    software_requirements, containers, resource_requirements, _, credentials = tool_source.parse_requirements()
     assert software_requirements.to_dict() == []
     assert len(containers) == 1
     assert containers[0].to_dict() == {
@@ -292,6 +292,7 @@ def test_load_proxy_simple():
     }
     assert len(resource_requirements) == 1
     assert resource_requirements[0].to_dict() == {"resource_type": "ram_min", "value_or_expression": 8}
+    assert len(credentials) == 0
 
 
 def test_representation_id():

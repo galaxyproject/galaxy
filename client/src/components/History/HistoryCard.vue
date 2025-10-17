@@ -93,6 +93,20 @@ interface Props {
      * @default false
      */
     sharedView?: boolean;
+
+    /**
+     * Whether the card is clickable for keyboard navigation
+     * @type {boolean}
+     * @default false
+     */
+    clickable?: boolean;
+
+    /**
+     * Whether this card is highlighted (for example, as a range selection anchor)
+     * @type {boolean}
+     * @default false
+     */
+    highlighted?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -102,6 +116,8 @@ const props = withDefaults(defineProps<Props>(), {
     selectable: false,
     selected: false,
     sharedView: false,
+    clickable: false,
+    highlighted: false,
 });
 
 const router = useRouter();
@@ -144,6 +160,18 @@ const emit = defineEmits<{
      * @event updateFilter
      */
     (e: "updateFilter", key: string, value: any): void;
+
+    /**
+     * Emitted when a keyboard event occurs on the history card
+     * @event on-key-down
+     */
+    (e: "on-key-down", history: AnyHistoryEntry, event: KeyboardEvent): void;
+
+    /**
+     * Emitted when the history card is clicked
+     * @event on-history-card-click
+     */
+    (e: "on-history-card-click", history: AnyHistoryEntry, event: Event): void;
 }>();
 
 /**
@@ -203,12 +231,25 @@ async function onTagsUpdate(historyId: string, tags: string[]) {
     await historyStore.updateHistory(historyId, { tags: tags });
     emit("refreshList", true, true);
 }
+
+function onClick(event: Event) {
+    if (props.clickable) {
+        emit("on-history-card-click", props.history, event);
+    }
+}
+
+function onKeyDown(event: KeyboardEvent) {
+    if (props.clickable) {
+        emit("on-key-down", props.history, event);
+    }
+}
 </script>
 
 <template>
     <GCard
         :id="`history-${history.id}`"
         :key="history.id"
+        class="history-card"
         :title="historyCardTitle"
         :title-badges="historyCardTitleBadges"
         :title-n-lines="2"
@@ -226,11 +267,15 @@ async function onTagsUpdate(historyId: string, tags: string[]) {
         :tags-editable="userOwnsHistory(currentUser, history)"
         :max-visible-tags="props.gridView ? 2 : 8"
         :update-time="history.update_time"
+        :clickable="props.clickable"
+        :highlighted="props.highlighted"
         @titleClick="onTitleClick"
         @rename="() => router.push(`/histories/rename?id=${history.id}`)"
         @select="isMyHistory(history) && emit('select', history)"
         @tagsUpdate="(tags) => onTagsUpdate(history.id, tags)"
-        @tagClick="(tag) => emit('tagClick', tag)">
+        @tagClick="(tag) => emit('tagClick', tag)"
+        @click="onClick"
+        @keydown="onKeyDown">
         <template v-if="props.archivedView && isArchivedHistory(history)" v-slot:titleActions>
             <ExportRecordDOILink :export-record-uri="history.export_record_data?.target_uri" />
         </template>

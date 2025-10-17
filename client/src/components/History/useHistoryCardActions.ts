@@ -47,6 +47,7 @@ export function useHistoryCardActions(
     historyCardExtraActions: CardAction[];
     historyCardSecondaryActions: CardAction[];
     historyCardPrimaryActions: ComputedRef<CardAction[]>;
+    onDeleteHistory: (purge?: boolean) => Promise<void>;
 } {
     const { confirm } = useConfirmDialog();
 
@@ -296,5 +297,5 @@ export function useHistoryCardActions(
         ];
     });
 
-    return { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimaryActions };
+    return { historyCardExtraActions, historyCardSecondaryActions, historyCardPrimaryActions, onDeleteHistory };
 }

@@ -92,7 +92,7 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 </script>
 
 <template>
-    <div class="workflow-card-list d-flex flex-wrap overflow-auto">
+    <div class="workflow-card-list d-flex flex-wrap overflow-auto pt-1">
         <WorkflowCard
             v-for="workflow in workflows"
             :ref="props.itemRefs[workflow.id]"
@@ -109,8 +109,8 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :compact="props.compact"
             :current="workflow.id === props.currentWorkflowId"
             :clickable="props.clickable"
+            :highlighted="props.rangeSelectAnchor?.id === workflow.id"
             class="workflow-card-in-list"
-            :class="{ 'range-select-anchor-workfow': props.rangeSelectAnchor?.id === workflow.id }"
             @select="(...args) => emit('select', ...args)"
             @tagClick="(...args) => emit('tagClick', ...args)"
             @refreshList="(...args) => emit('refreshList', ...args)"
@@ -170,12 +170,5 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 
 .workflow-card-list {
     container: cards-list / inline-size;
-    .workflow-card-in-list {
-        &.range-select-anchor-workfow {
-            &:deep(.g-card-content) {
-                box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
-            }
-        }
-    }
 }
 </style>

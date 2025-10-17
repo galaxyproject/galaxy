@@ -34,6 +34,7 @@ from galaxy.model import (
     PostJobAction,
     User,
 )
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
     FetchDataFormPayload,
@@ -210,6 +211,7 @@ class ToolsService(ServiceBase):
             inputs.get("use_cached_job", "false")
         )
         preferred_object_store_id = payload.get("preferred_object_store_id")
+        credentials_context = payload.get("credentials_context")
         input_format = str(payload.get("input_format", "legacy"))
         if input_format not in ("legacy", "21.01"):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
@@ -223,6 +225,7 @@ class ToolsService(ServiceBase):
             use_cached_job=use_cached_job,
             input_format=input_format,
             preferred_object_store_id=preferred_object_store_id,
+            credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
         )
 
         new_pja_flush = False

@@ -32,6 +32,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
+    JobCredentialsContextAssociation,
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
@@ -39,7 +40,9 @@ from galaxy.model.dataset_collections.adapters import CollectionAdapter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_util.parser.output_objects import tool_output_is_collection
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
@@ -106,6 +109,7 @@ class ToolAction:
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -439,6 +443,7 @@ class DefaultToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -733,6 +738,7 @@ class DefaultToolAction(ToolAction):
             for data in out_data.values():
                 data.set_skipped(object_store_populator)
         job.preferred_object_store_id = preferred_object_store_id
+        self._handle_credentials_context(trans.sa_session, job, credentials_context)
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
@@ -948,6 +954,23 @@ class DefaultToolAction(ToolAction):
         if tool.dynamic_tool:
             job.dynamic_tool_id = model.cached_id(tool.dynamic_tool)
         return job, galaxy_session
+
+    def _handle_credentials_context(
+        self, sa_session: galaxy_scoped_session, job: Job, credentials_context: Optional[CredentialsContext]
+    ) -> None:
+        if credentials_context is None:
+            return
+
+        for service_context in credentials_context.root:
+            association = JobCredentialsContextAssociation(
+                job=job,
+                user_credentials_id=service_context.user_credentials_id,
+                service_name=service_context.name,
+                service_version=service_context.version,
+                selected_group_id=service_context.selected_group.id,
+                selected_group_name=service_context.selected_group.name,
+            )
+            sa_session.add(association)
 
     def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):
         # FIXME: Don't need all of incoming here, just the defined parameters

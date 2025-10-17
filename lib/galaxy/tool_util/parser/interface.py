@@ -25,9 +25,7 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.tool_util_models.parameter_validators import (
-    AnyValidatorModel,
-)
+from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.tool_source import (
     BaseJsonTestCollectionDefCollectionElementDict,
     Citation,
@@ -53,6 +51,7 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
+        CredentialsRequirement,
         ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
@@ -326,12 +325,16 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_requirements_and_containers(
+    def parse_requirements(
         self,
     ) -> Tuple[
-        "ToolRequirements", List["ContainerDescription"], List["ToolResourceRequirement"], List["JavascriptRequirement"]
+        "ToolRequirements",
+        List["ContainerDescription"],
+        List["ToolResourceRequirement"],
+        List["JavascriptRequirement"],
+        List["CredentialsRequirement"],
     ]:
-        """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
+        """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, JavascriptRequirement, and CredentialsRequirement objects."""
 
     @abstractmethod
     def parse_input_pages(self) -> "PagesSource":
