@@ -883,6 +883,12 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is(landing_reponse, 200)
         return WorkflowLandingRequest.model_validate(landing_reponse.json())
 
+    def use_workflow_landing_raw(self, uuid: UUID4):
+        url = f"workflow_landings/{uuid}"
+        landing_reponse = self._get(url, {"client_secret": "foobar"})
+        api_asserts.assert_status_code_is(landing_reponse, 200)
+        return landing_reponse.json()
+
     def create_tool_from_path(self, tool_path: str) -> Dict[str, Any]:
         tool_directory = os.path.dirname(os.path.abspath(tool_path))
         payload = dict(

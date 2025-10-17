@@ -106,6 +106,14 @@ class TestLandingApi(ApiTestCase):
         _cannot_claim_request(self.dataset_populator, response)
         _cannot_use_request(self.dataset_populator, response)
 
+    @skip_without_tool("cat1")
+    def test_workflow_landing_uniform_response(self):
+        request = _get_simple_landing_payload(self.workflow_populator, public=True)
+        response = self.dataset_populator.create_workflow_landing(request)
+        landing_request = self.dataset_populator.use_workflow_landing_raw(response.uuid)
+        # Make sure url is turned into location
+        assert landing_request["request_state"]["WorkflowInput1"]["location"]
+
     def test_landing_claim_preserves_source_metadata(self):
         request = CreateWorkflowLandingRequestPayload(
             workflow_id="https://dockstore.org/api/ga4gh/trs/v2/tools/#workflow/github.com/iwc-workflows/chipseq-pe/main/versions/v0.12",
