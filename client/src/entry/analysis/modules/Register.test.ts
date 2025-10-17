@@ -61,7 +61,7 @@ describe("Register", () => {
         expect(props.sessionCsrfToken).toBe("session_csrf_token");
         expect(props.enableOidc).toBe(true);
         expect(props.mailingJoinAddr).toBe("mailing_join_addr");
-        expect(props.preferOIDCLogin).toBe(true);
+        expect(props.preferOidcLogin).toBe(true);
         expect(props.serverMailConfigured).toBe(true);
         expect(props.registrationWarningMessage).toBe("registration_warning_message");
         expect(props.termsUrl).toBe("terms_url");
