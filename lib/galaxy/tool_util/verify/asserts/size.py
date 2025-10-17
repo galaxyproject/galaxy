@@ -36,7 +36,7 @@ def assert_has_size(
         size = value
     _assert_number(
         output_size,
-        value,
+        size,
         delta,
         min,
         max,
