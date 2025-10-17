@@ -73,6 +73,7 @@ initializePanel();
         aria-labelledby="toolbox-heading"
         class="toolbox-panel"
         go-to-all-title="Discover Tools"
+        go-to-all-data-description="toolbox discover tools"
         href="/tools/list">
         <template v-slot:activity-panel-header-top>
             <PanelViewMenu />
