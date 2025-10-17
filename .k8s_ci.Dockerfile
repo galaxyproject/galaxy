@@ -22,7 +22,7 @@ ARG STAGE1_BASE=python:3.12-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
 ARG GALAXY_USER=galaxy
 ARG GALAXY_PLAYBOOK_REPO=https://github.com/galaxyproject/galaxy-docker-k8s
-ARG GALAXY_PLAYBOOK_BRANCH=v4.2.0
+ARG GALAXY_PLAYBOOK_BRANCH=v4.2.1
 
 ARG GIT_COMMIT=unspecified
 ARG BUILD_DATE=unspecified
@@ -63,8 +63,17 @@ RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO g
 WORKDIR /tmp/ansible/galaxy-docker
 RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
 
-# Add Galaxy source code
-COPY . $SERVER_DIR/
+# Copy just the Galaxy source code that we need
+COPY client/ $SERVER_DIR/client
+COPY client-api/ $SERVER_DIR/client-api
+COPY config/ $SERVER_DIR/config
+COPY lib/ $SERVER_DIR/lib
+COPY scripts/ $SERVER_DIR/scripts
+COPY static/ $SERVER_DIR/static
+COPY templates/ $SERVER_DIR/templates
+COPY tool-data/ $SERVER_DIR/tool-data
+COPY tools/ $SERVER_DIR/tools
+COPY Makefile *.sh $SERVER_DIR
 
 #======================================================
 # Stage 2.1 - Build galaxy server
@@ -76,8 +85,7 @@ RUN ansible-playbook -i localhost, playbook.yml -v -e "{galaxy_build_client: fal
 
 # Remove build artifacts + files not needed in container
 WORKDIR $SERVER_DIR
-# Save commit hash of HEAD before zapping git folder
-RUN git rev-parse HEAD > GITREVISION
+
 RUN rm -rf \
         .ci \
         .git \
@@ -181,7 +189,7 @@ COPY --chown=$GALAXY_USER:$GALAXY_USER --from=client_build $SERVER_DIR/static ./
 WORKDIR $SERVER_DIR
 
 # The data in version.json will be displayed in Galaxy's /api/version endpoint
-RUN printf "{\n  \"git_commit\": \"$(cat GITREVISION)\",\n  \"build_date\": \"$BUILD_DATE\",\n  \"image_tag\": \"$IMAGE_TAG\"\n}\n" > version.json \
+RUN printf "{\n  \"git_commit\": \"$GIT_COMMIT\",\n  \"build_date\": \"$BUILD_DATE\",\n  \"image_tag\": \"$IMAGE_TAG\"\n}\n" > version.json \
     && chown $GALAXY_USER:$GALAXY_USER version.json
 
 EXPOSE 8080
@@ -193,4 +201,4 @@ ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
 ENTRYPOINT ["tini", "--"]
 
 # [optional] to run:
-CMD galaxy
+CMD ["galaxy"]
