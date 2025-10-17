@@ -51,7 +51,7 @@ import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { Toast } from "composables/toast";
 import Vue from "vue";
 
-import { save } from "./util";
+import { save } from "./services";
 
 import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 

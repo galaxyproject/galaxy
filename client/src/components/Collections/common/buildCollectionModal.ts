@@ -1,19 +1,11 @@
 /**
- * TODO: Update this description...
- * Temporary adapter to launch bootstrap modals from Vue components, for use with
- * the collection assembly modals. i.e. With selected..... create dataset collection,
- * create paired collection, etc.
- *
- * The goal is to use the existing "createListCollection", etc. functions but doctor
- * the content parameter to have the API of a backbone model which requires a
- * deprecated jquery Deferred object.
+ * Launch bootstrap modals with Vue components, for use with the collection assembly modals.
+ * i.e. With selected..... create dataset collection, create paired collection, etc.
  */
-
-import jQuery from "jquery";
 
 import type { HDASummary, HistoryItemSummary } from "@/api";
 import type { CollectionType } from "@/api/datasetCollections";
-import RULE_BASED_COLLECTION_CREATOR from "@/components/Collections/RuleBasedCollectionCreatorModal";
+import { createCollectionViaRules } from "@/components/Collections/RuleBasedCollectionCreatorModal";
 import { createDatasetCollection } from "@/components/History/model/queries";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -72,7 +64,8 @@ export async function buildCollectionFromRules(
         });
     }
     if (historyId) {
-        const modalResult = await buildRuleCollectionModal(selectionContent, historyId, fromRulesInput);
+        const content = fromRulesInput ? selectionContent : createContent(historyId, selectionContent);
+        const modalResult = await createCollectionViaRules(content);
         if (modalResult) {
             console.debug("Submitting collection build request.", modalResult);
             await createDatasetCollection({ id: historyId } as any, modalResult);
@@ -80,46 +73,25 @@ export async function buildCollectionFromRules(
     }
 }
 
-// stand-in for buildCollection from history-view-edit.js
-export async function buildRuleCollectionModal(
-    selectedContent: HistoryItemSummary[],
-    historyId: string,
-    fromRulesInput = false,
-    defaultHideSourceItems = true,
-) {
-    // select legacy function
-    const createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
-    // pull up cached content by type_ids;
-    if (fromRulesInput) {
-        return await createFunc(selectedContent);
-    } else {
-        const fakeBackboneContent = createBackboneContent(historyId, selectedContent, defaultHideSourceItems);
-        return await createFunc(fakeBackboneContent);
-    }
-}
-
-const createBackboneContent = (historyId: string, selection: HistoryItemSummary[], defaultHideSourceItems: boolean) => {
+const createContent = (historyId: string, selection: HistoryItemSummary[], defaultHideSourceItems: boolean = true) => {
     const selectionJson = Array.from(selection.values());
     return {
         historyId,
         toJSON: () => selectionJson,
-        // result must be a $.Deferred object instead of a promise because
-        // that's the kind of deprecated data format that backbone likes to use.
-        createHDCA(
+        async createHDCA(
             element_identifiers: any,
             collection_type: CollectionType,
             name: string,
             hide_source_items: boolean,
             options = {},
         ) {
-            const def = jQuery.Deferred();
-            return def.resolve(null, {
+            return {
                 collection_type,
                 name,
                 hide_source_items,
                 element_identifiers,
                 options,
-            });
+            };
         },
         defaultHideSourceItems,
     };

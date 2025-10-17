@@ -646,14 +646,6 @@ Vue.use(BootstrapVue);
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
-// convert deferred backbone nonsense into a promise
-const deferredToPromise = (d) => {
-    return new Promise((resolve, reject) => {
-        d.done((_, result) => resolve(result));
-        d.fail((err) => reject(err));
-    });
-};
-
 export default {
     components: {
         TooltipOnHover,
@@ -688,14 +680,12 @@ export default {
             required: false,
             default: "datasets",
         },
-        // required if elementsType is "datasets" - hook into backbone code for creating
-        // collections from HDAs, etc...
+        // required if elementsType is "datasets" - hook for creating collections from HDAs, etc...
         creationFn: {
             required: false,
             type: Function,
         },
-        // required if elementsType is "collection_contents" - hook into tool form to update
-        // rule parameter
+        // required if elementsType is "collection_contents" - hook into tool form to update rule parameter
         saveRulesFn: {
             required: false,
             type: Function,
@@ -1546,15 +1536,12 @@ export default {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
                     if (this.creationFn) {
-                        const deferreds = Object.entries(elements).map(([name, els]) => {
-                            // This looks like a promise but it is not one because creationFn and
-                            // oncreate are references to function from the backbone models which means
-                            // they are expecting their arguments in a different order. So, looks like,
-                            // jQuery.Deferred and therefore jQuery are still dependencies
-                            return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
-                        });
-                        const promises = deferreds.map(deferredToPromise);
-                        return Promise.all(promises).catch((err) => this.renderFetchError(err));
+                        return Promise.all(
+                            Object.entries(elements).map(async ([name, els]) => {
+                                const result = await this.creationFn(els, collectionType, name, hideSourceItems);
+                                return this.oncreate(result);
+                            }),
+                        ).catch((err) => this.renderFetchError(err));
                     } else {
                         const request = Object.entries(elements).map(([name, els]) => {
                             return {

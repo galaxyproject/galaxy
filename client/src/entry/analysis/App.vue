@@ -53,8 +53,6 @@ import Toast from "components/Toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { setToastComponentRef } from "composables/toast";
-import { WindowManager } from "layout/window-manager";
-import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
@@ -67,6 +65,8 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { startWatchingHistory } from "@/watch/watchHistoryProvided";
+
+import { WindowManager } from "./window-manager";
 
 import Alert from "@/components/Alert.vue";
 import DragGhost from "@/components/DragGhost.vue";
@@ -189,7 +189,6 @@ export default {
     mounted() {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
-            this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
             if (this.Galaxy.config.interactivetools_enable) {
                 this.startWatchingEntryPoints();

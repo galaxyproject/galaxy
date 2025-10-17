@@ -123,21 +123,6 @@ from markupsafe import escape
 
     // Init. on document load.
     $(function() {
-        // Set links to Galaxy screencasts to open in overlay.
-        $(this).find("a[href^='http://screencast.g2.bx.psu.edu/']").each( function() {
-            $(this).click( function() {
-                var href = $(this).attr('href');
-                show_in_overlay(
-                    {
-                        url: href,
-                        width: 640,
-                        height: 480,
-                        scroll: 'no'
-                    }
-                );
-                return false;
-            });
-        });
 
         // Init user item rating.
         $('.user_rating_star').rating({

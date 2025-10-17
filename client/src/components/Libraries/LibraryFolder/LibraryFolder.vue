@@ -200,7 +200,7 @@
                         Edit
                     </b-button>
                     <b-button
-                        v-if="currentUser.is_admin"
+                        v-if="currentUser?.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
@@ -628,7 +628,7 @@ export default {
         },
 
         /*
-         Former Backbone code, adopted to work with Vue
+         Former code, adopted to work with Vue
         */
         saveChanges(folder) {
             let is_changed = false;

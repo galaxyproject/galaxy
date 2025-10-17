@@ -29,7 +29,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         description = self._get_random_name(prefix="new_sub_folder_description")
         long_description = self._get_random_name(prefix="new_sub_folder_description", len=45)
 
-        # create mew folder
+        # create new folder
         self.admin_login()
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)

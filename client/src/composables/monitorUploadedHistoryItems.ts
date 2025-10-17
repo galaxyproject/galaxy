@@ -4,8 +4,8 @@ import { computed, type Ref } from "vue";
 import { type HDASummary, type HistoryItemSummary, isHDA } from "@/api";
 import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
 import type { UploadItem } from "@/components/Upload/model";
-import STATES from "@/mvc/dataset/states";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import STATES from "@/utils/datasetStates";
 
 const REFER_TO_HISTORY_MSG = "Refer to the history panel to view dataset state.";
 
