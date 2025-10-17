@@ -28,8 +28,8 @@ from typing import (
 
 import yaml
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as ec
 
 from galaxy.navigation.components import (
@@ -720,15 +720,15 @@ class NavigatesGalaxy(HasDriver):
         cards = self.components.histories.history_cards.all()
 
         for card in cards:
-            card_name = card.find_element(self.by.CSS_SELECTOR, '[id^="g-card-title-link-history-"]').text
+            card_name = card.find_element(By.CSS_SELECTOR, '[id^="g-card-title-link-history-"]').text
             if card_name in item_names:
-                checkbox = card.find_element(self.by.CSS_SELECTOR, 'input[id^="g-card-select-history-"]')
+                checkbox = card.find_element(By.CSS_SELECTOR, 'input[id^="g-card-select-history-"]')
                 # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
                 self.execute_script("$(arguments[0]).click();", checkbox)
 
     def check_advanced_search_filter(self, filter_name):
         filter_div = self.wait_for_selector(f"[data-description='filter {filter_name}']")
-        checkbox = filter_div.find_element(self.by.CSS_SELECTOR, "input")
+        checkbox = filter_div.find_element(By.CSS_SELECTOR, "input")
         # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
         self.execute_script("$(arguments[0]).click();", checkbox)
 
@@ -1759,7 +1759,7 @@ class NavigatesGalaxy(HasDriver):
         workflow.find_element(By.CSS_SELECTOR, ".g-card-rename").click()
         self.components.workflows.rename_input.wait_for_visible().clear()
         self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
-        self.components.workflows.rename_input.wait_for_and_send_keys(self.keys.ENTER)
+        self.components.workflows.rename_input.wait_for_and_send_keys(Keys.ENTER)
 
     def workflow_delete_by_name(self, name):
         self.workflow_index_search_for(name)
@@ -2108,7 +2108,7 @@ class NavigatesGalaxy(HasDriver):
         # a simple .clear() doesn't work here since we perform a .blur because of that
         self.aggressive_clear(editable_text_input_element)
         editable_text_input_element.send_keys(new_name)
-        editable_text_input_element.send_keys(self.keys.ENTER)
+        editable_text_input_element.send_keys(Keys.ENTER)
         return editable_text_input_element
 
     def history_panel_name_input(self):
