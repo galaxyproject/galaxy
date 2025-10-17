@@ -23,14 +23,17 @@ from typing import (
     Literal,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as ec
+
+if TYPE_CHECKING:
+    from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.navigation.components import (
     Component,
@@ -41,14 +44,16 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
+from ._wait import wait_on
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
     exception_indicates_stale_element,
-    HasDriver,
     SeleniumTimeoutException,
 )
+from .has_driver_proxy import HasDriverProxy
 from .smart_components import SmartComponent
+from .web_element_protocol import WebElementProtocol
 
 # Test case data
 DEFAULT_PASSWORD = "123456"
@@ -90,6 +95,16 @@ class WAIT_TYPES:
     REPO_INSTALL = WaitType("repo_install", 60)
     # History Polling Duration
     HISTORY_POLL = WaitType("history_poll", 3)
+
+
+def galaxy_timeout_handler(timeout_multiplier: float = 1):
+
+    def callback(wait_type: Optional[WaitType] = None) -> float:
+        if wait_type is None:
+            wait_type = DEFAULT_WAIT_TYPE
+        return wait_type.default_length * timeout_multiplier
+
+    return callback
 
 
 # Choose a moderate wait type for operations that don't specify a type.
@@ -215,7 +230,7 @@ class ColumnDefinition:
     default_value: Optional[str] = None
 
 
-class NavigatesGalaxy(HasDriver):
+class NavigatesGalaxy(HasDriverProxy[WaitType]):
     """Class with helpers methods for driving components of the Galaxy interface.
 
     In most cases, methods for interacting with Galaxy components that appear in
@@ -232,8 +247,44 @@ class NavigatesGalaxy(HasDriver):
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
 
-    timeout_multiplier: float
-    driver: WebDriver
+    @property
+    def driver(self) -> "WebDriver":
+        """
+        Access the underlying Selenium WebDriver.
+
+        This property provides direct access to the Selenium driver when using
+        the Selenium backend. For Playwright backend, this raises NotImplementedError.
+
+        Returns:
+            WebDriver: The Selenium WebDriver instance
+
+        Raises:
+            NotImplementedError: If using Playwright backend
+        """
+        if self._driver_impl.backend_type == "selenium":
+            # Safe to access driver attribute when backend is Selenium
+            return self._driver_impl.driver  # type: ignore[attr-defined]
+        else:
+            raise NotImplementedError("Functionality cannot be run with Playwright yet.")
+
+    @property
+    def page(self):
+        """
+        Access the underlying Playwright Page.
+
+        This property provides direct access to the Playwright page when using
+        the Playwright backend. For Selenium backend, this raises NotImplementedError.
+
+        Returns:
+            Page: The Playwright Page instance
+
+        Raises:
+            NotImplementedError: If using Selenium backend
+        """
+        if self._driver_impl.backend_type == "playwright":
+            return self._driver_impl.page  # type: ignore[attr-defined]
+        else:
+            raise NotImplementedError("Functionality cannot be run with Selenium yet.")
 
     @abstractmethod
     def build_url(self, url: str, for_selenium: bool = True) -> str:
@@ -278,7 +329,7 @@ class NavigatesGalaxy(HasDriver):
         `timeout_multiplier` is used in production CI tests to reduce transient failures
         in a uniform way across test suites to expand waiting.
         """
-        return wait_type.default_length * self.timeout_multiplier
+        return self.timeout_handler(wait_type)
 
     def sleep_for(self, wait_type: WaitType) -> None:
         """Sleep on the Python client side for the specified wait_type.
@@ -294,9 +345,6 @@ class NavigatesGalaxy(HasDriver):
         (e.g. test) thread.
         """
         time.sleep(duration)
-
-    def timeout_for(self, wait_type: WaitType = DEFAULT_WAIT_TYPE, **kwd) -> float:
-        return self.wait_length(wait_type)
 
     def home(self) -> None:
         """Return to root Galaxy page and wait for some basic widgets to appear."""
@@ -478,7 +526,7 @@ class NavigatesGalaxy(HasDriver):
             return None
 
     def wait_for_history(self, assert_ok=True):
-        def history_becomes_terminal(driver):
+        def history_becomes_terminal(driver=None):
             current_history_id = self.current_history_id()
             state = self.api_get(f"histories/{current_history_id}")["state"]
             if state not in ["running", "queued", "new", "ready"]:
@@ -486,8 +534,12 @@ class NavigatesGalaxy(HasDriver):
             else:
                 return None
 
-        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
-        final_state = self.wait(timeout=timeout).until(history_becomes_terminal)
+        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        if self.backend_type == "playwright":
+            final_state = wait_on(history_becomes_terminal, "history to become terminal", timeout)
+        else:
+            final_state = self.wait(timeout=timeout).until(history_becomes_terminal)
+
         if assert_ok:
             assert final_state == "ok", final_state
         return final_state
@@ -516,6 +568,17 @@ class NavigatesGalaxy(HasDriver):
         assert hid
         return self.content_item_by_attributes(hid=hid, multi_history_panel=multi_history_panel)
 
+    def _wait_on(
+        self,
+        f,
+        on_str: Optional[str] = None,
+        timeout: Optional[float] = None,
+        wait_type: WaitType = WAIT_TYPES.JOB_COMPLETION,
+    ):
+        if timeout is None:
+            timeout = self.wait_length(wait_type=wait_type)
+        return wait_on(f, on_str or "custom wait", timeout)
+
     def wait_for_history_to_have_hid(self, history_id, hid):
         def get_hids():
             contents = self.api_get(f"histories/{history_id}/contents")
@@ -525,13 +588,16 @@ class NavigatesGalaxy(HasDriver):
                 raise Exception(f"Expected list of contents, got {type(contents)} for {contents}")
             return [d["hid"] for d in contents]
 
-        def history_has_hid(driver):
+        def history_has_hid(driver=None):
             hids = get_hids()
             return any(h == hid for h in hids)
 
-        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
         try:
-            self.wait(timeout).until(history_has_hid)
+            if self.backend_type == "playwright":
+                wait_on(history_has_hid, f"history {history_id} to have hid {hid}", timeout)
+            else:
+                self.wait(timeout).until(history_has_hid)
         except SeleniumTimeoutException as e:
             hids = get_hids()
             message = f"Timeout waiting for history {history_id} to have hid {hid} - have hids {hids}"
@@ -1073,10 +1139,15 @@ class NavigatesGalaxy(HasDriver):
             self.wait_for_selector_absent_or_hidden(build_selector)
 
     def upload_queue_local_file(self, test_path, tab_id="regular"):
-        self.wait_for_and_click_selector(f"div#{tab_id} button#btn-local")
-
-        file_upload = self.wait_for_selector(f'div#{tab_id} input[type="file"]')
-        file_upload.send_keys(test_path)
+        if self.backend_type == "playwright":
+            with self.page.expect_file_chooser() as fc_info:
+                self.wait_for_and_click_selector(f"div#{tab_id} button#btn-local")
+            file_chooser = fc_info.value
+            file_chooser.set_files(test_path)
+        else:
+            self.wait_for_and_click_selector(f"div#{tab_id} button#btn-local")
+            file_upload = self.wait_for_selector(f'div#{tab_id} input[type="file"]')
+            file_upload.send_keys(test_path)
 
     def upload_paste_data(self, pasted_content, tab_id="regular"):
         tab_locator = f"div#{tab_id}"
@@ -2108,7 +2179,7 @@ class NavigatesGalaxy(HasDriver):
         # a simple .clear() doesn't work here since we perform a .blur because of that
         self.aggressive_clear(editable_text_input_element)
         editable_text_input_element.send_keys(new_name)
-        editable_text_input_element.send_keys(Keys.ENTER)
+        self.send_enter(editable_text_input_element)
         return editable_text_input_element
 
     def history_panel_name_input(self):
@@ -2408,7 +2479,7 @@ class NavigatesGalaxy(HasDriver):
             self.run_tour_step(step, i, tour_callback)
 
     def tour_wait_for_clickable_element(self, selector):
-        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
         wait = self.wait(timeout=timeout)
         timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become clickable")
         element = wait.until(
@@ -2418,7 +2489,7 @@ class NavigatesGalaxy(HasDriver):
         return element
 
     def tour_wait_for_element_present(self, selector):
-        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
         wait = self.wait(timeout=timeout)
         timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become present")
         element = wait.until(

@@ -1,7 +1,8 @@
 """Unit tests for galaxy.selenium.has_driver module."""
 
+from typing import cast
+
 import pytest
-from playwright.sync_api import Page
 from selenium.common.exceptions import (
     NoSuchElementException,
     TimeoutException as SeleniumTimeoutException,
@@ -10,15 +11,30 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.navigation.components import Target
+from galaxy.selenium.availability import (
+    PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE,
+    SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE,
+)
 from galaxy.selenium.has_driver import (
-    HasDriver,
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
     exception_indicates_stale_element,
+    HasDriver,
 )
+from galaxy.selenium.has_driver_protocol import (
+    fixed_timeout_handler,
+    HasDriverProtocol,
+    TimeoutCallback,
+)
+from galaxy.selenium.has_driver_proxy import HasDriverProxyImpl
 from galaxy.selenium.has_playwright_driver import (
     HasPlaywrightDriver,
+    PlaywrightResources,
     PlaywrightTimeoutException,
+)
+from .util import (
+    check_playwright_cached,
+    check_selenium_cached,
 )
 
 
@@ -70,53 +86,83 @@ class TestHasDriverImpl(HasDriver):
         self.driver = driver
         self.default_timeout = default_timeout
 
-    def timeout_for(self, **kwds) -> float:
-        """Return timeout value (required abstract method)."""
-        return kwds.get("timeout", self.default_timeout)
+    @property
+    def timeout_handler(self) -> TimeoutCallback:
+        """Return timeout value."""
+        return fixed_timeout_handler(self.default_timeout)
 
 
 class TestHasPlaywrightDriverImpl(HasPlaywrightDriver):
     """
     Concrete implementation of HasPlaywrightDriver for testing.
 
-    HasPlaywrightDriver is an abstract mixin that requires a page and timeout implementation.
+    HasPlaywrightDriver is an abstract mixin that requires PlaywrightResources and timeout implementation.
     """
 
-    def __init__(self, page: Page, default_timeout: float = 10.0):
+    def __init__(self, playwright_resources: PlaywrightResources, default_timeout: float = 10.0):
         """
         Initialize test implementation.
 
         Args:
-            page: Playwright Page instance
+            playwright_resources: PlaywrightResources containing playwright, browser, and page
             default_timeout: Default timeout for waits
         """
-        self.page = page
+        self._playwright_resources = playwright_resources
         self.default_timeout = default_timeout
+        self._current_frame = None
 
-    def timeout_for(self, **kwds) -> float:
-        """Return timeout value (required abstract method)."""
-        return kwds.get("timeout", self.default_timeout)
+    @property
+    def timeout_handler(self) -> TimeoutCallback:
+        """Return timeout value."""
+        return fixed_timeout_handler(self.default_timeout)
 
 
-@pytest.fixture(params=["selenium", "playwright"])
-def has_driver_instance(request, driver, playwright_page):
+@pytest.fixture(
+    params=[
+        pytest.param(
+            "selenium",
+            marks=pytest.mark.skipif(
+                not check_selenium_cached(),
+                reason=SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE,
+            ),
+        ),
+        pytest.param(
+            "playwright",
+            marks=pytest.mark.skipif(
+                not check_playwright_cached(),
+                reason=PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE,
+            ),
+        ),
+        pytest.param(
+            "proxy-selenium",
+            marks=pytest.mark.skipif(
+                not check_selenium_cached(),
+                reason=SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE,
+            ),
+        ),
+    ]
+)
+def has_driver_instance(request, driver, playwright_resources) -> HasDriverProtocol:
     """
-    Create a HasDriver or HasPlaywrightDriver instance for testing.
+    Create a HasDriver, HasPlaywrightDriver, or proxied instance for testing.
 
-    This fixture is parametrized to test both implementations.
+    This fixture is parametrized to test all three approaches:
+    - Direct Selenium (HasDriver) - skipped if Chrome not available
+    - Direct Playwright (HasPlaywrightDriver) - skipped if Chromium not available
+    - Proxied Selenium (HasDriverProxy wrapping HasDriver) - skipped if Chrome not available
 
     Args:
         request: Pytest request object
         driver: Selenium WebDriver fixture
-        playwright_page: Playwright Page fixture
-
-    Returns:
-        Union[TestHasDriverImpl, TestHasPlaywrightDriverImpl]: Driver implementation
+        playwright_resources: PlaywrightResources fixture
     """
     if request.param == "selenium":
-        return TestHasDriverImpl(driver)
-    else:
-        return TestHasPlaywrightDriverImpl(playwright_page)
+        return cast(HasDriverProtocol, TestHasDriverImpl(driver))
+    elif request.param == "playwright":
+        return cast(HasDriverProtocol, TestHasPlaywrightDriverImpl(playwright_resources))
+    else:  # proxy-selenium
+        selenium_impl = cast(HasDriverProtocol, TestHasDriverImpl(driver))
+        return HasDriverProxyImpl(selenium_impl)
 
 
 class TestElementFinding:
@@ -366,7 +412,7 @@ class TestWaitMethods:
     def test_wait_for_element_count_of_at_least(self, has_driver_instance, base_url):
         """Test waiting for at least N elements."""
         # Skip for Playwright since _wait_on_condition_count is not implemented
-        if hasattr(has_driver_instance, 'page'):
+        if hasattr(has_driver_instance, "page"):
             pytest.skip("wait_for_element_count_of_at_least not implemented for Playwright")
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
         target = SimpleTarget(element_locator=(By.CLASS_NAME, "item"), description="list items")
@@ -594,13 +640,8 @@ class TestActionChainsAndKeys:
         element.send_keys("test")
         has_driver_instance.send_backspace(element)
         # Verify one character was deleted
-        # TODO: Playwright ElementHandle.get_property("value") returns None/undefined
-        # Need to investigate proper way to get input values from ElementHandles
-        # For now, skip value verification for Playwright
-        if not hasattr(has_driver_instance, 'page'):
-            # Selenium - can verify value normally
-            assert element.get_attribute("value") == "tes"
-        # For Playwright: the key press executed without error (implicit success)
+        value = has_driver_instance.get_input_value(element)
+        assert value == "tes"
 
     def test_aggressive_clear(self, has_driver_instance, base_url):
         """Test aggressive_clear() method for clearing input fields."""
@@ -723,7 +764,7 @@ class TestCookieManagement:
 class TestUtilityMethods:
     """Tests for utility methods."""
 
-    def test_navigate_to(self, has_driver_instance: TestHasDriverImpl, base_url: str, request) -> None:
+    def test_navigate_to(self, has_driver_instance: HasDriverProtocol, base_url: str, request) -> None:
         """Test navigating to a URL and changing pages."""
         # Navigate to first page
         has_driver_instance.navigate_to(f"{base_url}/basic.html")
@@ -740,7 +781,7 @@ class TestUtilityMethods:
         assert frame_header.text == "Inside Frame"
 
         # Verify the original element is no longer present
-        target = SimpleTarget((has_driver_instance.by.ID, "header"), "header element")
+        target = SimpleTarget((By.ID, "header"), "header element")
         elements = has_driver_instance.find_elements(target)
         assert len(elements) == 0
 
@@ -768,7 +809,9 @@ class TestUtilityMethods:
             assert "original message" in new_selenium_exception.msg
         else:  # playwright
             original_playwright_exc = PlaywrightTimeoutException("original message")
-            new_playwright_exception = has_driver_instance.prepend_timeout_message(original_playwright_exc, "New prefix:")
+            new_playwright_exception = has_driver_instance.prepend_timeout_message(
+                original_playwright_exc, "New prefix:"
+            )
             assert "New prefix:" in str(new_playwright_exception)
             assert "original message" in str(new_playwright_exception)
 
@@ -836,15 +879,9 @@ class TestJavaScriptExecution:
         # Set value using JavaScript
         has_driver_instance.set_element_value(input_element, "newvalue")
 
-        # Verify value was set
-        # TODO: Playwright element.get_attribute("value") returns None after JS modification
-        # This is related to the existing issue with ElementHandle.get_property("value")
-        # documented in test_send_backspace. Skip for playwright for now.
-        import pytest
-        from galaxy.selenium.playwright_element import PlaywrightElement
-        if isinstance(input_element, PlaywrightElement):
-            pytest.skip("Playwright ElementHandle.get_property('value') issue - see test_send_backspace")
-        assert input_element.get_attribute("value") == "newvalue"
+        # Verify value was set using the abstraction
+        value = has_driver_instance.get_input_value(input_element)
+        assert value == "newvalue"
 
     def test_execute_script_click(self, has_driver_instance, base_url):
         """Test clicking element via JavaScript."""

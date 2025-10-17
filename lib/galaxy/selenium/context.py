@@ -14,6 +14,16 @@ class GalaxySeleniumContext(NavigatesGalaxy):
     target_url_from_selenium: str
     configured_driver: ConfiguredDriver
 
+    @property
+    def _driver_impl(self):
+        """Provide driver implementation from configured_driver.
+
+        This property bridges the HasDriverProxy mixin to the ConfiguredDriver
+        used in the test framework. It allows NavigatesGalaxy methods to work
+        without requiring constructor changes in the test infrastructure.
+        """
+        return self.configured_driver.driver_impl
+
     def build_url(self, url: str, for_selenium: bool = True) -> str:
         if for_selenium:
             base = self.target_url_from_selenium

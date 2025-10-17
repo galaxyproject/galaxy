@@ -7,6 +7,7 @@ attribute.
 import abc
 import threading
 from typing import (
+    Generic,
     Literal,
     Optional,
     Union,
@@ -33,6 +34,11 @@ from .axe_results import (
     NullAxeResults,
     RealAxeResults,
 )
+from .has_driver_protocol import (
+    Cookie,
+    TimeoutCallback,
+    WaitTypeT,
+)
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
 
@@ -51,19 +57,6 @@ def get_axe_script(script_url: str) -> str:
             AXE_SCRIPT_HASH[script_url] = content
 
     return AXE_SCRIPT_HASH[script_url]
-
-
-class Cookie(TypedDict, total=False):
-    """Cookie dictionary structure compatible with both Selenium and Playwright."""
-
-    name: str
-    value: str
-    domain: str
-    path: str
-    expires: float
-    httpOnly: bool
-    secure: bool
-    sameSite: Literal["Lax", "None", "Strict"]
 
 
 def _webelement_to_protocol(element: WebElement) -> WebElementProtocol:
@@ -103,12 +96,33 @@ def _cookies_to_typed(cookies: list[dict]) -> list[Cookie]:
     return cookies  # type: ignore[return-value]
 
 
-class HasDriver(WaitMethodsMixin):
+class TimeoutMessageMixin:
+    """Mixin providing timeout message formatting for driver abstractions."""
+
+    def _timeout_message(self, on_str: str) -> str:
+        """
+        Generate a timeout error message.
+
+        Args:
+            on_str: Description of what was being waited on
+
+        Returns:
+            Formatted timeout message string
+        """
+        return f"Timeout waiting on {on_str}."
+
+
+class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
     by: type[By] = By
     keys: type[Keys] = Keys
     driver: WebDriver
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
+
+    @property
+    def backend_type(self) -> Literal["selenium", "playwright"]:
+        """Identify this as the Selenium backend implementation."""
+        return "selenium"
 
     @property
     def current_url(self) -> str:
@@ -207,7 +221,9 @@ class HasDriver(WaitMethodsMixin):
             # Try to switch by name first, if that fails, try by ID
             # We use NAME as the locator because frame_to_be_available_and_switch_to_it
             # checks both name and id attributes
-            return self._wait_on(ec.frame_to_be_available_and_switch_to_it((By.NAME, frame_reference)))
+            return self._wait_on_selenium_condition(
+                ec.frame_to_be_available_and_switch_to_it((By.NAME, frame_reference))
+            )
         elif isinstance(frame_reference, int):
             # Switch by index
             return self.driver.switch_to.frame(frame_reference)
@@ -235,40 +251,41 @@ class HasDriver(WaitMethodsMixin):
     # Implementation of WaitMethodsMixin abstract methods for Selenium
     def _wait_on_condition_present(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
         """Wait for element to be present in DOM."""
-        return self._wait_on(ec.presence_of_element_located(locator_tuple), message, **kwds)
+        return self._wait_on_selenium_condition(ec.presence_of_element_located(locator_tuple), message, **kwds)
 
     def _wait_on_condition_visible(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
         """Wait for element to be visible."""
-        return self._wait_on(ec.visibility_of_element_located(locator_tuple), message, **kwds)
+        return self._wait_on_selenium_condition(ec.visibility_of_element_located(locator_tuple), message, **kwds)
 
     def _wait_on_condition_clickable(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
         """Wait for element to be clickable."""
-        return self._wait_on(ec.element_to_be_clickable(locator_tuple), message, **kwds)
+        return self._wait_on_selenium_condition(ec.element_to_be_clickable(locator_tuple), message, **kwds)
 
     def _wait_on_condition_invisible(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
         """Wait for element to be invisible or absent."""
-        return self._wait_on(ec.invisibility_of_element_located(locator_tuple), message, **kwds)
+        return self._wait_on_selenium_condition(ec.invisibility_of_element_located(locator_tuple), message, **kwds)
 
     def _wait_on_condition_absent(self, locator_tuple: tuple, message: str, **kwds) -> WebElement:
         """Wait for element to be completely absent from DOM."""
-        return self._wait_on(lambda driver: len(driver.find_elements(*locator_tuple)) == 0, message, **kwds)
+        return self._wait_on_selenium_condition(
+            lambda driver: len(driver.find_elements(*locator_tuple)) == 0, message, **kwds
+        )
 
     def _wait_on_condition_count(self, locator_tuple: tuple, n: int, message: str, **kwds) -> WebElement:
         """Wait for at least N elements."""
-        return self._wait_on(lambda driver: len(driver.find_elements(*locator_tuple)) >= n, message, **kwds)
+        return self._wait_on_selenium_condition(
+            lambda driver: len(driver.find_elements(*locator_tuple)) >= n, message, **kwds
+        )
 
     def _wait_on_custom(self, condition_func, message: str, **kwds) -> WebElement:
         """Wait on custom condition function."""
-        return self._wait_on(condition_func, message, **kwds)
+        return self._wait_on_selenium_condition(condition_func, message, **kwds)
 
     def click(self, selector_template: Target):
         element = self.driver.find_element(*selector_template.element_locator)
         element.click()
 
-    def _timeout_message(self, on_str: str) -> str:
-        return f"Timeout waiting on {on_str}."
-
-    def _wait_on(self, condition, on_str: Optional[str] = None, **kwds):
+    def _wait_on_selenium_condition(self, condition, on_str: Optional[str] = None, **kwds):
         if on_str is None:
             on_str = str(condition)
         wait = self.wait(**kwds)
@@ -330,12 +347,15 @@ class HasDriver(WaitMethodsMixin):
         else:
             element.send_keys(key)
 
+    @property
     @abc.abstractmethod
-    def timeout_for(self, **kwds) -> float: ...
+    def timeout_handler(self) -> TimeoutCallback:
+        """Get timeout handler for application specific wait types."""
+        ...
 
-    def wait(self, timeout=UNSPECIFIED_TIMEOUT, **kwds):
+    def wait(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: Optional[WaitTypeT] = None, **kwds):
         if timeout is UNSPECIFIED_TIMEOUT:
-            timeout = self.timeout_for(**kwds)
+            timeout = self.timeout_handler(wait_type)
         return WebDriverWait(self.driver, timeout)
 
     def click_xpath(self, xpath: str):
@@ -510,6 +530,15 @@ class HasDriver(WaitMethodsMixin):
         """
         self.driver.save_screenshot(path)
 
+    def quit(self) -> None:
+        """
+        Clean up and close the driver/browser.
+
+        This closes all windows/tabs and releases all system resources.
+        The driver cannot be used after calling this method.
+        """
+        self.driver.quit()
+
     def _locator_aware(self, element: Optional[WebElement] = None) -> HasFindElement:
         if element is None:
             return self.driver
@@ -561,4 +590,5 @@ __all__ = (
     "exception_indicates_stale_element",
     "HasDriver",
     "SeleniumTimeoutException",
+    "TimeoutMessageMixin",
 )

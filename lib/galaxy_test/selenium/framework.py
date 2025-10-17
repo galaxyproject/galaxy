@@ -30,6 +30,7 @@ from galaxy.selenium.context import GalaxySeleniumContext
 from galaxy.selenium.has_driver import DEFAULT_AXE_SCRIPT_URL
 from galaxy.selenium.navigates_galaxy import (
     exception_seems_to_indicate_transition,
+    galaxy_timeout_handler,
     NavigatesGalaxy,
     retry_during_transitions,
 )
@@ -76,6 +77,8 @@ DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
+# Driver backend can be ["selenium", "playwright"]
+GALAXY_TEST_DRIVER_BACKEND = os.environ.get("GALAXY_TEST_DRIVER_BACKEND", "selenium")
 # Test browser can be ["CHROME", "FIREFOX"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", driver_factory.DEFAULT_SELENIUM_BROWSER)
 GALAXY_TEST_SELENIUM_REMOTE = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE", driver_factory.DEFAULT_SELENIUM_REMOTE)
@@ -297,8 +300,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # boolean used to skip axe testing, might be useful to speed up
     # tests or may be required if you have no external internet access
     axe_skip = GALAXY_TEST_SKIP_AXE
-
-    timeout_multiplier = TIMEOUT_MULTIPLIER
 
     def assert_baseline_accessibility(self):
         axe_results = self.axe_eval()
@@ -706,6 +707,7 @@ def default_web_host_for_selenium_tests():
 
 def get_configured_driver():
     return driver_factory.ConfiguredDriver(
+        galaxy_timeout_handler(TIMEOUT_MULTIPLIER),
         browser=GALAXY_TEST_SELENIUM_BROWSER,
         remote=asbool(GALAXY_TEST_SELENIUM_REMOTE),
         remote_host=GALAXY_TEST_SELENIUM_REMOTE_HOST,

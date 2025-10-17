@@ -48,7 +48,7 @@ class TestHistoryMultiView(SeleniumTestCase):
         ac = self.action_chains()
         ac = ac.move_to_element(dataset_element).click_and_hold()
         drag_and_drop(self.driver, source=dataset_element, target=drop_target)
-        self._wait_on(lambda driver: self.current_history_id() != source_history_id)
+        self._wait_on(lambda *driver: self.current_history_id() != source_history_id)
         target_history_id = self.current_history_id()
         assert source_history_id != target_history_id
         source_contents = self.dataset_populator.get_history_contents(history_id=source_history_id)

@@ -4,9 +4,17 @@ import pytest
 from playwright.sync_api import sync_playwright
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.chrome.service import Service as ChromeService
 
+from galaxy.selenium.availability import (
+    PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE,
+    SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE,
+)
+from galaxy.selenium.has_playwright_driver import PlaywrightResources
 from .test_server import TestHTTPServer
+from .util import (
+    check_playwright_cached,
+    check_selenium_cached,
+)
 
 
 @pytest.fixture(scope="session")
@@ -53,6 +61,9 @@ def driver(chrome_options):
     Yields:
         WebDriver: Chrome WebDriver instance
     """
+    if not check_selenium_cached():
+        pytest.skip(SELENIUM_BROWSER_NOT_AVAILABLE_MESSAGE)
+
     _driver = webdriver.Chrome(options=chrome_options)
     _driver.implicitly_wait(0)  # Disable implicit waits, use explicit waits in tests
     yield _driver
@@ -74,30 +85,23 @@ def base_url(test_server):
 
 
 @pytest.fixture(scope="function")
-def playwright_browser():
+def playwright_resources():
     """
-    Create a Playwright browser instance for each test.
+    Create Playwright resources (playwright, browser, page) for each test.
 
     Yields:
-        Browser: Playwright Browser instance
+        PlaywrightResources: NamedTuple containing playwright, browser, and page instances
     """
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        yield browser
-        browser.close()
+    if not check_playwright_cached():
+        pytest.skip(PLAYWRIGHT_BROWSER_NOT_AVAILABLE_MESSAGE)
 
+    playwright = sync_playwright().start()
+    browser = playwright.chromium.launch(headless=True)
+    page = browser.new_page()
 
-@pytest.fixture(scope="function")
-def playwright_page(playwright_browser):
-    """
-    Create a Playwright page instance for each test.
+    yield PlaywrightResources(playwright=playwright, browser=browser, page=page)
 
-    Args:
-        playwright_browser: Playwright browser fixture
-
-    Yields:
-        Page: Playwright Page instance
-    """
-    page = playwright_browser.new_page()
-    yield page
+    # Cleanup in reverse order
     page.close()
+    browser.close()
+    playwright.stop()

@@ -121,37 +121,66 @@ See Also
 
 import abc
 from typing import (
+    Generic,
+    NamedTuple,
     Optional,
     Union,
 )
 
 from playwright.sync_api import (
+    Browser,
     ElementHandle,
-    Error as PlaywrightError,
     Frame,
     FrameLocator,
-    Locator,
     Page,
+    Playwright,
     TimeoutError as PlaywrightTimeoutException,
 )
 
 from galaxy.navigation.components import Target
+from ._wait import (
+    TimeoutAssertionError,
+    wait_on,
+)
 from .axe_results import (
     AxeResults,
     NullAxeResults,
     RealAxeResults,
 )
 from .has_driver import (
-    Cookie,
     DEFAULT_AXE_SCRIPT_URL,
     get_axe_script,
+    TimeoutMessageMixin,
+)
+from .has_driver_protocol import (
+    BackendType,
+    Cookie,
+    TimeoutCallback,
+    WaitTypeT,
 )
 from .playwright_element import PlaywrightElement
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
-from ._wait import wait_on, TimeoutAssertionError
 
 UNSPECIFIED_TIMEOUT = object()
+
+
+class PlaywrightResources(NamedTuple):
+    """
+    Resources needed for Playwright driver lifecycle management.
+
+    This bundles together all the Playwright objects needed to properly
+    clean up a browser session.
+
+    Attributes:
+        playwright: Main Playwright instance (needs .stop() on cleanup)
+        browser: Browser instance (needs .close() on cleanup)
+        page: Page instance for browser automation
+    """
+
+    playwright: Playwright
+    browser: Browser
+    page: Page
 
 
 class PlaywrightKeys:
@@ -181,19 +210,30 @@ class PlaywrightBy:
     CSS_SELECTOR = "css_selector"
 
 
-class HasPlaywrightDriver(WaitMethodsMixin):
+class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
     """Playwright-backed implementation of HasDriver interface."""
 
     by: type[PlaywrightBy] = PlaywrightBy
     keys: type[PlaywrightKeys] = PlaywrightKeys
-    page: Page
     axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
     axe_skip: bool = False
     _current_frame: Optional[Union[Frame, FrameLocator]] = None
+    _playwright_resources: PlaywrightResources
 
+    @property
+    def page(self) -> Page:
+        """Access the Playwright Page from resources."""
+        return self._playwright_resources.page
+
+    @property
+    def backend_type(self) -> BackendType:
+        """Identify this as the Playwright backend implementation."""
+        return "playwright"
+
+    @property
     @abc.abstractmethod
-    def timeout_for(self, **kwds) -> float:
-        """Return timeout value for wait operations."""
+    def timeout_handler(self) -> TimeoutCallback:
+        """Get timeout handler for application specific wait types."""
         ...
 
     def _selenium_locator_to_playwright_selector(self, by: str, value: str) -> str:
@@ -438,14 +478,18 @@ class HasPlaywrightDriver(WaitMethodsMixin):
         value = element.get_attribute("value")
         return value if value is not None else ""
 
-    def _timeout_in_ms(self, **kwds) -> float:
+    def _timeout_in_ms(self, timeout=UNSPECIFIED_TIMEOUT, wait_type: Optional[WaitTypeT] = None, **kwds) -> float:
         """
         Convert timeout from seconds to milliseconds.
 
         Returns:
             Timeout in milliseconds for Playwright
         """
-        return self.timeout_for(**kwds) * 1000
+
+        if timeout is UNSPECIFIED_TIMEOUT:
+            timeout = self.timeout_handler(wait_type)
+
+        return timeout * 1000
 
     # Implementation of WaitMethodsMixin abstract methods for Playwright
     def _wait_on_condition_present(self, locator_tuple: tuple, message: str, **kwds) -> WebElementProtocol:
@@ -1015,8 +1059,19 @@ class HasPlaywrightDriver(WaitMethodsMixin):
         """
         self.page.screenshot(path=path)
 
+    def quit(self) -> None:
+        """
+        Clean up and close the driver/browser.
+
+        This closes all windows/tabs and releases all system resources.
+        The driver cannot be used after calling this method.
+        """
+        self._playwright_resources.browser.close()
+        self._playwright_resources.playwright.stop()
+
 
 __all__ = (
     "HasPlaywrightDriver",
+    "PlaywrightResources",
     "PlaywrightTimeoutException",
 )
