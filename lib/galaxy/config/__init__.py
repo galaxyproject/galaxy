@@ -1272,7 +1272,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             if isinstance(themes_by_host_value, str):
                 # If it's an empty/whitespace string or just braces, treat as empty dict
                 stripped = themes_by_host_value.strip()
-                if not stripped or stripped in ('{}', '{ }'):
+                if not stripped or stripped in ("{}", "{ }"):
                     themes_by_host_value = {}
                 else:
                     # Log a warning for unexpected string values

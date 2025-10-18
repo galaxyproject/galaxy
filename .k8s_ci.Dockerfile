@@ -181,6 +181,7 @@ RUN set -xe; \
       && chown $GALAXY_USER:$GALAXY_USER $ROOT_DIR -R
 
 WORKDIR $ROOT_DIR
+
 # Copy galaxy files to final image
 # The chown value MUST be hardcoded (see https://github.com/moby/moby/issues/35018)
 COPY --chown=$GALAXY_USER:$GALAXY_USER --from=server_build $ROOT_DIR .
