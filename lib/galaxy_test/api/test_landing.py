@@ -162,6 +162,30 @@ class TestLandingApi(ApiTestCase):
         _cannot_claim_request(self.dataset_populator, response)
         _cannot_use_request(self.dataset_populator, response)
 
+    def test_invalid_workflow_landing_creation_cors(self):
+        request = _get_simple_landing_payload(self.workflow_populator, public=True).model_dump()
+        # Make payload invalid.
+        request.pop("workflow_id")
+        cors_headers = {"Access-Control-Request-Method": "POST", "Origin": "https://foo.example"}
+        response = self._options(
+            "workflow_landings",
+            data=request,
+            headers=cors_headers,
+            json=True,
+        )
+        # CORS preflight request should succeed, doesn't matter that the payload is invalid
+        assert response.status_code == 200
+        assert response.headers["Access-Control-Allow-Origin"] == "https://foo.example"
+        response = self._post(
+            "workflow_landings",
+            data=request,
+            headers=cors_headers,
+            json=True,
+        )
+        assert response.status_code == 400
+        assert response.headers["Access-Control-Allow-Origin"] == "https://foo.example"
+        assert "Field required" in response.json()["err_msg"]
+
     @skip_without_tool("cat1")
     def test_create_private_workflow_landing_anonymous_user(self):
         request = _get_simple_landing_payload(self.workflow_populator, public=False)
