@@ -20,7 +20,7 @@ import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
-import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
+import DatasetDisplay from "./DatasetDisplay.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
@@ -187,12 +187,7 @@ watch(
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
-            <CenterFrame
-                v-else-if="isPdfDataset"
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
-            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
+            <div v-else-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
@@ -203,23 +198,18 @@ watch(
                 </div>
             </div>
             <DatasetAsImage
-                v-else-if="isImageDataset"
+                v-else-if="isImageDataset && !isPdfDataset"
                 :history-dataset-id="datasetId"
                 :allow-size-toggle="true"
                 class="p-3" />
-            <CenterFrame
+            <DatasetDisplay
                 v-else
-                :src="`/datasets/${datasetId}/display/?preview=True`"
+                :datasetId="datasetId"
                 :is-preview="true"
                 @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'raw'" class="h-100">
-            <CenterFrame
-                v-if="isPdfDataset"
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
-            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
+            <div v-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
@@ -229,9 +219,9 @@ watch(
                     </a>
                 </div>
             </div>
-            <CenterFrame
+            <DatasetDisplay
                 v-else
-                :src="`/datasets/${datasetId}/display/?preview=True`"
+                :datasetId="datasetId"
                 :is-preview="true"
                 @load="iframeLoading = false" />
         </div>
