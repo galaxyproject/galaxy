@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
+import axios from "axios";
+import { onMounted, ref } from "vue";
+import { withPrefix } from "@/utils/redirect";
 
 interface Props {
     datasetId: string;
@@ -7,12 +9,24 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {});
+
+const content = ref();
+
+onMounted(async () => {
+    const url = withPrefix(`/datasets/${props.datasetId}/display/?preview=True`);
+    try {
+        const { data } = await axios.get(url);
+        content.value = data;
+    } catch (e) {
+        console.error(e);
+    }
+
+});
 </script>
 
 <template>
-    <CenterFrame
-        :src="`/datasets/${props.datasetId}/display/?preview=True`"
-        :is-preview="true"
-        @load="$emit('load')" />
+    <pre>
+        {{  content }}
+    </pre>
 </template>
 
