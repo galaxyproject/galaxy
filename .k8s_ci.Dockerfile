@@ -58,7 +58,6 @@ RUN set -xe; \
 # Remove context from previous build; copy current context; run playbook
 WORKDIR /tmp/ansible
 RUN rm -rf *
-ENV LC_ALL=en_US.UTF-8
 RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO galaxy-docker
 WORKDIR /tmp/ansible/galaxy-docker
 RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
