@@ -58,12 +58,12 @@ RUN set -xe; \
 # Remove context from previous build; copy current context; run playbook
 WORKDIR /tmp/ansible
 RUN rm -rf *
-ENV LC_ALL en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO galaxy-docker
 WORKDIR /tmp/ansible/galaxy-docker
 RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
 
-# Copy just the Galaxy source code that we need
+# Copy just the Galaxy source code we need
 COPY client/ $SERVER_DIR/client
 COPY client-api/ $SERVER_DIR/client-api
 COPY config/ $SERVER_DIR/config
@@ -81,7 +81,7 @@ COPY Makefile *.sh $SERVER_DIR
 FROM stage1 AS server_build
 ARG SERVER_DIR
 
-RUN ansible-playbook -i localhost, playbook.yml -v -e "{galaxy_build_client: false}" -e galaxy_virtualenv_command=virtualenv
+RUN ansible-playbook -i localhost, playbook.yml -v -e "{galaxy_build_client: false, galaxy_additional_venv_packages: false, galaxy_virtualenv_command: virtualenv}"
 
 # Remove build artifacts + files not needed in container
 WORKDIR $SERVER_DIR
@@ -103,7 +103,7 @@ RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 FROM stage1 AS client_build
 ARG SERVER_DIR
 
-RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client" -e galaxy_virtualenv_command=virtualenv
+RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client" -e "{galaxy_additional_venv_packages: false, galaxy_virtualenv_command: virtualenv}"
 
 WORKDIR $SERVER_DIR
 RUN rm -rf \
