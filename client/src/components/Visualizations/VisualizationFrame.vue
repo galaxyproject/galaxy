@@ -95,7 +95,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="position-relative h-100">
+    <div class="position-relative h-100 overflow-hidden">
         <div v-if="isLoading" class="iframe-loading bg-light">
             <LoadingSpan message="Loading preview" />
         </div>
