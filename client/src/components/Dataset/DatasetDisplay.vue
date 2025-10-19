@@ -3,12 +3,14 @@ import axios from "axios";
 import { computed, onMounted, ref } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
+import { bytesToString } from "@/utils/utils";
 
 import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 import { useDatasetStore } from "@/stores/datasetStore";
 
 interface Props {
     datasetId: string;
+    isBinary: boolean;
 }
 
 const MAX_PEEK_SIZE_BINARY = 100000;
@@ -41,14 +43,15 @@ onMounted(async () => {
             You are viewing a deleted dataset.
         </div>
         <div class="warningmessagelarge">
-            This dataset is large and only the first megabyte is shown below.<br />
-            <a :href="downloadUrl">Download</a>
-        </div>
-        <div class="warningmessagelarge">
-            This is a binary (or unknown to Galaxy) dataset of size {{ dataset.file_size }}. Preview is not
-            implemented for this filetype. Displaying
-            <span v-if="dataset.file_size > MAX_PEEK_SIZE_BINARY"> first 100KB </span>
-            as ASCII text<br />
+            <span>
+                This dataset is large and only the first megabyte is shown below.<br />
+            </span>
+            <span>
+                This is a binary (or unknown to Galaxy) dataset of size {{ bytesToString(dataset.file_size) }}.
+                Preview is not implemented for this filetype. Displaying
+                <span v-if="dataset.file_size > MAX_PEEK_SIZE_BINARY"> first 100KB </span>
+                as ASCII text<br />
+            </span>
             <a :href="downloadUrl">Download</a>
         </div>
         <TabularChunkedView

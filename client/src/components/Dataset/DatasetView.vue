@@ -61,6 +61,15 @@ const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/disp
 const preferredVisualization = computed(
     () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
+const isBinaryDataset = computed(() => {
+    if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
+        return false;
+    }
+    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, [
+        "galaxy.datatypes.binary",
+    ]);
+});
+
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
@@ -69,6 +78,7 @@ const isImageDataset = computed(() => {
         "galaxy.datatypes.images.Image",
     ]);
 });
+
 
 const isPdfDataset = computed(() => {
     return dataset.value?.file_ext === "pdf";
@@ -202,7 +212,7 @@ watch(
                 :history-dataset-id="datasetId"
                 :allow-size-toggle="true"
                 class="p-3" />
-            <DatasetDisplay v-else :dataset-id="datasetId" @load="iframeLoading = false" />
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'raw'" class="h-100">
             <div v-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
@@ -215,7 +225,7 @@ watch(
                     </a>
                 </div>
             </div>
-            <DatasetDisplay v-else :dataset-id="datasetId" @load="iframeLoading = false" />
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
