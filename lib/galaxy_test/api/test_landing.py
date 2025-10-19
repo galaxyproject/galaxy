@@ -7,7 +7,7 @@ from pydantic import HttpUrl
 
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
-    DataLandingRequestState,
+    FileOrCollectionRequestsAdapter,
 )
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
@@ -65,19 +65,14 @@ class TestLandingApi(ApiTestCase):
         assert "Input should be a valid integer" in response.text
 
     def test_data_landing(self):
-        data_landing_request_state = DataLandingRequestState(
-            targets=[
+        data_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
+            [
                 {
-                    "destination": {"type": "hdas"},
-                    "items": [
-                        {
-                            "src": "url",
-                            "url": "base64://eyJ0ZXN0IjogInRlc3QifQ==",  # base64 encoded {"test": "test"}
-                            "ext": "txt",
-                            "deferred": False,
-                        }
-                    ],
-                }
+                    "class": "File",
+                    "location": "base64://eyJ0ZXN0IjogInRlc3QifQ==",  # base64 encoded {"test": "test"}
+                    "filetype": "txt",
+                    "deferred": False,
+                },
             ],
         )
         payload = CreateDataLandingPayload(request_state=data_landing_request_state, public=True)

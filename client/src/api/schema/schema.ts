@@ -7400,6 +7400,75 @@ export interface components {
             /** Item Ids */
             item_ids: string[];
         };
+        /** CollectionElementCollectionRequestUri */
+        CollectionElementCollectionRequestUri: {
+            /**
+             * Class
+             * @constant
+             */
+            class: "Collection";
+            /** Collection Type */
+            collection_type: string;
+            /** Elements */
+            elements: (
+                | components["schemas"]["CollectionElementCollectionRequestUri"]
+                | components["schemas"]["CollectionElementDataRequestUri"]
+            )[];
+            /**
+             * Identifier
+             * @description A unique identifier for this element within the collection.
+             */
+            identifier: string;
+        };
+        /** CollectionElementDataRequestUri */
+        CollectionElementDataRequestUri: {
+            /**
+             * Class
+             * @constant
+             */
+            class: "File";
+            /** Created From Basename */
+            created_from_basename?: string | null;
+            /**
+             * Dbkey
+             * @default ?
+             */
+            dbkey: string;
+            /**
+             * Deferred
+             * @default false
+             */
+            deferred: boolean;
+            /** Ext */
+            ext: string;
+            /** Hashes */
+            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            /**
+             * Identifier
+             * @description A unique identifier for this element within the collection.
+             */
+            identifier: string;
+            /** Info */
+            info?: string | null;
+            /** Location */
+            location: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Space To Tab
+             * @default false
+             */
+            space_to_tab: boolean;
+            /** Src */
+            src?: null;
+            /** Tags */
+            tags?: string[] | null;
+            /**
+             * To Posix Lines
+             * @default false
+             */
+            to_posix_lines: boolean;
+        };
         /** CollectionElementIdentifier */
         CollectionElementIdentifier: {
             /**
@@ -7976,7 +8045,11 @@ export interface components {
              * @default false
              */
             public: boolean;
-            request_state: components["schemas"]["DataLandingRequestState"];
+            /** Request State */
+            request_state: (
+                | components["schemas"]["FileRequestUri"]
+                | components["schemas"]["DataRequestCollectionUri"]
+            )[];
         };
         /** CreateEntryPayload */
         CreateEntryPayload: {
@@ -9510,17 +9583,6 @@ export interface components {
          * @enum {string}
          */
         DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
-        /** DataLandingRequestState */
-        DataLandingRequestState: {
-            /** Targets */
-            targets: (
-                | components["schemas"]["DataElementsTarget"]
-                | components["schemas"]["HdcaDataItemsTarget"]
-                | components["schemas"]["DataElementsFromTarget"]
-                | components["schemas"]["HdcaDataItemsFromTarget"]
-                | components["schemas"]["FtpImportTarget"]
-            )[];
-        };
         /** DataParameterModel */
         DataParameterModel: {
             /**
@@ -9588,6 +9650,30 @@ export interface components {
              * @enum {string}
              */
             type: "data";
+        };
+        /** DataRequestCollectionUri */
+        DataRequestCollectionUri: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            class: "Collection";
+            /** Collection Type */
+            collection_type: string;
+            /**
+             * Deferred
+             * @default false
+             */
+            deferred: boolean;
+            /** Elements */
+            elements: (
+                | components["schemas"]["CollectionElementCollectionRequestUri"]
+                | components["schemas"]["CollectionElementDataRequestUri"]
+            )[];
+            /** Name */
+            name?: string | null;
+            /** Src */
+            src?: null;
         };
         /** DatasetAssociationRoles */
         DatasetAssociationRoles: {
@@ -9666,7 +9752,17 @@ export interface components {
          */
         DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
         /** DatasetHash */
-        DatasetHash: {
+        "DatasetHash-Input": {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
+        /** DatasetHash */
+        "DatasetHash-Output": {
             /**
              * Extra Files Path
              * @description The path to the extra files used to generate the hash.
@@ -11378,6 +11474,50 @@ export interface components {
             /** visible */
             visible: boolean;
         };
+        /** FileRequestUri */
+        FileRequestUri: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            class: "File";
+            /** Created From Basename */
+            created_from_basename?: string | null;
+            /**
+             * Dbkey
+             * @default ?
+             */
+            dbkey: string;
+            /**
+             * Deferred
+             * @default false
+             */
+            deferred: boolean;
+            /** Ext */
+            ext: string;
+            /** Hashes */
+            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            /** Info */
+            info?: string | null;
+            /** Location */
+            location: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Space To Tab
+             * @default false
+             */
+            space_to_tab: boolean;
+            /** Src */
+            src?: null;
+            /** Tags */
+            tags?: string[] | null;
+            /**
+             * To Posix Lines
+             * @default false
+             */
+            to_posix_lines: boolean;
+        };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
         /** FileSourceTemplateSummary */
@@ -12218,7 +12358,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes?: components["schemas"]["DatasetHash"][] | null;
+            hashes?: components["schemas"]["DatasetHash-Output"][] | null;
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
@@ -12479,7 +12619,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes: components["schemas"]["DatasetHash"][];
+            hashes: components["schemas"]["DatasetHash-Output"][];
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).

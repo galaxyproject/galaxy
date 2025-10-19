@@ -37,13 +37,26 @@ from galaxy.model import (
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
+    DataElementsTarget,
     FetchDataFormPayload,
     FetchDataPayload,
     FilesPayload,
+    HdaDestination,
+    HdcaDataItemsTarget,
+    HdcaDestination,
+    NestedElement,
     TargetsAdapter,
+    UrlDataElement,
 )
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.tool_util_models.parameters import (
+    CollectionElementCollectionRequestUri,
+    CollectionElementDataRequestUri,
+    DataRequestCollectionUri,
+    DataRequestUri,
+    FileRequestUri,
+)
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
@@ -88,6 +101,82 @@ def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunRe
     return tool
 
 
+def data_landing_payload_to_fetch_targets(data_landing_payload: CreateDataLandingPayload):
+    """Convert a CreateDataLandingPayload with DataOrCollectionRequest format to FetchDataPayload with Targets format.
+
+    This function transforms data/collection requests (used in workflow landing and data request payloads) into the fetch API's target format.
+    """
+    targets: list[Union[DataElementsTarget, HdcaDataItemsTarget]] = []
+
+    for request_item in data_landing_payload.request_state:
+        if isinstance(request_item, (DataRequestUri, FileRequestUri)):
+            # Convert single file/URL request to a DataElementsTarget
+            element = UrlDataElement(
+                src="url",
+                url=str(request_item.url),
+                ext=request_item.ext,
+                dbkey=request_item.dbkey,
+                name=request_item.name,
+                deferred=request_item.deferred,
+                info=request_item.info,
+                tags=request_item.tags,
+                space_to_tab=request_item.space_to_tab,
+                to_posix_lines=request_item.to_posix_lines,
+                created_from_basename=request_item.created_from_basename,
+            )
+
+            targets.append(
+                DataElementsTarget(
+                    destination=HdaDestination(type="hdas"),
+                    elements=[element],
+                )
+            )
+
+        elif isinstance(request_item, DataRequestCollectionUri):
+            # Convert collection request to HdcaDataItemsTarget
+            def convert_collection_element(elem):
+                """Convert a collection element (file or nested collection) recursively."""
+                if isinstance(elem, CollectionElementDataRequestUri):
+                    # This is a file element
+                    return UrlDataElement(
+                        src="url",
+                        url=str(elem.url),
+                        ext=elem.ext,
+                        dbkey=elem.dbkey,
+                        name=elem.identifier,
+                        deferred=elem.deferred,
+                        info=elem.info,
+                        tags=elem.tags,
+                        space_to_tab=elem.space_to_tab,
+                        to_posix_lines=elem.to_posix_lines,
+                        created_from_basename=elem.created_from_basename,
+                    )
+                elif isinstance(elem, CollectionElementCollectionRequestUri):
+                    # This is a nested collection element
+                    # Recursively convert its elements
+                    nested_elements = [convert_collection_element(nested_elem) for nested_elem in elem.elements]
+                    return NestedElement(
+                        name=elem.identifier,
+                        elements=nested_elements,
+                        collection_type=elem.collection_type,
+                    )
+                else:
+                    raise ValueError(f"Unknown collection element type: {type(elem)}")
+
+            elements = [convert_collection_element(elem) for elem in request_item.elements]
+
+            targets.append(
+                HdcaDataItemsTarget(
+                    destination=HdcaDestination(type="hdca"),
+                    elements=elements,
+                    collection_type=request_item.collection_type,
+                    name=request_item.name,
+                )
+            )
+
+    return [target.model_dump(mode="json", exclude_unset=True) for target in TargetsAdapter.validate_python(targets)]
+
+
 class ToolsService(ServiceBase):
     def __init__(
         self,
@@ -107,12 +196,13 @@ class ToolsService(ServiceBase):
         data_landing_payload: CreateDataLandingPayload,
     ) -> CreateToolLandingRequestPayload:
         request_version = "1"
-        payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        payload = {"targets": data_landing_payload_to_fetch_targets(data_landing_payload)}
         validate_and_normalize_targets(trans, payload, set_internal_fields=False)
-        validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
         request_state = {
             "request_version": request_version,
-            "request_json": {"targets": TargetsAdapter.dump_python(validated_back_to_model, exclude_unset=True)},
+            "request_json": {
+                "targets": payload["targets"],
+            },
             "file_count": "0",
         }
         return CreateToolLandingRequestPayload(

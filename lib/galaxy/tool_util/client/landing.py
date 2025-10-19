@@ -79,7 +79,7 @@ def generate_claim_url(request: Request) -> Response:
     try:
         raw_response.raise_for_status()
     except Exception:
-        raise Exception("Request failed: %s", raw_response.text)
+        raise Exception("Request failed: %s", raw_response.json())
     response = raw_response.json()
     response_type = "workflow" if template_type == "workflow" else "tool"
     url = f"{galaxy_url}/{response_type}_landings/{response['uuid']}"

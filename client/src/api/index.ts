@@ -308,7 +308,7 @@ export function canMutateHistory(history: AnyHistory): boolean {
     return !history.purged && !history.archived;
 }
 
-export type DatasetHash = components["schemas"]["DatasetHash"];
+export type DatasetHash = components["schemas"]["DatasetHash-Output"];
 
 export type DatasetSource = components["schemas"]["DatasetSource"];
 export type DatasetTransform = components["schemas"]["DatasetSourceTransform"];
