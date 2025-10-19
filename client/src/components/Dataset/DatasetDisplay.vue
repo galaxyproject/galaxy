@@ -13,11 +13,9 @@ interface Props {
     isBinary: boolean;
 }
 
-const MAX_PEEK_SIZE_BINARY = 100000;
-
 const { getDataset, isLoadingDataset } = useDatasetStore();
 
-const props = withDefaults(defineProps<Props>(), {});
+const props = defineProps<Props>();
 
 const content = ref();
 
