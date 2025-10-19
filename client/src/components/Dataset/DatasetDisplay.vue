@@ -20,9 +20,8 @@ const props = withDefaults(defineProps<Props>(), {});
 const content = ref();
 
 const dataset = computed(() => getDataset(props.datasetId));
-const datasetUrl = computed(() => withPrefix(`/dataset/display/dataset_id=${props.datasetId}`));
-const displayUrl = computed(() => withPrefix(`${datasetUrl}&filename=''`));
-const downloadUrl = computed(() =>withPrefix(`${datasetUrl}&to_ext=${dataset.value?.file_ext}`),);
+const datasetUrl = computed(() => withPrefix(`/dataset/display?dataset_id=${props.datasetId}`));
+const downloadUrl = computed(() =>withPrefix(`${datasetUrl.value}&to_ext=${dataset.value?.file_ext}`),);
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
 
 onMounted(async () => {
@@ -43,8 +42,7 @@ onMounted(async () => {
         </div>
         <div class="warningmessagelarge">
             This dataset is large and only the first megabyte is shown below.<br />
-            <a :href="displayUrl">Show all</a> |
-            <a :href="downloadUrl">Save</a>
+            <a :href="downloadUrl">Download</a>
         </div>
         <div class="warningmessagelarge">
             This is a binary (or unknown to Galaxy) dataset of size {{ dataset.file_size }}. Preview is not
