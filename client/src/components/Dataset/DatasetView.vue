@@ -65,9 +65,7 @@ const isBinaryDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
     }
-    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, [
-        "galaxy.datatypes.binary",
-    ]);
+    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, ["galaxy.datatypes.binary"]);
 });
 
 const isImageDataset = computed(() => {
@@ -78,7 +76,6 @@ const isImageDataset = computed(() => {
         "galaxy.datatypes.images.Image",
     ]);
 });
-
 
 const isPdfDataset = computed(() => {
     return dataset.value?.file_ext === "pdf";
