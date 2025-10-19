@@ -509,6 +509,8 @@ class Data(metaclass=DataMeta):
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
         headers["content-type"] = "text/html"
+        if file_size > max_peek_size:
+            headers["x-content-truncated"] = max_peek_size
         with open(data.get_file_name(), "rb") as fh:
             return unicodify(fh.read(max_peek_size)), headers
 
@@ -522,6 +524,7 @@ class Data(metaclass=DataMeta):
         with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
             # preview large text file
             headers["content-type"] = "text/html"
+            headers["x-content-truncated"] = max_peek_size
             return unicodify(fh.read(max_peek_size)), headers
 
     def display_data(
