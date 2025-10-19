@@ -197,14 +197,7 @@ class TabularData(Text):
             else:
                 headers["content-type"] = "text/html"
                 with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
-                    return (
-                        trans.fill_template_mako(
-                            "/dataset/large_file.mako",
-                            truncated_data=fh.read(max_peek_size),
-                            data=dataset,
-                        ),
-                        headers,
-                    )
+                    return util.unicodify(fh.read(max_peek_size)), headers
         else:
             return self.get_chunk(trans, dataset, 0), headers
 
