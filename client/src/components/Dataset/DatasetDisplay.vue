@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
 
@@ -16,7 +16,12 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {});
 
 const content = ref();
-const datasetDetails = ref();
+const datasetDetails: any = ref();
+
+const displayUrl = computed(() => withPrefix(`/dataset/display/dataset_id=${props.datasetId}&filename=''`));
+const downloadUrl = computed(() =>
+    withPrefix(`/dataset/display/dataset_id=${props.datasetId}&to_ext=${datasetDetails.value.ext}`),
+);
 
 onMounted(async () => {
     const detailsUrl = withPrefix(`/api/datasets/${props.datasetId}`);
@@ -44,21 +49,21 @@ onMounted(async () => {
         </div>
         <div class="warningmessagelarge">
             This dataset is large and only the first megabyte is shown below.<br />
-            <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), filename='' )}">Show all</a> |
-            <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">Save</a>
+            <a :href="displayUrl">Show all</a> |
+            <a :href="downloadUrl">Save</a>
         </div>
         <div class="warningmessagelarge">
-            This is a binary (or unknown to Galaxy) dataset of size ${ file_size }. Preview is not implemented for this filetype. Displaying
-            <span v-if="datasetDetails.file_size > MAX_PEEK_SIZE_BINARY">
-                first 100KB
-            </span>
-            as ASCII text<br/>
-            <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">Download</a>
+            This is a binary (or unknown to Galaxy) dataset of size {{ datasetDetails.file_size }}. Preview is not
+            implemented for this filetype. Displaying
+            <span v-if="datasetDetails.file_size > MAX_PEEK_SIZE_BINARY"> first 100KB </span>
+            as ASCII text<br />
+            <a :href="downloadUrl">Download</a>
         </div>
-        <TabularChunkedView v-if="content && content.ck_data" :options="{ dataset_config: { ...datasetDetails, first_data_chunk: content } }" />
+        <TabularChunkedView
+            v-if="content && content.ck_data"
+            :options="{ dataset_config: { ...datasetDetails, first_data_chunk: content } }" />
         <pre v-else>
             {{ content }}
         </pre>
     </div>
 </template>
-
