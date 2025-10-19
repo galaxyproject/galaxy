@@ -53,7 +53,7 @@ onMounted(async () => {
         as ASCII text<br/>
             <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">Download</a>
         </div>
-        <TabularChunkedView v-if="content" :options="{ dataset_config: { ...datasetDetails, first_data_chunk: content && JSON.parse(content) } }" />  
+        <TabularChunkedView v-if="content" :options="{ dataset_config: { ...datasetDetails, first_data_chunk: content } }" />
         <pre>
             {{  content }}
         </pre>

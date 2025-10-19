@@ -206,28 +206,7 @@ class TabularData(Text):
                         headers,
                     )
         else:
-            column_names = "null"
-            if dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
-            elif hasattr(dataset.datatype, "column_names"):
-                column_names = dataset.datatype.column_names
-            column_types = dataset.metadata.column_types
-            if not column_types:
-                column_types = []
-            column_number = dataset.metadata.columns
-            if column_number is None:
-                column_number = "null"
-            return (
-                trans.fill_template(
-                    "/dataset/tabular_chunked.mako",
-                    dataset=dataset,
-                    chunk=self.get_chunk(trans, dataset, 0),
-                    column_number=column_number,
-                    column_names=column_names,
-                    column_types=column_types,
-                ),
-                headers,
-            )
+            return self.get_chunk(trans, dataset, 0), headers
 
     def display_as_markdown(self, dataset_instance: DatasetProtocol) -> str:
         with open(dataset_instance.get_file_name()) as f:
