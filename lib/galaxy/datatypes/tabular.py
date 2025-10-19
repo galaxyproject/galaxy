@@ -196,6 +196,7 @@ class TabularData(Text):
                 return open(dataset.get_file_name(), mode="rb"), headers
             else:
                 headers["content-type"] = "text/html"
+                headers["x-content-truncated"] = max_peek_size
                 with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
                     return util.unicodify(fh.read(max_peek_size)), headers
         else:

@@ -18,19 +18,25 @@ const { getDataset, isLoadingDataset } = useDatasetStore();
 const props = defineProps<Props>();
 
 const content = ref();
+const isTruncated = ref();
 
-const contentLength = computed(() => (typeof content.value === "string" ? content.value?.length : 0));
+const contentLength = computed(() => {
+    if (typeof content.value !== "string") {
+        return 0;
+    }
+    return new TextEncoder().encode(content.value).length;
+});
 const dataset = computed(() => getDataset(props.datasetId));
 const datasetUrl = computed(() => withPrefix(`/dataset/display?dataset_id=${props.datasetId}`));
 const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}&to_ext=${dataset.value?.file_ext}`));
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
-const isTruncated = computed(() => dataset.value && dataset.value.file_size > contentLength.value);
 
 onMounted(async () => {
     const url = withPrefix(`/datasets/${props.datasetId}/display/?preview=True`);
     try {
-        const { data } = await axios.get(url);
+        const { data, headers } = await axios.get(url);
         content.value = data;
+        isTruncated.value = headers["x-content-truncated"] === "true";
     } catch (e) {
         console.error(e);
     }
@@ -51,10 +57,7 @@ onMounted(async () => {
                 is not implemented for this filetype. Displaying as ASCII text.
             </div>
             <div v-if="isTruncated" class="warningmessagelarge">
-                <div>
-                    This dataset is large and only the first <span> {{ bytesToString(contentLength) }} </span> is shown
-                    below.
-                </div>
+                <div>This dataset is large and only the first {{ bytesToString(contentLength) }} is shown below.</div>
                 <a :href="downloadUrl">Download</a>
             </div>
             <pre>

@@ -337,6 +337,7 @@ class Sequence(data.Text):
                     mime = "text/plain"
                     self._clean_and_set_mime_type(trans, mime, headers)
                     return chunk[:-1], headers
+                headers["x-content-truncated"] = max_peek_size
                 return util.unicodify(chunk[:-1]), headers
         else:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
