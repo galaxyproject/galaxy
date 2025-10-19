@@ -14,13 +14,13 @@ import { bytesToString } from "@/utils/utils";
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
+import DatasetDisplay from "./DatasetDisplay.vue";
 import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
-import DatasetDisplay from "./DatasetDisplay.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
@@ -204,7 +204,7 @@ watch(
                 class="p-3" />
             <DatasetDisplay
                 v-else
-                :datasetId="datasetId"
+                :dataset-id="datasetId"
                 :is-preview="true"
                 @load="iframeLoading = false" />
         </div>
@@ -221,7 +221,7 @@ watch(
             </div>
             <DatasetDisplay
                 v-else
-                :datasetId="datasetId"
+                :dataset-id="datasetId"
                 :is-preview="true"
                 @load="iframeLoading = false" />
         </div>
