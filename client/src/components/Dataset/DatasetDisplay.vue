@@ -18,14 +18,8 @@ const { getDataset, isLoadingDataset } = useDatasetStore();
 const props = defineProps<Props>();
 
 const content = ref();
-const isTruncated = ref();
+const truncated = ref();
 
-const contentLength = computed(() => {
-    if (typeof content.value !== "string") {
-        return 0;
-    }
-    return new TextEncoder().encode(content.value).length;
-});
 const dataset = computed(() => getDataset(props.datasetId));
 const datasetUrl = computed(() => withPrefix(`/dataset/display?dataset_id=${props.datasetId}`));
 const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}&to_ext=${dataset.value?.file_ext}`));
@@ -36,7 +30,7 @@ onMounted(async () => {
     try {
         const { data, headers } = await axios.get(url);
         content.value = data;
-        isTruncated.value = headers["x-content-truncated"] === "true";
+        truncated.value = headers["x-content-truncated"];
     } catch (e) {
         console.error(e);
     }
@@ -56,8 +50,8 @@ onMounted(async () => {
                 This is a binary (or unknown to Galaxy) dataset of size {{ bytesToString(dataset.file_size) }}. Preview
                 is not implemented for this filetype. Displaying as ASCII text.
             </div>
-            <div v-if="isTruncated" class="warningmessagelarge">
-                <div>This dataset is large and only the first {{ bytesToString(contentLength) }} is shown below.</div>
+            <div v-if="truncated" class="warningmessagelarge">
+                <div>This dataset is large and only the first {{ bytesToString(truncated) }} is shown below.</div>
                 <a :href="downloadUrl">Download</a>
             </div>
             <pre>
