@@ -337,10 +337,7 @@ class Sequence(data.Text):
                     mime = "text/plain"
                     self._clean_and_set_mime_type(trans, mime, headers)
                     return chunk[:-1], headers
-                return (
-                    trans.fill_template_mako("/dataset/large_file.mako", truncated_data=chunk[:-1], data=dataset),
-                    headers,
-                )
+                return util.unicodify(chunk[:-1]), headers
         else:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 

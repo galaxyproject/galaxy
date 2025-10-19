@@ -1,1 +1,0 @@
-${ util.unicodify( truncated_data ) | h }
