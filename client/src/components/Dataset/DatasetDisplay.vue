@@ -6,6 +6,7 @@ import { useDatasetStore } from "@/stores/datasetStore";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
+import LoadingSpan from "components/LoadingSpan.vue";
 import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 
 interface Props {
@@ -38,13 +39,12 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div v-if="!isLoading && dataset">
+    <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset content" />
+    <div v-else>
         <div v-if="dataset.deleted" id="deleted-data-message" class="errormessagelarge">
             You are viewing a deleted dataset.
         </div>
-        <TabularChunkedView
-            v-if="content && content.ck_data"
-            :options="{ dataset_config: { ...dataset, first_data_chunk: content } }" />
+        <TabularChunkedView v-if="content && content.ck_data" :options="{ ...dataset, first_data_chunk: content }" />
         <div v-else-if="content">
             <div v-if="isBinary">
                 This is a binary (or unknown to Galaxy) dataset of size {{ bytesToString(dataset.file_size) }}. Preview
