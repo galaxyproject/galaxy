@@ -188,7 +188,7 @@ watch(
                 <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
-        <div v-if="tab === 'preview'" class="h-100">
+        <div v-if="tab === 'preview'" class="h-100 overflow-auto">
             <VisualizationFrame
                 v-if="preferredVisualization"
                 :dataset-id="datasetId"
@@ -211,7 +211,7 @@ watch(
                 class="p-3" />
             <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
-        <div v-else-if="tab === 'raw'" class="h-100">
+        <div v-else-if="tab === 'raw'" class="h-100 overflow-auto">
             <div v-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
