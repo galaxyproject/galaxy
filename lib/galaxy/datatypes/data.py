@@ -602,9 +602,8 @@ class Data(metaclass=DataMeta):
         else:  # displaying
             trans.log_event(f"Display dataset id: {str(dataset.id)}")
             max_peek_size = _get_max_peek_size(dataset)
-            if (
-                _is_binary_file(dataset) and preview and hasattr(trans, "fill_template_mako")
-            ):  # preview file which format is unknown (to Galaxy), we still try to display this as text
+            if _is_binary_file(dataset) and preview:
+                # preview file which format is unknown (to Galaxy), we still try to display this as text
                 return self._serve_binary_file_contents_as_text(trans, dataset, headers, file_size, max_peek_size)
             else:  # text/html, or image, or display was called without preview flag
                 return self._serve_file_contents(trans, dataset, headers, preview, file_size, max_peek_size)
