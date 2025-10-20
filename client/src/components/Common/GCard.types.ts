@@ -1,28 +1,10 @@
 import type { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
+import type { BootstrapVariant } from "@/components/Common";
+
 /** Card badge display styles */
 export type CardBadgeType = "pill" | "badge";
-
-/** Bootstrap color variants for theming */
-export type BootstrapVariant =
-    | "danger"
-    | "dark"
-    | "info"
-    | "light"
-    | "link"
-    | "primary"
-    | "secondary"
-    | "success"
-    | "warning"
-    | "outline-danger"
-    | "outline-dark"
-    | "outline-info"
-    | "outline-light"
-    | "outline-primary"
-    | "outline-secondary"
-    | "outline-success"
-    | "outline-warning";
 
 /** Bootstrap component sizes */
 export type BootstrapSize = "xs" | "sm" | "md" | "lg" | "xl";
