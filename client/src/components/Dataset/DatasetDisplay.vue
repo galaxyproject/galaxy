@@ -2,7 +2,7 @@
 import axios from "axios";
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useUserStore } from "@/stores/userStore";
@@ -47,25 +47,29 @@ const sanitizedMessage = computed(() => {
     return undefined;
 });
 
-onMounted(async () => {
-    const url = withPrefix(`/datasets/${props.datasetId}/display/?preview=True`);
-    try {
-        const { data, headers } = await axios.get(url);
-        content.value = data;
-        truncated.value = headers["x-content-truncated"];
-        const isImported = headers["x-sanitized-job-imported"];
-        const toolId = headers["x-sanitized-tool-id"];
-        if (isImported !== null) {
-            sanitizedImport.value = true;
-        } else if (toolId !== null) {
-            sanitizedToolId.value = toolId;
+watch(
+    () => props.datasetId,
+    async () => {
+        const url = withPrefix(`/datasets/${props.datasetId}/display/?preview=True`);
+        try {
+            const { data, headers } = await axios.get(url);
+            content.value = data;
+            truncated.value = headers["x-content-truncated"];
+            const isImported = headers["x-sanitized-job-imported"];
+            const toolId = headers["x-sanitized-tool-id"];
+            if (isImported !== null) {
+                sanitizedImport.value = true;
+            } else if (toolId !== null) {
+                sanitizedToolId.value = toolId;
+            }
+            errorMessage.value = "";
+        } catch (e) {
+            errorMessage.value = errorMessageAsString(e);
+            console.error(e);
         }
-        errorMessage.value = "";
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
-        console.error(e);
-    }
-});
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
