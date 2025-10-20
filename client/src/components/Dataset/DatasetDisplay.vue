@@ -37,6 +37,7 @@ const dataset = computed(() => getDataset(props.datasetId));
 const datasetUrl = computed(() => `/datasets/${props.datasetId}/display`);
 const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}?to_ext=${dataset.value?.file_ext}`));
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
+const previewUrl = computed(() => withPrefix(`${datasetUrl.value}?preview=True`));
 
 const sanitizedMessage = computed(() => {
     const plainText = "Contents are shown as plain text.";
@@ -51,9 +52,8 @@ const sanitizedMessage = computed(() => {
 watch(
     () => props.datasetId,
     async () => {
-        const url = withPrefix(`${datasetUrl.value}?preview=True`);
         try {
-            const { data, headers } = await axios.get(url);
+            const { data, headers } = await axios.get(previewUrl.value);
             content.value = data;
             contentTruncated.value = headers["x-content-truncated"];
             contentType.value = headers["content-type"];
@@ -98,8 +98,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame v-if="contentType === 'text/html'" :src="datasetUrl" />
-            <pre v-else>{{ content }}</pre>
+            <CenterFrame :src="previewUrl" />
         </div>
     </div>
 </template>
