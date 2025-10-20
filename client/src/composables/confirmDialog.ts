@@ -128,6 +128,11 @@ export interface ConfirmDialogOptions {
      */
     modalClass?: string;
     /**
+     * CSS classes for modal dialog wrapper
+     * @default undefined
+     */
+    dialogClass?: string;
+    /**
      * CSS classes for modal content
      * @default undefined
      */
