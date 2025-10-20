@@ -85,6 +85,11 @@ const disabledTabTooltip = computed(() => {
     }
 });
 
+/** We are on the default "Overview" tab if the tab prop is not set or is not one of the expected tab values */
+const onOverviewTab = computed(() => {
+    return !props.tab || !["steps", "inputs", "outputs", "report", "export", "metrics", "debug"].includes(props.tab);
+});
+
 const invocation = computed(() => {
     const storedInvocation = invocationStore.getInvocationById(props.invocationId);
     if (invocationLoaded.value && isWorkflowInvocationElementView(storedInvocation)) {
@@ -340,7 +345,7 @@ async function onCancel() {
         </WorkflowAnnotation>
 
         <BNav v-if="props.isFullPage" pills class="mb-2 p-2 bg-light border-bottom">
-            <BNavItem title="Overview" :active="!props.tab" :to="`/workflows/invocations/${props.invocationId}`">
+            <BNavItem title="Overview" :active="onOverviewTab" :to="`/workflows/invocations/${props.invocationId}`">
                 Overview
             </BNavItem>
             <BNavItem
@@ -424,7 +429,7 @@ async function onCancel() {
         </BNav>
 
         <div class="mt-1 d-flex flex-column overflow-auto">
-            <div v-if="!props.tab">
+            <div v-if="onOverviewTab">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
