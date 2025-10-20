@@ -93,7 +93,8 @@ watch(
                 <div>This dataset is large and only the first {{ bytesToString(truncated) }} is shown below.</div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <pre>{{ content }}</pre>
+            <pre v-if="sanitizedMessage || sanitizedToolId">{{ content }}</pre>
+            <pre v-else v-html="content" />
         </div>
     </div>
 </template>
