@@ -12,7 +12,8 @@ import { bytesToString } from "@/utils/utils";
 
 import Alert from "@/components/Alert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import TabularChunkedView from "./Tabular/TabularChunkedView.vue";
+import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
+import TabularChunkedView from "components/Dataset/Tabular/TabularChunkedView.vue";
 
 interface Props {
     datasetId: string;
@@ -73,7 +74,7 @@ watch(
         {{ errorMessage }}
     </BAlert>
     <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset content" />
-    <div v-else>
+    <div v-else class="h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
             <span v-if="isAdmin && sanitizedToolId">
@@ -86,7 +87,7 @@ watch(
             You are viewing a deleted dataset.
         </div>
         <TabularChunkedView v-if="content && content.ck_data" :options="{ ...dataset, first_data_chunk: content }" />
-        <div v-else-if="content">
+        <div v-else-if="content" class="h-100">
             <div v-if="isBinary">
                 This is a binary (or unknown to Galaxy) dataset of size {{ bytesToString(dataset.file_size) }}. Preview
                 is not implemented for this filetype. Displaying as ASCII text.
@@ -97,7 +98,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <pre v-if="contentType === 'text/html'" v-html="content" />
+            <CenterFrame v-if="contentType === 'text/html'" :html="content" />
             <pre v-else>{{ content }}</pre>
         </div>
     </div>
