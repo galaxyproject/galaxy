@@ -26,7 +26,6 @@ const props = defineProps<Props>();
 
 const content = ref();
 const contentTruncated = ref();
-const contentType = ref();
 const errorMessage = ref();
 const sanitizedJobImported = ref();
 const sanitizedToolId = ref();
@@ -56,7 +55,6 @@ watch(
             const { data, headers } = await axios.get(previewUrl.value);
             content.value = data;
             contentTruncated.value = headers["x-content-truncated"];
-            contentType.value = headers["content-type"];
             sanitizedJobImported.value = headers["x-sanitized-job-imported"];
             sanitizedToolId.value = headers["x-sanitized-tool-id"];
             errorMessage.value = "";
