@@ -158,6 +158,11 @@ function nextChunk() {
             loading.value = false;
         });
 }
+
+onMounted(() => {
+    // Fetch and render first chunk
+    nextChunk();
+});
 </script>
 
 <template>
