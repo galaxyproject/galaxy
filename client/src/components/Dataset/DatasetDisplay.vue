@@ -96,7 +96,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame :src="previewUrl" />
+            <CenterFrame :src="previewUrl" @load="$emit('load')" />
         </div>
     </div>
 </template>
