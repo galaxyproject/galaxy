@@ -138,7 +138,7 @@ const {
         );
         deleteInModal();
     },
-    expectedKeyDownClass: "workflow-card",
+    expectedKeyDownClass: "workflow-card-in-list",
     getAttributeForRangeSelection(item) {
         return `g-card-${item.id}`;
     },
