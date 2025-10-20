@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import axios from "axios";
 import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
+import Alert from "components/Alert.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 
@@ -24,10 +27,25 @@ const content = ref();
 const errorMessage = ref();
 const truncated = ref();
 
+const { isAdmin } = storeToRefs(useUserStore());
+
 const dataset = computed(() => getDataset(props.datasetId));
 const datasetUrl = computed(() => withPrefix(`/dataset/display?dataset_id=${props.datasetId}`));
 const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}&to_ext=${dataset.value?.file_ext}`));
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
+
+const sanitizedImport = ref(false);
+const sanitizedToolId = ref<String | false>(false);
+
+const plainText = "Contents are shown as plain text.";
+const sanitizedMessage = computed(() => {
+    if (sanitizedImport.value) {
+        return `Dataset has been imported. ${plainText}`;
+    } else if (sanitizedToolId.value) {
+        return `Dataset created by a tool that is not known to create safe HTML. ${plainText}`;
+    }
+    return undefined;
+});
 
 onMounted(async () => {
     const url = withPrefix(`/datasets/${props.datasetId}/display/?preview=True`);
@@ -35,6 +53,13 @@ onMounted(async () => {
         const { data, headers } = await axios.get(url);
         content.value = data;
         truncated.value = headers["x-content-truncated"];
+        const isImported = headers["x-sanitized-job-imported"];
+        const toolId = headers["x-sanitized-tool-id"];
+        if (isImported !== null) {
+            sanitizedImport.value = true;
+        } else if (toolId !== null) {
+            sanitizedToolId.value = toolId;
+        }
         errorMessage.value = "";
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
@@ -49,6 +74,14 @@ onMounted(async () => {
     </BAlert>
     <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset content" />
     <div v-else>
+        <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
+            {{ sanitizedMessage }}
+            <span v-if="isAdmin && sanitizedToolId">
+                <br />
+                <router-link data-description="allowlist link" to="/admin/sanitize_allow">Review Allowlist</router-link>
+                if outputs of {{ sanitizedToolId }} are trusted and should be shown as HTML.
+            </span>
+        </Alert>
         <div v-if="dataset.deleted" id="deleted-data-message" class="errormessagelarge">
             You are viewing a deleted dataset.
         </div>
