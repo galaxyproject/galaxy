@@ -10,9 +10,9 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
-import Alert from "components/Alert.vue";
-import LoadingSpan from "components/LoadingSpan.vue";
-import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
+import Alert from "@/components/Alert.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import TabularChunkedView from "./Tabular/TabularChunkedView.vue";
 
 interface Props {
     datasetId: string;
