@@ -367,7 +367,7 @@ async function onCancel() {
                 Outputs
             </BNavItem>
             <BNavItem
-                title="Report"
+                :title="!tabsDisabled ? 'Report' : disabledTabTooltip"
                 class="invocation-report-tab"
                 :active="!tabsDisabled && props.tab === 'report'"
                 :to="`/workflows/invocations/${props.invocationId}/report`"
@@ -375,7 +375,7 @@ async function onCancel() {
                 Report
             </BNavItem>
             <BNavItem
-                title="Export"
+                :title="!tabsDisabled ? 'Export' : disabledTabTooltip"
                 class="invocation-export-tab"
                 :active="!tabsDisabled && props.tab === 'export'"
                 :to="`/workflows/invocations/${props.invocationId}/export`"
