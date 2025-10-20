@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import axios from "axios";
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -24,8 +23,8 @@ const { getDataset, isLoadingDataset } = useDatasetStore();
 
 const props = defineProps<Props>();
 
-const content = ref();
 const contentTruncated = ref();
+const contentChunked = ref();
 const errorMessage = ref();
 const sanitizedJobImported = ref();
 const sanitizedToolId = ref();
@@ -52,11 +51,11 @@ watch(
     () => props.datasetId,
     async () => {
         try {
-            const { data, headers } = await axios.get(previewUrl.value);
-            content.value = data;
-            contentTruncated.value = headers["x-content-truncated"];
-            sanitizedJobImported.value = headers["x-sanitized-job-imported"];
-            sanitizedToolId.value = headers["x-sanitized-tool-id"];
+            const { headers } = await fetch(previewUrl.value, { method: "HEAD" });
+            contentChunked.value = headers.get("x-content-chunked");
+            contentTruncated.value = headers.get("x-content-truncated");
+            sanitizedJobImported.value = headers.get("x-sanitized-job-imported");
+            sanitizedToolId.value = headers.get("x-sanitized-tool-id");
             errorMessage.value = "";
         } catch (e) {
             errorMessage.value = errorMessageAsString(e);
@@ -84,8 +83,8 @@ watch(
         <div v-if="dataset.deleted" id="deleted-data-message" class="errormessagelarge">
             You are viewing a deleted dataset.
         </div>
-        <TabularChunkedView v-if="content && content.ck_data" :options="{ ...dataset, first_data_chunk: content }" />
-        <div v-else-if="content" class="h-100">
+        <TabularChunkedView v-if="contentChunked" :options="dataset" />
+        <div v-else class="h-100">
             <div v-if="isBinary">
                 This is a binary (or unknown to Galaxy) dataset of size {{ bytesToString(dataset.file_size) }}. Preview
                 is not implemented for this filetype. Displaying as ASCII text.

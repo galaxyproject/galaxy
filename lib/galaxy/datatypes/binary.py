@@ -819,6 +819,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         elif to_ext or not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
+            headers["x-content-chunked"] = "true"
             return self.get_chunk(trans, dataset, 0), headers
 
     def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
