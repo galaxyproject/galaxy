@@ -200,6 +200,7 @@ class TabularData(Text):
                 with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
                     return util.unicodify(fh.read(max_peek_size)), headers
         else:
+            headers["x-content-chunked"] = "true"
             return self.get_chunk(trans, dataset, 0), headers
 
     def display_as_markdown(self, dataset_instance: DatasetProtocol) -> str:

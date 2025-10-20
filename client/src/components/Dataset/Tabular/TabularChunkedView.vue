@@ -16,7 +16,6 @@ interface TabularChunkedViewProps {
     options: {
         id: string;
         file_ext: string;
-        first_data_chunk: TabularChunk;
         metadata_columns: number;
         metadata_column_types: string[];
         metadata_column_names: string[];
@@ -159,14 +158,6 @@ function nextChunk() {
             loading.value = false;
         });
 }
-
-onMounted(() => {
-    // Render first chunk if available.
-    if (props.options.first_data_chunk) {
-        processChunk(props.options.first_data_chunk);
-        loading.value = false;
-    }
-});
 </script>
 
 <template>
