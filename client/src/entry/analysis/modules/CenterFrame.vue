@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
 
@@ -10,24 +10,15 @@ const props = withDefaults(
     defineProps<{
         id?: string;
         src?: string;
-        html?: string;
     }>(),
     {
         id: "frame",
         src: "",
-        html: "",
     },
 );
 
-const iframeRef = ref<HTMLIFrameElement>();
 const srcWithRoot = computed(() => withPrefix(props.src));
 const isLoading = ref(true);
-
-function injectHtml(val: string) {
-    if (iframeRef.value && val) {
-        iframeRef.value.srcdoc = val;
-    }
-}
 
 function onLoad(ev: Event) {
     isLoading.value = false;
@@ -41,19 +32,14 @@ function onLoad(ev: Event) {
         console.warn("[CenterFrame] onLoad location access forbidden.", ev, location);
     }
 }
-
-watch(() => props.html, injectHtml);
-onMounted(() => injectHtml(props.html));
 </script>
-
 <template>
     <div class="h-100">
         <LoadingSpan v-if="isLoading">Loading ...</LoadingSpan>
         <iframe
             :id="id"
-            ref="iframeRef"
             :name="id"
-            :src="props.html ? undefined : srcWithRoot"
+            :src="srcWithRoot"
             class="center-frame"
             frameborder="0"
             title="galaxy frame"

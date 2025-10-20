@@ -34,8 +34,8 @@ const sanitizedToolId = ref();
 const { isAdmin } = storeToRefs(useUserStore());
 
 const dataset = computed(() => getDataset(props.datasetId));
-const datasetUrl = computed(() => withPrefix(`/dataset/display?dataset_id=${props.datasetId}`));
-const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}&to_ext=${dataset.value?.file_ext}`));
+const datasetUrl = computed(() => `/datasets/${props.datasetId}/display`);
+const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}?to_ext=${dataset.value?.file_ext}`));
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
 
 const sanitizedMessage = computed(() => {
@@ -51,7 +51,7 @@ const sanitizedMessage = computed(() => {
 watch(
     () => props.datasetId,
     async () => {
-        const url = withPrefix(`/datasets/${props.datasetId}/display/?preview=True`);
+        const url = withPrefix(`${datasetUrl.value}?preview=True`);
         try {
             const { data, headers } = await axios.get(url);
             content.value = data;
@@ -98,7 +98,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame v-if="contentType === 'text/html'" :html="content" />
+            <CenterFrame v-if="contentType === 'text/html'" :src="datasetUrl" />
             <pre v-else>{{ content }}</pre>
         </div>
     </div>
