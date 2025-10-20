@@ -6,6 +6,7 @@ import { computed, ref } from "vue";
 import type { ArchiveSource, ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
 import { useUserStore } from "@/stores/userStore";
 
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import ZipFileEntryCard from "@/components/ImportData/zip/ZipFileEntryCard.vue";
@@ -27,6 +28,7 @@ const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const localSelectedItems = ref<ImportableFile[]>(props.selectedItems);
+const searchQuery = ref("");
 
 function toggleSelection(item: ImportableFile) {
     const index = localSelectedItems.value.findIndex((selected) => selected.path === item.path);
@@ -38,18 +40,96 @@ function toggleSelection(item: ImportableFile) {
     emit("update:selectedItems", localSelectedItems.value);
 }
 
+function onSelectAll() {
+    const allSelectableFiles = [...filteredWorkflows.value, ...filteredFiles.value];
+    const allSelected = allSelectableFiles.every((file) =>
+        localSelectedItems.value.some((selected) => selected.path === file.path),
+    );
+
+    if (allSelected) {
+        // Deselect all
+        localSelectedItems.value = localSelectedItems.value.filter(
+            (selected) => !allSelectableFiles.some((file) => file.path === selected.path),
+        );
+    } else {
+        // Select all that aren't already selected
+        const newSelections = allSelectableFiles.filter(
+            (file) => !localSelectedItems.value.some((selected) => selected.path === file.path),
+        );
+        localSelectedItems.value = [...localSelectedItems.value, ...newSelections];
+    }
+    emit("update:selectedItems", localSelectedItems.value);
+}
+
+function matchesSearch(file: ImportableFile): boolean {
+    if (!searchQuery.value) {
+        return true;
+    }
+    const query = searchQuery.value.toLowerCase();
+    return (
+        file.name.toLowerCase().includes(query) ||
+        file.path.toLowerCase().includes(query) ||
+        Boolean(file.description && file.description.toLowerCase().includes(query))
+    );
+}
+
+const filteredWorkflows = computed(() => {
+    return props.zipContents.workflows.filter(matchesSearch);
+});
+
+const filteredFiles = computed(() => {
+    return props.zipContents.files.filter(matchesSearch);
+});
+
+const allSelectableFiles = computed(() => [...filteredWorkflows.value, ...filteredFiles.value]);
+
+const allSelected = computed(() => {
+    if (allSelectableFiles.value.length === 0) {
+        return false;
+    }
+    return allSelectableFiles.value.every((file) =>
+        localSelectedItems.value.some((selected) => selected.path === file.path),
+    );
+});
+
+const indeterminateSelected = computed(() => {
+    const selectedCount = allSelectableFiles.value.filter((file) =>
+        localSelectedItems.value.some((selected) => selected.path === file.path),
+    ).length;
+    return selectedCount > 0 && selectedCount < allSelectableFiles.value.length;
+});
+
 const currentListView = computed(() => userStore.currentListViewPreferences.zipFileSelector || "list");
 
 const localFileSizeLimit = computed(() => {
     return props.zipSource instanceof File ? props.bytesLimit : undefined;
 });
+
+function onSearch(value: string) {
+    searchQuery.value = value;
+}
 </script>
 
 <template>
     <div class="zip-file-selector w-100">
-        <ListHeader list-id="zipFileSelector" show-view-toggle />
+        <div class="zip-file-selector-search mb-3">
+            <DelayedInput
+                :value="searchQuery"
+                :delay="200"
+                placeholder="Search files by name or path"
+                @change="onSearch" />
+        </div>
 
-        <div v-if="props.zipContents.workflows.length > 0" class="d-flex flex-column w-100">
+        <ListHeader
+            list-id="zipFileSelector"
+            show-view-toggle
+            show-select-all
+            :all-selected="allSelected"
+            :indeterminate-selected="indeterminateSelected"
+            :select-all-disabled="allSelectableFiles.length === 0"
+            @select-all="onSelectAll" />
+
+        <div v-if="filteredWorkflows.length > 0" class="d-flex flex-column w-100">
             <Heading h3 separator> Workflows </Heading>
 
             <BAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</BAlert>
@@ -57,7 +137,7 @@ const localFileSizeLimit = computed(() => {
 
             <div class="d-flex flex-wrap">
                 <ZipFileEntryCard
-                    v-for="workflow in props.zipContents.workflows"
+                    v-for="workflow in filteredWorkflows"
                     :key="workflow.path"
                     :file="workflow"
                     :grid-view="currentListView === 'grid'"
@@ -66,14 +146,14 @@ const localFileSizeLimit = computed(() => {
             </div>
         </div>
 
-        <div v-if="props.zipContents.files.length > 0" class="d-flex flex-column w-100">
+        <div v-if="filteredFiles.length > 0" class="d-flex flex-column w-100">
             <Heading h3 separator> Files </Heading>
 
             <p>Here you can select individual files to import into your <b>current history</b>.</p>
 
             <div class="d-flex flex-wrap">
                 <ZipFileEntryCard
-                    v-for="dataset in props.zipContents.files"
+                    v-for="dataset in filteredFiles"
                     :key="dataset.path"
                     :file="dataset"
                     :bytes-limit="localFileSizeLimit"
@@ -82,5 +162,9 @@ const localFileSizeLimit = computed(() => {
                     @select="toggleSelection(dataset)" />
             </div>
         </div>
+
+        <BAlert v-if="searchQuery && filteredWorkflows.length === 0 && filteredFiles.length === 0" variant="info" show>
+            No files found matching "{{ searchQuery }}". Try a different search term.
+        </BAlert>
     </div>
 </template>
