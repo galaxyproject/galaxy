@@ -1048,8 +1048,6 @@ class MinimalJobWrapper(HasResourceParameters):
         self._job_io = None
         self.tool_provided_job_metadata = None
         self.params = None
-        if job.params:
-            self.params = loads(job.params)
         self.runner_command_line = None
 
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
