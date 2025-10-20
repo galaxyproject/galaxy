@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { ArchiveSource, ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
 import { useUserStore } from "@/stores/userStore";
@@ -29,6 +29,16 @@ const { isAnonymous } = storeToRefs(userStore);
 
 const localSelectedItems = ref<ImportableFile[]>(props.selectedItems);
 const searchQuery = ref("");
+const currentPage = ref(1);
+const itemsPerPage = ref(24);
+
+// Reset to page 1 when search changes
+watch(
+    () => searchQuery.value,
+    () => {
+        currentPage.value = 1;
+    },
+);
 
 function toggleSelection(item: ImportableFile) {
     const index = localSelectedItems.value.findIndex((selected) => selected.path === item.path);
@@ -40,25 +50,8 @@ function toggleSelection(item: ImportableFile) {
     emit("update:selectedItems", localSelectedItems.value);
 }
 
-function onSelectAll() {
-    const allSelectableFiles = [...filteredWorkflows.value, ...filteredFiles.value];
-    const allSelected = allSelectableFiles.every((file) =>
-        localSelectedItems.value.some((selected) => selected.path === file.path),
-    );
-
-    if (allSelected) {
-        // Deselect all
-        localSelectedItems.value = localSelectedItems.value.filter(
-            (selected) => !allSelectableFiles.some((file) => file.path === selected.path),
-        );
-    } else {
-        // Select all that aren't already selected
-        const newSelections = allSelectableFiles.filter(
-            (file) => !localSelectedItems.value.some((selected) => selected.path === file.path),
-        );
-        localSelectedItems.value = [...localSelectedItems.value, ...newSelections];
-    }
-    emit("update:selectedItems", localSelectedItems.value);
+function onPageChange(page: number) {
+    currentPage.value = page;
 }
 
 function matchesSearch(file: ImportableFile): boolean {
@@ -81,7 +74,63 @@ const filteredFiles = computed(() => {
     return props.zipContents.files.filter(matchesSearch);
 });
 
-const allSelectableFiles = computed(() => [...filteredWorkflows.value, ...filteredFiles.value]);
+// Paginated results
+const paginatedWorkflows = computed(() => {
+    const offset = (currentPage.value - 1) * itemsPerPage.value;
+
+    if (offset >= filteredWorkflows.value.length) {
+        return [];
+    }
+
+    const start = Math.max(0, offset);
+    const end = Math.min(filteredWorkflows.value.length, offset + itemsPerPage.value);
+
+    return filteredWorkflows.value.slice(start, end);
+});
+
+const paginatedFiles = computed(() => {
+    const offset = (currentPage.value - 1) * itemsPerPage.value;
+    const workflowsCount = filteredWorkflows.value.length;
+
+    if (offset >= workflowsCount + filteredFiles.value.length) {
+        return [];
+    }
+
+    const remainingSpace = itemsPerPage.value - paginatedWorkflows.value.length;
+
+    if (remainingSpace <= 0) {
+        return [];
+    }
+
+    const filesOffset = Math.max(0, offset - workflowsCount);
+    const end = Math.min(filteredFiles.value.length, filesOffset + remainingSpace);
+
+    return filteredFiles.value.slice(filesOffset, end);
+});
+
+const totalItems = computed(() => filteredWorkflows.value.length + filteredFiles.value.length);
+
+const allSelectableFiles = computed(() => [...paginatedWorkflows.value, ...paginatedFiles.value]);
+
+function onSelectAll() {
+    const allSelected = allSelectableFiles.value.every((file) =>
+        localSelectedItems.value.some((selected) => selected.path === file.path),
+    );
+
+    if (allSelected) {
+        // Deselect all visible items on current page
+        localSelectedItems.value = localSelectedItems.value.filter(
+            (selected) => !allSelectableFiles.value.some((file) => file.path === selected.path),
+        );
+    } else {
+        // Select all visible items on current page that aren't already selected
+        const newSelections = allSelectableFiles.value.filter(
+            (file) => !localSelectedItems.value.some((selected) => selected.path === file.path),
+        );
+        localSelectedItems.value = [...localSelectedItems.value, ...newSelections];
+    }
+    emit("update:selectedItems", localSelectedItems.value);
+}
 
 const allSelected = computed(() => {
     if (allSelectableFiles.value.length === 0) {
@@ -129,7 +178,7 @@ function onSearch(value: string) {
             :select-all-disabled="allSelectableFiles.length === 0"
             @select-all="onSelectAll" />
 
-        <div v-if="filteredWorkflows.length > 0" class="d-flex flex-column w-100">
+        <div v-if="paginatedWorkflows.length > 0" class="d-flex flex-column w-100">
             <Heading h3 separator> Workflows </Heading>
 
             <BAlert v-if="isAnonymous" variant="warning" show fade>You must be logged in to import workflows</BAlert>
@@ -137,7 +186,7 @@ function onSearch(value: string) {
 
             <div class="d-flex flex-wrap">
                 <ZipFileEntryCard
-                    v-for="workflow in filteredWorkflows"
+                    v-for="workflow in paginatedWorkflows"
                     :key="workflow.path"
                     :file="workflow"
                     :grid-view="currentListView === 'grid'"
@@ -146,14 +195,14 @@ function onSearch(value: string) {
             </div>
         </div>
 
-        <div v-if="filteredFiles.length > 0" class="d-flex flex-column w-100">
+        <div v-if="paginatedFiles.length > 0" class="d-flex flex-column w-100">
             <Heading h3 separator> Files </Heading>
 
             <p>Here you can select individual files to import into your <b>current history</b>.</p>
 
             <div class="d-flex flex-wrap">
                 <ZipFileEntryCard
-                    v-for="dataset in filteredFiles"
+                    v-for="dataset in paginatedFiles"
                     :key="dataset.path"
                     :file="dataset"
                     :bytes-limit="localFileSizeLimit"
@@ -166,5 +215,28 @@ function onSearch(value: string) {
         <BAlert v-if="searchQuery && filteredWorkflows.length === 0 && filteredFiles.length === 0" variant="info" show>
             No files found matching "{{ searchQuery }}". Try a different search term.
         </BAlert>
+
+        <div v-if="totalItems > itemsPerPage" class="zip-file-selector-footer mt-3">
+            <BPagination
+                :value="currentPage"
+                :total-rows="totalItems"
+                :per-page="itemsPerPage"
+                align="center"
+                size="sm"
+                first-number
+                last-number
+                @change="onPageChange" />
+        </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+.zip-file-selector {
+    .zip-file-selector-footer {
+        display: flex;
+        justify-content: center;
+        padding: 1rem 0;
+        border-top: 1px solid #dee2e6;
+    }
+}
+</style>
