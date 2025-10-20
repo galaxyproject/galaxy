@@ -24,10 +24,11 @@ const { getDataset, isLoadingDataset } = useDatasetStore();
 const props = defineProps<Props>();
 
 const content = ref();
+const contentTruncated = ref();
+const contentType = ref();
 const errorMessage = ref();
-const sanitizedImport = ref(false);
+const sanitizedJobImported = ref();
 const sanitizedToolId = ref();
-const truncated = ref();
 
 const { isAdmin } = storeToRefs(useUserStore());
 
@@ -38,7 +39,7 @@ const isLoading = computed(() => isLoadingDataset(props.datasetId));
 
 const sanitizedMessage = computed(() => {
     const plainText = "Contents are shown as plain text.";
-    if (sanitizedImport.value) {
+    if (sanitizedJobImported.value) {
         return `Dataset has been imported. ${plainText}`;
     } else if (sanitizedToolId.value) {
         return `Dataset created by a tool that is not known to create safe HTML. ${plainText}`;
@@ -53,8 +54,9 @@ watch(
         try {
             const { data, headers } = await axios.get(url);
             content.value = data;
-            truncated.value = headers["x-content-truncated"];
-            sanitizedImport.value = !!headers["x-sanitized-job-imported"];
+            contentTruncated.value = headers["x-content-truncated"];
+            contentType.value = headers["content-type"];
+            sanitizedJobImported.value = headers["x-sanitized-job-imported"];
             sanitizedToolId.value = headers["x-sanitized-tool-id"];
             errorMessage.value = "";
         } catch (e) {
@@ -89,12 +91,14 @@ watch(
                 This is a binary (or unknown to Galaxy) dataset of size {{ bytesToString(dataset.file_size) }}. Preview
                 is not implemented for this filetype. Displaying as ASCII text.
             </div>
-            <div v-if="truncated" class="warningmessagelarge">
-                <div>This dataset is large and only the first {{ bytesToString(truncated) }} is shown below.</div>
+            <div v-if="contentTruncated" class="warningmessagelarge">
+                <div>
+                    This dataset is large and only the first {{ bytesToString(contentTruncated) }} is shown below.
+                </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <pre v-if="sanitizedMessage || sanitizedToolId">{{ content }}</pre>
-            <pre v-else v-html="content" />
+            <pre v-if="contentType === 'text/html'" v-html="content" />
+            <pre v-else>{{ content }}</pre>
         </div>
     </div>
 </template>
