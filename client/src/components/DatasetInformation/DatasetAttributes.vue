@@ -91,7 +91,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div aria-labelledby="dataset-attributes-heading">
+    <div class="dataset-attributes" aria-labelledby="dataset-attributes-heading">
         <Heading id="dataset-attributes-heading" h1 separator inline size="md">
             {{ localize("Edit Dataset Attributes") }}
         </Heading>
@@ -230,3 +230,10 @@ onMounted(async () => {
         </div>
     </div>
 </template>
+
+<style>
+.dataset-attributes {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+</style>
