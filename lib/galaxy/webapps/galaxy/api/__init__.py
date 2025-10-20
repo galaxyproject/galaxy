@@ -548,7 +548,21 @@ class APICorsRoute(APIRoute):
         original_route_handler = super().get_route_handler()
 
         async def custom_route_handler(request: Request) -> Response:
-            response: Response = await original_route_handler(request)
+            try:
+                response: Response = await original_route_handler(request)
+            except Exception as exc:
+                # Find and use FastAPI's exception handler
+                handler = None
+                for exc_class, exc_handler in request.app.exception_handlers.items():
+                    if isinstance(exc, exc_class):
+                        handler = exc_handler
+                        break
+
+                if handler is None:
+                    raise exc
+
+                # Call the handler - it's already a callable that takes (request, exc)
+                response = await handler(request, exc)
             response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
             response.headers["Access-Control-Max-Age"] = "600"
             return response
