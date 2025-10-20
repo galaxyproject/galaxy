@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -19,6 +20,7 @@ const { getDataset, isLoadingDataset } = useDatasetStore();
 const props = defineProps<Props>();
 
 const content = ref();
+const errorMessage = ref();
 const truncated = ref();
 
 const dataset = computed(() => getDataset(props.datasetId));
@@ -32,14 +34,19 @@ onMounted(async () => {
         const { data, headers } = await axios.get(url);
         content.value = data;
         truncated.value = headers["x-content-truncated"];
+        errorMessage.value = "";
     } catch (e) {
+        errorMessage.value = String(e);
         console.error(e);
     }
 });
 </script>
 
 <template>
-    <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset content" />
+    <BAlert v-if="errorMessage" variant="danger" show>
+        {{ errorMessage }}
+    </BAlert>
+    <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset content" />
     <div v-else>
         <div v-if="dataset.deleted" id="deleted-data-message" class="errormessagelarge">
             You are viewing a deleted dataset.
@@ -54,9 +61,7 @@ onMounted(async () => {
                 <div>This dataset is large and only the first {{ bytesToString(truncated) }} is shown below.</div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <pre>
-                {{ content }}
-            </pre>
+            <pre>{{ content }}</pre>
         </div>
     </div>
 </template>
