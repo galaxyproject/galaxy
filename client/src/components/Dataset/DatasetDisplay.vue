@@ -25,6 +25,8 @@ const props = defineProps<Props>();
 
 const content = ref();
 const errorMessage = ref();
+const sanitizedImport = ref(false);
+const sanitizedToolId = ref();
 const truncated = ref();
 
 const { isAdmin } = storeToRefs(useUserStore());
@@ -34,11 +36,8 @@ const datasetUrl = computed(() => withPrefix(`/dataset/display?dataset_id=${prop
 const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}&to_ext=${dataset.value?.file_ext}`));
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
 
-const sanitizedImport = ref(false);
-const sanitizedToolId = ref<String | false>(false);
-
-const plainText = "Contents are shown as plain text.";
 const sanitizedMessage = computed(() => {
+    const plainText = "Contents are shown as plain text.";
     if (sanitizedImport.value) {
         return `Dataset has been imported. ${plainText}`;
     } else if (sanitizedToolId.value) {
@@ -55,13 +54,8 @@ watch(
             const { data, headers } = await axios.get(url);
             content.value = data;
             truncated.value = headers["x-content-truncated"];
-            const isImported = headers["x-sanitized-job-imported"];
-            const toolId = headers["x-sanitized-tool-id"];
-            if (isImported !== null) {
-                sanitizedImport.value = true;
-            } else if (toolId !== null) {
-                sanitizedToolId.value = toolId;
-            }
+            sanitizedImport.value = !!headers["x-sanitized-job-imported"];
+            sanitizedToolId.value = headers["x-sanitized-tool-id"];
             errorMessage.value = "";
         } catch (e) {
             errorMessage.value = errorMessageAsString(e);
