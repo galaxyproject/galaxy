@@ -5,6 +5,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
 import LoadingSpan from "components/LoadingSpan.vue";
@@ -36,7 +37,7 @@ onMounted(async () => {
         truncated.value = headers["x-content-truncated"];
         errorMessage.value = "";
     } catch (e) {
-        errorMessage.value = String(e);
+        errorMessage.value = errorMessageAsString(e);
         console.error(e);
     }
 });
