@@ -2,18 +2,18 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import type { RawLocation } from "vue-router";
 
 /**
+ * Basic color variants for components that only support
+ * color-based styling like alerts, badges, and backgrounds (no outline variants).
+ */
+export type ColorVariant = "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+
+/**
  * Bootstrap Vue variants for styling components.
+ * Includes basic color variants plus outline variants for buttons and modals.
  */
 export type BootstrapVariant =
-    | "primary"
-    | "secondary"
-    | "success"
-    | "danger"
-    | "warning"
-    | "info"
-    | "light"
+    | ColorVariant
     | "link"
-    | "dark"
     | "outline-primary"
     | "outline-secondary"
     | "outline-success"
@@ -23,9 +23,6 @@ export type BootstrapVariant =
     | "outline-light"
     | "outline-link"
     | "outline-dark";
-
-// TODO: Not sure if this is the best place for this type
-export type ColorVariant = "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
 
 /**
  * Represents a breadcrumb item in the BreadcrumbHeading component.
