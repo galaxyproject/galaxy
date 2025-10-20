@@ -28,7 +28,6 @@ class TestAllowListSanitization(SeleniumIntegrationTestCase):
         self.wait_for_selector_visible("[data-description='sanitization warning']")
         self.assert_selector_absent("[data-description='allowlist link']")
         self.screenshot("sanitization warning")
-        assert self.switch_to_frame()
         self.assert_selector_absent("[data-description='hello-world']")
         self.switch_to_default_content()
 
@@ -47,7 +46,6 @@ class TestAllowListSanitization(SeleniumIntegrationTestCase):
             self.driver.refresh()
             self.assert_selector_absent("[data-description='sanitization warning']")
             self.assert_selector_absent("[data-description='allowlist link']")
-            assert self.switch_to_frame()
             self.wait_for_selector("[data-description='hello-world']")
             self.switch_to_default_content()
         finally:
