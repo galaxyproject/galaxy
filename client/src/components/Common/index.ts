@@ -1,6 +1,29 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import type { RawLocation } from "vue-router";
 
+/**
+ * Bootstrap Vue variants for styling components.
+ */
+export type BootstrapVariant =
+    | "primary"
+    | "secondary"
+    | "success"
+    | "danger"
+    | "warning"
+    | "info"
+    | "light"
+    | "link"
+    | "dark"
+    | "outline-primary"
+    | "outline-secondary"
+    | "outline-success"
+    | "outline-danger"
+    | "outline-warning"
+    | "outline-info"
+    | "outline-light"
+    | "outline-link"
+    | "outline-dark";
+
 // TODO: Not sure if this is the best place for this type
 export type ColorVariant = "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
 

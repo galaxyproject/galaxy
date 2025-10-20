@@ -1,25 +1,6 @@
 import { type Ref, ref } from "vue";
 
-/**
- * Bootstrap Vue variants for styling components.
- */
-export type BootstrapVariant =
-    | "primary"
-    | "secondary"
-    | "success"
-    | "warning"
-    | "danger"
-    | "info"
-    | "light"
-    | "dark"
-    | "outline-primary"
-    | "outline-secondary"
-    | "outline-success"
-    | "outline-warning"
-    | "outline-danger"
-    | "outline-info"
-    | "outline-light"
-    | "outline-dark";
+import type { BootstrapVariant } from "@/components/Common";
 
 /**
  * Bootstrap Vue modal message box options interface.
