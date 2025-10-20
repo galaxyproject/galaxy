@@ -3,6 +3,7 @@ import { BAlert, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { usePagination } from "@/composables/pagination";
 import type { ArchiveSource, ImportableFile, ImportableZipContents } from "@/composables/zipExplorer";
 import { useUserStore } from "@/stores/userStore";
 
@@ -29,16 +30,6 @@ const { isAnonymous } = storeToRefs(userStore);
 
 const localSelectedItems = ref<ImportableFile[]>(props.selectedItems);
 const searchQuery = ref("");
-const currentPage = ref(1);
-const itemsPerPage = ref(24);
-
-// Reset to page 1 when search changes
-watch(
-    () => searchQuery.value,
-    () => {
-        currentPage.value = 1;
-    },
-);
 
 function toggleSelection(item: ImportableFile) {
     const index = localSelectedItems.value.findIndex((selected) => selected.path === item.path);
@@ -48,10 +39,6 @@ function toggleSelection(item: ImportableFile) {
         localSelectedItems.value.splice(index, 1);
     }
     emit("update:selectedItems", localSelectedItems.value);
-}
-
-function onPageChange(page: number) {
-    currentPage.value = page;
 }
 
 function matchesSearch(file: ImportableFile): boolean {
@@ -74,41 +61,30 @@ const filteredFiles = computed(() => {
     return props.zipContents.files.filter(matchesSearch);
 });
 
-// Paginated results
+// Combine workflows and files for unified pagination
+const allFilteredItems = computed(() => [...filteredWorkflows.value, ...filteredFiles.value]);
+
+const {
+    currentPage,
+    itemsPerPage,
+    paginatedItems: allPaginatedItems,
+    totalItems,
+    showPagination,
+    onPageChange,
+    resetPage,
+} = usePagination(allFilteredItems);
+
+// Split paginated items back into workflows and files
 const paginatedWorkflows = computed(() => {
-    const offset = (currentPage.value - 1) * itemsPerPage.value;
-
-    if (offset >= filteredWorkflows.value.length) {
-        return [];
-    }
-
-    const start = Math.max(0, offset);
-    const end = Math.min(filteredWorkflows.value.length, offset + itemsPerPage.value);
-
-    return filteredWorkflows.value.slice(start, end);
+    return allPaginatedItems.value.filter((item) => item.type === "workflow");
 });
 
 const paginatedFiles = computed(() => {
-    const offset = (currentPage.value - 1) * itemsPerPage.value;
-    const workflowsCount = filteredWorkflows.value.length;
-
-    if (offset >= workflowsCount + filteredFiles.value.length) {
-        return [];
-    }
-
-    const remainingSpace = itemsPerPage.value - paginatedWorkflows.value.length;
-
-    if (remainingSpace <= 0) {
-        return [];
-    }
-
-    const filesOffset = Math.max(0, offset - workflowsCount);
-    const end = Math.min(filteredFiles.value.length, filesOffset + remainingSpace);
-
-    return filteredFiles.value.slice(filesOffset, end);
+    return allPaginatedItems.value.filter((item) => item.type === "file");
 });
 
-const totalItems = computed(() => filteredWorkflows.value.length + filteredFiles.value.length);
+// Reset to page 1 when search changes
+watch(searchQuery, resetPage);
 
 const allSelectableFiles = computed(() => [...paginatedWorkflows.value, ...paginatedFiles.value]);
 
@@ -216,7 +192,7 @@ function onSearch(value: string) {
             No files found matching "{{ searchQuery }}". Try a different search term.
         </BAlert>
 
-        <div v-if="totalItems > itemsPerPage" class="zip-file-selector-footer mt-3">
+        <div v-if="showPagination" class="zip-file-selector-footer mt-3">
             <BPagination
                 :value="currentPage"
                 :total-rows="totalItems"
