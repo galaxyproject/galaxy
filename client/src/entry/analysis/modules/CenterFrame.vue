@@ -34,7 +34,7 @@ function onLoad(ev: Event) {
 }
 </script>
 <template>
-    <div class="h-100">
+    <div class="h-100 overflow-hidden">
         <LoadingSpan v-if="isLoading">Loading ...</LoadingSpan>
         <iframe
             :id="id"

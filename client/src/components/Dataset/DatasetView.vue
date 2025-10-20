@@ -100,7 +100,7 @@ watch(
 
 <template>
     <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
-    <div v-else class="dataset-view d-flex flex-column h-100">
+    <div v-else class="dataset-view d-flex flex-column">
         <header v-if="!displayOnly" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
                 <Heading
@@ -188,7 +188,7 @@ watch(
                 <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
-        <div v-if="tab === 'preview'" class="h-100 overflow-auto">
+        <div v-if="tab === 'preview'" class="tab-content-panel">
             <VisualizationFrame
                 v-if="preferredVisualization"
                 :dataset-id="datasetId"
@@ -211,7 +211,7 @@ watch(
                 class="p-3" />
             <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
-        <div v-else-if="tab === 'raw'" class="h-100 overflow-auto">
+        <div v-else-if="tab === 'raw'" class="tab-content-panel">
             <div v-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
@@ -307,8 +307,7 @@ watch(
 .tab-content-panel {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    overflow-y: auto;
+    overflow: auto;
     height: 100%;
 }
 
