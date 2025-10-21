@@ -250,7 +250,7 @@ class FetchTools:
         response.headers["Last-Modified"] = last_modified
         return response
 
-    @router.post("/api/data_landings", public=True)
+    @router.post("/api/data_landings", public=True, allow_cors=True)
     def create_data_landing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -259,7 +259,7 @@ class FetchTools:
         tool_landing_request = self.service.data_landing_to_tool_landing(trans, data_landing_request)
         return self.landing_manager.create_tool_landing_request(tool_landing_request)
 
-    @router.post("/api/tool_landings", public=True)
+    @router.post("/api/tool_landings", public=True, allow_cors=True)
     def create_landing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
