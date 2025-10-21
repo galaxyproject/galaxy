@@ -8,6 +8,7 @@ import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
+import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
@@ -56,6 +57,7 @@ const showError = computed(
 const isAutoDownloadType = computed(
     () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
 );
+const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
 const preferredVisualization = computed(
     () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
@@ -195,7 +197,7 @@ watch(
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
                     <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
-                    <a :href="`/datasets/${datasetId}/display`" class="btn btn-primary mt-2" download>
+                    <a :href="downloadUrl" class="btn btn-primary mt-2" download>
                         <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
                     </a>
                 </div>
@@ -222,7 +224,7 @@ watch(
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
                     <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
-                    <a :href="`/datasets/${datasetId}/display`" class="btn btn-primary mt-2" download>
+                    <a :href="downloadUrl" class="btn btn-primary mt-2" download>
                         <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
                     </a>
                 </div>
