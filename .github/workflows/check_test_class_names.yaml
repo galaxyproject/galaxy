@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
       - name: Install Python dependencies
         run: uv pip install --system -r requirements.txt -r lib/galaxy/dependencies/pinned-test-requirements.txt
       - name: Run tests

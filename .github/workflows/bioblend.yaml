@@ -54,7 +54,7 @@ jobs:
         with:
           python-version: ${{ steps.get_bioblend_python_version.outputs.bioblend_python_version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Set up Python for Galaxy

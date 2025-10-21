@@ -43,7 +43,7 @@ jobs:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests

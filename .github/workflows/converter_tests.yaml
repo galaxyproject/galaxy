@@ -44,7 +44,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
       - name: Move test data
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo
