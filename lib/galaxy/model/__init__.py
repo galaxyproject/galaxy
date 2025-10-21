@@ -2036,14 +2036,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = self.raw_param_dict()
         tool = app.toolbox.get_tool(
             self.tool_id,
             tool_version=self.tool_version,
             tool_uuid=self.dynamic_tool and self.dynamic_tool.uuid,
             user=self.user,
         )
-        param_dict = tool.params_from_strings(param_dict, app, ignore_errors=ignore_errors)
+        param_dict = tool.get_param_values(self, ignore_errors=ignore_errors)
         return param_dict
 
     def raw_param_dict(self):
