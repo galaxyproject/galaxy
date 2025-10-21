@@ -37,6 +37,7 @@ from galaxy.model import (
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
+    CreateFileLandingPayload,
     DataElementsTarget,
     FetchDataFormPayload,
     FetchDataPayload,
@@ -101,7 +102,7 @@ def validate_tool_for_running(trans: ProvidesHistoryContext, tool_ref: ToolRunRe
     return tool
 
 
-def data_landing_payload_to_fetch_targets(data_landing_payload: CreateDataLandingPayload):
+def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandingPayload):
     """Convert a CreateDataLandingPayload with DataOrCollectionRequest format to FetchDataPayload with Targets format.
 
     This function transforms data/collection requests (used in workflow landing and data request payloads) into the fetch API's target format.
@@ -190,19 +191,41 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
-    def data_landing_to_tool_landing(
+    def file_landing_to_tool_landing(
         self,
         trans: ProvidesUserContext,
-        data_landing_payload: CreateDataLandingPayload,
+        file_landing_payload: CreateFileLandingPayload,
     ) -> CreateToolLandingRequestPayload:
         request_version = "1"
-        payload = {"targets": data_landing_payload_to_fetch_targets(data_landing_payload)}
+        payload = {"targets": file_landing_payload_to_fetch_targets(file_landing_payload)}
         validate_and_normalize_targets(trans, payload, set_internal_fields=False)
         request_state = {
             "request_version": request_version,
             "request_json": {
                 "targets": payload["targets"],
             },
+            "file_count": "0",
+        }
+        return CreateToolLandingRequestPayload(
+            tool_id="__DATA_FETCH__",
+            tool_version=None,
+            request_state=request_state,
+            client_secret=file_landing_payload.client_secret,
+            public=file_landing_payload.public,
+        )
+
+    def data_landing_to_tool_landing(
+        self,
+        trans: ProvidesUserContext,
+        data_landing_payload: CreateDataLandingPayload,
+    ) -> CreateToolLandingRequestPayload:
+        request_version = "1"
+        payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
+        validate_and_normalize_targets(trans, payload, set_internal_fields=False)
+        validated_back_to_model = TargetsAdapter.validate_python(payload["targets"])
+        request_state = {
+            "request_version": request_version,
+            "request_json": {"targets": TargetsAdapter.dump_python(validated_back_to_model, exclude_unset=True)},
             "file_count": "0",
         }
         return CreateToolLandingRequestPayload(

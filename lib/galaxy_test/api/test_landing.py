@@ -7,6 +7,8 @@ from pydantic import HttpUrl
 
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
+    CreateFileLandingPayload,
+    DataLandingRequestState,
     FileOrCollectionRequestsAdapter,
 )
 from galaxy.schema.schema import (
@@ -59,13 +61,46 @@ class TestLandingApi(ApiTestCase):
             tool_version=None,
             request_state={"parameter": "foobar"},
         )
-        response = self.dataset_populator.create_tool_landing_raw(request)
+        response = self.dataset_populator.create_landing_raw(request, "tool")
         assert_status_code_is(response, 400)
         assert_error_code_is(response, 400008)
         assert "Input should be a valid integer" in response.text
 
     def test_data_landing(self):
-        data_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
+        data_landing_request_state = DataLandingRequestState(
+            targets=[
+                {
+                    "destination": {"type": "hdas"},
+                    "items": [
+                        {
+                            "src": "url",
+                            "url": "base64://eyJ0ZXN0IjogInRlc3QifQ==",  # base64 encoded {"test": "test"}
+                            "ext": "txt",
+                            "deferred": False,
+                        }
+                    ],
+                }
+            ],
+        )
+        payload = CreateDataLandingPayload(request_state=data_landing_request_state, public=True)
+        response = self.dataset_populator.create_data_landing(payload)
+        assert response.tool_id == "__DATA_FETCH__"
+
+        tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
+        request_state = tool_landing.request_state
+        assert request_state
+        request_json = request_state["request_json"]
+        assert request_json
+        targets = request_json["targets"]
+        assert targets
+        assert len(targets) == 1
+        target = targets[0]
+        assert "elements" in target
+        assert target["elements"]
+        assert len(target["elements"]) == 1
+
+    def test_file_landing(self):
+        file_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
             [
                 {
                     "class": "File",
@@ -75,8 +110,8 @@ class TestLandingApi(ApiTestCase):
                 },
             ],
         )
-        payload = CreateDataLandingPayload(request_state=data_landing_request_state, public=True)
-        response = self.dataset_populator.create_data_landing(payload)
+        payload = CreateFileLandingPayload(request_state=file_landing_request_state, public=True)
+        response = self.dataset_populator.create_file_landing(payload)
         assert response.tool_id == "__DATA_FETCH__"
 
         tool_landing = self.dataset_populator.use_tool_landing(response.uuid)

@@ -1090,6 +1090,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/file_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create File Landing */
+        post: operations["create_file_landing_api_file_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/file_source_instances": {
         parameters: {
             query?: never;
@@ -8045,11 +8062,7 @@ export interface components {
              * @default false
              */
             public: boolean;
-            /** Request State */
-            request_state: (
-                | components["schemas"]["FileRequestUri"]
-                | components["schemas"]["DataRequestCollectionUri"]
-            )[];
+            request_state: components["schemas"]["DataLandingRequestState"];
         };
         /** CreateEntryPayload */
         CreateEntryPayload: {
@@ -8063,6 +8076,23 @@ export interface components {
              * @description The target file source to create the entry in.
              */
             target: string;
+        };
+        /** CreateFileLandingPayload */
+        CreateFileLandingPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /** Origin */
+            origin?: string | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            /** Request State */
+            request_state: (
+                | components["schemas"]["FileRequestUri"]
+                | components["schemas"]["DataRequestCollectionUri"]
+            )[];
         };
         /** CreateHistoryContentFromStore */
         CreateHistoryContentFromStore: {
@@ -9583,6 +9613,17 @@ export interface components {
          * @enum {string}
          */
         DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
+        /** DataLandingRequestState */
+        DataLandingRequestState: {
+            /** Targets */
+            targets: (
+                | components["schemas"]["DataElementsTarget"]
+                | components["schemas"]["HdcaDataItemsTarget"]
+                | components["schemas"]["DataElementsFromTarget"]
+                | components["schemas"]["HdcaDataItemsFromTarget"]
+                | components["schemas"]["FtpImportTarget"]
+            )[];
+        };
         /** DataParameterModel */
         DataParameterModel: {
             /**
@@ -26759,6 +26800,51 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_file_landing_api_file_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFileLandingPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
                 };
             };
             /** @description Request Error */

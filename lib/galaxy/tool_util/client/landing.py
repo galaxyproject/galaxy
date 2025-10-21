@@ -64,6 +64,8 @@ def generate_claim_url(request: Request) -> Response:
         template_type = "tool"
     elif "workflow_id" in template:
         template_type = "workflow"
+    elif isinstance(template["request_state"], list):
+        template_type = "file"
     else:
         template_type = "data"
     if client_secret:

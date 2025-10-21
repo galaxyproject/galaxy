@@ -19,7 +19,7 @@ int_workflow:
   workflow_target_type: stored_workflow
   request_state:
     int_input: 8
-upload:
+upload_file:
   request_state:
     - class: File
       name: Reference information
@@ -237,7 +237,7 @@ upload:
             ext: "txt"
             name: "reverse"
 
-upload_one:
+upload_one_file:
   request_state:
     - class: Collection
       collection_type: list
@@ -246,4 +246,211 @@ upload_one:
       - class: File
         name: "Reference information"
         location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "txt"
+
+upload:
+  request_state:
+    targets:
+    - destination: {type: "hdas"}
+      items:
+      - src: url
+        name: "Reference information"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "txt"
+      - src: url
+        name: "Reference sequence"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fasta"
+      - src: url
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fastq.gz"
+    - destination: {type: "hdca"}
+      collection_type: list
+      name: "my collection"
+      items:
+      - src: url
+        name: "sample1"
+        url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+        ext: "txt"
+      - src: url
+        name: sample2
+        url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+        ext: "txt"
+      - src: url
+        name: sample3
+        url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+        ext: "txt"
+    - destination: {type: "hdca"}
+      collection_type: list:paired
+      name: "The List of Dataset Pairs"
+      items:
+      - name: sample1
+        items:
+        - src: url
+          name: forward
+          url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+        - src: url
+          name: reverse
+          url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+      - name: sample2
+        items:
+        - src: url
+          name: forward
+          url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+        - src: url
+          name: reverse
+          url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+    - destination: {type: "hdca"}
+      collection_type: list:list:paired
+      name: "Nested List of Dataset Pairs"
+      items:
+      - name: treatment1
+        items:
+        - name: replicate1
+          items:
+          - src: url
+            name: forward
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - src: url
+            name: reverse
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+        - name: replicate2
+          items:
+          - src: url
+            name: forward
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - src: url
+            name: reverse
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+      - name: treatment2
+        items:
+        - name: replicate1
+          items:
+          - src: url
+            name: forward
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - src: url
+            name: reverse
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+        - name: replicate2
+          items:
+          - src: url
+            name: forward
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - src: url
+            name: reverse
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+    - destination: {type: "hdas"}
+      items:
+      - src: url
+        name: "sample1.fasta"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fasta"
+        tags: ['name:sample1']
+      - src: url
+        name: "sample2.fasta"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fasta"
+        tags: ['name:sample2']
+    - destination: {type: "hdas"}
+      items:
+      - src: url
+        name: "sample1.fastq"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fastq"
+        tags: ['group:treatment:treatment1', 'group:replicate:replicate1']
+      - src: url
+        name: "sample2.fastq"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fastq"
+        tags: ['group:treatment:treatment1', 'group:replicate:replicate2']
+      - src: url
+        name: "sample3.fastq"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fastq"
+        tags: ['group:treatment:treatment2', 'group:replicate:replicate1']
+      - src: url
+        name: "sample4.fastq"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fastq"
+        tags: ['group:treatment:treatment2', 'group:replicate:replicate2']
+    - destination: {type: "hdas"}
+      items:
+      - src: url
+        name: "Convert spaces and not newlines"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "txt"
+        space_to_tab: true
+        to_posix_lines: false
+      - src: url
+        name: "Convert newlines and not spaces"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fasta"
+        space_to_tab: false
+        to_posix_lines: true
+      - src: url
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fastq.gz"
+    - destination: {type: "hdas"}
+      items:
+      - src: url
+        name: "Reference information"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "txt"
+        dbkey: hg19
+      - src: url
+        name: "Reference sequence"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fasta"
+        dbkey: hg19
+      - src: url
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "fastq.gz"
+    - destination: {type: "hdca"}
+      collection_type: paired:paired
+      name: "esoteric collection type"
+      items:
+      - name: "forward"
+        items:
+          - src: url
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "forward"
+        items:
+          - src: url
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "reverse"
+      - name: "reverse"
+        items:
+          - src: url
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "forward"
+        items:
+          - src: url
+            url: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "reverse"
+
+upload_one:
+  request_state:
+    targets:
+    - destination: {type: "hdas"}
+      items:
+      - src: url
+        name: "Reference information"
+        url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
         ext: "txt"
