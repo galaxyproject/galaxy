@@ -7,7 +7,9 @@ from pydantic import HttpUrl
 
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
+    CreateFileLandingPayload,
     DataLandingRequestState,
+    FileOrCollectionRequestsAdapter,
 )
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
@@ -59,7 +61,7 @@ class TestLandingApi(ApiTestCase):
             tool_version=None,
             request_state={"parameter": "foobar"},
         )
-        response = self.dataset_populator.create_tool_landing_raw(request)
+        response = self.dataset_populator.create_landing_raw(request, "tool")
         assert_status_code_is(response, 400)
         assert_error_code_is(response, 400008)
         assert "Input should be a valid integer" in response.text
@@ -82,6 +84,34 @@ class TestLandingApi(ApiTestCase):
         )
         payload = CreateDataLandingPayload(request_state=data_landing_request_state, public=True)
         response = self.dataset_populator.create_data_landing(payload)
+        assert response.tool_id == "__DATA_FETCH__"
+
+        tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
+        request_state = tool_landing.request_state
+        assert request_state
+        request_json = request_state["request_json"]
+        assert request_json
+        targets = request_json["targets"]
+        assert targets
+        assert len(targets) == 1
+        target = targets[0]
+        assert "elements" in target
+        assert target["elements"]
+        assert len(target["elements"]) == 1
+
+    def test_file_landing(self):
+        file_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
+            [
+                {
+                    "class": "File",
+                    "location": "base64://eyJ0ZXN0IjogInRlc3QifQ==",  # base64 encoded {"test": "test"}
+                    "filetype": "txt",
+                    "deferred": False,
+                },
+            ],
+        )
+        payload = CreateFileLandingPayload(request_state=file_landing_request_state, public=True)
+        response = self.dataset_populator.create_file_landing(payload)
         assert response.tool_id == "__DATA_FETCH__"
 
         tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
@@ -162,6 +192,30 @@ class TestLandingApi(ApiTestCase):
         _cannot_claim_request(self.dataset_populator, response)
         _cannot_use_request(self.dataset_populator, response)
 
+    def test_invalid_workflow_landing_creation_cors(self):
+        request = _get_simple_landing_payload(self.workflow_populator, public=True).model_dump()
+        # Make payload invalid.
+        request.pop("workflow_id")
+        cors_headers = {"Access-Control-Request-Method": "POST", "Origin": "https://foo.example"}
+        response = self._options(
+            "workflow_landings",
+            data=request,
+            headers=cors_headers,
+            json=True,
+        )
+        # CORS preflight request should succeed, doesn't matter that the payload is invalid
+        assert response.status_code == 200
+        assert response.headers["Access-Control-Allow-Origin"] == "https://foo.example"
+        response = self._post(
+            "workflow_landings",
+            data=request,
+            headers=cors_headers,
+            json=True,
+        )
+        assert response.status_code == 400
+        assert response.headers["Access-Control-Allow-Origin"] == "https://foo.example"
+        assert "Field required" in response.json()["err_msg"]
+
     @skip_without_tool("cat1")
     def test_create_private_workflow_landing_anonymous_user(self):
         request = _get_simple_landing_payload(self.workflow_populator, public=False)
@@ -177,6 +231,14 @@ class TestLandingApi(ApiTestCase):
         # other user claimed, so we can't use
         _cannot_claim_request(self.dataset_populator, response)
         _cannot_use_request(self.dataset_populator, response)
+
+    @skip_without_tool("cat1")
+    def test_workflow_landing_uniform_response(self):
+        request = _get_simple_landing_payload(self.workflow_populator, public=True)
+        response = self.dataset_populator.create_workflow_landing(request)
+        landing_request = self.dataset_populator.use_workflow_landing_raw(response.uuid)
+        # Make sure url is turned into location
+        assert landing_request["request_state"]["WorkflowInput1"]["location"]
 
     def test_landing_claim_preserves_source_metadata(self):
         request = CreateWorkflowLandingRequestPayload(

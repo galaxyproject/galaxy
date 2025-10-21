@@ -6,6 +6,7 @@ into the API test suite.
 
 import json
 import os
+import zipfile
 from typing import (
     Any,
     cast,
@@ -255,3 +256,139 @@ steps:
         assert "expected_response" not in kwds
         run_summary = self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
         return cast(RunJobsSummary, run_summary)
+
+    def test_export_ro_crate_with_hidden_and_deleted_datasets(self):
+        """Test that hidden and deleted datasets are properly included/excluded based on export flags.
+
+        This test creates a workflow with three outputs, hides one, deletes another, and then
+        exports the invocation with different combinations of include_hidden and include_deleted
+        flags to verify correct behavior.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            # Run a workflow that produces three outputs
+            test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+  output_2:
+    outputSource: second_cat/out_file1
+  output_3:
+    outputSource: third_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+  second_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+  third_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            invocation_id = summary.invocation_id
+
+            # Get the invocation details to find output datasets
+            invocation = self.workflow_populator.get_invocation(invocation_id)
+            outputs = invocation["outputs"]
+
+            # Hide output_1
+            hidden_dataset_id = outputs["output_1"]["id"]
+            self.dataset_populator.update_dataset(hidden_dataset_id, {"visible": False})
+
+            # Delete output_2 (but don't purge it)
+            deleted_dataset_id = outputs["output_2"]["id"]
+            self.dataset_populator.delete_dataset(history_id, deleted_dataset_id, purge=False)
+
+            # Verify the datasets have the expected states
+            hidden_dataset = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=hidden_dataset_id
+            )
+            assert hidden_dataset["visible"] is False
+
+            deleted_dataset = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=deleted_dataset_id
+            )
+            assert deleted_dataset["deleted"] is True
+
+            # Test 1: Export with include_hidden=False, include_deleted=False
+            # Expected: 2 datasets (input_1 + output_3)
+            dataset_files = self._export_and_get_datasets(invocation_id, include_hidden=False, include_deleted=False)
+            assert len(dataset_files) == 2, (
+                f"Test 1 (hidden=False, deleted=False): Expected 2 datasets, found {len(dataset_files)}: "
+                f"{dataset_files}"
+            )
+
+            # Test 2: Export with include_hidden=True, include_deleted=False
+            # Expected: 3 datasets (input_1 + output_1[hidden] + output_3)
+            dataset_files = self._export_and_get_datasets(invocation_id, include_hidden=True, include_deleted=False)
+            assert len(dataset_files) == 3, (
+                f"Test 2 (hidden=True, deleted=False): Expected 3 datasets, found {len(dataset_files)}: "
+                f"{dataset_files}"
+            )
+
+            # Test 3: Export with include_hidden=False, include_deleted=True
+            # Expected: 3 datasets (input_1 + output_2[deleted] + output_3)
+            dataset_files = self._export_and_get_datasets(invocation_id, include_hidden=False, include_deleted=True)
+            assert len(dataset_files) == 3, (
+                f"Test 3 (hidden=False, deleted=True): Expected 3 datasets, found {len(dataset_files)}: "
+                f"{dataset_files}"
+            )
+
+            # Test 4: Export with include_hidden=True, include_deleted=True
+            # Expected: 4 datasets (input_1 + output_1[hidden] + output_2[deleted] + output_3)
+            dataset_files = self._export_and_get_datasets(invocation_id, include_hidden=True, include_deleted=True)
+            assert len(dataset_files) == 4, (
+                f"Test 4 (hidden=True, deleted=True): Expected 4 datasets, found {len(dataset_files)}: "
+                f"{dataset_files}"
+            )
+
+    def _export_and_get_datasets(self, invocation_id: str, include_hidden: bool, include_deleted: bool) -> list[str]:
+        """Helper method to export an invocation and return the list of dataset files in the archive."""
+        url = f"invocations/{invocation_id}/prepare_store_download"
+        download_response = self.workflow_populator._post(
+            url,
+            dict(
+                include_files=True,
+                include_hidden=include_hidden,
+                include_deleted=include_deleted,
+                model_store_format="rocrate.zip",
+            ),
+            json=True,
+        )
+        storage_request_id = self.dataset_populator.assert_download_request_ok(download_response)
+        self.dataset_populator.wait_for_download_ready(storage_request_id)
+        ro_crate_path = self.workflow_populator._get_to_tempfile(f"short_term_storage/{storage_request_id}")
+        return self._get_dataset_files_in_archive(ro_crate_path)
+
+    def _get_dataset_files_in_archive(self, archive_path: str) -> list[str]:
+        """Extract dataset files from a rocrate.zip archive, excluding metadata files.
+
+        Dataset files are typically stored in a 'datasets/' folder within the archive.
+        """
+        dataset_files = []
+
+        with zipfile.ZipFile(archive_path, "r") as zf:
+            for name in zf.namelist():
+                # Skip directories
+                if name.endswith("/"):
+                    continue
+                # Only count files in the datasets/ folder
+                if name.startswith("datasets/"):
+                    dataset_files.append(name)
+
+        return dataset_files

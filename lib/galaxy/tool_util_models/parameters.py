@@ -19,6 +19,7 @@ from typing import (
 
 from pydantic import (
     AfterValidator,
+    AliasChoices,
     AnyUrl,
     BaseModel,
     ConfigDict,
@@ -403,6 +404,7 @@ class BaseDataRequest(StrictModel):
     deferred: StrictBool = False
     created_from_basename: Optional[StrictStr] = None
     info: Optional[StrictStr] = None
+    tags: Optional[List[str]] = None
     hashes: Optional[List[DatasetHash]] = None
     space_to_tab: bool = False
     to_posix_lines: bool = False
@@ -440,12 +442,20 @@ class FileRequestUri(BaseDataRequest):
 
 class CollectionElementDataRequestUri(FileRequestUri):
     class_: Literal["File"] = Field(..., alias="class")
-    identifier: StrictStr
+    identifier: StrictStr = Field(
+        ...,
+        description="A unique identifier for this element within the collection.",
+        validation_alias=AliasChoices("identifier", "name"),
+    )
 
 
 class CollectionElementCollectionRequestUri(StrictModel):
     class_: Literal["Collection"] = Field(..., alias="class")
-    identifier: StrictStr
+    identifier: StrictStr = Field(
+        ...,
+        description="A unique identifier for this element within the collection.",
+        validation_alias=AliasChoices("identifier", "name"),
+    )
     collection_type: StrictStr
     elements: List[
         Annotated[
@@ -485,6 +495,7 @@ _DataRequest = Annotated[
 DataRequest: Type = cast(Type, _DataRequest)
 
 DataOrCollectionRequest = Union[_DataRequest, FileRequestUri, DataRequestCollectionUri, DataRequestHdca]
+FileOrCollectionRequest = Annotated[Union[FileRequestUri, DataRequestCollectionUri], Field(discriminator="class_")]
 
 DataRequestHda.model_rebuild()
 DataRequestLd.model_rebuild()

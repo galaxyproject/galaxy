@@ -24,6 +24,7 @@ import WorkflowInvocationSteps from "../Workflow/Invocation/Graph/WorkflowInvoca
 import InvocationReport from "../Workflow/InvocationReport.vue";
 import WorkflowAnnotation from "../Workflow/WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../Workflow/WorkflowNavigationTitle.vue";
+import TabsDisabledAlert from "./TabsDisabledAlert.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationFeedback from "./WorkflowInvocationFeedback.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
@@ -76,12 +77,17 @@ const tabsDisabled = computed(
 const disabledTabTooltip = computed(() => {
     const state = invocationState.value;
     if (state != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete any disabled tabs will become available.`;
+        return `This workflow is not currently scheduled. The current state is ${state}. Disabled tabs are available if the workflow is fully scheduled and all jobs have completed.`;
     } else if (stateCounts.value && stateCounts.value.runningCount != 0) {
         return `The workflow invocation still contains ${stateCounts.value.runningCount} running job(s). Once these jobs have completed any disabled tabs will become available.`;
     } else {
         return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
     }
+});
+
+/** We are on the default "Overview" tab if the tab prop is not set or is not one of the expected tab values */
+const onOverviewTab = computed(() => {
+    return !props.tab || !["steps", "inputs", "outputs", "report", "export", "metrics", "debug"].includes(props.tab);
 });
 
 const invocation = computed(() => {
@@ -339,7 +345,7 @@ async function onCancel() {
         </WorkflowAnnotation>
 
         <BNav v-if="props.isFullPage" pills class="mb-2 p-2 bg-light border-bottom">
-            <BNavItem title="Overview" :active="!props.tab" :to="`/workflows/invocations/${props.invocationId}`">
+            <BNavItem title="Overview" :active="onOverviewTab" :to="`/workflows/invocations/${props.invocationId}`">
                 Overview
             </BNavItem>
             <BNavItem
@@ -361,17 +367,17 @@ async function onCancel() {
                 Outputs
             </BNavItem>
             <BNavItem
-                title="Report"
+                :title="!tabsDisabled ? 'Report' : disabledTabTooltip"
                 class="invocation-report-tab"
-                :active="props.tab === 'report'"
+                :active="!tabsDisabled && props.tab === 'report'"
                 :to="`/workflows/invocations/${props.invocationId}/report`"
                 :disabled="tabsDisabled">
                 Report
             </BNavItem>
             <BNavItem
-                title="Export"
+                :title="!tabsDisabled ? 'Export' : disabledTabTooltip"
                 class="invocation-export-tab"
-                :active="props.tab === 'export'"
+                :active="!tabsDisabled && props.tab === 'export'"
                 :to="`/workflows/invocations/${props.invocationId}/export`"
                 :disabled="tabsDisabled">
                 Export
@@ -423,7 +429,7 @@ async function onCancel() {
         </BNav>
 
         <div class="mt-1 d-flex flex-column overflow-auto">
-            <div v-if="!props.tab">
+            <div v-if="onOverviewTab">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
                     :invocation="invocation"
@@ -451,15 +457,17 @@ async function onCancel() {
                 <BAlert v-if="isSubworkflow" variant="info" show>
                     <span v-localize>Report is not available for subworkflow.</span>
                 </BAlert>
-                <BAlert v-else-if="!invocationStateSuccess" variant="info" show>
-                    <span v-localize>{{ disabledTabTooltip }}</span>
-                </BAlert>
+                <TabsDisabledAlert
+                    v-else-if="tabsDisabled"
+                    :invocation-id="props.invocationId"
+                    :tooltip="disabledTabTooltip" />
                 <InvocationReport v-else :invocation-id="invocation.id" />
             </div>
             <div v-if="props.tab === 'export'">
-                <BAlert v-if="!invocationAndJobTerminal" variant="info" show>
-                    <span v-localize>{{ disabledTabTooltip }}</span>
-                </BAlert>
+                <TabsDisabledAlert
+                    v-if="tabsDisabled"
+                    :invocation-id="props.invocationId"
+                    :tooltip="disabledTabTooltip" />
                 <div v-else>
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>

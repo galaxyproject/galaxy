@@ -75,7 +75,10 @@ from gxformat2 import (
     ImporterGalaxyInterface,
 )
 from gxformat2.yaml import ordered_load
-from pydantic import UUID4
+from pydantic import (
+    BaseModel,
+    UUID4,
+)
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import (
@@ -84,7 +87,10 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.schema.fetch_data import CreateDataLandingPayload
+from galaxy.schema.fetch_data import (
+    CreateDataLandingPayload,
+    CreateFileLandingPayload,
+)
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
     CreateWorkflowLandingRequestPayload,
@@ -890,25 +896,25 @@ class BaseDatasetPopulator(BasePopulator):
         self.update_dataset_collection(content_id, {"name": new_name})
 
     def create_tool_landing(self, payload: CreateToolLandingRequestPayload) -> ToolLandingRequest:
-        create_response = self.create_tool_landing_raw(payload)
+        create_response = self.create_landing_raw(payload, "tool")
         api_asserts.assert_status_code_is(create_response, 200)
         create_response.raise_for_status()
         return ToolLandingRequest.model_validate(create_response.json())
 
-    def create_tool_landing_raw(self, payload: CreateToolLandingRequestPayload) -> Response:
-        create_url = "tool_landings"
-        json = payload.model_dump(mode="json")
-        create_response = self._post(create_url, json, json=True, anon=True)
-        return create_response
+    def create_file_landing(self, payload: CreateFileLandingPayload) -> ToolLandingRequest:
+        create_response = self.create_landing_raw(payload, "file")
+        api_asserts.assert_status_code_is(create_response, 200)
+        create_response.raise_for_status()
+        return ToolLandingRequest.model_validate(create_response.json())
 
     def create_data_landing(self, payload: CreateDataLandingPayload) -> ToolLandingRequest:
-        create_response = self.create_data_landing_raw(payload)
+        create_response = self.create_landing_raw(payload, "data")
         api_asserts.assert_status_code_is(create_response, 200)
         create_response.raise_for_status()
         return ToolLandingRequest.model_validate(create_response.json())
 
-    def create_data_landing_raw(self, payload: CreateDataLandingPayload) -> Response:
-        create_url = "data_landings"
+    def create_landing_raw(self, payload: BaseModel, landing_type: Literal["file", "data", "tool"]) -> Response:
+        create_url = f"{landing_type}_landings"
         json = payload.model_dump(mode="json")
         create_response = self._post(create_url, json, json=True, anon=True)
         return create_response
@@ -945,6 +951,12 @@ class BaseDatasetPopulator(BasePopulator):
         landing_reponse = self._get(url, {"client_secret": "foobar"})
         api_asserts.assert_status_code_is(landing_reponse, 200)
         return ToolLandingRequest.model_validate(landing_reponse.json())
+
+    def use_workflow_landing_raw(self, uuid: UUID4):
+        url = f"workflow_landings/{uuid}"
+        landing_reponse = self._get(url, {"client_secret": "foobar"})
+        api_asserts.assert_status_code_is(landing_reponse, 200)
+        return landing_reponse.json()
 
     def create_tool_from_path(self, tool_path: str) -> dict[str, Any]:
         tool_directory = os.path.dirname(os.path.abspath(tool_path))

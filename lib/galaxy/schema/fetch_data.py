@@ -27,6 +27,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.terms import HelpTerms
 from galaxy.schema.types import CoercedStringType
+from galaxy.tool_util_models.parameters import FileOrCollectionRequest
 from galaxy.util.hash_util import HashFunctionNames
 
 HELP_TERMS = HelpTerms()
@@ -307,10 +308,24 @@ class DataLandingRequestState(Model):
     targets: Targets
 
 
+FileOrCollectionRequests = list[FileOrCollectionRequest]
+
+FileOrCollectionRequestsAdapter = TypeAdapter(FileOrCollectionRequests)
+
+
 # Vaguely matches the schema.schema.ToolLandingState but we don't allow data_fetch to be called directly
 # via the tool API so we have a more specific model here.
 class CreateDataLandingPayload(Model):
     request_state: DataLandingRequestState
+    client_secret: Optional[str] = None
+    public: bool = False
+    origin: Optional[HttpUrl] = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class CreateFileLandingPayload(Model):
+    request_state: FileOrCollectionRequests
     client_secret: Optional[str] = None
     public: bool = False
     origin: Optional[HttpUrl] = None

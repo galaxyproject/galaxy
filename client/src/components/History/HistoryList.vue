@@ -189,9 +189,9 @@ const {
         );
         await onDeleteHistory();
     },
-    expectedKeyDownClass: "history-card",
+    expectedKeyDownClass: "history-card-in-list",
     getAttributeForRangeSelection(item) {
-        return `g-card-${item.id}`;
+        return `g-card-history-${item.id}`;
     },
 });
 
