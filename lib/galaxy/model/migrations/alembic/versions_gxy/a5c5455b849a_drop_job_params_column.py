@@ -1,7 +1,7 @@
 """Drop Job.params column
 
 Revision ID: a5c5455b849a
-Revises: e382f8eb5e12
+Revises: cd26484899fb
 Create Date: 2025-10-15 16:13:14.778789
 
 """
@@ -16,7 +16,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "a5c5455b849a"
-down_revision = "e382f8eb5e12"
+down_revision = "cd26484899fb"
 branch_labels = None
 depends_on = None
 
