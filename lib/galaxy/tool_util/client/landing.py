@@ -64,6 +64,8 @@ def generate_claim_url(request: Request) -> Response:
         template_type = "tool"
     elif "workflow_id" in template:
         template_type = "workflow"
+    elif isinstance(template["request_state"], list):
+        template_type = "file"
     else:
         template_type = "data"
     if client_secret:
@@ -79,7 +81,7 @@ def generate_claim_url(request: Request) -> Response:
     try:
         raw_response.raise_for_status()
     except Exception:
-        raise Exception("Request failed: %s", raw_response.text)
+        raise Exception("Request failed: %s", raw_response.json())
     response = raw_response.json()
     response_type = "workflow" if template_type == "workflow" else "tool"
     url = f"{galaxy_url}/{response_type}_landings/{response['uuid']}"
