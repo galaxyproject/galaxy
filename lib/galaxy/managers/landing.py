@@ -4,7 +4,10 @@ from typing import (
 )
 from uuid import uuid4
 
-from pydantic import UUID4
+from pydantic import (
+    UUID4,
+    ValidationError,
+)
 from sqlalchemy import select
 
 from galaxy.exceptions import (
@@ -38,6 +41,7 @@ from galaxy.tool_util.parameters import (
     LandingRequestInternalToolState,
     LandingRequestToolState,
 )
+from galaxy.tool_util_models.parameters import DataOrCollectionRequestAdapter
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
 from .tools import (
@@ -107,10 +111,24 @@ class LandingRequestManager:
             model.workflow_source = payload.workflow_id
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
-        model.request_state = payload.request_state
+        model.request_state = self.validate_workflow_request_state(payload.request_state)
         model.public = payload.public
         self._save(model)
         return self._workflow_response(model)
+
+    def validate_workflow_request_state(self, request_state: Optional[dict]) -> Optional[dict]:
+        # This would ideally be run in the context of a workflow input definition
+        if isinstance(request_state, dict):
+            for key, value in request_state.items():
+                if isinstance(value, dict):
+                    try:
+                        # persist values after model validators and aliases have been applied
+                        request_state[key] = DataOrCollectionRequestAdapter.validate_python(value).model_dump(
+                            by_alias=True, exclude_unset=True, mode="json"
+                        )
+                    except ValidationError:
+                        pass
+        return request_state
 
     def claim_tool_landing_request(
         self, trans: ProvidesUserContext, uuid: UUID4, claim: Optional[ClaimLandingPayload]

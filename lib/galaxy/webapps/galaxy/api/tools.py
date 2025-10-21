@@ -41,6 +41,7 @@ from galaxy.managers.landing import LandingRequestManager
 from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
+    CreateFileLandingPayload,
     FetchDataFormPayload,
     FetchDataPayload,
 )
@@ -250,7 +251,16 @@ class FetchTools:
         response.headers["Last-Modified"] = last_modified
         return response
 
-    @router.post("/api/data_landings", public=True)
+    @router.post("/api/file_landings", public=True, allow_cors=True)
+    def create_file_landing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        file_landing_request: CreateFileLandingPayload = Body(...),
+    ) -> ToolLandingRequest:
+        tool_landing_request = self.service.file_landing_to_tool_landing(trans, file_landing_request)
+        return self.landing_manager.create_tool_landing_request(tool_landing_request)
+
+    @router.post("/api/data_landings", public=True, allow_cors=True)
     def create_data_landing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -259,7 +269,7 @@ class FetchTools:
         tool_landing_request = self.service.data_landing_to_tool_landing(trans, data_landing_request)
         return self.landing_manager.create_tool_landing_request(tool_landing_request)
 
-    @router.post("/api/tool_landings", public=True)
+    @router.post("/api/tool_landings", public=True, allow_cors=True)
     def create_landing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,

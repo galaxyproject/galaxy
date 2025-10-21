@@ -19,6 +19,235 @@ int_workflow:
   workflow_target_type: stored_workflow
   request_state:
     int_input: 8
+upload_file:
+  request_state:
+    - class: File
+      name: Reference information
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "txt"
+    - class: File
+      name: Reference sequence
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fasta"
+    - class: File
+      name: Read 1
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq.gz"
+    - class: Collection
+      collection_type: list
+      name: "my collection"
+      elements:
+      - class: File
+        name: sample1
+        location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+        ext: "txt"
+      - class: File
+        name: sample2
+        location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+        ext: "txt"
+      - class: File
+        name: sample3
+        location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+        ext: "txt"
+    - class: Collection
+      collection_type: list:paired
+      name: "The List of Dataset Pairs"
+      elements:
+      - class: Collection
+        collection_type: paired
+        name: sample1
+        elements:
+        - class: File
+          name: forward
+          location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+        - class: File
+          name: reverse
+          location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+      - name: sample2
+        class: Collection
+        collection_type: paired
+        elements:
+        - class: File
+          name: forward
+          location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+        - class: File
+          name: reverse
+          location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+          ext: "txt"
+    - class: Collection
+      collection_type: list:list:paired
+      name: "Nested List of Dataset Pairs"
+      elements:
+      - class: Collection
+        collection_type: list:paired
+        name: treatment1
+        elements:
+        - class: Collection
+          collection_type: paired
+          name: replicate1
+          elements:
+          - class: File
+            name: forward
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - class: File
+            name: reverse
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+        - class: Collection
+          collection_type: paired
+          name: replicate2
+          elements:
+          - class: File
+            name: forward
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - class: File
+            name: reverse
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+      - class: Collection
+        collection_type: list:paired
+        name: treatment2
+        elements:
+        - class: Collection
+          collection_type: paired
+          name: replicate1
+          elements:
+          - class: File
+            name: forward
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - class: File
+            name: reverse
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+        - class: Collection
+          collection_type: paired
+          name: replicate2
+          elements:
+          - class: File
+            name: forward
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+          - class: File
+            name: reverse
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+    - class: File
+      name: "sample1.fasta"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fasta"
+      tags: ['name:sample1']
+    - class: File
+      name: "sample2.fasta"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fasta"
+      tags: ['name:sample2']
+    - class: File
+      name: "sample1.fastq"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq"
+      tags: ['group:treatment:treatment1', 'group:replicate:replicate1']
+    - class: File
+      name: "sample2.fastq"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq"
+      tags: ['group:treatment:treatment1', 'group:replicate:replicate2']
+    - class: File
+      name: "sample2.fastq"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq"
+      tags: ['group:treatment:treatment1', 'group:replicate:replicate2']
+    - class: File
+      name: "sample3.fastq"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq"
+      tags: ['group:treatment:treatment1', 'group:replicate:replicate2']
+    - class: File
+      name: "sample3.fastq"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq"
+      tags: ['group:treatment:treatment2', 'group:replicate:replicate1']
+    - class: File
+      name: "sample4.fastq"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq"
+      tags: ['group:treatment:treatment2', 'group:replicate:replicate2']
+    - class: File
+      name: "Convert spaces and not newlines"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "txt"
+      space_to_tab: true
+      to_posix_lines: false
+    - class: File
+      name: "Convert newlines and not spaces"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fasta"
+      space_to_tab: false
+      to_posix_lines: true
+    - class: File
+      name: "Reference genome"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fastq.gz"
+    - class: File
+      name: "Reference information"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "txt"
+      dbkey: hg19
+    - class: File
+      name: "Reference sequence"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "fasta"
+      dbkey: hg19
+    - class: File
+      name: "Reference annotation"
+      location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+      ext: "gff"
+      dbkey: hg19
+    - class: Collection
+      collection_type: paired:paired
+      name: "esoteric collection type"
+      elements:
+      - class: Collection
+        collection_type: paired
+        name: "forward"
+        elements:
+          - class: File
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "forward"
+          - class: File
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "reverse"
+      - class: Collection
+        collection_type: paired
+        name: "reverse"
+        elements:
+          - class: File
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "forward"
+          - class: File
+            location: "base64://eyJ0c3JjIjogInRlc3QifQ=="
+            ext: "txt"
+            name: "reverse"
+
+upload_one_file:
+  request_state:
+    - class: Collection
+      collection_type: list
+      name: "my collection"
+      elements:
+      - class: File
+        name: "Reference information"
+        location: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
+        ext: "txt"
+
 upload:
   request_state:
     targets:
