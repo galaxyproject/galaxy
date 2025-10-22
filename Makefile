@@ -180,13 +180,13 @@ skip-client: ## Run only the server, skipping the client build.
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
-	npm install -g yarn;
+	corepack enable yarn;
 endif
 	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
 
 client-node-deps: ## Install NodeJS dependencies for the client.
 ifndef YARN
-	npm install -g yarn;
+	corepack enable yarn;
 endif
 	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
 
