@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import axios from "axios";
 import { onMounted, ref } from "vue";
 import { onBeforeRouteLeave } from "vue-router/composables";
-import axios from "axios";
 
 import { withPrefix } from "@/utils/redirect";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationWrapper from "./VisualizationWrapper.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const emit = defineEmits(["load"]);
 

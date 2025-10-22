@@ -118,9 +118,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert vis1.name == "vis1"
         assert vis1.path == os.path.join(expected_plugins_path, "vis1")
         assert vis1.base_url == "/".join((plugin_mgr.base_url, vis1.name))
-        assert vis1.serves_templates
-        assert vis1.template_path == os.path.join(vis1.path, "templates")
-        assert vis1.template_lookup.__class__.__name__ == "TemplateLookup"
 
         vis1_as_dict = vis1.to_dict()
         assert vis1_as_dict["specs"]
@@ -150,7 +147,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
                     <model_class>HistoryDatasetAssociation</model_class>
                 </data_source>
             </data_sources>
-            <entry_point entry_point_type="script" container="mycontainer" src="mysrc" css="mycss"></entry_point>
+            <entry_point container="mycontainer" src="mysrc" css="mycss"></entry_point>
         </visualization>
         """
         )
@@ -168,14 +165,13 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         )
         script_entry = plugin_mgr.plugins["jstest"]
 
-        assert isinstance(script_entry, plugin.ScriptVisualizationPlugin)
+        assert isinstance(script_entry, plugin.VisualizationPlugin)
         assert script_entry.name == "jstest"
-        assert script_entry.serves_templates
 
         trans = galaxy_mock.MockTrans()
-        response = script_entry.render(trans=trans, embedded=True)
-        assert '<script type="module" src="mysrc">' in response
-        assert '<link rel="stylesheet" href="mycss">' in response
-        assert re.search(r'<div id="mycontainer" data-incoming=\'.*?\'></div>', response)
-        assert escape("'root': 'request.host_url/'") in response
+        response = script_entry.to_dict()
+        entry_point_attr = response["entry_point"]["attr"]
+        assert entry_point_attr["container"] == "mycontainer"
+        assert entry_point_attr["src"] == "mysrc"
+        assert entry_point_attr["css"] == "mycss"
         mock_app_dir.remove()
