@@ -5639,6 +5639,54 @@ default_file_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
 
+    def test_conditional_skip_on_database_operation_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_collection: collection
+steps:
+  filter:
+    tool_id: __FILTER_FAILED_DATASETS__
+    in:
+      input: input_collection
+    when: $(false)
+""",
+                test_data="""
+input_collection:
+  collection_type: list
+  elements:
+    - identifier: el1
+      content: "test content 1"
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+
+            input_hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=invocation["inputs"]["0"]["id"]
+            )
+            input_hda = input_hdca_details["elements"][0]["object"]
+            filter_content = self.dataset_populator.get_history_dataset_content(
+                history_id=history_id, content_id=input_hda["id"]
+            )
+            assert "test content 1" in filter_content, f"Expected 'test content 1' in input, got: {filter_content}"
+
+            # Get the filter step output
+            filter_step = [s for s in invocation["steps"] if s["workflow_step_label"] == "filter"][0]
+            filter_output_id = filter_step["output_collections"]["output"]["id"]
+            hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=filter_output_id)
+            hda = hdca["elements"][0]["object"]
+
+            # Assert that the filter output dataset contains the string 'null'
+            filter_content = self.dataset_populator.get_history_dataset_content(
+                history_id=history_id, content_id=hda["id"]
+            )
+            assert "null" in filter_content, f"Expected 'null' in filter output, got: {filter_content}"
+
     def test_conditional_flat_crossproduct_subworkflow(self):
         parent = yaml.safe_load(
             """
