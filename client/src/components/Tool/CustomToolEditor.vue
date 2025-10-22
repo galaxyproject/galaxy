@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSave } from "@fortawesome/free-regular-svg-icons";
+import { faLemon,faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
@@ -104,6 +104,27 @@ async function saveTool() {
         router.push(`/tools/editor/${data.uuid}`);
     }
 }
+
+async function generateViaLLM() {
+    const userPrompt = prompt("Describe the tool you would like to build");
+    if (!userPrompt) {
+        return;
+    }
+
+    try {
+        const response = await GalaxyApi().POST("/api/unprivileged_tools/generate", {
+            body: { prompt: userPrompt },
+        });
+        if (response.error) {
+            errorMsg.value = { err_code: response.error.err_code, err_msg: response.error.err_msg };
+        }
+        yamlRepresentation.value = stringify(response.data, {
+            blockQuote: "literal",
+        });
+    } catch (error) {
+        errorMsg.value = { err_code: -1, err_msg: `Couldn't generate YAML: ${error}` };
+    }
+}
 </script>
 
 <template>
@@ -113,6 +134,14 @@ async function saveTool() {
         </b-alert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
+            <b-button
+                variant="secondary"
+                size="m"
+                title="Generate via LLM"
+                data-description="Generate via LLM"
+                @click="generateViaLLM"
+                ><FontAwesomeIcon :icon="faLemon"
+            /></b-button>
             <b-button
                 variant="primary"
                 size="m"
