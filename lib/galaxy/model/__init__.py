@@ -4743,26 +4743,32 @@ class Dataset(Base, StorableObject, Serializable):
             literal(0).label("depth_level"),
         ]
 
-        # Create a single base query that covers both HDA and LDDA cases using OR conditions
-        base_query = (
+        # Create separate base queries for HDA and LDDA cases and union them
+        # We need to wrap the union in a subquery to use it as the anchor for the recursive CTE
+        union_query = (
             select(*base_columns)
             .select_from(
-                DatasetCollectionElement.__table__.outerjoin(
+                DatasetCollectionElement.__table__.join(
                     HistoryDatasetAssociation.__table__, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id
-                ).outerjoin(
-                    LibraryDatasetDatasetAssociation.__table__,
-                    DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
                 )
             )
-            .where(
-                or_(
-                    HistoryDatasetAssociation.dataset_id == self.id,
-                    LibraryDatasetDatasetAssociation.dataset_id == self.id,
+            .where(HistoryDatasetAssociation.dataset_id == self.id)
+            .union(
+                select(*base_columns)
+                .select_from(
+                    DatasetCollectionElement.__table__.join(
+                        LibraryDatasetDatasetAssociation.__table__,
+                        DatasetCollectionElement.ldda_id == LibraryDatasetDatasetAssociation.id,
+                    )
                 )
+                .where(LibraryDatasetDatasetAssociation.dataset_id == self.id)
             )
-        )
+        ).subquery()
 
-        # Create the recursive CTE from the single base query
+        # Select from the union subquery to create a proper base query for the CTE
+        base_query = select(union_query.c.collection_id, union_query.c.depth_level)
+
+        # Create the recursive CTE from the base query
         collection_hierarchy_cte = base_query.cte(name="collection_hierarchy", recursive=True)
 
         # Create aliases for the recursive part
