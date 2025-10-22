@@ -850,6 +850,7 @@ class Data(metaclass=DataMeta):
         deps: Optional[dict] = None,
         target_context: Optional[dict] = None,
         history=None,
+        use_cached_job: bool = False,
     ):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type(original_dataset.ext, target_type)
@@ -865,8 +866,16 @@ class Data(metaclass=DataMeta):
         # Make the target datatype available to the converter
         params["__target_datatype__"] = target_type
         # Run converter, job is dispatched through Queue
+        # Always use cached job if it exists
+        completed_jobs = converter.completed_jobs(trans, all_params=[params], use_cached_job=use_cached_job)
+        completed_job = completed_jobs[0] if completed_jobs else None
         job, converted_datasets, *_ = converter.execute(
-            trans, incoming=params, set_output_hid=visible, history=history, flush_job=False
+            trans,
+            incoming=params,
+            set_output_hid=visible,
+            history=history,
+            flush_job=False,
+            completed_job=completed_job,
         )
         # We should only have a single converted output, but let's be defensive here
         n_converted_datasets = len(converted_datasets)
