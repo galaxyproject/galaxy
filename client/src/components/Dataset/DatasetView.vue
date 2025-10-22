@@ -20,7 +20,7 @@ import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
-import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
+import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
@@ -189,10 +189,10 @@ watch(
             </BNavItem>
         </BNav>
         <div v-if="tab === 'preview'" class="tab-content-panel">
-            <VisualizationWrapper
+            <VisualizationFrame
                 v-if="preferredVisualization"
-                :config="{ dataset_id: datasetId }"
-                :name="preferredVisualization"
+                :datasetId="datasetId"
+                :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
             <div v-else-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">

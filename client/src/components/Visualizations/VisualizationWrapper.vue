@@ -16,8 +16,10 @@ const props = withDefaults(
         name: string;
         title?: string;
         height?: number;
+        fullHeight?: boolean;
     }>(),
     {
+        fullHeight: false,
         height: 400,
     },
 );
@@ -32,7 +34,7 @@ const errorMessage = ref("");
 const expand = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
-const minMaxHeight = computed(() => `max-height: ${props.height}px; min-height: ${props.height}px`);
+const minMaxHeight = computed(() => props.fullHeight ? "height: 100%; padding-top: 0px !important;" : `max-height: ${props.height}px; min-height: ${props.height}px`);
 
 async function render() {
     if (!props.name) {
@@ -108,13 +110,14 @@ onMounted(() => render());
     <div v-if="errorMessage">
         <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     </div>
-    <div v-else class="position-relative">
+    <div v-else class="position-relative h-100">
         <iframe
             ref="iframeRef"
-            :class="expand ? 'visualization-popout-wrapper' : 'visualization-wrapper'"
+            :class="!fullHeight && expand ? 'visualization-popout-wrapper' : 'visualization-wrapper'"
             title="visualization"
-            :style="expand ? '' : minMaxHeight"></iframe>
+            :style="!fullHeight && expand ? '' : minMaxHeight"></iframe>
         <BButton
+            v-if="!fullHeight"
             class="visualization-popout-expand"
             variant="link"
             size="sm"
@@ -123,7 +126,7 @@ onMounted(() => render());
             <FontAwesomeIcon :icon="faExpand" />
         </BButton>
         <BButton
-            v-if="expand"
+            v-if="!fullHeight && expand"
             class="visualization-popout-close"
             variant="link"
             size="sm"

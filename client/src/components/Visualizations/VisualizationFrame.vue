@@ -102,6 +102,7 @@ onMounted(async () => {
         </div>
         <VisualizationWrapper
             v-if="visualizationConfig"
+            :full-height="true"
             :config="visualizationConfig"
             :name="visualization"
             @load="handleLoad" />
