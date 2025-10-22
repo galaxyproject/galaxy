@@ -737,7 +737,7 @@ class DefaultToolAction(ToolAction):
                 hdca.collection.mark_as_populated()
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
-                data.set_skipped(object_store_populator)
+                data.set_skipped(object_store_populator, replace_dataset=False)
         job.preferred_object_store_id = preferred_object_store_id
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
