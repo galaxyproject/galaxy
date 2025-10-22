@@ -87,24 +87,6 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         render_vars = self._build_render_vars({}, trans=trans, **kwargs)
         return self._render(render_vars, trans=trans, embedded=embedded)
 
-    def render_saved(self, visualization, trans=None, embedded=None, **kwargs):
-        """
-        Render and return the text of the plugin webpage/fragment using the
-        config/data of a saved visualization.
-        """
-        config: dict[str, Any] = self._get_saved_visualization_config(visualization, **kwargs)
-        # pass the saved visualization config for parsing into render vars
-        render_vars = self._build_render_vars(config, trans=trans, **kwargs)
-        # update any values that were loaded from the saved Visualization
-        render_vars.update(
-            dict(
-                title=visualization.latest_revision.title,
-                saved_visualization=visualization,
-                visualization_id=trans.security.encode_id(visualization.id),
-            )
-        )
-        return self._render(render_vars, trans=trans, embedded=embedded)
-
     def to_dict(self):
         return {
             "name": self.name,
