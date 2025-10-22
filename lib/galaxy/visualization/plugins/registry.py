@@ -143,13 +143,7 @@ class VisualizationsRegistry:
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
 
     def _build_plugin(self, plugin_name, plugin_path, config):
-        # from mako
-        if config["entry_point"]["type"] == "mako":
-            plugin_class = vis_plugins.VisualizationPlugin
-        else:
-            # default from js
-            plugin_class = vis_plugins.ScriptVisualizationPlugin
-        return plugin_class(
+        return vis_plugins.VisualizationPlugin(
             self.app(),
             plugin_path,
             plugin_name,
