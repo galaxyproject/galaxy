@@ -112,6 +112,7 @@ onMounted(() => render());
     </div>
     <div v-else class="position-relative h-100">
         <iframe
+            id="galaxy_visualization"
             ref="iframeRef"
             :class="!fullHeight && expand ? 'visualization-popout-wrapper' : 'visualization-wrapper'"
             title="visualization"
