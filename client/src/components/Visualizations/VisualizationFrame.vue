@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { onBeforeRouteLeave } from "vue-router/composables";
+import axios from "axios";
 
 import { withPrefix } from "@/utils/redirect";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import VisualizationWrapper from "./VisualizationWrapper.vue";
 
 const emit = defineEmits(["load"]);
 
@@ -19,17 +21,7 @@ const props = defineProps<Props>();
 const isLoading = ref(true);
 const hasUnsavedChanges = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
-
-const srcWithRoot = computed(() => {
-    let url = "";
-    if (props.visualizationId) {
-        url = `/plugins/visualizations/${props.visualization}/saved?id=${props.visualizationId}`;
-    } else {
-        const query = props.datasetId ? `?dataset_id=${props.datasetId}` : "";
-        url = `/plugins/visualizations/${props.visualization}/show${query}`;
-    }
-    return withPrefix(url);
-});
+const visualizationConfig = ref();
 
 function handleLoad() {
     isLoading.value = false;
@@ -84,7 +76,17 @@ onBeforeRouteLeave((to, from, next) => {
     }
 });
 
-onMounted(() => {
+onMounted(async () => {
+
+    if (props.visualizationId) {
+        const url = withPrefix(`/api/visualizations/${props.visualizationId}`);
+        const { data } = await axios.get(url);
+        console.log(data.latest_revision.config);
+        visualizationConfig.value = data.latest_revision.config;
+    } else {
+        visualizationConfig.value = { dataset_id: props.datasetId };
+    }
+
     window.addEventListener("beforeunload", (e) => {
         if (hasUnsavedChanges.value) {
             e.preventDefault();
@@ -99,32 +101,10 @@ onMounted(() => {
         <div v-if="isLoading" class="iframe-loading bg-light">
             <LoadingSpan message="Loading preview" />
         </div>
-        <iframe
-            id="galaxy_visualization"
-            ref="iframeRef"
-            :src="srcWithRoot"
-            class="center-frame"
-            frameborder="0"
-            title="galaxy visualization frame"
-            width="100%"
-            height="100%"
+        <VisualizationWrapper
+            v-if="visualizationConfig"
+            :config="visualizationConfig"
+            :name="visualization"
             @load="handleLoad" />
     </div>
 </template>
-
-<style>
-.iframe-loading {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    opacity: 0.9;
-    pointer-events: none;
-}
-</style>

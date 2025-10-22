@@ -22,7 +22,7 @@ const props = withDefaults(
     },
 );
 
-const emit = defineEmits(["change"]);
+const emit = defineEmits(["change", "load"]);
 
 const emitChange = debounce((newValue: string) => {
     emit("change", newValue);
@@ -89,7 +89,7 @@ async function render() {
                         emitChange(event.data);
                     }
                 });
-
+                emit("load");
                 // Reset error message
                 errorMessage.value = "";
             } else {
