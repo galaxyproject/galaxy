@@ -611,27 +611,6 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
 
-    # ---- visualizations registry ---- generic template renderer
-    # @deprecated: this route should be considered deprecated
-    webapp.add_route(
-        "/visualization/show/{visualization_name}", controller="visualization", action="render", visualization_name=None
-    )
-
-    # provide an alternate route to visualization plugins that's closer to their static assets
-    # (/plugins/visualizations/{visualization_name}/static) and allow them to use relative urls to those
-    webapp.mapper.connect(
-        "visualization_plugin",
-        "/plugins/visualizations/{visualization_name}/show",
-        controller="visualization",
-        action="render",
-    )
-    webapp.mapper.connect(
-        "saved_visualization",
-        "/plugins/visualizations/{visualization_name}/saved",
-        controller="visualization",
-        action="saved",
-        conditions={"method": ["GET"]},
-    )
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect(
         "import_workflow_deprecated",
