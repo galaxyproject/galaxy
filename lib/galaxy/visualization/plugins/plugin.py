@@ -54,7 +54,11 @@ class VisualizationPlugin:
             "specs": self.config.get("specs"),
             "tracks": self.config.get("tracks"),
             "tests": self.config.get("tests"),
+            "href": self._get_url(),
         }
+
+    def _get_url(self):
+        return url_for("visualization_plugin", visualization_name=self.name)
 
     def _set_logo(self):
         if self.static_path:
