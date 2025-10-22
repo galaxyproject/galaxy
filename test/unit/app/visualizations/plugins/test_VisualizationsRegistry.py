@@ -168,7 +168,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert isinstance(script_entry, plugin.VisualizationPlugin)
         assert script_entry.name == "jstest"
 
-        trans = galaxy_mock.MockTrans()
         response = script_entry.to_dict()
         entry_point_attr = response["entry_point"]["attr"]
         assert entry_point_attr["container"] == "mycontainer"
