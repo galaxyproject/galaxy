@@ -44,7 +44,7 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     requests,
 )
-from ._wait import wait_on
+from galaxy.util.wait import wait_on
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,

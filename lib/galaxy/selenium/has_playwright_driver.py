@@ -138,7 +138,7 @@ from playwright.sync_api import (
 )
 
 from galaxy.navigation.components import Target
-from ._wait import (
+from galaxy.util.wait import (
     TimeoutAssertionError,
     wait_on,
 )

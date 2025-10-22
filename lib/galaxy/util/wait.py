@@ -1,8 +1,4 @@
-"""Abstraction for waiting on API conditions to become true.
-
-Duplicate of lib/galaxy/tool_util/verify/wait.py to avoid dependency on tool_util.
-Maybe we move into galaxy.util I suppose.
-"""
+"""Abstraction for waiting on API conditions to become true."""
 
 import time
 from typing import (
