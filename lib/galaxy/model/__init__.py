@@ -130,6 +130,7 @@ from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
+    deprecated,
     Literal,
     NotRequired,
     Protocol,
@@ -2031,6 +2032,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             self.state_history.append(JobStateHistory(self))
             return True
 
+    @deprecated("Use tool.get_param_values(job) instead")
     def get_param_values(self, app, ignore_errors=False):
         """
         Read encoded parameter values from the database and turn back into a
