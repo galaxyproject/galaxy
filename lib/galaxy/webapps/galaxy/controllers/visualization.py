@@ -258,21 +258,3 @@ class VisualizationController(
             use_panels=False,
         )
 
-    @web.expose
-    def saved(self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs):
-        """
-        Load a visualization and render it.
-        """
-        # check the id and load the saved visualization
-        if id is None:
-            return HTTPBadRequest("A valid visualization id is required to load a visualization")
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-
-        # re-add title to kwargs for passing to render
-        if title:
-            kwargs["title"] = title
-        plugin = self._get_plugin_from_registry(trans, visualization.type)
-        try:
-            return plugin.render_saved(visualization, trans=trans, **kwargs)
-        except Exception as exception:
-            self._handle_plugin_error(trans, visualization.type, exception)
