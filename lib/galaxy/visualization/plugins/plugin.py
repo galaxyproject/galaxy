@@ -6,14 +6,8 @@ from a query string and render a webpage based on those data.
 import copy
 import logging
 import os
-from typing import (
-    Any,
-)
 
-from galaxy.visualization.plugins import (
-    resource_parser,
-    utils,
-)
+from galaxy.visualization.plugins import resource_parser
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
