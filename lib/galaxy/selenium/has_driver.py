@@ -608,6 +608,10 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         return self.driver.get_screenshot_as_png()
 
+    def close(self) -> None:
+        """Cleanup the current browser tab/page."""
+        self.driver.close()
+
     def quit(self) -> None:
         """
         Clean up and close the driver/browser.

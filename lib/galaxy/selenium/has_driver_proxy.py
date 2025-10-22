@@ -457,6 +457,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         return self._driver_impl.prepend_timeout_message(timeout_exception, message)
 
     # Cleanup
+    def close(self) -> None:
+        """Close the current browser/page."""
+        self._driver_impl.close()
+
     def quit(self) -> None:
         """Quit the driver and clean up resources."""
         self._driver_impl.quit()

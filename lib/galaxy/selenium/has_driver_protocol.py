@@ -525,6 +525,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Lifecycle management
     @abstractmethod
+    def close(self) -> None:
+        """Clean up and close the current page/tab."""
+        ...
+
+    @abstractmethod
     def quit(self) -> None:
         """
         Clean up and close the driver/browser.

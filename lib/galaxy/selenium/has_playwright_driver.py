@@ -1124,6 +1124,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         return self.page.screenshot()
 
+    def close(self) -> None:
+        """Cleanup the current browser tab/page."""
+        self._playwright_resources.browser.close()
+
     def quit(self) -> None:
         """
         Clean up and close the driver/browser.
@@ -1131,7 +1135,7 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         This closes all windows/tabs and releases all system resources.
         The driver cannot be used after calling this method.
         """
-        self._playwright_resources.browser.close()
+        self.close()
         self._playwright_resources.playwright.stop()
 
 

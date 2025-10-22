@@ -529,18 +529,24 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 
     def tear_down_driver(self):
         exception = None
-        try:
-            self.quit()
-        except Exception as e:
-            if "cannot kill Chrome" in str(e):
-                print(f"Ignoring likely harmless error in Selenium shutdown {e}")
-            else:
+        if self.backend_type == "playwright":
+            try:
+                self.quit()
+            except Exception as e:
                 exception = e
+        else:
+            try:
+                self.close()
+            except Exception as e:
+                if "cannot kill Chrome" in str(e):
+                    print(f"Ignoring likely harmless error in Selenium shutdown {e}")
+                else:
+                    exception = e
 
-        try:
-            self.display.stop()
-        except Exception as e:
-            exception = e
+            try:
+                self.display.stop()
+            except Exception as e:
+                exception = e
 
         if exception is not None:
             raise exception
