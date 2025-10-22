@@ -72,14 +72,6 @@ the following considerations:
    - Playwright doesn't have an equivalent to Selenium's element count waiting
    - Use wait_for_present() and then check length of find_elements() instead
 
-2. Custom wait conditions - Not implemented (raises NotImplementedError)
-   - Selenium's WebDriverWait.until() with custom conditions has no direct equivalent
-   - Use Playwright's built-in wait methods or page.wait_for_function() instead
-
-3. Alert handling - Different approach required
-   - Playwright requires setting up event handlers before triggering dialogs
-   - accept_alert() sets up a one-time handler, but may need adjustment for your use case
-
 Implementation Details
 ----------------------
 **Locator Strategy:**
@@ -122,6 +114,7 @@ See Also
 import abc
 from contextlib import contextmanager
 from typing import (
+    Any,
     Generic,
     NamedTuple,
     Optional,
@@ -620,9 +613,14 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """Wait for at least N elements."""
         raise NotImplementedError("wait_for_element_count_of_at_least not yet implemented for Playwright")
 
-    def _wait_on_custom(self, condition_func, message: str, **kwds) -> None:
+    # TODO: typevar here Any needs to be return type of condition_func thunk.
+    def _wait_on_custom(self, condition_func, message: str, **kwds) -> Any:
         """Wait on custom condition function."""
-        raise NotImplementedError("Custom wait conditions not yet implemented for Playwright")
+        timeout = kwds.get("timeout", UNSPECIFIED_TIMEOUT)
+        if timeout is UNSPECIFIED_TIMEOUT:
+            timeout = self.timeout_handler(kwds.get("wait_type"))
+
+        return wait_on(condition_func, message, timeout)
 
     def _unwrap_element(self, element: WebElementProtocol) -> ElementHandle:
         """

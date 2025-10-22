@@ -223,6 +223,11 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Wait for element to be clickable and double-click it."""
         return self._driver_impl.wait_for_and_double_click(selector_template, **kwds)
 
+    # Custom wait abstraction
+    def _wait_on_custom(self, condition_func, message: str, **kwds) -> Any:
+        """Wait on custom condition function."""
+        return self._driver_impl._wait_on_custom(condition_func, message, **kwds)
+
     # Visibility checks
 
     def selector_is_displayed(self, selector: str) -> bool:

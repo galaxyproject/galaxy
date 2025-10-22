@@ -8,6 +8,7 @@ import abc
 import threading
 from contextlib import contextmanager
 from typing import (
+    Any,
     cast,
     Generic,
     Literal,
@@ -310,7 +311,8 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             lambda driver: len(driver.find_elements(*locator_tuple)) >= n, message, **kwds
         )
 
-    def _wait_on_custom(self, condition_func, message: str, **kwds) -> WebElement:
+    # TODO: typevar...
+    def _wait_on_custom(self, condition_func, message: str, **kwds) -> Any:
         """Wait on custom condition function."""
         return self._wait_on_selenium_condition(condition_func, message, **kwds)
 

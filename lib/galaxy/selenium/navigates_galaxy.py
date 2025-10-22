@@ -534,12 +534,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             else:
                 return None
 
-        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
-        if self.backend_type == "playwright":
-            final_state = wait_on(history_becomes_terminal, "history to become terminal", timeout)
-        else:
-            final_state = self.wait(timeout=timeout).until(history_becomes_terminal)
-
+        final_state = self._wait_on_custom(
+            history_becomes_terminal, "history to become terminal", wait_type=WAIT_TYPES.JOB_COMPLETION
+        )
         if assert_ok:
             assert final_state == "ok", final_state
         return final_state

@@ -249,6 +249,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         """Wait for element to be clickable and double-click it."""
         ...
 
+    @abstractmethod
+    def _wait_on_custom(self, condition_func, message: str, **kwds) -> Any:
+        """Wait on custom condition function."""
+        ...
+
     # Visibility checks
     @abstractmethod
     def selector_is_displayed(self, selector: str) -> bool:
