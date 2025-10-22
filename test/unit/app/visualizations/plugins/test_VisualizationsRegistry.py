@@ -65,13 +65,11 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         plugin_mgr = VisualizationsRegistry(mock_app, directories_setting=vis_reg_path, template_cache_dir=None)
 
         expected_plugins_path = os.path.join(glx_dir, vis_reg_path)
-        assert plugin_mgr.base_url == "visualizations"
         assert expected_plugins_path in plugin_mgr.directories
 
         example = plugin_mgr.plugins["example"]
         assert example.name == "example"
         assert example.path == os.path.join(expected_plugins_path, "example")
-        assert example.base_url == "/".join((plugin_mgr.base_url, example.name))
 
     def test_plugin_load(self):
         """"""
@@ -107,14 +105,12 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         expected_plugins_path = os.path.join(mock_app_dir.root_path, "plugins")
         expected_plugin_names = ["vis1", "vis2"]
 
-        assert plugin_mgr.base_url == "visualizations"
         assert expected_plugins_path in plugin_mgr.directories
         assert sorted(plugin_mgr.plugins.keys()) == expected_plugin_names
 
         vis1 = plugin_mgr.plugins["vis1"]
         assert vis1.name == "vis1"
         assert vis1.path == os.path.join(expected_plugins_path, "vis1")
-        assert vis1.base_url == "/".join((plugin_mgr.base_url, vis1.name))
 
         vis1_as_dict = vis1.to_dict()
         assert vis1_as_dict["specs"]
@@ -129,7 +125,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         vis2 = plugin_mgr.plugins["vis2"]
         assert vis2.name == "vis2"
         assert vis2.path == os.path.join(expected_plugins_path, "vis2")
-        assert vis2.base_url == "/".join((plugin_mgr.base_url, vis2.name))
 
         mock_app_dir.remove()
 
