@@ -77,7 +77,6 @@ onBeforeRouteLeave((to, from, next) => {
 });
 
 onMounted(async () => {
-
     if (props.visualizationId) {
         const url = withPrefix(`/api/visualizations/${props.visualizationId}`);
         const { data } = await axios.get(url);
