@@ -3,7 +3,6 @@ Test lib/galaxy/visualization/plugins/registry.
 """
 
 import os
-import re
 
 from markupsafe import escape
 
