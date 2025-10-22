@@ -40,7 +40,7 @@ async function render() {
     } else {
         try {
             const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
-            const pluginPath = `${getAppRoot()}static/plugins/visualizations/${props.name}/static/`;
+            const pluginPath = plugin.href;
             const dataIncoming = {
                 root: window.location.origin + getAppRoot(),
                 visualization_config: props.config,
