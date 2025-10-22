@@ -4,8 +4,6 @@ Test lib/galaxy/visualization/plugins/registry.
 
 import os
 
-from markupsafe import escape
-
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import (
     clean_multiline_string,
