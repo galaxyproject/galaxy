@@ -78,15 +78,6 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.resource_parser = resource_parser.ResourceParser(app)
         self._set_logo()
 
-    def render(self, trans=None, embedded=None, **kwargs):
-        """
-        Render and return the text of the non-saved plugin webpage/fragment.
-        """
-        # not saved - no existing config
-        # set up render vars based on plugin.config and kwargs
-        render_vars = self._build_render_vars({}, trans=trans, **kwargs)
-        return self._render(render_vars, trans=trans, embedded=embedded)
-
     def to_dict(self):
         return {
             "name": self.name,
