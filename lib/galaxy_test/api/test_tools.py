@@ -2613,7 +2613,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 exception_raised = e
             assert exception_raised, "Expected invalid column selection to fail job"
 
-    @skip_without_tool("implicit_conversion_format_input")
+    @skip_without_tool("Grep1")
     def test_implicit_conversion_input_dataset_tracking(self):
         with self.dataset_populator.test_history() as history_id:
             compressed_path = self.test_data_resolver.get_filename("1.fastqsanger.gz")
