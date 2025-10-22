@@ -238,8 +238,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
             echo "Installing yarn into '$CONDA_DEFAULT_ENV' Conda environment with conda."
             $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" 'yarn<2'
         elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
-            echo "Installing yarn into $VIRTUAL_ENV with npm."
-            npm install --global yarn
+            echo "Installing yarn into $VIRTUAL_ENV with corepack."
+            corepack enable yarn
         else
             echo "Installing yarn locally with npm."
             npm install yarn
