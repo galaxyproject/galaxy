@@ -40,7 +40,7 @@ class VisualizationsRegistry:
     def __str__(self):
         return self.__class__.__name__
 
-    def __init__(self, app, template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
+    def __init__(self, app, directories_setting=None, skip_bad_plugins=True, **kwargs):
         """
         Set up the manager and load all visualization plugins.
 
@@ -48,14 +48,10 @@ class VisualizationsRegistry:
         :param  app:        the application (and its configuration) using this manager
         :type   base_url:   string
         :param  base_url:   url to prefix all plugin urls with
-        :type   template_cache_dir: string
-        :param  template_cache_dir: filesytem path to the directory where cached
-            templates are kept
         """
         self.app = weakref.ref(app)
         self.config_parser = config_parser.VisualizationsConfigParser()
         self.base_url = self.BASE_URL
-        self.template_cache_dir = template_cache_dir
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = {}
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
@@ -150,7 +146,6 @@ class VisualizationsRegistry:
             config,
             context=dict(
                 base_url=self.base_url,
-                template_cache_dir=self.template_cache_dir,
             ),
         )
 
