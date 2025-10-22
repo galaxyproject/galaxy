@@ -131,6 +131,7 @@ from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
+    deprecated,
     Literal,
     NotRequired,
     Protocol,
@@ -2029,6 +2030,21 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             self.state = state
             self.state_history.append(JobStateHistory(self))
             return True
+
+    @deprecated("Use tool.get_param_values(job) instead")
+    def get_param_values(self, app, ignore_errors=False):
+        """
+        Read encoded parameter values from the database and turn back into a
+        dict of tool parameter values.
+        """
+        tool = app.toolbox.get_tool(
+            self.tool_id,
+            tool_version=self.tool_version,
+            tool_uuid=self.dynamic_tool and self.dynamic_tool.uuid,
+            user=self.user,
+        )
+        param_dict = tool.get_param_values(self, ignore_errors=ignore_errors)
+        return param_dict
 
     def raw_param_dict(self):
         param_dict = {p.name: p.value for p in self.parameters}
