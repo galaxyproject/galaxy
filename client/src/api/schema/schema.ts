@@ -23194,11 +23194,6 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
-             * Target
-             * @description The target of the plugin.
-             */
-            target: string;
-            /**
              * Title
              * @description The title of the plugin.
              */
