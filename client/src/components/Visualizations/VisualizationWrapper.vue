@@ -67,7 +67,7 @@ async function render() {
                 if (plugin?.entry_point?.attr?.src) {
                     const script = iframeDocument.createElement("script");
                     script.type = "module";
-                    script.src = `${pluginPath}${plugin.entry_point.attr.src}`;
+                    script.src = `${pluginPath}/${plugin.entry_point.attr.src}`;
                     iframeDocument.body.appendChild(script);
                 } else {
                     const error = iframeDocument.createElement("div");
@@ -79,7 +79,7 @@ async function render() {
                 if (plugin?.entry_point?.attr?.css) {
                     const link = iframeDocument.createElement("link");
                     link.rel = "stylesheet";
-                    link.href = `${pluginPath}${plugin.entry_point.attr.css}`;
+                    link.href = `${pluginPath}/${plugin.entry_point.attr.css}`;
                     iframeDocument.head.appendChild(link);
                 }
 

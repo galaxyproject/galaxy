@@ -12,11 +12,9 @@ import weakref
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import config_directories_from_setting
-from galaxy.visualization.plugins import (
-    config_parser,
-    plugin as vis_plugins,
-)
+from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins.datasource_testing import is_object_applicable
+from galaxy.visualization.plugins.plugin import VisualizationPlugin
 
 log = logging.getLogger(__name__)
 
@@ -134,20 +132,8 @@ class VisualizationsRegistry:
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
-                plugin = self._build_plugin(plugin_name, plugin_path, config)
-                return plugin
+                return VisualizationPlugin(plugin_path, plugin_name, config)
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
-
-    def _build_plugin(self, plugin_name, plugin_path, config):
-        return vis_plugins.VisualizationPlugin(
-            self.app(),
-            plugin_path,
-            plugin_name,
-            config,
-            context=dict(
-                base_url=self.base_url,
-            ),
-        )
 
     def get_plugin(self, key):
         """
