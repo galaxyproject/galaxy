@@ -77,7 +77,7 @@ def _webelement_to_protocol(element: WebElement) -> WebElementProtocol:
     Since WebElement actually implements all required protocol methods correctly
     at runtime, this cast is safe.
     """
-    return element  # type: ignore[return-value]
+    return cast(WebElementProtocol, element)
 
 
 def _webelements_to_protocol(elements: list[WebElement]) -> list[WebElementProtocol]:
@@ -86,7 +86,12 @@ def _webelements_to_protocol(elements: list[WebElement]) -> list[WebElementProto
 
     See _webelement_to_protocol for why this type conversion is necessary.
     """
-    return elements  # type: ignore[return-value]
+    return [cast(WebElementProtocol, element) for element in elements]
+
+
+def _protocol_to_webelement(element: WebElementProtocol) -> WebElement:
+    """See notes above for why these cannot be directly typed."""
+    return cast(WebElement, element)
 
 
 def _cookies_to_typed(cookies: list[dict]) -> list[Cookie]:
@@ -572,9 +577,7 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             selector_template: Either a Target or a (locator_type, value) tuple for the select element
             value: The value attribute of the option to select
         """
-        # Cast to WebElement - we know this is actually a WebElement in the Selenium backend
-        select_element = self.find_element(selector_template)
-        assert isinstance(select_element, WebElement)
+        select_element = _protocol_to_webelement(self.find_element(selector_template))
         select = Select(select_element)
         select.select_by_value(value)
 
