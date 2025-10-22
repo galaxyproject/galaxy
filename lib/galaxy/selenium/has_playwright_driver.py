@@ -120,6 +120,7 @@ See Also
 """
 
 import abc
+from contextlib import contextmanager
 from typing import (
     Generic,
     NamedTuple,
@@ -1034,7 +1035,6 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
                 driver.click_selector("#button-that-shows-alert")
             # Alert is automatically accepted by the handler
         """
-        from contextlib import contextmanager
 
         @contextmanager
         def _accept_alert_context():

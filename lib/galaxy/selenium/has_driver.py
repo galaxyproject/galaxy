@@ -6,6 +6,7 @@ attribute.
 
 import abc
 import threading
+from contextlib import contextmanager
 from typing import (
     cast,
     Generic,
@@ -25,6 +26,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from seletools.actions import drag_and_drop as seletools_drag_and_drop
 
@@ -437,7 +439,6 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
                 driver.click_selector("#button-that-shows-alert")
             # Alert is automatically accepted here
         """
-        from contextlib import contextmanager
 
         @contextmanager
         def _accept_alert_context():
@@ -569,10 +570,9 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             selector_template: Either a Target or a (locator_type, value) tuple for the select element
             value: The value attribute of the option to select
         """
-        from selenium.webdriver.support.ui import Select
-
         # Cast to WebElement - we know this is actually a WebElement in the Selenium backend
-        select_element = cast(WebElement, self.find_element(selector_template))
+        select_element = self.find_element(selector_template)
+        assert isinstance(select_element, WebElement)
         select = Select(select_element)
         select.select_by_value(value)
 
