@@ -134,6 +134,52 @@ gx_boolean:
     - parameter: "true"
     - parameter: {__class__: 'ConnectedValue3'}
 
+gx_boolean_user:
+  request_valid:
+    - parameter: True
+    - parameter: False
+    - {}
+  request_invalid:
+    - parameter: {}
+    - parameter: "true"
+    - parameter: "mytrue"
+    - parameter: null
+    - parameter: {__class__: 'ConnectedValue'}
+  job_internal_valid:
+   - parameter: true
+   - parameter: false
+  job_internal_invalid:
+   - {}
+  landing_request_valid:
+    - {}
+    - parameter: true
+    - parameter: false
+  landing_request_invalid:
+    - parameter: "true"
+    - parameter: "5"
+  landing_request_internal_valid:
+    - {}
+    - parameter: true
+    - parameter: false
+  landing_request_internal_invalid:
+    - parameter: "moo"
+    - parameter: "true"
+    - parameter: "5"
+  workflow_step_valid:
+    - parameter: True
+    - {}
+  workflow_step_invalid:
+    - parameter: "true"
+    - parameter: mytrue
+    - parameter: null
+  workflow_step_linked_valid:
+    - parameter: True
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: "true"
+    - parameter: {__class__: 'ConnectedValue3'}
+
 gx_int_optional:
   request_valid: &gx_int_optional_request_valid
    - parameter: 5
