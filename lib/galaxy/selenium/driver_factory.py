@@ -115,13 +115,13 @@ class ConfiguredDriver:
         Initialize a configured driver with the specified backend.
 
         Args:
+            timeout_handler: Callback function that returns timeout value for wait operations
             browser: Browser name ("auto", "CHROME", "FIREFOX", etc.)
             remote: Whether to use remote Selenium Grid (Selenium only)
             remote_host: Remote Selenium Grid host
             remote_port: Remote Selenium Grid port
             headless: Whether to run browser in headless mode
             backend_type: Which backend to use ("selenium" or "playwright")
-            default_timeout: Default timeout for wait operations in seconds
 
         Raises:
             Exception: If Playwright backend is requested with remote=True
