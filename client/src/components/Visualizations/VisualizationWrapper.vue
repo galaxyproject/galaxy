@@ -14,7 +14,7 @@ const props = withDefaults(
     defineProps<{
         config: object;
         name: string;
-        title: string;
+        title?: string;
         height?: number;
     }>(),
     {
