@@ -2290,6 +2290,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
         rerun_remap_job_id: Optional[int] = None,
+        credentials_context: Optional[CredentialsContext] = None,
         input_format: str = "legacy",
     ):
         """The tool request API+tasks version of handle_input."""
@@ -2311,6 +2312,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             completed_jobs,
             rerun_remap_job_id=rerun_remap_job_id,
             preferred_object_store_id=preferred_object_store_id,
+            credentials_context=credentials_context,
             collection_info=collection_info,
         )
 
