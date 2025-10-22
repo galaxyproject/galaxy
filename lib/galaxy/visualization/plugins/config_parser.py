@@ -32,8 +32,6 @@ class VisualizationsConfigParser:
             -- what information needs to be added to the query string
     """
 
-    #: what are the allowed 'entry_point_type' for entry_point elements
-    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script"]
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = ["galaxy_main", "_top", "_blank"]
 
@@ -176,27 +174,16 @@ class VisualizationsConfigParser:
 
     def parse_entry_point(self, xml_tree):
         """
-        Parse the config file for an appropriate entry point: a mako template, a script tag,
-        or an html file, returning as dictionary with: ``type``, ``file``, and ``attr`` (-ibutes) of
-        the element.
+        Parse the config file for script entry point attributes like ``src`` and ``css`.
         """
-        # (older) mako-only syntax: the template to use in rendering the visualization
-        template = xml_tree.find("template")
-        if template is not None and template.text:
-            log.info("template syntax is deprecated: use entry_point instead")
-            return {"type": "mako", "file": template.text, "attr": {}}
-
-        # need one of the two: (the deprecated) template or entry_point
+        # verify entry_point exists
         entry_point = xml_tree.find("entry_point")
         if entry_point is None:
             raise ParsingException("template or entry_point required")
 
-        # parse by returning a sub-object and simply copying any attributes unused here
+        # parse by returning a sub-object
         entry_point_attrib = dict(entry_point.attrib)
-        entry_point_type = entry_point_attrib.pop("entry_point_type", "mako")
-        if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
-            raise ParsingException(f"Unknown entry_point type: {entry_point_type}")
-        return {"type": entry_point_type, "file": entry_point.text, "attr": entry_point_attrib}
+        return {"attr": entry_point_attrib}
 
 
 # -------------------------------------------------------------------
