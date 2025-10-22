@@ -1,10 +1,6 @@
 import logging
 
 from markupsafe import escape
-from paste.httpexceptions import (
-    HTTPBadRequest,
-    HTTPNotFound,
-)
 
 from galaxy import (
     model,
