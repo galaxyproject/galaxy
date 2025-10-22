@@ -5165,7 +5165,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     return item
         return None
 
-    def get_converted_dataset_deps(self, trans, target_ext):
+    def get_converted_dataset_deps(self, trans, target_ext, use_cached_job=False):
         """
         Returns dict of { "dependency" => HDA }
         """
@@ -5174,9 +5174,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
         except KeyError:
             depends_list = []
-        return {dep: self.get_converted_dataset(trans, dep) for dep in depends_list}
+        return {dep: self.get_converted_dataset(trans, dep, use_cached_job=use_cached_job) for dep in depends_list}
 
-    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None, include_errored=False):
+    def get_converted_dataset(
+        self, trans, target_ext, target_context=None, history=None, include_errored=False, use_cached_job=False
+    ):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -5201,7 +5203,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # Check if we have dependencies
         try:
             for dependency in depends_list:
-                dep_dataset = self.get_converted_dataset(trans, dependency)
+                dep_dataset = self.get_converted_dataset(trans, dependency, use_cached_job=use_cached_job)
                 if dep_dataset is None:
                     # None means converter is running first time
                     return None
@@ -5226,6 +5228,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                     deps=deps,
                     target_context=target_context,
                     history=history,
+                    use_cached_job=use_cached_job,
                 ).values()
             )
         )
