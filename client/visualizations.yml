@@ -38,7 +38,7 @@ heatmap:
     version: 0.0.15
 hivtrace:
     package: "@galaxyproject/hivtrace"
-    version: 0.0.0
+    version: 0.0.1
 igv:
     package: "@galaxyproject/igv"
     version: 0.0.14
