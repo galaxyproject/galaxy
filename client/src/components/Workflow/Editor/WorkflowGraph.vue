@@ -4,7 +4,6 @@ import { storeToRefs } from "pinia";
 import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { isGraphStep } from "@/composables/useInvocationGraph";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
@@ -72,24 +71,6 @@ const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundi
     transform,
 );
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
-
-const stepConnectionClasses = computed<{
-    breathing: number[];
-    flowing: number[];
-}>(() => {
-    const retVal: { breathing: number[]; flowing: number[] } = { breathing: [], flowing: [] };
-    for (const stepId in props.steps) {
-        const step = props.steps[stepId];
-        if (step && isGraphStep(step) && step.state) {
-            if (["queued", "new", "waiting"].includes(step.state)) {
-                retVal.breathing.push(step.id);
-            } else if (step.state === "running") {
-                retVal.flowing.push(step.id);
-            }
-        }
-    }
-    return retVal;
-});
 
 function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0) {
     if (!Object.keys(props.steps).length) {
@@ -225,8 +206,7 @@ defineExpose({
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
-                    :dragging-connection="draggingPosition"
-                    :step-connection-classes="stepConnectionClasses" />
+                    :dragging-connection="draggingPosition" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="step.id"
