@@ -8738,7 +8738,7 @@ steps:
             workflow_id = self.workflow_populator.upload_yaml_workflow(wf)
 
             # Run workflow first time
-            workflow_request: Dict[str, Any] = {
+            workflow_request: dict[str, Any] = {
                 "inputs": json.dumps({"fastq_input": self._ds_entry(dataset)}),
                 "history": f"hist_id={history_id}",
                 "inputs_by": "name",
