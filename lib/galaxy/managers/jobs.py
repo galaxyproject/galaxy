@@ -2002,10 +2002,8 @@ class JobSubmitter:
             target_history = request_context.history
             use_cached_jobs = request.use_cached_jobs
             rerun_remap_job_id = request.rerun_remap_job_id
-            tool_state: RequestInternalDereferencedToolState
-            new_hdas: list[DereferencedDatasetPair]
             tool_state, new_hdas = self.dereference(request_context, tool, request, tool_request)
-            to_materialize_list: list[DereferencedDatasetPair] = [p for p in new_hdas if not p.request.deferred]
+            to_materialize_list = [p for p in new_hdas if not p.request.deferred]
             for to_materialize in to_materialize_list:
                 materialize_request = self.materialize_request_for(request_context, to_materialize.hda)
                 # API dataset materialization is immutable and produces new datasets
