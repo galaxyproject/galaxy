@@ -3191,6 +3191,12 @@ class ExpressionTool(Tool):
     tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
 
+    def parse(self, tool_source: ToolSource, guid: Optional[str] = None, dynamic: bool = False) -> None:
+        super().parse(tool_source, guid, dynamic)
+        if self.profile < 19.05:
+            # Expression tools were introduced in 19.05 and we don't want crazy stuff like failing on stderr
+            self.profile = 19.05
+
     def parse_command(self, tool_source):
         self.command = f"cd ../; {expressions.EXPRESSION_SCRIPT_CALL}"
         self.interpreter = None
