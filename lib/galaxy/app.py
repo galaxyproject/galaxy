@@ -266,9 +266,13 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
     object_store: BaseObjectStore
+    _tool_data_tables: Optional[BaseToolDataTableManager]
+    _genome_builds: Optional[GenomeBuilds]
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
+        self._genome_builds = None
+        self._tool_data_tables = None
         self.haltables = [
             ("object store", self._shutdown_object_store),
             ("database connection", self._shutdown_model),
@@ -314,7 +318,15 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             self.trace_logger = None
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
-        self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
+        self._genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
+
+    # lazy initialize genome_builds so tool_data_tables is also lazy
+    @property
+    def genome_builds(self) -> GenomeBuilds:
+        if self._genome_builds is None:
+            self._configure_genome_builds()
+        assert self._genome_builds is not None
+        return self._genome_builds
 
     def wait_for_toolbox_reload(self, old_toolbox):
         timer = ExecutionTimer()
@@ -412,22 +424,30 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def _configure_tool_data_tables(self, from_shed_config):
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        self.tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
+        tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
             tool_data_path=self.config.tool_data_path,
             config_filename=self.config.tool_data_table_config_path,
             other_config_dict=self.config,
         )
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         try:
-            self.tool_data_tables.load_from_config_file(
+            tool_data_tables.load_from_config_file(
                 config_filename=self.config.shed_tool_data_table_config,
-                tool_data_path=self.tool_data_tables.tool_data_path,
+                tool_data_path=tool_data_tables.tool_data_path,
                 from_shed_config=from_shed_config,
             )
         except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
             if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
                 raise
+        self._tool_data_tables = tool_data_tables
+
+    @property
+    def tool_data_tables(self) -> BaseToolDataTableManager:
+        if self._tool_data_tables is None:
+            self._configure_tool_data_tables(from_shed_config=False)
+        assert self._tool_data_tables is not None
+        return self._tool_data_tables
 
     def _configure_datatypes_registry(self, use_display_applications=True, use_converters=True):
         # Create an empty datatypes registry.
@@ -746,10 +766,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
-        # Tool Data Tables
+        # Setup lazy variables
         self._configure_tool_data_tables(from_shed_config=False)
-        # Load dbkey / genome build manager
-        self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
+        self._configure_genome_builds()
 
         # Genomes
         self.genomes = self._register_singleton(Genomes)

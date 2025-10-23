@@ -72,11 +72,6 @@ log = get_logger(__name__)
 
 
 @lru_cache
-def setup_data_table_manager(app):
-    app._configure_tool_data_tables(from_shed_config=False)
-
-
-@lru_cache
 def cached_create_tool_from_representation(app: MinimalManagerApp, raw_tool_source: str):
     return create_tool_from_representation(app=app, raw_tool_source=raw_tool_source, tool_source_class="XmlToolSource")
 
@@ -448,7 +443,6 @@ def import_data_bundle(
     tool_data_file_path: Optional[str] = None,
     task_user_id: Optional[int] = None,
 ):
-    setup_data_table_manager(app)
     if src == "uri":
         assert uri
         tool_data_import_manager.import_data_bundle_by_uri(config, uri, tool_data_file_path=tool_data_file_path)

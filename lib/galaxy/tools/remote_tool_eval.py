@@ -66,10 +66,14 @@ class ToolApp(MinimalToolApp):
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store
         self.genome_builds = GenomeBuilds(self)
-        self.tool_data_tables = tool_data_table_manager
+        self._tool_data_tables = tool_data_table_manager
         self.file_sources = file_sources
         self.biotools_metadata_source = None
         self.security = None  # type: ignore[assignment]
+
+    @property
+    def tool_data_tables(self) -> ToolDataTableManager:
+        return self._tool_data_tables
 
 
 def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY) -> None:

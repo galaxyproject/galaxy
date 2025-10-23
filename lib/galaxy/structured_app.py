@@ -80,7 +80,10 @@ class BasicSharedApp(Container):
     auth_manager: AuthManager
     security_agent: Any
     quota_agent: QuotaAgent
-    tool_data_tables: "ToolDataTableManager"
+
+    @property
+    def tool_data_tables(self) -> "ToolDataTableManager":
+        raise NotImplementedError()
 
     @property
     def toolbox(self) -> "ToolBox":
@@ -95,9 +98,12 @@ class MinimalToolApp(Protocol):
     config: Any
     datatypes_registry: Registry
     object_store: BaseObjectStore
-    tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
     security: IdEncodingHelper
+
+    @property
+    def tool_data_tables(self) -> "ToolDataTableManager":
+        raise NotImplementedError()
 
 
 class MinimalApp(BasicSharedApp):
