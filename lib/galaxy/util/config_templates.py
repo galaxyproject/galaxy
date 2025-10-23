@@ -5,6 +5,7 @@ This is capturing code shared by file source templates and object store template
 
 import logging
 import os
+import re
 from collections.abc import Iterable
 from typing import (
     Any,
@@ -74,16 +75,27 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", coerce_numbers_to_str=True)
 
 
+class TemplateVariableValidator(StrictModel):
+    """Validator definition for template variables."""
+
+    type: Literal["regex", "length", "range"]
+    message: str
+    expression: Optional[str] = None
+    min: Optional[int] = None
+    max: Optional[int] = None
+    negate: bool = False
+
+
 class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
     help: Optional[MarkdownContent]
+    validators: Optional[List[TemplateVariableValidator]] = None
 
 
 class TemplateVariableString(BaseTemplateVariable):
     type: Literal["string"]
     default: str = ""
-    # add non-empty validation?
 
 
 class TemplateVariableInteger(BaseTemplateVariable):
@@ -371,6 +383,63 @@ def validate_specified_datatypes(instance: InstanceDefinition, template: Templat
     validate_specified_datatypes_variables(variables, template)
 
 
+def _run_variable_validator(validator: TemplateVariableValidator, value: Any, variable_name: str) -> None:
+    """Run a single validator on a variable value.
+
+    Raises RequestParameterInvalidException if validation fails.
+    """
+    if validator.type == "regex":
+        if not validator.expression:
+            raise RequestParameterInvalidException(
+                f"Regex validator for variable '{variable_name}' is missing 'expression' field"
+            )
+        try:
+            pattern = re.compile(validator.expression)
+            matches = pattern.search(str(value)) is not None
+            is_valid = not matches if validator.negate else matches
+            if not is_valid:
+                raise RequestParameterInvalidException(
+                    f"Variable '{variable_name}' failed validation: {validator.message}"
+                )
+        except re.error as e:
+            raise RequestParameterInvalidException(f"Invalid regex pattern for variable '{variable_name}': {str(e)}")
+    elif validator.type == "length":
+        if validator.min is None and validator.max is None:
+            raise RequestParameterInvalidException(
+                f"Length validator for variable '{variable_name}' must specify 'min' or 'max'"
+            )
+        value_length = len(str(value))
+        is_valid = True
+        if validator.min is not None and value_length < validator.min:
+            is_valid = False
+        if validator.max is not None and value_length > validator.max:
+            is_valid = False
+        if validator.negate:
+            is_valid = not is_valid
+        if not is_valid:
+            raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {validator.message}")
+    elif validator.type == "range":
+        if validator.min is None and validator.max is None:
+            raise RequestParameterInvalidException(
+                f"Range validator for variable '{variable_name}' must specify 'min' or 'max'"
+            )
+        try:
+            numeric_value = float(value)
+            is_valid = True
+            if validator.min is not None and numeric_value < validator.min:
+                is_valid = False
+            if validator.max is not None and numeric_value > validator.max:
+                is_valid = False
+            if validator.negate:
+                is_valid = not is_valid
+            if not is_valid:
+                raise RequestParameterInvalidException(
+                    f"Variable '{variable_name}' failed validation: {validator.message}"
+                )
+        except (ValueError, TypeError):
+            raise RequestParameterInvalidException(f"Variable '{variable_name}' must be numeric for range validation")
+
+
 def validate_specified_datatypes_variables(variables: Dict[str, Any], template: Template):
     for template_variable in template.variables or []:
         name = template_variable.name
@@ -394,6 +463,11 @@ def validate_specified_datatypes_variables(variables: Dict[str, Any], template: 
         if template_type == "boolean":
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
+
+        # Run custom validators if present and value is not None or empty
+        if template_variable.validators and variable_value is not None and variable_value != "":
+            for validator in template_variable.validators:
+                _run_variable_validator(validator, variable_value, name)
 
 
 def validate_no_extra_secrets_defined(secrets: Dict[str, str], template: Template) -> None:
