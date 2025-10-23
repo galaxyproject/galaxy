@@ -43,9 +43,6 @@ export default {
                 reloadEditor = false;
                 this.skipNextReload = false;
             }
-            if (reloadEditor) {
-                this.editorReloadKey += 1;
-            }
 
             this.version = Query.get("version");
             this.storedWorkflowId = Query.get("id");
@@ -58,6 +55,10 @@ export default {
             if (this.workflowId) {
                 const { id: storedWorkflowId } = await getWorkflowInfo(workflowId, this.version, true);
                 this.storedWorkflowId = storedWorkflowId;
+            }
+
+            if (reloadEditor) {
+                this.editorReloadKey += 1;
             }
         },
     },
