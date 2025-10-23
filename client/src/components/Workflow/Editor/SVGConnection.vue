@@ -1,24 +1,22 @@
 <script setup lang="ts">
 import { curveBasis, line } from "d3";
-import { computed } from "vue";
+import { computed, type PropType } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { getConnectionId } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import type { Connection } from "@/stores/workflowStoreTypes";
 
-interface Props {
-    id: string;
-    connection: Connection;
-    terminalPosition?: TerminalPosition | null;
-    flowing?: boolean;
-    breathing?: boolean;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-    terminalPosition: null,
-    flowing: false,
-    breathing: false,
+const props = defineProps({
+    id: String,
+    connection: {
+        type: Object as PropType<Connection>,
+        required: true,
+    },
+    terminalPosition: {
+        type: Object as PropType<TerminalPosition | null>,
+        default: null,
+    },
 });
 
 const ribbonMargin = 4;
@@ -166,24 +164,6 @@ const paths = computed(() => {
     return lines.map((l) => curve(l)!);
 });
 
-// Estimate path length for animation timing on flowing connections
-const estimatedPathLength = computed(() => {
-    if (!props.flowing) {
-        return 0;
-    }
-
-    if (!connectionPosition.value) {
-        return 100;
-    }
-
-    const deltaX = connectionPosition.value.endX - connectionPosition.value.startX;
-    const deltaY = connectionPosition.value.endY - connectionPosition.value.startY;
-    const straightDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-    // Add some extra length to account for curves
-    return Math.max(100, straightDistance * 1.3);
-});
-
 const lineWidth = computed(() => {
     if (inputIsMappedOver.value || outputIsMappedOver.value) {
         return 2;
@@ -201,10 +181,6 @@ const connectionClass = computed(() => {
 
     if (!connectionIsValid.value) {
         classList.push("invalid");
-    }
-
-    if (props.breathing) {
-        classList.push("breathing");
     }
 
     return classList.join(" ");
@@ -253,22 +229,6 @@ function keyForIndex(index: number) {
             :stroke-width="lineWidth"
             fill="none">
         </path>
-
-        <template v-if="props.flowing">
-            <path
-                v-for="(path, index) in paths"
-                :key="`particle-${keyForIndex(index)}`"
-                class="connection-particle"
-                :d="path"
-                :stroke-width="lineWidth * 2"
-                :style="{
-                    '--path-length': `${estimatedPathLength}px`,
-                    '--animation-duration': `${Math.max(2, estimatedPathLength / 80)}s`,
-                }"
-                stroke-linecap="round"
-                fill="none">
-            </path>
-        </template>
     </g>
 </template>
 
@@ -287,45 +247,6 @@ function keyForIndex(index: number) {
         &.invalid {
             stroke: #{$brand-warning};
         }
-
-        &.breathing {
-            animation: breathe 2s ease-in-out infinite;
-        }
-    }
-
-    .connection-particle {
-        stroke: white;
-        stroke-dasharray: 0 calc(var(--path-length, 100px) / 2) 0 var(--path-length, 100px);
-        animation: flow var(--animation-duration, 1s) linear infinite;
-    }
-}
-
-@keyframes flow {
-    0% {
-        stroke-dashoffset: 0;
-    }
-    100% {
-        stroke-dashoffset: calc(-2 * var(--path-length, 100px) - 8px);
-    }
-}
-
-@keyframes breathe {
-    0%,
-    100% {
-        stroke-width: var(--stroke-width, 4px);
-        opacity: 0.8;
-    }
-    25% {
-        stroke-width: calc(var(--stroke-width, 4px) * 1.2);
-        opacity: 0.9;
-    }
-    50% {
-        stroke-width: calc(var(--stroke-width, 4px) * 1.4);
-        opacity: 1;
-    }
-    75% {
-        stroke-width: calc(var(--stroke-width, 4px) * 1.2);
-        opacity: 0.9;
     }
 }
 </style>
