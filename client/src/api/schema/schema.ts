@@ -8123,7 +8123,7 @@ export interface components {
              * Column Definitions
              * @description Specify definitions for row data if collection_type is sample_sheet
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Content
              * @description Depending on the `source` it can be:
@@ -8354,7 +8354,7 @@ export interface components {
              * Column Definitions
              * @description Specify definitions for row data if collection_type is sample_sheet
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Copy Elements
              * @description Whether to create a copy of the source HDAs for the new collection.
@@ -11322,8 +11322,6 @@ export interface components {
             type:
                 | ("File" | "null" | "boolean" | "int" | "float" | "string")
                 | ("File" | "null" | "boolean" | "int" | "float" | "string")[];
-        } & {
-            [key: string]: unknown;
         };
         /** FileDataElement */
         FileDataElement: {
@@ -12004,7 +12002,7 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             /** Column Definitions */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Ftp Path */
             ftp_path: string;
@@ -13128,7 +13126,7 @@ export interface components {
              * Column Definitions
              * @description Column data associated with each element of this collection.
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Output"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -13291,7 +13289,7 @@ export interface components {
              * Column Definitions
              * @description Column data associated with each element of this collection.
              */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Output"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -13699,7 +13697,7 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             /** Column Definitions */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Ftp Path */
             ftp_path?: string | null;
@@ -13730,7 +13728,7 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             /** Column Definitions */
-            column_definitions?: components["schemas"]["SampleSheetColumnDefinition-Input"][] | null;
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Elements */
             elements: (
@@ -19771,35 +19769,7 @@ export interface components {
             type: "rules";
         };
         /** SampleSheetColumnDefinition */
-        "SampleSheetColumnDefinition-Input": {
-            /** Default Value */
-            default_value?: number | boolean | string | null;
-            /** Description */
-            description?: string | null;
-            /** Name */
-            name: string;
-            /** Optional */
-            optional: boolean;
-            /** Restrictions */
-            restrictions?: (number | boolean | string | null)[] | null;
-            /** Suggestions */
-            suggestions?: (number | boolean | string | null)[] | null;
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "string" | "int" | "float" | "boolean" | "element_identifier";
-            /** Validators */
-            validators?:
-                | {
-                      [key: string]: unknown;
-                  }[]
-                | null;
-        } & {
-            [key: string]: unknown;
-        };
-        /** SampleSheetColumnDefinition */
-        "SampleSheetColumnDefinition-Output": {
+        SampleSheetColumnDefinition: {
             /** Default Value */
             default_value?: number | boolean | string | null;
             /** Description */
