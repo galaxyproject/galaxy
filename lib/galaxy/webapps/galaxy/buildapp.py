@@ -10,7 +10,7 @@ import traceback
 from typing import Optional
 from urllib.parse import urljoin
 
-from paste import httpexceptions
+from webob import exc as httpexceptions
 from tuswsgi import TusMiddleware
 
 import galaxy.app

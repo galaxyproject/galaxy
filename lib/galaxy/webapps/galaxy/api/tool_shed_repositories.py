@@ -10,7 +10,7 @@ from fastapi import (
     Path,
     Query,
 )
-from paste.httpexceptions import (
+from webob.exc import (
     HTTPBadRequest,
     HTTPForbidden,
 )

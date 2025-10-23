@@ -1,7 +1,7 @@
 import logging
 
 from markupsafe import escape
-from paste.httpexceptions import (
+from webob.exc import (
     HTTPBadRequest,
     HTTPNotFound,
 )

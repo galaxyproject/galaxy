@@ -4,7 +4,7 @@ from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
 
-import paste.httpexceptions
+import webob.exc
 from pydantic import (
     BaseModel,
     ValidationError,
@@ -201,11 +201,11 @@ def legacy_expose_api(func, to_json=True, user_required=True):
             if to_json:
                 rval = format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
             return rval
-        except paste.httpexceptions.HTTPException:
+        except webob.exc.HTTPException:
             raise  # handled
         except Exception:
             log.exception("Uncaught exception in exposed API method:")
-            raise paste.httpexceptions.HTTPServerError()
+            raise webob.exc.HTTPServerError()
 
     return expose(_save_orig_fn(decorator, func))
 
@@ -346,7 +346,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
         except MessageException as e:
             traceback_string = format_exc()
             return __api_error_response(trans, exception=e, traceback=traceback_string)
-        except paste.httpexceptions.HTTPException:
+        except webob.exc.HTTPException:
             # TODO: Allow to pass or format for the API???
             raise  # handled
         except Exception as e:

@@ -5,7 +5,7 @@ from urllib.parse import (
     unquote_plus,
 )
 
-import paste.httpexceptions
+import webob.exc
 from markupsafe import escape
 
 from galaxy import (
@@ -483,9 +483,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         site = filename
         data = trans.sa_session.query(HistoryDatasetAssociation).get(dataset_id)
         if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable(
-                f"Invalid reference dataset id: {str(dataset_id)}."
-            )
+            raise webob.exc.HTTPRequestRangeNotSatisfiable(f"Invalid reference dataset id: {str(dataset_id)}.")
         if "display_url" not in kwd or "redirect_url" not in kwd:
             return trans.show_error_message(
                 'Invalid parameters specified for "display at" link, please contact a Galaxy administrator'
@@ -534,9 +532,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # decode ids
         data, user = decode_dataset_user(trans, dataset_id, user_id)
         if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable(
-                f"Invalid reference dataset id: {str(dataset_id)}."
-            )
+            raise webob.exc.HTTPRequestRangeNotSatisfiable(f"Invalid reference dataset id: {str(dataset_id)}.")
         if user is None:
             user = trans.user
         if user:
@@ -551,19 +547,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             display_app = trans.app.datatypes_registry.display_applications.get(app_name)
             if not display_app:
                 log.debug("Unknown display application has been requested: %s", app_name)
-                return paste.httpexceptions.HTTPNotFound(
-                    f"The requested display application ({app_name}) is not available."
-                )
+                return webob.exc.HTTPNotFound(f"The requested display application ({app_name}) is not available.")
             dataset_hash, user_hash = encode_dataset_user(trans, data, user)
             try:
                 display_link = display_app.get_link(link_name, data, dataset_hash, user_hash, trans, app_kwds)
             except Exception as e:
                 log.debug("Error generating display_link: %s", e)
                 # User can sometimes recover from, e.g. conversion errors by fixing input metadata, so use conflict
-                return paste.httpexceptions.HTTPConflict(f"Error generating display_link: {e}")
+                return webob.exc.HTTPConflict(f"Error generating display_link: {e}")
             if not display_link:
                 log.debug("Unknown display link has been requested: %s", link_name)
-                return paste.httpexceptions.HTTPNotFound(f"Unknown display link has been requested: {link_name}")
+                return webob.exc.HTTPNotFound(f"Unknown display link has been requested: {link_name}")
             if data.state == data.states.ERROR:
                 msg.append(
                     (
@@ -596,7 +590,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             action_param = display_link.get_param_name_by_url(action_param)
                         except ValueError as e:
                             log.debug(e)
-                            return paste.httpexceptions.HTTPNotFound(util.unicodify(e))
+                            return webob.exc.HTTPNotFound(util.unicodify(e))
                         value = display_link.get_param_value(action_param)
                         assert value, f"An invalid parameter name was provided: {action_param}"
                         assert value.parameter.viewable, "This parameter is not viewable."
@@ -613,7 +607,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 rval = open(file_name, "rb")
                             except OSError as e:
                                 log.debug("Unable to access requested file in display application: %s", e)
-                                return paste.httpexceptions.HTTPNotFound("This file is no longer available.")
+                                return webob.exc.HTTPNotFound("This file is no longer available.")
                         else:
                             rval = str(value)
                             content_length = len(rval)

@@ -7,7 +7,7 @@ import os.path
 import string
 from json import dumps
 
-from paste.httpexceptions import (
+from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
 )

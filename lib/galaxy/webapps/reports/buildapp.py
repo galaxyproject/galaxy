@@ -7,7 +7,7 @@ import logging
 import os
 from inspect import isclass
 
-from paste import httpexceptions
+from webob import exc as httpexceptions
 
 import galaxy.model
 import galaxy.model.mapping

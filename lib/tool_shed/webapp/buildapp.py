@@ -9,7 +9,7 @@ from inspect import isclass
 from urllib.parse import parse_qs
 
 import routes
-from paste import httpexceptions
+from webob import exc as httpexceptions
 from routes.middleware import RoutesMiddleware
 
 import galaxy.webapps.base.webapp
