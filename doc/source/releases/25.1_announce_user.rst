@@ -355,6 +355,9 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+* Set minimum profile version for expression tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21151`_
 * Drop ucsc test server from sample build sites
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 20723`_
