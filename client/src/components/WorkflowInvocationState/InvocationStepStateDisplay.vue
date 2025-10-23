@@ -14,7 +14,7 @@ const props = defineProps<{
     <span
         class="d-flex align-items-center"
         data-description="invocation step state counter"
-        :data-state="state"
+        :data-step-state="state"
         :data-count="jobCount">
         <FontAwesomeIcon
             v-if="iconClasses[props.state]"

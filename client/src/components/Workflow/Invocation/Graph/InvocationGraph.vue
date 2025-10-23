@@ -204,7 +204,9 @@ function stepClicked(nodeId: number | null) {
                     @mouseover="showSideOverlay = true"
                     @mouseleave="showSideOverlay = false">
                     <BCard no-body>
-                        <div v-if="activeNodeId !== null && showSideOverlay" class="overlay overlay-left" />
+                        <div
+                            v-if="activeNodeId !== null && showSideOverlay"
+                            class="graph-scroll-overlay overlay-left" />
                         <WorkflowGraph
                             ref="workflowGraph"
                             class="invocation-graph"
@@ -218,7 +220,9 @@ function stepClicked(nodeId: number | null) {
                             is-invocation
                             readonly
                             @stepClicked="stepClicked" />
-                        <div v-if="activeNodeId !== null && showSideOverlay" class="overlay overlay-right" />
+                        <div
+                            v-if="activeNodeId !== null && showSideOverlay"
+                            class="graph-scroll-overlay overlay-right" />
                     </BCard>
                 </div>
             </div>
@@ -289,11 +293,13 @@ function stepClicked(nodeId: number | null) {
     }
 }
 
-.overlay {
+.graph-scroll-overlay {
     bottom: 0;
     width: 1.5rem;
     background: $gray-200;
     opacity: 0.5;
+    position: absolute;
+    height: 100%;
     &.overlay-left {
         z-index: 1;
     }
