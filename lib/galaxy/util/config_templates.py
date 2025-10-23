@@ -353,6 +353,80 @@ def find_template_by(templates: List[T], template_id: str, template_version: int
     raise ObjectNotFound(f"Could not find a {what} template with id {template_id} and version {template_version}")
 
 
+def validate_variable_regex(validator: TemplateVariableValidator, value: Any, variable_name: str) -> None:
+    """Validate value against a regular expression pattern."""
+    if not validator.expression:
+        raise RequestParameterInvalidException(
+            f"Regex validator for variable '{variable_name}' is missing 'expression' field"
+        )
+    try:
+        pattern = re.compile(validator.expression)
+        matches = pattern.search(str(value)) is not None
+        is_valid = not matches if validator.negate else matches
+        if not is_valid:
+            raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {validator.message}")
+    except re.error as e:
+        raise RequestParameterInvalidException(f"Invalid regex pattern for variable '{variable_name}': {str(e)}")
+
+
+def validate_variable_length(validator: TemplateVariableValidator, value: Any, variable_name: str) -> None:
+    """Validate value length is within specified bounds."""
+    if validator.min is None and validator.max is None:
+        raise RequestParameterInvalidException(
+            f"Length validator for variable '{variable_name}' must specify 'min' or 'max'"
+        )
+    value_length = len(str(value))
+    is_valid = True
+    if validator.min is not None and value_length < validator.min:
+        is_valid = False
+    if validator.max is not None and value_length > validator.max:
+        is_valid = False
+    if validator.negate:
+        is_valid = not is_valid
+    if not is_valid:
+        raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {validator.message}")
+
+
+def validate_variable_range(validator: TemplateVariableValidator, value: Any, variable_name: str) -> None:
+    """Validate numeric value is within specified range."""
+    if validator.min is None and validator.max is None:
+        raise RequestParameterInvalidException(
+            f"Range validator for variable '{variable_name}' must specify 'min' or 'max'"
+        )
+    try:
+        numeric_value = float(value)
+        is_valid = True
+        if validator.min is not None and numeric_value < validator.min:
+            is_valid = False
+        if validator.max is not None and numeric_value > validator.max:
+            is_valid = False
+        if validator.negate:
+            is_valid = not is_valid
+        if not is_valid:
+            raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {validator.message}")
+    except (ValueError, TypeError):
+        raise RequestParameterInvalidException(f"Variable '{variable_name}' must be numeric for range validation")
+
+
+VARIABLE_VALIDATOR_FUNCTIONS = {
+    "regex": validate_variable_regex,
+    "length": validate_variable_length,
+    "range": validate_variable_range,
+}
+
+
+def _run_variable_validator(validator: TemplateVariableValidator, value: Any, variable_name: str) -> None:
+    """Run a single validator on a variable value.
+
+    Raises RequestParameterInvalidException if validation fails.
+    """
+    validator_func = VARIABLE_VALIDATOR_FUNCTIONS.get(validator.type)
+    if validator_func:
+        validator_func(validator, value, variable_name)
+    else:
+        raise RequestParameterInvalidException(f"Unknown validator type: {validator.type}")
+
+
 def validate_variable_types(instance: InstanceDefinition, template: Template) -> None:
     pass
 
@@ -381,63 +455,6 @@ def validate_specified_datatypes(instance: InstanceDefinition, template: Templat
             raise RequestParameterInvalidException(f"Secret value for secret '{name}' must be of type string")
     variables = instance.variables
     validate_specified_datatypes_variables(variables, template)
-
-
-def _run_variable_validator(validator: TemplateVariableValidator, value: Any, variable_name: str) -> None:
-    """Run a single validator on a variable value.
-
-    Raises RequestParameterInvalidException if validation fails.
-    """
-    if validator.type == "regex":
-        if not validator.expression:
-            raise RequestParameterInvalidException(
-                f"Regex validator for variable '{variable_name}' is missing 'expression' field"
-            )
-        try:
-            pattern = re.compile(validator.expression)
-            matches = pattern.search(str(value)) is not None
-            is_valid = not matches if validator.negate else matches
-            if not is_valid:
-                raise RequestParameterInvalidException(
-                    f"Variable '{variable_name}' failed validation: {validator.message}"
-                )
-        except re.error as e:
-            raise RequestParameterInvalidException(f"Invalid regex pattern for variable '{variable_name}': {str(e)}")
-    elif validator.type == "length":
-        if validator.min is None and validator.max is None:
-            raise RequestParameterInvalidException(
-                f"Length validator for variable '{variable_name}' must specify 'min' or 'max'"
-            )
-        value_length = len(str(value))
-        is_valid = True
-        if validator.min is not None and value_length < validator.min:
-            is_valid = False
-        if validator.max is not None and value_length > validator.max:
-            is_valid = False
-        if validator.negate:
-            is_valid = not is_valid
-        if not is_valid:
-            raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {validator.message}")
-    elif validator.type == "range":
-        if validator.min is None and validator.max is None:
-            raise RequestParameterInvalidException(
-                f"Range validator for variable '{variable_name}' must specify 'min' or 'max'"
-            )
-        try:
-            numeric_value = float(value)
-            is_valid = True
-            if validator.min is not None and numeric_value < validator.min:
-                is_valid = False
-            if validator.max is not None and numeric_value > validator.max:
-                is_valid = False
-            if validator.negate:
-                is_valid = not is_valid
-            if not is_valid:
-                raise RequestParameterInvalidException(
-                    f"Variable '{variable_name}' failed validation: {validator.message}"
-                )
-        except (ValueError, TypeError):
-            raise RequestParameterInvalidException(f"Variable '{variable_name}' must be numeric for range validation")
 
 
 def validate_specified_datatypes_variables(variables: Dict[str, Any], template: Template):
