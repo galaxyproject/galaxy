@@ -180,7 +180,6 @@ class ModelOperationToolAction(DefaultToolAction):
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for hdca in output_collections.out_collection_instances.values():
                 hdca.visible = False
-                # Would we also need to replace the datasets with skipped datasets?
                 for data in hdca.dataset_instances:
-                    data.set_skipped(object_store_populator)
+                    data.set_skipped(object_store_populator, replace_dataset=True)
         trans.sa_session.add_all(out_data.values())
