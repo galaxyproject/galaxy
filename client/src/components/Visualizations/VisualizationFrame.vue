@@ -23,6 +23,8 @@ const emitChange = debounce((newValue: string) => {
 const errorMessage = ref("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
+const blankPageUrl = `${getAppRoot()}static/blank.html`;
+
 async function render() {
     if (props.name) {
         try {
@@ -37,6 +39,12 @@ async function render() {
 
             const iframe = iframeRef.value;
             if (iframe) {
+                if (iframe.contentDocument?.readyState !== "complete") {
+                    await new Promise<HTMLIFrameElement>((resolve) => {
+                        iframe.onload = () => resolve(iframe);
+                    });
+                }
+
                 const iframeDocument = iframe.contentDocument;
                 if (iframeDocument) {
                     const container = iframeDocument.createElement("div");
@@ -93,8 +101,9 @@ onMounted(() => render());
     </div>
     <iframe
         v-else
+        class="position-relative h-100 w-100 border-0"
         id="galaxy_visualization"
         ref="iframeRef"
-        class="position-relative h-100 w-100 border-0"
+        :src="blankPageUrl"
         title="visualization" />
 </template>
