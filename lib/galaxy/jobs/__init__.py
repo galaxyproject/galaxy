@@ -1241,6 +1241,8 @@ class MinimalJobWrapper(HasResourceParameters):
             and self.app.config.require_container_for_user_defined_tools
         ):
             return True
+        if self.tool and self.tool.tool_type == "interactive":
+            return True
         return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     @property
