@@ -100,6 +100,32 @@ export function matchInputs(index, response) {
     return result;
 }
 
+/** Run a single validator
+ * @param{object} validator - Validator definition with type, expression, message, etc.
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function runValidator(validator, value) {
+    if (validator.type === "regex") {
+        try {
+            const regex = new RegExp(validator.expression);
+            const matches = regex.test(value);
+            const isValid = validator.negate ? !matches : matches;
+            return {
+                isValid: isValid,
+                message: isValid ? null : validator.message,
+            };
+        } catch (error) {
+            return {
+                isValid: false,
+                message: `Invalid validation pattern: ${error.message}`,
+            };
+        }
+    }
+    // Future: Add support for length and range validators here
+    return { isValid: true, message: null };
+}
+
 /** Validates input parameters to identify issues before submitting a server request, where comprehensive validation is performed.
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
@@ -156,6 +182,16 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
                     inputId,
                     `Please make sure that you select the same number of inputs for all batch mode fields. This field contains ${n} selection(s) while a previous field contains ${batchN}.`,
                 ];
+            }
+        }
+
+        // Run custom validators if present
+        if (inputDef.validators && inputValue != null && inputValue !== "") {
+            for (const validator of inputDef.validators) {
+                const validationResult = runValidator(validator, inputValue);
+                if (!validationResult.isValid) {
+                    return [inputId, validationResult.message];
+                }
             }
         }
     }
