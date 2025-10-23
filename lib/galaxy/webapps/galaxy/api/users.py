@@ -596,6 +596,7 @@ class FastAPIUsers:
         "/api/users",
         name="create_user",
         summary="Create a new Galaxy user. Only admins can create users for now.",
+        require_admin=True,
     )
     def create(
         self,
