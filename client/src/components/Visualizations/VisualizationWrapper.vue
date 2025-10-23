@@ -16,10 +16,8 @@ const props = withDefaults(
         name: string;
         title?: string;
         height?: number;
-        fullHeight?: boolean;
     }>(),
     {
-        fullHeight: false,
         height: 400,
     },
 );
@@ -35,15 +33,11 @@ const expand = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
 const iframeClass = computed(() =>
-    props.fullHeight
-        ? "visualization-wrapper full-height"
-        : expand.value
-          ? "visualization-popout-wrapper"
-          : "visualization-wrapper",
+    expand.value ? "visualization-popout-wrapper" : "visualization-wrapper"
 );
 
 const iframeStyle = computed(() =>
-    props.fullHeight || expand.value ? {} : { maxHeight: `${props.height}px`, minHeight: `${props.height}px` },
+    expand.value ? {} : { maxHeight: `${props.height}px`, minHeight: `${props.height}px` }
 );
 
 async function render() {
@@ -125,7 +119,6 @@ onMounted(() => render());
             :style="iframeStyle">
         </iframe>
         <BButton
-            v-if="!props.fullHeight"
             class="visualization-popout-expand"
             variant="link"
             size="sm"
@@ -134,7 +127,7 @@ onMounted(() => render());
             <FontAwesomeIcon :icon="faExpand" />
         </BButton>
         <BButton
-            v-if="!props.fullHeight && expand"
+            v-if="expand"
             class="visualization-popout-close"
             variant="link"
             size="sm"
@@ -178,9 +171,5 @@ onMounted(() => render());
     border: none;
     width: 100%;
     padding-top: 1.5rem;
-}
-.full-height {
-    height: 100%;
-    padding-top: 0 !important;
 }
 </style>
