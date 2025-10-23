@@ -34,72 +34,78 @@ const errorMessage = ref("");
 const expand = ref(false);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
-const minMaxHeight = computed(() => props.fullHeight ? "height: 100%; padding-top: 0px !important;" : `max-height: ${props.height}px; min-height: ${props.height}px`);
+const iframeClass = computed(() =>
+    props.fullHeight
+        ? "visualization-wrapper full-height"
+        : expand.value
+          ? "visualization-popout-wrapper"
+          : "visualization-wrapper",
+);
+
+const iframeStyle = computed(() =>
+    props.fullHeight || expand.value ? {} : { maxHeight: `${props.height}px`, minHeight: `${props.height}px` },
+);
 
 async function render() {
     if (!props.name) {
         errorMessage.value = "Visualization name is required!";
-    } else {
-        try {
-            const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
-            const pluginPath = plugin.href;
-            const dataIncoming = {
-                root: window.location.origin + getAppRoot(),
-                visualization_config: props.config,
-                visualization_plugin: plugin,
-                visualization_title: props.title,
-            };
+        return;
+    }
+    try {
+        const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
+        const pluginPath = plugin.href;
+        const dataIncoming = {
+            root: window.location.origin + getAppRoot(),
+            visualization_config: props.config,
+            visualization_plugin: plugin,
+            visualization_title: props.title,
+        };
 
-            const iframe = iframeRef.value;
-            if (iframe) {
-                // Verify document existence
-                const iframeDocument = iframe.contentDocument;
-                if (!iframeDocument) {
-                    errorMessage.value = "Failed to access iframe document.";
-                    return;
-                }
-
-                // Create the container for the plugin
-                const container = iframeDocument.createElement("div");
-                container.id = "app";
-                container.setAttribute("data-incoming", JSON.stringify(dataIncoming));
-                iframeDocument.body.appendChild(container);
-
-                // Inject the script tag for the plugin
-                if (plugin?.entry_point?.attr?.src) {
-                    const script = iframeDocument.createElement("script");
-                    script.type = "module";
-                    script.src = `${pluginPath}/${plugin.entry_point.attr.src}`;
-                    iframeDocument.body.appendChild(script);
-                } else {
-                    const error = iframeDocument.createElement("div");
-                    error.innerHTML = `Unable to locate plugin module for: ${props.name}.`;
-                    iframeDocument.body.appendChild(error);
-                }
-
-                // Add a CSS link to the iframe document
-                if (plugin?.entry_point?.attr?.css) {
-                    const link = iframeDocument.createElement("link");
-                    link.rel = "stylesheet";
-                    link.href = `${pluginPath}/${plugin.entry_point.attr.css}`;
-                    iframeDocument.head.appendChild(link);
-                }
-
-                // Add event listener
-                iframe.contentWindow?.addEventListener("message", (event) => {
-                    if (event.data.from === "galaxy-visualization") {
-                        emitChange(event.data);
-                    }
-                });
-                emit("load");
-                // Reset error message
-                errorMessage.value = "";
-            } else {
-                errorMessage.value = "Frame has been invalidated.";
-            }
-        } catch (e) {
-            errorMessage.value = `Visualization '${props.name}' not available: ${e}.`;
+        const iframe = iframeRef.value;
+        if (!iframe) {
+            errorMessage.value = "Frame has been invalidated.";
+            return;
         }
+
+        const iframeDocument = iframe.contentDocument;
+        if (!iframeDocument) {
+            errorMessage.value = "Failed to access iframe document.";
+            return;
+        }
+
+        const container = iframeDocument.createElement("div");
+        container.id = "app";
+        container.setAttribute("data-incoming", JSON.stringify(dataIncoming));
+        iframeDocument.body.appendChild(container);
+
+        if (plugin?.entry_point?.attr?.src) {
+            const script = iframeDocument.createElement("script");
+            script.type = "module";
+            script.src = `${pluginPath}/${plugin.entry_point.attr.src}`;
+            iframeDocument.body.appendChild(script);
+        } else {
+            const error = iframeDocument.createElement("div");
+            error.innerHTML = `Unable to locate plugin module for: ${props.name}.`;
+            iframeDocument.body.appendChild(error);
+        }
+
+        if (plugin?.entry_point?.attr?.css) {
+            const link = iframeDocument.createElement("link");
+            link.rel = "stylesheet";
+            link.href = `${pluginPath}/${plugin.entry_point.attr.css}`;
+            iframeDocument.head.appendChild(link);
+        }
+
+        iframe.contentWindow?.addEventListener("message", (event) => {
+            if (event.data.from === "galaxy-visualization") {
+                emitChange(event.data);
+            }
+        });
+
+        emit("load");
+        errorMessage.value = "";
+    } catch (e) {
+        errorMessage.value = `Visualization '${props.name}' not available: ${e}.`;
     }
 }
 
@@ -108,17 +114,18 @@ onMounted(() => render());
 
 <template>
     <div v-if="errorMessage">
-        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+        <BAlert variant="danger" show>{{ errorMessage }}</BAlert>
     </div>
     <div v-else class="position-relative h-100">
         <iframe
             id="galaxy_visualization"
             ref="iframeRef"
-            :class="!fullHeight && expand ? 'visualization-popout-wrapper' : 'visualization-wrapper'"
+            :class="iframeClass"
             title="visualization"
-            :style="!fullHeight && expand ? '' : minMaxHeight"></iframe>
+            :style="iframeStyle">
+        </iframe>
         <BButton
-            v-if="!fullHeight"
+            v-if="!props.fullHeight"
             class="visualization-popout-expand"
             variant="link"
             size="sm"
@@ -127,7 +134,7 @@ onMounted(() => render());
             <FontAwesomeIcon :icon="faExpand" />
         </BButton>
         <BButton
-            v-if="!fullHeight && expand"
+            v-if="!props.fullHeight && expand"
             class="visualization-popout-close"
             variant="link"
             size="sm"
@@ -171,5 +178,9 @@ onMounted(() => render());
     border: none;
     width: 100%;
     padding-top: 1.5rem;
+}
+.full-height {
+    height: 100%;
+    padding-top: 0 !important;
 }
 </style>
