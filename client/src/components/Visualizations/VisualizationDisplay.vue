@@ -5,7 +5,7 @@ import { onBeforeRouteLeave } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 
-import VisualizationWrapper from "./VisualizationWrapper.vue";
+import VisualizationFrame from "./VisualizationFrame.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const emit = defineEmits(["load"]);
@@ -100,9 +100,8 @@ onMounted(async () => {
         <div v-if="isLoading" class="iframe-loading bg-light">
             <LoadingSpan message="Loading preview" />
         </div>
-        <VisualizationWrapper
+        <VisualizationFrame
             v-if="visualizationConfig"
-            :full-height="true"
             :config="visualizationConfig"
             :name="visualization"
             @load="handleLoad" />
