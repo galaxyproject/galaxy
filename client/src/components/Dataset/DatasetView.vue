@@ -191,7 +191,7 @@ watch(
         <div v-if="tab === 'preview'" class="tab-content-panel">
             <VisualizationDisplay
                 v-if="preferredVisualization"
-                :datasetId="datasetId"
+                :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
             <div v-else-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">

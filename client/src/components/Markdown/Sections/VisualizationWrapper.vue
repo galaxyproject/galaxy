@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import VisualizationFrame from "./VisualizationFrame.vue";
+import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
 const props = withDefaults(
     defineProps<{
