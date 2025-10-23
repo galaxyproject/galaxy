@@ -230,6 +230,8 @@ store configuration).
 
 ![galaxy.objectstore.templates.models](object_store_templates.png)
 
+For information on adding validation constraints to template variables, see the [Template Variable Validators](#template-variable-validators) section.
+
 ### Ready To Use Production Object Store Templates
 
 The templates are sufficiently generic that they may make sense for a variety of
@@ -429,6 +431,8 @@ configuration).
 
 ![galaxy.files.templates.models](file_source_templates.png)
 
+For information on adding validation constraints to template variables, see the [Template Variable Validators](#template-variable-validators) section.
+
 ### Ready To Use Production File Source Templates
 
 The templates are sufficiently generic that they may make sense for a variety of
@@ -512,7 +516,6 @@ and you are comfortable with it storing your user's secrets.
 ```
 
 ![Screenshot](user_file_source_form_full_rspace.png)
-
 
 ### Production OAuth 2.0 File Source Templates
 
@@ -615,8 +618,8 @@ plugin templates.
 :language: yaml
 ```
 
--   https://github.com/ansible/ansible/pull/75306
--   https://stackoverflow.com/questions/12083319/add-custom-tokens-in-jinja2-e-g-somevar
+- https://github.com/ansible/ansible/pull/75306
+- https://stackoverflow.com/questions/12083319/add-custom-tokens-in-jinja2-e-g-somevar
 
 ## Jinja Template Reference
 
@@ -637,6 +640,8 @@ and the [list of builtin filters](https://jinja.palletsprojects.com/en/3.0.x/tem
 
 This is a typed dictionary object is populated with user supplied values defined via the the `variables` section of the configuration template and filled in by the user when they
 created a new object store or file source.
+
+For information on adding validation constraints to template variables, see the [Template Variable Validators](#template-variable-validators) section.
 
 ### `secrets`
 
@@ -712,6 +717,119 @@ on the simple minio example.
 ```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/minio_example.yml
 :language: yaml
 ```
+
+## Template Variable Validators
+
+Template variables can include optional validators to enforce constraints on user input. Validators ensure that users provide valid values when configuring file sources or object stores, providing clear error messages when validation fails.
+
+### Validator Types
+
+Galaxy supports three types of validators that can be applied to template variables:
+
+#### `regex` - Pattern Matching
+
+Validates that a value matches (or doesn't match) a regular expression pattern.
+
+**Parameters:**
+
+- `type`: Must be `regex`
+- `expression`: The regular expression pattern to match
+- `message`: Error message shown when validation fails
+- `negate` (optional): If `true`, validation succeeds when the pattern does NOT match (default: `false`)
+
+**Example:**
+
+```yaml
+variables:
+  bucket:
+    label: Bucket Name
+    type: string
+    validators:
+      - type: regex
+        expression: '^(?!\s)(?!.*\s$).*$'
+        message: "Bucket name cannot have leading or trailing whitespace"
+      - type: regex
+        expression: "^.*[^/]$"
+        message: "Bucket name cannot end with a slash"
+```
+
+#### `length` - String Length Constraints
+
+Validates that a string value's length falls within specified bounds.
+
+**Parameters:**
+
+- `type`: Must be `length`
+- `min` (optional): Minimum allowed length (inclusive)
+- `max` (optional): Maximum allowed length (inclusive)
+- `message`: Error message shown when validation fails
+
+**Example:**
+
+```yaml
+variables:
+  username:
+    label: Username
+    type: string
+    validators:
+      - type: length
+        min: 3
+        max: 20
+        message: "Username must be between 3 and 20 characters"
+```
+
+#### `range` - Numeric Range Constraints
+
+Validates that a numeric value falls within specified bounds.
+
+**Parameters:**
+
+- `type`: Must be `range`
+- `min` (optional): Minimum allowed value (inclusive)
+- `max` (optional): Maximum allowed value (inclusive)
+- `message`: Error message shown when validation fails
+
+**Example:**
+
+```yaml
+variables:
+  port:
+    label: Port Number
+    type: integer
+    validators:
+      - type: range
+        min: 1
+        max: 65535
+        message: "Port must be between 1 and 65535"
+```
+
+### Multiple Validators
+
+You can apply multiple validators to a single variable. They are evaluated in order, and the first failing validator will stop validation and return its error message.
+
+**Example:**
+
+```yaml
+variables:
+  project_name:
+    label: Project Name
+    type: string
+    validators:
+      - type: length
+        min: 3
+        max: 50
+        message: "Project name must be between 3 and 50 characters"
+      - type: regex
+        expression: "^[a-zA-Z0-9_-]+$"
+        message: "Project name can only contain letters, numbers, hyphens, and underscores"
+```
+
+### Validator Behavior
+
+- Validators are **optional** - variables without validators accept any value (subject to type constraints)
+- Validators **skip empty values** - if a variable is optional and the user provides no value, validators are not run
+- Validators apply to **both frontend and backend** - validation happens in the UI for immediate feedback and on the server for security
+- **Clear error messages** help users understand what went wrong and how to fix it
 
 ## Connecting Configuration Templates to Secrets
 
