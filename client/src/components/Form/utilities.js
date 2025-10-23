@@ -100,29 +100,104 @@ export function matchInputs(index, response) {
     return result;
 }
 
+/** Validate value against a regular expression pattern
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateRegex(validator, value) {
+    try {
+        const regex = new RegExp(validator.expression);
+        const matches = regex.test(String(value));
+        const isValid = validator.negate ? !matches : matches;
+        return {
+            isValid: isValid,
+            message: isValid ? null : validator.message,
+        };
+    } catch (error) {
+        return {
+            isValid: false,
+            message: `Invalid validation pattern: ${error.message}`,
+        };
+    }
+}
+
+/** Validate value length is within specified bounds
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateLength(validator, value) {
+    const valueLength = String(value).length;
+    let isValid = true;
+
+    if (validator.min !== undefined && valueLength < validator.min) {
+        isValid = false;
+    }
+    if (validator.max !== undefined && valueLength > validator.max) {
+        isValid = false;
+    }
+    if (validator.negate) {
+        isValid = !isValid;
+    }
+
+    return {
+        isValid: isValid,
+        message: isValid ? null : validator.message,
+    };
+}
+
+/** Validate numeric value is within specified range
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateRange(validator, value) {
+    const numericValue = Number(value);
+
+    if (isNaN(numericValue)) {
+        return {
+            isValid: false,
+            message: "Value must be numeric for range validation",
+        };
+    }
+
+    let isValid = true;
+
+    if (validator.min !== undefined && numericValue < validator.min) {
+        isValid = false;
+    }
+    if (validator.max !== undefined && numericValue > validator.max) {
+        isValid = false;
+    }
+    if (validator.negate) {
+        isValid = !isValid;
+    }
+
+    return {
+        isValid: isValid,
+        message: isValid ? null : validator.message,
+    };
+}
+
+// Map validator types to their validation functions
+const validatorFunctions = {
+    regex: validateRegex,
+    length: validateLength,
+    range: validateRange,
+};
+
 /** Run a single validator
  * @param{object} validator - Validator definition with type, expression, message, etc.
  * @param{*}      value     - Value to validate
  * @returns{object} Object with isValid boolean and message string
  */
 function runValidator(validator, value) {
-    if (validator.type === "regex") {
-        try {
-            const regex = new RegExp(validator.expression);
-            const matches = regex.test(value);
-            const isValid = validator.negate ? !matches : matches;
-            return {
-                isValid: isValid,
-                message: isValid ? null : validator.message,
-            };
-        } catch (error) {
-            return {
-                isValid: false,
-                message: `Invalid validation pattern: ${error.message}`,
-            };
-        }
+    const validatorFunc = validatorFunctions[validator.type];
+    if (validatorFunc) {
+        return validatorFunc(validator, value);
     }
-    // Future: Add support for length and range validators here
+    // Unknown validator type - consider valid by default
     return { isValid: true, message: null };
 }
 
