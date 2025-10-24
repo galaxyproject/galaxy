@@ -540,17 +540,21 @@ def multi_data_discriminator(v: Any) -> str:
     return ""
 
 
+def tag(field: Type, tag: str) -> Type:
+    return Annotated[field, Tag(tag)]  # type: ignore[return-value]
+
+
 MultiDataInstanceDiscriminator = Discriminator(multi_data_discriminator)
 MultiDataInstance: Type = cast(
     Type,
     Annotated[
         union_type(
             [
-                Annotated[DataRequestHda, Tag("data_request_hda")],
-                Annotated[DataRequestLdda, Tag("data_request_ldda")],
-                Annotated[DataRequestHdca, Tag("data_request_hdca")],
-                Annotated[DataRequestUri, Tag("data_request_uri")],
-                Annotated[DataRequestCollectionUri, Tag("data_request_collection_uri")],
+                tag(DataRequestHda, "data_request_hda"),
+                tag(DataRequestLdda, "data_request_ldda"),
+                tag(DataRequestHdca, "data_request_hdca"),
+                tag(DataRequestUri, "data_request_uri"),
+                tag(DataRequestCollectionUri, "data_request_collection_uri"),
             ]
         ),
         Field(discriminator=MultiDataInstanceDiscriminator),
@@ -614,13 +618,15 @@ class DataCollectionPaired(StrictModel):
 DataRequestInternal: Type = cast(
     Type,
     Annotated[
-        Union[
-            Annotated[DataRequestInternalHda, Tag("data_request_hda")],
-            Annotated[DataRequestInternalLdda, Tag("data_request_ldda")],
-            Annotated[DataRequestInternalHdca, Tag("data_request_hdca")],
-            Annotated[DataRequestUri, Tag("data_request_uri")],
-            Annotated[DataRequestCollectionUri, Tag("data_request_collection_uri")],
-        ],
+        union_type(
+            [
+                tag(DataRequestInternalHda, "data_request_hda"),
+                tag(DataRequestInternalLdda, "data_request_ldda"),
+                tag(DataRequestInternalHdca, "data_request_hdca"),
+                tag(DataRequestUri, "data_request_uri"),
+                tag(DataRequestCollectionUri, "data_request_collection_uri"),
+            ]
+        ),
         Field(discriminator=MultiDataInstanceDiscriminator),
     ],
 )
@@ -761,7 +767,7 @@ class DataCollectionRequest(StrictModel):
     id: StrictStr
 
 
-DataCollectionRequestOrCollectionUri = Union[DataCollectionRequest, DataRequestCollectionUri]
+DataCollectionRequestOrCollectionUri: Type = union_type([DataCollectionRequest, DataRequestCollectionUri])
 
 
 class DataCollectionRequestInternal(StrictModel):
@@ -769,7 +775,9 @@ class DataCollectionRequestInternal(StrictModel):
     id: StrictInt
 
 
-DataCollectionRequestInternalOrCollectionUri = Union[DataCollectionRequestInternal, DataRequestCollectionUri]
+DataCollectionRequestInternalOrCollectionUri: Type = union_type(
+    [DataCollectionRequestInternal, DataRequestCollectionUri]
+)
 CollectionAdapterSrcT = Literal["CollectionAdapter"]
 
 
