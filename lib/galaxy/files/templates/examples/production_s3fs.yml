@@ -81,6 +81,13 @@
         store your datasets in. How to setup buckets for your storage will vary from service to service
         but all S3 compatible storage services should have the concept of a bucket to namespace
         a grouping of your data together with.
+      validators:
+        - type: regex
+          expression: '^(?!\s)(?!.*\s$).*$'
+          message: "Bucket name cannot have leading or trailing whitespace"
+        - type: regex
+          expression: '^.*[^/]$'
+          message: "Bucket name cannot end with a slash"
     endpoint_url:
       label: S3-Compatible API Endpoint
       type: string
