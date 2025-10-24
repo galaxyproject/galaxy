@@ -45,6 +45,7 @@ from .display_applications.application import DisplayApplication
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
     from galaxy.tool_util.toolbox.base import AbstractToolBox
+    from galaxy.tools import SetMetadataTool
 
 
 class ConfigurationError(Exception):
@@ -749,7 +750,7 @@ class Registry:
                 failed.append(display_application_id)
         return (reloaded, failed)
 
-    def load_external_metadata_tool(self, toolbox):
+    def load_external_metadata_tool(self, toolbox: "AbstractToolBox") -> None:
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
@@ -757,7 +758,7 @@ class Registry:
         set_meta_tool = toolbox.load_hidden_lib_tool(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml"))
         )
-        self.set_external_metadata_tool = set_meta_tool
+        self.set_external_metadata_tool = cast("SetMetadataTool", set_meta_tool)
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 
     def set_default_values(self):

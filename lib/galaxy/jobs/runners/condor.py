@@ -34,10 +34,8 @@ from galaxy.jobs.runners.util.condor import (
 from galaxy.util import asbool
 
 if TYPE_CHECKING:
-    from galaxy.jobs import (
-        JobDestination,
-        MinimalJobWrapper,
-    )
+    from galaxy.jobs import MinimalJobWrapper
+    from galaxy.jobs.job_destination import JobDestination
 
 log = logging.getLogger(__name__)
 

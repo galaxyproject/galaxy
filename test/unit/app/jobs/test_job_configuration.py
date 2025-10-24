@@ -120,7 +120,7 @@ class BaseJobConfXmlParserTestCase(TestCase):
         self._write_config(contents)
 
     def _write_config(self, contents):
-        with open(os.path.join(self.temp_directory, f"job_conf.{self.extension}"), "w") as f:
+        with open(self.config.job_config_file, "w") as f:
             f.write(contents)
 
     def _with_advanced_config(self):
@@ -293,7 +293,7 @@ class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
         assert limits.total_walltime["delta"] == datetime.timedelta(0, 0, 0, 0, 0, 24)
         assert limits.total_walltime["window"] == 30
 
-    def test_env_parsing(self):
+    def test_env_parsing(self) -> None:
         self._with_advanced_config()
         env_dest = self.job_config.destinations["java_cluster"][0]
         assert len(env_dest.env) == 4, len(env_dest.env)

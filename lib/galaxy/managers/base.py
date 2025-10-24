@@ -37,6 +37,7 @@ from typing import (
     Generic,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
@@ -64,6 +65,9 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
 
 log = logging.getLogger(__name__)
 
@@ -159,7 +163,14 @@ def encode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str
     return security.encode_id(id, kind=kind)
 
 
-def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+def get_object(
+    trans: "ProvidesAppContext",
+    id,
+    class_name,
+    check_ownership: bool = False,
+    check_accessible: bool = False,
+    deleted: Union[bool, None] = None,
+):
     """
     Convenience method to get a model object with the specified checks. This is
     a generic method for dealing with objects uniformly from the older
@@ -170,7 +181,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
     try:
         item_class = get_class(class_name)
         assert item_class is not None
-        item = trans.sa_session.query(item_class).get(decoded_id)
+        item = trans.sa_session.get(item_class, decoded_id)
         assert item is not None
     except Exception:
         log.warning(f"Invalid {class_name} id ( {id} ) specified.")

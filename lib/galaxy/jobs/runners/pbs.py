@@ -21,7 +21,7 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.jobs import JobDestination
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -120,12 +120,8 @@ class PBSJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             log.debug(f"Set default PBS server to {self.default_pbs_server}")
         return self.__default_pbs_server
 
-    def url_to_destination(self, url):
+    def url_to_destination(self, url: str) -> JobDestination:
         """Convert a legacy URL to a job destination"""
-
-        if not url:
-            return
-
         # Determine the PBS server
         url_split = url.split("/")
         server = url_split[2]

@@ -12,7 +12,9 @@ from json import loads
 from pathlib import Path
 from typing import (
     Any,
+    cast,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 from urllib.parse import (
@@ -79,6 +81,9 @@ from .twillbrowser import (
     page_content,
     visit_url,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model.scoped_session import install_model_scoped_session
 
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600
@@ -540,9 +545,10 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
     def update_installed_repository(
         self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
     ) -> dict[str, Any]:
+        install_model_context = cast("install_model_scoped_session", self._installation_target.install_model.session)
         message, status = check_for_updates(
             self._installation_target.tool_shed_registry,
-            self._installation_target.install_model.context,
+            install_model_context,
             installed_repository.id,
         )
         response = CheckForUpdatesResponse(message=message, status=status)

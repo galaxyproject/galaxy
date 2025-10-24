@@ -7,7 +7,7 @@ import time
 from typing import TYPE_CHECKING
 
 from galaxy import model
-from galaxy.jobs import JobDestination
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -46,13 +46,12 @@ class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     def get_cli_plugins(self, shell_params, job_params):
         return self.cli_interface.get_plugins(shell_params, job_params)
 
-    def url_to_destination(self, url):
-        params = {}
-        shell_params, job_params = url.split("/")[2:4]
+    def url_to_destination(self, url: str) -> JobDestination:
+        shell_params_str, job_params_str = url.split("/")[2:4]
         # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = {f"shell_{k}": v for k, v in [kv.split("=", 1) for kv in shell_params.split("&")]}
-        job_params = {f"job_{k}": v for k, v in [kv.split("=", 1) for kv in job_params.split("&")]}
-        params.update(shell_params)
+        shell_params = {f"shell_{k}": v for k, v in [kv.split("=", 1) for kv in shell_params_str.split("&")]}
+        job_params = {f"job_{k}": v for k, v in [kv.split("=", 1) for kv in job_params_str.split("&")]}
+        params = shell_params
         params.update(job_params)
         log.debug(f"Converted URL '{url}' to destination runner=cli, params={params}")
         # Create a dynamic JobDestination

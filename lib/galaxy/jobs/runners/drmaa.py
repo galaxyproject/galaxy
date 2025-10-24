@@ -16,8 +16,8 @@ from typing import (
 from typing_extensions import TypeAlias
 
 from galaxy import model
-from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_RUNNER_FAILURE_MESSAGE
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -117,10 +117,8 @@ class DRMAAJobRunner(AsynchronousJobRunner[DRMAAJobState]):
 
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
 
-    def url_to_destination(self, url):
+    def url_to_destination(self, url: str) -> JobDestination:
         """Convert a legacy URL to a job destination"""
-        if not url:
-            return
         if native_spec := url.split("/")[2]:
             params = dict(nativeSpecification=native_spec)
             log.debug(f"Converted URL '{url}' to destination runner=drmaa, params={params}")

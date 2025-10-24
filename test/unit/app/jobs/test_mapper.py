@@ -4,10 +4,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.jobs import (
-    HasResourceParameters,
-    JobDestination,
-)
+from galaxy.jobs import HasResourceParameters
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
     ERROR_MESSAGE_NO_RULE_FUNCTION,
     ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND,

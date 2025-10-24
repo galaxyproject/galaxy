@@ -8,11 +8,15 @@ import threading
 from typing import (
     Callable,
     Optional,
+    TYPE_CHECKING,
 )
 
 from galaxy.model import database_utils
 from galaxy.util.facts import get_facts
 from .handlers import HANDLER_ASSIGNMENT_METHODS
+
+if TYPE_CHECKING:
+    from .handlers import ConfiguresHandlers
 
 log = logging.getLogger(__name__)
 
@@ -76,17 +80,17 @@ class ApplicationStack:
                 self._preferred_handler_assignment_method = HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
         return self._preferred_handler_assignment_method
 
-    def _set_default_job_handler_assignment_methods(self, job_config, base_pool):
+    def _set_default_job_handler_assignment_methods(self, job_config: "ConfiguresHandlers", base_pool: str) -> None:
         """Override in subclasses to set default job handler assignment methods if not explicitly configured by the administrator.
 
         Called once per job_config.
         """
 
-    def _init_job_handler_assignment_methods(self, job_config, base_pool):
+    def _init_job_handler_assignment_methods(self, job_config: "ConfiguresHandlers", base_pool: str) -> None:
         if not job_config.handler_assignment_methods_configured:
             self._set_default_job_handler_assignment_methods(job_config, base_pool)
 
-    def _init_job_handler_subpools(self, job_config, base_pool):
+    def _init_job_handler_subpools(self, job_config: "ConfiguresHandlers", base_pool: str) -> None:
         """Set up members of "subpools" ("base_pool.*") as handlers (including the base pool itself, if it exists)."""
         for pool_name in self.configured_pools:
             if pool_name == base_pool:
@@ -105,7 +109,7 @@ class ApplicationStack:
                     job_config.add_handler(handler, [tag])
                 job_config.pool_for_tag[tag] = pool_name
 
-    def init_job_handling(self, job_config):
+    def init_job_handling(self, job_config: "ConfiguresHandlers") -> None:
         """Automatically add pools as handlers if they are named per predefined names and there is not an explicit
         job handler assignment configuration.
 
@@ -147,17 +151,17 @@ class ApplicationStack:
     def configured_pools(self):
         return {}
 
-    def has_base_pool(self, pool_name):
+    def has_base_pool(self, pool_name: str) -> bool:
         return self.has_pool(pool_name) or any(pool.startswith(f"{pool_name}.") for pool in self.configured_pools)
 
-    def has_pool(self, pool_name):
+    def has_pool(self, pool_name: str) -> bool:
         return pool_name in self.configured_pools
 
-    def in_pool(self, pool_name):
+    def in_pool(self, pool_name: str) -> bool:
         return False
 
-    def pool_members(self, pool_name):
-        return None
+    def pool_members(self, pool_name: str) -> tuple[str, ...]:
+        return ()
 
     @property
     def facts(self):
@@ -224,7 +228,7 @@ class GunicornApplicationStack(ApplicationStack):
 class WeblessApplicationStack(ApplicationStack):
     name = "Webless"
 
-    def _set_default_job_handler_assignment_methods(self, job_config, base_pool):
+    def _set_default_job_handler_assignment_methods(self, job_config: "ConfiguresHandlers", base_pool: str) -> None:
         # We will only get here if --attach-to-pool has been set so it is safe to assume that this handler is dynamic
         # and that we want to use one of the DB serialization methods.
         #
@@ -267,11 +271,11 @@ class WeblessApplicationStack(ApplicationStack):
     def configured_pools(self):
         return dict.fromkeys(self.config.attach_to_pools, self.config.server_name)
 
-    def in_pool(self, pool_name):
+    def in_pool(self, pool_name: str) -> bool:
         return pool_name in self.config.attach_to_pools
 
-    def pool_members(self, pool_name):
-        return (self.config.server_name,) if self.in_pool(pool_name) else None
+    def pool_members(self, pool_name: str) -> tuple[str, ...]:
+        return (self.config.server_name,) if self.in_pool(pool_name) else ()
 
 
 def application_stack_class() -> type[ApplicationStack]:
@@ -294,12 +298,8 @@ def application_stack_log_filter():
     return application_stack_class().log_filter_class()
 
 
-def application_stack_log_formatter():
+def application_stack_log_formatter() -> logging.Formatter:
     return logging.Formatter(fmt=application_stack_class().log_format)
-
-
-def register_postfork_function(f, *args, post_fork_only=False, **kwargs):
-    application_stack_class().register_postfork_function(f, *args, post_fork_only=post_fork_only**kwargs)
 
 
 def get_app_kwds(config_section, app_name=None):

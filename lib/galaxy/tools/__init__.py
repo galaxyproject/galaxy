@@ -235,6 +235,8 @@ if TYPE_CHECKING:
     from sqlalchemy.orm.scoping import scoped_session
 
     from galaxy.app import UniverseApplication
+    from galaxy.jobs import JobToolConfiguration
+    from galaxy.jobs.job_destination import JobDestination
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
     from galaxy.model import (
@@ -990,7 +992,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     Represents a computational tool that can be executed through Galaxy.
     """
 
-    job_tool_configurations: list
+    job_tool_configurations: list["JobToolConfiguration"]
     tool_type = "default"
     requires_setting_metadata = True
     produces_entry_points = False
@@ -1215,7 +1217,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             )
             return legacy_tool
 
-    def __get_job_tool_configuration(self, job_params=None):
+    def __get_job_tool_configuration(self, job_params: Union[dict, None] = None) -> "JobToolConfiguration":
         """Generalized method for getting this tool's job configuration.
 
         :type job_params: dict or None
@@ -1248,7 +1250,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         ), f"Could not get a job tool configuration for Tool {self.id} with job_params {job_params}, this is a bug"
         return rval
 
-    def get_configured_job_handler(self):
+    def get_configured_job_handler(self) -> Union[str, None]:
         """Get the configured job handler for this `Tool`.
 
         Unlike the former ``get_job_handler()`` method, this does not perform "preassignment" (random selection of
@@ -1258,9 +1260,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         """
         return self.__get_job_tool_configuration().handler
 
-    def get_job_destination(self, job_params=None):
+    def get_job_destination(self, job_params: Union[dict, None] = None) -> "JobDestination":
         """
-        :returns: galaxy.jobs.JobDestination -- The destination definition and runner parameters.
+        :returns: The destination definition and runner parameters.
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
@@ -1401,7 +1403,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         # In the toolshed context, there is no job config.
         if hasattr(self.app, "job_config"):
             # Order of this list must match documentation in job_conf.sample_advanced.yml
-            tool_classes = []
+            tool_classes: list[str] = []
             if self.tool_type_local:
                 tool_classes.append("local")
             elif self.old_id in ["upload1", "__DATA_FETCH__"]:

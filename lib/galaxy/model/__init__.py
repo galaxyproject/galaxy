@@ -582,6 +582,7 @@ def cached_id(galaxy_model_object):
 
 class JobLike:
     job_messages: Mapped[Optional[list[AnyJobMessage]]]
+    tool_id: Union[str, None]
     MAX_NUMERIC = 10 ** (JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
 
     def _init_metrics(self):
@@ -650,7 +651,7 @@ class JobLike:
         if job_messages is not None:
             self.job_messages = cast(Optional[list[AnyJobMessage]], job_messages)
 
-    def log_str(self):
+    def log_str(self) -> str:
         extra = ""
         if (safe_id := getattr(self, "id", None)) is not None:
             extra += f"id={safe_id}"
@@ -1582,7 +1583,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     job_runner_name: Mapped[Optional[str]] = mapped_column(String(255))
     job_runner_external_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
     destination_id: Mapped[Optional[str]] = mapped_column(String(255))
-    destination_params: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    destination_params: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)
     object_store_id: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     imported: Mapped[Optional[bool]] = mapped_column(default=False, index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
@@ -1935,7 +1936,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def set_imported(self, imported):
         self.imported = imported
 
-    def set_handler(self, handler):
+    def set_handler(self, handler: str) -> None:
         self.handler = handler
 
     def add_parameter(self, name, value):
@@ -2431,6 +2432,7 @@ class Task(Base, JobLike, RepresentById):
         self.working_directory = working_directory
         add_object_to_object_session(self, job)
         self.job = job
+        self.tool_id = job.tool_id
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
 
@@ -9858,10 +9860,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 return True
         return False
 
-    def set_handler(self, handler):
+    def set_handler(self, handler: str) -> None:
         self.handler = handler
 
-    def log_str(self):
+    def log_str(self) -> str:
         extra = ""
         if (safe_id := getattr(self, "id", None)) is not None:
             extra += f"id={safe_id}"

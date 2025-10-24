@@ -4,6 +4,10 @@ import os
 import threading
 import time
 from multiprocessing.util import register_after_fork
+from typing import (
+    Any,
+    Union,
+)
 
 from sqlalchemy import (
     create_engine,
@@ -47,13 +51,13 @@ def pretty_stack():
 
 def build_engine(
     url: str,
-    engine_options=None,
+    engine_options: Union[dict[str, Any], None] = None,
     database_query_profiling_proxy=False,
     trace_logger=None,
     slow_query_log_threshold=0,
     thread_local_log=None,
     log_query_counts=False,
-):
+) -> Engine:
     if database_query_profiling_proxy or slow_query_log_threshold or thread_local_log or log_query_counts:
 
         @event.listens_for(Engine, "before_cursor_execute")
