@@ -1,5 +1,6 @@
 """ """
 
+import base64
 from typing import (
     Any,
     Dict,
@@ -96,6 +97,53 @@ class TestToolExecution(ApiTestCase):
                         "ext": "txt",
                         "deferred": True,
                     }
+                },
+            )
+            assert_status_code_is_ok(response)
+            response_json = response.json()
+            tool_request_id = response_json.get("tool_request_id")
+            task_result = response_json["task_result"]
+            self.dataset_populator.wait_on_task_object(task_result)
+            state = self.dataset_populator.wait_on_tool_request(tool_request_id)
+            assert state, str(self.dataset_populator.get_tool_request(tool_request_id))
+            jobs = self.galaxy_interactor.jobs_for_tool_request(tool_request_id)
+            self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
+            if len(jobs) != 1:
+                raise Exception(f"Found incorrect number of jobs for tool request - was expecting a single job {jobs}")
+            assert len(jobs) == 1, jobs
+            job_id = jobs[0]["id"]
+            job_outputs = self.galaxy_interactor.job_outputs(job_id)
+            assert len(job_outputs) == 1
+            job_output = job_outputs[0]
+            assert job_output["name"] == "output"
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=job_output["dataset"])
+            assert content == "Hello World!"
+
+            # verify input was left deferred and infer must have been materialized just for the job
+            input_dataset_details = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
+            assert input_dataset_details["state"] == "deferred", input_dataset_details
+
+    @skip_without_tool("gx_data_collection_list")
+    def test_execution_with_deferred_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            input_b64_1 = base64.b64encode(b"1 2 3").decode("utf-8")
+            response = self._run(
+                "gx_data_collection_list",
+                history_id,
+                {
+                    "parameter": {
+                        "class": "Collection",
+                        "collection_type": "list",
+                        "elements": [
+                            {
+                                "class": "File",
+                                "identifier": "mycoolelement",
+                                "url": f"base64://{input_b64_1}",
+                                "ext": "txt",
+                                "deferred": True,
+                            }
+                        ],
+                    },
                 },
             )
             assert_status_code_is_ok(response)

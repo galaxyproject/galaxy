@@ -1302,6 +1302,7 @@ gx_data_multiple_optional:
 gx_data_collection:
   request_valid:
    - parameter: {src: hdca, id: abcdabcd}
+   - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_invalid:
    - parameter: {src: hdca, id: 7}
    - parameter: null
@@ -1312,8 +1313,10 @@ gx_data_collection:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+   - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_internal_invalid:
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: null
@@ -1324,10 +1327,15 @@ gx_data_collection:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+   - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_dereferenced_valid:
    - parameter: {src: hdca, id: 5}
   request_internal_dereferenced_invalid:
    - parameter: {src: hdca, id: abcdabcd}
+   # At thsi point the collection should have been dereferenced into datasets,
+   # so we don't allow these json collection representations anymore - must have
+   # an ID.
+   - parameter: {class: "Collection", collection_type: "list", elements: []}
   landing_request_valid:
    - parameter: {src: hdca, id: abcdabcd}
    - {}

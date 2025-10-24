@@ -523,10 +523,37 @@ class BatchDataInstance(StrictModel):
     id: StrictStr
 
 
+def multi_data_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        src = v.get("src", None)
+        clazz = v.get("class", None)
+        if clazz == "Collection":
+            return "data_request_collection_uri"
+        elif src == "hda":
+            return "data_request_hda"
+        elif src == "ldda":
+            return "data_request_ldda"
+        elif src == "hdca":
+            return "data_request_hdca"
+        elif src == "url":
+            return "data_request_uri"
+    return ""
+
+
+MultiDataInstanceDiscriminator = Discriminator(multi_data_discriminator)
 MultiDataInstance: Type = cast(
     Type,
     Annotated[
-        union_type([DataRequestHda, DataRequestLdda, DataRequestHdca, DataRequestUri]), Field(discriminator="src")
+        union_type(
+            [
+                Annotated[DataRequestHda, Tag("data_request_hda")],
+                Annotated[DataRequestLdda, Tag("data_request_ldda")],
+                Annotated[DataRequestHdca, Tag("data_request_hdca")],
+                Annotated[DataRequestUri, Tag("data_request_uri")],
+                Annotated[DataRequestCollectionUri, Tag("data_request_collection_uri")],
+            ]
+        ),
+        Field(discriminator=MultiDataInstanceDiscriminator),
     ],
 )
 MultiDataRequest: Type = union_type([MultiDataInstance, list_type(MultiDataInstance)])
@@ -585,7 +612,17 @@ class DataCollectionPaired(StrictModel):
 
 
 DataRequestInternal: Type = cast(
-    Type, Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestUri], Field(discriminator="src")]
+    Type,
+    Annotated[
+        Union[
+            Annotated[DataRequestInternalHda, Tag("data_request_hda")],
+            Annotated[DataRequestInternalLdda, Tag("data_request_ldda")],
+            Annotated[DataRequestInternalHdca, Tag("data_request_hdca")],
+            Annotated[DataRequestUri, Tag("data_request_uri")],
+            Annotated[DataRequestCollectionUri, Tag("data_request_collection_uri")],
+        ],
+        Field(discriminator=MultiDataInstanceDiscriminator),
+    ],
 )
 DataRequestInternalDereferenced: Type = cast(
     Type,
@@ -724,11 +761,15 @@ class DataCollectionRequest(StrictModel):
     id: StrictStr
 
 
+DataCollectionRequestOrCollectionUri = Union[DataCollectionRequest, DataRequestCollectionUri]
+
+
 class DataCollectionRequestInternal(StrictModel):
     src: CollectionStrT
     id: StrictInt
 
 
+DataCollectionRequestInternalOrCollectionUri = Union[DataCollectionRequestInternal, DataRequestCollectionUri]
 CollectionAdapterSrcT = Literal["CollectionAdapter"]
 
 
@@ -812,10 +853,14 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def py_type(self) -> Type:
-        return optional_if_needed(DataCollectionRequest, self.optional)
+        return optional_if_needed(DataCollectionRequestOrCollectionUri, self.optional)
 
     @property
     def py_type_internal(self) -> Type:
+        return optional_if_needed(DataCollectionRequestInternalOrCollectionUri, self.optional)
+
+    @property
+    def py_type_internal_dereferenced(self) -> Type:
         return optional_if_needed(DataCollectionRequestInternal, self.optional)
 
     @property
@@ -833,7 +878,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
                     else:
                         base_type = Dict[str, base_type]  # type: ignore[valid-type]  # we use this at runtime to build pydantic model
                 else:
-                    raise Exception(f"unkown subtype '{subtype}' in collection_type '{self.collection_type}'")
+                    raise Exception(f"unknown subtype '{subtype}' in collection_type '{self.collection_type}'")
         else:
             base_type = union_type(
                 [list_type(DataInternalJson), DataCollectionPaired, RecursiveDataCollectionInternalJson]
@@ -850,8 +895,10 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
             return allow_batching(
                 dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=False)
             )
-        elif state_representation in ["request_internal", "request_internal_dereferenced"]:
+        elif state_representation == "request_internal":
             return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal))
+        elif state_representation == "request_internal_dereferenced":
+            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced))
         elif state_representation == "job_internal":
             return dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=True)
         elif state_representation == "job_runtime":
