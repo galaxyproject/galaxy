@@ -373,7 +373,7 @@ class ParamParser:
             raise ParsingException("Param entry requires text")
 
         # determine parameter type
-        returned["type"] = param_type = xml_tree.get("type") or self.DEFAULT_PARAM_TYPE
+        returned["type"] = xml_tree.get("type") or self.DEFAULT_PARAM_TYPE
 
         # is the parameter required in the template and,
         #   if not, what is the default value?
