@@ -5253,7 +5253,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**  Returns collection of custom builds. */
+        /** Returns collection of custom builds. */
         get: operations["get_custom_builds_api_users__user_id__custom_builds_get"];
         put?: never;
         post?: never;
@@ -6422,6 +6422,7 @@ export interface components {
             /**
              * Region
              * @description Name of the region in the cloud service provider that the object belongs to.
+             * @example us-east-1
              */
             region?: string | null;
             /** @description Type of the access method. */
@@ -6437,6 +6438,7 @@ export interface components {
             /**
              * Headers
              * @description An optional list of headers to include in the HTTP request to `url`. These headers can be used to provide auth tokens required to fetch the object bytes.
+             * @example Authorization: Basic Z2E0Z2g6ZHJz
              */
             headers?: string[] | null;
             /**
@@ -6729,6 +6731,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -6820,6 +6825,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -7256,16 +7264,19 @@ export interface components {
             /**
              * Documentation
              * @description Documentation or extended description for this plugin.
+             * @example Galaxy's library import directory
              */
             doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
+             * @example _import
              */
             id: string;
             /**
              * Label
              * @description The display label for this plugin.
+             * @example Library Import Directory
              */
             label: string;
             /**
@@ -7290,11 +7301,13 @@ export interface components {
             /**
              * Type
              * @description The type of the plugin.
+             * @example gximport
              */
             type: string;
             /**
              * URI root
              * @description The URI root used by this type of plugin.
+             * @example gximport://
              */
             uri_root: string;
             /**
@@ -7305,6 +7318,7 @@ export interface components {
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
+             * @example false
              */
             writable: boolean;
         };
@@ -7392,6 +7406,7 @@ export interface components {
              * @description The digest method used to create the checksum.
              *     The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
              *     GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.
+             * @example sha-256
              */
             type: string;
         };
@@ -7590,28 +7605,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -7619,7 +7630,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -7635,7 +7645,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -7644,7 +7653,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -7655,7 +7663,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -7666,7 +7673,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -7684,7 +7690,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -7698,7 +7703,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -7707,7 +7711,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -8036,6 +8039,7 @@ export interface components {
             /**
              * Drs Uri
              * @description A list of full DRS identifier URI paths that may be used to obtain the object. These URIs may be external to this DRS instance.
+             * @example drs://drs.example.org/314159
              */
             drs_uri?: string[] | null;
             /**
@@ -8077,6 +8081,7 @@ export interface components {
             /**
              * Name
              * @description The name of the entry to create.
+             * @example my_new_entry
              */
             name: string;
             /**
@@ -8131,7 +8136,6 @@ export interface components {
              *     - The encoded id from the library folder
              *     - The encoded id from the HDA
              *     - The encoded id from the HDCA
-             *
              */
             content?: string | null;
             /**
@@ -8269,6 +8273,7 @@ export interface components {
             /**
              * View
              * @description The name of the view used to serialize this item. This will return a predefined set of attributes of the item.
+             * @example element
              */
             view?: components["schemas"]["InvocationSerializationView"] | null;
         };
@@ -8340,6 +8345,12 @@ export interface components {
             /**
              * List of metrics to be recorded.
              * @default []
+             * @example {
+             *       "args": "{\"test\":\"value\"}",
+             *       "level": 0,
+             *       "namespace": "test-source",
+             *       "time": "2021-01-23T18:25:43.511Z"
+             *     }
              */
             metrics: components["schemas"]["Metric"][];
         };
@@ -8657,11 +8668,13 @@ export interface components {
             /**
              * Name
              * @description The name of the created entry.
+             * @example my_new_entry
              */
             name: string;
             /**
              * URI
              * @description The URI of the created entry.
+             * @example gxfiles://my_new_entry
              */
             uri: string;
         };
@@ -8674,7 +8687,7 @@ export interface components {
             active: boolean;
             /**
              * Deleted
-             * @description  User is deleted
+             * @description User is deleted
              */
             deleted: boolean;
             /**
@@ -8885,6 +8898,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags?: string[] | null;
             /**
@@ -8983,7 +8999,6 @@ export interface components {
              * @description A list of label/value pairs with all the datasets of type `FASTA` contained in the History.
              *      - `label` is item position followed by the name of the dataset.
              *      - `value` is the encoded database ID of the dataset.
-             *
              */
             fasta_hdas: components["schemas"]["LabelValuePair"][];
             /**
@@ -9122,6 +9137,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags?: string[] | null;
             /**
@@ -9589,7 +9607,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -9616,7 +9633,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -9668,6 +9684,9 @@ export interface components {
              * @default [
              *       "data"
              *     ]
+             * @example txt
+             * @example tabular
+             * @example tiff
              */
             extensions: string[];
             /**
@@ -9780,6 +9799,7 @@ export interface components {
             /**
              * Extension
              * @description The dataset file extension.
+             * @example txt
              */
             extension: string;
             /** Extensions */
@@ -9793,6 +9813,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
         };
@@ -10089,16 +10112,19 @@ export interface components {
             /**
              * Source
              * @description Source type for conversion
+             * @example bam
              */
             source: string;
             /**
              * Target
              * @description Target type for conversion
+             * @example bai
              */
             target: string;
             /**
              * Tool identifier
              * @description The converter tool identifier
+             * @example CONVERTER_Bam_Bai_0
              */
             tool_id: string;
         };
@@ -10122,6 +10148,7 @@ export interface components {
             /**
              * Description URL
              * @description The URL to a detailed description for this datatype
+             * @example https://wiki.galaxyproject.org/Learn/Datatypes#Bed
              */
             description_url: string | null;
             /**
@@ -10138,6 +10165,7 @@ export interface components {
             /**
              * Extension
              * @description The data type’s Dataset file extension
+             * @example bed
              */
             extension: string;
             /**
@@ -10151,16 +10179,19 @@ export interface components {
             /**
              * Definition
              * @description The EDAM definition
+             * @example Entry (gene) format of the NCBI database.
              */
             definition: string | null;
             /**
              * Label
              * @description The EDAM label
+             * @example NCBI gene report format
              */
             label: string | null;
             /**
              * Prefix IRI
              * @description The EDAM prefixed Resource Identifier
+             * @example format_1782
              */
             prefix_IRI: string;
         };
@@ -10169,11 +10200,16 @@ export interface components {
             /**
              * Datatype
              * @description The datatype extension this visualization applies to
+             * @example bam
+             * @example h5
+             * @example vcf
              */
             datatype: string;
             /**
              * Visualization
              * @description The visualization plugin to use
+             * @example igv
+             * @example vitessce
              */
             visualization: string;
         };
@@ -10234,7 +10270,6 @@ export interface components {
              * @description The type of the default quota. Either one of:
              *      - `registered`: the associated quota will affect registered users.
              *      - `unregistered`: the associated quota will affect unregistered users.
-             *
              */
             type: components["schemas"]["DefaultQuotaTypes"];
         };
@@ -10356,7 +10391,7 @@ export interface components {
         DetailedUserModel: {
             /**
              * Deleted
-             * @description  User is deleted
+             * @description User is deleted
              */
             deleted: boolean;
             /**
@@ -10721,6 +10756,7 @@ export interface components {
             /**
              * Mime Type
              * @description A string providing the mime-type of the `DrsObject`.
+             * @example application/json
              */
             mime_type?: string | null;
             /**
@@ -10733,6 +10769,7 @@ export interface components {
              * Self Uri
              * @description A drs:// hostname-based URI, as defined in the DRS documentation, that tells clients how to access this object.
              *     The intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.
+             * @example drs://drs.example.org/314159
              */
             self_uri: string;
             /**
@@ -10955,6 +10992,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -11329,28 +11367,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -11358,7 +11392,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -11373,7 +11406,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -11382,7 +11414,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -11393,7 +11424,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -11404,7 +11434,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -11418,7 +11447,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -11432,7 +11460,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -11441,7 +11468,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -11503,6 +11529,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -11659,16 +11688,19 @@ export interface components {
             /**
              * Documentation
              * @description Documentation or extended description for this plugin.
+             * @example Galaxy's library import directory
              */
             doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
+             * @example _import
              */
             id: string;
             /**
              * Label
              * @description The display label for this plugin.
+             * @example Library Import Directory
              */
             label: string;
             /**
@@ -11693,6 +11725,7 @@ export interface components {
             /**
              * Type
              * @description The type of the plugin.
+             * @example gximport
              */
             type: string;
             /**
@@ -11703,6 +11736,7 @@ export interface components {
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
+             * @example false
              */
             writable: boolean;
         };
@@ -11869,28 +11903,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -11898,7 +11928,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -11913,7 +11942,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -11922,7 +11950,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -11933,7 +11960,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -11946,7 +11972,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -11960,7 +11985,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -11974,7 +11998,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -11983,7 +12006,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -11995,7 +12017,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -12387,6 +12408,7 @@ export interface components {
             /**
              * Data Type
              * @description The fully qualified name of the class implementing the data type of this dataset.
+             * @example galaxy.datatypes.data.Text
              */
             data_type?: string | null;
             /**
@@ -12423,6 +12445,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension?: string | null;
             /**
@@ -12551,6 +12574,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags?: string[] | null;
             /**
@@ -12563,6 +12589,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12655,6 +12682,7 @@ export interface components {
             /**
              * Data Type
              * @description The fully qualified name of the class implementing the data type of this dataset.
+             * @example galaxy.datatypes.data.Text
              */
             data_type: string;
             /**
@@ -12691,6 +12719,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension: string | null;
             /**
@@ -12820,6 +12849,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -12832,6 +12864,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12924,6 +12957,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -12934,6 +12970,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -13023,6 +13060,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension: string | null;
             /**
@@ -13075,6 +13113,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -13085,6 +13126,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -13239,6 +13281,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags?: string[] | null;
             /**
@@ -13251,6 +13296,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -13404,6 +13450,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -13416,6 +13465,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -13548,6 +13598,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -13560,6 +13613,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -13690,7 +13744,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -13721,7 +13774,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -14316,6 +14368,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -14405,6 +14460,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -14433,6 +14491,7 @@ export interface components {
             /**
              * Target
              * @description Specifies where to open the linked document.
+             * @example _blank
              */
             target: string;
             /**
@@ -15874,6 +15933,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -16051,6 +16111,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -16313,6 +16374,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -16883,6 +16945,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /** Update Time */
@@ -17247,6 +17312,7 @@ export interface components {
             /**
              * Create Time Pretty
              * @description Nice time representation of the creation date.
+             * @example 2 months ago
              */
             create_time_pretty: string;
             /**
@@ -17305,26 +17371,31 @@ export interface components {
              * Details URL
              * Format: uri
              * @description URL to the SPDX json details for this license
+             * @example http://spdx.org/licenses/Apache-2.0.json
              */
             detailsUrl: string;
             /**
              * Deprecated License
              * @description True if the entire license is deprecated
+             * @example false
              */
             isDeprecatedLicenseId: boolean;
             /**
              * OSI approved
              * @description Indicates if the [OSI](https://opensource.org/) has approved the license
+             * @example true
              */
             isOsiApproved: boolean;
             /**
              * Identifier
              * @description SPDX Identifier
+             * @example Apache-2.0
              */
             licenseId: string;
             /**
              * Name
              * @description Full name of the license
+             * @example Apache License 2.0
              */
             name: string;
             /**
@@ -17335,6 +17406,7 @@ export interface components {
             /**
              * Reference
              * @description Reference to the HTML format for the license file
+             * @example ./Apache-2.0.html
              */
             reference: string;
             /**
@@ -17350,12 +17422,14 @@ export interface components {
             /**
              * SPDX URL
              * Format: uri
+             * @example https://spdx.org/licenses/Apache-2.0.html
              */
             spdxUrl: string;
             /**
              * URL
              * Format: uri
              * @description License URL
+             * @example http://www.apache.org/licenses/LICENSE-2.0
              */
             url: string;
         };
@@ -17413,7 +17487,6 @@ export interface components {
              * @description Depending on the `source` it can be:
              *     - The encoded id of the source library dataset
              *     - The encoded id of the HDA
-             *
              * @example 0123456789ABCDEF
              */
             content: string;
@@ -17498,6 +17571,7 @@ export interface components {
             /**
              * Timestamp
              * @description The timestamp in ISO format.
+             * @example 2021-01-23T18:25:43.511Z
              */
             time: string;
         };
@@ -17513,28 +17587,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -17542,7 +17612,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -17557,7 +17626,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -17566,7 +17634,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -17590,7 +17657,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -17601,7 +17667,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -17615,7 +17680,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -17624,7 +17688,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -17633,7 +17696,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -18180,6 +18242,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -18265,6 +18330,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -18498,28 +18566,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -18527,7 +18591,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -18542,7 +18605,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -18551,7 +18613,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -18562,7 +18623,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -18573,7 +18633,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -18582,7 +18641,6 @@ export interface components {
             /**
              * Paste Content
              * @description This is the text of the content to import if the 'src' of the item is 'pasted'.
-             *
              */
             paste_content: string | number | boolean;
             /** Row */
@@ -18593,7 +18651,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -18607,7 +18664,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -18616,7 +18672,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -18643,28 +18698,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -18672,7 +18723,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -18687,7 +18737,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -18696,7 +18745,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -18707,7 +18755,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -18718,7 +18765,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -18736,7 +18782,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -18750,7 +18795,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -18759,7 +18803,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -19129,7 +19172,6 @@ export interface components {
              *     the result of applying the action may change one or both of these.
              *     If connections are dropped this step reference will refer to the
              *     step with the previously connected input.
-             *
              */
             order_index?: number | null;
             /**
@@ -19141,7 +19183,6 @@ export interface components {
              * Output Name
              * @description If this message is about an output to a step,
              *     this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
-             *
              */
             output_name?: string | null;
             /**
@@ -19154,7 +19195,6 @@ export interface components {
              *     the result of applying the action may change one or both of these.
              *     If connections are dropped this step reference will refer to the
              *     step with the previously connected input.
-             *
              */
             step_label?: string | null;
         };
@@ -19603,7 +19643,6 @@ export interface components {
              * @description Maximum reserved number of CPU cores.
              *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
              *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
-             *
              */
             cores_max?: number | null;
             /**
@@ -19611,7 +19650,6 @@ export interface components {
              * @description Minimum reserved number of CPU cores.
              *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
              *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
-             *
              * @default 1
              */
             cores_min: number | null;
@@ -20123,28 +20161,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -20152,7 +20186,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -20167,7 +20200,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -20176,7 +20208,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -20187,7 +20218,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -20198,7 +20228,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -20216,7 +20245,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -20230,7 +20258,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -20239,7 +20266,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -20249,36 +20275,43 @@ export interface components {
             /**
              * Contacturl
              * @description URL of the contact for the provider of this service, e.g. a link to a contact form (RFC 3986 format), or an email (RFC 2368 format).
+             * @example mailto:support@example.com
              */
             contactUrl?: string | null;
             /**
              * Createdat
              * @description Timestamp describing when the service was first deployed and available (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             createdAt?: string | null;
             /**
              * Description
              * @description Description of the service. Should be human readable and provide information about the service.
+             * @example This service provides...
              */
             description?: string | null;
             /**
              * Documentationurl
              * @description URL of the documentation of this service (RFC 3986 format). This should help someone learn how to use your service, including any specifics required to access data, e.g. authentication.
+             * @example https://docs.myservice.example.com
              */
             documentationUrl?: string | null;
             /**
              * Environment
              * @description Environment the service is running in. Use this to distinguish between production, development and testing/staging deployments. Suggested values are prod, test, dev, staging. However this is advised and not enforced.
+             * @example test
              */
             environment?: string | null;
             /**
              * Id
              * @description Unique ID of this service. Reverse domain name notation is recommended, though not required. The identifier should attempt to be globally unique so it can be used in downstream aggregator services e.g. Service Registry.
+             * @example org.ga4gh.myservice
              */
             id: string;
             /**
              * Name
              * @description Name of this service. Should be human readable.
+             * @example My project
              */
             name: string;
             /** @description Organization providing the service */
@@ -20287,11 +20320,13 @@ export interface components {
             /**
              * Updatedat
              * @description Timestamp describing when the service was last updated (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             updatedAt?: string | null;
             /**
              * Version
              * @description Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.
+             * @example 1.0.0
              */
             version: string;
         };
@@ -20412,16 +20447,19 @@ export interface components {
             /**
              * Artifact
              * @description Name of the API or GA4GH specification implemented. Official GA4GH types should be assigned as part of standards approval process. Custom artifacts are supported.
+             * @example beacon
              */
             artifact: string;
             /**
              * Group
              * @description Namespace in reverse domain name format. Use `org.ga4gh` for implementations compliant with official GA4GH specifications. For services with custom APIs not standardized by GA4GH, or implementations diverging from official GA4GH specifications, use a different namespace (e.g. your organization's reverse domain name).
+             * @example org.ga4gh
              */
             group: string;
             /**
              * Version
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
+             * @example 1.0.0
              */
             version: string;
         };
@@ -20534,7 +20572,6 @@ export interface components {
              *      - make_public: The contents of the resource will be made publicly accessible.
              *      - make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.
              *      - no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.
-             *
              */
             share_option?: components["schemas"]["SharingOptions"] | null;
             /**
@@ -20724,6 +20761,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -21104,6 +21142,9 @@ export interface components {
             /**
              * Tags
              * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
              */
             tags: string[];
             /**
@@ -21430,6 +21471,10 @@ export interface components {
             /**
              * Columns
              * @description A list of column names
+             * @example value
+             * @example dbkey
+             * @example name
+             * @example path
              */
             columns: string[];
             /**
@@ -21440,11 +21485,13 @@ export interface components {
             /**
              * Model class
              * @description The name of class modelling this tool data
+             * @example TabularToolDataTable
              */
             model_class: string;
             /**
              * Name
              * @description The name of this tool data entry
+             * @example all_fasta
              */
             name: string;
         };
@@ -21453,11 +21500,13 @@ export interface components {
             /**
              * Model class
              * @description The name of class modelling this tool data
+             * @example TabularToolDataTable
              */
             model_class: string;
             /**
              * Name
              * @description The name of this tool data entry
+             * @example all_fasta
              */
             name: string;
         };
@@ -21477,6 +21526,9 @@ export interface components {
             /**
              * Files
              * @description A dictionary of file names and their size in bytes
+             * @example {
+             *       "file.txt": 136
+             *     }
              */
             files: {
                 [key: string]: number;
@@ -21484,11 +21536,13 @@ export interface components {
             /**
              * Fingerprint
              * @description SHA1 Hash
+             * @example 22b45237a85c2b3f474bf66888c534387ffe0ced
              */
             fingerprint: string;
             /**
              * Model class
              * @description The name of class modelling this tool data field
+             * @example TabularToolDataField
              */
             model_class: string;
             /**
@@ -21502,6 +21556,7 @@ export interface components {
             /**
              * Values
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
+             * @example value	dbkey	name	path
              */
             values: string;
         };
@@ -22252,6 +22307,24 @@ export interface components {
         /**
          * UpdateUserNotificationPreferencesRequest
          * @description Contains the new notification preferences of a user.
+         * @example {
+         *       "preferences": {
+         *         "message": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "new_shared_item": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         }
+         *       }
+         *     }
          */
         UpdateUserNotificationPreferencesRequest: {
             /**
@@ -22324,28 +22397,24 @@ export interface components {
              * Md5
              * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
-             *
              */
             MD5?: string | null;
             /**
              * Sha-1
              * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
-             *
              */
             "SHA-1"?: string | null;
             /**
              * Sha-256
              * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-256"?: string | null;
             /**
              * Sha-512
              * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
              *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
-             *
              */
             "SHA-512"?: string | null;
             /**
@@ -22353,7 +22422,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
              *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
              *     explicitly set to a compressed datatype.
-             *
              * @default false
              */
             auto_decompress: boolean;
@@ -22368,7 +22436,6 @@ export interface components {
              *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
              *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
              *     indicate that the dataset does not have a dbkey set.
-             *
              * @default ?
              */
             dbkey: string;
@@ -22377,7 +22444,6 @@ export interface components {
              * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
              *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
              *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
-             *
              * @default false
              */
             deferred: boolean;
@@ -22388,7 +22454,6 @@ export interface components {
              * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
              *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
              *     the contents of the file.
-             *
              * @default auto
              */
             ext: string;
@@ -22399,7 +22464,6 @@ export interface components {
              * Info
              * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
              *     displayed in the Galaxy user interface, but now is largely unused.
-             *
              */
             info?: string | null;
             items_from?: components["schemas"]["ElementsFromType"] | null;
@@ -22413,7 +22477,6 @@ export interface components {
              *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
              *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
              *     correctly.
-             *
              * @default false
              */
             space_to_tab: boolean;
@@ -22427,7 +22490,6 @@ export interface components {
              * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
              *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
              *     used to search for datasets in the Galaxy API.
-             *
              */
             tags?: string[] | null;
             /**
@@ -22436,7 +22498,6 @@ export interface components {
              *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
              *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
              *     though assuming the API user is more likely to be want to be precise about file handling details.
-             *
              * @default false
              */
             to_posix_lines: boolean;
@@ -22601,7 +22662,7 @@ export interface components {
             active: boolean;
             /**
              * Deleted
-             * @description  User is deleted
+             * @description User is deleted
              */
             deleted: boolean;
             /**
@@ -22637,6 +22698,24 @@ export interface components {
         /**
          * UserNotificationPreferences
          * @description Contains the full notification preferences of a user.
+         * @example {
+         *       "preferences": {
+         *         "message": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "new_shared_item": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         }
+         *       }
+         *     }
          */
         UserNotificationPreferences: {
             /**
@@ -22896,6 +22975,7 @@ export interface components {
             /**
              * container
              * @description Container image to use for this tool.
+             * @example quay.io/biocontainers/python:3.13
              */
             container: string;
             /**
@@ -22915,6 +22995,7 @@ export interface components {
             /**
              * id
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             * @example my-cool-tool
              */
             id: string;
             /**
@@ -22925,6 +23006,7 @@ export interface components {
             /**
              * license
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             * @example MIT
              */
             license?: string | null;
             /**
@@ -22959,11 +23041,13 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
             /**
              * version
              * @description Version for the tool.
+             * @example 0.1.0
              */
             version: string;
             /** xrefs */
@@ -22986,6 +23070,7 @@ export interface components {
             /**
              * container
              * @description Container image to use for this tool.
+             * @example quay.io/biocontainers/python:3.13
              */
             container: string;
             /**
@@ -23005,6 +23090,7 @@ export interface components {
             /**
              * id
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             * @example my-cool-tool
              */
             id: string;
             /**
@@ -23015,6 +23101,7 @@ export interface components {
             /**
              * license
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             * @example MIT
              */
             license?: string | null;
             /**
@@ -23049,11 +23136,13 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
             /**
              * version
              * @description Version for the tool.
+             * @example 0.1.0
              */
             version: string;
             /** xrefs */
@@ -23918,11 +24007,13 @@ export interface components {
             /**
              * Name
              * @description Name of external reference
+             * @example PubChem-compound
              */
             name: string;
             /**
              * Namespace
              * @description External resource vendor prefix
+             * @example pubchem.compound
              */
             namespace: string;
         };
@@ -23946,12 +24037,14 @@ export interface components {
             /**
              * Name
              * @description Name of the organization responsible for the service
+             * @example My organization
              */
             name: string;
             /**
              * Url
              * Format: uri
              * @description URL of the website of the organization (RFC 3986 format)
+             * @example https://example.com
              */
             url: string;
         };
@@ -26007,7 +26100,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -26062,7 +26155,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -29105,7 +29198,8 @@ export interface operations {
                 sort_by?: "create_time" | "name" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -29136,8 +29230,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Historys: `title`, `description`, `slug`, `tag`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
                 all?: boolean | null;
@@ -30701,7 +30794,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -30757,7 +30850,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -33067,10 +33160,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -33119,10 +33214,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -33779,7 +33876,8 @@ export interface operations {
                 implicit_collection_jobs_id?: string | null;
                 /** @description Sort results by specified field. */
                 order_by?: components["schemas"]["JobIndexSortByEnum"];
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -33813,8 +33911,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Jobs: `user`, `tool`, `handler`, `runner`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 /** @description Maximum number of jobs to return. */
                 limit?: number;
@@ -36390,7 +36487,8 @@ export interface operations {
                 deleted?: boolean;
                 limit?: number;
                 offset?: number;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -36424,8 +36522,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Pages: `title`, `slug`, `tag`, `user`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 show_own?: boolean;
                 show_published?: boolean;
@@ -41541,7 +41638,8 @@ export interface operations {
                 sort_by?: "create_time" | "title" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -41575,8 +41673,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Visualizations: `title`, `slug`, `tag`, `type`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
             };
             header?: {
@@ -42266,7 +42363,8 @@ export interface operations {
                 sort_desc?: boolean | null;
                 limit?: number | null;
                 offset?: number | null;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -42312,8 +42410,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Stored Workflows: `name`, `tag`, `user`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 /** @description Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts. */
                 skip_step_counts?: boolean;
@@ -42759,10 +42856,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -42813,10 +42912,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -43817,10 +43918,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -43871,10 +43974,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
