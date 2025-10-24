@@ -388,7 +388,7 @@ NoneType = type(None)
 SampleSheetColumnValueT = Union[int, float, bool, str, NoneType]
 
 
-class SampleSheetColumnDefinition(TypedDict):
+class SampleSheetColumnDefinition(TypedDict, closed=True):
     name: str
     description: NotRequired[Optional[str]]
     type: SampleSheetColumnType
