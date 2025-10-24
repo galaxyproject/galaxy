@@ -21320,7 +21320,13 @@ export interface components {
              */
             type: "boolean";
             /** Validators */
-            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariableInteger */
         TemplateVariableInteger: {
@@ -21341,7 +21347,13 @@ export interface components {
              */
             type: "integer";
             /** Validators */
-            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariablePathComponent */
         TemplateVariablePathComponent: {
@@ -21359,7 +21371,13 @@ export interface components {
              */
             type: "path_component";
             /** Validators */
-            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -21380,31 +21398,13 @@ export interface components {
              */
             type: "string";
             /** Validators */
-            validators?: components["schemas"]["TemplateVariableValidator"][] | null;
-        };
-        /**
-         * TemplateVariableValidator
-         * @description Validator definition for template variables.
-         */
-        TemplateVariableValidator: {
-            /** Expression */
-            expression?: string | null;
-            /** Max */
-            max?: number | null;
-            /** Message */
-            message: string;
-            /** Min */
-            min?: number | null;
-            /**
-             * Negate
-             * @default false
-             */
-            negate: boolean;
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "regex" | "length" | "range";
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TestUpdateInstancePayload */
         TestUpdateInstancePayload: {

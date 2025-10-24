@@ -152,7 +152,7 @@ function validateLength(validator, value) {
  * @param{*}      value     - Value to validate
  * @returns{object} Object with isValid boolean and message string
  */
-function validateRange(validator, value) {
+function validateInRange(validator, value) {
     const numericValue = Number(value);
 
     if (isNaN(numericValue)) {
@@ -184,7 +184,7 @@ function validateRange(validator, value) {
 const validatorFunctions = {
     regex: validateRegex,
     length: validateLength,
-    range: validateRange,
+    in_range: validateInRange,
 };
 
 /** Run a single validator

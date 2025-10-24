@@ -11,7 +11,10 @@ export type TemplateVariable =
     | components["schemas"]["TemplateVariableInteger"]
     | components["schemas"]["TemplateVariablePathComponent"]
     | components["schemas"]["TemplateVariableBoolean"];
-export type TemplateVariableValidator = components["schemas"]["TemplateVariableValidator"];
+export type TemplateVariableValidator =
+    | components["schemas"]["RegexParameterValidatorModel"]
+    | components["schemas"]["InRangeParameterValidatorModel"]
+    | components["schemas"]["LengthParameterValidatorModel"];
 export type TemplateSecret = components["schemas"]["TemplateSecret"];
 export type VariableData = CreateInstancePayload["variables"];
 export type VariableValueType = VariableData[keyof VariableData];

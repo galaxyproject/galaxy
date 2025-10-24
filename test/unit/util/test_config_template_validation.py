@@ -9,6 +9,11 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.tool_util_models.parameter_validators import (
+    InRangeParameterValidatorModel,
+    LengthParameterValidatorModel,
+    RegexParameterValidatorModel,
+)
 from galaxy.util.config_templates import (
     StrictModel,
     TemplateEnvironmentEntry,
@@ -18,7 +23,6 @@ from galaxy.util.config_templates import (
     TemplateVariableInteger,
     TemplateVariablePathComponent,
     TemplateVariableString,
-    TemplateVariableValidator,
     validate_secrets_and_variables,
 )
 
@@ -184,13 +188,11 @@ def assert_validation_throws(instance: TestInstanceDefinition, template: TestTem
 def test_multiple_validators():
     """Test multiple validators on the same variable."""
     validators = [
-        TemplateVariableValidator(
-            type="regex",
+        RegexParameterValidatorModel(
             expression=r"^.*[^/]$",
             message="Value cannot end with a trailing slash",
         ),
-        TemplateVariableValidator(
-            type="regex",
+        RegexParameterValidatorModel(
             expression=r"^(?!\s)(?!.*\s$).*$",
             message="Value cannot have leading or trailing whitespace",
         ),
@@ -218,8 +220,7 @@ def test_multiple_validators():
 
 def test_regex_validator_negate():
     """Test regex validation with negate flag."""
-    validator = TemplateVariableValidator(
-        type="regex",
+    validator = RegexParameterValidatorModel(
         expression=r"forbidden",
         message="Value cannot contain 'forbidden'",
         negate=True,
@@ -240,8 +241,7 @@ def test_regex_validator_negate():
 
 def test_length_validator():
     """Test length validation."""
-    validator = TemplateVariableValidator(
-        type="length",
+    validator = LengthParameterValidatorModel(
         min=3,
         max=10,
         message="Value must be between 3 and 10 characters",
@@ -270,8 +270,7 @@ def test_length_validator():
 
 def test_length_validator_min_only():
     """Test length validation with only minimum."""
-    validator = TemplateVariableValidator(
-        type="length",
+    validator = LengthParameterValidatorModel(
         min=5,
         message="Value must be at least 5 characters",
     )
@@ -294,8 +293,7 @@ def test_length_validator_min_only():
 
 def test_length_validator_max_only():
     """Test length validation with only maximum."""
-    validator = TemplateVariableValidator(
-        type="length",
+    validator = LengthParameterValidatorModel(
         max=50,
         message="Value must be at most 50 characters",
     )
@@ -318,8 +316,7 @@ def test_length_validator_max_only():
 
 def test_range_validator():
     """Test range validation for numeric values."""
-    validator = TemplateVariableValidator(
-        type="range",
+    validator = InRangeParameterValidatorModel(
         min=1,
         max=100,
         message="Value must be between 1 and 100",
@@ -351,8 +348,7 @@ def test_range_validator():
 
 def test_validators_skip_empty_optional_values():
     """Test that validators skip empty optional values."""
-    validator = TemplateVariableValidator(
-        type="length",
+    validator = LengthParameterValidatorModel(
         min=3,
         message="Value must be at least 3 characters",
     )
@@ -367,8 +363,7 @@ def test_validators_skip_empty_optional_values():
 
 def test_validators_skip_null_values():
     """Test that validators skip empty values for optional fields with defaults."""
-    validator = TemplateVariableValidator(
-        type="length",
+    validator = LengthParameterValidatorModel(
         min=3,
         message="Value must be at least 3 characters",
     )
@@ -379,20 +374,3 @@ def test_validators_skip_null_values():
     # Empty value should not trigger validator when field has empty default
     instance = _test_instance_with_variables({})
     validate_secrets_and_variables(instance, template)
-
-
-def test_invalid_regex_pattern():
-    """Test that invalid regex patterns are handled gracefully."""
-    validator = TemplateVariableValidator(
-        type="regex",
-        expression=r"[invalid(regex",  # Invalid regex
-        message="Test message",
-    )
-    template = _template_with_variable(
-        TemplateVariableString(name="test", help=None, type="string", validators=[validator])
-    )
-
-    instance = _test_instance_with_variables({"test": "value"})
-    e = assert_validation_throws(instance, template)
-    assert isinstance(e, RequestParameterInvalidException)
-    assert "Invalid regex pattern" in str(e)

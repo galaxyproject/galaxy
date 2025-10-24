@@ -778,13 +778,13 @@ variables:
         message: "Username must be between 3 and 20 characters"
 ```
 
-#### `range` - Numeric Range Constraints
+#### `in_range` - Numeric Range Constraints
 
 Validates that a numeric value falls within specified bounds.
 
 **Parameters:**
 
-- `type`: Must be `range`
+- `type`: Must be `in_range`
 - `min` (optional): Minimum allowed value (inclusive)
 - `max` (optional): Maximum allowed value (inclusive)
 - `message`: Error message shown when validation fails

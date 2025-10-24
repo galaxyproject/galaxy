@@ -247,12 +247,12 @@ describe("form component utilities", () => {
         expect(result).toEqual(["username", "Username must be between 3 and 20 characters"]);
     });
 
-    it("test range validator", () => {
+    it("test in_range validator", () => {
         const index = {
             age: {
                 validators: [
                     {
-                        type: "range",
+                        type: "in_range",
                         min: 18,
                         max: 120,
                         message: "Age must be between 18 and 120",
@@ -285,12 +285,12 @@ describe("form component utilities", () => {
         expect(result).toEqual(["age", "Age must be between 18 and 120"]);
     });
 
-    it("test range validator with non-numeric value", () => {
+    it("test in_range validator with non-numeric value", () => {
         const index = {
             age: {
                 validators: [
                     {
-                        type: "range",
+                        type: "in_range",
                         min: 18,
                         max: 120,
                         message: "Age must be between 18 and 120",
