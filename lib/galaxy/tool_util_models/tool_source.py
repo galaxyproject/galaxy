@@ -170,7 +170,7 @@ CwlType = Literal["File", "null", "boolean", "int", "float", "string"]
 FieldType = Union[CwlType, List[CwlType]]
 
 
-class FieldDict(TypedDict):
+class FieldDict(TypedDict, closed=True):
     name: str
     type: FieldType
     format: NotRequired[Optional[str]]
