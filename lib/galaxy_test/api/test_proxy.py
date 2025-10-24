@@ -11,6 +11,7 @@ EXPECTED_HEADERS = {
     "accept-ranges": "bytes",
 }
 ZIP_MAGIC_NUMBER = b"PK\x03\x04"
+TRAINING_URL = "https://training.galaxyproject.org/training-material/topics/introduction/tutorials/galaxy-intro-short/tutorial.html"
 
 
 class TestProxyApi(ApiTestCase):
@@ -71,3 +72,19 @@ class TestProxyApi(ApiTestCase):
         response = self._get(f"proxy?url={invalid_url}")
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Invalid URL format."
+
+    def test_proxy_handles_encoding(self):
+        """Test handling of responses with content-encoding and proper header filtering.
+
+        The TRAINING_URL URL triggered the 'Too much data for declared Content-Length' error because
+        the response included a content-encoding header (gzip) even though the content was
+        already decompressed by the requests library.
+        """
+        response = self._get(f"proxy?url={TRAINING_URL}")
+        self._assert_status_code_is_ok(response)
+        # Verify we got HTML content
+        assert b"<!DOCTYPE" in response.content or b"<html" in response.content.lower()
+        # Verify the response has actual content
+        assert len(response.content) > 0
+        # Verify content-encoding header was properly filtered out (no double decompression)
+        assert "content-encoding" not in response.headers
