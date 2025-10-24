@@ -216,7 +216,7 @@ def dereference(
     internal_state: RequestInternalToolState, input_models: ToolParameterBundle, dereference: DereferenceCallable
 ) -> RequestInternalDereferencedToolState:
 
-    def derefrence_dict(src_dict: dict):
+    def dereference_dict(src_dict: dict):
         src = src_dict.get("src")
         if src == "url":
             data_request_uri: DataRequestUri = DataRequestUri.model_validate(src_dict)
@@ -230,10 +230,10 @@ def dereference(
             if value is None:
                 return VISITOR_NO_REPLACEMENT
             if parameter.multiple and isinstance(value, list):
-                return list(map(derefrence_dict, value))
+                return list(map(dereference_dict, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return derefrence_dict(value)
+                return dereference_dict(value)
         else:
             return VISITOR_NO_REPLACEMENT
 
