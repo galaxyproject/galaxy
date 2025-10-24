@@ -73,25 +73,45 @@ class FastAPIProxy:
         # This is to prevent the server from hanging indefinitely
         timeout = httpx.Timeout(10.0, connect=60.0)
 
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            try:
-                response = await client.request(method=request.method, url=url, headers=headers, follow_redirects=True)
+        client = httpx.AsyncClient(timeout=timeout)
+        response = None
+        try:
+            response = await client.request(method=request.method, url=url, headers=headers, follow_redirects=True)
 
+            if request.method == "GET":
                 # Return a streaming response for GET requests
-                if request.method == "GET":
-                    return StreamingResponse(
-                        response.aiter_bytes(),
-                        status_code=response.status_code,
-                        headers=response.headers,
-                    )
-                else:
-                    return Response(
-                        status_code=response.status_code,
-                        headers=response.headers,
-                    )
+                filtered_headers = self._filter_response_headers(response.headers)
 
-            except httpx.RequestError as e:
-                raise Exception(f"Request error: {e}")
+                async def stream_with_cleanup():
+                    """Stream response chunks and ensure cleanup on completion or error."""
+                    try:
+                        async for chunk in response.aiter_bytes():
+                            yield chunk
+                    finally:
+                        await response.aclose()
+                        await client.aclose()
+
+                # StreamingResponse will handle chunked transfer encoding automatically
+                return StreamingResponse(
+                    stream_with_cleanup(),
+                    status_code=response.status_code,
+                    headers=filtered_headers,
+                )
+            else:
+                # For HEAD requests, return immediately and cleanup in finally block
+                return Response(
+                    status_code=response.status_code,
+                    headers=response.headers,
+                )
+
+        except httpx.RequestError as e:
+            raise Exception(f"Request error: {e}")
+        finally:
+            # Only cleanup for non-GET requests (GET cleanup happens in the stream generator)
+            if request.method != "GET":
+                if response is not None:
+                    await response.aclose()
+                await client.aclose()
 
     def _validate_range_header(self, range_header: str) -> str:
         """
@@ -106,3 +126,29 @@ class FastAPIProxy:
         except ValueError:
             raise RequestParameterInvalidException("Invalid Range header format")
         return f"bytes={start}-{end}" if end else f"bytes={start}-"
+
+    def _filter_response_headers(self, headers: httpx.Headers) -> dict[str, str]:
+        """
+        Filter out headers that shouldn't be forwarded when proxying responses.
+
+        Removes:
+        - Hop-by-hop headers (transfer-encoding, connection, keep-alive)
+        - content-encoding: httpx auto-decompresses, so content is no longer encoded
+        - content-length: only if response was compressed (size changes after decompression)
+
+        Args:
+            headers: The response headers from the upstream server
+
+        Returns:
+            Filtered dictionary of headers safe to forward to the client
+        """
+        had_content_encoding = "content-encoding" in headers
+
+        # Always exclude these hop-by-hop and encoding headers
+        excluded_headers = ["transfer-encoding", "connection", "keep-alive", "content-encoding"]
+
+        if had_content_encoding:
+            # If content was compressed, the content-length is now incorrect after decompression
+            excluded_headers.append("content-length")
+
+        return {key: value for key, value in headers.items() if key.lower() not in excluded_headers}
