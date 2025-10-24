@@ -57,9 +57,7 @@ const showError = computed(
 const isAutoDownloadType = computed(
     () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext)
 );
-const downloadUrl = computed(
-    () => withPrefix(`/datasets/${props.datasetId}/display`)
-);
+const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
 const preferredVisualization = computed(
     () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext)
 );
