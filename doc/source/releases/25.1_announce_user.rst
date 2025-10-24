@@ -126,24 +126,26 @@ This improves the discoverability and accessibility of recent downloads without 
 manually.
 [`#20585 <https://github.com/galaxyproject/galaxy/pull/20585>`__]
 
-Direct Access to Hugging Face Hub Models
+Visual Indicators for Short-Term Storage Expiration
 --------
 
-This release also ships integration with **Hugging Face Hub**, allowing users to directly access and
-import machine learning models and datasets from the world's largest collection of open-source AI
-resources.
+Galaxy 25.1 introduces visual expiration indicators that help users identify when datasets and
+collections are stored in temporary or short-term storage that will be automatically cleaned up.
 
-- **File Source Instance Setup**. Navigate to the file source instances page and select "Hugging Face
-  Hub" to create a custom connection with your preferred repositories and settings.
-- **Integrated Upload Access**. Once configured, access your Hugging Face file source directly from
-  Galaxy's upload interface by choosing "Choose from repository" and selecting your Hugging Face
-  instance.
-- **Browse and Import**. Explore Hugging Face repositories directly within Galaxy and import models
-  suitable for your analysis.
+- **Expiration warnings in history**. Datasets and collections now display countdown timers showing
+  when they will expire, helping users plan data management and downloads before automatic cleanup.
+- **Collection-aware indicators**. Smart detection across dataset collections shows the earliest
+  expiration time when collections contain datasets from mixed storage types.
+- **Admin-configurable expiration periods**. Administrators can set `object_expires_after_days` in
+  object store configurations to match their actual cleanup schedules and inform users appropriately.
 
-*Note that the Hugging Face Hub file source needs to be enabled/configured by your preferred Galaxy
-instance administrator.*
-[`#20805 <https://github.com/galaxyproject/galaxy/pull/20805>`__]
+*Note that Galaxy instance administrators must set `object_expires_after_days` in their object store
+configurations for these indicators to function correctly.*
+
+This feature is particularly valuable for instances using scratch storage or temporary
+high-performance storage tiers, as it gives users clear visibility into data lifecycle and helps
+prevent unexpected data loss due to automatic cleanup processes.
+[`#20332 <https://github.com/galaxyproject/galaxy/pull/20332>`__]
 
 Galaxy Tools Now Handle Secrets and Authentication
 --------
