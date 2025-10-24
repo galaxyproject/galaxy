@@ -5,7 +5,9 @@ from typing import (
 )
 
 from galaxy.tool_util.parameters import (
+    DataRequestCollectionUri,
     DataRequestInternalHda,
+    DataRequestInternalHdca,
     DataRequestUri,
     decode,
     dereference,
@@ -165,7 +167,7 @@ def test_dereference():
         exception = e
     assert exception is not None
 
-    dereferenced_state = dereference(request_state, bundle, _fake_dereference)
+    dereferenced_state = dereference(request_state, bundle, _fake_dereference, _fake_collection_deference)
     assert isinstance(dereferenced_state, RequestInternalDereferencedToolState)
     dereferenced_state.validate(bundle)
 
@@ -282,6 +284,10 @@ def strictify_for(tool_state: Dict[str, Any], tool_path: str) -> Dict[str, Any]:
 
 def _fake_dereference(input: DataRequestUri) -> DataRequestInternalHda:
     return DataRequestInternalHda(id=EXAMPLE_ID_1, src="hda")
+
+
+def _fake_collection_deference(input: DataRequestCollectionUri) -> DataRequestInternalHdca:
+    return DataRequestInternalHdca(id=EXAMPLE_ID_1, src="hdca")
 
 
 def _fake_decode(input: str) -> int:

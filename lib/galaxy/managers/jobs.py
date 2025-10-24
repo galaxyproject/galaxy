@@ -91,7 +91,9 @@ from galaxy.structured_app import (
     StructuredApp,
 )
 from galaxy.tool_util.parameters import (
+    DataRequestCollectionUri,
     DataRequestInternalHda,
+    DataRequestInternalHdca,
     DataRequestUri,
     dereference,
     RequestInternalDereferencedToolState,
@@ -1978,6 +1980,35 @@ class JobSubmitter:
     ) -> Tuple[RequestInternalDereferencedToolState, list[DereferencedDatasetPair]]:
         new_hdas: list[DereferencedDatasetPair] = []
 
+        def dereference_collection_callback(data_request: DataRequestCollectionUri) -> DataRequestInternalHdca:
+            # a deferred dataset corresponding to request
+            history = tool_request.history
+            if not history:
+                raise InconsistentDatabase("Tool request has no history associated")
+
+            hdca = dereference_input(trans, data_request, history)
+            assert isinstance(hdca, model.HistoryDatasetCollectionAssociation)
+
+            # we need the HDCA to have an ID - so we force a commit here - for
+            # consistency it would be great if this happened in the dereference_input
+            # since the HDA is committed in the other branch.
+            history.add_pending_items()
+            trans.sa_session.commit()
+
+            def find_new_hdas(collection: model.DatasetCollection, request_elements) -> None:
+                for dce, dce_request in zip(collection.elements, request_elements):
+                    if dce.is_collection:
+                        child_collection = dce.child_collection
+                        assert child_collection
+                        find_new_hdas(child_collection, dce_request.elements)
+                    else:
+                        hda = dce.hda
+                        assert hda
+                        new_hdas.append(DereferencedDatasetPair(hda, dce_request))
+
+            find_new_hdas(hdca.collection, data_request.elements)
+            return DataRequestInternalHdca(id=hdca.id, src="hdca")
+
         def dereference_callback(data_request: DataRequestUri) -> DataRequestInternalHda:
             # a deferred dataset corresponding to request
             history = tool_request.history
@@ -1985,14 +2016,12 @@ class JobSubmitter:
                 raise InconsistentDatabase("Tool request has no history associated")
 
             hda = dereference_input(trans, data_request, history)
-            if not isinstance(hda, model.HistoryDatasetAssociation):
-                raise RequestParameterInvalidException("Input dataset is not a history dataset association")
-
+            assert isinstance(hda, model.HistoryDatasetAssociation)
             new_hdas.append(DereferencedDatasetPair(hda, data_request))
             return DataRequestInternalHda(id=hda.id, src="hda")
 
         tool_state = RequestInternalToolState(tool_request.request)
-        return dereference(tool_state, tool, dereference_callback), new_hdas
+        return dereference(tool_state, tool, dereference_callback, dereference_collection_callback), new_hdas
 
     def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
         tool_request: ToolRequest = self._tool_request(request.tool_request_id)

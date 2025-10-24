@@ -20,8 +20,10 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionRequest,
     DataColumnParameterModel,
     DataParameterModel,
+    DataRequestCollectionUri,
     DataRequestHda,
     DataRequestInternalHda,
+    DataRequestInternalHdca,
     DataRequestUri,
     DiscriminatorType,
     DrillDownParameterModel,
@@ -63,6 +65,7 @@ log = logging.getLogger(__name__)
 DecodeFunctionT = Callable[[str], int]
 EncodeFunctionT = Callable[[int], str]
 DereferenceCallable = Callable[[DataRequestUri], DataRequestInternalHda]
+DereferenceCollectionCallable = Callable[[DataRequestCollectionUri], DataRequestInternalHdca]
 # interfaces for adapting test data dictionaries to tool request dictionaries
 # e.g. {class: File, path: foo.bed} => {src: hda, id: ab1235cdfea3}
 AdaptDatasets = Callable[[JsonTestDatasetDefDict], DataRequestHda]
@@ -213,15 +216,25 @@ def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParamete
 
 
 def dereference(
-    internal_state: RequestInternalToolState, input_models: ToolParameterBundle, dereference: DereferenceCallable
+    internal_state: RequestInternalToolState,
+    input_models: ToolParameterBundle,
+    dereference: DereferenceCallable,
+    dereference_collection: DereferenceCollectionCallable,
 ) -> RequestInternalDereferencedToolState:
 
     def dereference_dict(src_dict: dict):
         src = src_dict.get("src")
+        clazz = src_dict.get("class")
         if src == "url":
             data_request_uri: DataRequestUri = DataRequestUri.model_validate(src_dict)
             data_request_hda: DataRequestInternalHda = dereference(data_request_uri)
             return data_request_hda.model_dump()
+        elif clazz == "Collection":
+            data_request_collection_from_uri: DataRequestCollectionUri = DataRequestCollectionUri.model_validate(
+                src_dict
+            )
+            data_request_hdca: DataRequestInternalHdca = dereference_collection(data_request_collection_from_uri)
+            return data_request_hdca.model_dump()
         else:
             return src_dict
 
@@ -234,6 +247,11 @@ def dereference(
             else:
                 assert isinstance(value, dict), str(value)
                 return dereference_dict(value)
+        elif isinstance(parameter, DataCollectionParameterModel):
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
+            assert isinstance(value, dict), str(value)
+            return dereference_dict(value)
         else:
             return VISITOR_NO_REPLACEMENT
 

@@ -1,6 +1,6 @@
 <tool id="gx_data_collection_list" name="gx_data_collection_list" version="1.0.0">
     <command><![CDATA[
-cat '$parameter' >> '$output'
+cat #for $q in $parameter# '$q' #end for# > '$output'
     ]]></command>
     <inputs>
         <param name="parameter" type="data_collection" collection_type="list" ext="data" />
