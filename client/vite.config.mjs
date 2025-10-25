@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import ViteYaml from "@modyfi/vite-plugin-yaml";
 import inject from "@rollup/plugin-inject";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -69,6 +69,10 @@ export default defineConfig({
                 compilerOptions: {
                     // Preserve whitespace to match Webpack's vue-loader default behavior
                     whitespace: "preserve",
+                    // Vue 3 compat mode — accept Vue 2 SFC syntax during migration.
+                    compatConfig: {
+                        MODE: 2,
+                    },
                 },
             },
         }),
@@ -87,7 +91,8 @@ export default defineConfig({
         }),
         galaxyDevServerPlugin(), // Transform proxied Galaxy HTML for HMR support
     ],
-    // resolve aliases are handled by galaxyLegacyPlugin
+    // resolve aliases are handled by galaxyLegacyPlugin (vue itself points at
+    // @vue/compat there for the Vue 2 → 3 migration).
     css: {
         preprocessorOptions: {
             scss: {
