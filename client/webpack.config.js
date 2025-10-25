@@ -1,7 +1,7 @@
 /* eslint-env node */
 const webpack = require("webpack");
 const path = require("path");
-const VueLoaderPlugin = require("vue-loader/lib/plugin");
+const { VueLoaderPlugin } = require("vue-loader");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
@@ -80,7 +80,7 @@ module.exports = (env = {}, argv = {}) => {
                 buffer: require.resolve("buffer/"),
             },
             alias: {
-                vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
+                vue$: path.resolve(__dirname, "node_modules/@vue/compat/dist/vue.esm-bundler.js"),
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
