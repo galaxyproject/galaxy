@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { onBeforeRouteLeave } from "vue-router/composables";
+import { onBeforeRouteLeave } from "vue-router";
 
 import { withPrefix } from "@/utils/redirect";
 
