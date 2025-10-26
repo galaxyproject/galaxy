@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faEye, faLink, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getFullAppUrl } from "@/app/utils";
 import { Toast } from "@/composables/toast";
