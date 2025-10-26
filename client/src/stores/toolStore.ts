@@ -263,7 +263,7 @@ export const useToolStore = defineStore("toolStore", () => {
                     toolHelpData.help = ""; // for cases where helpText == '\n'
                 }
 
-                Vue.set(helpDataCached.value, toolId, toolHelpData);
+                helpDataCached.value[toolId] = toolHelpData;
             }
         } catch (error) {
             console.error("Error fetching help:", error);

@@ -80,28 +80,28 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
     /** Whether some tools have required service credentials. */
     const someToolsHasRequiredServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).some(
-            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials.value,
+            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials,
         );
     });
 
     /** Whether user has provided all service credentials for all tools. */
     const hasUserProvidedAllToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials.value,
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials,
         );
     });
 
     /** Whether user has provided all required service credentials for all tools. */
     const hasUserProvidedAllRequiredToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials.value,
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials,
         );
     });
 
     /** Whether user has provided some optional service credentials for any tools. */
     const hasUserProvidedSomeOptionalToolsServiceCredentials = computed(() => {
         return Array.from(userToolCredentialsByKey.values()).some(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials.value,
+            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials,
         );
     });
 
