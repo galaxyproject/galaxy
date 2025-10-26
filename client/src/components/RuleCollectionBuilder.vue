@@ -526,17 +526,17 @@
                     <input v-if="elementsType == 'datasets'" v-model="hideSourceItems" type="checkbox" />
                     <div v-if="extension && showFileTypeSelector" class="rule-footer-extension-group">
                         <label>{{ l("Type") }}:</label>
-                        <Select2 v-model="extension" name="extension" class="extension-select">
+                        <SelectBasic v-model="extension" name="extension" class="extension-select">
                             <option v-for="col in extensions" :key="col.id" :value="col['id']">
                                 {{ col["text"] }}
                             </option>
-                        </Select2>
+                        </SelectBasic>
                     </div>
                     <div v-if="genome && showGenomeSelector" class="rule-footer-genome-group">
                         <label>{{ l("Genome") }}:</label>
-                        <Select2 v-model="genome" class="genome-select">
+                        <SelectBasic v-model="genome" class="genome-select">
                             <option v-for="col in genomes" :key="col.id" :value="col['id']">{{ col["text"] }}</option>
-                        </Select2>
+                        </SelectBasic>
                     </div>
                     <label v-if="showAddNameTag">{{ l("Add nametag for name") }}:</label>
                     <input v-if="showAddNameTag" v-model="addNameTag" type="checkbox" />
@@ -633,7 +633,7 @@ import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 import SaveRules from "components/RuleBuilder/SaveRules";
 import StateDiv from "components/RuleBuilder/StateDiv";
-import Select2 from "components/Select2";
+import SelectBasic from "components/RuleBuilder/SelectBasic";
 import UploadUtils from "components/Upload/utils";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
