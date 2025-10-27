@@ -80,7 +80,7 @@ phylocanvas:
     version: 0.0.11
 plotly:
     package: "@galaxyproject/plotly"
-    version: 0.0.22
+    version: 0.0.25
 plotly_box:
     package: "@galaxyproject/plotly_box"
     version: 0.0.0
@@ -90,6 +90,9 @@ plotly_heatmap:
 plotly_histogram:
     package: "@galaxyproject/plotly_histogram"
     version: 0.0.0
+plotly_pie:
+    package: "@galaxyproject/plotly_pie"
+    version: 0.0.3
 plotly_surface:
     package: "@galaxyproject/plotly_surface"
     version: 0.0.0
