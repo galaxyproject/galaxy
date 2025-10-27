@@ -34,20 +34,41 @@ class GalaxySeleniumContext(NavigatesGalaxy):
             base = self.url
         return urljoin(base, url)
 
-    def screenshot(self, label: str):
-        """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
+    def screenshot(self, label: str, caption: Optional[str] = None):
+        """Take a screenshot and optionally add to story.
 
-        Unlike the above "snapshot" feature, this will be written out regardless and not in a per-test
-        directory. The above method is used for debugging failures within a specific test. This method
-        if more for creating a set of images to augment automated testing with manual human inspection
-        after a test or test suite has executed.
+        Saves screenshot to the configured directory (story directory if story is enabled,
+        otherwise screenshots directory). In test framework, if both are configured,
+        screenshot is saved to both locations.
+
+        Args:
+            label: Base filename for screenshot
+            caption: Optional caption for the screenshot in the story
         """
         target = self._screenshot_path(label)
         if target is None:
             return
 
         self.save_screenshot(target)
+
+        # Add to story (noop if NoopStory)
+        if hasattr(self, "story"):
+            self.story.add_screenshot(target, caption or label)
+
         return target
+
+    def document(self, markdown_content: str):
+        """Add markdown documentation to the story.
+
+        This method appends markdown content to the story if story tracking
+        is enabled. Content will be interleaved with screenshots in the final
+        story document.
+
+        Args:
+            markdown_content: Markdown-formatted documentation to add to story
+        """
+        if hasattr(self, "story"):
+            self.story.add_documentation(markdown_content)
 
     @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> Optional[str]:
