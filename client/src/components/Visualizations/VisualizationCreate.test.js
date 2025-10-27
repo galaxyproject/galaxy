@@ -100,7 +100,6 @@ it("adds hid to dataset names when fetching history items", async () => {
 it("displays create new visualization option if dataset is not required", async () => {
     fetchPlugin.mockResolvedValueOnce(PLUGIN);
     const wrapper = mount(VisualizationCreate, {
-        localVue,
         propsData: {
             visualization: "scatterplot",
         },

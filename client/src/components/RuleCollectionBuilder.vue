@@ -632,8 +632,8 @@ import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
 import RuleTargetComponent from "components/RuleBuilder/RuleTargetComponent";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 import SaveRules from "components/RuleBuilder/SaveRules";
-import StateDiv from "components/RuleBuilder/StateDiv";
 import SelectBasic from "components/RuleBuilder/SelectBasic";
+import StateDiv from "components/RuleBuilder/StateDiv";
 import UploadUtils from "components/Upload/utils";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
@@ -676,7 +676,6 @@ export default {
         RuleModalHeader,
         RuleModalMiddle,
         RuleModalFooter,
-        Select2,
         GButton,
     },
     mixins: [SaveRules],

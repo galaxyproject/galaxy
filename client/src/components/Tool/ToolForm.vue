@@ -82,7 +82,7 @@
                     v-model="dataManagerMode"
                     :options="bundleOptions"
                     title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
-                <ToolFormTags :tags.sync="tags" />
+                <ToolFormTags v-model:tags="tags" />
             </div>
             <template v-slot:buttons>
                 <ButtonSpinner

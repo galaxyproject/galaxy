@@ -539,13 +539,13 @@ onMounted(async () => {
 
             <FilterMenu
                 id="history-list-filter"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 name="history-list-filter"
                 :filter-class="historyListFilters"
-                :filter-text.sync="filterText"
                 :loading="loading || overlay"
                 view="compact"
-                :placeholder="searchPlaceHolder"
-                :show-advanced.sync="showAdvanced" />
+                :placeholder="searchPlaceHolder" />
 
             <ListHeader
                 ref="listHeader"

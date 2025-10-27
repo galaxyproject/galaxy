@@ -7,11 +7,11 @@
  * will handle initializations for components individually.
  *
  */
-import { replaceChildrenWithComponent } from "utils/mountVueComponent";
-
 /* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery"; // eslint-disable-line no-unused-vars
 import _ from "underscore"; // eslint-disable-line no-unused-vars
+import { replaceChildrenWithComponent } from "utils/mountVueComponent";
+
 import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 
 // legacy/grid_base.mako
