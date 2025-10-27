@@ -92,7 +92,7 @@ plotly_histogram:
     version: 0.0.0
 plotly_pie:
     package: "@galaxyproject/plotly_pie"
-    version: 0.0.2
+    version: 0.0.3
 plotly_surface:
     package: "@galaxyproject/plotly_surface"
     version: 0.0.0
