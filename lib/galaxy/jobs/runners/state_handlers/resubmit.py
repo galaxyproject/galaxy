@@ -1,9 +1,15 @@
 import logging
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
 from ._safe_eval import safe_eval
+
+if TYPE_CHECKING:
+    from galaxy.app import GalaxyManagerApplication
+    from galaxy.jobs import ResubmitConfigDict
+    from galaxy.jobs.runners import BaseJobRunner
 
 __all__ = ("failure",)
 
@@ -17,9 +23,9 @@ MESSAGES = dict(
 )
 
 
-def failure(app, job_runner, job_state):
+def failure(app: "GalaxyManagerApplication", job_runner: "BaseJobRunner", job_state: JobState) -> None:
     # Leave handler quickly if no resubmit conditions specified or if the runner state doesn't allow resubmission.
-    resubmit_definitions = job_state.job_destination.get("resubmit")
+    resubmit_definitions = job_state.job_destination.resubmit
     if not resubmit_definitions:
         return
 
@@ -37,7 +43,12 @@ def failure(app, job_runner, job_state):
     _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_state)
 
 
-def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_state):
+def _handle_resubmit_definitions(
+    resubmit_definitions: list["ResubmitConfigDict"],
+    app: "GalaxyManagerApplication",
+    job_runner: "BaseJobRunner",
+    job_state: JobState,
+) -> None:
     runner_state = getattr(job_state, "runner_state", None) or JobState.runner_states.UNKNOWN_ERROR
 
     # Setup environment for evaluating resubmission conditions and related expression.
@@ -52,41 +63,36 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
             # its condition is not for the encountered state
             continue
 
-        external_id = getattr(job_state, "job_id", None)
-        if external_id:
-            job_log_prefix = f"({job_state.job_wrapper.job_id}/{job_state.job_id})"
+        if (external_id := getattr(job_state, "job_id", None)) is not None:
+            job_log_prefix = f"({job_state.job_wrapper.job_id}/{external_id})"
         else:
             job_log_prefix = f"({job_state.job_wrapper.job_id})"
 
         # Is destination needed here, might these be serialized to the database?
-        destination = resubmit.get("environment") or resubmit.get("destination")
-        log.info(
-            "%s Job will be resubmitted to '%s' because %s at the '%s' destination",
-            job_log_prefix,
-            destination,
-            MESSAGES[runner_state],
-            job_state.job_wrapper.job_destination.id,
-        )
-        # fetch JobDestination for the id or tag
-        if destination:
+        if (destination := resubmit.get("environment")) is not None:
             new_destination = app.job_config.get_destination(destination)
         else:
             new_destination = job_state.job_destination
+        log.info(
+            "%s Job will be resubmitted to '%s' because %s at the '%s' destination",
+            job_log_prefix,
+            new_destination.id,
+            MESSAGES[runner_state],
+            job_state.job_wrapper.job_destination.id,
+        )
 
-        # Resolve dynamic if necessary
-        new_destination = job_state.job_wrapper.job_runner_mapper.cache_job_destination(new_destination)
+        # Resolve dynamic if necessary, and cache the destination to prevent
+        # rerunning dynamic after resubmit
+        new_destination = job_state.job_wrapper.set_cached_job_destination(new_destination)
         # Reset job state
         job_state.job_wrapper.clear_working_directory()
         job = job_state.job_wrapper.get_job()
-        if resubmit.get("handler", None):
-            log.debug("%s Job reassigned to handler %s", job_log_prefix, resubmit["handler"])
-            job.set_handler(resubmit["handler"])
+        if handler := resubmit.get("handler"):
+            log.debug("%s Job reassigned to handler %s", job_log_prefix, handler)
+            job.set_handler(handler)
             job_runner.sa_session.add(job)
             # Is this safe to do here?
             job_runner.sa_session.commit()
-        # Cache the destination to prevent rerunning dynamic after
-        # resubmit
-        job_state.job_wrapper.job_runner_mapper.cached_job_destination = new_destination
         # Handle delaying before resubmission if needed.
         raw_delay = resubmit.get("delay")
         if raw_delay:

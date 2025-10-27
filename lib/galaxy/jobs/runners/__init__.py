@@ -27,7 +27,6 @@ from typing import (
 from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
-import galaxy.jobs
 from galaxy import model
 from galaxy.exceptions import ConfigurationError
 from galaxy.job_execution.output_collect import (
@@ -35,6 +34,7 @@ from galaxy.job_execution.output_collect import (
     read_exit_code_from,
 )
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
@@ -65,7 +65,6 @@ from .state_handler_factory import build_state_handlers
 if TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
     from galaxy.jobs import (
-        JobDestination,
         JobWrapper,
         MinimalJobWrapper,
     )
@@ -201,7 +200,7 @@ class BaseJobRunner:
                 self.app.model.session().add(job)
 
     # Causes a runner's `queue_job` method to be called from a worker thread
-    def put(self, job_wrapper: "MinimalJobWrapper"):
+    def put(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
         try:
@@ -259,7 +258,7 @@ class BaseJobRunner:
                 )
 
     # Most runners should override the legacy URL handler methods and destination param method
-    def url_to_destination(self, url: str):
+    def url_to_destination(self, url: str) -> JobDestination:
         """
         Convert a legacy URL to a JobDestination.
 
@@ -267,7 +266,7 @@ class BaseJobRunner:
         This base class method converts from a URL to a very basic
         JobDestination without destination params.
         """
-        return galaxy.jobs.JobDestination(runner=url.split(":")[0])
+        return JobDestination(runner=url.split(":")[0])
 
     def parse_destination_params(self, params: dict[str, Any]):
         """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
@@ -507,7 +506,7 @@ class BaseJobRunner:
         env_setup_commands = kwds.get("env_setup_commands", [])
         env_setup_commands.append(job_wrapper.get_env_setup_clause() or "")
         destination = job_wrapper.job_destination
-        envs = destination.get("env", [])
+        envs = destination.env
         envs.extend(job_wrapper.environment_variables)
         for env in envs:
             env_setup_commands.append(env_to_statement(env))
@@ -713,7 +712,7 @@ class JobState:
 
     runner_states = runner_states
 
-    def __init__(self, job_wrapper: "MinimalJobWrapper", job_destination: "JobDestination") -> None:
+    def __init__(self, job_wrapper: "MinimalJobWrapper", job_destination: JobDestination) -> None:
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
@@ -779,7 +778,7 @@ class AsynchronousJobState(JobState):
     def __init__(
         self,
         job_wrapper: "MinimalJobWrapper",
-        job_destination: "JobDestination",
+        job_destination: JobDestination,
         *,
         files_dir=None,
         job_id: Union[str, None] = None,

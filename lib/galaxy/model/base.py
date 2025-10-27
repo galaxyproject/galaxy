@@ -27,6 +27,8 @@ from sqlalchemy.orm import (
 from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
+
     from galaxy.model import (
         APIKeys as GalaxyAPIKeys,
         GalaxySession as GalaxyGalaxySession,
@@ -68,7 +70,7 @@ def check_database_connection(session):
 
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
-    def __init__(self, model_modules: list[ModuleType], engine):
+    def __init__(self, model_modules: list[ModuleType], engine: "Engine") -> None:
         self.engine = engine
         self._SessionLocal = sessionmaker(autoflush=False)
         versioned_session(self._SessionLocal)

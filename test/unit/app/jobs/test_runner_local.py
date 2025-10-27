@@ -15,6 +15,7 @@ from galaxy import (
 )
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs import MinimalJobWrapper
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 from galaxy.util.unittest import TestCase
@@ -140,7 +141,7 @@ class MockJobWrapper:
         self.working_directory = working_directory
         self.tool_working_directory = tool_working_directory
         self.requires_setting_metadata = True
-        self.job_destination = bunch.Bunch(id="default", params={})
+        self.job_destination = JobDestination(id="default", params={})
         self.galaxy_lib_dir = os.path.abspath("lib")
         self.job = model.Job()
         self.job_id = 1

@@ -4,7 +4,11 @@ from datetime import (
     timedelta,
 )
 from functools import partial
-from typing import Optional
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
 from sqlalchemy.orm import Session
 
@@ -22,13 +26,23 @@ from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     RequestUser,
 )
-from galaxy.structured_app import MinimalManagerApp
-from galaxy.util import plugin_config
+from galaxy.util import (
+    plugin_config,
+    unicodify,
+)
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.web_stack.message import WorkflowSchedulingMessage
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import MinimalManagerApp
+    from galaxy.util import Element
+    from galaxy.workflow.schedulers import (
+        ActiveWorkflowSchedulingPlugin,
+        WorkflowSchedulingPlugin,
+    )
 
 log = get_logger(__name__)
 
@@ -55,19 +69,15 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
     DEFAULT_BASE_HANDLER_POOLS = ("workflow-schedulers", "job-handlers")
 
-    def __init__(self, app):
-        self.app = app
-        self.__handlers_configured = False
-        self.workflow_schedulers = {}
-        self.active_workflow_schedulers = {}
+    def __init__(self, app: "MinimalManagerApp") -> None:
+        super().__init__(app)
+        self.__handlers_configured: bool = False
+        self.workflow_schedulers: dict[str, WorkflowSchedulingPlugin] = {}
+        self.active_workflow_schedulers: dict[str, ActiveWorkflowSchedulingPlugin] = {}
         # Passive workflow schedulers won't need to be monitored I guess.
 
         self.request_monitor = None
 
-        self.handlers = {}
-        self.handler_assignment_methods_configured = False
-        self.handler_assignment_methods = None
-        self.handler_max_grab = None
         self.default_handler_id = None
 
         self.__plugin_classes = self.__plugins_dict()
@@ -82,22 +92,20 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         # When assinging handlers to workflows being queued - use job_conf
         # if not explicit workflow scheduling handlers have be specified or
         # else use those explicit workflow scheduling handlers (on self).
-        if self.__handlers_configured:
-            self.__handlers_config = self
-        else:
-            self.__handlers_config = app.job_config
+        self.__handlers_config = self if self.__handlers_configured else app.job_config
 
         if not self._is_workflow_handler():
             # Process should not schedule workflows but should check for any unassigned to handlers
             self.__startup_recovery()
 
-    def __startup_recovery(self):
+    def __startup_recovery(self) -> None:
         sa_session = self.app.model.context
         for invocation_id in model.WorkflowInvocation.poll_unhandled_workflow_ids(sa_session):
             log.info(
                 "(%s) Handler unassigned at startup, resubmitting workflow invocation for assignment", invocation_id
             )
             workflow_invocation = sa_session.get(model.WorkflowInvocation, invocation_id)
+            assert workflow_invocation is not None
             self._assign_handler(workflow_invocation)
 
     def _handle_setup_msg(self, workflow_invocation_id=None):
@@ -135,7 +143,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
     def _message_callback(self, workflow_invocation):
         return WorkflowSchedulingMessage(task="setup", workflow_invocation_id=workflow_invocation.id)
 
-    def _assign_handler(self, workflow_invocation, flush=True):
+    def _assign_handler(self, workflow_invocation: model.WorkflowInvocation, flush: bool = True) -> str:
         # Use random-ish integer history_id to produce a consistent index to pick
         # job handler with.
         random_index = workflow_invocation.history.id
@@ -146,10 +154,10 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         return self.__handlers_config.assign_handler(
             workflow_invocation,
             configured=None,
+            flush=flush,
             index=random_index,
             queue_callback=queue_callback,
             message_callback=message_callback,
-            flush=flush,
         )
 
     def shutdown(self):
@@ -195,7 +203,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         for workflow_scheduler in self.workflow_schedulers.values():
             workflow_scheduler.startup(self.app)
 
-    def __plugins_dict(self):
+    def __plugins_dict(self) -> dict[str, type["WorkflowSchedulingPlugin"]]:
         return plugin_config.plugins_dict(galaxy.workflow.schedulers, "plugin_type")
 
     @property
@@ -234,8 +242,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.default_scheduler_id = DEFAULT_SCHEDULER_ID
         self.__init_plugin(DEFAULT_SCHEDULER_PLUGIN_TYPE)
 
-    def __init_schedulers_for_element(self, plugins_element):
-        plugins_kwds = dict(plugins_element.items())
+    def __init_schedulers_for_element(self, plugins_element: "Element") -> None:
+        plugins_kwds = {unicodify(k): unicodify(v) for k, v in plugins_element.items()}
         self.default_scheduler_id = plugins_kwds.get("default", DEFAULT_SCHEDULER_ID)
         for config_element in plugins_element:
             config_element_tag = config_element.tag
@@ -250,7 +258,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
                 plugin_type = config_element_tag
                 plugin_element = config_element
                 # Configuring a scheduling plugin...
-                plugin_kwds = dict(plugin_element.items())
+                plugin_kwds = {unicodify(k): unicodify(v) for k, v in plugin_element.items()}
                 workflow_scheduler_id = plugin_kwds.get("id", None)
                 self.__init_plugin(plugin_type, workflow_scheduler_id, **plugin_kwds)
 
@@ -282,7 +290,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             log.info("Tag [%s] handlers: %s", tag, ", ".join(handlers))
         self.__handlers_configured = True
 
-    def __init_plugin(self, plugin_type, workflow_scheduler_id=None, **kwds):
+    def __init_plugin(self, plugin_type: str, workflow_scheduler_id: Union[str, None] = None, **kwds) -> None:
         workflow_scheduler_id = workflow_scheduler_id or self.default_scheduler_id
 
         if workflow_scheduler_id in self.workflow_schedulers:
@@ -300,7 +308,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
 class WorkflowRequestMonitor(Monitors):
 
-    def __init__(self, app: MinimalManagerApp, workflow_scheduling_manager):
+    def __init__(self, app: "MinimalManagerApp", workflow_scheduling_manager: WorkflowSchedulingManager) -> None:
         self.app = app
         self.workflow_scheduling_manager = workflow_scheduling_manager
         self._init_monitor_thread(
