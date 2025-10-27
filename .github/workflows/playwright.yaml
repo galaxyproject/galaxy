@@ -84,12 +84,12 @@ jobs:
         with:
           flags: playwright
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Playwright test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_playwright_tests.html'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Playwright debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})

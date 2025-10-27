@@ -80,12 +80,12 @@ jobs:
         with:
           flags: selenium
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_selenium_tests.html'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Selenium debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})

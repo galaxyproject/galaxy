@@ -60,7 +60,7 @@ jobs:
         with:
           flags: main-tools
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Main tool test results (${{ matrix.python-version }})

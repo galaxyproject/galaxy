@@ -64,7 +64,7 @@ jobs:
         with:
           flags: cwl-conformance
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: CWL conformance test results (${{ matrix.python-version }}, ${{ matrix.marker }}, ${{ matrix.conformance-version }})

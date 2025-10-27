@@ -53,7 +53,7 @@ jobs:
         with:
           flags: py-unit
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Unit test results (${{ matrix.python-version }})

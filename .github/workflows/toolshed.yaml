@@ -76,7 +76,7 @@ jobs:
           TOOL_SHED_API_VERSION: ${{ matrix.shed-api }}
           TOOL_SHED_TEST_BROWSER: ${{ matrix.shed-api == 'v1' && 'twill' || 'playwright' }}
         working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Toolshed test results (${{ matrix.python-version }}, ${{ matrix.shed-api }}, ${{ matrix.test-install-client }})

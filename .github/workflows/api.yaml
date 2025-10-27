@@ -72,7 +72,7 @@ jobs:
         with:
           flags: api
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: API test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
