@@ -204,7 +204,6 @@ def reload_data_managers(app, **kwargs):
     reload_timer = util.ExecutionTimer()
 
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
-    app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count + 1
     app.data_managers = DataManagers(app, None, reload_count)

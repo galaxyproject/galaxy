@@ -222,7 +222,7 @@ class StandaloneInstallationTarget(InstallationTarget):
         config.shed_tools_dir = str(tool_root_dir)
         self.watchers = Watchers(self)
         self.reload_toolbox()
-        self.tool_data_tables = ToolDataTableManager(
+        self._tool_data_tables = ToolDataTableManager(
             tool_data_path=self.config.tool_data_path,
             config_filename=self.config.shed_tool_data_table_config,
             other_config_dict=self.config,
@@ -230,6 +230,10 @@ class StandaloneInstallationTarget(InstallationTarget):
         dependency_dir = target_directory / "_dependencies"
         dependency_dir.mkdir()
         self.installed_repository_manager = InstalledRepositoryManager(self)
+
+    @property
+    def tool_data_tables(self) -> ToolDataTableManager:
+        return self._tool_data_tables
 
     @property
     def tool_dependency_dir(self) -> Optional[str]:

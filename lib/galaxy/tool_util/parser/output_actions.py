@@ -27,7 +27,8 @@ class ToolOutputActionAppConfig(Protocol):
 
 
 class ToolOutputActionApp(Protocol):
-    tool_data_tables: Any  # TODO after refactor "ToolDataTableManager"
+    @property
+    def tool_data_tables(self) -> Any: ...  # TODO after refactor "ToolDataTableManager"
 
     @property
     def config(self) -> ToolOutputActionAppConfig: ...  # https://github.com/python/mypy/issues/7041
