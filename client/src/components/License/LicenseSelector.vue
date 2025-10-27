@@ -89,6 +89,7 @@ watchImmediate(
         <Multiselect
             v-else
             v-model="currentLicense"
+            name="license-selector"
             data-description="license select"
             track-by="licenseId"
             :options="licenseOptions"
