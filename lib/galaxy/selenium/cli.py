@@ -6,6 +6,7 @@ GALAXY_URL_DESCRIPTION = "URL of Galaxy instance to target."
 HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwise this requires pyvirtualdisplay)."
 BACKEND_DESCRIPTION = "Browser automation backend to use (selenium or playwright)."
 
+import os
 from typing import Literal
 from urllib.parse import urljoin
 
@@ -16,6 +17,11 @@ from .driver_factory import (
 from .navigates_galaxy import (
     galaxy_timeout_handler,
     NavigatesGalaxy,
+)
+from .story import (
+    NoopStory,
+    Story,
+    StoryProtocol,
 )
 
 
@@ -64,6 +70,31 @@ def add_selenium_arguments(parser):
     return parser
 
 
+def add_story_arguments(parser):
+    """Add story generation arguments for CLI scripts.
+
+    All the browser automation arguments (add_selenium_arguments) are also added.
+    """
+    add_selenium_arguments(parser)
+    parser.add_argument(
+        "--story-output",
+        default=None,
+        help="Directory to generate story documentation (markdown, HTML, PDF)",
+    )
+    parser.add_argument(
+        "--story-title",
+        default=None,
+        help="Title for the generated story",
+    )
+    parser.add_argument(
+        "--story-description",
+        default=None,
+        help="Description for the generated story",
+    )
+
+    return parser
+
+
 class DriverWrapper(NavigatesGalaxy):
     """Adapt argparse command-line options to a browser automation driver."""
 
@@ -93,6 +124,18 @@ class DriverWrapper(NavigatesGalaxy):
         )
         self.target_url = args.galaxy_url
 
+        # Initialize story (real or noop)
+        # Scripts opt-in by calling add_story_arguments()
+        if hasattr(args, "story_output") and args.story_output:
+            if not os.path.exists(args.story_output):
+                os.makedirs(args.story_output)
+
+            title = args.story_title or "Galaxy Tutorial"
+            description = args.story_description or ""
+            self.story: StoryProtocol = Story(title, description, args.story_output)
+        else:
+            self.story: StoryProtocol = NoopStory()
+
     @property
     def _driver_impl(self):
         """Provide driver implementation from configured_driver."""
@@ -101,11 +144,23 @@ class DriverWrapper(NavigatesGalaxy):
     def build_url(self, url="", for_selenium: bool = True):
         return urljoin(self.target_url, url)
 
-    def screenshot(self, label: str) -> None:
-        """No-op in this context, not saving debugging/testing screenshots.
+    def screenshot(self, label: str, caption: str = None) -> None:
+        """Save screenshot if story tracking is enabled.
 
-        Consider a verbose or debug option for saving these.
+        Args:
+            label: Base filename for screenshot
+            caption: Optional caption for the screenshot in the story
         """
+        if self.story.enabled:
+            # Generate screenshot path with sequential numbering
+            target = os.path.join(self.story.output_directory, f"{self.story.screenshot_counter:03d}_{label}.png")
+            self.story.screenshot_counter += 1
+
+            # Save screenshot
+            self.save_screenshot(target)
+
+            # Add to story
+            self.story.add_screenshot(target, caption or label)
 
     @property
     def default_timeout(self):
