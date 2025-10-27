@@ -102,8 +102,10 @@ Create a Jupyter notebook for interactively prototyping a Selenium test.
 **Workflow:**
 1. Run `/setup-selenium-test-notebook <feature>` to create notebook
 2. Follow printed instructions to start Jupyter
-3. Prototype test interactively with screenshots
-4. Run `/extract-selenium-test` when done to convert to test file
+3. Prototype test interactively with screenshots and documentation
+4. Use `screenshot("name", caption="...")` to add captioned screenshots
+5. Use `document("markdown")` to add narrative documentation
+6. Run `/extract-selenium-test` when done to convert to test file
 
 #### `/extract-selenium-test`
 
@@ -146,8 +148,47 @@ For complex tests or DOM exploration:
 1. **Create notebook**: `/setup-selenium-test-notebook <description>`
 2. **Start Galaxy & Jupyter** following the printed instructions
 3. **Prototype interactively** in the notebook with live screenshots
-4. **Extract to test**: `/extract-selenium-test <notebook_path>`
-5. **Run** with `pytest lib/galaxy_test/selenium/test_<your_file>.py`
+4. **Add documentation** using `screenshot(caption="...")` and `document("markdown")`
+5. **Extract to test**: `/extract-selenium-test <notebook_path>`
+6. **Run** with `pytest lib/galaxy_test/selenium/test_<your_file>.py`
+
+## Test Stories
+
+Test stories provide visual narrative documentation of test execution, automatically generating markdown, HTML, and PDF artifacts with interleaved screenshots and documentation.
+
+### Enabling Test Stories
+
+Set the `GALAXY_TEST_STORIES_DIRECTORY` environment variable:
+
+```bash
+export GALAXY_TEST_STORIES_DIRECTORY=/path/to/stories
+pytest lib/galaxy_test/selenium/test_your_feature.py
+```
+
+### Generated Artifacts
+
+For each test, a timestamped directory is created containing:
+- `story.md` - Markdown source with embedded screenshots
+- `story.html` - Self-contained HTML with embedded images
+- `story.pdf` - PDF version (if weasyprint available)
+- `{test_name}.zip` - Zip archive of all artifacts
+
+### Building Stories in Tests
+
+Use `screenshot()` with captions and `document()` to create rich test documentation:
+
+```python
+@selenium_test
+def test_workflow_import(self):
+    self.document("## Testing TRS Import\n\nThis test validates workflow import from TRS.")
+    
+    self.navigate_to_workflows()
+    self.screenshot("workflow_list", caption="Initial workflow listing")
+    
+    self.document("Import workflow from TRS endpoint...")
+    self.import_workflow_from_trs("https://...")
+    self.screenshot("after_import", caption="Workflow appears in listing after import")
+```
 
 ## Tips
 

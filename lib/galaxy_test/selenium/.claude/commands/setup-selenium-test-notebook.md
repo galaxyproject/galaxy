@@ -12,7 +12,8 @@ $ARGUMENTS
 
 Galaxy Selenium tests can be prototyped interactively in Jupyter notebooks. The notebook environment provides:
 - Full access to the Selenium test infrastructure
-- Screenshot capabilities with inline display
+- Screenshot capabilities with inline display and optional captions
+- Documentation capabilities via `document()` helper for adding markdown
 - Interactive DOM exploration
 - Rapid iteration without restarting Galaxy or re-running costly intermediate steps such as data upload.
 
@@ -105,7 +106,8 @@ Create a new Jupyter notebook for prototyping a Selenium test. Input can be:
    - Login if needed: `gx_selenium_context.login()`
    - Navigation: `gx_selenium_context.home()`
    - Dataset creation if needed: `gx_selenium_context.dataset_populator.new_dataset(history_id)`
-   - Screenshots: `gx_selenium_context.screenshot("description")`
+   - Screenshots: `gx_selenium_context.screenshot("description", caption="Optional caption for story")`
+   - Documentation: `gx_selenium_context.document("# Markdown content\n\nExplain what this test does...")`
    - Admin access if needed: `gx_selenium_context.admin_login()`
    - Component access examples
    - Comments suggesting what to implement
@@ -163,6 +165,8 @@ Create a new Jupyter notebook for prototyping a Selenium test. Input can be:
 
    5. Run cells interactively to prototype your test
       - Screenshots will display inline
+      - Use screenshot("name", caption="...") to add captions for documentation
+      - Use document("markdown content") to add narrative documentation
       - You can inspect the DOM, try different selectors
       - Iterate quickly without restarting
       - Components selectors defined in lib/galaxy/navigation/navigation.yml
@@ -192,5 +196,7 @@ Create a new Jupyter notebook for prototyping a Selenium test. Input can be:
 - The notebook uses `JupyterTestContextImpl` which provides the "same" interface as `SeleniumTestCase`
 - All methods from `NavigatesGalaxy` are available on `gx_selenium_context`
 - Screenshots are displayed inline in Jupyter for immediate feedback
+- Use `screenshot("name", caption="...")` to add captions that appear in generated stories
+- Use `document("markdown")` to add narrative documentation between screenshots
 - Configuration is read from `jupyter/galaxy_selenium_context.yml` if present
 - After prototyping, use `/extract-test` to convert notebook cells into a proper test file

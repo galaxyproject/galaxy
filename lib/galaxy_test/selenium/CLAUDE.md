@@ -83,6 +83,45 @@ self.wait_for_history()
 self.history_panel_wait_for_hid_ok(1)
 ```
 
+### Screenshots and Documentation
+
+```python
+# Take a screenshot (saved to screenshots directory)
+self.screenshot("workflow_editor")
+
+# Take a screenshot with caption (for test stories)
+self.screenshot("workflow_editor", caption="Workflow editor after loading")
+
+# Add markdown documentation to test story
+self.document("""
+## Testing Workflow Import
+
+This test validates that workflows can be imported from TRS endpoints.
+The following steps are performed:
+1. Navigate to workflow import page
+2. Enter TRS URL
+3. Verify workflow appears in listing
+""")
+```
+
+### Test Stories
+
+Test stories provide visual narrative documentation of test execution, automatically generating markdown, HTML, and PDF artifacts with interleaved screenshots and documentation.
+
+To enable test stories, set the `GALAXY_TEST_STORIES_DIRECTORY` environment variable:
+```bash
+export GALAXY_TEST_STORIES_DIRECTORY=/path/to/stories
+pytest lib/galaxy_test/selenium/test_your_feature.py
+```
+
+Stories are generated automatically for each test, creating timestamped directories with:
+- `story.md` - Markdown source with embedded screenshots
+- `story.html` - Self-contained HTML with embedded images  
+- `story.pdf` - PDF version (if weasyprint available)
+- `{test_name}.zip` - Zip archive of all artifacts
+
+Use `screenshot()` with captions and `document()` to build rich test documentation.
+
 ### Assertions with Retry Logic
 
 ```python
@@ -184,6 +223,8 @@ Common methods from `SeleniumTestCase`:
 - `self.wait_for_history()` - Wait for history panel to load
 - `self.perform_upload(filepath)` - Upload a file
 - `self.history_panel_wait_for_hid_ok(hid)` - Wait for dataset to be OK
+- `self.screenshot(label, caption=None)` - Take screenshot, optionally add to story
+- `self.document(markdown_content)` - Add markdown documentation to test story
 
 ## Wait Types
 
