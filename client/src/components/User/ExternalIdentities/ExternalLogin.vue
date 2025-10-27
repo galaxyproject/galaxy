@@ -175,6 +175,7 @@ function getIdpPreference() {
                     <BFormGroup :label="`Use ${props.loginPage ? `existing` : ``} institutional login`">
                         <Multiselect
                             v-model="selected"
+                            name="institution-select"
                             placeholder="Select your institution"
                             :options="cILogonIdps"
                             label="DisplayName"
