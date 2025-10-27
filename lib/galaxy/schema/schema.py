@@ -388,7 +388,8 @@ NoneType = type(None)
 SampleSheetColumnValueT = Union[int, float, bool, str, NoneType]
 
 
-class SampleSheetColumnDefinition(TypedDict):
+# type ignore because mypy can't handle closed TypedDicts yet
+class SampleSheetColumnDefinition(TypedDict, closed=True):  # type: ignore[call-arg]
     name: str
     description: NotRequired[Optional[str]]
     type: SampleSheetColumnType

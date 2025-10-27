@@ -380,6 +380,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Show beginning1": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
     "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "sort1": safe_update(parse_version("1.1.0"), parse_version("1.2.0")),
+    "Convert characters1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "CONVERTER_interval_to_bgzip_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
     "CONVERTER_Bam_Bai_0": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "CONVERTER_cram_to_bam_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
@@ -3192,6 +3193,12 @@ class ExpressionTool(Tool):
     tool_type = "expression"
     tool_type_local = True
     EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
+
+    def parse(self, tool_source: ToolSource, guid: Optional[str] = None, dynamic: bool = False) -> None:
+        super().parse(tool_source, guid, dynamic)
+        if self.profile < 19.05:
+            # Expression tools were introduced in 19.05 and we don't want crazy stuff like failing on stderr
+            self.profile = 19.05
 
     def parse_command(self, tool_source):
         self.command = f"cd ../; {expressions.EXPRESSION_SCRIPT_CALL}"

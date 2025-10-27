@@ -170,7 +170,8 @@ CwlType = Literal["File", "null", "boolean", "int", "float", "string"]
 FieldType = Union[CwlType, List[CwlType]]
 
 
-class FieldDict(TypedDict):
+# type ignore because mypy can't handle closed TypedDicts yet
+class FieldDict(TypedDict, closed=True):  # type: ignore[call-arg]
     name: str
     type: FieldType
     format: NotRequired[Optional[str]]

@@ -1,4 +1,4 @@
-<tool name="Pick parameter value" id="pick_value" version="0.1.0" tool_type="expression">
+<tool name="Pick parameter value" id="pick_value" version="0.1.0" tool_type="expression" profile="19.05">
     <macros>
         <xml name="booleans">
             <repeat name="pick_from" title="Pick from">
