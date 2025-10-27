@@ -26,6 +26,7 @@
             <b-row>
                 <b-col id="installed-builds" class="mb-4">
                     <Multiselect
+                        id="installed-builds"
                         v-model="selectedInstalledBuilds"
                         name="installed-builds"
                         multiple
