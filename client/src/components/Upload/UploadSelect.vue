@@ -53,6 +53,7 @@ const currentValue = computed({
     <Multiselect
         :id="id"
         v-model="currentValue"
+        :name="id"
         class="upload-settings-select rounded"
         deselect-label=""
         :disabled="disabled"
