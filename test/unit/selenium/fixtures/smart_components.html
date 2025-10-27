@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Components Test Page</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+        .visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Smart Components Test Page</h1>
+
+    <!-- Button for click testing -->
+    <button type="button" id="test-button">Click Me</button>
+    <div id="result"></div>
+
+    <!-- Input field for text input testing -->
+    <input type="text" id="test-input" placeholder="Enter text" />
+    <input type="text" id="disabled-input" disabled placeholder="Disabled" />
+
+    <!-- Multiple items for testing all() -->
+    <div class="items-container">
+        <div class="item">Item 1</div>
+        <div class="item">Item 2</div>
+        <div class="item">Item 3</div>
+    </div>
+
+    <!-- Hidden element -->
+    <div id="hidden-element" class="hidden">Hidden content</div>
+
+    <!-- Data attributes -->
+    <div id="data-element" data-test="example-value" data-other="other-value"></div>
+
+    <!-- Class testing -->
+    <div id="class-element" class="active enabled"></div>
+
+    <!-- Select element -->
+    <select id="test-select">
+        <option value="1">Option 1</option>
+        <option value="2">Option 2</option>
+        <option value="3">Option 3</option>
+    </select>
+
+    <!-- Accessible form for axe testing -->
+    <form id="accessible-form">
+        <label for="form-input">Name:</label>
+        <input type="text" id="form-input" name="name" />
+
+        <label for="form-email">Email:</label>
+        <input type="email" id="form-email" name="email" />
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        // Button click handler
+        let clickCount = 0;
+        document.getElementById('test-button').addEventListener('click', function() {
+            clickCount++;
+            if (clickCount === 1) {
+                document.getElementById('result').textContent = 'Button clicked!';
+            }
+        });
+
+        // Button double-click handler
+        document.getElementById('test-button').addEventListener('dblclick', function() {
+            document.getElementById('result').textContent = 'Button double-clicked!';
+        });
+
+        // Form submission handler
+        document.getElementById('accessible-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>

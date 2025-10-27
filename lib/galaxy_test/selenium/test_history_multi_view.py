@@ -2,6 +2,7 @@ from seletools.actions import drag_and_drop
 
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -35,6 +36,7 @@ class TestHistoryMultiView(SeleniumTestCase):
         dataset_selector.wait_for_and_click()
         self.screenshot("multi_history_list_list")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_list_list_copy(self):
@@ -48,7 +50,7 @@ class TestHistoryMultiView(SeleniumTestCase):
         ac = self.action_chains()
         ac = ac.move_to_element(dataset_element).click_and_hold()
         drag_and_drop(self.driver, source=dataset_element, target=drop_target)
-        self._wait_on(lambda driver: self.current_history_id() != source_history_id)
+        self._wait_on(lambda *driver: self.current_history_id() != source_history_id)
         target_history_id = self.current_history_id()
         assert source_history_id != target_history_id
         source_contents = self.dataset_populator.get_history_contents(history_id=source_history_id)

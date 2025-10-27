@@ -1,5 +1,6 @@
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -29,6 +30,7 @@ UPLOAD_DATA_3 = {
 class TestHistoryStorage(SeleniumTestCase):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_history_storage_accessibility(self):
@@ -55,6 +57,7 @@ class TestHistoryStorage(SeleniumTestCase):
         self.screenshot("storage_dashboard_manage_explore_usage_landing")
         self.assert_baseline_accessibility()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_delete_dataset_from_storage_view(self):

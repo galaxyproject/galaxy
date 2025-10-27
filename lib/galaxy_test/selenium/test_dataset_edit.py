@@ -1,6 +1,7 @@
 from galaxy.selenium.axe_results import FORMS_VIOLATIONS
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -66,6 +67,7 @@ class TestHistoryPanel(SeleniumTestCase):
         assert annotation_component.wait_for_value() == TEST_ANNOTATION
         assert info_component.wait_for_value() == TEST_INFO
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_history_dataset_auto_detect_datatype(self):

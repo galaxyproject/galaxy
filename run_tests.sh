@@ -21,6 +21,8 @@ cat <<EOF
 '${0##*/} -unit (test_selector)'    for running unit tests on specified test path (using pytest selector syntax)
 '${0##*/} -selenium'                for running all selenium web tests (in lib/galaxy_test/selenium)
 '${0##*/} -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
+'${0##*/} -playwright'                 for running all end2end web tests (in lib/galaxy_test/selenium) using Playwright
+'${0##*/} -playwright (test_selector)' for running specified end2end web tests (using pytest selector syntax) using Playwright
 
 This wrapper script largely serves as a point documentation and convenience for
 running Galaxy's Python tests. All Python tests shipped with Galaxy can be run with
@@ -77,12 +79,37 @@ Run all selenium tests (Under Linux using Docker):
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
     ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::TestRegistration::test_reregister_username_fails
 
-Run a selenium test against a running server while watching client (fastest iterating on client tests):
-    ./run.sh & # run Galaxy on 8080
-    make client-watch & # watch for client changes
-    export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
+Run an end-to-end test using Selenium against a running server while watching client (fastest iterating on client tests):
+    GALAXY_SKIP_CLIENT_BUILD=1 GALAXY_RUN_WITH_TEST_TOOLS=1 ./run.sh & # run Galaxy on 8080 with test tools and skip client build
+    make client-dev-server & # watch for client changes and serve on 8081
+    export GALAXY_TEST_EXTERNAL=http://localhost:8081/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
     pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
+
+Some tests create new users but most tests can just use a single user - you can adjust
+these end-to-end tests to use a specific user by copying and updating the sample config:
+
+
+    cp lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
+    vi galaxy_selenium_context.yml  # edit user and password, target galaxy server, etc..
+
+If you've setup this config file, the file can be used with any end-to-end/selenium/playwright test by
+setting GALAXY_TEST_END_TO_END_CONFIG when calling pytest or run_test.sh. So for example
+the last line in that previous example run could become:
+
+    GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
+
+Run an end-to-end test using Playwright against a running server while watching client (fastest iterating on client tests):
+    GALAXY_SKIP_CLIENT_BUILD=1 GALAXY_RUN_WITH_TEST_TOOLS=1 ./run.sh & # run Galaxy on 8080 with test tools and skip client build
+    make client-dev-server & # watch for client changes and serve on 8081
+    export GALAXY_TEST_EXTERNAL=http://localhost:8081/  # Target tests at server.
+    . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
+    GALAXY_TEST_DRIVER_BACKEND=playwright pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
+
+Playwright will probably require a browser installation:
+
+    . .venv/bin/activate
+    playwright install --with-deps
 
 To run the tool tests for a specific framework test tool
 listed in test/functional/tools/sample_tool_conf.xml.
@@ -361,6 +388,20 @@ do
       -selenium|--selenium)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_selenium_tests.html"
+          skip_client_build=""
+          if [ $# -gt 1 ]; then
+              selenium_script=$2
+              shift 2
+          else
+              selenium_script="./lib/galaxy_test/selenium"
+              shift 1
+          fi
+          ;;
+      -playwright|--playwright)
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
+          GALAXY_TEST_DRIVER_BACKEND="playwright"
+          export GALAXY_TEST_DRIVER_BACKEND
+          report_file="./run_playwright_tests.html"
           skip_client_build=""
           if [ $# -gt 1 ]; then
               selenium_script=$2

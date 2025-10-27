@@ -112,6 +112,9 @@ async function signOut() {
         okVariant: "danger",
         cancelTitle: "Cancel",
         cancelVariant: "outline-primary",
+        // data-description cannot be set for this so falling back to
+        // setting a class for DOM inspection.
+        modalClass: "sign-out-modal",
         centered: true,
     });
 

@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 
 from galaxy.util.unittest_utils import skip_if_github_down
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -13,6 +14,7 @@ REMOTE_ZIP_URL = (
 
 
 class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_import_from_local_zip(self):
         self.login()
@@ -41,6 +43,7 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
         self.start_importing_files()
         self.expect_history_item_to_be_imported(hid=1, name="README.txt")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @skip_if_github_down
     def test_import_from_remote_zip(self):

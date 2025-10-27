@@ -3,8 +3,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from selenium.webdriver.support.select import Select
-
 from galaxy.navigation.components import (
     Component,
     Target,
@@ -15,8 +13,7 @@ from .axe_results import (
 )
 
 if TYPE_CHECKING:
-    # TODO: ideally this after refactoring things this should be galaxy.selenium.has_driver.HasDriver -John
-    from galaxy.selenium.navigates_galaxy import NavigatesGalaxy
+    from galaxy.selenium.has_driver_protocol import HasDriverProtocol
 
 
 class SmartComponent:
@@ -27,7 +24,7 @@ class SmartComponent:
     click themselves, etc.... More "magic", but much cleaner usage.
     """
 
-    def __init__(self, component, has_driver: "NavigatesGalaxy"):
+    def __init__(self, component, has_driver: "HasDriverProtocol"):
         self._component = component
         self._has_driver = has_driver
 
@@ -49,7 +46,7 @@ class SmartComponent:
 class SmartTarget:
     """Wrap a Target with driver aware methods."""
 
-    def __init__(self, target, has_driver: "NavigatesGalaxy"):
+    def __init__(self, target, has_driver: "HasDriverProtocol"):
         self._target = target
         self._has_driver = has_driver
 
@@ -69,7 +66,7 @@ class SmartTarget:
             return simple_object
 
     def all(self):
-        return self._has_driver.driver.find_elements(*self._target.element_locator)
+        return self._has_driver.find_elements(self._target)
 
     def wait_for_element_count_of_at_least(self, n: int, **kwds):
         self._has_driver.wait_for_element_count_of_at_least(self._target, n, **kwds)
@@ -83,9 +80,6 @@ class SmartTarget:
     def wait_for_visible(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds)
 
-    def wait_for_select(self, **kwds):
-        return Select(self.wait_for_visible(**kwds))
-
     def wait_for_clickable(self, **kwds):
         return self._has_driver.wait_for_clickable(self._target, **kwds)
 
@@ -93,7 +87,8 @@ class SmartTarget:
         return self._has_driver.wait_for_visible(self._target, **kwds).text
 
     def wait_for_value(self, **kwds):
-        return self._has_driver.wait_for_visible(self._target, **kwds).get_attribute("value")
+        element = self._has_driver.wait_for_visible(self._target, **kwds)
+        return self._has_driver.get_input_value(element)
 
     @property
     def is_displayed(self):
@@ -126,9 +121,8 @@ class SmartTarget:
 
     def data_value(self, attribute: str):
         full_attribute = f"data-{attribute}"
-        attribute_value = (
-            self._has_driver.driver.find_element(*self._target.element_locator).get_attribute(full_attribute) or ""
-        )
+        element = self._has_driver.find_element(self._target)
+        attribute_value = element.get_attribute(full_attribute) or ""
         return attribute_value
 
     def assert_data_value(self, attribute: str, expected_value: str):
@@ -137,11 +131,16 @@ class SmartTarget:
             raise AssertionError(message)
 
     def has_class(self, class_name):
-        classes_str = self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class") or ""
+        element = self._has_driver.find_element(self._target)
+        classes_str = element.get_attribute("class") or ""
         return class_name in classes_str.split(" ")
 
     def wait_for_and_send_keys(self, *text):
         self.wait_for_visible().send_keys(*text)
+
+    def wait_for_and_send_enter(self):
+        # TODO: add to unit test
+        self._has_driver.send_enter(self.wait_for_visible())
 
     def wait_for_and_clear_and_send_keys(self, *text):
         dom_element = self.wait_for_visible()

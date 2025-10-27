@@ -65,14 +65,14 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        pip install '.[image-util,template,jstree,config-template]'
+        pip install '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
-        pip install '.[cwl,mulled,edam,extended-assertions]'
+        pip install '.[cwl,mulled,edam,extended-assertions,test]'
+    elif grep -q 'test =' setup.cfg 2>/dev/null; then
+        pip install '.[test]'
     else
         pip install .
     fi
-
-    pip install -r test-requirements.txt
 
     if [ $FOR_PULSAR -eq 0 ]; then
         marker_args=(-m 'not external_dependency_management')
@@ -82,7 +82,9 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     # Ignore exit code 5 (no tests ran)
     pytest "${marker_args[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
-        make mypy
+        # make mypy uses uv now and so this legacy code should just run mypy
+        # directly to use the venv we have already activated
+        mypy .
     fi
     cd ..
 done < $PACKAGE_LIST_FILE

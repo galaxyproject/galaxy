@@ -1,1 +1,17 @@
-../package-pyproject.toml
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools"]
+
+[project]
+dynamic = [
+    "authors",
+    "dependencies",
+    "description",
+    "license",
+    "optional-dependencies",
+    "readme",
+    "requires-python",
+    "version"
+]
+name = "galaxy-web-client"
