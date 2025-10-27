@@ -3,8 +3,10 @@
         <LoadingSpan v-if="loading" :message="loadingMessage" />
         <Multiselect
             v-if="items && items.length"
+            id="single-item-selector"
             v-model="selectedItem"
             class="single-item-selector"
+            name="single-item-selector"
             :allow-empty="false"
             :deselect-label="null"
             :select-label="null"
