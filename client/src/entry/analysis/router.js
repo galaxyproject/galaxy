@@ -11,8 +11,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
-import { patchRouterPush } from "./router-push";
-
+// import { patchRouterPush } from "./router-push";
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
