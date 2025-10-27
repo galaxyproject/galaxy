@@ -165,3 +165,6 @@ vtk:
 warc:
     package: "@galaxyproject/warc"
     version: 0.0.1
+frequencymap:
+    package: "@hujambo_dunia/frequencymap"
+    version: 0.1.1
