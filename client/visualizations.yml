@@ -126,3 +126,6 @@ vizarr:
 vtk:
     package: "@galaxyproject/vtk"
     version: 0.0.2
+frequencymap:
+    package: "@hujambo_dunia/frequencymap"
+    version: 0.1.1
