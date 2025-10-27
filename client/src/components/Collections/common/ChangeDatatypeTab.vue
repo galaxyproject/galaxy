@@ -50,6 +50,7 @@ function clickedSave() {
 
         <Multiselect
             v-if="hasSelectedDatatype"
+            id="datatype-extension"
             v-model="selectedDatatype"
             class="datatype-dropdown"
             name="datatype-extension"
