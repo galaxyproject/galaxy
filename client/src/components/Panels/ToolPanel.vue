@@ -83,8 +83,8 @@ initializePanel();
         </template>
         <ToolBox
             v-if="isPanelPopulated"
+            v-model:show-favorites="showFavorites"
             :workflow="props.workflow"
-            :show-favorites.sync="showFavorites"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool" />
         <div v-else-if="errorMessage" data-description="tool panel error message">

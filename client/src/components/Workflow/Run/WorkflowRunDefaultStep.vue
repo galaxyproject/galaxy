@@ -1,6 +1,6 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
+        <FormCard v-model:expanded="expanded" :title="model.fixed_title" :icon="icon" :collapsible="true">
             <template v-slot:title>
                 <span v-if="credentialInfo?.toolId" v-b-tooltip.hover title="Uses credentials">
                     <FontAwesomeIcon :icon="faKey" fixed-width />

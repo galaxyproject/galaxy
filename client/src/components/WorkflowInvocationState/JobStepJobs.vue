@@ -160,7 +160,7 @@ watch(
             </template>
         </BTable>
 
-        <GModal :show.sync="showModal" fixed-height size="medium" @close="viewedJob = null">
+        <GModal v-model:show="showModal" fixed-height size="medium" @close="viewedJob = null">
             <template v-slot:header>
                 <div v-if="viewedJob" class="w-100 d-flex justify-content-between align-items-center">
                     <div class="d-flex flex-gapx-1 align-items-center">
