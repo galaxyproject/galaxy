@@ -6,7 +6,10 @@ from urllib.parse import urljoin
 import yaml
 
 from .driver_factory import ConfiguredDriver
-from .navigates_galaxy import NavigatesGalaxy
+from .navigates_galaxy import (
+    galaxy_timeout_handler,
+    NavigatesGalaxy,
+)
 
 
 class GalaxySeleniumContext(NavigatesGalaxy):
@@ -60,10 +63,11 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
 
     def __init__(self, from_dict: Optional[dict] = None) -> None:
         from_dict = from_dict or {}
-        self.configured_driver = ConfiguredDriver(**from_dict.get("driver", {}))
+        self.timeout_multiplier = from_dict.get("timeout_multiplier", 1)
+        timeout_handler = galaxy_timeout_handler(self.timeout_multiplier)
+        self.configured_driver = ConfiguredDriver(timeout_handler=timeout_handler, **from_dict.get("driver", {}))
         self.url = from_dict.get("local_galaxy_url", "http://localhost:8080")
         self.target_url_from_selenium = from_dict.get("selenium_galaxy_url", self.url)
-        self.timeout_multiplier = from_dict.get("timeout_multiplier", 1)
         # Optional properties...
         self.login_email = from_dict.get("login_email", "")
         self.login_password = from_dict.get("login_password", "")
