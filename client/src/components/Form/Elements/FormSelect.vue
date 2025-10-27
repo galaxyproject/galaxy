@@ -271,6 +271,7 @@ function isSelected(item: SelectValue): boolean {
             v-if="hasOptions"
             :id="id"
             v-model="currentValue"
+            :name="id"
             :data-filter-pending="filterPending ? 'true' : undefined"
             :allow-empty="optional || multiple"
             :aria-expanded="ariaExpanded"
