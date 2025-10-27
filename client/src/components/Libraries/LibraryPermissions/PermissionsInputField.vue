@@ -7,6 +7,7 @@
             <b-col>
                 <div v-if="options && value" :class="permission_type">
                     <Multiselect
+                        :id="id"
                         v-model="value"
                         :name="id"
                         :options="fetched_options"

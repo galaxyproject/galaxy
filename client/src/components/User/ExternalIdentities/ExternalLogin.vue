@@ -189,6 +189,7 @@ function getIdpPreference() {
                     <!--Only Display if CILogon/Custos is configured-->
                     <BFormGroup label="Use existing institutional login">
                         <Multiselect
+                            id="institution-select"
                             v-model="selected"
                             name="institution-select"
                             placeholder="Select your institution"
@@ -242,6 +243,7 @@ function getIdpPreference() {
 
                     <BFormGroup v-if="toggleCilogon" class="mt-1">
                         <Multiselect
+                            id="institution-select-toggle"
                             v-model="selected"
                             name="institution-select-toggle"
                             placeholder="Select your institution"
