@@ -46,6 +46,7 @@ onMounted(() => {
         <Multiselect
             v-model="selectedGenome"
             class="database-dropdown"
+            name="database-build"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"

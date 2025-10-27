@@ -4,6 +4,7 @@
         <Multiselect
             v-if="items"
             v-model="selectedItem"
+            name="single-item-selector"
             :deselect-label="null"
             :track-by="trackBy"
             :label="label"
