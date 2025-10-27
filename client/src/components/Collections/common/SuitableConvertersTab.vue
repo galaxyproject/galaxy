@@ -13,6 +13,7 @@
         </div>
         <b>{{ l("Converter Tool: ") }}</b>
         <Multiselect
+            id="converter-tool"
             v-model="selectedConverter"
             name="converter-tool"
             deselect-label="Can't remove this value"

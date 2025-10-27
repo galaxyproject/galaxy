@@ -44,6 +44,7 @@ onMounted(() => {
         <b>{{ localize("Database/Build") }}: </b>
 
         <Multiselect
+            id="database-build"
             v-model="selectedGenome"
             class="database-dropdown"
             name="database-build"
