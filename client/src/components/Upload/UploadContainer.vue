@@ -221,7 +221,8 @@ defineExpose({
             :list-db-keys="listDbKeys"
             :multiple="regularTabActive ? multiple : undefined"
             :is-collection="collectionTabActive"
-            @progress="progress" />
+            @progress="progress"
+            @dismiss="$emit('dismiss')" />
     </BTabs>
     <div v-else>
         <LoadingSpan message="Loading required information from Galaxy server." />
