@@ -164,6 +164,7 @@ defineExpose({
             <div class="share_with_view">
                 <Multiselect
                     v-model="sharingCandidates"
+                    name="user-share-selector"
                     :options="userOptions"
                     :clear-on-select="true"
                     :multiple="true"

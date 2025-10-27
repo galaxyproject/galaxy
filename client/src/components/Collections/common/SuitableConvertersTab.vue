@@ -14,6 +14,7 @@
         <b>{{ l("Converter Tool: ") }}</b>
         <Multiselect
             v-model="selectedConverter"
+            name="converter-tool"
             deselect-label="Can't remove this value"
             track-by="name"
             label="name"
