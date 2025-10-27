@@ -20,6 +20,7 @@
         <Multiselect
             id="multiselect"
             v-model="currentValue"
+            name="multiselect"
             deselect-label=""
             label="name"
             :options="options"
