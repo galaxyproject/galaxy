@@ -177,15 +177,15 @@ function onToggleView(newView: ListViewMode) {
             <div class="d-flex flex-nowrap align-items-center flex-gapx-1 py-2">
                 <FilterMenu
                     ref="toolFilterMenu"
+                    v-model:filter-text="filterText"
+                    v-model:show-advanced="showAdvanced"
                     class="w-100"
                     name="Tools"
                     placeholder="search tools"
                     :debounce-delay="400"
-                    :filter-text.sync="filterText"
                     :filter-class="ToolFilters"
                     has-help
-                    :loading="loading"
-                    :show-advanced.sync="showAdvanced">
+                    :loading="loading">
                     <template v-slot:menu-help-text>
                         <div>
                             <p>
