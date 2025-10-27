@@ -27,6 +27,7 @@
                 <b-col id="installed-builds" class="mb-4">
                     <Multiselect
                         v-model="selectedInstalledBuilds"
+                        name="installed-builds"
                         multiple
                         taggable
                         label="label"

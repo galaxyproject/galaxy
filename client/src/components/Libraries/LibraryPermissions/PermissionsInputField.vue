@@ -8,6 +8,7 @@
                 <div v-if="options && value" :class="permission_type">
                     <Multiselect
                         v-model="value"
+                        :name="id"
                         :options="fetched_options"
                         :clear-on-select="true"
                         :preserve-search="true"

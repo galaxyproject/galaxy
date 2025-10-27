@@ -52,6 +52,7 @@ function clickedSave() {
             v-if="hasSelectedDatatype"
             v-model="selectedDatatype"
             class="datatype-dropdown"
+            name="datatype-extension"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"
