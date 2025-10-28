@@ -38,8 +38,10 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 if command -v uv >/dev/null; then
     uv venv "$TEST_ENV_DIR" --python "$TEST_PYTHON"
+    PIP="uv pip"
 else
     "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
+    PIP="pip"
 fi
 
 # shellcheck disable=SC1091
@@ -48,11 +50,7 @@ if ! command -v uv >/dev/null; then
     pip install --upgrade pip setuptools wheel
 fi
 if [ $FOR_PULSAR -eq 0 ]; then
-    if command -v uv >/dev/null; then
-        uv pip install -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
-    else
-        pip install -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
-    fi
+    ${PIP} install -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 fi
 
 # Ensure ordered by dependency DAG
@@ -76,29 +74,13 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        if command -v uv >/dev/null; then
-            uv pip install '.[image-util,template,jstree,config-template,test]'
-        else
-            pip install '.[image-util,template,jstree,config-template,test]'
-        fi
+        ${PIP} install '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
-        if command -v uv >/dev/null; then
-            uv pip install '.[cwl,mulled,edam,extended-assertions,test]'
-        else
-            pip install '.[cwl,mulled,edam,extended-assertions,test]'
-        fi
+        ${PIP} install '.[cwl,mulled,edam,extended-assertions,test]'
     elif grep -q 'test =' setup.cfg 2>/dev/null; then
-        if command -v uv >/dev/null; then
-            uv pip install '.[test]'
-        else
-            pip install '.[test]'
-        fi
+        ${PIP} install '.[test]'
     else
-        if command -v uv >/dev/null; then
-            uv pip install .
-        else
-            pip install .
-        fi
+        ${PIP} install .
     fi
 
     if [ $FOR_PULSAR -eq 0 ]; then
