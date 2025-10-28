@@ -1,0 +1,13 @@
+{
+  "migrated": [
+    "src/components/Common/BreadcrumbHeading.vitest.test.ts"
+  ],
+  "lastUpdated": "2025-01-10",
+  "notes": {
+    "src/components/Common/BreadcrumbHeading.vitest.test.ts": {
+      "originalFile": "src/components/Common/BreadcrumbHeading.test.ts",
+      "migratedDate": "2025-01-10",
+      "changes": "Added explicit vitest imports (describe, it, expect)"
+    }
+  }
+}
