@@ -1,6 +1,3 @@
-
-from selenium.webdriver.common.by import By
-
 from galaxy.selenium.axe_results import FORMS_VIOLATIONS
 
 from .framework import (
