@@ -233,6 +233,9 @@ Visualizations Updates
 ===========================================================
 
 .. visualizations
+* Enable drag-and-drop of collection elements in IGV
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21173`_
 * Update Javascript package licenses to MIT
   (thanks to `@mr-c <https://github.com/mr-c>`__).
   `Pull Request 20264`_
