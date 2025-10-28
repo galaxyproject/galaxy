@@ -37,7 +37,7 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
-    "fastapi-slim>=0.111.0",
+    "fastapi-slim>=0.111.0,!=0.119.*,!=0.120.0",  # https://github.com/fastapi/fastapi/pull/13918
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
