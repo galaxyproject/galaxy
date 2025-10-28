@@ -27,7 +27,6 @@ server.use(
 );
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 let eventStore: ReturnType<typeof useEventStore>;
 
