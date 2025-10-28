@@ -18,7 +18,7 @@ from .navigates_galaxy import (
     galaxy_timeout_handler,
     NavigatesGalaxy,
 )
-from .story import (
+from .stories import (
     NoopStory,
     Story,
     StoryProtocol,

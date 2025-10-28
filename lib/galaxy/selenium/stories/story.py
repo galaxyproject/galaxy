@@ -27,6 +27,21 @@ class StoryProtocol(ABC):
     def enabled(self) -> bool:
         """Whether story generation is enabled."""
 
+    @property
+    @abstractmethod
+    def output_directory(self) -> str:
+        """Output directory for story artifacts."""
+
+    @property
+    @abstractmethod
+    def screenshot_counter(self) -> int:
+        """Current screenshot counter."""
+
+    @screenshot_counter.setter
+    @abstractmethod
+    def screenshot_counter(self, value: int):
+        """Set screenshot counter."""
+
     @abstractmethod
     def add_screenshot(self, screenshot_path: str, caption: str):
         """Add a screenshot to the story."""
@@ -61,14 +76,29 @@ class Story(StoryProtocol):
         """
         self.title = title
         self.description = description
-        self.output_directory = output_directory
+        self._output_directory = output_directory
         self.elements = []  # List of (type, content, metadata) tuples
-        self.screenshot_counter = 0
+        self._screenshot_counter = 0
 
     @property
     def enabled(self) -> bool:
         """Story generation is enabled for Story instances."""
         return True
+
+    @property
+    def output_directory(self) -> str:
+        """Output directory for story artifacts."""
+        return self._output_directory
+
+    @property
+    def screenshot_counter(self) -> int:
+        """Current screenshot counter."""
+        return self._screenshot_counter
+
+    @screenshot_counter.setter
+    def screenshot_counter(self, value: int):
+        """Set screenshot counter."""
+        self._screenshot_counter = value
 
     def add_screenshot(self, screenshot_path: str, caption: str):
         """Add a screenshot to the story.
@@ -95,7 +125,7 @@ class Story(StoryProtocol):
         from failed attempts.
         """
         self.elements = []
-        self.screenshot_counter = 0
+        self._screenshot_counter = 0
 
     def finalize(self):
         """Generate final story artifacts (markdown, HTML, PDF, zip).
@@ -234,10 +264,29 @@ class NoopStory(StoryProtocol):
     object to avoid conditional checks throughout the codebase.
     """
 
+    def __init__(self):
+        """Initialize noop story."""
+        self._screenshot_counter = 0
+
     @property
     def enabled(self) -> bool:
         """Story generation is disabled for NoopStory instances."""
         return False
+
+    @property
+    def output_directory(self) -> str:
+        """Return empty string for noop story."""
+        return ""
+
+    @property
+    def screenshot_counter(self) -> int:
+        """Return counter (unused but required by protocol)."""
+        return self._screenshot_counter
+
+    @screenshot_counter.setter
+    def screenshot_counter(self, value: int):
+        """Set counter (no-op but required by protocol)."""
+        self._screenshot_counter = value
 
     def add_screenshot(self, screenshot_path: str, caption: str):
         """No-op: screenshot not added to story."""
