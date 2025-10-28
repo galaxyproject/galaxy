@@ -12,6 +12,12 @@ from abc import (
     abstractmethod,
 )
 
+from galaxy.util.markdown import (
+    to_html,
+    to_pdf_raw,
+    weasyprint_available,
+)
+
 
 class StoryProtocol(ABC):
     """Protocol for story implementations (real or noop)."""
@@ -151,9 +157,6 @@ class Story(StoryProtocol):
 
     def _generate_html(self, markdown_content: str) -> str:
         """Generate HTML from markdown."""
-        # Use Galaxy's existing markdown utilities
-        from galaxy.managers.markdown_util import to_html
-
         html_body = to_html(markdown_content)
 
         # Wrap in basic HTML structure with styling
@@ -201,16 +204,11 @@ class Story(StoryProtocol):
         Degrades gracefully if weasyprint is not available.
         """
         try:
-            from galaxy.managers.markdown_util import (
-                to_pdf_raw,
-                weasyprint_available,
-            )
-
             if not weasyprint_available():
                 print("Warning: weasyprint not available, skipping PDF generation")
                 return
 
-            pdf_bytes = to_pdf_raw(markdown_content)
+            pdf_bytes = to_pdf_raw(markdown_content, directory=self.output_directory)
             with open(output_path, "wb") as f:
                 f.write(pdf_bytes)
         except Exception as e:
