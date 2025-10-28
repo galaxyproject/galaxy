@@ -11,6 +11,7 @@ THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 update_pinned_reqs() {
     VENV=$(mktemp -d "${TMPDIR:-/tmp}/$1_venv.XXXXXXXXXX")
     if command -v uv >/dev/null; then
+        uv self update
         uv venv "${VENV}" --python python3.9
         . "${VENV}/bin/activate"
         uv pip install -r "${THIS_DIRECTORY}/$1-requirements.txt"
