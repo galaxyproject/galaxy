@@ -57,7 +57,7 @@ jobs:
           GALAXY_TEST_USEGALAXYEU_USER_PASSWORD: ${{ secrets.USEGALAXYEU_USER_PASSWORD }}
           GALAXY_TEST_USEGALAXYEU_USER_KEY: ${{ secrets.USEGALAXYEU_USER_KEY }}
           GALAXY_TEST_TIMEOUT_MULTIPLIER: 10
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: Deployment test results (${{ inputs.target }}, ${{ inputs.type }}, ${{ inputs.debug }}, ${{ matrix.python-version }})

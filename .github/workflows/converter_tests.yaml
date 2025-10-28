@@ -64,7 +64,7 @@ jobs:
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
           planemo test --biocontainers --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: Converter test results (${{ matrix.python-version }})
