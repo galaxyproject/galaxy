@@ -133,6 +133,7 @@ function create_venv() {
     if [ ! -d "$VENV" ]; then
         if command -v uv >/dev/null; then
             log_exec uv venv "$VENV"
+            log_exec uv pip install --python "$VENV/bin/python" wheel packaging
         else
             log_exec python3 -m venv "$VENV"
             log_exec "${VENV}/bin/pip" install wheel packaging
