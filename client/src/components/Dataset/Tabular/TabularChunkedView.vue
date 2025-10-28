@@ -14,14 +14,11 @@ interface TabularChunk {
 
 interface TabularChunkedViewProps {
     options: {
-        dataset_config: {
-            id: string;
-            file_ext: string;
-            first_data_chunk: TabularChunk;
-            metadata_columns: number;
-            metadata_column_types: string[];
-            metadata_column_names: string[];
-        };
+        id: string;
+        file_ext: string;
+        metadata_columns: number;
+        metadata_column_types: string[];
+        metadata_column_names: string[];
     };
 }
 
@@ -37,10 +34,10 @@ const tabularData = reactive<{ rows: string[][] }>({
 });
 
 const columns = computed(() => {
-    const columns = Array(props.options.dataset_config.metadata_columns);
+    const columns = Array(props.options.metadata_columns);
     // for each column_name, inject header
-    if (props.options.dataset_config.metadata_column_names?.length > 0) {
-        props.options.dataset_config.metadata_column_names.forEach((column_name, index) => {
+    if (props.options.metadata_column_names?.length > 0) {
+        props.options.metadata_column_names.forEach((column_name, index) => {
             columns[index] = column_name;
         });
     }
@@ -48,9 +45,9 @@ const columns = computed(() => {
 });
 
 const columnStyle = computed(() => {
-    const columnStyle = Array(props.options.dataset_config.metadata_columns);
-    if (props.options.dataset_config.metadata_column_types?.length > 0) {
-        props.options.dataset_config.metadata_column_types.forEach((column_type, index) => {
+    const columnStyle = Array(props.options.metadata_columns);
+    if (props.options.metadata_column_types?.length > 0) {
+        props.options.metadata_column_types.forEach((column_type, index) => {
             columnStyle[index] = column_type === "str" || column_type === "list" ? "string-align" : "number-align";
         });
     }
@@ -58,11 +55,11 @@ const columnStyle = computed(() => {
 });
 
 const delimiter = computed(() => {
-    return props.options.dataset_config.file_ext === "csv" ? "," : "\t";
+    return props.options.file_ext === "csv" ? "," : "\t";
 });
 
 const chunkUrl = computed(() => {
-    return `${getAppRoot()}dataset/display?dataset_id=${props.options.dataset_config.id}`;
+    return `${getAppRoot()}dataset/display?dataset_id=${props.options.id}`;
 });
 
 // Loading more data on user scroll to (near) bottom.
@@ -163,11 +160,8 @@ function nextChunk() {
 }
 
 onMounted(() => {
-    // Render first chunk if available.
-    if (props.options.dataset_config.first_data_chunk) {
-        processChunk(props.options.dataset_config.first_data_chunk);
-        loading.value = false;
-    }
+    // Fetch and render first chunk
+    nextChunk();
 });
 </script>
 

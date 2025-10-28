@@ -7,8 +7,8 @@ import { parseInput, parseOutput } from "@/components/Markdown/Utilities/parseIn
 import { stringify } from "@/components/Markdown/Utilities/stringify";
 import { useInvocationStore } from "@/stores/invocationStore";
 
+import VisualizationWrapper from "./VisualizationWrapper.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 
 const DEFAULT_HEIGHT = 400;
 

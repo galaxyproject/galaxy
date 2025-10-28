@@ -12,11 +12,9 @@ import weakref
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import config_directories_from_setting
-from galaxy.visualization.plugins import (
-    config_parser,
-    plugin as vis_plugins,
-)
+from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins.datasource_testing import is_object_applicable
+from galaxy.visualization.plugins.plugin import VisualizationPlugin
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +38,7 @@ class VisualizationsRegistry:
     def __str__(self):
         return self.__class__.__name__
 
-    def __init__(self, app, template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
+    def __init__(self, app, directories_setting=None, skip_bad_plugins=True, **kwargs):
         """
         Set up the manager and load all visualization plugins.
 
@@ -48,14 +46,10 @@ class VisualizationsRegistry:
         :param  app:        the application (and its configuration) using this manager
         :type   base_url:   string
         :param  base_url:   url to prefix all plugin urls with
-        :type   template_cache_dir: string
-        :param  template_cache_dir: filesytem path to the directory where cached
-            templates are kept
         """
         self.app = weakref.ref(app)
         self.config_parser = config_parser.VisualizationsConfigParser()
         self.base_url = self.BASE_URL
-        self.template_cache_dir = template_cache_dir
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = {}
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
@@ -138,27 +132,8 @@ class VisualizationsRegistry:
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
-                plugin = self._build_plugin(plugin_name, plugin_path, config)
-                return plugin
+                return VisualizationPlugin(plugin_path, plugin_name, config)
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
-
-    def _build_plugin(self, plugin_name, plugin_path, config):
-        # from mako
-        if config["entry_point"]["type"] == "mako":
-            plugin_class = vis_plugins.VisualizationPlugin
-        else:
-            # default from js
-            plugin_class = vis_plugins.ScriptVisualizationPlugin
-        return plugin_class(
-            self.app(),
-            plugin_path,
-            plugin_name,
-            config,
-            context=dict(
-                base_url=self.base_url,
-                template_cache_dir=self.template_cache_dir,
-            ),
-        )
 
     def get_plugin(self, key):
         """

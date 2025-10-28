@@ -1,130 +1,109 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { onBeforeRouteLeave } from "vue-router/composables";
+import axios from "axios";
+import { BAlert } from "bootstrap-vue";
+import { debounce } from "lodash";
+import { onMounted, ref } from "vue";
 
-import { withPrefix } from "@/utils/redirect";
+import { getAppRoot } from "@/onload/loadConfig";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
+const DELAY = 300;
 
-const emit = defineEmits(["load"]);
+const props = defineProps<{
+    config: object;
+    name: string;
+    title?: string;
+}>();
 
-export interface Props {
-    datasetId?: string;
-    visualization: string;
-    visualizationId?: string;
-}
+const emit = defineEmits(["change", "load"]);
 
-const props = defineProps<Props>();
+const emitChange = debounce((newValue: string) => {
+    emit("change", newValue);
+}, DELAY);
 
-const isLoading = ref(true);
-const hasUnsavedChanges = ref(false);
+const errorMessage = ref("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
-const srcWithRoot = computed(() => {
-    let url = "";
-    if (props.visualizationId) {
-        url = `/plugins/visualizations/${props.visualization}/saved?id=${props.visualizationId}`;
-    } else {
-        const query = props.datasetId ? `?dataset_id=${props.datasetId}` : "";
-        url = `/plugins/visualizations/${props.visualization}/show${query}`;
-    }
-    return withPrefix(url);
-});
+const blankPageUrl = `${getAppRoot()}static/blank.html`;
 
-function handleLoad() {
-    isLoading.value = false;
-    emit("load");
-    setupChangeDetection();
-}
-
-function setupChangeDetection() {
-    const iframe = iframeRef.value;
-    if (!iframe?.contentWindow) {
-        return;
-    }
-
-    setTimeout(() => {
+async function render() {
+    if (props.name) {
         try {
-            const iframeDoc = iframe.contentDocument;
-            if (!iframeDoc) {
-                return;
-            }
-
-            const markAsChanged = () => {
-                if (!hasUnsavedChanges.value) {
-                    hasUnsavedChanges.value = true;
-                }
+            const { data: plugin } = await axios.get(`${getAppRoot()}api/plugins/${props.name}`);
+            const pluginPath = plugin.href;
+            const dataIncoming = {
+                root: window.location.origin + getAppRoot(),
+                visualization_config: props.config,
+                visualization_plugin: plugin,
+                visualization_title: props.title,
             };
 
-            // Monitor DOM changes (skip initial load)
-            setTimeout(() => {
-                const observer = new MutationObserver(() => markAsChanged());
-                observer.observe(iframeDoc.body, {
-                    childList: true,
-                    subtree: true,
-                    characterData: true,
-                });
-            }, 2000);
+            const iframe = iframeRef.value;
+            if (iframe) {
+                if (iframe.contentDocument?.readyState !== "complete") {
+                    await new Promise<HTMLIFrameElement>((resolve) => {
+                        iframe.onload = () => resolve(iframe);
+                    });
+                }
 
-            // Monitor user input
-            ["input", "change", "keyup", "paste"].forEach((type) => {
-                iframeDoc.addEventListener(type, markAsChanged, true);
-            });
+                const iframeDocument = iframe.contentDocument;
+                if (iframeDocument) {
+                    const container = iframeDocument.createElement("div");
+                    container.id = "app";
+                    container.setAttribute("data-incoming", JSON.stringify(dataIncoming));
+                    iframeDocument.body.appendChild(container);
+
+                    if (plugin?.entry_point?.attr?.src) {
+                        const script = iframeDocument.createElement("script");
+                        script.type = "module";
+                        script.src = `${pluginPath}/${plugin.entry_point.attr.src}`;
+                        iframeDocument.body.appendChild(script);
+                    } else {
+                        const error = iframeDocument.createElement("div");
+                        error.innerHTML = `Unable to locate plugin module for: ${props.name}.`;
+                        iframeDocument.body.appendChild(error);
+                    }
+
+                    if (plugin?.entry_point?.attr?.css) {
+                        const link = iframeDocument.createElement("link");
+                        link.rel = "stylesheet";
+                        link.href = `${pluginPath}/${plugin.entry_point.attr.css}`;
+                        iframeDocument.head.appendChild(link);
+                    }
+
+                    iframe.contentWindow?.addEventListener("message", (event) => {
+                        if (event.data.from === "galaxy-visualization") {
+                            emitChange(event.data);
+                        }
+                    });
+
+                    emit("load");
+                    errorMessage.value = "";
+                } else {
+                    errorMessage.value = "Failed to access iframe document.";
+                }
+            } else {
+                errorMessage.value = "Frame has been invalidated.";
+            }
         } catch (e) {
-            console.warn("Cannot monitor iframe for changes:", e);
+            errorMessage.value = `Visualization '${props.name}' not available: ${e}.`;
         }
-    }, 1000);
+    } else {
+        errorMessage.value = "Visualization name is required!";
+    }
 }
 
-onBeforeRouteLeave((to, from, next) => {
-    if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
-        next(false);
-    } else {
-        next();
-    }
-});
-
-onMounted(() => {
-    window.addEventListener("beforeunload", (e) => {
-        if (hasUnsavedChanges.value) {
-            e.preventDefault();
-            e.returnValue = "";
-        }
-    });
-});
+onMounted(() => render());
 </script>
 
 <template>
-    <div class="position-relative h-100">
-        <div v-if="isLoading" class="iframe-loading bg-light">
-            <LoadingSpan message="Loading preview" />
-        </div>
-        <iframe
-            id="galaxy_visualization"
-            ref="iframeRef"
-            :src="srcWithRoot"
-            class="center-frame"
-            frameborder="0"
-            title="galaxy visualization frame"
-            width="100%"
-            height="100%"
-            @load="handleLoad" />
+    <div v-if="errorMessage">
+        <BAlert variant="danger" show>{{ errorMessage }}</BAlert>
     </div>
+    <iframe
+        v-else
+        class="position-relative h-100 w-100 border-0"
+        id="galaxy_visualization"
+        ref="iframeRef"
+        :src="blankPageUrl"
+        title="visualization" />
 </template>
-
-<style>
-.iframe-loading {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    opacity: 0.9;
-    pointer-events: none;
-}
-</style>
