@@ -74,7 +74,7 @@ while read package; do
         if [ ! -d "$VENV" ]; then
             if command -v uv >/dev/null; then
                 uv venv "$VENV"
-                uv pip install --python "${VENV}/bin/python" -r <(grep -v test-requirements.txt dev-requirements.txt)
+                VIRTUAL_ENV="${VENV}" uv pip install -r <(grep -v test-requirements.txt dev-requirements.txt)
             else
                 python3 -m venv "$VENV"
                 "${VENV}/bin/pip" install -r <(grep -v test-requirements.txt dev-requirements.txt)
