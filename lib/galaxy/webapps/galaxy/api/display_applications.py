@@ -42,6 +42,40 @@ class FastAPIDisplay:
         """
         return self.manager.index()
 
+
+    @router.post(
+        "/api/display_applications/create_link",
+        summary="Creates a link for display applications.",
+        name="display_applications_create_link"
+    )
+    def create_link(
+        self,
+        payload: Optional[dict[str, list[Any]]] = Body(default=None),
+    ) -> Any:
+        """
+        Creates a link for display applications.
+
+        :param  app_name:  display application name
+        :type   app_name:  string
+        :param  dataset_id:  encoded dataset_id
+        :type   dataset_id:  string
+        :param  link_name:  link name
+        :type   link_name:  string
+        """
+        payload = payload or {}
+        app_name = payload.get("app_name")
+        dataset_id = payload.get("dataset_id")
+        link_name = payload.get("link_name")
+        kwd = payload.get("kwd", {})
+        result = self.manager.create_link(
+            trans,
+            app_name=app_name,
+            dataset_id=dataset_id,
+            link_name=link_name,
+            **kwd,
+        )
+        return result
+
     @router.post(
         "/api/display_applications/reload",
         summary="Reloads the list of display applications.",
