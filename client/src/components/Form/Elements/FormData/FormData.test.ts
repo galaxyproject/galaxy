@@ -15,7 +15,6 @@ import MountTarget from "./FormData.vue";
 vi.mock("@/composables/filter");
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 let eventStore: ReturnType<typeof useEventStore>;
 

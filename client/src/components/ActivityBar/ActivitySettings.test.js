@@ -11,7 +11,6 @@ import { useActivityStore } from "@/stores/activityStore";
 import mountTarget from "./ActivitySettings.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";

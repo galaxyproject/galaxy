@@ -6,8 +6,8 @@
         class="annotation"
         tag-name="p"
         :value="annotation"
-        :title="'Edit annotation...' | localize"
-        :placeholder="'Edit annotation...' | localize">
+        :title="localize('Edit annotation...')"
+        :placeholder="localize('Edit annotation...')">
         <DebouncedInput v-slot="inputScope" v-model="annotation" :delay="1000">
             <b-form-textarea
                 size="sm"
@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import { localize } from "@/utils/localization";
+
 import DebouncedInput from "./DebouncedInput";
 
 import ClickToEdit from "./ClickToEdit.vue";
@@ -48,9 +50,6 @@ export default {
                 }
             },
         },
-    },
-    methods: {
-        localize,
     },
 };
 </script>
