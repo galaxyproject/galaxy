@@ -34,6 +34,7 @@ class TestHistoryPanel(SeleniumTestCase):
         self.switch_to_dataset_panel()
         text = self.components.dataset_display.content.wait_for_text()
         assert "chr1    4225    19670" in text
+        self.driver.switch_to.default_content()
 
     @selenium_test
     @managed_history
