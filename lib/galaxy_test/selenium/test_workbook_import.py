@@ -1,13 +1,14 @@
+from galaxy.selenium.stories.data.upload import (
+    WORKBOOK_EXAMPLE_1,
+    WORKBOOK_EXAMPLE_2,
+    WORKBOOK_EXAMPLE_3,
+    WORKBOOK_EXAMPLE_4,
+)
+
 from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
-
-# File paths for workbook examples
-WORKBOOK_EXAMPLE_1_PATH = "../galaxy/selenium/examples/workbook_example_1.tsv"
-WORKBOOK_EXAMPLE_2_PATH = "../galaxy/selenium/examples/workbook_example_2.tsv"
-WORKBOOK_EXAMPLE_3_PATH = "../galaxy/selenium/examples/workbook_example_3.tsv"
-WORKBOOK_EXAMPLE_4_PATH = "../galaxy/selenium/examples/workbook_example_4.tsv"
 
 # Screenshot identifiers
 SCREENSHOT_EXAMPLE_1_LANDING = "workbook_example_1_landing"
@@ -113,7 +114,7 @@ class TestWorkbookImport(SeleniumTestCase):
         self.screenshot(SCREENSHOT_EXAMPLE_1_LANDING, CAPTION_RULES_WIZARD)
 
         # Upload workbook with dataset metadata
-        self.workbook_upload(self.get_filename(WORKBOOK_EXAMPLE_1_PATH))
+        self.workbook_upload(WORKBOOK_EXAMPLE_1)
 
         self.document(DOC_EXAMPLE_1_MAPPED)
         self.screenshot(SCREENSHOT_EXAMPLE_1_MAPPED, CAPTION_EXAMPLE_1_MAPPED)
@@ -146,7 +147,7 @@ class TestWorkbookImport(SeleniumTestCase):
         self.screenshot(SCREENSHOT_EXAMPLE_2_CREATE_COLLECTIONS, CAPTION_COLLECTIONS_BUTTON)
 
         # Upload workbook with simple list collection metadata
-        self.workbook_upload(self.get_filename(WORKBOOK_EXAMPLE_2_PATH))
+        self.workbook_upload(WORKBOOK_EXAMPLE_2)
 
         self.document(DOC_EXAMPLE_2_MAPPED)
         self.screenshot(SCREENSHOT_EXAMPLE_2_MAPPED, CAPTION_EXAMPLE_2_MAPPED)
@@ -180,7 +181,7 @@ class TestWorkbookImport(SeleniumTestCase):
         self.screenshot(SCREENSHOT_EXAMPLE_3_CREATE_COLLECTIONS, CAPTION_COLLECTIONS_BUTTON)
 
         # Upload workbook with paired list collection metadata
-        self.workbook_upload(self.get_filename(WORKBOOK_EXAMPLE_3_PATH))
+        self.workbook_upload(WORKBOOK_EXAMPLE_3)
 
         self.document(DOC_EXAMPLE_3_MAPPED)
         self.screenshot(SCREENSHOT_EXAMPLE_3_MAPPED, CAPTION_EXAMPLE_3_MAPPED)
@@ -218,7 +219,7 @@ class TestWorkbookImport(SeleniumTestCase):
         self.screenshot(SCREENSHOT_EXAMPLE_4_CREATE_COLLECTIONS, CAPTION_COLLECTIONS_BUTTON)
 
         # Upload workbook with nested list of pairs metadata
-        self.workbook_upload(self.get_filename(WORKBOOK_EXAMPLE_4_PATH))
+        self.workbook_upload(WORKBOOK_EXAMPLE_4)
 
         self.document(DOC_EXAMPLE_4_MAPPED)
         self.screenshot(SCREENSHOT_EXAMPLE_4_MAPPED, CAPTION_EXAMPLE_4_MAPPED)

@@ -39,7 +39,7 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
-from galaxy.selenium.story import (
+from galaxy.selenium.stories import (
     NoopStory,
     Story,
     StoryProtocol,
@@ -342,9 +342,9 @@ def selenium_test(f):
         # Initialize story (real or noop)
         if GALAXY_TEST_STORIES_DIRECTORY:
             story_dir = _create_story_directory(test_name)
-            self.story: StoryProtocol = Story(test_name, test_docstring or "", story_dir)
+            self.story = Story(test_name, test_docstring or "", story_dir)
         else:
-            self.story: StoryProtocol = NoopStory()
+            self.story = NoopStory()
 
         retry_attempts = 0
         while True:
