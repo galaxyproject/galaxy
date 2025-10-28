@@ -2,22 +2,26 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import { vi } from "vitest";
+import { configureCompat } from "@vue/compat";
 
-// Vue configuration
-import Vue from "vue";
-Vue.config.productionTip = false;
-Vue.config.devtools = false;
+// Vue 3 compat mode configuration
+configureCompat({
+    MODE: 2,
+    GLOBAL_EXTEND: true,
+    GLOBAL_MOUNT: true,
+    RENDER_FUNCTION: true,
+    COMPONENT_FUNCTIONAL: true,
+    COMPONENT_V_MODEL: true,
+    ATTR_FALSE_VALUE: true,
+    ATTR_ENUMERATED_COERCION: true,
+    TRANSITION_CLASSES: true,
+    FILTERS: true,
+    PRIVATE_APIS: true,
+});
 
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
 vi.mock("@/composables/userLocalStorage");
-
-// Provide a mocked version of Vue to ensure above settings are not
-// overridden by a Vue library that gets imported later
-vi.doMock("vue", () => ({
-    default: Vue,
-    ...Vue,
-}));
 
 // Mock window.scrollIntoView (not available in jsdom)
 global.scrollIntoView = vi.fn();
