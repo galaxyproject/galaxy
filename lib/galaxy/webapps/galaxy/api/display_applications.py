@@ -4,10 +4,13 @@ API operations on annotations.
 
 import logging
 from typing import (
+    Any,
     Optional,
 )
 
 from fastapi import Body
+
+from galaxy.managers.context import ProvidesUserContext
 
 from galaxy.managers.display_applications import (
     DisplayApplication,
@@ -17,6 +20,11 @@ from galaxy.managers.display_applications import (
 from . import (
     depends,
     Router,
+)
+
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
 )
 
 log = logging.getLogger(__name__)
@@ -50,7 +58,8 @@ class FastAPIDisplay:
     )
     def create_link(
         self,
-        payload: Optional[dict[str, list[Any]]] = Body(default=None),
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: Optional[dict[str, Any]] = Body(default=None),
     ) -> Any:
         """
         Creates a link for display applications.
