@@ -28,7 +28,7 @@ class TestDataset(SeleniumTestCase):
         dataset_display = self.components.dataset_display.container
         dataset_display.wait_for_visible()
 
-        self.switch_to_dataset_panel()
+        self.switch_to_frame()
         text = self.components.dataset_display.content.wait_for_text()
         assert "chr1    4225    19670" in text
         self.driver.switch_to.default_content()

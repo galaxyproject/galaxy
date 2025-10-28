@@ -99,7 +99,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame id="galaxy_dataset" :src="previewUrl" @load="emit('load')" />
+            <CenterFrame :src="previewUrl" @load="emit('load')" />
         </div>
     </div>
 </template>

@@ -62,7 +62,6 @@ RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = 0.1
 RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
 GALAXY_MAIN_FRAME_ID = "galaxy_main"
-GALAXY_DATASET_FRAME_ID = "galaxy_dataset"
 GALAXY_VISUALIZATION_FRAME_ID = "galaxy_visualization"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
@@ -388,9 +387,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def switch_to_main_panel(self):
         self.switch_to_frame(GALAXY_MAIN_FRAME_ID)
-
-    def switch_to_dataset_panel(self):
-        self.driver.switch_to.frame(GALAXY_DATASET_FRAME_ID)
 
     @contextlib.contextmanager
     def local_storage(self, key: str, value: Union[float, str]):
