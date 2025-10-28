@@ -32,6 +32,10 @@ This update modernizes one of Galaxy's core interfaces, providing a cleaner and 
 way to navigate your analysis history collection while adding powerful selection capabilities.
 [`#20744 <https://github.com/galaxyproject/galaxy/pull/20744>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/1kPTyiEr3ks?si=OYLxFeyA82bZ13Xd" title="Galaxy 25.1 - A Fresh, Modern History List Interface" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 Smart Sample Sheets for Complex Workflow Inputs
 --------
 
@@ -54,6 +58,10 @@ Sample Sheets are particularly useful for workflows that require multiple relate
 need to process batches of samples with associated metadata in a structured format.
 [`#19305 <https://github.com/galaxyproject/galaxy/pull/19305>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/5sAjEABPh8M?si=sxIX6RV1LtUkH4xW" title="Galaxy 25.1 - Smart Sample Sheets for Complex Workflow Inputs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 An Enhanced Tool Discovery View
 --------
 
@@ -72,6 +80,10 @@ search with a more powerful and intuitive tool exploration interface.
 This new interface makes tool discovery more efficient and helps users find the most appropriate tools
 for their specific analysis needs.
 [`#20747 <https://github.com/galaxyproject/galaxy/pull/20747>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/7L_QjcwyBiw?si=gD8tGTr0BTzgv7rw" title="Galaxy 25.1 - Tool Discovery View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 New Galaxy Charts Visualization Framework
 --------
@@ -111,6 +123,10 @@ making it easier than ever to create sophisticated, interactive visualizations w
 integration with Galaxy's data management and analysis ecosystem. Here's a look at the IGV.js addition:
 [`#20943 <https://github.com/galaxyproject/galaxy/pull/20943>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/VC05IvZGPiU?si=tMVdiHS1d5yTOX06" title="Galaxy 25.1 - New Galaxy Charts Visualization Framework" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 A Place to Find your Recent Downloads in Galaxy
 --------
 
@@ -125,6 +141,10 @@ exports/downloads.
 This improves the discoverability and accessibility of recent downloads without needing to track links
 manually.
 [`#20585 <https://github.com/galaxyproject/galaxy/pull/20585>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/NMeH_HWuMwA?si=ly9gCTQksghLwRf0" title="Galaxy 25.1 - A Place to Find your Recent Downloads in Galaxy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Visual Indicators for Short-Term Storage Expiration
 --------
@@ -146,6 +166,10 @@ This feature is particularly valuable for instances using scratch storage or tem
 high-performance storage tiers, as it gives users clear visibility into data lifecycle and helps
 prevent unexpected data loss due to automatic cleanup processes.
 [`#20332 <https://github.com/galaxyproject/galaxy/pull/20332>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/CytCTixQTY8?si=taaSIrbl_gM2QhUC" title="Galaxy 25.1 - Visual Indicators for Short-Term Storage Expiration" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Galaxy Tools Now Handle Secrets and Authentication
 --------
@@ -175,6 +199,10 @@ while making it easy for users to configure and manage their credentials across 
 workflows.
 [`#19084 <https://github.com/galaxyproject/galaxy/pull/19084>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/2xEFtTS3DSk?si=TvG5EUBy96Otrt9T" title="Galaxy 25.1 - Tools Now Handle Secrets and Authentication" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 Search for Steps, Tools and Subworkflows within the Workflow Editor
 --------
 
@@ -183,12 +211,21 @@ search for several properties of all elements in the workflow graph, displays th
 list, and highlights them when clicked.
 [`#20390 <https://github.com/galaxyproject/galaxy/pull/20390>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/Guma5nPqZ_8?si=BuQ2xkiCCULhV_Q5" title="Galaxy 25.1 - A Search in the Workflow Editor" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 A Redesign of your User Preferences
 --------
 
 The User Preferences interface has been redesigned to enhance user experience through improved
 navigation and a modernised interface.
 [`#19658 <https://github.com/galaxyproject/galaxy/pull/19658>`__]
+
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/vTjJtStlf9w?si=98P65gcBJP0xNDZA" title="Galaxy 25.1 - A Redesign of your User Preferences" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 
 ----
