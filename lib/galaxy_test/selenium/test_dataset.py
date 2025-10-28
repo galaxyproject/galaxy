@@ -14,7 +14,7 @@ TEST_ANNOTATION = "my cool annotation"
 TEST_INFO = "my cool info"
 
 
-class TestHistoryPanel(SeleniumTestCase):
+class TestDataset(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
