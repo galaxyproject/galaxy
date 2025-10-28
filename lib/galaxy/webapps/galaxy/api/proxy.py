@@ -66,7 +66,7 @@ class FastAPIProxy:
 
         self._validate_url_and_access(url, trans)
 
-        headers = {}
+        headers: dict[str, str] = {}
         if "range" in request.headers:
             headers["Range"] = self._validate_range_header(request.headers["range"])
 
@@ -75,38 +75,8 @@ class FastAPIProxy:
         timeout = httpx.Timeout(10.0, connect=60.0)
 
         client = httpx.AsyncClient(timeout=timeout)
-        response = None
         try:
-            # Manually handle redirects to validate each redirect URL
-            current_url = url
-            redirect_count = 0
-
-            while redirect_count <= MAX_REDIRECTS:
-                response = await client.request(
-                    method=request.method, url=current_url, headers=headers, follow_redirects=False
-                )
-
-                if self._is_redirect_response(response):
-                    redirect_count += 1
-                    if redirect_count > MAX_REDIRECTS:
-                        raise RequestParameterInvalidException("Too many redirects")
-
-                    redirect_location = response.headers["location"]
-
-                    # Handle relative URLs by resolving them against the current URL
-                    redirect_url = urljoin(current_url, redirect_location)
-
-                    self._validate_url_and_access(redirect_url, trans)
-
-                    # Close current response and follow the validated redirect
-                    await response.aclose()
-                    current_url = redirect_url
-                else:
-                    # Not a redirect, we have our final response
-                    break
-
-            # Ensure we have a valid response at this point
-            assert response is not None, "Response should not be None after redirect loop"
+            response = await self._handle_redirects_validation(request, url, trans, headers, client)
 
             if request.method == "GET":
                 # Return a streaming response for GET requests
@@ -142,6 +112,46 @@ class FastAPIProxy:
                 if response is not None:
                     await response.aclose()
                 await client.aclose()
+
+    async def _handle_redirects_validation(
+        self,
+        request: Request,
+        url: str,
+        trans: ProvidesUserContext,
+        headers: dict[str, str],
+        client: httpx.AsyncClient,
+    ) -> httpx.Response:
+        """Handle redirects manually to validate each redirect URL."""
+        response = None
+        current_url = url
+        redirect_count = 0
+
+        while redirect_count <= MAX_REDIRECTS:
+            response = await client.request(
+                method=request.method, url=current_url, headers=headers, follow_redirects=False
+            )
+
+            if self._is_redirect_response(response):
+                redirect_count += 1
+                if redirect_count > MAX_REDIRECTS:
+                    raise RequestParameterInvalidException("Too many redirects")
+
+                redirect_location = response.headers["location"]
+
+                # Handle relative URLs by resolving them against the current URL
+                redirect_url = urljoin(current_url, redirect_location)
+
+                self._validate_url_and_access(redirect_url, trans)
+
+                # Close current response and follow the validated redirect
+                await response.aclose()
+                current_url = redirect_url
+            else:
+                # Not a redirect, we have our final response
+                break
+
+        assert response is not None, "Response should not be None after redirect loop"
+        return response
 
     def _validate_url_and_access(self, url: str, trans: ProvidesUserContext):
         if not is_valid_url(url):
