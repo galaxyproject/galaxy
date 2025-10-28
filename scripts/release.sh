@@ -177,7 +177,11 @@ function ensure_prereqs() {
         [ -d "$VENV" ] || { log_error "Missing venv, please create: ${VENV}"; exit 1; }
         . "${VENV}/bin/activate"
     fi
-    pip_list=$(log_exec "${VENV}/bin/pip" list)
+    if command -v uv >/dev/null; then
+        pip_list=$(log_exec uv pip list)
+    else
+        pip_list=$(log_exec "${VENV}/bin/pip" list)
+    fi
     for package in ${VERIFY_PACKAGES[@]}; do
         echo "$pip_list" | grep -E "^${package}\s+" || { log_error "Package '${package}' missing from venv: ${VENV}" ; exit 1; }
     done
