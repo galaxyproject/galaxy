@@ -1,8 +1,15 @@
 <script setup>
-import { withPrefix } from "@/utils/redirect";
 import axios from "axios";
-import { DatasetProvider } from "components/providers";
-import { computed, defineProps, onMounted, ref } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { withPrefix } from "@/utils/redirect";
+import LoadingSpan from "../LoadingSpan.vue";
+import { computed, onMounted, ref } from "vue";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+const TIMEOUT = 2000;
+
 const props = defineProps({
     appName: {
         type: String,
@@ -17,9 +24,14 @@ const props = defineProps({
         required: true,
     },
 });
+
 const applicationData = ref({});
+const errorMessage = ref("");
+const isLoading = ref(true);
+
 const hasData = computed(() => !!applicationData.value);
-async function getCreateLink() {
+
+async function requestLink() {
     const params = {
         app_name: props.appName,
         dataset_id: props.datasetId,
@@ -29,20 +41,35 @@ async function getCreateLink() {
         const buildUrl = withPrefix("/api/display_applications/create_link");
         const { data } = await axios.post(buildUrl, params);
         applicationData.value = data;
-        console.log(data);
+        if (applicationData.value.resource) {
+            window.location.url = data.resource;
+        } else if (applicationData.value.refresh) {
+            setTimeout(() => requestLink(), TIMEOUT);
+        }
+        errorMessage.value = "";
     } catch (e) {
+        errorMessage.value = `Failed to create link: ${errorMessageAsString(e)}.`;
         console.error(e);
     }
+    isLoading.value = false;
 }
+
 onMounted(() => {
-    getCreateLink();
+    requestLink();
 });
 </script>
+
 <template>
-    <div v-if="hasData">
-        {{  applicationData.value }}
+    <BAlert v-if="errorMessage" variant="danger" show>
+        {{ errorMessage }}
+    </BAlert>
+    <LoadingSpan v-else-if="isLoading" />
+    <div v-else-if="hasData">
         <div v-for="(message, messageIndex) in applicationData.msg" :key="messageIndex">
-            <b-alert :variant="message[1]" show>{{ message[0] }}</b-alert>
+            <BAlert :variant="message[1]" show>
+                <FontAwesomeIcon v-if="applicationData.refresh" spin :icon="faSpinner" />
+                <span>{{ message[0] }}</span>
+            </BAlert>
         </div>
         <div v-if="applicationData.preparable_steps">
             <h2>Preparation Status</h2>
