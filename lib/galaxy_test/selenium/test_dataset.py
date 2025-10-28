@@ -1,5 +1,4 @@
 from galaxy.selenium.axe_results import FORMS_VIOLATIONS
-
 from .framework import (
     managed_history,
     selenium_only,
