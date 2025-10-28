@@ -75,7 +75,7 @@ watch(
         {{ errorMessage }}
     </BAlert>
     <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset content" />
-    <div v-else class="h-100">
+    <div v-else class="dataset-display h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
             <span v-if="isAdmin && sanitizedToolId">
@@ -99,7 +99,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame :src="previewUrl" @load="emit('load')" />
+            <CenterFrame id="galaxy_dataset" :src="previewUrl" @load="emit('load')" />
         </div>
     </div>
 </template>

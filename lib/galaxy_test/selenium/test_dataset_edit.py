@@ -1,4 +1,8 @@
+
+from selenium.webdriver.common.by import By
+
 from galaxy.selenium.axe_results import FORMS_VIOLATIONS
+
 from .framework import (
     managed_history,
     selenium_only,
@@ -12,6 +16,24 @@ TEST_INFO = "my cool info"
 
 class TestHistoryPanel(SeleniumTestCase):
     ensure_registered = True
+
+    @selenium_test
+    @managed_history
+    def test_history_dataset_display_text(self):
+        original_name = "1.txt"
+
+        history_entry = self.perform_single_upload(self.get_filename(original_name))
+        hid = history_entry.hid
+        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(hid)
+        self.display_dataset(hid=hid)
+
+        dataset_display = self.components.dataset_display.container
+        dataset_display.wait_for_visible()
+
+        self.switch_to_dataset_panel()
+        text = self.components.dataset_display.content.wait_for_text()
+        assert "chr1    4225    19670" in text
 
     @selenium_test
     @managed_history
