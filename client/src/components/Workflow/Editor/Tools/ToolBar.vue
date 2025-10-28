@@ -161,14 +161,14 @@ function autoLayout() {
                         <FontAwesomeIcon :icon="faMousePointer" size="lg" />
                     </GButton>
                     <GButton
+                        v-model:pressed="snapActive"
                         tooltip
                         tooltip-placement="right"
                         outline
                         color="blue"
                         class="button"
                         data-tool="toggle_snap"
-                        :title="snapButtonTitle"
-                        v-model:pressed="snapActive">
+                        :title="snapButtonTitle">
                         <FontAwesomeIcon :icon="faMagnet" size="lg" />
                     </GButton>
                 </GButtonGroup>
