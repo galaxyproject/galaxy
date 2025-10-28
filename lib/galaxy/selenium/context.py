@@ -70,6 +70,45 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         if hasattr(self, "story"):
             self.story.add_documentation(markdown_content)
 
+    def document_file(self, file_path: str, caption: Optional[str] = None):
+        """Document the contents of a file in the story.
+
+        This method reads a file and adds its contents to the story as a code block,
+        along with the filename and an optional caption. Useful for documenting
+        data files used in tests and tutorials.
+
+        Args:
+            file_path: Absolute path to the file to document
+            caption: Optional caption/description for the file
+
+        Example:
+            self.document_file("/path/to/workbook.tsv", "Example workbook with dataset metadata")
+        """
+        if not hasattr(self, "story"):
+            return
+
+        # Get just the filename, not full path
+        filename = os.path.basename(file_path)
+
+        # Read file contents
+        try:
+            with open(file_path) as f:
+                contents = f.read()
+        except Exception as e:
+            # If we can't read the file, document the error
+            self.document(f"**File: `{filename}`**\n\n*Error reading file: {e}*\n")
+            return
+
+        # Build markdown with filename, contents, and optional caption
+        markdown_parts = []
+
+        markdown_parts.append(f"**File: `{filename}`**\n")
+        markdown_parts.append(f"```\n{contents}```\n")
+        if caption:
+            markdown_parts.append(f"**{caption}**\n")
+
+        self.document("\n".join(markdown_parts))
+
     @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> Optional[str]:
         """Path to store screenshots in."""
