@@ -64,10 +64,7 @@ class FastAPIProxy:
         if trans.anonymous:
             raise UserRequiredException("Anonymous users are not allowed to access this endpoint")
 
-        if not is_valid_url(url):
-            raise RequestParameterInvalidException("Invalid URL format.")
-
-        validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+        self._validate_url_and_access(url, trans)
 
         headers = {}
         if "range" in request.headers:
@@ -99,11 +96,7 @@ class FastAPIProxy:
                     # Handle relative URLs by resolving them against the current URL
                     redirect_url = urljoin(current_url, redirect_location)
 
-                    # Validate the redirect URL using the same security checks
-                    if not is_valid_url(redirect_url):
-                        raise RequestParameterInvalidException(f"Invalid redirect URL format: {redirect_url}")
-
-                    validate_uri_access(redirect_url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+                    self._validate_url_and_access(redirect_url, trans)
 
                     # Close current response and follow the validated redirect
                     await response.aclose()
@@ -149,6 +142,12 @@ class FastAPIProxy:
                 if response is not None:
                     await response.aclose()
                 await client.aclose()
+
+    def _validate_url_and_access(self, url: str, trans: ProvidesUserContext):
+        if not is_valid_url(url):
+            raise RequestParameterInvalidException("Invalid URL format.")
+
+        validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
 
     def _is_redirect_response(self, response: httpx.Response) -> bool:
         return response.status_code in (301, 302, 303, 307, 308) and "location" in response.headers
