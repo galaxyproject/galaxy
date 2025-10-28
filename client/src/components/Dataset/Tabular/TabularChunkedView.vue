@@ -4,6 +4,7 @@ import axios from "axios";
 import { parse } from "csv-parse/sync";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import type { HDADetailed } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 
 interface TabularChunk {
@@ -12,14 +13,14 @@ interface TabularChunk {
     data_line_offset: number;
 }
 
+interface TabularDataset extends HDADetailed {
+    metadata_columns?: number;
+    metadata_column_types?: string[];
+    metadata_column_names?: string[];
+}
+
 interface TabularChunkedViewProps {
-    options: {
-        id: string;
-        file_ext: string;
-        metadata_columns: number;
-        metadata_column_types: string[];
-        metadata_column_names: string[];
-    };
+    options: TabularDataset;
 }
 
 const props = defineProps<TabularChunkedViewProps>();
@@ -36,7 +37,7 @@ const tabularData = reactive<{ rows: string[][] }>({
 const columns = computed(() => {
     const columns = Array(props.options.metadata_columns);
     // for each column_name, inject header
-    if (props.options.metadata_column_names?.length > 0) {
+    if (props.options.metadata_column_names && props.options.metadata_column_names?.length > 0) {
         props.options.metadata_column_names.forEach((column_name, index) => {
             columns[index] = column_name;
         });
@@ -46,7 +47,7 @@ const columns = computed(() => {
 
 const columnStyle = computed(() => {
     const columnStyle = Array(props.options.metadata_columns);
-    if (props.options.metadata_column_types?.length > 0) {
+    if (props.options.metadata_column_types && props.options.metadata_column_types?.length > 0) {
         props.options.metadata_column_types.forEach((column_type, index) => {
             columnStyle[index] = column_type === "str" || column_type === "list" ? "string-align" : "number-align";
         });

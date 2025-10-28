@@ -10,9 +10,9 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
 import Alert from "@/components/Alert.vue";
+import TabularChunkedView from "@/components/Dataset/Tabular/TabularChunkedView.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
-import TabularChunkedView from "@/components/Dataset/Tabular/TabularChunkedView.vue";
 
 interface Props {
     datasetId: string;
@@ -54,9 +54,11 @@ watch(
     async () => {
         try {
             const { headers } = await fetch(previewUrl.value, { method: "HEAD" });
-            contentChunked.value = headers.get("x-content-chunked");
-            contentTruncated.value = headers.get("x-content-truncated");
-            sanitizedJobImported.value = headers.get("x-sanitized-job-imported");
+            contentChunked.value = !!headers.get("x-content-chunked");
+            contentTruncated.value = headers.get("x-content-truncated")
+                ? Number(headers.get("x-content-truncated"))
+                : null;
+            sanitizedJobImported.value = !!headers.get("x-sanitized-job-imported");
             sanitizedToolId.value = headers.get("x-sanitized-tool-id");
             errorMessage.value = "";
         } catch (e) {
