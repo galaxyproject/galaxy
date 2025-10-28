@@ -16,13 +16,13 @@ function migrateTestFile(filePath) {
 
     // Read the file
     let content = fs.readFileSync(filePath, "utf8");
-    
+
     // Create the new filename
     const dir = path.dirname(filePath);
     const basename = path.basename(filePath);
     const newBasename = basename.replace(/\.test\.(js|ts)$/, ".vitest.test.$1");
     const newFilePath = path.join(dir, newBasename);
-    
+
     // Check if already migrated
     if (fs.existsSync(newFilePath)) {
         console.error(`Vitest file already exists: ${newFilePath}`);
@@ -35,15 +35,18 @@ function migrateTestFile(filePath) {
     const replacements = [
         // Update test helper imports
         [/@tests\/jest\/helpers/g, "@tests/vitest/helpers"],
-        
+
         // Add vitest imports if not present
-        [/^(import .* from ['"]@vue\/test-utils['"];?)$/m, (match) => {
-            if (!content.includes("from \"vitest\"")) {
-                return match + "\nimport { describe, it, expect, beforeEach, afterEach, vi } from \"vitest\";";
-            }
-            return match;
-        }],
-        
+        [
+            /^(import .* from ['"]@vue\/test-utils['"];?)$/m,
+            (match) => {
+                if (!content.includes('from "vitest"')) {
+                    return match + '\nimport { describe, it, expect, beforeEach, afterEach, vi } from "vitest";';
+                }
+                return match;
+            },
+        ],
+
         // Replace jest with vi
         [/\bjest\.fn\(/g, "vi.fn("],
         [/\bjest\.spyOn\(/g, "vi.spyOn("],
@@ -55,12 +58,15 @@ function migrateTestFile(filePath) {
         [/\bjest\.clearAllMocks\(/g, "vi.clearAllMocks("],
         [/\bjest\.resetAllMocks\(/g, "vi.resetAllMocks("],
         [/\bjest\.restoreAllMocks\(/g, "vi.restoreAllMocks("],
-        
+
         // Handle module mocking at top level
-        [/^(jest\.mock\(.+\);?)$/gm, (match) => {
-            console.log(`  ⚠️  Found module mock that may need manual review: ${match}`);
-            return match.replace("jest.mock", "vi.mock");
-        }],
+        [
+            /^(jest\.mock\(.+\);?)$/gm,
+            (match) => {
+                console.log(`  ⚠️  Found module mock that may need manual review: ${match}`);
+                return match.replace("jest.mock", "vi.mock");
+            },
+        ],
     ];
 
     // Apply replacements
@@ -75,14 +81,14 @@ function migrateTestFile(filePath) {
     // Update migration tracker
     const trackerPath = path.join(process.cwd(), ".vitest-migrated.json");
     let tracker = { migrated: [], notes: {} };
-    
+
     if (fs.existsSync(trackerPath)) {
         tracker = JSON.parse(fs.readFileSync(trackerPath, "utf8"));
     }
-    
+
     const relativePath = path.relative(process.cwd(), newFilePath).replace(/\\/g, "/");
     const originalRelativePath = path.relative(process.cwd(), filePath).replace(/\\/g, "/");
-    
+
     if (!tracker.migrated.includes(relativePath)) {
         tracker.migrated.push(relativePath);
         tracker.lastUpdated = new Date().toISOString().split("T")[0];
@@ -91,7 +97,7 @@ function migrateTestFile(filePath) {
             migratedDate: new Date().toISOString().split("T")[0],
             changes: "Automated migration with jest->vi replacements",
         };
-        
+
         fs.writeFileSync(trackerPath, JSON.stringify(tracker, null, 2) + "\n");
         console.log("✅ Updated .vitest-migrated.json");
     }

@@ -1,326 +1,155 @@
-// Vitest-compatible test helpers
-// This is a port of Jest helpers to work with Vitest
-import { createLocalVue, mount, Wrapper } from "@vue/test-utils";
+// Vitest-compatible test helpers for Vue 3
+// Based on tests/jest/helpers.js but adapted for Vitest
+import { shallowMount } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
+import { iconPlugin } from "@/components/plugins/icons";
+import { localizationPlugin } from "@/components/plugins/localization";
+import { vueRxShortcutPlugin } from "@/components/plugins/vueRxShortcuts";
 import { createPinia } from "pinia";
-import Vue from "vue";
-import VueRouter from "vue-router";
-import { vi } from "vitest";
-import { expect } from "vitest";
+import _l from "@/utils/localization";
+import { createRouter, createMemoryHistory } from "vue-router";
+import { vi, expect } from "vitest";
 
-// Mock localize function
-const mockLocalize = (text) => text;
-
-// Import composables and utils
-import { useConfig } from "@/composables/config";
-
-// Setup Bootstrap Vue components we use in tests
-const bComponents = {
-    BAlert: BootstrapVue.BAlert,
-    BButton: BootstrapVue.BButton,
-    BButtonGroup: BootstrapVue.BButtonGroup,
-    BCard: BootstrapVue.BCard,
-    BCardBody: BootstrapVue.BCardBody,
-    BCardFooter: BootstrapVue.BCardFooter,
-    BCardHeader: BootstrapVue.BCardHeader,
-    BCardText: BootstrapVue.BCardText,
-    BCol: BootstrapVue.BCol,
-    BCollapse: BootstrapVue.BCollapse,
-    BContainer: BootstrapVue.BContainer,
-    BDropdown: BootstrapVue.BDropdown,
-    BDropdownDivider: BootstrapVue.BDropdownDivider,
-    BDropdownItem: BootstrapVue.BDropdownItem,
-    BDropdownText: BootstrapVue.BDropdownText,
-    BFormCheckbox: BootstrapVue.BFormCheckbox,
-    BFormCheckboxGroup: BootstrapVue.BFormCheckboxGroup,
-    BFormGroup: BootstrapVue.BFormGroup,
-    BFormInput: BootstrapVue.BFormInput,
-    BFormRadio: BootstrapVue.BFormRadio,
-    BFormRadioGroup: BootstrapVue.BFormRadioGroup,
-    BFormSelect: BootstrapVue.BFormSelect,
-    BFormSelectOption: BootstrapVue.BFormSelectOption,
-    BFormTextarea: BootstrapVue.BFormTextarea,
-    BInputGroup: BootstrapVue.BInputGroup,
-    BInputGroupAppend: BootstrapVue.BInputGroupAppend,
-    BInputGroupPrepend: BootstrapVue.BInputGroupPrepend,
-    BLink: BootstrapVue.BLink,
-    BListGroup: BootstrapVue.BListGroup,
-    BListGroupItem: BootstrapVue.BListGroupItem,
-    BModal: BootstrapVue.BModal,
-    BNav: BootstrapVue.BNav,
-    BNavItem: BootstrapVue.BNavItem,
-    BNavbar: BootstrapVue.BNavbar,
-    BPagination: BootstrapVue.BPagination,
-    BPopover: BootstrapVue.BPopover,
-    BRow: BootstrapVue.BRow,
-    BSpinner: BootstrapVue.BSpinner,
-    BTab: BootstrapVue.BTab,
-    BTable: BootstrapVue.BTable,
-    BTabs: BootstrapVue.BTabs,
-    BTooltip: BootstrapVue.BTooltip,
-};
-
-const bDirectives = {
-    VBModal: BootstrapVue.VBModal,
-    VBPopover: BootstrapVue.VBPopover,
-    VBTooltip: BootstrapVue.VBTooltip,
-};
-
-/**
- * Gets a new test localVue instance with common plugins
- * @param {boolean} withRouter - whether to include router
- * @returns {VueConstructor} localVue instance
- */
-export function getLocalVue(withRouter = false) {
-    const localVue = createLocalVue();
-    
-    // Add Bootstrap Vue components
-    Object.entries(bComponents).forEach(([name, component]) => {
-        localVue.component(name, component);
-    });
-    
-    // Add Bootstrap Vue directives
-    Object.entries(bDirectives).forEach(([name, directive]) => {
-        localVue.directive(name, directive);
-    });
-    
-    // Add Pinia
-    localVue.use(createPinia());
-    
-    // Add localization
-    localVue.directive("localize", {
-        bind(el, binding) {
-            el.textContent = mockLocalize(binding.value);
-        },
-        update(el, binding) {
-            el.textContent = mockLocalize(binding.value);
-        },
-    });
-    
-    localVue.filter("localize", mockLocalize);
-    localVue.prototype.l = mockLocalize;
-    localVue.prototype.localize = mockLocalize;
-    
-    // Add router if requested
-    if (withRouter) {
-        localVue.use(VueRouter);
+// Test localization function
+function testLocalize(text) {
+    if (text) {
+        return `test_localized<${text}>`;
+    } else {
+        return text;
     }
-    
-    return localVue;
 }
 
-/**
- * Custom matchers for localization
- */
+function isTestLocalized(text) {
+    return text && text.indexOf("test_localized<") == 0;
+}
+
+// Custom vitest matchers for localization
 expect.extend({
     toBeLocalized(received) {
-        const pass = typeof received === "string" && received.length > 0;
-        return {
-            pass,
-            message: () => pass 
-                ? `expected ${received} not to be localized`
-                : `expected ${received} to be localized`,
-        };
+        const pass = isTestLocalized(received);
+        if (pass) {
+            return {
+                message: () => `expected ${received} to be localized`,
+                pass: true,
+            };
+        } else {
+            return {
+                message: () => `expected ${received} to be localized`,
+                pass: false,
+            };
+        }
     },
-    
-    toBeLocalizationOf(received, expected) {
-        const pass = received === expected; // Since we mock localize to return input
-        return {
-            pass,
-            message: () => pass
-                ? `expected ${received} not to be localization of ${expected}`
-                : `expected ${received} to be localization of ${expected}`,
-        };
+    toBeLocalizationOf(received, str) {
+        let unlocalized;
+        if (received.indexOf("test_localized<") == 0) {
+            unlocalized = received.substr("test_localized<".length);
+            unlocalized = unlocalized.substr(0, unlocalized.length - 1);
+        } else {
+            unlocalized = received;
+        }
+        const pass = testLocalize(str) == received;
+        if (pass) {
+            return {
+                message: () => `expected ${unlocalized} to be localization of ${str}`,
+                pass: true,
+            };
+        } else if (!isTestLocalized(received)) {
+            return {
+                message: () => `expected ${received} to be localized`,
+                pass: false,
+            };
+        } else {
+            return {
+                message: () => `expected ${unlocalized} to be localization of ${str}`,
+                pass: false,
+            };
+        }
     },
-    
-    toContainLocalizationOf(received, expected) {
-        const pass = received.includes(expected);
-        return {
-            pass,
-            message: () => pass
-                ? `expected ${received} not to contain localization of ${expected}`
-                : `expected ${received} to contain localization of ${expected}`,
-        };
+    toContainLocalizationOf(received, str) {
+        const pass = received.indexOf(testLocalize(str)) >= 0;
+        if (pass) {
+            return {
+                message: () => `expected ${received} to contain localization of ${str}`,
+                pass: true,
+            };
+        } else {
+            return {
+                message: () => `expected ${received} to contain localization of ${str}`,
+                pass: false,
+            };
+        }
     },
 });
 
-/**
- * Mount a renderless component (no template)
- */
-export async function mountRenderless(component, options = {}) {
-    const { localVue = getLocalVue(), ...rest } = options;
-    const wrapper = mount(component, {
-        localVue,
-        ...rest,
-    });
-    await wrapper.vm.$nextTick();
-    return wrapper;
-}
-
-/**
- * Utility to wait for a specific time
- */
-export function wait(ms = 0) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Wait for a lifecycle event on a component
- */
-export async function waitForLifecyleEvent(wrapper, lifecycleHook) {
-    return new Promise((resolve) => {
-        const vm = wrapper.vm;
-        vm.$options[lifecycleHook] = vm.$options[lifecycleHook] || [];
-        vm.$options[lifecycleHook].push(resolve);
-    });
-}
-
-/**
- * Watch for a specific change in component
- */
-export async function watchForChange(wrapper, watchSpec) {
-    const vm = wrapper.vm;
-    return new Promise((resolve) => {
-        vm.$watch(watchSpec, (newVal) => {
-            resolve(newVal);
-        });
-    });
-}
-
-/**
- * Watch until a condition is met
- */
-export async function watchUntil(wrapper, watchSpec, condition) {
-    const vm = wrapper.vm;
-    return new Promise((resolve) => {
-        const unwatch = vm.$watch(watchSpec, (newVal) => {
-            if (condition(newVal)) {
-                unwatch();
-                resolve(newVal);
-            }
-        });
-    });
-}
-
-/**
- * Mock Vuex module
- */
-export function mockModule(moduleId, mockImplementation) {
-    vi.doMock(`@/store/modules/${moduleId}`, () => ({
-        default: mockImplementation,
-    }));
-}
-
-/**
- * Dispatch browser event
- */
-export function dispatchEvent(wrapper, type, options = {}) {
-    const event = new Event(type, { bubbles: true, cancelable: true, ...options });
-    wrapper.element.dispatchEvent(event);
-}
-
-/**
- * Get element by selector
- */
-export function getElement(wrapper, selector) {
-    return wrapper.find(selector).element;
-}
-
-/**
- * Debug helpers
- */
-export function show(wrapper, selector) {
-    if (selector) {
-        console.log(wrapper.find(selector).html());
-    } else {
-        console.log(wrapper.html());
+// Gets Vue Test Utils global configuration for Vue 3
+export function getLocalVue(options = {}) {
+    // options can be a boolean for backward compatibility with old instrumentLocalization flag
+    if (typeof options === "boolean") {
+        options = { instrumentLocalization: options };
     }
-}
+    const { instrumentLocalization = false, withPinia = true } = options;
 
-export function showComputed(wrapper, computedName) {
-    console.log(wrapper.vm[computedName]);
-}
+    const mockedDirective = {
+        beforeMount(el, binding) {
+            el.setAttribute("data-mock-directive", binding.value || el.title);
+        },
+    };
 
-export function showData(wrapper, dataName) {
-    console.log(wrapper.vm[dataName]);
-}
+    const l = instrumentLocalization ? testLocalize : _l;
 
-export function showAll(wrapper) {
-    console.log("HTML:", wrapper.html());
-    console.log("Props:", wrapper.props());
-    console.log("Data:", wrapper.vm.$data);
-    console.log("Computed:", Object.keys(wrapper.vm.$options.computed || {}));
-}
-
-/**
- * Suppress console methods
- */
-export function suppressConsoleLogs() {
-    const originalLog = console.log;
-    beforeAll(() => {
-        console.log = vi.fn();
+    // Create a basic router for tests - use MemoryHistory for tests
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [],
     });
-    afterAll(() => {
-        console.log = originalLog;
-    });
+
+    const plugins = [router, BootstrapVue, [localizationPlugin, l], vueRxShortcutPlugin, iconPlugin];
+    if (withPinia) {
+        plugins.unshift(createPinia());
+    }
+
+    // Return global config object for Vue Test Utils v2
+    return {
+        global: {
+            plugins: plugins,
+            directives: {
+                "b-tooltip": mockedDirective,
+                "b-popover": mockedDirective,
+            },
+            stubs: {},
+        },
+    };
 }
 
-export function suppressConsoleWarns() {
-    const originalWarn = console.warn;
-    beforeAll(() => {
-        console.warn = vi.fn();
-    });
-    afterAll(() => {
-        console.warn = originalWarn;
-    });
-}
-
-export function suppressConsoleErrors() {
-    const originalError = console.error;
-    beforeAll(() => {
-        console.error = vi.fn();
-    });
-    afterAll(() => {
-        console.error = originalError;
+// Mounts a renderless component with sample content for testing
+export function mountRenderless(component, mountConfig = {}) {
+    const globalConfig = getLocalVue();
+    return shallowMount(component, {
+        ...globalConfig,
+        ...mountConfig,
+        slots: {
+            default: "<div></div>",
+        },
     });
 }
 
-/**
- * Mock configuration request
- */
-export function expectConfigurationRequest(config = {}) {
-    vi.mocked(useConfig).mockReturnValue({
-        config: { ...config },
-        isConfigLoaded: true,
+// Return a new mocked out router for Vue 3
+export function injectTestRouter() {
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [],
     });
+    return router;
 }
 
-/**
- * Inject test router
- */
-export function injectTestRouter(localVue, routes = []) {
-    const router = new VueRouter({ routes, mode: "abstract" });
-    return { localVue, router };
+// Get local Vue config with router included
+export function getLocalVueWithRouter(instrumentLocalization = false) {
+    const config = getLocalVue(instrumentLocalization);
+    const router = injectTestRouter();
+    return {
+        global: {
+            ...config.global,
+            plugins: [...config.global.plugins, router],
+        },
+    };
 }
-
-/**
- * Wait for N emissions of an event
- */
-export async function untilNthEmission(wrapper, eventName, n = 1) {
-    const emissions = [];
-    return new Promise((resolve) => {
-        let count = 0;
-        wrapper.vm.$on(eventName, (payload) => {
-            count++;
-            emissions.push(payload);
-            if (count === n) {
-                resolve(emissions);
-            }
-        });
-    });
-}
-
-// Re-export some common utilities
-export { mount, shallowMount, createLocalVue } from "@vue/test-utils";
-export { flushPromises } from "flush-promises";
-export { vi } from "vitest";
