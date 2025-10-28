@@ -14,6 +14,7 @@ class TestDataset(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
+    @selenium_only("Not yet migrated to support Playwright backend")
     @managed_history
     def test_history_dataset_display_text(self):
         original_name = "1.txt"
