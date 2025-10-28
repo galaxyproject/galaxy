@@ -12,7 +12,7 @@ import { bytesToString } from "@/utils/utils";
 import Alert from "@/components/Alert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
-import TabularChunkedView from "components/Dataset/Tabular/TabularChunkedView.vue";
+import TabularChunkedView from "@/components/Dataset/Tabular/TabularChunkedView.vue";
 
 interface Props {
     datasetId: string;
