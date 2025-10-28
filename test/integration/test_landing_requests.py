@@ -276,7 +276,7 @@ class TestLandingRequestsWithoutVaultIntegration(BaseLandingRequestTest):
 
         # Should return 500 status code when trying to create the landing request
         # because sensitive headers are present but vault is not configured
-        response = self.dataset_populator.create_data_landing_raw(payload)
+        response = self.dataset_populator.create_landing_raw(payload, "data")
         assert response.status_code == 500
 
     def test_data_landing_succeeds_without_vault_when_no_sensitive_headers(self):
@@ -359,7 +359,7 @@ class TestLandingRequestsWithoutHeadersConfigIntegration(BaseLandingRequestTest)
         payload = CreateDataLandingPayload(request_state=request_state, public=True)
 
         # Should fail with 403 because no URL headers configuration is available (fail-fast)
-        response = self.dataset_populator.create_data_landing_raw(payload)
+        response = self.dataset_populator.create_landing_raw(payload, "data")
         assert response.status_code == 403
         assert "No URL headers configuration is available" in response.json()["err_msg"]
 
