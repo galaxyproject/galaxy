@@ -3,7 +3,10 @@ API Controller to handle remote zip operations.
 """
 
 import logging
-from urllib.parse import urlparse
+from urllib.parse import (
+    urljoin,
+    urlparse,
+)
 
 import httpx
 from fastapi import (
@@ -36,6 +39,7 @@ URLQueryParam: str = Query(
 )
 
 ALLOWED_SCHEMES = ("https", "http")
+MAX_REDIRECTS = 5
 
 
 def is_valid_url(url: str) -> bool:
@@ -76,7 +80,40 @@ class FastAPIProxy:
         client = httpx.AsyncClient(timeout=timeout)
         response = None
         try:
-            response = await client.request(method=request.method, url=url, headers=headers, follow_redirects=True)
+            # Manually handle redirects to validate each redirect URL
+            current_url = url
+            redirect_count = 0
+
+            while redirect_count <= MAX_REDIRECTS:
+                response = await client.request(
+                    method=request.method, url=current_url, headers=headers, follow_redirects=False
+                )
+
+                if self._is_redirect_response(response):
+                    redirect_count += 1
+                    if redirect_count > MAX_REDIRECTS:
+                        raise RequestParameterInvalidException("Too many redirects")
+
+                    redirect_location = response.headers["location"]
+
+                    # Handle relative URLs by resolving them against the current URL
+                    redirect_url = urljoin(current_url, redirect_location)
+
+                    # Validate the redirect URL using the same security checks
+                    if not is_valid_url(redirect_url):
+                        raise RequestParameterInvalidException(f"Invalid redirect URL format: {redirect_url}")
+
+                    validate_uri_access(redirect_url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+
+                    # Close current response and follow the validated redirect
+                    await response.aclose()
+                    current_url = redirect_url
+                else:
+                    # Not a redirect, we have our final response
+                    break
+
+            # Ensure we have a valid response at this point
+            assert response is not None, "Response should not be None after redirect loop"
 
             if request.method == "GET":
                 # Return a streaming response for GET requests
@@ -112,6 +149,9 @@ class FastAPIProxy:
                 if response is not None:
                     await response.aclose()
                 await client.aclose()
+
+    def _is_redirect_response(self, response: httpx.Response) -> bool:
+        return response.status_code in (301, 302, 303, 307, 308) and "location" in response.headers
 
     def _validate_range_header(self, range_header: str) -> str:
         """
