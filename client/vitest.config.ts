@@ -1,11 +1,16 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
 import path from "path";
 import { fileURLToPath } from "url";
 import { i18nPlugin } from "./tests/vitest/test-plugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Dynamic import for ESM-only plugin
+async function getVuePlugin() {
+    const { default: vue } = await import("@vitejs/plugin-vue");
+    return vue();
+}
 
 // List of modules that need to be transformed
 const modulesToTransform = [
@@ -20,8 +25,8 @@ const modulesToTransform = [
     "yaml",
 ];
 
-export default defineConfig({
-    plugins: [vue(), i18nPlugin()],
+export default defineConfig(async () => ({
+    plugins: [await getVuePlugin(), i18nPlugin()],
     test: {
         globals: true,
         environment: "jsdom",
@@ -93,4 +98,4 @@ export default defineConfig({
     optimizeDeps: {
         include: ["vue", "@vue/test-utils", ...modulesToTransform],
     },
-});
+}));
