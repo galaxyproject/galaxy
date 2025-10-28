@@ -26,6 +26,7 @@ import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
 import DatasetList from "@/components/Dataset/DatasetList.vue";
 import DatasetView from "@/components/Dataset/DatasetView.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
+import DisplayApplication from "@/components/Visualizations/DisplayApplication.vue";
 import RecentDownloads from "@/components/Downloads/RecentDownloads.vue";
 import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateInstance.vue";
 import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
@@ -293,6 +294,12 @@ export function getRouter(Galaxy) {
                     {
                         path: "datatypes",
                         component: AvailableDatatypes,
+                    },
+                    {
+                        path: "display_applications/:datasetId/:appName/:linkName",
+                        component: DisplayApplication,
+                        props: true,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "histories/import",
