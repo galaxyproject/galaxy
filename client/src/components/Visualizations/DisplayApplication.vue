@@ -1,5 +1,6 @@
 <script setup>
-import { urlData } from "utils/url";
+import { withPrefix } from "@/utils/redirect";
+import axios from "axios";
 import { DatasetProvider } from "components/providers";
 import { computed, defineProps, onMounted, ref } from "vue";
 const props = defineProps({
@@ -19,14 +20,19 @@ const props = defineProps({
 const applicationData = ref({});
 const hasData = computed(() => !!applicationData.value);
 async function getCreateLink() {
-    const params = new URLSearchParams({
+    const params = {
         app_name: props.appName,
         dataset_id: props.datasetId,
         link_name: props.linkName,
-    });
-    const buildUrl = `/api/display_applications/create_link?${params.toString()}`;
-    applicationData.value = await urlData({ url: buildUrl });
-    console.log(applicationData.value);
+    }
+    try {
+        const buildUrl = withPrefix("/api/display_applications/create_link");
+        const { data } = await axios.post(buildUrl, params);
+        applicationData.value = data;
+        console.log(data);
+    } catch (e) {
+        console.error(e);
+    }
 }
 onMounted(() => {
     getCreateLink();
@@ -34,6 +40,7 @@ onMounted(() => {
 </script>
 <template>
     <div v-if="hasData">
+        {{  applicationData.value }}
         <div v-for="(message, messageIndex) in applicationData.msg" :key="messageIndex">
             <b-alert :variant="message[1]" show>{{ message[0] }}</b-alert>
         </div>
