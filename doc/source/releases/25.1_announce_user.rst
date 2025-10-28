@@ -102,9 +102,8 @@ more powerful visualization experience to Galaxy users.
 - **Expanded Visualization Library**. The new framework enables rapid deployment of cutting-edge
   visualizations, meaning Galaxy users will see more powerful visualization options in future releases.
 
-*See the Admin Notes and Deprecation Notices sections in the
-:doc:`Admin facing release notes <25.1_announce>` for more details on the visualization framework and
-the removal of Trackster.*
+*See the Admin Notes and Deprecation Notices sections* :doc:`here <25.1_announce>` *for more details on
+the visualization framework and the removal of Trackster.*
 
 **Featured Implementation: IGV.js Genome Browser**
 
