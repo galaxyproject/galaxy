@@ -23,11 +23,11 @@ const { getDataset, isLoadingDataset } = useDatasetStore();
 
 const props = defineProps<Props>();
 
-const contentTruncated = ref();
-const contentChunked = ref();
-const errorMessage = ref();
-const sanitizedJobImported = ref();
-const sanitizedToolId = ref();
+const contentTruncated = ref<number | null>(null);
+const contentChunked = ref<boolean>(false);
+const errorMessage = ref<string>("");
+const sanitizedJobImported = ref<boolean>(false);
+const sanitizedToolId = ref<string | null>(null);
 
 const { isAdmin } = storeToRefs(useUserStore());
 
