@@ -21,6 +21,8 @@ interface Props {
 
 const { getDataset, isLoadingDataset } = useDatasetStore();
 
+const emit = defineEmits(["load"]);
+
 const props = defineProps<Props>();
 
 const contentTruncated = ref<number | null>(null);
@@ -95,7 +97,7 @@ watch(
                 </div>
                 <a :href="downloadUrl">Download</a>
             </div>
-            <CenterFrame :src="previewUrl" @load="$emit('load')" />
+            <CenterFrame :src="previewUrl" @load="emit('load')" />
         </div>
     </div>
 </template>
