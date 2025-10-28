@@ -4,7 +4,6 @@ from galaxy.selenium.stories.data.upload import (
     WORKBOOK_EXAMPLE_3,
     WORKBOOK_EXAMPLE_4,
 )
-
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -113,7 +112,10 @@ class TestWorkbookImport(SeleniumTestCase):
         self.click_rules_activity()
         self.screenshot(SCREENSHOT_EXAMPLE_1_LANDING, CAPTION_RULES_WIZARD)
 
-        # Upload workbook with dataset metadata
+        # Document and upload workbook with dataset metadata
+        self.document_file(
+            WORKBOOK_EXAMPLE_1, "Example workbook with dataset name, URL, and genome columns for simple dataset import"
+        )
         self.workbook_upload(WORKBOOK_EXAMPLE_1)
 
         self.document(DOC_EXAMPLE_1_MAPPED)
@@ -146,7 +148,11 @@ class TestWorkbookImport(SeleniumTestCase):
         self.components.rule_builder.create_collections.wait_for_and_click()
         self.screenshot(SCREENSHOT_EXAMPLE_2_CREATE_COLLECTIONS, CAPTION_COLLECTIONS_BUTTON)
 
-        # Upload workbook with simple list collection metadata
+        # Document and upload workbook with simple list collection metadata
+        self.document_file(
+            WORKBOOK_EXAMPLE_2,
+            "Example workbook with list identifier, URL, and file type columns for list collection import",
+        )
         self.workbook_upload(WORKBOOK_EXAMPLE_2)
 
         self.document(DOC_EXAMPLE_2_MAPPED)
@@ -180,7 +186,11 @@ class TestWorkbookImport(SeleniumTestCase):
         self.components.rule_builder.create_collections.wait_for_and_click()
         self.screenshot(SCREENSHOT_EXAMPLE_3_CREATE_COLLECTIONS, CAPTION_COLLECTIONS_BUTTON)
 
-        # Upload workbook with paired list collection metadata
+        # Document and upload workbook with paired list collection metadata
+        self.document_file(
+            WORKBOOK_EXAMPLE_3,
+            "Example workbook with paired URLs (forward/reverse reads) and genome information for list of pairs import",
+        )
         self.workbook_upload(WORKBOOK_EXAMPLE_3)
 
         self.document(DOC_EXAMPLE_3_MAPPED)
@@ -218,7 +228,11 @@ class TestWorkbookImport(SeleniumTestCase):
         self.components.rule_builder.create_collections.wait_for_and_click()
         self.screenshot(SCREENSHOT_EXAMPLE_4_CREATE_COLLECTIONS, CAPTION_COLLECTIONS_BUTTON)
 
-        # Upload workbook with nested list of pairs metadata
+        # Document and upload workbook with nested list of pairs metadata
+        self.document_file(
+            WORKBOOK_EXAMPLE_4,
+            "Example workbook with paired URLs and multiple list identifier columns for nested list of pairs import",
+        )
         self.workbook_upload(WORKBOOK_EXAMPLE_4)
 
         self.document(DOC_EXAMPLE_4_MAPPED)
