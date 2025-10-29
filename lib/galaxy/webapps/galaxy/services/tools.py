@@ -331,6 +331,7 @@ class ToolsService(ServiceBase):
         input_format = cast(Literal["legacy", "21.01"], input_format)
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
+        tags = payload.get("__tags")
         vars = tool.handle_input(
             trans,
             incoming,
@@ -339,6 +340,7 @@ class ToolsService(ServiceBase):
             input_format=input_format,
             preferred_object_store_id=preferred_object_store_id,
             credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
+            tags=tags,
         )
 
         new_pja_flush = False

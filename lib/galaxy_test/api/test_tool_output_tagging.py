@@ -27,7 +27,6 @@ class TestToolOutputTaggingApi(ApiTestCase):
             "history_id": history_id,
             "inputs": {
                 "input1": {"values": [{"src": "hda", "id": hda["id"]}]},
-                "__tags": ["t1", "t2"],
             },
             "input_format": "21.01",
             "__tags": ["t1", "t2"],
@@ -54,7 +53,6 @@ class TestToolOutputTaggingApi(ApiTestCase):
                     "batch": True,
                     "values": [{"src": "hdca", "id": hdca["id"]}],
                 },
-                "__tags": ["m1", "m2"],
             },
             "input_format": "21.01",
             "__tags": ["m1", "m2"],
