@@ -128,7 +128,7 @@
                             <span
                                 class="shrinked-description"
                                 :title="getMessage(row.item)"
-                                v-html="linkify(sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
+                                v-html="linkify(purify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
                             </span>
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
@@ -137,7 +137,7 @@
                             </a>
                         </div>
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>
+                        <div v-else v-html="linkify(purify.sanitize(getMessage(row.item)))"></div>
                     </div>
                 </div>
             </template>
@@ -280,7 +280,7 @@ import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries
 import UtcDate from "@/components/UtcDate.vue";
 import { usePersistentRef } from "@/composables/persistentRef";
 import { Toast } from "@/composables/toast";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 import { getAppRoot } from "@/onload/loadConfig";
 import { mapState } from "pinia";
