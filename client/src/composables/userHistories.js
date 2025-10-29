@@ -1,4 +1,4 @@
-import { useHistoryStore } from "stores/historyStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { computed, unref, watch } from "vue";
 
 export function useUserHistories(user) {

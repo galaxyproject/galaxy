@@ -3,7 +3,7 @@ import Backbone from "backbone";
 import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
-import { useHistoryStore } from "stores/historyStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import _ from "underscore";
 import Modal from "@/utils/modal";
 

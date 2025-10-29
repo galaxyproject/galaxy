@@ -1,5 +1,5 @@
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
-import { useHistoryStore } from "stores/historyStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { appendVueComponent } from "@/utils/mountVueComponent";
 
 import { uploadPayload } from "@/utils/upload-payload.js";
