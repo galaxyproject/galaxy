@@ -6,6 +6,8 @@ requires-python = ">=3.9"
 dependencies = []
 
 [tool.uv]
+# Workaround for https://github.com/python/mypy/issues/13392 taken from https://github.com/astral-sh/uv/issues/3898
+config-settings = { editable_mode = "compat" }
 package = false
 
 [tool.uv.sources]
