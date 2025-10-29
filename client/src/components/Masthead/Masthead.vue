@@ -1,20 +1,21 @@
 <script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
 import {
     getOIDCIdpsWithRegistration,
     isOnlyOneOIDCProviderConfigured,
     redirectToSingleProvider,
 } from "@/components/User/ExternalIdentities/ExternalIDHelper";
-import { storeToRefs } from "pinia";
-import { userLogout } from "@/utils/logout";
-import { withPrefix } from "@/utils/redirect";
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
-
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
+import { userLogout } from "@/utils/logout";
+import { withPrefix } from "@/utils/redirect";
 
 import { loadMastheadWebhooks } from "./_webhooks";
+
 import MastheadDropdown from "./MastheadDropdown.vue";
 import MastheadItem from "./MastheadItem.vue";
 import QuotaMeter from "./QuotaMeter.vue";

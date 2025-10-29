@@ -31,6 +31,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 import HelpText from "@/components/Help/HelpText.vue";
 
 library.add(faCompressAlt, faExpandAlt);

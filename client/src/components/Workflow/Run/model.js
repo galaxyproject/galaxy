@@ -1,5 +1,6 @@
-import { visitInputs } from "@/components/Form/utilities";
 import _ from "underscore";
+
+import { visitInputs } from "@/components/Form/utilities";
 import { isEmpty } from "@/utils/utils";
 
 export class WorkflowRunModel {

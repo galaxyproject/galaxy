@@ -606,14 +606,25 @@
 
 <script>
 import HotTable from "@handsontable/vue";
-import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
-import { fetch, fetchJobErrorMessage } from "@/api/tools";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import _ from "underscore";
+import Vue from "vue";
+
+import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
+import { fetch, fetchJobErrorMessage } from "@/api/tools";
+import RuleDefs from "@/components/RuleBuilder/rule-definitions";
+import UploadUtils from "@/components/Upload/utils";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useHistoryStore } from "@/stores/historyStore";
+import _l from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { startWatchingHistory } from "@/watch/watchHistoryProvided";
+
+import GButton from "./BaseComponents/GButton.vue";
 import ColumnSelector from "@/components/RuleBuilder/ColumnSelector.vue";
 import IdentifierDisplay from "@/components/RuleBuilder/IdentifierDisplay.vue";
 import RegularExpressionInput from "@/components/RuleBuilder/RegularExpressionInput.vue";
-import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 import RuleComponent from "@/components/RuleBuilder/RuleComponent.vue";
 import RuleDisplay from "@/components/RuleBuilder/RuleDisplay.vue";
 import RuleGrid from "@/components/RuleBuilder/RuleGrid.vue";
@@ -625,17 +636,6 @@ import SavedRulesSelector from "@/components/RuleBuilder/SavedRulesSelector.vue"
 import SaveRules from "@/components/RuleBuilder/SaveRules.vue";
 import SelectBasic from "@/components/RuleBuilder/SelectBasic.vue";
 import StateDiv from "@/components/RuleBuilder/StateDiv.vue";
-import UploadUtils from "@/components/Upload/utils";
-import { getAppRoot } from "@/onload/loadConfig";
-import { useHistoryStore } from "@/stores/historyStore";
-import _ from "underscore";
-import _l from "@/utils/localization";
-import Vue from "vue";
-
-import { errorMessageAsString } from "@/utils/simple-error";
-import { startWatchingHistory } from "@/watch/watchHistoryProvided";
-
-import GButton from "./BaseComponents/GButton.vue";
 import TooltipOnHover from "@/components/TooltipOnHover.vue";
 
 Vue.use(BootstrapVue);

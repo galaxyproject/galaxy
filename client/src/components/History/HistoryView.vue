@@ -54,7 +54,6 @@ import { useUserStore } from "@/stores/userStore";
 import CollectionPanel from "./CurrentCollection/CollectionPanel.vue";
 import HistoryPanel from "./CurrentHistory/HistoryPanel.vue";
 import CopyModal from "./Modals/CopyModal.vue";
-
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HistoryOptions from "@/components/History/HistoryOptions.vue";

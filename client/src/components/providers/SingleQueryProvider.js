@@ -1,4 +1,5 @@
 import hash from "object-hash";
+
 import { LastQueue } from "@/utils/lastQueue";
 
 import { HasAttributesMixin } from "./utils";

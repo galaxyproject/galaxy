@@ -1,4 +1,10 @@
 import { getGalaxyInstance } from "@/app";
+import adminFormsGridConfig from "@/components/Grid/configs/adminForms";
+import adminGroupsGridConfig from "@/components/Grid/configs/adminGroups";
+import adminQuotasGridConfig from "@/components/Grid/configs/adminQuotas";
+import adminRolesGridConfig from "@/components/Grid/configs/adminRoles";
+import adminUsersGridConfig from "@/components/Grid/configs/adminUsers";
+
 import AdminHome from "@/components/admin/AdminHome.vue";
 import DataManager from "@/components/admin/DataManager/DataManager.vue";
 import DataManagerJob from "@/components/admin/DataManager/DataManagerJob.vue";
@@ -18,11 +24,6 @@ import ResetMetadata from "@/components/admin/ResetMetadata.vue";
 import RoleForm from "@/components/admin/RoleForm.vue";
 import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
-import adminFormsGridConfig from "@/components/Grid/configs/adminForms";
-import adminGroupsGridConfig from "@/components/Grid/configs/adminGroups";
-import adminQuotasGridConfig from "@/components/Grid/configs/adminQuotas";
-import adminRolesGridConfig from "@/components/Grid/configs/adminRoles";
-import adminUsersGridConfig from "@/components/Grid/configs/adminUsers";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridList from "@/components/Grid/GridList.vue";
 import RegisterForm from "@/components/Register/RegisterForm.vue";

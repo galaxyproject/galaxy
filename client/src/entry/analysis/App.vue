@@ -47,19 +47,19 @@
     </div>
 </template>
 <script>
-import { getGalaxyInstance } from "@/app";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import Toast from "@/components/Toast";
-import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
-import { setGlobalUploadModal } from "@/composables/globalUploadModal";
-import { setToastComponentRef } from "@/composables/toast";
-import { getAppRoot } from "@/onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import short from "@/components/plugins/short";
+import Toast from "@/components/Toast";
+import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
+import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
+import { setToastComponentRef } from "@/composables/toast";
+import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";

@@ -24,11 +24,13 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import UtcDate from "@/components/UtcDate.vue";
-import _l from "@/utils/localization";
 import Vue from "vue";
 
+import _l from "@/utils/localization";
+
 import { MAPPING_TARGETS, RULES } from "./rule-definitions";
+
+import UtcDate from "@/components/UtcDate.vue";
 
 Vue.use(BootstrapVue);
 export default {

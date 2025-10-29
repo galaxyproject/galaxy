@@ -19,8 +19,8 @@
 </template>
 <script>
 import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
-import DependencyIndexWrapper from "./DependencyIndexWrapper.vue";
 
+import DependencyIndexWrapper from "./DependencyIndexWrapper.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 export default {

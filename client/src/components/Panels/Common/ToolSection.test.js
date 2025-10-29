@@ -1,7 +1,8 @@
 import { mount } from "@vue/test-utils";
-import { useConfig } from "@/composables/config";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+
+import { useConfig } from "@/composables/config";
 
 import ToolSection from "./ToolSection.vue";
 

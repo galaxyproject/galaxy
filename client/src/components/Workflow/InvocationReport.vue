@@ -11,13 +11,14 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import Markdown from "@/components/Markdown/Markdown.vue";
-import { Toast } from "@/composables/toast";
-import { withPrefix } from "@/utils/redirect";
-import { urlData } from "@/utils/url";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { Toast } from "@/composables/toast";
+import { withPrefix } from "@/utils/redirect";
+import { urlData } from "@/utils/url";
+
+import Markdown from "@/components/Markdown/Markdown.vue";
 
 Vue.use(BootstrapVue);
 

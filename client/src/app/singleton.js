@@ -3,6 +3,7 @@
  */
 
 import config from "config";
+
 import { serverPath } from "@/utils/serverPath";
 
 import { GalaxyApp } from "./galaxy";

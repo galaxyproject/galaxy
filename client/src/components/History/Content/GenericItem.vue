@@ -30,18 +30,18 @@
 </template>
 
 <script>
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import { Toast } from "@/composables/toast";
 import { mapActions } from "pinia";
 
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { DatasetCollectionProvider, DatasetProvider } from "@/components/providers";
 import { DatasetCollectionElementProvider } from "@/components/providers/storeProviders";
+import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ContentItem from "./ContentItem.vue";
 import GenericElement from "./GenericElement.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {

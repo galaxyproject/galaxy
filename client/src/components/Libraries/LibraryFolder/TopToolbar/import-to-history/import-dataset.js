@@ -1,8 +1,9 @@
 import Backbone from "backbone";
-import { Toast } from "@/composables/toast";
 import $ from "jquery";
-import { getAppRoot } from "@/onload/loadConfig";
 import _ from "underscore";
+
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 import Modal from "@/utils/modal";
 

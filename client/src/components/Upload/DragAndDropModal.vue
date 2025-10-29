@@ -4,11 +4,11 @@
     with data-galaxy-file-drop-target - see fileDrop composable for more information.
 -->
 <script setup>
+import { computed, ref, watch } from "vue";
+
 import { setIframeEvents } from "@/components/Upload/utils";
 import { useFileDrop } from "@/composables/fileDrop";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
-import { computed, ref, watch } from "vue";
-
 import { useToast } from "@/composables/toast";
 
 const modalContentElement = ref(null);

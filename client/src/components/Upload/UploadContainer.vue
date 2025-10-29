@@ -1,7 +1,10 @@
 <script setup>
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref } from "vue";
+
+import { canMutateHistory } from "@/api";
 import { getDatatypesMapper } from "@/components/Datatypes";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import {
     AUTO_EXTENSION,
     DEFAULT_DBKEY,
@@ -9,10 +12,6 @@ import {
     getUploadDatatypes,
     getUploadDbKeys,
 } from "@/components/Upload/utils";
-import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
-
-import { canMutateHistory } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
@@ -20,6 +19,7 @@ import { uploadPayload } from "@/utils/upload-payload.js";
 import CompositeBox from "./CompositeBox.vue";
 import DefaultBox from "./DefaultBox.vue";
 import RulesInput from "./RulesInput.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps({
     auto: {

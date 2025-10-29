@@ -93,13 +93,13 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "@/app";
 import BootstrapVue from "bootstrap-vue";
-import { Toast } from "@/composables/toast";
 import purify from "dompurify";
-import { userLogout } from "@/utils/logout";
 import Vue from "vue";
 
+import { getGalaxyInstance } from "@/app";
+import { Toast } from "@/composables/toast";
+import { userLogout } from "@/utils/logout";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";

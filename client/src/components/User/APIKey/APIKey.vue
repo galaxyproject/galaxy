@@ -1,12 +1,13 @@
 <script setup>
-import { getGalaxyInstance } from "@/app";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import { ref } from "vue";
 
-import APIKeyItem from "./APIKeyItem.vue";
+import { getGalaxyInstance } from "@/app";
+
 import svc from "./model/service";
 
+import APIKeyItem from "./APIKeyItem.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const apiKey = ref(null);
 const loading = ref(false);

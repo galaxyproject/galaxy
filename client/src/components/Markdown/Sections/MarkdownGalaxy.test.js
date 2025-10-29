@@ -4,9 +4,9 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import { withPrefix } from "@/utils/redirect";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { withPrefix } from "@/utils/redirect";
 
 import MountTarget from "./MarkdownGalaxy.vue";
 
