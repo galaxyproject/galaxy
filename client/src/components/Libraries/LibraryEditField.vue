@@ -66,7 +66,7 @@ export default {
         };
     },
     methods: {
-        sanitize,
+        purify,
         updateValue(value) {
             this.$emit("update:changedValue", value);
         },
