@@ -34,8 +34,8 @@
 </template>
 
 <script>
-import SelectBasic from "components/RuleBuilder/SelectBasic";
-import _l from "utils/localization";
+import SelectBasic from "@/components/RuleBuilder/SelectBasic";
+import _l from "@/utils/localization";
 import Vue from "vue";
 
 export default {

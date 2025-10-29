@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { useToast } from "composables/toast";
+import { useToast } from "@/composables/toast";
 import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
 
 import { normalizeTag, useUserTagsStore } from "@/stores/userTagsStore";

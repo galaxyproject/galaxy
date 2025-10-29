@@ -2,7 +2,7 @@
 import axios from "axios";
 import { mapActions, mapState } from "pinia";
 import { useDbKeyStore } from "stores/dbKeyStore";
-import { prependPath } from "utils/redirect";
+import { prependPath } from "@/utils/redirect";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
 

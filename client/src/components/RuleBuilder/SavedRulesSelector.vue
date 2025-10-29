@@ -24,8 +24,8 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import UtcDate from "components/UtcDate";
-import _l from "utils/localization";
+import UtcDate from "@/components/UtcDate";
+import _l from "@/utils/localization";
 import Vue from "vue";
 
 import { MAPPING_TARGETS, RULES } from "./rule-definitions";

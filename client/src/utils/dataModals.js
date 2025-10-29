@@ -1,8 +1,8 @@
-import { FilesDialog } from "components/FilesDialog";
+import { FilesDialog } from "@/components/FilesDialog";
 import { useHistoryStore } from "stores/historyStore";
-import { appendVueComponent } from "utils/mountVueComponent";
+import { appendVueComponent } from "@/utils/mountVueComponent";
 
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
+import DatasetCollectionDialog from "@/components/SelectionDialog/DatasetCollectionDialog.vue";
 
 /**
  * Opens a modal dialog for dataset collection selection

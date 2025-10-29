@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { useConfig } from "composables/config";
+import { useConfig } from "@/composables/config";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 

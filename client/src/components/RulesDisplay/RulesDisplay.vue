@@ -17,7 +17,7 @@
     </div>
 </template>
 <script>
-import RuleDefs from "components/RuleBuilder/rule-definitions";
+import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 
 import IdentifierDisplayPreview from "./IdentifierDisplayPreview";
 import RuleDisplayPreview from "./RuleDisplayPreview";

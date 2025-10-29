@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { waitOnJob } from "components/JobStates/wait";
+import { waitOnJob } from "@/components/JobStates/wait";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 

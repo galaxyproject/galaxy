@@ -55,7 +55,7 @@
 
 <script>
 import { storeToRefs } from "pinia";
-import Utils from "utils/utils";
+import Utils from "@/utils/utils";
 import { ref, toRef, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";

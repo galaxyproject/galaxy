@@ -91,10 +91,10 @@
 
 <script>
 import { BAlert } from "bootstrap-vue";
-import ButtonSpinner from "components/Common/ButtonSpinner";
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import FormElement from "components/Form/FormElement";
+import ButtonSpinner from "@/components/Common/ButtonSpinner";
+import FormCard from "@/components/Form/FormCard";
+import FormDisplay from "@/components/Form/FormDisplay";
+import FormElement from "@/components/Form/FormElement";
 import { mapState } from "pinia";
 
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";

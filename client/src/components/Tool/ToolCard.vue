@@ -2,10 +2,10 @@
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BModal, BPopover } from "bootstrap-vue";
-import Heading from "components/Common/Heading";
-import FormMessage from "components/Form/FormMessage";
-import ToolFooter from "components/Tool/ToolFooter";
-import ToolHelp from "components/Tool/ToolHelp";
+import Heading from "@/components/Common/Heading";
+import FormMessage from "@/components/Form/FormMessage";
+import ToolFooter from "@/components/Tool/ToolFooter";
+import ToolHelp from "@/components/Tool/ToolHelp";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -23,9 +23,9 @@ import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
-import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
-import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
-import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
+import ToolOptionsButton from "@/components/Tool/Buttons/ToolOptionsButton.vue";
+import ToolVersionsButton from "@/components/Tool/Buttons/ToolVersionsButton.vue";
 
 const props = defineProps({
     id: {

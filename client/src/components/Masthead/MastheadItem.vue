@@ -1,6 +1,6 @@
 <script setup>
 import { BNavItem, VBTooltipPlugin } from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
+import { withPrefix } from "@/utils/redirect";
 import Vue from "vue";
 
 Vue.use(VBTooltipPlugin);

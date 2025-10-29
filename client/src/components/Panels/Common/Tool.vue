@@ -33,7 +33,7 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import ariaAlert from "utils/ariaAlert";
+import ariaAlert from "@/utils/ariaAlert";
 import Vue from "vue";
 
 Vue.use(BootstrapVue);

@@ -52,7 +52,7 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 import Vue from "vue";
 
 import JobOutputs from "../JobInformation/JobOutputs";

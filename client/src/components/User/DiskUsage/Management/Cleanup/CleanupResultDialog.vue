@@ -5,7 +5,7 @@ import localize from "@/utils/localization";
 
 import type { CleanupResult } from "./model";
 
-import Alert from "components/Alert.vue";
+import Alert from "@/components/Alert.vue";
 
 interface CleanupResultDialogProps {
     result?: CleanupResult;

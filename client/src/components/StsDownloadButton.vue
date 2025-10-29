@@ -23,9 +23,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
-import { withPrefix } from "utils/redirect";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+import { withPrefix } from "@/utils/redirect";
 
 import { useConfig } from "@/composables/config";
 

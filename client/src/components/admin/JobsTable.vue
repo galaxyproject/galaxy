@@ -70,9 +70,9 @@
 </template>
 
 <script>
-import JobDetails from "components/JobInformation/JobDetails";
-import LoadingSpan from "components/LoadingSpan";
-import UtcDate from "components/UtcDate";
+import JobDetails from "@/components/JobInformation/JobDetails";
+import LoadingSpan from "@/components/LoadingSpan";
+import UtcDate from "@/components/UtcDate";
 
 export default {
     components: { UtcDate, JobDetails, LoadingSpan },

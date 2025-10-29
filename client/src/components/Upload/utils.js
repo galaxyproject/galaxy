@@ -1,7 +1,7 @@
 /*
  * Utilities for working with upload data structures.
  */
-import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "@/api";
 import { getDbKeys } from "@/api/dbKeys";

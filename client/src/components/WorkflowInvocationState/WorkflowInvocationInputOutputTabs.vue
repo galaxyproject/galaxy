@@ -10,7 +10,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import Heading from "../Common/Heading.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowInvocationInputs from "./WorkflowInvocationInputs.vue";
-import GenericHistoryItem from "components/History/Content/GenericItem.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 const OUTPUTS_NOT_AVAILABLE_YET_MSG =
     "Either no outputs have been produced yet, or no steps were checked to " +

@@ -16,11 +16,11 @@
 </template>
 
 <script>
-import { getDatatypesMapper } from "components/Datatypes";
-import { getToolPredictions } from "components/Workflow/Editor/modules/services";
-import { getCompatibleRecommendations } from "components/Workflow/Editor/modules/utilities";
+import { getDatatypesMapper } from "@/components/Datatypes";
+import { getToolPredictions } from "@/components/Workflow/Editor/modules/services";
+import { getCompatibleRecommendations } from "@/components/Workflow/Editor/modules/utilities";
 import * as d3 from "d3";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 
 import { getShortToolId } from "@/utils/tool";
 

@@ -141,7 +141,7 @@ import { computed } from "vue";
 
 import { useConfig } from "@/composables/config";
 
-import Heading from "components/Common/Heading.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 library.add(faServer, faUser, faWrench);
 

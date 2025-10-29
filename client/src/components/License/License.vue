@@ -18,8 +18,8 @@
 </template>
 
 <script>
-import ExternalLink from "components/ExternalLink";
-import LoadingSpan from "components/LoadingSpan";
+import ExternalLink from "@/components/ExternalLink";
+import LoadingSpan from "@/components/LoadingSpan";
 
 import { GalaxyApi } from "@/api";
 

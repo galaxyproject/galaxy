@@ -1,4 +1,4 @@
-import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
+import { SingleQueryProvider } from "@/components/providers/SingleQueryProvider";
 
 import { fetchCollectionDetails, fetchCollectionSummary } from "@/api/datasetCollections";
 

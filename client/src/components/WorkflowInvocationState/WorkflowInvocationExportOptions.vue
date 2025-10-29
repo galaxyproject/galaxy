@@ -1,6 +1,6 @@
 <script setup>
 import { BCard } from "bootstrap-vue";
-import { useConfig } from "composables/config";
+import { useConfig } from "@/composables/config";
 
 import InvocationExportWizard from "@/components/Workflow/Invocation/Export/InvocationExportWizard.vue";
 import BioComputeObjectExportCard from "@/components/Workflow/Invocation/Export/Plugins/BioComputeObject/BioComputeObjectExportCard.vue";

@@ -1,5 +1,5 @@
-import _l from "utils/localization";
-import Modal from "utils/modal";
+import _l from "@/utils/localization";
+import Modal from "@/utils/modal";
 import Vue from "vue";
 
 import { rawToTable } from "@/components/Collections/tables";

@@ -32,8 +32,8 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ToolSection from "components/Panels/Common/ToolSection";
-import { getAppRoot } from "onload/loadConfig";
+import ToolSection from "@/components/Panels/Common/ToolSection";
+import { getAppRoot } from "@/onload/loadConfig";
 import Vue from "vue";
 
 import { fromSteps } from "@/components/Workflow/Editor/modules/labels";

@@ -1,10 +1,10 @@
 import Backbone from "backbone";
-import { Toast } from "composables/toast";
+import { Toast } from "@/composables/toast";
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 import _ from "underscore";
-import _l from "utils/localization";
-import Modal from "utils/modal";
+import _l from "@/utils/localization";
+import Modal from "@/utils/modal";
 
 import { updateProgress } from "../delete-selected";
 import mod_library_model from "../library-model";

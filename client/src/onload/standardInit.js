@@ -12,7 +12,7 @@
 
 import { combineLatest } from "rxjs";
 import { map } from "rxjs/operators";
-import { serverPath } from "utils/serverPath";
+import { serverPath } from "@/utils/serverPath";
 
 import { defaultAppFactory } from "./defaultAppFactory";
 import { globalInits } from "./globalInits";

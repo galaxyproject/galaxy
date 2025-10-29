@@ -1,5 +1,5 @@
 <script setup>
-import { useFormattedToolHelp } from "composables/formattedToolHelp";
+import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
 
 const props = defineProps({
     content: {

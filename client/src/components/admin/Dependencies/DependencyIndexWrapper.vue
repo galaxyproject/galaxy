@@ -13,7 +13,7 @@
     </div>
 </template>
 <script>
-import LoadingSpan from "components/LoadingSpan";
+import LoadingSpan from "@/components/LoadingSpan";
 
 export default {
     components: {

@@ -16,7 +16,7 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
+import LoadingSpan from "@/components/LoadingSpan";
 import Vue from "vue";
 
 import { Services } from "../services";
