@@ -14,7 +14,6 @@ from typing import (
     Any,
     cast,
     Optional,
-    TYPE_CHECKING,
 )
 
 import requests
@@ -36,9 +35,9 @@ from galaxy.selenium.has_driver_protocol import (
 from galaxy.selenium.navigates_galaxy import (
     exception_seems_to_indicate_transition,
     galaxy_timeout_handler,
-    NavigatesGalaxy,
     retry_during_transitions,
 )
+from galaxy.selenium.navigates_galaxy_mixin import NavigatesGalaxyMixin
 from galaxy.selenium.stories import (
     NoopStory,
     Story,
@@ -764,12 +763,6 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
 
     def setup_shared_state(self):
         """Override this to setup shared data for tests that gets initialized only once."""
-
-
-if TYPE_CHECKING:
-    NavigatesGalaxyMixin = NavigatesGalaxy
-else:
-    NavigatesGalaxyMixin = object
 
 
 class UsesLibraryAssertions(NavigatesGalaxyMixin):
