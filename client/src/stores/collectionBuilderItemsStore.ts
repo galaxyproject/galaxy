@@ -7,7 +7,7 @@ import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { filtersToQueryValues } from "@/components/History/model/queries";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-const DEFAULT_FILTERS = { visible: true, deleted: false };
+const DEFAULT_FILTERS: Record<string, any> = { visible: true, deleted: false };
 
 /**
  * Fetches datasets for the Collection Builder modal. It caches the datasets for each filter text.
