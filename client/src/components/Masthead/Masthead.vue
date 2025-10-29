@@ -6,10 +6,10 @@ import {
     getOIDCIdpsWithRegistration,
     isOnlyOneOIDCProviderConfigured,
     redirectToSingleProvider,
-} from "components/User/ExternalIdentities/ExternalIDHelper";
+} from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { storeToRefs } from "pinia";
-import { userLogout } from "utils/logout";
-import { withPrefix } from "utils/redirect";
+import { userLogout } from "@/utils/logout";
+import { withPrefix } from "@/utils/redirect";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 

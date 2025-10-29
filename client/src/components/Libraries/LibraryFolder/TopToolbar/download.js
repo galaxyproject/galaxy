@@ -1,4 +1,4 @@
-import { Toast } from "composables/toast";
+import { Toast } from "@/composables/toast";
 import $ from "jquery";
 import { getAppRoot } from "onload";
 

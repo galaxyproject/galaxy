@@ -3,7 +3,7 @@
 */
 
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 import * as tus from "tus-js-client";
 
 /**

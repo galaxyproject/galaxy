@@ -1,4 +1,4 @@
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 import { computed, unref } from "vue";
 
 /**

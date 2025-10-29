@@ -1,6 +1,6 @@
 import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 
 export function waitOnJob(jobId, onStateUpdate = null, interval = 1000) {
     // full=true to capture standard error on last iteration for building

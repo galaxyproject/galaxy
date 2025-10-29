@@ -1,4 +1,4 @@
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 
 import ContainerDescription from "./ContainerDescription";
 import ContainerResolver from "./ContainerResolver";

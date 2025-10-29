@@ -1,7 +1,7 @@
-import { getGalaxyInstance } from "app";
+import { getGalaxyInstance } from "@/app";
 import axios from "axios";
-import { withPrefix } from "utils/redirect";
-import { rethrowSimple } from "utils/simple-error";
+import { withPrefix } from "@/utils/redirect";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { toSimple } from "./Editor/modules/model";
 

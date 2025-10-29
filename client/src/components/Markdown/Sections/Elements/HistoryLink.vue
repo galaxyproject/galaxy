@@ -3,7 +3,7 @@ import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 //@ts-ignore
-import { errorMessageAsString } from "utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 import { computed, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";

@@ -1,10 +1,10 @@
-import LibrariesList from "components/Libraries/LibrariesList";
-import LibraryFolder from "components/Libraries/LibraryFolder/LibraryFolder";
-import LibraryDataset from "components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset";
-import LibraryFolderDatasetPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions";
-import LibraryFolderPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions";
-import LibraryPermissions from "components/Libraries/LibraryPermissions/LibraryPermissions";
-import Base from "entry/analysis/modules/Base";
+import LibrariesList from "@/components/Libraries/LibrariesList";
+import LibraryFolder from "@/components/Libraries/LibraryFolder/LibraryFolder";
+import LibraryDataset from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset";
+import LibraryFolderDatasetPermissions from "@/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions";
+import LibraryFolderPermissions from "@/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions";
+import LibraryPermissions from "@/components/Libraries/LibraryPermissions/LibraryPermissions";
+import Base from "@/entry/analysis/modules/Base";
 
 export default [
     {

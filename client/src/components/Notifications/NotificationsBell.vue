@@ -7,7 +7,7 @@ import { useRouter } from "vue-router/composables";
 
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
-import Popper from "components/Popper/Popper.vue";
+import Popper from "@/components/Popper/Popper.vue";
 
 defineProps({
     tooltipPlacement: {

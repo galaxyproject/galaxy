@@ -95,13 +95,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ImportSuccess from "components/ImportSuccess";
-import JobError from "components/JobInformation/JobError";
-import { waitOnJob } from "components/JobStates/wait";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
-import { errorMessageAsString } from "utils/simple-error";
-import { capitalizeFirstLetter } from "utils/strings";
+import ImportSuccess from "@/components/ImportSuccess";
+import JobError from "@/components/JobInformation/JobError";
+import { waitOnJob } from "@/components/JobStates/wait";
+import LoadingSpan from "@/components/LoadingSpan";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 import Vue, { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
@@ -109,7 +109,7 @@ import { fetchFileSources } from "@/api/remoteFiles";
 import ExternalLink from "./ExternalLink";
 
 import GButton from "./BaseComponents/GButton.vue";
-import FilesInput from "components/FilesDialog/FilesInput.vue";
+import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 
 Vue.use(BootstrapVue);
 

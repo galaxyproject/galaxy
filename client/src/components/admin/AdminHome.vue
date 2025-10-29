@@ -140,7 +140,7 @@ import { computed } from "vue";
 
 import { useConfig } from "@/composables/config";
 
-import Heading from "components/Common/Heading.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const { config, isConfigLoaded } = useConfig();
 

@@ -32,11 +32,11 @@
 <script>
 import { faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import FormMessage from "components/Form/FormMessage";
-import { visitInputs } from "components/Form/utilities";
-import WorkflowIcons from "components/Workflow/icons";
+import FormCard from "@/components/Form/FormCard";
+import FormDisplay from "@/components/Form/FormDisplay";
+import FormMessage from "@/components/Form/FormMessage";
+import { visitInputs } from "@/components/Form/utilities";
+import WorkflowIcons from "@/components/Workflow/icons";
 import { mapState } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 

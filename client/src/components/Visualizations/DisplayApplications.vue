@@ -37,7 +37,7 @@
     </div>
 </template>
 <script>
-import { DatasetProvider } from "components/providers";
+import { DatasetProvider } from "@/components/providers";
 
 export default {
     components: {

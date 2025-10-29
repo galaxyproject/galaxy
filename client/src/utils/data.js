@@ -1,12 +1,12 @@
-import { useGlobalUploadModal } from "composables/globalUploadModal";
+import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useHistoryStore } from "stores/historyStore";
-import { appendVueComponent } from "utils/mountVueComponent";
+import { appendVueComponent } from "@/utils/mountVueComponent";
 
 import { uploadPayload } from "@/utils/upload-payload.js";
 import { uploadSubmit } from "@/utils/upload-submit.js";
 import { startWatchingHistory } from "@/watch/watchHistory";
 
-import DataDialog from "components/DataDialog/DataDialog.vue";
+import DataDialog from "@/components/DataDialog/DataDialog.vue";
 
 /**
  * Opens a modal dialog for data selection

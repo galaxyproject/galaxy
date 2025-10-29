@@ -7,7 +7,7 @@ import Heading from "../Common/Heading.vue";
 import CodeRow from "./CodeRow.vue";
 import JobInformation from "./JobInformation.vue";
 import JobMetrics from "@/components/JobMetrics/JobMetrics.vue";
-import JobParameters from "components/JobParameters/JobParameters.vue";
+import JobParameters from "@/components/JobParameters/JobParameters.vue";
 
 const props = defineProps<{
     job?: JobBaseModel;

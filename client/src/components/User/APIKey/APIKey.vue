@@ -1,8 +1,8 @@
 <script setup>
 import { faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
-import LoadingSpan from "components/LoadingSpan";
+import { getGalaxyInstance } from "@/app";
+import LoadingSpan from "@/components/LoadingSpan";
 import { ref } from "vue";
 
 import APIKeyItem from "./APIKeyItem";

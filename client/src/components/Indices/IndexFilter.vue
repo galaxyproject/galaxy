@@ -43,7 +43,7 @@
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
-import DebouncedInput from "components/DebouncedInput";
+import DebouncedInput from "@/components/DebouncedInput";
 
 /**
  * Component for the search/filter button on the top of Galaxy object index grids.

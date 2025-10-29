@@ -1,4 +1,4 @@
-import IndexFilter from "components/Indices/IndexFilter";
+import IndexFilter from "@/components/Indices/IndexFilter";
 
 export default {
     components: {

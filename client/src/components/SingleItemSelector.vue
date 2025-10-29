@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import LoadingSpan from "components/LoadingSpan";
+import LoadingSpan from "@/components/LoadingSpan";
 import Multiselect from "vue-multiselect";
 
 /** A simple item selector that allows searching/filtering of the available items.

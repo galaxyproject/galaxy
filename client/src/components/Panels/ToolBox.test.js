@@ -1,8 +1,8 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import toolsList from "components/ToolsView/testData/toolsList";
-import toolsListInPanel from "components/ToolsView/testData/toolsListInPanel";
-import { useConfig } from "composables/config";
+import toolsList from "@/components/ToolsView/testData/toolsList";
+import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel";
+import { useConfig } from "@/composables/config";
 
 import { createSortedResultPanel, filterTools } from "./utilities";
 

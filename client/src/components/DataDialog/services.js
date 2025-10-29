@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 
 /** Data populator traverses raw server responses **/
 export class Services {

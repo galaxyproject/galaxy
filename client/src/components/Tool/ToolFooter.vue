@@ -71,12 +71,12 @@
 <script>
 import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getCitations } from "components/Citation/services";
-import License from "components/License/License";
-import Creators from "components/SchemaOrg/Creators";
-import { copy } from "utils/clipboard";
+import { getCitations } from "@/components/Citation/services";
+import License from "@/components/License/License";
+import Creators from "@/components/SchemaOrg/Creators";
+import { copy } from "@/utils/clipboard";
 
-import CitationItem from "components/Citation/CitationItem.vue";
+import CitationItem from "@/components/Citation/CitationItem.vue";
 
 export default {
     components: {

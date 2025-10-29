@@ -84,7 +84,7 @@
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
+import { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { storeToRefs } from "pinia";
 import Vue from "vue";
 

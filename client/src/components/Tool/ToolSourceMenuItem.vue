@@ -1,7 +1,7 @@
 <script setup>
 import { faEye } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useConfig } from "composables/config";
+import { useConfig } from "@/composables/config";
 import { storeToRefs } from "pinia";
 
 import { useUserStore } from "@/stores/userStore";

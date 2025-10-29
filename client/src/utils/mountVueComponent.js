@@ -3,7 +3,7 @@
 // the same plugins and events.
 
 import BootstrapVue from "bootstrap-vue";
-import { localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
+import { localizationPlugin, vueRxShortcutPlugin } from "@/components/plugins";
 import { createPinia, getActivePinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 

@@ -12,7 +12,7 @@ Vue.use(VBTooltipPlugin);
 defineProps({
     disabled: Boolean,
     id: String,
-    icon: [String, Object] as PropType<string | IconLike>, // String for legacy CSS classes, IconLike for proper imports
+    icon: Object as PropType<IconLike>,
     target: String,
     title: String,
     tooltip: String,
@@ -33,8 +33,7 @@ defineProps({
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tooltip || id }}</span>
-            <FontAwesomeIcon v-if="typeof icon === 'object'" fixed-width :icon="icon" />
-            <span v-else :class="`fa fa-fw ${icon}`" />
+            <FontAwesomeIcon fixed-width :icon="icon" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>

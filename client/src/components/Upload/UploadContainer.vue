@@ -1,14 +1,14 @@
 <script setup>
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
-import { getDatatypesMapper } from "components/Datatypes";
-import LoadingSpan from "components/LoadingSpan";
+import { getDatatypesMapper } from "@/components/Datatypes";
+import LoadingSpan from "@/components/LoadingSpan";
 import {
     AUTO_EXTENSION,
     DEFAULT_DBKEY,
     DEFAULT_EXTENSION,
     getUploadDatatypes,
     getUploadDbKeys,
-} from "components/Upload/utils";
+} from "@/components/Upload/utils";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 

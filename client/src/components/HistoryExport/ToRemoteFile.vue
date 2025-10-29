@@ -24,12 +24,12 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ExportForm from "components/Common/ExportForm";
-import JobError from "components/JobInformation/JobError";
-import { waitOnJob } from "components/JobStates/wait";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
-import { errorMessageAsString } from "utils/simple-error";
+import ExportForm from "@/components/Common/ExportForm";
+import JobError from "@/components/JobInformation/JobError";
+import { waitOnJob } from "@/components/JobStates/wait";
+import LoadingSpan from "@/components/LoadingSpan";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
 import Vue from "vue";
 
 Vue.use(BootstrapVue);

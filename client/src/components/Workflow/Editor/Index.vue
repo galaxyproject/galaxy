@@ -243,7 +243,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "bootstrap-vue";
-import { Toast } from "composables/toast";
+import { Toast } from "@/composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 

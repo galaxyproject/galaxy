@@ -39,7 +39,7 @@
 <script>
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 import { mapState } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 

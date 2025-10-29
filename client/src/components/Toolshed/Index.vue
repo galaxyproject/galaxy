@@ -27,7 +27,7 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
+import _l from "@/utils/localization";
 
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";

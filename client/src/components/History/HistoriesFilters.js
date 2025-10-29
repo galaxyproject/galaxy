@@ -1,4 +1,4 @@
-import Filtering, { compare, contains, expandNameTag, toDate } from "utils/filtering";
+import Filtering, { compare, contains, expandNameTag, toDate } from "@/utils/filtering";
 
 const validFilters = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },

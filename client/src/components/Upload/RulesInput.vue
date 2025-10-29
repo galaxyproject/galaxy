@@ -1,12 +1,12 @@
 <script setup>
 import { faEdit, faFile, faFolderOpen, faLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
+import { getGalaxyInstance } from "@/app";
 import { BAlert, BButton } from "bootstrap-vue";
-import { buildCollectionFromRules } from "components/Collections/common/buildCollectionModal";
-import { getRemoteEntries, getRemoteEntriesAt } from "components/Upload/utils";
-import { filesDialog } from "utils/dataModals";
-import { urlData } from "utils/url";
+import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
+import { getRemoteEntries, getRemoteEntriesAt } from "@/components/Upload/utils";
+import { filesDialog } from "@/utils/dataModals";
+import { urlData } from "@/utils/url";
 import { computed, ref } from "vue";
 
 import { RULES_TYPES } from "./utils.js";

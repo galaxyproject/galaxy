@@ -1,4 +1,4 @@
-import WorkflowIcons from "components/Workflow/icons";
+import WorkflowIcons from "@/components/Workflow/icons";
 import _ from "underscore";
 
 export function getStateUpgradeMessages(data) {

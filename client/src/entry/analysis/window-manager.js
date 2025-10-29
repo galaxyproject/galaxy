@@ -2,8 +2,8 @@
 import "winbox/src/css/winbox.css";
 
 import { faTh } from "@fortawesome/free-solid-svg-icons";
-import _l from "utils/localization";
-import { withPrefix } from "utils/redirect";
+import _l from "@/utils/localization";
+import { withPrefix } from "@/utils/redirect";
 import WinBox from "winbox/src/js/winbox.js";
 
 export class WindowManager {
