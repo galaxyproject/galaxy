@@ -19,6 +19,7 @@ import { showHid } from "./common/useCollectionCreator";
 import type { WhichListBuilder } from "./ListWizard/types";
 import { useAutoPairing } from "./usePairing";
 
+import LoadingSpan from "../LoadingSpan.vue";
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import WhichBuilder from "./ListWizard/WhichBuilder.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
@@ -199,16 +200,22 @@ function onRuleState(newRuleState: boolean) {
 <template>
     <div v-if="currentHistoryId">
         <div v-if="creationError">
-            <BAlert variant="danger">
+            <BAlert variant="danger" show>
                 {{ creationError }}
             </BAlert>
         </div>
         <div v-if="collectionCreated">
             <BAlert variant="success" show> Collection created and it has been added to your history. </BAlert>
         </div>
-        <div v-else-if="!selectedItems">Loading...</div>
+        <div v-else-if="!selectedItems">
+            <BAlert variant="info" show>
+                <LoadingSpan />
+            </BAlert>
+        </div>
         <div v-else-if="selectedItems.length == 0">
-            <p>Select datasets from history panel to use the Galaxy list building wizard.</p>
+            <BAlert variant="info" show>
+                Select datasets from the history panel to use the Galaxy list building wizard.
+            </BAlert>
         </div>
         <GenericWizard v-else :use="wizard" :is-busy="isBusy" :submit-button-label="buildButtonLabel" @submit="submit">
             <div v-if="wizard.isCurrent('which-builder')">
