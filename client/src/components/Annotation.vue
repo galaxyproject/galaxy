@@ -24,8 +24,9 @@
 </template>
 
 <script>
-import ClickToEdit from "./ClickToEdit.vue";
 import DebouncedInput from "./DebouncedInput";
+
+import ClickToEdit from "./ClickToEdit.vue";
 
 export default {
     components: {

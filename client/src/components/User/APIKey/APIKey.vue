@@ -1,14 +1,14 @@
 <script setup>
 import { faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "@/app";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import { ref } from "vue";
+
+import { getGalaxyInstance } from "@/app";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 import APIKeyItem from "./APIKeyItem.vue";
 import svc from "./model/service";
-
-import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const apiKey = ref(null);
 const loading = ref(false);

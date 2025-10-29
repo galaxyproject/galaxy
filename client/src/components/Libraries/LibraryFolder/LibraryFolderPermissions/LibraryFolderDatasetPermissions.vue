@@ -78,8 +78,11 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { faFile, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "@/app";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+import VueObserveVisibility from "vue-observe-visibility";
+
+import { getGalaxyInstance } from "@/app";
 import { extractRoles } from "@/components/Libraries/library-utils";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
@@ -87,8 +90,6 @@ import PermissionsInputField from "@/components/Libraries/LibraryPermissions/Per
 import { Services } from "@/components/Libraries/LibraryPermissions/services";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
-import Vue from "vue";
-import VueObserveVisibility from "vue-observe-visibility";
 
 Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);

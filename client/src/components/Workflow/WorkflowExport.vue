@@ -40,10 +40,12 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import Vue from "vue";
+
 import { withPrefix } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
-import Vue from "vue";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 Vue.use(BootstrapVue);
 

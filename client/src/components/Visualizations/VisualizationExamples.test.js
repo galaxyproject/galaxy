@@ -1,9 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
-import { useToast } from "@/composables/toast";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { ref } from "vue";
+
+import { useToast } from "@/composables/toast";
 
 import UploadExamples from "./VisualizationExamples.vue";
 

@@ -4,12 +4,14 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { useEntryPointStore } from "@/stores/entryPointStore";
-import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import InteractiveTools from "./InteractiveTools.vue";
+import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
+
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse.json";
+
+import InteractiveTools from "./InteractiveTools.vue";
 
 // Mock the rethrowSimple function to prevent test failures
 jest.mock("@/utils/simple-error", () => ({

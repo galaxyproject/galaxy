@@ -20,6 +20,7 @@
 import { faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BModal } from "bootstrap-vue";
+
 import { copy } from "@/utils/clipboard";
 
 import JobInformation from "@/components/JobInformation/JobInformation.vue";

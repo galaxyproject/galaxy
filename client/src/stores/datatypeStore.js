@@ -1,7 +1,7 @@
-import UploadUtils from "@/components/Upload/utils";
 import { defineStore } from "pinia";
 
 import { fetchDatatypeDetails } from "@/api/datatypes";
+import UploadUtils from "@/components/Upload/utils";
 
 export const useDatatypeStore = defineStore("datatypeStore", {
     state: () => ({

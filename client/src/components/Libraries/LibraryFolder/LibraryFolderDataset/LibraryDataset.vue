@@ -131,8 +131,10 @@
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import CopyToClipboard from "@/components/CopyToClipboard.vue";
+import { mapState } from "pinia";
+
 import { buildFields } from "@/components/Libraries/library-utils";
+import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import { fieldTitles } from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
@@ -141,8 +143,6 @@ import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/
 import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 import { Toast } from "@/composables/toast";
-import { mapState } from "pinia";
-
 import { useUserStore } from "@/stores/userStore";
 
 export default {

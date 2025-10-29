@@ -276,18 +276,18 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import purify from "dompurify";
+import linkifyHtml from "linkify-html";
+import { mapState } from "pinia";
+import Vue from "vue";
+
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 import UtcDate from "@/components/UtcDate.vue";
 import { usePersistentRef } from "@/composables/persistentRef";
 import { Toast } from "@/composables/toast";
-import purify from "dompurify";
-import linkifyHtml from "linkify-html";
 import { getAppRoot } from "@/onload/loadConfig";
-import { mapState } from "pinia";
-import Utils from "@/utils/utils";
-import Vue from "vue";
-
 import { useUserStore } from "@/stores/userStore";
+import Utils from "@/utils/utils";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";

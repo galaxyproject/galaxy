@@ -6,10 +6,10 @@
     </ToolSourceProvider>
 </template>
 <script>
-import Alert from "@/components/Alert.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import { ToolSourceProvider } from "@/components/providers/ToolSourceProvider";
 
+import Alert from "@/components/Alert.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolSourceDisplay from "@/components/Tool/ToolSourceDisplay.vue";
 
 export default {

@@ -38,9 +38,9 @@
 
 <script>
 import { BButton } from "bootstrap-vue";
-import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 import Heading from "../Common/Heading.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 export default {
     components: {

@@ -1,5 +1,6 @@
 import Backbone from "backbone";
 import _ from "underscore";
+
 import Utils from "@/utils/utils";
 /**
  * A plugin for initializing select2 input items.

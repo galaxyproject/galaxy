@@ -36,10 +36,11 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import { MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 import Vue from "vue";
+
+import { MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 
 Vue.use(BootstrapVue);
 

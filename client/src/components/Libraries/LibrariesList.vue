@@ -194,16 +194,16 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
+import { mapState } from "pinia";
+import Vue from "vue";
+
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "@/components/Libraries/library-utils";
 import LibraryEditField from "@/components/Libraries/LibraryEditField.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
-import { mapState } from "pinia";
-import _l from "@/utils/localization";
-import Vue from "vue";
-
 import { useUserStore } from "@/stores/userStore";
+import _l from "@/utils/localization";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";

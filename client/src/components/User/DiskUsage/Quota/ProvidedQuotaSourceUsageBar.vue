@@ -9,10 +9,10 @@
 </template>
 
 <script>
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import { QuotaSourceUsageProvider } from "./QuotaUsageProvider";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";
-import { QuotaSourceUsageProvider } from "./QuotaUsageProvider";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {

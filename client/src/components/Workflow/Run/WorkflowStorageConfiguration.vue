@@ -63,7 +63,6 @@ import { mapState } from "pinia";
 import { useConfigStore } from "@/stores/configurationStore";
 
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore.vue";
-
 import WorkflowTargetPreferredObjectStorePopover from "@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue";
 
 export default {

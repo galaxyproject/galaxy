@@ -1,5 +1,4 @@
 import { STATES } from "@/components/History/Content/model/states";
-import StatesInfo from "@/components/History/Content/model/StatesInfo.vue";
 import Filtering, {
     compare,
     contains,
@@ -9,6 +8,8 @@ import Filtering, {
     toBool,
     toDate,
 } from "@/utils/filtering";
+
+import StatesInfo from "@/components/History/Content/model/StatesInfo.vue";
 
 const excludeStates = ["empty", "failed", "upload", "placeholder", "failed_populated_state", "new_populated_state"];
 const states = Object.keys(STATES).filter((state) => !excludeStates.includes(state));

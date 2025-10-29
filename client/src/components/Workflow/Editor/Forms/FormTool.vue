@@ -55,11 +55,11 @@
 
 <script>
 import { storeToRefs } from "pinia";
-import Utils from "@/utils/utils";
 import { ref, toRef, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
+import Utils from "@/utils/utils";
 
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";

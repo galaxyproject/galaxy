@@ -1,5 +1,6 @@
-import { NON_TERMINAL_STATES } from "@/api/jobs";
 import { snakeCase } from "lodash";
+
+import { NON_TERMINAL_STATES } from "@/api/jobs";
 
 export function stateIsTerminal(result) {
     return !NON_TERMINAL_STATES.includes(result.state);

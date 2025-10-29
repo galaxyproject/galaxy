@@ -8,9 +8,10 @@
 </template>
 
 <script>
+import decodeUriComponent from "decode-uri-component";
+
 import ToolForm from "@/components/Tool/ToolForm.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
-import decodeUriComponent from "decode-uri-component";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
 export default {

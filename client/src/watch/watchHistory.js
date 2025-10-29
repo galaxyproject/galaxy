@@ -6,14 +6,14 @@
  */
 
 import { storeToRefs } from "pinia";
-import { useHistoryItemsStore } from "@/stores/historyItemsStore";
-import { useHistoryStore } from "@/stores/historyStore";
-import { loadSet } from "@/utils/setCache";
-import { urlData } from "@/utils/url";
 
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { loadSet } from "@/utils/setCache";
+import { urlData } from "@/utils/url";
 
 const limit = 1000;
 
