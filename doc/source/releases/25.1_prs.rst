@@ -1,5 +1,8 @@
 
 .. github_links
+.. _Pull Request 21185: https://github.com/galaxyproject/galaxy/pull/21185
+.. _Pull Request 21184: https://github.com/galaxyproject/galaxy/pull/21184
+.. _Pull Request 21175: https://github.com/galaxyproject/galaxy/pull/21175
 .. _Pull Request 21181: https://github.com/galaxyproject/galaxy/pull/21181
 .. _Pull Request 21159: https://github.com/galaxyproject/galaxy/pull/21159
 .. _Pull Request 21166: https://github.com/galaxyproject/galaxy/pull/21166
