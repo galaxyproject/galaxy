@@ -38,7 +38,7 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 if command -v uv >/dev/null; then
     uv venv "$TEST_ENV_DIR" --python "$TEST_PYTHON"
-    PIP="uv pip"
+    PIP="$(command -v uv) pip"
 else
     "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
     PIP="pip"
