@@ -111,7 +111,7 @@ export function useResourceWatcher<T = unknown>(
     function updateThrottle() {
         if (document.visibilityState === "visible") {
             currentPollingInterval = shortPollingInterval;
-            startWatchingResource();
+            startWatchingResourceIfNeeded();
         } else {
             currentPollingInterval = enableBackgroundPolling ? longPollingInterval : undefined;
         }
