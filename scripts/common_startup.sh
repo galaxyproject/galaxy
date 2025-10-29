@@ -112,7 +112,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${GALAXY_CONDA_PYTHON_VERSION}" "pip>=${MIN_PIP_VERSION}"
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${GALAXY_CONDA_PYTHON_VERSION}" "pip>=${MIN_PIP_VERSION}" uv
                     unset __CONDA_INFO
                 fi
                 conda_activate
