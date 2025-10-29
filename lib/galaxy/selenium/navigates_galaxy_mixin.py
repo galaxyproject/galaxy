@@ -5,10 +5,10 @@ This provides some level of type checking support despite being a bit hacky.
 
 from typing import TYPE_CHECKING
 
-from .navigates_galaxy import NavigatesGalaxy
+from .context import GalaxySeleniumContext
 
 if TYPE_CHECKING:
-    NavigatesGalaxyMixin = NavigatesGalaxy
+    NavigatesGalaxyMixin = GalaxySeleniumContext
 else:
     NavigatesGalaxyMixin = object
 
