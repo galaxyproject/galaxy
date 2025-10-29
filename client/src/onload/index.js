@@ -1,7 +1,7 @@
 // Bootstrap overwrites .tooltip() method
 import "bootstrap";
 // Galaxy core styles
-import "scss/base.scss";
+import "@/style/scss/base.scss";
 // Set up webpack's public path; nothing to import but the module has side
 // effects fixing webpack globals.
 import "./publicPath";
