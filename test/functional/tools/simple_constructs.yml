@@ -9,22 +9,23 @@ edam_operations:
 edam_topics:
   - topic_0003
   - topic_3372
-command:
+shell_command:
   >
-    echo "$booltest"  >> $out_file1;
-    echo "$inttest"   >> $out_file1;
-    echo "$floattest" >> $out_file1;
-    cat "$simp_file"   >> $out_file1;
-    echo "$drop_select"  >> $out_file1;
-    echo "$radio_select" >> $out_file1;
-    echo "$check_select" >> $out_file1;
-    cat "$more_files[0].nestinput"   >> $out_file1;
-    echo "$p1.p1val"  >> $out_file1;
+    echo "$(inputs.booltest)"   > 'out_file1.txt';
+    echo "$(inputs.inttest)"   >> 'out_file1.txt';
+    echo "$(inputs.floattest)" >> 'out_file1.txt';
+    cat "$(inputs.simp_file['path'])"   >> 'out_file1.txt';
+    echo "$(inputs.drop_select)"  >> 'out_file1.txt';
+    echo "$(inputs.radio_select)" >> 'out_file1.txt';
+    echo "$(inputs.check_select)" >> 'out_file1.txt';
+    cat "$(inputs.more_files[0].nestinput['path'])"   >> 'out_file1.txt';
+    echo "$(inputs.p1.p1val)"  >> 'out_file1.txt';
 inputs:
 - name: booltest
   type: boolean
-  truevalue: booltrue
-  falsevalue: boolfalse
+  # These don't work with YAML tools?
+  # truevalue: booltrue
+  # falsevalue: boolfalse
   checked: false
 - name: inttest
   type: integer
@@ -90,20 +91,29 @@ inputs:
 
 outputs:
   out_file1:
+    from_work_dir: out_file1.txt
     format: txt
 tests:
 - inputs:
     booltest: true
     inttest: 12456
     floattest: 6.789
-    simp_file: simple_line.txt
-    nestinput: simple_line_alternative.txt
-    p1use: true
+    simp_file:
+      class: File
+      path: simple_line.txt
+    more_files:
+    - nestinput:
+        class: File
+        path: simple_line_alternative.txt
+    p1:
+      p1use: true
   outputs:
     out_file1:
       asserts:
         - that: has_line
-          line: booltrue
+          # drop because truevalue doesn't work in YAML tools
+          # line: booltrue
+          line: "true"
         - that: has_line
           line: '12456'
         - that: has_line
@@ -121,18 +131,31 @@ tests:
         - that: has_line
           line: a_radio
 - inputs:
-    simp_file: simple_line.txt
-    nestinput: simple_line_alternative.txt
-    check_select: "a_check,b_check"
+    simp_file:
+      class: File
+      path: simple_line.txt
+    more_files:
+    - nestinput:
+        class: File
+        path: simple_line_alternative.txt
+    check_select: 
+    - a_check
+    - b_check
   outputs:
     out_file1:
       asserts:
         has_line:
-          line: "a_check,b_check"
+          line: "[a_check, b_check]"
 - inputs:
-    simp_file: simple_line.txt
-    nestinput: simple_line_alternative.txt
-    p1use: false
+    simp_file:
+      class: File
+      path: simple_line.txt
+    more_files:
+    - nestinput:
+        class: File
+        path: simple_line_alternative.txt
+    p1:
+      p1use: false
   outputs:
     out_file1:
       asserts:

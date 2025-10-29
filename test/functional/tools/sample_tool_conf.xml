@@ -286,6 +286,10 @@
   <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />
+  <!-- YAML tools not picked up automatically yet - arguably for the 
+       best until they are out of beta. -->
+  <tool file="parameters/gx_data_user.yml" />
+  <tool file="parameters/gx_data_multiple_user.yml" />
 
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />
