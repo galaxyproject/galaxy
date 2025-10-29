@@ -16,6 +16,14 @@ EDITABLE=false
 META=false
 WHEELHOUSE=
 
+if command -v uv >/dev/null; then
+    VENV_CMD="$(command -v uv) venv"
+    PIP_CMD="$(command -v uv) pip"
+else
+    VENV_CMD='python3 -m venv'
+    PIP_CMD='pip'
+fi
+
 # Prevent making a venv for build deps for each package, Used inside the package dir, so refers to
 # <source_root>/packages/.venv
 : ${VENV=../.venv}
@@ -65,28 +73,15 @@ while read package; do
     printf "\n========= PACKAGE %s =========\n\n" "$package"
     pushd $package
     if $EDITABLE; then
-        if command -v uv >/dev/null; then
-            uv pip install -e .
-        else
-            pip install -e .
-        fi
+        ${PIP_CMD} install -e .
     else
         if [ ! -d "$VENV" ]; then
-            if command -v uv >/dev/null; then
-                uv venv "$VENV"
-                VIRTUAL_ENV="${VENV}" uv pip install -r dev-requirements.txt
-            else
-                python3 -m venv "$VENV"
-                "${VENV}/bin/pip" install -r dev-requirements.txt
-            fi
+            ${VENV_CMD} "$VENV"
+            VIRTUAL_ENV="${VENV}" ${PIP_CMD} install -r dev-requirements.txt
         fi
         make dist
         if $INSTALL && ! $META; then
-            if command -v uv >/dev/null; then
-                uv pip install dist/*.whl
-            else
-                pip install dist/*.whl
-            fi
+            ${PIP_CMD} install dist/*.whl
         fi
     fi
     popd
@@ -96,9 +91,5 @@ done < "$PACKAGE_LIST_FILE"
 if $INSTALL && $META && ! $EDITABLE; then
     WHEELHOUSE=$(mktemp -d -t gxpkgwheelhouseXXXXXX)
     cp */dist/*.whl "$WHEELHOUSE"
-    if command -v uv >/dev/null; then
-        uv pip install $PIP_EXTRA_ARGS --find-links "$WHEELHOUSE" meta/dist/*.whl
-    else
-        pip install $PIP_EXTRA_ARGS --find-links "$WHEELHOUSE" meta/dist/*.whl
-    fi
+    ${PIP_CMD} install $PIP_EXTRA_ARGS --find-links "$WHEELHOUSE" meta/dist/*.whl
 fi

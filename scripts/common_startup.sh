@@ -133,7 +133,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_VIRTUAL_ENV to an"
             echo "existing environment before starting Galaxy."
             if command -v uv >/dev/null; then
-                uv venv "$GALAXY_VIRTUAL_ENV" --python "$GALAXY_PYTHON"
+                uv venv --python "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
             else
                 # First try to use the venv standard library module, although it is
                 # not always installed by default on Linux distributions.
@@ -168,6 +168,14 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
     fi
 fi
 
+if command -v uv >/dev/null; then
+    PIP_CMD="$(command -v uv) pip"
+    UNINSTALL_OPTIONS=''
+else
+    PIP_CMD='python -m pip'
+    UNINSTALL_OPTIONS='--yes'
+fi
+
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
 setup_python
 
@@ -188,32 +196,19 @@ fi
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    if command -v uv >/dev/null; then
-        uv pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-
-        set_galaxy_config_file_var
-        GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
-        if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
-            if uv pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
-                echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
-                uv pip uninstall psycopg2 psycopg2-binary
-            fi
-            echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | uv pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        ${PIP_CMD} install "pip>=${MIN_PIP_VERSION}" wheel
+    fi
+    # shellcheck disable=SC2086
+    ${PIP_CMD} install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    set_galaxy_config_file_var
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
+    if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
+        if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
+            echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
+            ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-    else
-        python -m pip install "pip>=$MIN_PIP_VERSION" wheel
-        # shellcheck disable=SC2086
-        pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-
-        set_galaxy_config_file_var
-        GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
-        if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
-            if pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
-                echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
-                pip uninstall -y psycopg2 psycopg2-binary
-            fi
-            echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-        fi
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     fi
 fi
 
