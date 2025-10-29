@@ -6,7 +6,6 @@ on:
       - dev
       - master
       - 'release_*'
-      - 'release-drafter-integration'
   pull_request_target:
     types: [opened, reopened, synchronize]
 
@@ -18,7 +17,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    if: github.repository == 'dannon/galaxy'
+    if: github.repository == 'galaxyproject/galaxy'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
