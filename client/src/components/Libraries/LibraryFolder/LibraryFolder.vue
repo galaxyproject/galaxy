@@ -128,7 +128,9 @@
                             <span
                                 class="shrinked-description"
                                 :title="getMessage(row.item)"
-                                v-html="linkify(purify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
+                                v-html="
+                                    linkify(purify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))
+                                ">
                             </span>
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
@@ -391,7 +393,7 @@ export default {
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        sanitize,
+        purify,
         getFolder(folder_id, page) {
             this.currentFolderId = folder_id;
             this.currentPage = page;
