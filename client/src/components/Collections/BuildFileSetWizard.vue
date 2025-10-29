@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCardGroup } from "bootstrap-vue";
+import { BAlert, BCardGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -11,6 +11,7 @@ import { forBuilder, type ForBuilderResponse } from "@/components/Collections/wi
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useToolRouting } from "@/composables/route";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type {
     ParsedFetchWorkbook,
@@ -239,7 +240,7 @@ async function handleWorkbook(base64Content: string) {
         handleUploadedData(data);
     } else {
         console.log(error);
-        uploadErrorMessage.value = "There was an error processing the file.";
+        uploadErrorMessage.value = "There was an error processing the file. " + errorMessageAsString(error);
     }
 }
 
@@ -260,6 +261,14 @@ const {
 <template>
     <GenericWizard :use="wizard" :submit-button-label="importButtonLabel" :title="title" @submit="submit">
         <template v-slot:header>
+            <BAlert
+                :show="!!uploadErrorMessage"
+                variant="danger"
+                class="my-2"
+                dismissible
+                @dismissed="uploadErrorMessage = ''">
+                {{ uploadErrorMessage }}
+            </BAlert>
             <h2 data-galaxy-file-drop-target>
                 {{ title }}
                 <FontAwesomeIcon
