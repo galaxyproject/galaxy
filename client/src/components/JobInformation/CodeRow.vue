@@ -30,7 +30,7 @@
 <script>
 import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import HelpText from "@/components/Help/HelpText";
+import HelpText from "@/components/Help/HelpText.vue";
 
 export default {
     components: {

@@ -3,7 +3,7 @@ import { createPinia } from "pinia";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import DetailsLayout from "./DetailsLayout";
+import DetailsLayout from "./DetailsLayout.vue";
 
 const localVue = getLocalVue();
 

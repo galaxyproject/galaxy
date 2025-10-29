@@ -19,8 +19,8 @@
 <script>
 import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 
-import IdentifierDisplayPreview from "./IdentifierDisplayPreview";
-import RuleDisplayPreview from "./RuleDisplayPreview";
+import IdentifierDisplayPreview from "./IdentifierDisplayPreview.vue";
+import RuleDisplayPreview from "./RuleDisplayPreview.vue";
 
 export default {
     components: {

@@ -67,13 +67,13 @@
     </b-card>
 </template>
 <script>
-import ContainerResolutionDetails from "./ContainerResolutionDetails";
-import DependencyResolver from "./DependencyResolver";
-import Requirement from "./Requirement";
-import Requirements from "./Requirements";
-import StatusDisplay from "./StatusDisplay";
-import ToolDisplay from "./ToolDisplay";
-import Tools from "./Tools";
+import ContainerResolutionDetails from "./ContainerResolutionDetails.vue";
+import DependencyResolver from "./DependencyResolver.vue";
+import Requirement from "./Requirement.vue";
+import Requirements from "./Requirements.vue";
+import StatusDisplay from "./StatusDisplay.vue";
+import ToolDisplay from "./ToolDisplay.vue";
+import Tools from "./Tools.vue";
 
 export default {
     components: {

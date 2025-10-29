@@ -6,8 +6,8 @@
     </ToolSourceProvider>
 </template>
 <script>
-import Alert from "@/components/Alert";
-import LoadingSpan from "@/components/LoadingSpan";
+import Alert from "@/components/Alert.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import { ToolSourceProvider } from "@/components/providers/ToolSourceProvider";
 
 import ToolSourceDisplay from "@/components/Tool/ToolSourceDisplay.vue";

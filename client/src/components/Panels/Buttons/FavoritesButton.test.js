@@ -3,7 +3,7 @@ import { createPinia } from "pinia";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FavoritesButton from "./FavoritesButton";
+import FavoritesButton from "./FavoritesButton.vue";
 
 const localVue = getLocalVue();
 

@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import GenericHistoryItem from "@/components/History/Content/GenericItem";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 export default {
     components: {

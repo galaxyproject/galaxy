@@ -9,7 +9,7 @@ import { setupMockConfig } from "tests/jest/mockConfig";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import ToolCard from "./ToolCard";
+import ToolCard from "./ToolCard.vue";
 
 const { server, http } = useServerMock();
 

@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import RepositoryTools from "./RepositoryTools";
+import RepositoryTools from "./RepositoryTools.vue";
 
 const localVue = getLocalVue();
 

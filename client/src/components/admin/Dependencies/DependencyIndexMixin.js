@@ -1,14 +1,14 @@
 import { getAppRoot } from "@/onload/loadConfig";
 
-import ContainerDescription from "./ContainerDescription";
-import ContainerResolver from "./ContainerResolver";
-import DependencyIndexWrapper from "./DependencyIndexWrapper";
-import DependencyResolver from "./DependencyResolver";
-import Requirements from "./Requirements";
-import StatusDisplay from "./StatusDisplay";
-import Statuses from "./Statuses";
-import ToolDisplay from "./ToolDisplay";
-import Tools from "./Tools";
+import ContainerDescription from "./ContainerDescription.vue";
+import ContainerResolver from "./ContainerResolver.vue";
+import DependencyIndexWrapper from "./DependencyIndexWrapper.vue";
+import DependencyResolver from "./DependencyResolver.vue";
+import Requirements from "./Requirements.vue";
+import StatusDisplay from "./StatusDisplay.vue";
+import Statuses from "./Statuses.vue";
+import ToolDisplay from "./ToolDisplay.vue";
+import Tools from "./Tools.vue";
 
 export default {
     components: {

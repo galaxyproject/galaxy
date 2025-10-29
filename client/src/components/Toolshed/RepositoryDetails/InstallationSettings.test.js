@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import InstallationSettings from "./InstallationSettings";
+import InstallationSettings from "./InstallationSettings.vue";
 
 jest.mock("app");
 // Mock the useConfig composable

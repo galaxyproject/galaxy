@@ -8,7 +8,7 @@ import { useEntryPointStore } from "stores/entryPointStore";
 import { useInteractiveToolsStore } from "stores/interactiveToolsStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import InteractiveTools from "./InteractiveTools";
+import InteractiveTools from "./InteractiveTools.vue";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse.json";
 
 // Mock the rethrowSimple function to prevent test failures

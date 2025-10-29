@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FormCard from "./FormCard";
+import FormCard from "./FormCard.vue";
 
 const localVue = getLocalVue();
 

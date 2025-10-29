@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import LoadingSpan from "@/components/LoadingSpan";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import _l from "@/utils/localization";
 
 import { useWorkflowStores } from "@/composables/workflowStores";

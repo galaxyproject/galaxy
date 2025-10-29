@@ -25,7 +25,7 @@
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import Vue from "vue";
 
-import FormInputs from "./FormInputs";
+import FormInputs from "./FormInputs.vue";
 import { matchInputs, validateInputs, visitInputs } from "./utilities";
 
 export default {

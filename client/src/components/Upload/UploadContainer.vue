@@ -1,7 +1,7 @@
 <script setup>
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { getDatatypesMapper } from "@/components/Datatypes";
-import LoadingSpan from "@/components/LoadingSpan";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import {
     AUTO_EXTENSION,
     DEFAULT_DBKEY,
@@ -17,9 +17,9 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
 
-import CompositeBox from "./CompositeBox";
-import DefaultBox from "./DefaultBox";
-import RulesInput from "./RulesInput";
+import CompositeBox from "./CompositeBox.vue";
+import DefaultBox from "./DefaultBox.vue";
+import RulesInput from "./RulesInput.vue";
 
 const props = defineProps({
     auto: {
