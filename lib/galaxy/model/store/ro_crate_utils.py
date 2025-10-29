@@ -525,6 +525,12 @@ class WorkflowRunCrateProfileBuilder:
             )
         )
         crate.mainEntity.append_to("input", formal_param)
+
+        # Handle case where output_value is None (e.g., optional parameter not provided)
+        output_value = None
+        if step.output_value:
+            output_value = step.output_value.value
+
         return crate.add(
             ContextEntity(
                 crate,
@@ -532,7 +538,7 @@ class WorkflowRunCrateProfileBuilder:
                 properties={
                     "@type": "PropertyValue",
                     "name": f"{param_id}",
-                    "value": step.output_value.value,
+                    "value": output_value,
                     "exampleOfWork": {"@id": formal_param.id},
                 },
             )
