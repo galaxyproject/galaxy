@@ -18,6 +18,9 @@ from galaxy.util.markdown import (
     weasyprint_available,
 )
 
+# Type for story elements: (type, content, metadata)
+StoryElement = tuple[str, str, dict[str, str]]
+
 
 class StoryProtocol(ABC):
     """Protocol for story implementations (real or noop)."""
@@ -77,7 +80,7 @@ class Story(StoryProtocol):
         self.title = title
         self.description = description
         self._output_directory = output_directory
-        self.elements = []  # List of (type, content, metadata) tuples
+        self.elements: list[StoryElement] = []  # List of (type, content, metadata) tuples
         self._screenshot_counter = 0
 
     @property
