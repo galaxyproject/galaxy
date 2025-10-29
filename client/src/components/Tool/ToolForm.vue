@@ -117,8 +117,8 @@ import FormElement from "@/components/Form/FormElement.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 import { mapActions, mapState, storeToRefs } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
-import { useJobStore } from "stores/jobStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import { useJobStore } from "@/stores/jobStore";
 
 import { canMutateHistory } from "@/api";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";

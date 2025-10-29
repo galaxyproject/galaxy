@@ -606,8 +606,8 @@
 
 <script>
 import HotTable from "@handsontable/vue";
-import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
-import { fetch, fetchJobErrorMessage } from "api/tools";
+import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
+import { fetch, fetchJobErrorMessage } from "@/api/tools";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ColumnSelector from "@/components/RuleBuilder/ColumnSelector.vue";
@@ -627,7 +627,7 @@ import SelectBasic from "@/components/RuleBuilder/SelectBasic.vue";
 import StateDiv from "@/components/RuleBuilder/StateDiv.vue";
 import UploadUtils from "@/components/Upload/utils";
 import { getAppRoot } from "@/onload/loadConfig";
-import { useHistoryStore } from "stores/historyStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import _ from "underscore";
 import _l from "@/utils/localization";
 import Vue from "vue";

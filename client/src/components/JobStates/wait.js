@@ -1,4 +1,4 @@
-import { ERROR_STATES, NON_TERMINAL_STATES } from "api/jobs";
+import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
 import axios from "axios";
 import { getAppRoot } from "@/onload/loadConfig";
 

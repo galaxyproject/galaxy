@@ -4,8 +4,8 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { useEntryPointStore } from "stores/entryPointStore";
-import { useInteractiveToolsStore } from "stores/interactiveToolsStore";
+import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 import { getLocalVue } from "tests/jest/helpers";
 
 import InteractiveTools from "./InteractiveTools.vue";

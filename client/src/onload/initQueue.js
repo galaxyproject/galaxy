@@ -10,7 +10,7 @@
  * In a python template (the config object is attached to window in the browser):
  *    config.addInitialiation(function (galaxyInstance, config) { // your init } )
  * In any webpack script:
- *    import { addInitialization } from "onload";
+ *    import { addInitialization } from "@/onload";
  *    addInitialization((galaxyInstance, config) => { // do things });
  */
 

@@ -53,7 +53,7 @@ import Toast from "@/components/Toast";
 import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
 import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { setToastComponentRef } from "@/composables/toast";
-import { getAppRoot } from "onload";
+import { getAppRoot } from "@/onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
@@ -225,5 +225,5 @@ export default {
 </script>
 
 <style lang="scss">
-@import "custom_theme_variables.scss";
+@import "@/style/scss/custom_theme_variables.scss";
 </style>

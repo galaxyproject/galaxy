@@ -105,7 +105,7 @@
 </template>
 
 <script>
-import { NON_TERMINAL_STATES } from "api/jobs";
+import { NON_TERMINAL_STATES } from "@/api/jobs";
 import axios from "axios";
 import JobsTable from "@/components/admin/JobsTable.vue";
 import Heading from "@/components/Common/Heading.vue";
