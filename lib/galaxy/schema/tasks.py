@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import (
+    Literal,
     Optional,
 )
 from uuid import UUID
@@ -153,9 +154,13 @@ class TaskResult(Model):
     )
 
 
+TOOL_SOURCE_CLASS = Literal["XmlToolSource", "YamlToolSource", "CwlToolSource"]
+
+
 class ToolSource(Model):
     raw_tool_source: str
     tool_dir: str
+    tool_source_class: TOOL_SOURCE_CLASS = "XmlToolSource"
 
 
 class QueueJobs(Model):

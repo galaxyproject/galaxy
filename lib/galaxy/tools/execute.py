@@ -314,16 +314,26 @@ def _execute(
             #  task_user_id parameter is used to do task user rate limiting. It is only passed
             #  to first task in chain because it is only necessary to rate limit the first
             #  task in a chain.
+            tool_source_class = type(tool.tool_source).__name__
             async_result = (
                 setup_fetch_data.s(
-                    job_id, raw_tool_source=raw_tool_source, task_user_id=getattr(trans.user, "id", None)
+                    job_id,
+                    raw_tool_source=raw_tool_source,
+                    task_user_id=getattr(trans.user, "id", None),
+                    tool_source_class=tool_source_class,
                 )
                 | fetch_data.s(job_id=job_id)
                 | set_job_metadata.s(
                     extended_metadata_collection="extended" in tool.app.config.metadata_strategy,
                     job_id=job_id,
-                ).set(link_error=finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source))
-                | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
+                ).set(
+                    link_error=finish_job.si(
+                        job_id=job_id,
+                        raw_tool_source=raw_tool_source,
+                        tool_source_class=tool_source_class,
+                    )
+                )
+                | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source, tool_source_class=tool_source_class)
             )()
             job2.set_runner_external_id(async_result.task_id)
             continue

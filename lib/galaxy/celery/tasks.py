@@ -59,6 +59,7 @@ from galaxy.schema.tasks import (
     PurgeDatasetsTaskRequest,
     QueueJobs,
     SetupHistoryExportJob,
+    TOOL_SOURCE_CLASS,
     WriteHistoryContentTo,
     WriteHistoryTo,
     WriteInvocationTo,
@@ -74,9 +75,14 @@ log = get_logger(__name__)
 
 
 @lru_cache
-def cached_create_tool_from_representation(app: MinimalManagerApp, raw_tool_source: str, tool_dir: str = ""):
+def cached_create_tool_from_representation(
+    app: MinimalManagerApp,
+    raw_tool_source: str,
+    tool_source_class: TOOL_SOURCE_CLASS,
+    tool_dir: str = "",
+):
     return create_tool_from_representation(
-        app=app, raw_tool_source=raw_tool_source, tool_dir=tool_dir, tool_source_class="XmlToolSource"
+        app=app, raw_tool_source=raw_tool_source, tool_dir=tool_dir, tool_source_class=tool_source_class
     )
 
 
@@ -225,11 +231,14 @@ def setup_fetch_data(
     self,
     job_id: int,
     raw_tool_source: str,
+    tool_source_class: TOOL_SOURCE_CLASS,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
-    tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
+    tool = cached_create_tool_from_representation(
+        app=app, raw_tool_source=raw_tool_source, tool_source_class=tool_source_class
+    )
     job = sa_session.get(Job, job_id)
     assert job
     # self.request.hostname is the actual worker name given by the `-n` argument, not the hostname as you might think.
@@ -258,11 +267,14 @@ def setup_fetch_data(
 def finish_job(
     job_id: int,
     raw_tool_source: str,
+    tool_source_class: TOOL_SOURCE_CLASS,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
-    tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
+    tool = cached_create_tool_from_representation(
+        app=app, raw_tool_source=raw_tool_source, tool_source_class=tool_source_class
+    )
     job = sa_session.get(Job, job_id)
     assert job
     # TODO: assert state ?
@@ -335,8 +347,12 @@ def fetch_data(
 @galaxy_task(action="queuing up submitted jobs")
 def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSubmitter):
     tool = cached_create_tool_from_representation(
-        app, request.tool_source.raw_tool_source, tool_dir=request.tool_source.tool_dir
+        app=app,
+        raw_tool_source=request.tool_source.raw_tool_source,
+        tool_dir=request.tool_source.tool_dir,
+        tool_source_class=request.tool_source.tool_source_class,
     )
+
     job_submitter.queue_jobs(
         tool,
         request,
