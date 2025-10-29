@@ -10,8 +10,28 @@ TEST_ANNOTATION = "my cool annotation"
 TEST_INFO = "my cool info"
 
 
-class TestHistoryPanel(SeleniumTestCase):
+class TestDataset(SeleniumTestCase):
     ensure_registered = True
+
+    @selenium_test
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @managed_history
+    def test_history_dataset_display_text(self):
+        original_name = "1.txt"
+
+        history_entry = self.perform_single_upload(self.get_filename(original_name))
+        hid = history_entry.hid
+        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(hid)
+        self.display_dataset(hid=hid)
+
+        dataset_display = self.components.dataset_display.container
+        dataset_display.wait_for_visible()
+
+        self.switch_to_frame()
+        text = self.components.dataset_display.content.wait_for_text()
+        assert "chr1    4225    19670" in text
+        self.driver.switch_to.default_content()
 
     @selenium_test
     @managed_history

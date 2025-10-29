@@ -165,6 +165,11 @@ dataset_view:
     details_tab: ".nav-item[title='View detailed information about this dataset'] > a.nav-link"
     visualize_tab: ".nav-item[title='Explore available visualizations for this dataset'] > a.nav-link"
 
+dataset_display:
+  selectors:
+    container: .dataset-display
+    content: body
+
 history_panel:
   menu:
     labels:

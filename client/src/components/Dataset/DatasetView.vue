@@ -14,13 +14,13 @@ import { bytesToString } from "@/utils/utils";
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
+import DatasetDisplay from "./DatasetDisplay.vue";
 import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
-import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
@@ -61,6 +61,13 @@ const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/disp
 const preferredVisualization = computed(
     () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
+const isBinaryDataset = computed(() => {
+    if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
+        return false;
+    }
+    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, ["galaxy.datatypes.binary"]);
+});
+
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
@@ -93,7 +100,7 @@ watch(
 
 <template>
     <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
-    <div v-else class="dataset-view d-flex flex-column h-100">
+    <div v-else class="dataset-view d-flex flex-column">
         <header v-if="!displayOnly" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
                 <Heading
@@ -181,18 +188,13 @@ watch(
                 <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
-        <div v-if="tab === 'preview'" class="h-100">
+        <div v-if="tab === 'preview'" class="tab-content-panel">
             <VisualizationFrame
                 v-if="preferredVisualization"
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
-            <CenterFrame
-                v-else-if="isPdfDataset"
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
-            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
+            <div v-else-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
@@ -203,23 +205,14 @@ watch(
                 </div>
             </div>
             <DatasetAsImage
-                v-else-if="isImageDataset"
+                v-else-if="isImageDataset && !isPdfDataset"
                 :history-dataset-id="datasetId"
                 :allow-size-toggle="true"
                 class="p-3" />
-            <CenterFrame
-                v-else
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
-        <div v-else-if="tab === 'raw'" class="h-100">
-            <CenterFrame
-                v-if="isPdfDataset"
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
-            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
+        <div v-else-if="tab === 'raw'" class="tab-content-panel">
+            <div v-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
@@ -229,11 +222,7 @@ watch(
                     </a>
                 </div>
             </div>
-            <CenterFrame
-                v-else
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
@@ -318,8 +307,7 @@ watch(
 .tab-content-panel {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    overflow-y: auto;
+    overflow: auto;
     height: 100%;
 }
 

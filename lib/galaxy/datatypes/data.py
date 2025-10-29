@@ -509,17 +509,10 @@ class Data(metaclass=DataMeta):
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
         headers["content-type"] = "text/html"
+        if file_size > max_peek_size:
+            headers["x-content-truncated"] = max_peek_size
         with open(data.get_file_name(), "rb") as fh:
-            return (
-                trans.fill_template_mako(
-                    "/dataset/binary_file.mako",
-                    data=data,
-                    file_contents=fh.read(max_peek_size),
-                    file_size=util.nice_size(file_size),
-                    truncated=file_size > max_peek_size,
-                ),
-                headers,
-            )
+            return unicodify(fh.read(max_peek_size)), headers
 
     def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
         from galaxy.datatypes import images
@@ -531,14 +524,8 @@ class Data(metaclass=DataMeta):
         with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
             # preview large text file
             headers["content-type"] = "text/html"
-            return (
-                trans.fill_template_mako(
-                    "/dataset/large_file.mako",
-                    truncated_data=fh.read(max_peek_size),
-                    data=data,
-                ),
-                headers,
-            )
+            headers["x-content-truncated"] = max_peek_size
+            return unicodify(fh.read(max_peek_size)), headers
 
     def display_data(
         self,
@@ -618,9 +605,8 @@ class Data(metaclass=DataMeta):
         else:  # displaying
             trans.log_event(f"Display dataset id: {str(dataset.id)}")
             max_peek_size = _get_max_peek_size(dataset)
-            if (
-                _is_binary_file(dataset) and preview and hasattr(trans, "fill_template_mako")
-            ):  # preview file which format is unknown (to Galaxy), we still try to display this as text
+            if _is_binary_file(dataset) and preview:
+                # preview file which format is unknown (to Galaxy), we still try to display this as text
                 return self._serve_binary_file_contents_as_text(trans, dataset, headers, file_size, max_peek_size)
             else:  # text/html, or image, or display was called without preview flag
                 return self._serve_file_contents(trans, dataset, headers, preview, file_size, max_peek_size)
