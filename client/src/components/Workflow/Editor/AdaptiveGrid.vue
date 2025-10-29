@@ -151,7 +151,7 @@ function traceGrid(
 </template>
 
 <style scoped lang="scss">
-@import "~bootstrap/scss/_functions.scss";
+@import "bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
 
 .adaptive-grid-canvas {
