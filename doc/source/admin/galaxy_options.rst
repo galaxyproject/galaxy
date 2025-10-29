@@ -5842,4 +5842,16 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_tool_formats``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable user defined tools. In order to enable users to use this
+    feature create a role of type `Custom Tool Execution` in the admin
+    user interface and assign users or groups to this role.
+:Default: ``false``
+:Type: bool
+
+
 
