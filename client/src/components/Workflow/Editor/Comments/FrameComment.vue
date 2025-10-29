@@ -5,7 +5,7 @@ import { faCompressAlt, faObjectGroup, faPalette } from "@fortawesome/free-solid
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
@@ -50,7 +50,7 @@ useResizable(
 );
 
 function escapeAndSanitize(text: string) {
-    return sanitize(text, { ALLOWED_TAGS: [] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
+    return purify.sanitize(text, { ALLOWED_TAGS: [] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
 }
 
 const editableElement = ref<HTMLSpanElement>();

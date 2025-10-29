@@ -5,7 +5,7 @@ import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
@@ -48,7 +48,7 @@ useResizable(
 );
 
 function escapeAndSanitize(text: string) {
-    return sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
+    return purify.sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
 }
 
 const editableElement = ref<HTMLSpanElement>();

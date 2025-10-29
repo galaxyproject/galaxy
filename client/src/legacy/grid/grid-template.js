@@ -1,5 +1,5 @@
 // dependencies
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 
 // grid view templates
 export default {
@@ -537,7 +537,7 @@ export default {
 
     // template for filter items
     filter_element: function (filter_key, filter_value) {
-        filter_value = sanitize(filter_value);
+        filter_value = purify.sanitize(filter_value);
         return `<span class="text-filter-val">${filter_value}<a href="javascript:void(0);" filter_key="${filter_key}" filter_val="${filter_value}"><i class="fa fa-times" style="padding-left: 5px; padding-bottom: 6px;"/></a></span>`;
     },
 };
