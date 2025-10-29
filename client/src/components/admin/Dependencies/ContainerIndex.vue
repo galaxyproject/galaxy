@@ -96,8 +96,8 @@ import _ from "underscore";
 import Vue from "vue";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
-import ContainerResolutionDetails from "./ContainerResolutionDetails";
-import { DESCRIPTION } from "./ContainerResolver";
+import ContainerResolutionDetails from "./ContainerResolutionDetails.vue";
+import { DESCRIPTION } from "./ContainerResolver.vue";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 
 import GButton from "@/components/BaseComponents/GButton.vue";

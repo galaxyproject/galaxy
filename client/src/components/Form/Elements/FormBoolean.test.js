@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FormBoolean from "./FormBoolean";
+import FormBoolean from "./FormBoolean.vue";
 
 const localVue = getLocalVue();
 

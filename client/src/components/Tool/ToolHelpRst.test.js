@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import ToolHelpRst from "./ToolHelpRst";
+import ToolHelpRst from "./ToolHelpRst.vue";
 
 const localVue = getLocalVue();
 

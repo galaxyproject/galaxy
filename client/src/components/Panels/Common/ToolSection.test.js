@@ -3,7 +3,7 @@ import { useConfig } from "@/composables/config";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import ToolSection from "./ToolSection";
+import ToolSection from "./ToolSection.vue";
 
 jest.mock("composables/config");
 useConfig.mockReturnValue({

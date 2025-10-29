@@ -1,5 +1,5 @@
 import { STATES } from "@/components/History/Content/model/states";
-import StatesInfo from "@/components/History/Content/model/StatesInfo";
+import StatesInfo from "@/components/History/Content/model/StatesInfo.vue";
 import Filtering, {
     compare,
     contains,

@@ -4,7 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import WorkflowExport from "./WorkflowExport";
+import WorkflowExport from "./WorkflowExport.vue";
 
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);

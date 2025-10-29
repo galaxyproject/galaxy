@@ -24,7 +24,7 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import UtcDate from "@/components/UtcDate";
+import UtcDate from "@/components/UtcDate.vue";
 import _l from "@/utils/localization";
 import Vue from "vue";
 

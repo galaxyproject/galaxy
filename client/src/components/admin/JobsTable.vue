@@ -70,9 +70,9 @@
 </template>
 
 <script>
-import JobDetails from "@/components/JobInformation/JobDetails";
-import LoadingSpan from "@/components/LoadingSpan";
-import UtcDate from "@/components/UtcDate";
+import JobDetails from "@/components/JobInformation/JobDetails.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 export default {
     components: { UtcDate, JobDetails, LoadingSpan },

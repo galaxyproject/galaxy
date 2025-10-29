@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import LoadingSpan from "@/components/LoadingSpan";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import { Toast } from "@/composables/toast";
 import { mapActions } from "pinia";
 
@@ -40,8 +40,8 @@ import { DatasetCollectionElementProvider } from "@/components/providers/storePr
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import ContentItem from "./ContentItem";
-import GenericElement from "./GenericElement";
+import ContentItem from "./ContentItem.vue";
+import GenericElement from "./GenericElement.vue";
 
 export default {
     components: {

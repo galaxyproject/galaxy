@@ -1,7 +1,7 @@
 import { createLocalVue, mount } from "@vue/test-utils";
 
 import { Services } from "../services";
-import Repositories from "./Repositories";
+import Repositories from "./Repositories.vue";
 
 jest.mock("app");
 jest.mock("../services");

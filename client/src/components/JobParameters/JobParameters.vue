@@ -55,8 +55,8 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "@/onload/loadConfig";
 import Vue from "vue";
 
-import JobOutputs from "../JobInformation/JobOutputs";
-import JobParametersArrayValue from "./JobParametersArrayValue";
+import JobOutputs from "../JobInformation/JobOutputs.vue";
+import JobParametersArrayValue from "./JobParametersArrayValue.vue";
 
 import Heading from "../Common/Heading.vue";
 import DataFetchRequestParameter from "./DataFetchRequestParameter.vue";

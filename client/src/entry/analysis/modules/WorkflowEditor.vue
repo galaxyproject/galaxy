@@ -8,7 +8,7 @@
         @skipNextReload="() => (skipNextReload = true)" />
 </template>
 <script>
-import Editor from "@/components/Workflow/Editor/Index";
+import Editor from "@/components/Workflow/Editor/Index.vue";
 import Query from "@/utils/query-string-parsing";
 
 import { getWorkflowInfo } from "@/api/workflows";

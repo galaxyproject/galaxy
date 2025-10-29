@@ -25,8 +25,8 @@
 </template>
 
 <script>
-import FormCard from "@/components/Form/FormCard";
-import FormDisplay from "@/components/Form/FormDisplay";
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
 import { visitInputs } from "@/components/Form/utilities";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider";
 import { IconDefinition } from "font-awesome-6";

@@ -89,7 +89,7 @@ import Vue from "vue";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
-import ResolutionDetails from "./ResolutionDetails";
+import ResolutionDetails from "./ResolutionDetails.vue";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 

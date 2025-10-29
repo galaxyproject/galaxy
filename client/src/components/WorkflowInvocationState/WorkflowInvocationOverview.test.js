@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import invocationData from "../Workflow/test/json/invocation.json";
-import WorkflowInvocationOverview from "./WorkflowInvocationOverview";
+import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 
 const localVue = getLocalVue();
 

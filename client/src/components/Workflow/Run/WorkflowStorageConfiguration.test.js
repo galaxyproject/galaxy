@@ -8,7 +8,7 @@ import { ROOT_COMPONENT } from "@/utils/navigation";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
+import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 
 const localVue = getLocalVue(true);
 

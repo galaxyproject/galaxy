@@ -5,7 +5,7 @@ import VueRouter from "vue-router";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
-import GenericElement from "./GenericElement";
+import GenericElement from "./GenericElement.vue";
 
 jest.mock("components/History/model/queries");
 

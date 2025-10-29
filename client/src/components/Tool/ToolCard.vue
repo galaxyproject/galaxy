@@ -2,10 +2,10 @@
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BModal, BPopover } from "bootstrap-vue";
-import Heading from "@/components/Common/Heading";
-import FormMessage from "@/components/Form/FormMessage";
-import ToolFooter from "@/components/Tool/ToolFooter";
-import ToolHelp from "@/components/Tool/ToolHelp";
+import Heading from "@/components/Common/Heading.vue";
+import FormMessage from "@/components/Form/FormMessage.vue";
+import ToolFooter from "@/components/Tool/ToolFooter.vue";
+import ToolHelp from "@/components/Tool/ToolHelp.vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -14,8 +14,8 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
-import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
-import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
+import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
+import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover.vue";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";

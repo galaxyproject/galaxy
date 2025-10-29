@@ -3,7 +3,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { Services } from "../services";
-import Index from "./Index";
+import Index from "./Index.vue";
 
 jest.mock("app");
 jest.mock("onload/loadConfig");

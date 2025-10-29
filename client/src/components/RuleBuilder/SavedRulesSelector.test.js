@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import SavedRulesSelector from "@/components/RuleBuilder/SavedRulesSelector";
+import SavedRulesSelector from "@/components/RuleBuilder/SavedRulesSelector.vue";
 import { getLocalVue } from "tests/jest/helpers";
 
 const localVue = getLocalVue();
