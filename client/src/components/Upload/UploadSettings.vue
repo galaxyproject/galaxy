@@ -59,7 +59,7 @@ const emit = defineEmits(["input"]);
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .upload-settings-content {
     position: relative;
     .upload-settings-cover {

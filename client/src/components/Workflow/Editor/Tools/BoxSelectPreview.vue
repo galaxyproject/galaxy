@@ -22,7 +22,7 @@ const removeMode = computed(() => toolbarStore.boxSelectMode === "remove");
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .box-select-preview {
     pointer-events: none;

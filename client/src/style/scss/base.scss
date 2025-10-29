@@ -1,6 +1,6 @@
 // Bootstrap variables and core framework
 @import "bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "bootstrap/scss/bootstrap.scss";
 @import "bootstrap-vue/src/index.scss";
 

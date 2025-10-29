@@ -53,7 +53,7 @@ const warnText = computed(() => details.value.upload_warning);
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .selection-warning {
     color: $brand-warning;
 }

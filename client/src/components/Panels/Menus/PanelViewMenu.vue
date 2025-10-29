@@ -172,7 +172,7 @@ async function updatePanelView(panel: Panel) {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .panel-view-selector {
     color: $panel-header-text-color;

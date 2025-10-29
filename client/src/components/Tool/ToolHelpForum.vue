@@ -93,7 +93,7 @@ const configStore = useConfigStore();
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .tool-help-forum {
     --fa-secondary-color: #{$brand-toggle};

@@ -57,7 +57,7 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .tag {
     display: inline-flex;

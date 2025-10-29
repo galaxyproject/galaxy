@@ -1243,7 +1243,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .editor-top-bar {
     background: $brand-light;

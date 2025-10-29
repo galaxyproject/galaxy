@@ -152,7 +152,7 @@ function traceGrid(
 
 <style scoped lang="scss">
 @import "bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .adaptive-grid-canvas {
     --grid-color: #{$workflow-editor-grid-color};

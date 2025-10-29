@@ -144,7 +144,7 @@ function openInteractiveTool(toolId: string) {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .tool-item {
     background: none;
