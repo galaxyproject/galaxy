@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import axios from "axios";
+import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 import { onBeforeRouteLeave } from "vue-router/composables";
 
-import { withPrefix } from "@/utils/redirect";
+import { GalaxyApi } from "@/api";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import VisualizationFrame from "./VisualizationFrame.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -18,9 +19,10 @@ export interface Props {
 
 const props = defineProps<Props>();
 
+const errorMessage = ref("");
+const iframeRef = ref<HTMLIFrameElement | null>(null);
 const isLoading = ref(true);
 const hasUnsavedChanges = ref(false);
-const iframeRef = ref<HTMLIFrameElement | null>(null);
 const visualizationConfig = ref();
 
 function handleLoad() {
@@ -78,10 +80,17 @@ onBeforeRouteLeave((to, from, next) => {
 
 onMounted(async () => {
     if (props.visualizationId) {
-        const url = withPrefix(`/api/visualizations/${props.visualizationId}`);
-        const { data } = await axios.get(url);
-        console.log(data.latest_revision.config);
-        visualizationConfig.value = data.latest_revision.config;
+        const { data, error } = await GalaxyApi().GET("/api/visualizations/{id}", {
+            params: { path: { id: props.visualizationId } },
+        });
+        if (error) {
+            errorMessage.value = errorMessageAsString(error);
+        } else if (data?.latest_revision?.config) {
+            visualizationConfig.value = data.latest_revision.config;
+            errorMessage.value = "";
+        } else {
+            errorMessage.value = "Failed to access visualization details.";
+        }
     } else {
         visualizationConfig.value = { dataset_id: props.datasetId };
     }
@@ -97,8 +106,11 @@ onMounted(async () => {
 
 <template>
     <div class="position-relative h-100 overflow-hidden">
-        <div v-if="isLoading" class="iframe-loading bg-light">
-            <LoadingSpan message="Loading preview" />
+        <BAlert v-if="errorMessage" variant="danger" show>
+            {{ errorMessage }}
+        </BAlert>
+        <div v-else-if="isLoading" class="iframe-loading bg-light">
+            <LoadingSpan message="Loading visualization" />
         </div>
         <VisualizationFrame
             v-if="visualizationConfig"
