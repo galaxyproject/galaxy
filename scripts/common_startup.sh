@@ -267,7 +267,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Set plugin path
     GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
 
-    if [ $INSTALL_PREBUILT_CLIENT -eq 0 ]; then
+    if [ "${INSTALL_PREBUILT_CLIENT}" -eq 0 ]; then
         # If we have not opted to use a prebuilt client, then build client.
         cd client
         # shellcheck disable=SC2086

@@ -11,8 +11,8 @@ SKIP_PACKAGES=(
 
 should_skip_package() {
     local pkg
-    for pkg in ${SKIP_PACKAGES[@]}; do
-        [[ $1 == $pkg ]] && return 0
+    for pkg in "${SKIP_PACKAGES[@]}"; do
+        [ "$1" = "$pkg" ] && return 0
     done
     return 1
 }
