@@ -1396,6 +1396,8 @@ rule_builder:
     workbook_upload_button: '.workbook-upload-helper'
     workbook_upload_file_input: '[data-description="workbook-file-input"]'
     create_collections: '[data-creating-what="collections"]'
+    wizard_import: ".wizard-actions .btn-primary"
+
 
 charts:
   selectors:

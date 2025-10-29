@@ -33,7 +33,7 @@ For this example, we'll create a collection rather than individual datasets. Cli
 class UploadStoriesMixin(NavigatesGalaxyMixin):
     """Mixin describing upload user stories around the workbooks and rules."""
 
-    def upload_workbook_example_1(self):
+    def upload_workbook_example_1(self, include_result: bool = False):
         """Importing datasets from a workbook with automatic column mapping.
 
         Demonstrates that Galaxy can:
@@ -72,8 +72,15 @@ Notice that we didn't have to configure any rules manually - Galaxy recognized t
             "workbook_example_1_mapped",
             "The rule builder showing automatically detected column mappings for name, URL, and genome",
         )
+        if include_result:
+            rule_builder = self.components.rule_builder
+            rule_builder.wizard_import.wait_for_and_click()
+            self.history_panel_wait_for_hid_ok(4)
+            # In next iteration - wait on the "uploading" message to disappear.
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.screenshot("workbook_example_1_complete", "Final datasets created and available in the history.")
 
-    def upload_workbook_example_2(self):
+    def upload_workbook_example_2(self, include_result: bool = False):
         """Importing a simple list collection from a workbook.
 
         Demonstrates that Galaxy can:
@@ -104,7 +111,7 @@ The key difference here is that our spreadsheet includes a **LIST IDENTIFIER** c
             "Example workbook with list identifier, URL, and file type columns",
         )
         self.workbook_upload(WORKBOOK_EXAMPLE_2)
-
+        self.rule_builder_set_collection_name("Example 2 - List")
         self.document(
             """
 Galaxy has recognized the column structure for a list collection:
@@ -119,8 +126,14 @@ Even though these column names are different from Example 1 (URI instead of url,
             "workbook_example_2_mapped",
             "The rule builder showing automatically detected list identifier, URI, and type column mappings",
         )
+        if include_result:
+            self.rule_builder_import()
+            self.history_panel_wait_for_hid_ok(1)
+            # In next iteration - wait on the "uploading" message to disappear.
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.screenshot("workbook_example_2_complete", "Final collection created and available in the history.")
 
-    def upload_workbook_example_3(self):
+    def upload_workbook_example_3(self, include_result: bool = False):
         """Importing a list of pairs collection with automatic pairing.
 
         This test validates that Galaxy can:
@@ -152,6 +165,7 @@ This example demonstrates how Galaxy splits the paired data and creates a **list
             "Example workbook with paired URLs (forward/reverse reads) and genome information",
         )
         self.workbook_upload(WORKBOOK_EXAMPLE_3)
+        self.rule_builder_set_collection_name("Example 3 - A List of Pairs")
 
         self.document(
             """
@@ -169,8 +183,14 @@ This automatic splitting and pairing is one of the most powerful features of the
             "workbook_example_3_mapped",
             "The rule builder showing automatic paired data detection - notice the data has been split with forward/reverse identifiers added",
         )
+        if include_result:
+            self.rule_builder_import()
+            self.history_panel_wait_for_hid_ok(1)
+            # In next iteration - wait on the "uploading" message to disappear.
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.screenshot("workbook_example_3_complete", "Final collection created and available in the history.")
 
-    def upload_workbook_example_4(self):
+    def upload_workbook_example_4(self, include_result: bool = False):
         """Importing nested list structures with paired data
 
         Demonstrates that Galaxy can:
@@ -205,6 +225,7 @@ This example shows how Galaxy automatically builds nested structures when your s
             "Example workbook with paired URLs and multiple list identifier columns",
         )
         self.workbook_upload(WORKBOOK_EXAMPLE_4)
+        self.rule_builder_set_collection_name("Example 4 - Nested Collections")
 
         self.document(
             """
@@ -224,8 +245,10 @@ This example demonstrates the most advanced capability of auto-detection, handli
             "workbook_example_4_mapped",
             "The rule builder showing automatic nested structure detection from multiple list identifier columns and paired URL columns",
         )
+        # This is 12 multi-gigabyte datasets - don't both ever actually running the upload in
+        # this example.
 
-    def upload_rules_example_1(self):
+    def upload_rules_example_1(self, include_result: bool = False):
         """Uploading datasets with manual rules - basic filtering and column mapping.
 
         Demonstrates manual rule building to:
@@ -318,11 +341,14 @@ Finally, we specify the **file type** (datatype extension) so Galaxy knows these
         )
         self.rule_builder_set_extension("fastqsanger.gz")
         self.screenshot("rules_example_1_7_extension_set", "File type set to fastqsanger.gz - ready to upload")
-        # rule_builder.main_button_ok.wait_for_and_click()
-        # self.history_panel_wait_for_hid_ok(6)
-        # self.screenshot("rules_example_1_6_download_complete")
+        if include_result:
+            rule_builder.main_button_ok.wait_for_and_click()
+            self.history_panel_wait_for_hid_ok(6)
+            self.screenshot(
+                "rules_example_1_6_download_complete", "Final datasets created and available in the history."
+            )
 
-    def upload_rules_example_2(self):
+    def upload_rules_example_2(self, include_result: bool = False):
         """Creating a simple list collection from a history dataset.
 
         Demonstrates:
@@ -351,7 +377,9 @@ This example also demonstrates loading metadata from an **existing history datas
         self.upload_rule_set_data_type("Collections")
         self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
-        self.screenshot("rules_example_2_1_inputs", "Rule builder configured to create collections from a history dataset")
+        self.screenshot(
+            "rules_example_2_1_inputs", "Rule builder configured to create collections from a history dataset"
+        )
         self.document(
             """
 The key difference from Example 1 is that we've selected:
@@ -391,11 +419,14 @@ Finally, we give the collection itself a name - this is the name that will appea
         )
         self.rule_builder_set_collection_name("PRJDA60709")
         self.screenshot("rules_example_2_4_name", "Collection named and ready to upload")
-        # rule_builder.main_buton_ok.wait_for_and_click()
-        # self.history_panel_wait_for_hid_ok(2)
-        # self.screenshot("rules_example_2_5_download_complete")
+        if include_result:
+            rule_builder.main_button_ok.wait_for_and_click()
+            self.history_panel_wait_for_hid_ok(2)
+            self.screenshot(
+                "rules_example_2_5_download_complete", "Final collection created and available in the history."
+            )
 
-    def upload_rules_example_3(self):
+    def upload_rules_example_3(self, include_result: bool = False):
         """Creating a list of pairs collection with regular expressions.
 
         Demonstrates advanced techniques:
@@ -456,7 +487,9 @@ Column D contains two URLs like `url1;url2`. We'll use a **regular expression** 
 """
         )
         self.rule_builder_add_regex_groups("D", 2, r"(.*);(.*)", screenshot_name="rules_example_3_4_regex")
-        self.screenshot("rules_example_3_6_with_regexes", "Column D split into two columns with forward and reverse URLs")
+        self.screenshot(
+            "rules_example_3_6_with_regexes", "Column D split into two columns with forward and reverse URLs"
+        )
         self.document(
             """
 Now we have two URL columns, but they're still in the same row. We need one row per file.
@@ -476,9 +509,11 @@ This effectively doubles our row count, with each original sample now represente
 """
         )
         self.rule_builder_split_columns(["D"], ["E"], screenshot_name="rules_example_3_8_split_columns")
-        self.screenshot("rules_example_3_9_columns_are_split", "Each sample is now two rows - one for each read direction")
+        self.screenshot(
+            "rules_example_3_9_columns_are_split", "Each sample is now two rows - one for each read direction"
+        )
         self.document(
-            """
+            r"""
 ### Extracting the Pair Indicator
 
 Now we need to tell Galaxy which rows are forward reads and which are reverse. The filenames contain `_1.fastq.gz` or `_2.fastq.gz`, so we'll extract that digit using another regular expression:
@@ -504,11 +539,9 @@ For clarity, we'll swap the columns so the pair indicator appears before the URL
         self.rule_builder_set_mapping("paired-identifier", "D")
         self.rule_builder_set_mapping("url", "E")
         self.rule_builder_set_collection_name("PRJDB3920")
-        self.screenshot(
-            "rules_example_3_14_paired_identifier_set", "Paired collection configured and ready to upload"
-        )
+        self.screenshot("rules_example_3_14_paired_identifier_set", "Paired collection configured and ready to upload")
 
-    def upload_rules_example_4(self):
+    def upload_rules_example_4(self, include_result: bool = False):
         """Building URLs from accession numbers.
 
         Demonstrates advanced URL construction:
@@ -614,7 +647,7 @@ Click the wrench icon to view the JSON representation of these rules.
         rule_builder.main_button_ok.wait_for_and_click()
         rule_builder.view_source.wait_for_visible()
 
-    def upload_rules_example_5(self):
+    def upload_rules_example_5(self, include_result: bool = False):
         """Building matched collections from the same metadata.
 
         Demonstrates:
@@ -713,7 +746,7 @@ This creates two separate collections with matched identifiers.
         self.rule_builder_set_mapping("collection-name", "E")
         self.screenshot("rules_example_5_9_mapping", "Mappings configured to create two matched collections")
 
-    def upload_rules_example_6(self):
+    def upload_rules_example_6(self, include_result: bool = False):
         """Building nested list collections.
 
         Demonstrates:
@@ -773,7 +806,7 @@ First, the standard operations:
         self.scroll_to_end_of_table()
         self.screenshot("rules_example_6_3_end_of_table", "Scrolled to show library names in column L")
         self.document(
-            """
+            r"""
 ### Extracting Group Names with Regex
 
 Column L contains library names like "wtPA14", "con1", "con2", "str1", "gen5". We want to group by the **text prefix** (con, str, gen) but the numbers make each name unique.

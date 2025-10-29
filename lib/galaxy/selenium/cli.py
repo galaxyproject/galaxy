@@ -7,22 +7,23 @@ HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwi
 BACKEND_DESCRIPTION = "Browser automation backend to use (selenium or playwright)."
 
 import os
-from typing import Literal
+from typing import (
+    Literal,
+    Optional,
+)
 from urllib.parse import urljoin
 
 from .driver_factory import (
     ConfiguredDriver,
     virtual_display_if_enabled,
 )
-from .navigates_galaxy import (
-    galaxy_timeout_handler,
-    NavigatesGalaxy,
-)
+from .navigates_galaxy import galaxy_timeout_handler
 from .stories import (
     NoopStory,
     Story,
     StoryProtocol,
 )
+from .stories.data.upload import UploadStoriesMixin
 
 
 def add_selenium_arguments(parser):
@@ -66,7 +67,12 @@ def add_selenium_arguments(parser):
         choices=["selenium", "playwright"],
         help=BACKEND_DESCRIPTION,
     )
-
+    parser.add_argument(
+        "--timeout-multiplier",
+        type=float,
+        default=1.0,
+        help="Multiplier to apply to all timeout values (for slower environments).",
+    )
     return parser
 
 
@@ -95,7 +101,7 @@ def add_story_arguments(parser):
     return parser
 
 
-class DriverWrapper(NavigatesGalaxy):
+class DriverWrapper(UploadStoriesMixin):
     """Adapt argparse command-line options to a browser automation driver."""
 
     def __init__(self, args):
@@ -112,9 +118,8 @@ class DriverWrapper(NavigatesGalaxy):
             self.display = virtual_display_if_enabled(args.selenium_headless)
 
         # Create configured driver with the specified backend
-        # TODO: parameterize timeout multiplier
         self.configured_driver = ConfiguredDriver(
-            galaxy_timeout_handler(1.0),
+            galaxy_timeout_handler(args.timeout_multiplier),
             browser=browser,
             remote=args.selenium_remote,
             remote_host=args.selenium_remote_host,
@@ -134,7 +139,7 @@ class DriverWrapper(NavigatesGalaxy):
             description = args.story_description or ""
             self.story: StoryProtocol = Story(title, description, args.story_output)
         else:
-            self.story: StoryProtocol = NoopStory()
+            self.story = NoopStory()
 
     @property
     def _driver_impl(self):
@@ -144,7 +149,7 @@ class DriverWrapper(NavigatesGalaxy):
     def build_url(self, url="", for_selenium: bool = True):
         return urljoin(self.target_url, url)
 
-    def screenshot(self, label: str, caption: str = None) -> None:
+    def screenshot(self, label: str, caption: Optional[str] = None) -> None:
         """Save screenshot if story tracking is enabled.
 
         Args:
@@ -185,3 +190,6 @@ class DriverWrapper(NavigatesGalaxy):
 
         if exception is not None:
             raise exception
+
+    def _screenshot_path(self, label: str, extension: str = ".png") -> Optional[str]:
+        return None

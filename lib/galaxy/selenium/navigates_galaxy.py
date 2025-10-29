@@ -1228,6 +1228,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def ensure_rules_activity_enabled(self):
         if self.components.rule_builder.activity.is_absent:
             activity_bar = self.components.activity_bar
+            # Odd problems here - settings bar may be clickable but not yet wired up?
+            self.sleep_for(self.wait_types.UX_RENDER)
             self.sleep_for(self.wait_types.UX_RENDER)
             activity_bar.settings.wait_for_and_click()
             activity_bar.additional_activities.wait_for_present()
@@ -1238,6 +1240,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def click_rules_activity(self):
         self.components.rule_builder.activity.wait_for_and_click()
+
+    def rule_builder_import(self):
+        rule_builder = self.components.rule_builder
+        rule_builder.wizard_import.wait_for_and_click()
 
     def rule_builder_set_collection_name(self, name):
         rule_builder = self.components.rule_builder
