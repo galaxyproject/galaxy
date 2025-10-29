@@ -37,7 +37,7 @@ const dataset = computed(() => getDataset(props.datasetId));
 const datasetUrl = computed(() => `/datasets/${props.datasetId}/display`);
 const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}?to_ext=${dataset.value?.file_ext}`));
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
-const previewUrl = computed(() => withPrefix(`${datasetUrl.value}?preview=True`));
+const previewUrl = computed(() => `${datasetUrl.value}?preview=True`);
 
 const sanitizedMessage = computed(() => {
     const plainText = "Contents are shown as plain text.";
@@ -53,7 +53,7 @@ watch(
     () => props.datasetId,
     async () => {
         try {
-            const { headers } = await fetch(previewUrl.value, { method: "HEAD" });
+            const { headers } = await fetch(withPrefix(previewUrl.value), { method: "HEAD" });
             contentChunked.value = !!headers.get("x-content-chunked");
             contentTruncated.value = headers.get("x-content-truncated")
                 ? Number(headers.get("x-content-truncated"))
