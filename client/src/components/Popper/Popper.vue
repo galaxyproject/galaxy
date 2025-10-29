@@ -57,7 +57,7 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 @function popper-border($border-color) {
     @return 1px solid $border-color;

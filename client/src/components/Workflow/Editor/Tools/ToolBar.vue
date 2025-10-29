@@ -445,7 +445,7 @@ function autoLayout() {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-editor-toolbar {
     position: absolute;

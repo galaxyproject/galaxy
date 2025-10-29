@@ -135,7 +135,7 @@ onMounted(() => render());
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .visualization-popout-close {
     left: 1rem;

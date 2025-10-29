@@ -95,7 +95,7 @@ watch(
 </script>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .cell-code-focus {
     background-color: $gray-100;
 }

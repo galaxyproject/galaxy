@@ -125,7 +125,7 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .plugin-item:hover {
     background: $gray-200;

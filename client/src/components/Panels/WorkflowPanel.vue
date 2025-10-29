@@ -196,7 +196,7 @@ function createNew(event: Event) {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-scroll-list {
     overflow-y: auto;

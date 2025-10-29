@@ -61,7 +61,7 @@ watch(isFileOverDocument, (newValue, oldValue) => {
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .ui-drag-and-drop-modal {
     .modal-dialog {

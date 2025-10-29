@@ -48,7 +48,7 @@ function onClick() {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .user-preference-element {
     :deep(.g-card-content h1) {
