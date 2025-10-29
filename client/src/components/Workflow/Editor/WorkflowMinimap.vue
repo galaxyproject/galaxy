@@ -312,7 +312,7 @@ useDraggable(canvas, {
 </template>
 
 <style lang="scss" scoped>
-@import "~bootstrap/scss/_functions.scss";
+@import "bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
 
 .workflow-overview {

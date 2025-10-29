@@ -56,7 +56,7 @@ watch(
 </template>
 
 <style lang="scss" scoped>
-@import "~bootstrap/scss/bootstrap.scss";
+@import "bootstrap/scss/bootstrap.scss";
 @import "custom_theme_variables.scss";
 .theme-element {
     @extend .rounded;
