@@ -75,7 +75,7 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
             <div v-for="([key, output], index) in outputs" :key="index" data-description="terminal invocation output">
                 <Heading size="text" bold separator>{{ key }}</Heading>
                 <GenericHistoryItem
-                    :item-id="output.id"
+                    :item-id="output.id ?? ''"
                     :item-src="output.src"
                     data-description="terminal invocation output item" />
             </div>

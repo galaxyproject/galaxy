@@ -163,7 +163,7 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
         const sortDesc = ctx.sortDesc;
         const sortBy: HistorySortByLiteral =
             ctx.sortBy === "label" ? "name" : (ctx.sortBy as HistorySortByLiteral) || "update_time";
-        const queryDict = HistoriesFilters.getQueryDict(ctx.filter);
+        const queryDict = HistoriesFilters.getQueryDict(ctx.filter ?? "");
 
         const { response, data, error } = await GalaxyApi().GET("/api/histories", {
             params: {
