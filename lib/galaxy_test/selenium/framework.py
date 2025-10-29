@@ -322,12 +322,16 @@ def _create_story_directory(test_name: str) -> str:
     Returns:
         Absolute path to created story directory
     """
-    if not os.path.exists(GALAXY_TEST_STORIES_DIRECTORY):
-        os.makedirs(GALAXY_TEST_STORIES_DIRECTORY)
+    if GALAXY_TEST_STORIES_DIRECTORY is None:
+        raise ValueError("GALAXY_TEST_STORIES_DIRECTORY is not set")
+
+    test_stories_directory = os.path.abspath(GALAXY_TEST_STORIES_DIRECTORY)
+    if not os.path.exists(test_stories_directory):
+        os.makedirs(test_stories_directory)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     story_dir_name = f"{test_name}_{timestamp}"
-    story_dir = os.path.join(GALAXY_TEST_STORIES_DIRECTORY, story_dir_name)
+    story_dir = os.path.join(test_stories_directory, story_dir_name)
     os.makedirs(story_dir)
 
     return story_dir
@@ -356,6 +360,8 @@ def selenium_test(f):
 
                 # Finalize story on success
                 self.story.finalize()
+                if GALAXY_TEST_STORIES_DIRECTORY:
+                    try_symlink(story_dir, os.path.abspath(os.path.join(GALAXY_TEST_STORIES_DIRECTORY, "latest")))
 
                 return rval
             except unittest.SkipTest:
