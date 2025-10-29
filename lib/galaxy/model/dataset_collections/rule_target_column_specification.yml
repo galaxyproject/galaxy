@@ -48,12 +48,19 @@
 - doc: "dbkey maps to the dbkey target type"
   column_header: "dbkey"
   maps_to: "dbkey"
+- doc: "build maps to the dbkey target type"
+  column_header: "build"
+  maps_to: "dbkey"
+
 
 - doc: "filetype maps to the file_type target type"
   column_header: "file type"
   maps_to: "file_type"
 - doc: "extension maps to the file_type target type"
   column_header: "extension"
+  maps_to: "file_type"
+- doc: "Type maps to the file_type target type"
+  column_header: "Type"
   maps_to: "file_type"
 
 - doc: "info maps to the info target type"
