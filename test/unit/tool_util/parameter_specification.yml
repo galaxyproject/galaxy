@@ -263,8 +263,9 @@ gx_text:
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
+    # The legacy API behavior is to make these non-null request parameters into implicit
+    # "" values for text parameters.
     - {}
-    # need to explicitly mark these as non-optional
     - parameter: null
   request_invalid: &gx_text_request_invalid
     - parameter: 5
@@ -627,10 +628,16 @@ gx_genomebuild_optional:
 gx_genomebuild_multiple:
   request_valid:
   - parameter: ["hg18", hg19"]
+  # I don't love this but this is how the legacy API works and the tool parameters
+  # wrappers work this way also. Not sure how I would change this.
+  - parameter: null
   request_invalid:
   - parameter: 6
-  # DIVERGES_FROM_CURRENT_API
+  job_internal_valid:
+  - parameter: ["hg18", hg19"]
   - parameter: null
+  job_internal_invalid:
+  - {}
 
 gx_directory_uri:
   request_valid:

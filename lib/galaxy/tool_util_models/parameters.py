@@ -122,6 +122,7 @@ def allow_batching(job_template: DynamicModelInformation, batch_type: Optional[T
     class BatchRequest(StrictModel):
         meta_class: Literal["Batch"] = Field(..., alias="__class__")
         values: List[batch_type]  # type: ignore[valid-type]
+        linked: Optional[bool] = None  # maybe True instead?
 
     request_type = union_type([job_py_type, BatchRequest])
 
@@ -273,8 +274,17 @@ class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type(self) -> Type:
         return optional_if_needed(StrictStr, self.optional)
 
+    @property
+    def py_type_request(self) -> Type:
+        # such a hack but explicit nulls are always allowed in the API even for non-optional
+        # parameters - it becomes "" in the internal state.
+        return optional(StrictStr)
+
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        py_type = decorate_type_with_validators_if_needed(self.py_type, self.validators)
+        py_type = self.py_type
+        if state_representation in ["request", "request_internal", "request_internal_dereferenced"]:
+            py_type = self.py_type_request
+        py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
         requires_value = self.request_requires_value
@@ -303,8 +313,15 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type(self) -> Type:
         return optional_if_needed(StrictInt, self.optional)
 
+    #@property
+    #def py_type_request(self) -> Type:
+    #    # ugh... we allow explicit nulls in the API even if the input is not optional
+    #    return optional_if_needed(StrictInt, True)
+
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type
+        # if state_representation == "request":
+        #    py_type = self.py_type_request
         validators = self.validators[:]
         if self.min is not None or self.max is not None:
             validators.append(InRangeParameterValidatorModel(min=self.min, max=self.max, implicit=True))
@@ -1138,7 +1155,7 @@ class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
         py_type: Type = StrictStr
         if self.multiple:
             py_type = list_type(py_type)
-        return optional_if_needed(py_type, self.optional)
+        return optional_if_needed(py_type, self.optional or self.multiple)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         requires_value = self.request_requires_value

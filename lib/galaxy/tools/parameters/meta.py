@@ -15,13 +15,16 @@ from galaxy import (
 from galaxy.model import (
     DatasetCollectionElement,
     DatasetInstance,
+    HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
 )
 from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
 from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
+from galaxy.tool_util.parameters import RequestInternalDereferencedToolState
 from galaxy.util.permutations import (
     build_combos,
     input_classification,
@@ -37,6 +40,7 @@ from .wrapped import process_key
 from .._types import (
     InputFormatT,
     ToolRequestT,
+    ToolStateDumpedToJsonInternalT,
     ToolStateJobInstanceT,
 )
 
@@ -333,6 +337,80 @@ def split_inputs_nested(inputs, nested_dict, classifier):
     return (single_inputs_nested, matched_multi_inputs, multiplied_multi_inputs)
 
 
+ExpandedAsyncT = tuple[
+    list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], Optional[matching.MatchingCollections]
+]
+
+
+def expand_meta_parameters_async(app, tool, incoming: RequestInternalDereferencedToolState) -> ExpandedAsyncT:
+    collections_to_match = matching.CollectionsToMatch()
+
+    def classifier_from_value(value, input_key):
+        if isinstance(value, dict) and "values" in value:
+            # Explicit meta wrapper for inputs...
+            is_batch = value.get("__class__", "Batch") == "Batch"
+            is_linked = value.get("linked", True)
+            if is_batch and is_linked:
+                classification = input_classification.MATCHED
+            elif is_batch:
+                classification = input_classification.MULTIPLIED
+            else:
+                classification = input_classification.SINGLE
+            if __collection_multirun_parameter(value):
+                collection_value = value["values"][0]
+                values = __expand_collection_parameter_async(
+                    app, input_key, collection_value, collections_to_match, linked=is_linked
+                )
+            else:
+                values = value["values"]
+        else:
+            classification = input_classification.SINGLE
+            values = value
+        return classification, values
+
+    # is there a way to make Pydantic ensure reordering isn't needed - model and serialize out the parameters maybe?
+    reordered_incoming = reorder_parameters(tool, incoming.input_state, incoming.input_state, True)
+    incoming_template = reordered_incoming
+
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
+        tool.inputs, incoming_template, classifier_from_value
+    )
+    expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=True)
+    # those all have sa model objects from expansion to be used within for additional logic (maybe?)
+    # but we want to record just src and IDS in the job state object - so undo that
+    expanded_job_states = build_combos(
+        to_decoded_json(single_inputs),
+        to_decoded_json(matched_multi_inputs),
+        to_decoded_json(multiplied_multi_inputs),
+        nested=True,
+    )
+    if collections_to_match.has_collections():
+        collection_info = app.dataset_collection_manager.match_collections(collections_to_match)
+    else:
+        collection_info = None
+    return expanded_incomings, expanded_job_states, collection_info
+
+
+def to_decoded_json(has_objects):
+    if isinstance(has_objects, dict):
+        decoded_json = {}
+        for key, value in has_objects.items():
+            decoded_json[key] = to_decoded_json(value)
+        return decoded_json
+    elif isinstance(has_objects, list):
+        return [to_decoded_json(o) for o in has_objects]
+    elif isinstance(has_objects, DatasetCollectionElement):
+        return {"src": "dce", "id": has_objects.id}
+    elif isinstance(has_objects, HistoryDatasetAssociation):
+        return {"src": "hda", "id": has_objects.id}
+    elif isinstance(has_objects, HistoryDatasetCollectionAssociation):
+        return {"src": "hdca", "id": has_objects.id}
+    elif isinstance(has_objects, LibraryDatasetDatasetAssociation):
+        return {"src": "ldda", "id": has_objects.id}
+    else:
+        return has_objects
+
+
 CollectionExpansionListT = Union[
     list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]], list[DatasetInstance]
 ]
@@ -371,7 +449,9 @@ def __expand_collection_parameter(
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
     collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        subcollection_elements = subcollections._split_dataset_collection(collection, subcollection_type)
+        subcollection_elements: list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]] = (
+            subcollections._split_dataset_collection(collection, subcollection_type)
+        )
         return subcollection_elements
     else:
         hdas: list[DatasetInstance] = []
@@ -382,8 +462,36 @@ def __expand_collection_parameter(
         return hdas
 
 
+def __expand_collection_parameter_async(
+    app, input_key, incoming_val, collections_to_match: "matching.CollectionsToMatch", linked=False
+) -> CollectionExpansionListT:
+    # If subcollection multirun of data_collection param - value will
+    # be "hdca_id|subcollection_type" else it will just be hdca_id
+    try:
+        src = incoming_val["src"]
+        if src != "hdca":
+            raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
+        hdc_id = incoming_val["id"]
+        subcollection_type = incoming_val.get("map_over_type", None)
+    except TypeError:
+        hdc_id = incoming_val
+        subcollection_type = None
+    hdc = app.model.context.get(HistoryDatasetCollectionAssociation, hdc_id)
+    collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
+    if subcollection_type is not None:
+        subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
+        return subcollection_elements
+    else:
+        hdas: list[DatasetInstance] = []
+        for element in hdc.collection.dataset_elements:
+            hda = element.dataset_instance
+            hda.element_identifier = element.element_identifier
+            hdas.append(hda)
+        return hdas
+
+
 def __collection_multirun_parameter(value: dict[str, Any]) -> bool:
-    is_batch = value.get("batch", False)
+    is_batch = value.get("batch", False) or value.get("__class__", None) == "Batch"
     if not is_batch:
         return False
 

@@ -43,7 +43,19 @@ def test_decode_data():
     assert decoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_collection():
+def test_decode_data_batch():
+    tool_source = tool_source_for("parameters/gx_data")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = RequestToolState(
+        {"parameter": {"__class__": "Batch", "values": [{"src": "hda", "id": EXAMPLE_ID_1_ENCODED}]}}
+    )
+    request_state.validate(bundle)
+    decoded_state = decode(request_state, bundle, _fake_decode)
+    assert decoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert decoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1
+
+
+def test_decode_collection():
     tool_source = tool_source_for("parameters/gx_data_collection")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": {"src": "hdca", "id": EXAMPLE_ID_1_ENCODED}})
@@ -117,6 +129,22 @@ def test_landing_encode_data():
     encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
     assert encoded_state.input_state["parameter"]["src"] == "hda"
     assert encoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1_ENCODED
+
+
+def test_landing_encode_data_batch():
+    tool_source = tool_source_for("parameters/gx_data")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = LandingRequestToolState(
+        {"parameter": {"__class__": "Batch", "values": [{"src": "hda", "id": EXAMPLE_ID_1_ENCODED}]}}
+    )
+    request_state.validate(bundle)
+    decoded_state = landing_decode(request_state, bundle, _fake_decode)
+    assert decoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert decoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1
+
+    encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
+    assert encoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert encoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1_ENCODED
 
 
 def test_dereference():

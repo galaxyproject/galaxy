@@ -1,3 +1,4 @@
+from galaxy.tool_util_models._types import is_optional
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ColorParameterModel,
@@ -141,6 +142,7 @@ __all__ = (
     "validate_workflow_step",
     "validate_workflow_step_linked",
     "validate_explicit_conditional_test_value",
+    "is_optional",
     "ToolState",
     "TestCaseToolState",
     "ToolParameterT",

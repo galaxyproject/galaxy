@@ -6,7 +6,6 @@ from json import dumps
 from typing import (
     Any,
     cast,
-    Literal,
     Optional,
     Union,
 )
@@ -51,6 +50,7 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.tool_util.parameters import ToolParameterT
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
     CollectionElementDataRequestUri,
@@ -59,6 +59,7 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.tools import Tool
+from galaxy.tools._types import InputFormatT
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
@@ -236,6 +237,14 @@ class ToolsService(ServiceBase):
             public=data_landing_payload.public,
         )
 
+    def inputs(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_ref: ToolRunReference,
+    ) -> list[ToolParameterT]:
+        tool = get_tool(trans, tool_ref)
+        return tool.parameters
+
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
@@ -328,7 +337,7 @@ class ToolsService(ServiceBase):
         input_format = str(payload.get("input_format", "legacy"))
         if input_format not in ("legacy", "21.01"):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
-        input_format = cast(Literal["legacy", "21.01"], input_format)
+        input_format = cast(InputFormatT, input_format)
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         vars = tool.handle_input(

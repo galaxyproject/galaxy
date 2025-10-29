@@ -46,6 +46,7 @@ from galaxy.schema.jobs import (
     JobInputAssociation,
     JobInputSummary,
     JobOutputAssociation,
+    JobOutputCollectionAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
 )
@@ -70,11 +71,14 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list
 from galaxy.webapps.galaxy.services.jobs import (
+    JobCreateResponse,
     JobIndexPayload,
     JobIndexViewEnum,
+    JobRequest,
     JobsService,
 )
 from galaxy.work.context import proxy_work_context_for_history
+from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
 
@@ -156,6 +160,12 @@ ImplicitCollectionJobsIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     default=None,
     title="Implicit Collection Jobs ID",
     description="Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned.",
+)
+
+ToolRequestIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Tool Request ID",
+    description="Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned.",
 )
 
 SortByQueryParam: JobIndexSortByEnum = Query(
@@ -261,6 +271,13 @@ class ShowFullJobResponse(EncodedJobDetails):
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
 
+    @router.post("/api/jobs")
+    def create(
+        self, trans: ProvidesHistoryContext = DependsOnTrans, job_request: JobRequest = Body(...)
+    ) -> JobCreateResponse:
+        validate_not_protected(job_request.tool_id)
+        return self.service.create(trans, job_request)
+
     @router.get("/api/jobs")
     def index(
         self,
@@ -277,6 +294,7 @@ class FastAPIJobs:
         workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
         invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
         implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = ImplicitCollectionJobsIdQueryParam,
+        tool_request_id: Optional[DecodedDatabaseIdField] = ToolRequestIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
@@ -295,6 +313,7 @@ class FastAPIJobs:
             workflow_id=workflow_id,
             invocation_id=invocation_id,
             implicit_collection_jobs_id=implicit_collection_jobs_id,
+            tool_request_id=tool_request_id,
             order_by=order_by,
             search=search,
             limit=limit,
@@ -415,12 +434,14 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> list[JobOutputAssociation]:
+    ) -> list[Union[JobOutputAssociation, JobOutputCollectionAssociation]]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-        output_associations = []
+        output_associations: list[Union[JobOutputAssociation, JobOutputCollectionAssociation]] = []
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+
+        output_associations.extend(self.service.dictify_output_collection_associations(trans, job))
         return output_associations
 
     @router.get(

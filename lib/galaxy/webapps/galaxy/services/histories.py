@@ -68,6 +68,7 @@ from galaxy.schema.schema import (
     ShareHistoryWithStatus,
     ShareWithPayload,
     StoreExportPayload,
+    ToolRequestModel,
     WriteStoreToPayload,
 )
 from galaxy.schema.tasks import (
@@ -85,6 +86,7 @@ from galaxy.webapps.galaxy.services.base import (
     model_store_storage_target,
     ServesExportStores,
     ServiceBase,
+    tool_request_to_model,
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -535,6 +537,13 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             for history in histories
         ]
         return rval
+
+    def tool_requests(
+        self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField
+    ) -> list[ToolRequestModel]:
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        tool_requests = history.tool_requests
+        return [tool_request_to_model(tr) for tr in tool_requests]
 
     def citations(self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField):
         """
