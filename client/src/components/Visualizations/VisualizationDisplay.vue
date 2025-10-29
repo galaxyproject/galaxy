@@ -4,7 +4,6 @@ import { onMounted, ref } from "vue";
 import { onBeforeRouteLeave } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { errorMessageAsString } from "@/utils/simple-error";
 
 import VisualizationFrame from "./VisualizationFrame.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -84,7 +83,7 @@ onMounted(async () => {
             params: { path: { id: props.visualizationId } },
         });
         if (error) {
-            errorMessage.value = errorMessageAsString(error);
+            errorMessage.value = error.err_msg;
         } else if (data?.latest_revision?.config) {
             visualizationConfig.value = data.latest_revision.config;
             errorMessage.value = "";
