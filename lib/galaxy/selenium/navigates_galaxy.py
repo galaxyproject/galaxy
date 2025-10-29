@@ -965,6 +965,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def hover_over(self, target):
         self.hover(target)
 
+    def wait_for_upload_modal(self):
+        self.components.upload.build_button.wait_for_visible()
+        self.components.upload.build_button.wait_for_clickable()
+
     def perform_single_upload(self, test_path, **kwd) -> HistoryEntry:
         before_latest_history_item = self.latest_history_entry()
         self._perform_upload(test_path=test_path, **kwd)
