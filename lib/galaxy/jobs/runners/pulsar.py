@@ -209,6 +209,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    relay_topic_prefix=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
 )
 
 
