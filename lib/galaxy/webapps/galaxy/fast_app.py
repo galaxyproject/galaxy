@@ -1,6 +1,7 @@
 from typing import (
     Any,
 )
+from urllib.parse import urljoin
 
 from a2wsgi import WSGIMiddleware
 from fastapi import (
@@ -9,6 +10,7 @@ from fastapi import (
 )
 from fastapi.openapi.constants import REF_TEMPLATE
 from starlette.middleware.cors import CORSMiddleware
+from tuspyserver import create_tus_router
 
 from galaxy.schema.generics import CustomJsonSchema
 from galaxy.version import VERSION
@@ -165,6 +167,23 @@ def get_openapi_schema() -> dict[str, Any]:
     )
 
 
+def include_tus(app: FastAPI, gx_app):
+    config = gx_app.config
+    root_path = "" if config.galaxy_url_prefix == "/" else config.galaxy_url_prefix
+    upload_tus_router = create_tus_router(
+        prefix=urljoin(root_path, "api/upload/resumable_upload"),
+        files_dir=config.tus_upload_store or config.new_file_path,
+        max_size=config.maximum_upload_file_size,
+    )
+    job_files_tus_router = create_tus_router(
+        prefix=urljoin(root_path, "api/job_files/resumable_upload"),
+        files_dir=config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path,
+        max_size=config.maximum_upload_file_size,
+    )
+    app.include_router(upload_tus_router)
+    app.include_router(job_files_tus_router)
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
     app = get_fastapi_instance(root_path=root_path)
@@ -178,6 +197,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
+    include_tus(app, gx_app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()

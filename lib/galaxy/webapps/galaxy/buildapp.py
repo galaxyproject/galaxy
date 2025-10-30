@@ -8,10 +8,8 @@ import sys
 import threading
 import traceback
 from typing import Optional
-from urllib.parse import urljoin
 
 from paste import httpexceptions
-from tuswsgi import TusMiddleware
 
 import galaxy.app
 import galaxy.datatypes.registry
@@ -1084,30 +1082,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.web.framework.middleware.translogger import TransLogger
 
         app = wrap_if_allowed(app, stack, TransLogger)
-    # TUS upload middleware
-    app = wrap_if_allowed(
-        app,
-        stack,
-        TusMiddleware,
-        kwargs={
-            "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/upload/resumable_upload"),
-            "tmp_dir": application_stack.config.tus_upload_store or application_stack.config.new_file_path,
-            "max_size": application_stack.config.maximum_upload_file_size,
-        },
-    )
-    # TUS upload middleware for job files....
-    app = wrap_if_allowed(
-        app,
-        stack,
-        TusMiddleware,
-        kwargs={
-            "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/job_files/resumable_upload"),
-            "tmp_dir": application_stack.config.tus_upload_store_job_files
-            or application_stack.config.tus_upload_store
-            or application_stack.config.new_file_path,
-            "max_size": application_stack.config.maximum_upload_file_size,
-        },
-    )
     # X-Forwarded-Host handling
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     # Request ID middleware
