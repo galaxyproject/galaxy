@@ -99,134 +99,147 @@ function searchWithinSections(sections: ToolSection[], query: string) {
 
 <template>
     <div class="d-flex flex-column flex-gapy-1">
-        <div class="d-flex flex-gapx-1">
-            <BDropdown
-                block
-                :disabled="props.disabled"
-                variant="link"
-                class="tool-section-dropdown"
-                toggle-class="text-decoration-none"
-                role="menu"
-                aria-label="Select a tool section to filter by"
-                size="sm">
-                <template v-slot:button-content>
-                    <span class="sr-only">Select a tool section to filter by</span>
-                    <FontAwesomeIcon :icon="faLayerGroup" />
-                    <span v-if="selectedSection">
-                        {{ selectedSection.name }}
-                    </span>
-                    <i v-else> Select a section to filter by </i>
-                </template>
-
-                <BDropdownGroup id="searchable-sections" class="sections-select-list" header-classes="search-header">
-                    <template v-slot:header>
-                        <BDropdownText>
-                            <BFormInput
-                                v-model="defaultToolSectionsFilter"
-                                type="text"
-                                placeholder="Filter sections..." />
-                        </BDropdownText>
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex flex-gapx-1">
+                <BDropdown
+                    block
+                    :disabled="props.disabled"
+                    variant="link"
+                    class="tool-section-dropdown"
+                    toggle-class="text-decoration-none"
+                    role="menu"
+                    aria-label="Select a tool section to filter by"
+                    size="sm">
+                    <template v-slot:button-content>
+                        <span class="sr-only">Select a tool section to filter by</span>
+                        <FontAwesomeIcon :icon="faLayerGroup" />
+                        <span v-if="selectedSection">
+                            {{ selectedSection.name }}
+                        </span>
+                        <i v-else> Select a section to filter by </i>
                     </template>
 
-                    <BDropdownItem
-                        v-for="sec in defaultToolSections"
-                        :key="sec.id"
-                        :title="sec.description"
-                        :active="selectedSection?.id === sec.id"
-                        @click="applyQuotedFilter('section', sec.name)">
-                        <span v-localize>{{ sec.name }}</span>
-                    </BDropdownItem>
-                </BDropdownGroup>
-            </BDropdown>
+                    <BDropdownGroup
+                        id="searchable-sections"
+                        class="sections-select-list"
+                        header-classes="search-header">
+                        <template v-slot:header>
+                            <BDropdownText>
+                                <BFormInput
+                                    v-model="defaultToolSectionsFilter"
+                                    type="text"
+                                    placeholder="Filter sections..." />
+                            </BDropdownText>
+                        </template>
 
-            <GButton
-                v-if="selectedSection"
-                title="Remove section filter"
-                icon-only
-                inline
-                transparent
-                tooltip
-                @click="applyQuotedFilter('section', selectedSection.name)">
-                <FontAwesomeIcon :icon="faTimes" />
-            </GButton>
+                        <BDropdownItem
+                            v-for="sec in defaultToolSections"
+                            :key="sec.id"
+                            :title="sec.description"
+                            :active="selectedSection?.id === sec.id"
+                            @click="applyQuotedFilter('section', sec.name)">
+                            <span v-localize>{{ sec.name }}</span>
+                        </BDropdownItem>
+                    </BDropdownGroup>
+                </BDropdown>
 
-            <BDropdown
-                block
-                :disabled="props.disabled"
-                variant="link"
-                class="tool-section-dropdown"
-                toggle-class="text-decoration-none"
-                role="menu"
-                aria-label="Select a tool ontology to filter by"
-                size="sm">
-                <template v-slot:button-content>
-                    <span class="sr-only">Select a tool ontology to filter by</span>
-                    <FontAwesomeIcon :icon="faSitemap" />
-                    <span v-if="selectedOntology">
-                        {{ selectedOntology.name }}
-                    </span>
-                    <i v-else> Select an ontology to filter by </i>
-                </template>
+                <GButton
+                    v-if="selectedSection"
+                    title="Remove section filter"
+                    icon-only
+                    inline
+                    transparent
+                    tooltip
+                    @click="applyQuotedFilter('section', selectedSection.name)">
+                    <FontAwesomeIcon :icon="faTimes" />
+                </GButton>
 
-                <BDropdownGroup id="searchable-sections" class="sections-select-list" header-classes="search-header">
-                    <template v-slot:header>
-                        <BDropdownText>
-                            <BFormInput v-model="ontologiesFilter" type="text" placeholder="Filter ontologies..." />
-                        </BDropdownText>
+                <BDropdown
+                    block
+                    :disabled="props.disabled"
+                    variant="link"
+                    class="tool-section-dropdown"
+                    toggle-class="text-decoration-none"
+                    role="menu"
+                    aria-label="Select a tool ontology to filter by"
+                    size="sm">
+                    <template v-slot:button-content>
+                        <span class="sr-only">Select a tool ontology to filter by</span>
+                        <FontAwesomeIcon :icon="faSitemap" />
+                        <span v-if="selectedOntology">
+                            {{ selectedOntology.name }}
+                        </span>
+                        <i v-else> Select an ontology to filter by </i>
                     </template>
 
-                    <BDropdownGroup v-if="Object.keys(edamOperations).length" id="edam-operations" class="unselectable">
+                    <BDropdownGroup
+                        id="searchable-sections"
+                        class="sections-select-list"
+                        header-classes="search-header">
                         <template v-slot:header>
-                            <FontAwesomeIcon
-                                v-if="getPanelIcon('ontology:edam_operations')"
-                                :icon="getPanelIcon('ontology:edam_operations')"
-                                fixed-width
-                                size="sm" />
-                            <small class="font-weight-bold">{{ panels["ontology:edam_operations"]?.name }}</small>
+                            <BDropdownText>
+                                <BFormInput v-model="ontologiesFilter" type="text" placeholder="Filter ontologies..." />
+                            </BDropdownText>
                         </template>
-                        <BDropdownItem
-                            v-for="ont in edamOperations"
-                            :key="ont.id"
-                            :title="ont.description"
-                            :active="selectedOntology?.id === ont.id"
-                            @click="applyQuotedFilter('ontology', ont.id)">
-                            <span v-localize>{{ ont.name }}</span>
-                        </BDropdownItem>
+
+                        <BDropdownGroup
+                            v-if="Object.keys(edamOperations).length"
+                            id="edam-operations"
+                            class="unselectable">
+                            <template v-slot:header>
+                                <FontAwesomeIcon
+                                    v-if="getPanelIcon('ontology:edam_operations')"
+                                    :icon="getPanelIcon('ontology:edam_operations')"
+                                    fixed-width
+                                    size="sm" />
+                                <small class="font-weight-bold">{{ panels["ontology:edam_operations"]?.name }}</small>
+                            </template>
+                            <BDropdownItem
+                                v-for="ont in edamOperations"
+                                :key="ont.id"
+                                :title="ont.description"
+                                :active="selectedOntology?.id === ont.id"
+                                @click="applyQuotedFilter('ontology', ont.id)">
+                                <span v-localize>{{ ont.name }}</span>
+                            </BDropdownItem>
+                        </BDropdownGroup>
+
+                        <BDropdownDivider />
+
+                        <BDropdownGroup v-if="Object.keys(edamTopics).length" id="edam-topics" class="unselectable">
+                            <template v-slot:header>
+                                <FontAwesomeIcon
+                                    v-if="getPanelIcon('ontology:edam_topics')"
+                                    :icon="getPanelIcon('ontology:edam_topics')"
+                                    fixed-width
+                                    size="sm" />
+                                <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>
+                            </template>
+                            <BDropdownItem
+                                v-for="ont in edamTopics"
+                                :key="ont.id"
+                                :title="ont.description"
+                                :active="selectedOntology?.id === ont.id"
+                                @click="applyQuotedFilter('ontology', ont.id)">
+                                <span v-localize>{{ ont.name }}</span>
+                            </BDropdownItem>
+                        </BDropdownGroup>
                     </BDropdownGroup>
+                </BDropdown>
 
-                    <BDropdownDivider />
+                <GButton
+                    v-if="selectedOntology"
+                    title="Remove ontology filter"
+                    icon-only
+                    inline
+                    transparent
+                    tooltip
+                    @click="applyQuotedFilter('ontology', selectedOntology.id)">
+                    <FontAwesomeIcon :icon="faTimes" />
+                </GButton>
+            </div>
 
-                    <BDropdownGroup v-if="Object.keys(edamTopics).length" id="edam-topics" class="unselectable">
-                        <template v-slot:header>
-                            <FontAwesomeIcon
-                                v-if="getPanelIcon('ontology:edam_topics')"
-                                :icon="getPanelIcon('ontology:edam_topics')"
-                                fixed-width
-                                size="sm" />
-                            <small class="font-weight-bold">{{ panels["ontology:edam_topics"]?.name }}</small>
-                        </template>
-                        <BDropdownItem
-                            v-for="ont in edamTopics"
-                            :key="ont.id"
-                            :title="ont.description"
-                            :active="selectedOntology?.id === ont.id"
-                            @click="applyQuotedFilter('ontology', ont.id)">
-                            <span v-localize>{{ ont.name }}</span>
-                        </BDropdownItem>
-                    </BDropdownGroup>
-                </BDropdownGroup>
-            </BDropdown>
-
-            <GButton
-                v-if="selectedOntology"
-                title="Remove ontology filter"
-                icon-only
-                inline
-                transparent
-                tooltip
-                @click="applyQuotedFilter('ontology', selectedOntology.id)">
-                <FontAwesomeIcon :icon="faTimes" />
-            </GButton>
+            <slot name="list-view-controls" />
         </div>
 
         <ToolOntologyCard v-if="selectedOntology?.description" :ontology="selectedOntology" header />
