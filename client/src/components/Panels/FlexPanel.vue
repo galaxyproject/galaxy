@@ -83,6 +83,10 @@ const sideClasses = computed(() => ({
     left: props.side === "left",
     right: props.side === "right",
 }));
+
+defineExpose({
+    show,
+});
 </script>
 
 <template>
