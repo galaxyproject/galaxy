@@ -8,7 +8,6 @@ import sys
 import threading
 import traceback
 from typing import Optional
-from urllib.parse import urljoin
 
 from paste import httpexceptions
 
