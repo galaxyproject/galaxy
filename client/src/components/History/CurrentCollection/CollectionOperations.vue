@@ -22,6 +22,10 @@ const showCollectionDetailsUrl = computed(() =>
 );
 const disableDownload = props.dsc.populated_state !== "ok";
 
+const hasSampleSheet = computed(() => {
+    return props.dsc.collection_type && props.dsc.collection_type.startsWith("sample_sheet");
+});
+
 const sheetUrl = computed(() => {
     return `${getAppRoot()}collection/${props.dsc.id}/sheet`;
 });
@@ -68,7 +72,7 @@ function onDownload() {
                     <span>Run Job Again</span>
                 </b-button>
                 <b-button
-                    v-if="sheetUrl"
+                    v-if="hasSampleSheet && sheetUrl"
                     class="rounded-0 text-decoration-none"
                     size="sm"
                     variant="link"
