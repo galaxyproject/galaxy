@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faChevronLeft,
-    faChevronRight,
-    faExclamationCircle,
-    faExclamationTriangle,
-    faInfoCircle,
-    faTimes,
-} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -19,8 +10,6 @@ import { ensureDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
-
-library.add(faInfoCircle, faTimes, faChevronRight, faChevronLeft, faExclamationTriangle, faExclamationCircle);
 
 type BroadcastNotificationCreateRequest = components["schemas"]["BroadcastNotificationCreateRequest"];
 

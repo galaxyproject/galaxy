@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -17,8 +16,6 @@ import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
-
-library.add(faTrashAlt, faPalette);
 
 const props = defineProps<{
     comment: TextWorkflowComment;
@@ -239,7 +236,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
-                <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
             </BButton>
             <BButton
                 class="button prevent-zoom"
@@ -256,7 +253,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 <FontAwesomeIcon :icon="['gxd', 'textLarger']" class="prevent-zoom" />
             </BButton>
             <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
-                <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
             </BButton>
         </BButtonGroup>
 

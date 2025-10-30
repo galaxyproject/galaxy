@@ -1,9 +1,6 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-
-library.add(faExternalLinkAlt);
 
 const props = defineProps({
     href: {
@@ -16,6 +13,6 @@ const props = defineProps({
 <template>
     <a target="_blank" :href="props.href">
         <slot></slot>
-        <FontAwesomeIcon icon="external-link-alt" />
+        <FontAwesomeIcon :icon="faExternalLinkAlt" />
     </a>
 </template>

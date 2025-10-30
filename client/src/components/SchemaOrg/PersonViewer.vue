@@ -1,6 +1,6 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Person">
-        <FontAwesomeIcon ref="button" icon="user" />
+        <FontAwesomeIcon ref="button" :icon="faUser" />
         <b-popover
             triggers="click blur"
             :placement="hoverPlacement"
@@ -27,7 +27,7 @@
         </a>
         <a v-if="url" v-b-tooltip.hover title="URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
-            <FontAwesomeIcon icon="external-link-alt" />
+            <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </a>
         <meta
             v-for="attribute in explicitMetaAttributes"
@@ -39,14 +39,11 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faOrcid } from "@fortawesome/free-brands-svg-icons";
 import { faExternalLinkAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import ThingViewerMixin from "./ThingViewerMixin";
-
-library.add(faOrcid, faUser, faExternalLinkAlt);
 
 export default {
     components: {
@@ -64,6 +61,9 @@ export default {
     },
     data() {
         return {
+            faOrcid,
+            faUser,
+            faExternalLinkAlt,
             implicitMicrodataProperties: ["name", "givenName", "email", "familyName", "url", "identifier"],
             thing: this.person,
         };

@@ -1,7 +1,9 @@
 <template>
     <div>
         <div v-if="!url">
-            <GButton id="select-btn" @click="reset"> <FontAwesomeIcon icon="folder-open" /> {{ selectText }} </GButton>
+            <GButton id="select-btn" @click="reset">
+                <FontAwesomeIcon :icon="faFolderOpen" /> {{ selectText }}
+            </GButton>
             <FilesDialog
                 :key="modalKey"
                 mode="directory"
@@ -12,7 +14,7 @@
         <b-breadcrumb v-if="url" class="mb-0">
             <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
                 <GButton class="pathname" color="blue">
-                    <FontAwesomeIcon icon="folder-open" /> {{ url.protocol }}
+                    <FontAwesomeIcon :icon="faFolderOpen" /> {{ url.protocol }}
                 </GButton>
             </b-breadcrumb-item>
             <b-breadcrumb-item
@@ -45,8 +47,7 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFolder, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
+import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { FilesDialog } from "components/FilesDialog";
 import { Toast } from "composables/toast";
@@ -55,8 +56,6 @@ import _l from "utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-
-library.add(faFolder, faFolderOpen);
 
 const getDefaultValues = () => ({
     isModalShown: false,
@@ -78,7 +77,12 @@ export default {
         },
     },
     data() {
-        return { ...getDefaultValues(), modalKey: 0, selectText: _l("Select") };
+        return {
+            ...getDefaultValues(),
+            modalKey: 0,
+            selectText: _l("Select"),
+            faFolderOpen,
+        };
     },
     computed: {
         isValidName() {

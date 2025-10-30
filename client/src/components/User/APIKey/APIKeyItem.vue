@@ -1,6 +1,5 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEye, faEyeSlash, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import CopyToClipboard from "components/CopyToClipboard";
@@ -8,8 +7,6 @@ import UtcDate from "components/UtcDate";
 import { ref } from "vue";
 
 import svc from "./model/service";
-
-library.add(faEye, faEyeSlash, faKey, faTrash);
 
 defineProps({
     item: {

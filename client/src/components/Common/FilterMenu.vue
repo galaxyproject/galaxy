@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BModal, BPopover } from "bootstrap-vue";
@@ -17,8 +16,6 @@ import FilterMenuInput from "@/components/Common/FilterMenuInput.vue";
 import FilterMenuMultiTags from "@/components/Common/FilterMenuMultiTags.vue";
 import FilterMenuObjectStore from "@/components/Common/FilterMenuObjectStore.vue";
 import FilterMenuRanged from "@/components/Common/FilterMenuRanged.vue";
-
-library.add(faAngleDoubleUp, faQuestion, faSearch);
 
 interface BackendFilterError {
     err_msg: string;

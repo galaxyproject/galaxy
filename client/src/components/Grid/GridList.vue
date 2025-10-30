@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
@@ -26,8 +25,6 @@ import UtcDate from "@/components/UtcDate.vue";
 
 const eventBus = useEventBus<string>("grid-router-push");
 const router = useRouter();
-
-library.add(faCaretDown, faCaretUp, faShieldAlt);
 
 interface Props {
     // provide a grid configuration
@@ -414,9 +411,9 @@ watch(operationMessage, () => {
                                 <span v-if="sortBy === fieldEntry.key">
                                     <FontAwesomeIcon
                                         v-if="sortDesc"
-                                        icon="caret-down"
+                                        :icon="faCaretDown"
                                         data-description="grid sort desc" />
-                                    <FontAwesomeIcon v-else icon="caret-up" data-description="grid sort asc" />
+                                    <FontAwesomeIcon v-else :icon="faCaretUp" data-description="grid sort asc" />
                                 </span>
                             </BButton>
                         </span>
@@ -493,7 +490,7 @@ watch(operationMessage, () => {
                                     @tag-click="applyFilter('tag', $event, true)" />
                                 <span v-else v-localize> Not available. </span>
                             </div>
-                            <FontAwesomeIcon v-else icon="fa-shield-alt" />
+                            <FontAwesomeIcon v-else :icon="faShieldAlt" />
                         </td>
                     </tr>
                     <tr v-if="expanded.has(rowData)" data-description="grid expanded row">

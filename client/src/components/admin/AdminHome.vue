@@ -135,15 +135,11 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
 import { useConfig } from "@/composables/config";
 
 import Heading from "components/Common/Heading.vue";
-
-library.add(faServer, faUser, faWrench);
 
 const { config, isConfigLoaded } = useConfig();
 

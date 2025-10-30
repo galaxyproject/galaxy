@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
-
-library.add(faChevronLeft, faChevronRight);
 
 const DEFAULT_WIDTH = 300;
 

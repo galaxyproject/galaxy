@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -8,8 +7,6 @@ import { useRouter } from "vue-router/composables";
 import { useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-
-library.add(faPlus, faUpload);
 
 const router = useRouter();
 

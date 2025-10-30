@@ -10,8 +10,8 @@
                     variant="link"
                     size="sm"
                     class="float-right">
-                    <FontAwesomeIcon v-if="expanded" icon="chevron-up" class="fa-fw" />
-                    <FontAwesomeIcon v-else icon="chevron-down" class="fa-fw" />
+                    <FontAwesomeIcon v-if="expanded" :icon="faChevronUp" class="fa-fw" />
+                    <FontAwesomeIcon v-else :icon="faChevronDown" class="fa-fw" />
                 </span>
             </div>
             <span class="portlet-title">
@@ -28,13 +28,9 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { IconDefinition } from "font-awesome-6";
-
-library.add(faChevronUp);
-library.add(faChevronDown);
 
 export default {
     components: {
@@ -63,7 +59,10 @@ export default {
         },
     },
     data() {
-        return {};
+        return {
+            faChevronUp,
+            faChevronDown,
+        };
     },
     computed: {
         portletHeaderClasses() {

@@ -1,4 +1,3 @@
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { computed, onMounted, ref } from "vue";
 
@@ -9,8 +8,6 @@ import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { type ItemSizeSummary, purgeDatasetById, undeleteDatasetById } from "./service";
-
-library.add(faAngleDoubleUp, faAngleDoubleDown);
 
 interface DataLoader {
     (): Promise<void>;

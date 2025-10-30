@@ -17,16 +17,12 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
 import type { PropType } from "vue";
 import { ref } from "vue";
 
 import { type Trigger, usePopper } from "./usePopper";
-
-library.add(faTimesCircle);
 
 const props = defineProps({
     arrow: { type: Boolean, default: true },

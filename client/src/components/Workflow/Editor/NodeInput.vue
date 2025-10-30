@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronCircleRight, faMinusSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce, type UseElementBoundingReturn } from "@vueuse/core";
@@ -30,8 +29,6 @@ import type { InputTerminalSource } from "@/stores/workflowStepStore";
 
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
-
-library.add(faChevronCircleRight, faMinusSquare);
 
 const props = defineProps({
     input: {
@@ -236,7 +233,7 @@ watch(
             <b-tooltip v-if="reason" :target="id" :show="showTooltip">
                 {{ reason }}
             </b-tooltip>
-            <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
+            <FontAwesomeIcon class="terminal-icon" :icon="faChevronCircleRight" />
         </div>
         <button
             v-if="hasConnections && !readonly"
@@ -244,7 +241,7 @@ watch(
             :title="reason"
             class="delete-terminal-button"
             @click="onRemove">
-            <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
+            <FontAwesomeIcon class="delete-button-icon" :icon="faMinusSquare" />
         </button>
         <span v-if="!blank">{{ label }}</span>
         <span
