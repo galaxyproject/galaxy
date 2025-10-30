@@ -113,7 +113,7 @@ const wizard = useWizard({
     },
     "upload-workbook": {
         label: "Upload workbook",
-        instructions: "Upload a workbook containing with URIs and metadata",
+        instructions: "Upload a workbook containing URIs with metadata",
         isValid: () => sourceFrom.value === "workbook" && workbookCompleted.value,
         isSkippable: () => sourceFrom.value !== "workbook",
     },
