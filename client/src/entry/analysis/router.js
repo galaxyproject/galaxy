@@ -34,6 +34,7 @@ import CredentialsManagement from "components/User/Credentials/CredentialsManage
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import NotificationsPreferences from "components/User/Notifications/NotificationsPreferences";
+import TagsManagement from "components/User/TagsManagement";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
@@ -629,6 +630,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/notifications/preferences",
                         component: NotificationsPreferences,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/tags",
+                        component: TagsManagement,
                         redirect: redirectAnon(),
                     },
                     {
