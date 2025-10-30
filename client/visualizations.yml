@@ -44,7 +44,7 @@ hyphyvision:
     version: 0.0.1
 igv:
     package: "@galaxyproject/igv"
-    version: 0.0.20
+    version: 0.0.21
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
     version: 0.0.17
