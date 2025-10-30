@@ -142,6 +142,11 @@ class SmartTarget:
         # TODO: add to unit test
         self._has_driver.send_enter(self.wait_for_visible())
 
+    def wait_for_and_highlight(self, **kwds):
+        """Wait for element visible and return context manager to highlight it."""
+        element = self.wait_for_visible(**kwds)
+        return self._has_driver.highlight_element(element)
+
     def wait_for_and_clear_and_send_keys(self, *text):
         dom_element = self.wait_for_visible()
         dom_element.clear()
