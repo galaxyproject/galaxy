@@ -224,7 +224,7 @@ tomli==2.3.0 ; python_full_version < '3.11'
 tornado==6.5.2
 tqdm==4.67.1
 tuspy==1.1.0
-tuswsgi==0.5.5
+tuspyserver==4.2.0
 typing-extensions==4.15.0
 typing-inspection==0.4.2
 tzdata==2025.2

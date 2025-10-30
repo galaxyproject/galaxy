@@ -101,8 +101,8 @@ dependencies = [
     "starlette-context",
     "svgwrite",
     "tifffile",
-    "tuswsgi",
     "typing-extensions",
+    "tuspyserver",
     "uvicorn!=0.28.0",  # https://github.com/galaxyproject/galaxy/issues/17669
     "uvloop>=0.21.0",  # Python 3.13 support
     "WebOb>=1.8.9",  # Python 3.13 support
@@ -256,6 +256,9 @@ keep-runtime-typing = true
 constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
     "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
+]
+override-dependencies = [
+    "fastapi; sys_platform == 'never'",
 ]
 default-groups = []
 extra-index-url = ["https://wheels.galaxyproject.org/simple"]
