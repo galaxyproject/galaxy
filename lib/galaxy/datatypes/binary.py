@@ -4891,44 +4891,41 @@ class SpatialData(CompressedZarrZipArchive):
 
     file_ext = "spatialdata.zip"
 
+    # Minimal metadata for elements
     MetadataElement(
-        name="images",
-        desc="SpatialData image elements",
-        default=[],
-        param=metadata.SelectParameter,
-        multiple=True,
+        name="images_count",
+        desc="Number of SpatialData image elements",
+        default=0,
         readonly=True,
         visible=True,
+        no_value=0,
     )
 
     MetadataElement(
-        name="labels",
-        desc="SpatialData label elements",
-        default=[],
-        param=metadata.SelectParameter,
-        multiple=True,
+        name="labels_count",
+        desc="Number of SpatialData label elements",
+        default=0,
         readonly=True,
         visible=True,
+        no_value=0,
     )
 
     MetadataElement(
-        name="shapes",
-        desc="SpatialData shape elements",
-        default=[],
-        param=metadata.SelectParameter,
-        multiple=True,
+        name="shapes_count",
+        desc="Number of SpatialData shape elements",
+        default=0,
         readonly=True,
         visible=True,
+        no_value=0,
     )
 
     MetadataElement(
-        name="points",
-        desc="SpatialData point elements",
-        default=[],
-        param=metadata.SelectParameter,
-        multiple=True,
+        name="points_count",
+        desc="Number of SpatialData point elements",
+        default=0,
         readonly=True,
         visible=True,
+        no_value=0,
     )
 
     MetadataElement(
@@ -4978,26 +4975,18 @@ class SpatialData(CompressedZarrZipArchive):
             if dataset.metadata.zarr_format:
                 peek_lines[0] += f" (Zarr Format v{dataset.metadata.zarr_format})"
 
-            # Show each element type if present
-            if dataset.metadata.images:
-                peek_lines.append(f"├── Images ({len(dataset.metadata.images)})")
-                for img in dataset.metadata.images:
-                    peek_lines.append(f"│     └── '{img}'")
+            # Show counts for each element type
+            if getattr(dataset.metadata, "images_count", 0):
+                peek_lines.append(f"├── Images ({dataset.metadata.images_count})")
 
-            if dataset.metadata.labels:
-                peek_lines.append(f"├── Labels ({len(dataset.metadata.labels)})")
-                for lbl in dataset.metadata.labels:
-                    peek_lines.append(f"│     └── '{lbl}'")
+            if getattr(dataset.metadata, "labels_count", 0):
+                peek_lines.append(f"├── Labels ({dataset.metadata.labels_count})")
 
-            if dataset.metadata.shapes:
-                peek_lines.append(f"├── Shapes ({len(dataset.metadata.shapes)})")
-                for shp in dataset.metadata.shapes:
-                    peek_lines.append(f"│     └── '{shp}'")
+            if getattr(dataset.metadata, "shapes_count", 0):
+                peek_lines.append(f"├── Shapes ({dataset.metadata.shapes_count})")
 
-            if dataset.metadata.points:
-                peek_lines.append(f"├── Points ({len(dataset.metadata.points)})")
-                for pts in dataset.metadata.points:
-                    peek_lines.append(f"│     └── '{pts}'")
+            if getattr(dataset.metadata, "points_count", 0):
+                peek_lines.append(f"├── Points ({dataset.metadata.points_count})")
 
             if dataset.metadata.tables:
                 peek_lines.append(f"└── Tables ({len(dataset.metadata.tables)})")
@@ -5119,38 +5108,34 @@ class SpatialData(CompressedZarrZipArchive):
                         except Exception:
                             pass
 
-                # Extract table shapes (n_obs, n_vars) from AnnData tables
+                # Set metadata: counts for most elements, but keep tables and
+                # coordinate system names and table shapes for compatibility.
+                dataset.metadata.images_count = len(images)
+                dataset.metadata.labels_count = len(labels)
+                dataset.metadata.shapes_count = len(shapes)
+                dataset.metadata.points_count = len(points)
+
+                # Preserve table names and shapes (as before)
+                dataset.metadata.tables = sorted(tables)
                 table_shapes = {}
                 for table_name in tables:
                     try:
-                        # Get obs shape from obs/_index/.zarray
                         obs_index_path = f"{root_zarr}/tables/{table_name}/obs/_index/.zarray"
                         var_index_path = f"{root_zarr}/tables/{table_name}/var/_index/.zarray"
-
                         n_obs = None
                         n_vars = None
-
                         if obs_index_path in zf.namelist():
                             with zf.open(obs_index_path) as f:
                                 obs_array = json.load(f)
                                 n_obs = obs_array.get("shape", [None])[0]
-
                         if var_index_path in zf.namelist():
                             with zf.open(var_index_path) as f:
                                 var_array = json.load(f)
                                 n_vars = var_array.get("shape", [None])[0]
-
                         if n_obs is not None and n_vars is not None:
                             table_shapes[table_name] = (n_obs, n_vars)
                     except Exception:
                         pass
-
-                # Set metadata
-                dataset.metadata.images = sorted(images)
-                dataset.metadata.labels = sorted(labels)
-                dataset.metadata.shapes = sorted(shapes)
-                dataset.metadata.points = sorted(points)
-                dataset.metadata.tables = sorted(tables)
                 dataset.metadata.table_shapes = table_shapes
                 dataset.metadata.coordinate_systems = sorted(coordinate_systems)
                 dataset.metadata.spatialdata_version = spatialdata_version
