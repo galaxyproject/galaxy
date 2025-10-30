@@ -1509,6 +1509,8 @@ class Anndata(H5):
     True
     >>> Anndata().sniff(get_test_fname('adata_unk.h5ad'))
     True
+    >>> Anndata().sniff(get_test_fname('adata_noX.h5ad'))
+    True
     """
 
     file_ext = "h5ad"
@@ -1683,14 +1685,23 @@ class Anndata(H5):
 
             # Resolving the problematic shape parameter
             if "X" in dataset.metadata.layers_names:
-                # Shape we determine here due to the non-standard representation of 'X' dimensions
-                shape = anndata_file["X"].attrs.get("shape")
-                if shape is not None:
-                    dataset.metadata.shape = tuple(shape)
-                elif hasattr(anndata_file["X"], "shape"):
-                    dataset.metadata.shape = tuple(anndata_file["X"].shape)
 
-            if dataset.metadata.shape is None:
+                # Check if X is a null/empty matrix (common in fragment-only files of snapatac data for example)
+                if (
+                    anndata_file["X"].attrs.get("encoding-type") == "null"
+                    or anndata_file["X"].attrs.get("shape") is None
+                ):
+                    # if X matrix is null/empty, derive shape from obs and var sizes
+                    dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+                else:
+                    # if X matrix has actual data
+                    shape = anndata_file["X"].attrs.get("shape")
+                    if shape is not None:
+                        dataset.metadata.shape = tuple(shape)
+                    elif hasattr(anndata_file["X"], "shape") and anndata_file["X"].shape is not None:
+                        dataset.metadata.shape = tuple(anndata_file["X"].shape)
+
+            if dataset.metadata.shape is None or dataset.metadata.shape == (-1, -1):
                 dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
