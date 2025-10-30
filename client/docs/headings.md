@@ -49,4 +49,4 @@ Following properties allow for further styling the component:
 - `bold` - makes a heading bold
 - `inline` - displays the heading inline
 - `separator` - draws a separating line, to better distinguish sections
-- `icon="..."` - adds a font-awesome icon decoration to the left of the heading. Make sure to also load the icon with `library.add(...)`.
+- `icon={iconObject}` - adds an icon to the left of the heading. Import from FontAwesome (`@fortawesome/free-solid-svg-icons`) or Galaxy icons (`@/components/icons/galaxyIcons`).
