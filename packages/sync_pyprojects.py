@@ -7,8 +7,7 @@ PACKAGES_DIR = Path(__file__).parent
 WORKSPACE_ROOT_PYPROJECT = PACKAGES_DIR / "pyproject.toml"
 
 PYPROJECT_TOML = Template(
-    """
-[build-system]
+    """[build-system]
 build-backend = "setuptools.build_meta"
 requires = ["setuptools"]
 
@@ -21,7 +20,7 @@ dynamic = [
     "optional-dependencies",
     "readme",
     "requires-python",
-    "version"
+    "version",
 ]
 name = "${project_name}"
 """

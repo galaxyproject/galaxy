@@ -112,12 +112,16 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${GALAXY_CONDA_PYTHON_VERSION}" "pip>=${MIN_PIP_VERSION}"
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${GALAXY_CONDA_PYTHON_VERSION}" "pip>=${MIN_PIP_VERSION}" uv
                     unset __CONDA_INFO
                 fi
                 conda_activate
             fi
-            python3 -m venv "$GALAXY_VIRTUAL_ENV"
+            if command -v uv >/dev/null; then
+                uv venv "$GALAXY_VIRTUAL_ENV"
+            else
+                python3 -m venv "$GALAXY_VIRTUAL_ENV"
+            fi
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
 
@@ -128,36 +132,48 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "using Python: $GALAXY_PYTHON"
             echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_VIRTUAL_ENV to an"
             echo "existing environment before starting Galaxy."
-            # First try to use the venv standard library module, although it is
-            # not always installed by default on Linux distributions.
-            if ! "$GALAXY_PYTHON" -m venv "$GALAXY_VIRTUAL_ENV"; then
-                echo "Creating the Python virtual environment using the venv standard library module failed."
-                echo "Trying with virtualenv now."
-                if command -v virtualenv >/dev/null; then
-                    virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
-                else
-                    # Download virtualenv zipapp
-                    vurl="https://bootstrap.pypa.io/virtualenv/${MIN_PYTHON_VERSION}/virtualenv.pyz"
-                    vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
-                    vsrc="$vtmp/$(basename $vurl)"
-                    echo "Fetching $vurl"
-                    if command -v curl >/dev/null; then
-                        curl -L -o "$vsrc" "$vurl"
-                    elif command -v wget >/dev/null; then
-                        wget -O "$vsrc" "$vurl"
+            if command -v uv >/dev/null; then
+                uv venv --python "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
+            else
+                # First try to use the venv standard library module, although it is
+                # not always installed by default on Linux distributions.
+                if ! "$GALAXY_PYTHON" -m venv "$GALAXY_VIRTUAL_ENV"; then
+                    echo "Creating the Python virtual environment using the venv standard library module failed."
+                    echo "Trying with virtualenv now."
+                    if command -v virtualenv >/dev/null; then
+                        virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
                     else
-                        "$GALAXY_PYTHON" -c "try:
-        from urllib import urlretrieve
-    except:
-        from urllib.request import urlretrieve
-    urlretrieve('$vurl', '$vsrc')"
+                        # Download virtualenv zipapp
+                        vurl="https://bootstrap.pypa.io/virtualenv/${MIN_PYTHON_VERSION}/virtualenv.pyz"
+                        vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
+                        vsrc="$vtmp/$(basename $vurl)"
+                        echo "Fetching $vurl"
+                        if command -v curl >/dev/null; then
+                            curl -L -o "$vsrc" "$vurl"
+                        elif command -v wget >/dev/null; then
+                            wget -O "$vsrc" "$vurl"
+                        else
+                            "$GALAXY_PYTHON" -c "try:
+            from urllib import urlretrieve
+        except:
+            from urllib.request import urlretrieve
+        urlretrieve('$vurl', '$vsrc')"
+                        fi
+                        "$GALAXY_PYTHON" "$vsrc" "$GALAXY_VIRTUAL_ENV"
+                        rm -rf "$vtmp"
                     fi
-                    "$GALAXY_PYTHON" "$vsrc" "$GALAXY_VIRTUAL_ENV"
-                    rm -rf "$vtmp"
                 fi
             fi
         fi
     fi
+fi
+
+if command -v uv >/dev/null; then
+    PIP_CMD="$(command -v uv) pip"
+    UNINSTALL_OPTIONS=''
+else
+    PIP_CMD='python -m pip'
+    UNINSTALL_OPTIONS='--yes'
 fi
 
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
@@ -180,18 +196,19 @@ fi
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    python -m pip install "pip>=$MIN_PIP_VERSION" wheel
+    if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        ${PIP_CMD} install "pip>=${MIN_PIP_VERSION}" wheel
+    fi
     # shellcheck disable=SC2086
-    pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-
+    ${PIP_CMD} install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     set_galaxy_config_file_var
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
-        if pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
+        if ${PIP_CMD} list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
-            pip uninstall -y psycopg2 psycopg2-binary
+            ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     fi
 fi
 
@@ -250,7 +267,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Set plugin path
     GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
 
-    if [ $INSTALL_PREBUILT_CLIENT -eq 0 ]; then
+    if [ "${INSTALL_PREBUILT_CLIENT}" -eq 0 ]; then
         # If we have not opted to use a prebuilt client, then build client.
         cd client
         # shellcheck disable=SC2086

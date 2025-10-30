@@ -11,8 +11,8 @@ SKIP_PACKAGES=(
 
 should_skip_package() {
     local pkg
-    for pkg in ${SKIP_PACKAGES[@]}; do
-        [[ $1 == $pkg ]] && return 0
+    for pkg in "${SKIP_PACKAGES[@]}"; do
+        [ "$1" = "$pkg" ] && return 0
     done
     return 1
 }
@@ -36,12 +36,21 @@ cd "$(dirname "$0")"
 TEST_PYTHON=${TEST_PYTHON:-"python3"}
 TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
-"$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
+if command -v uv >/dev/null; then
+    uv venv --python "$TEST_PYTHON" "$TEST_ENV_DIR"
+    PIP_CMD="$(command -v uv) pip"
+else
+    "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
+    PIP_CMD='python -m pip'
+fi
+
 # shellcheck disable=SC1091
 . "${TEST_ENV_DIR}/bin/activate"
-pip install --upgrade pip setuptools wheel
+if [ "${PIP_CMD}" = 'python -m pip' ]; then
+    ${PIP_CMD} install --upgrade pip setuptools wheel
+fi
 if [ $FOR_PULSAR -eq 0 ]; then
-    pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
+    ${PIP_CMD} install -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 fi
 
 # Ensure ordered by dependency DAG
@@ -65,13 +74,13 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        pip install '.[image-util,template,jstree,config-template,test]'
+        ${PIP_CMD} install '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
-        pip install '.[cwl,mulled,edam,extended-assertions,test]'
+        ${PIP_CMD} install '.[cwl,mulled,edam,extended-assertions,test]'
     elif grep -q 'test =' setup.cfg 2>/dev/null; then
-        pip install '.[test]'
+        ${PIP_CMD} install '.[test]'
     else
-        pip install .
+        ${PIP_CMD} install .
     fi
 
     if [ $FOR_PULSAR -eq 0 ]; then

@@ -5,27 +5,27 @@ shopt -s extglob
 # TODO: upload packages
 # TODO: set dev version in 21.01 (+ 20.09?) branches
 
-: ${VENV:=.venv}
-: ${FORK_REMOTE:=origin}
-: ${UPSTREAM_REMOTE:=upstream}
-: ${UPSTREAM_REMOTE_URL:=git@github.com:galaxyproject/galaxy.git}
-: ${DEV_BRANCH:=dev}
-: ${STABLE_BRANCH:=master}
+: "${VENV:=.venv}"
+: "${FORK_REMOTE:=origin}"
+: "${UPSTREAM_REMOTE:=upstream}"
+: "${UPSTREAM_REMOTE_URL:=git@github.com:galaxyproject/galaxy.git}"
+: "${DEV_BRANCH:=dev}"
+: "${STABLE_BRANCH:=master}"
 
 # Vars for local releases
-: ${RELEASE_LOCAL_TAG:=local}
-: ${RELEASE_LOCAL_COMMIT:=$(git rev-parse --short HEAD)}
-: ${RELEASE_LOCAL_VERSION:=${RELEASE_LOCAL_TAG}$(date -u +%Y%m%dT%H%M%SZ).${RELEASE_LOCAL_COMMIT}}
+: "${RELEASE_LOCAL_TAG:=local}"
+: "${RELEASE_LOCAL_COMMIT:=$(git rev-parse --short HEAD)}"
+: "${RELEASE_LOCAL_VERSION:=${RELEASE_LOCAL_TAG}$(date -u +%Y%m%dT%H%M%SZ).${RELEASE_LOCAL_COMMIT}}"
 
 # Only use this for dev/testing/CI to ignore forward merge conflicts, skip confirmation and package builds, etc.
-: ${TEST_MODE:=false}
+: "${TEST_MODE:=false}"
 $TEST_MODE && MERGE_STRATEGY_OPTIONS='-X ours' || MERGE_STRATEGY_OPTIONS=
 
 VERIFY_PACKAGES=(wheel packaging)
 
 BRANCH_CURR=$(git branch --show-current)
 
-: ${RELEASE_CURR:=$(grep '^VERSION_MAJOR' lib/galaxy/version.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}
+: "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' lib/galaxy/version.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
 RELEASE_NEXT=
 RELEASE_CURR_MINOR=
 RELEASE_CURR_MINOR_NEXT=
@@ -70,7 +70,6 @@ done
 
 function trap_handler() {
     { set +x; } 2>/dev/null
-    local file
     $ERROR && log_func=log_error || log_func=log
     $log_func "Cleaning up..."
     if $WORKING_DIR_CLEAN; then
@@ -140,7 +139,8 @@ function sed_inplace() {
 
 
 function fork_owner() {
-    local url=$(git remote get-url "$FORK_REMOTE")
+    local url
+    url=$(git remote get-url "$FORK_REMOTE")
     case "$url" in
         https://github.com/*)
             echo "$url" | awk -F/ '{print $4}'
@@ -177,8 +177,12 @@ function ensure_prereqs() {
         [ -d "$VENV" ] || { log_error "Missing venv, please create: ${VENV}"; exit 1; }
         . "${VENV}/bin/activate"
     fi
-    pip_list=$(log_exec "${VENV}/bin/pip" list)
-    for package in ${VERIFY_PACKAGES[@]}; do
+    if command -v uv >/dev/null; then
+        pip_list=$(log_exec uv pip list)
+    else
+        pip_list=$(log_exec "${VENV}/bin/pip" list)
+    fi
+    for package in "${VERIFY_PACKAGES[@]}"; do
         echo "$pip_list" | grep -E "^${package}\s+" || { log_error "Package '${package}' missing from venv: ${VENV}" ; exit 1; }
     done
 }
@@ -253,7 +257,8 @@ function branch_exists() {
 
 function _test_forward_merge() {
     local curr="$1"
-    local next="$(release_next "$curr")"
+    local next
+    next=$(release_next "$curr")
     local curr_branch="${UPSTREAM_REMOTE}/release_${curr}"
     local next_branch="${UPSTREAM_REMOTE}/release_${next}"
     local curr_local_branch="__release_merge_test_${curr}"
@@ -270,6 +275,7 @@ function _test_forward_merge() {
     fi
     git_checkout_temp "$next_local_branch" "$next_branch"
     # Test the merge even if ignoring just to test the code path
+    # shellcheck disable=SC2086
     log_exec git merge $MERGE_STRATEGY_OPTIONS -m 'test merge; please ignore' "$curr_local_branch" || { 
         log_error "Merging unmodified ${curr} to ${next} failed, resolve upstream first!"; exit 1; }
     if $recurse; then
@@ -279,21 +285,27 @@ function _test_forward_merge() {
 
 
 function test_forward_merge() {
-    local branch_curr=$(git branch --show-current)
+    local branch_curr
+    branch_curr=$(git branch --show-current)
     _test_forward_merge "$@"
     git checkout "$branch_curr"
 }
 
 
 function perform_stable_merge() {
-    [ "$RELEASE_TYPE" == 'initial' -o "$RELEASE_TYPE" == 'point' ] || return 0
-    local branch_curr=$(git branch --show-current)
+    [ "$RELEASE_TYPE" == 'initial' ] || [ "$RELEASE_TYPE" == 'point' ] || return 0
+    local branch_curr
+    branch_curr=$(git branch --show-current)
     git_checkout_temp '__stable' "${UPSTREAM_REMOTE}/${STABLE_BRANCH}"
-    local stable=$(get_version_major)
-    local curr_int=$(echo "$RELEASE_CURR" | tr -d .)
-    local stable_int=$(echo "$stable" | tr -d .)
+    local stable
+    stable=$(get_version_major)
+    local curr_int
+    curr_int=$(echo "$RELEASE_CURR" | tr -d .)
+    local stable_int
+    stable_int=$(echo "$stable" | tr -d .)
     if [ "$curr_int" -ge "$stable_int" ]; then
         log "Release '${RELEASE_CURR}' >= stable branch release '${stable}', merging 'release_${RELEASE_CURR}' to '${STABLE_BRANCH}'"
+        # shellcheck disable=SC2086
         log_exec git merge $MERGE_STRATEGY_OPTIONS -m "Merge branch 'release_${RELEASE_CURR}' into '${STABLE_BRANCH}'" "__release_${RELEASE_CURR}"
         PUSH_BRANCHES+=("__stable:${STABLE_BRANCH}")
     else
@@ -305,7 +317,8 @@ function perform_stable_merge() {
 
 function _perform_forward_merge() {
     local curr="$1"
-    local next="$(release_next "$curr")"
+    local next
+    next="$(release_next "$curr")"
     local curr_branch="${UPSTREAM_REMOTE}/release_${curr}"
     local next_branch="${UPSTREAM_REMOTE}/release_${next}"
     local curr_local_branch="__release_${curr}"
@@ -331,7 +344,8 @@ function _perform_forward_merge() {
 
 function perform_forward_merge() {
     local curr="$1"
-    local branch_curr=$(git branch --show-current)
+    local branch_curr
+    branch_curr=$(git branch --show-current)
     _perform_forward_merge "$@"
     declare -p PUSH_BRANCHES
     git checkout "$branch_curr"
@@ -344,7 +358,7 @@ function push_merged() {
         log "Pushing '${branch}' to remote '${UPSTREAM_REMOTE}'"
         log_exec git push "$UPSTREAM_REMOTE" "$branch"
     done
-    if [ "$RELEASE_TYPE" == 'initial' -o "$RELEASE_TYPE" == 'point' ]; then
+    if [ "$RELEASE_TYPE" == 'initial' ] || [ "$RELEASE_TYPE" == 'point' ]; then
         log_exec git push --tags "$UPSTREAM_REMOTE"
     fi
 }
@@ -444,7 +458,7 @@ function packages_make_all() {
     (
         cd packages/
         for dir in *; do
-            [ ! -d "$dir" -o ! -f "${dir}/setup.cfg" ] && continue
+            [ ! -d "$dir" ] || [ ! -f "${dir}/setup.cfg" ] && continue
             # can't use log_exec here because we want to capture output
             echo + make -C "$dir" "$@" 1>&2
             make -C "$dir" "$@" >"${dir}/make-${1}.log" 2>&1
@@ -500,7 +514,7 @@ function perform_version_update() {
 
 
 function perform_version_update_dev() {
-    [ "$RELEASE_TYPE" == 'initial' -o "$RELEASE_TYPE" == 'point' ] || return 0
+    [ "$RELEASE_TYPE" == 'initial' ] || [ "$RELEASE_TYPE" == 'point' ] || return 0
     log "Incrementing release version to '${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT_DEV}' for development of next point release"
     update_galaxy_version 'VERSION_MINOR' "$RELEASE_CURR_MINOR_NEXT_DEV"
     log_exec git diff --exit-code && { log_error 'Missing expected version.py changes'; exit 1; } || true
@@ -538,7 +552,8 @@ function create_release_rc_initial() {
     sed_inplace -e "s/^RELEASE_CURR:=.*/RELEASE_CURR:=${RELEASE_NEXT}/" Makefile
     log_exec git diff --exit-code && { log_error 'Missing expected Makefile changes'; exit 1; } || true
     git add -- Makefile
-    local package_version=$(packaging_version "${RELEASE_NEXT}.0dev0" "true")
+    local package_version
+    package_version=$(packaging_version "${RELEASE_NEXT}.0dev0" "true")
     update_package_versions "$package_version"
     git add -- packages/
     log_exec git commit -m "Update version to ${RELEASE_NEXT}.dev0"
@@ -547,7 +562,8 @@ function create_release_rc_initial() {
 	log_exec git merge -X ours -m "Merge branch 'release_${RELEASE_CURR}' into 'dev'" "__release_${RELEASE_CURR}"
 
     # Push branches for PR
-    local owner=$(fork_owner)
+    local owner
+    owner=$(fork_owner)
     local curr_remote_branch="version-${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT}"
     local next_remote_branch="version-${RELEASE_NEXT}.dev"
     log_exec git push "$FORK_REMOTE" "__release_${RELEASE_CURR}:${curr_remote_branch}"

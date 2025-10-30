@@ -32,11 +32,6 @@ jobs:
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - name: Cache pip dir
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Caches/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Install miniforge  # use this job to test using Python from a conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -47,8 +42,10 @@ jobs:
         with:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Install tox
-        run: pip install tox
+        run: uv tool install tox --with tox-uv
       - name: Run tests
         run: tox -e first_startup
         working-directory: 'galaxy root'
