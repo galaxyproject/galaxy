@@ -170,9 +170,8 @@ def get_openapi_schema() -> dict[str, Any]:
 def include_tus(app: FastAPI, gx_app):
     config = gx_app.config
     root_path = "" if config.galaxy_url_prefix == "/" else config.galaxy_url_prefix
-    prefix = urljoin(root_path, "api/upload/resumable_upload")
     upload_tus_router = create_tus_router(
-        prefix=prefix,
+        prefix=urljoin(root_path, "api/upload/resumable_upload"),
         files_dir=config.tus_upload_store or config.new_file_path,
         max_size=config.maximum_upload_file_size,
     )
