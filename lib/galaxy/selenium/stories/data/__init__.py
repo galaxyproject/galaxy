@@ -28,7 +28,12 @@ def get_example_path(filename: str) -> str:
     return str(get_data_directory() / filename)
 
 
+def get_document_fragment_path(filename: str) -> str:
+    return str(Path(__file__).parent / "fragments" / filename)
+
+
 __all__ = [
     "get_data_directory",
+    "get_document_fragment_path",
     "get_example_path",
 ]

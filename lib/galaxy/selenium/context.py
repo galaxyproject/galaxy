@@ -70,6 +70,13 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         if hasattr(self, "story"):
             self.story.add_documentation(markdown_content)
 
+    def document_embed(self, file_path: str):
+        """Embed a Markdown document right into the story."""
+        if hasattr(self, "story"):
+            with open(file_path) as f:
+                contents = f.read()
+            self.document(contents)
+
     def document_file(self, file_path: str, caption: Optional[str] = None):
         """Document the contents of a file in the story.
 
