@@ -271,15 +271,16 @@ const {
             </BAlert>
             <h2 data-galaxy-file-drop-target>
                 {{ title }}
-                <FontAwesomeIcon
-                    class="workbook-upload-helper mr-1"
-                    :class="dropZoneClasses"
-                    :title="dropWorkbookTitle"
-                    :icon="faUpload"
-                    @click.prevent="browseFiles"
-                    @drop.prevent="handleDrop"
-                    @dragover.prevent="isDragging = true"
-                    @dragleave.prevent="isDragging = false" />
+                <a v-b-tooltip.hover aria-label="Upload Completed Workbook" :title="dropWorkbookTitle" href="#">
+                    <FontAwesomeIcon
+                        class="workbook-upload-helper mr-1"
+                        :class="dropZoneClasses"
+                        :icon="faUpload"
+                        @click.prevent="browseFiles"
+                        @drop.prevent="handleDrop"
+                        @dragover.prevent="isDragging = true"
+                        @dragleave.prevent="isDragging = false" />
+                </a>
                 <HiddenWorkbookUploadInput ref="uploadRef" @onFileUpload="onFileUpload" />
             </h2>
         </template>
@@ -346,5 +347,8 @@ const {
 // modeled a bit after upload-helper in the upload component...
 .workbook-upload-helper {
     color: $border-color;
+    &:hover {
+        color: $brand-primary;
+    }
 }
 </style>
