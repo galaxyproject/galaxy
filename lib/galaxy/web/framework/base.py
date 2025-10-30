@@ -25,13 +25,22 @@ import webob.cookies
 import webob.exc
 import webob.exc as httpexceptions
 
-# We will use some very basic HTTP/wsgi utilities from the paste library
-from paste.response import HeaderDict
-
 from galaxy.util import smart_str
 from galaxy.util.resources import resource_string
 
 log = logging.getLogger(__name__)
+
+
+class HeaderDict(dict):
+    """
+    Simple dict subclass that provides headeritems() method for WSGI compatibility.
+    This replaces paste.response.HeaderDict with a minimal implementation.
+    """
+
+    def headeritems(self):
+        """Return headers as list of tuples for WSGI start_response."""
+        return list(self.items())
+
 
 #: time of the most recent server startup
 server_starttime = int(time.time())

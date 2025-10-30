@@ -1,7 +1,7 @@
 import logging
 from json import loads
 
-import paste.httpexceptions
+import webob.exc
 
 from galaxy import web
 from galaxy.model import (
@@ -23,7 +23,7 @@ class DataManager(BaseUIController):
     def data_managers_list(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
-            raise paste.httpexceptions.HTTPUnauthorized(
+            raise webob.exc.HTTPUnauthorized(
                 "This Galaxy instance is not configured to allow non-admins to view the data manager."
             )
         message = kwd.get("message", "")
@@ -58,7 +58,7 @@ class DataManager(BaseUIController):
     def jobs_list(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
-            raise paste.httpexceptions.HTTPUnauthorized(
+            raise webob.exc.HTTPUnauthorized(
                 "This Galaxy instance is not configured to allow non-admins to view the data manager."
             )
         message = kwd.get("message", "")
@@ -103,7 +103,7 @@ class DataManager(BaseUIController):
     def job_info(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
-            raise paste.httpexceptions.HTTPUnauthorized(
+            raise webob.exc.HTTPUnauthorized(
                 "This Galaxy instance is not configured to allow non-admins to view the data manager."
             )
         message = kwd.get("message", "")
@@ -173,7 +173,7 @@ class DataManager(BaseUIController):
     def tool_data_table_info_1(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
-            raise paste.httpexceptions.HTTPUnauthorized(
+            raise webob.exc.HTTPUnauthorized(
                 "This Galaxy instance is not configured to allow non-admins to view the data manager."
             )
         message = kwd.get("message", "")
