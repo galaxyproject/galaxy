@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
@@ -9,8 +8,6 @@ import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 
 import DatasetSourceTransform from "@/components/DatasetInformation/DatasetSourceTransform.vue";
-
-library.add(faCopy, faExternalLinkAlt);
 
 interface Props {
     source: DatasetSource;

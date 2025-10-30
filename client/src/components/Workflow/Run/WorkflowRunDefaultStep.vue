@@ -30,8 +30,7 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faKey, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
@@ -44,8 +43,6 @@ import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { getTool } from "./services";
 
 import ToolCredentials from "@/components/Tool/ToolCredentials.vue";
-
-library.add(faEdit, faUndo);
 
 export default {
     components: {

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faColumns, faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -21,8 +20,6 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
-
-library.add(faColumns, faPlus, faUndo);
 
 const filter = ref("");
 const showAdvanced = ref(false);

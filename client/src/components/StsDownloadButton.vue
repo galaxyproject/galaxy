@@ -9,8 +9,8 @@
         :size="size"
         @click="onDownload(config)">
         Generate
-        <FontAwesomeIcon v-if="waiting" icon="spinner" spin />
-        <FontAwesomeIcon v-else icon="download" />
+        <FontAwesomeIcon v-if="waiting" :icon="faSpinner" spin />
+        <FontAwesomeIcon v-else :icon="faDownload" />
     </GButton>
 </template>
 
@@ -19,7 +19,6 @@
     A Galaxy Button with logic for interfacing with Galaxy's short term storage
     component (STS).
 */
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
@@ -31,7 +30,6 @@ import { useConfig } from "@/composables/config";
 
 import GButton from "./BaseComponents/GButton.vue";
 
-library.add(faDownload, faSpinner);
 export default {
     components: {
         FontAwesomeIcon,
@@ -75,6 +73,8 @@ export default {
     },
     data() {
         return {
+            faDownload,
+            faSpinner,
             waiting: false,
             delay: 200,
         };

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn } from "@vueuse/core";
@@ -17,8 +16,6 @@ import GButton from "../BaseComponents/GButton.vue";
 import UploadExtension from "./UploadExtension.vue";
 import UploadSelect from "./UploadSelect.vue";
 import UploadSettings from "./UploadSettings.vue";
-
-library.add(faEdit, faLaptop, faFolderOpen);
 
 const { isAnonymous } = storeToRefs(useUserStore());
 
@@ -129,9 +126,9 @@ initializeExplorableArchive();
     <div :id="`upload-row-${index}`" class="upload-row rounded my-1 p-2" :class="`upload-${status}`">
         <div class="d-flex justify-content-around align-items-center">
             <div>
-                <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" fixed-width />
-                <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" fixed-width />
-                <FontAwesomeIcon v-if="fileMode == 'url'" icon="fa-folder-open" fixed-width />
+                <FontAwesomeIcon v-if="fileMode == 'new'" :icon="faEdit" fixed-width />
+                <FontAwesomeIcon v-if="fileMode == 'local'" :icon="faLaptop" fixed-width />
+                <FontAwesomeIcon v-if="fileMode == 'url'" :icon="faFolderOpen" fixed-width />
             </div>
             <b-input
                 ref="fileField"

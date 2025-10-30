@@ -9,7 +9,7 @@
                 variant="link"
                 size="sm"
                 @click="copyBibtex">
-                <FontAwesomeIcon icon="copy" />
+                <FontAwesomeIcon :icon="faCopy" />
             </b-button>
             <CitationItem
                 v-for="(citation, index) in citations"
@@ -25,7 +25,7 @@
                 title="Learn more about Galaxy Requirements"
                 href="https://galaxyproject.org/tools/requirements/"
                 target="_blank">
-                See details <FontAwesomeIcon icon="external-link-alt" />
+                See details <FontAwesomeIcon :icon="faExternalLinkAlt" />
             </a>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
@@ -43,10 +43,13 @@
                 <template v-if="xref.type == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
-                        <FontAwesomeIcon v-b-tooltip.hover title="Visit bio.tools page" icon="external-link-alt" /> </a
+                        <FontAwesomeIcon v-b-tooltip.hover title="Visit bio.tools page" :icon="faExternalLinkAlt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
-                        <FontAwesomeIcon v-b-tooltip.hover title="Visit OpenEBench page" icon="external-link-alt" /> </a
+                        <FontAwesomeIcon
+                            v-b-tooltip.hover
+                            title="Visit OpenEBench page"
+                            :icon="faExternalLinkAlt" /> </a
                     >)
                 </template>
                 <template v-else-if="xref.type == 'bioconductor'">
@@ -66,8 +69,7 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAngleDoubleDown, faAngleDoubleUp, faCopy, faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getCitations } from "components/Citation/services";
 import License from "components/License/License";
@@ -75,8 +77,6 @@ import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
 
 import CitationItem from "components/Citation/CitationItem.vue";
-
-library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
 
 export default {
     components: {
@@ -109,6 +109,8 @@ export default {
     data() {
         return {
             citations: [],
+            faCopy,
+            faExternalLinkAlt,
         };
     },
     computed: {

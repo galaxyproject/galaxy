@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { BNav, BNavItem } from "bootstrap-vue";
 
 import visualizationsGridConfig from "@/components/Grid/configs/visualizations";
@@ -13,8 +11,6 @@ import LoginRequired from "@/components/Common/LoginRequired.vue";
 import GridList from "@/components/Grid/GridList.vue";
 
 const userStore = useUserStore();
-
-library.add(faPlus);
 
 interface Props {
     activeList?: "my" | "shared" | "published";

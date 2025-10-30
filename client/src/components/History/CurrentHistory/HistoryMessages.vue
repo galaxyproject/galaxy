@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive, faBurn, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
@@ -7,8 +6,6 @@ import { computed, ref } from "vue";
 
 import { type AnyUser, type HistorySummary, userOwnsHistory } from "@/api";
 import localize from "@/utils/localization";
-
-library.add(faArchive, faBurn, faTrash);
 
 interface Props {
     history: HistorySummary;

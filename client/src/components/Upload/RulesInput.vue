@@ -1,5 +1,4 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faFile, faFolderOpen, faLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
@@ -13,8 +12,6 @@ import { computed, ref } from "vue";
 import { RULES_TYPES } from "./utils.js";
 
 import UploadSelect from "./UploadSelect.vue";
-
-library.add(faEdit, faFile, faFolderOpen, faLock);
 
 const props = defineProps({
     hasCallback: {
@@ -129,26 +126,26 @@ function inputRemote() {
             class="upload-box upload-rule-source-content"
             placeholder="Insert tabular source data here."
             :disabled="isDisabled" />
-        <FontAwesomeIcon v-if="isDisabled" class="upload-text-lock" icon="fa-lock" />
+        <FontAwesomeIcon v-if="isDisabled" class="upload-text-lock" :icon="faLock" />
         <div class="upload-footer text-center">
             <span class="upload-footer-title">Upload type:</span>
             <UploadSelect v-model="dataType" class="rule-data-type" :options="RULES_TYPES" :searchable="false" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton @click="inputPaste">
-                <FontAwesomeIcon icon="fa-edit" />
+                <FontAwesomeIcon :icon="faEdit" />
                 <span v-localize>Paste data</span>
             </BButton>
             <BButton data-description="rules dataset dialog" @click="inputDialog">
-                <FontAwesomeIcon icon="fa-file" />
+                <FontAwesomeIcon :icon="faFile" />
                 <span v-localize>Choose dataset</span>
             </BButton>
             <BButton v-if="ftpUploadSite" @click="inputFtp">
-                <FontAwesomeIcon icon="fa-folder-open" />
+                <FontAwesomeIcon :icon="faFolderOpen" />
                 <span v-localize>Import FTP files</span>
             </BButton>
             <BButton @click="inputRemote">
-                <FontAwesomeIcon icon="fa-folder-open" />
+                <FontAwesomeIcon :icon="faFolderOpen" />
                 <span v-localize>Choose from repository</span>
             </BButton>
             <BButton

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownItem } from "bootstrap-vue";
@@ -7,8 +6,6 @@ import { computed } from "vue";
 
 import type { HDADetailed } from "@/api";
 import { prependPath } from "@/utils/redirect";
-
-library.add(faSave);
 
 interface Props {
     item: HDADetailed;

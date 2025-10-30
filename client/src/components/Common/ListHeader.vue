@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDown, faAngleUp, faBars, faGripVertical } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox } from "bootstrap-vue";
@@ -9,8 +8,6 @@ import { type ListViewMode, useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
-
-library.add(faAngleDown, faAngleUp, faBars, faGripVertical);
 
 type SortBy = "create_time" | "update_time" | "name";
 

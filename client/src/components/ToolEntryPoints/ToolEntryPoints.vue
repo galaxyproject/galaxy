@@ -8,7 +8,7 @@
                 There is an InteractiveTool result view available,
                 <a v-b-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
                     Open
-                    <FontAwesomeIcon icon="external-link-alt" />
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 </a>
             </span>
             <span v-else>
@@ -23,7 +23,7 @@
                     <span v-if="entryPoint.active">
                         <a v-b-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
                             (Open
-                            <FontAwesomeIcon icon="external-link-alt" />)
+                            <FontAwesomeIcon :icon="faExternalLinkAlt" />)
                         </a>
                     </span>
                     <span v-else> (waiting to become active...) </span>
@@ -37,14 +37,11 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
-
-library.add(faExternalLinkAlt);
 
 export default {
     components: {
@@ -55,6 +52,11 @@ export default {
             type: String,
             required: true,
         },
+    },
+    data() {
+        return {
+            faExternalLinkAlt,
+        };
     },
     computed: {
         ...mapState(useEntryPointStore, ["entryPointsForJob"]),

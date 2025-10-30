@@ -6,7 +6,6 @@
  * not a fully featured Multiselect alternative
  */
 
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faChevronUp, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useElementBounding, whenever } from "@vueuse/core";
@@ -16,8 +15,6 @@ import Vue2Teleport from "vue2-teleport";
 
 import { useUid } from "@/composables/utils/uid";
 import { normalizeTag } from "@/stores/userTagsStore";
-
-library.add(faCheck, faChevronUp, faPlus, faTags, faTimes);
 
 const props = withDefaults(
     defineProps<{
@@ -309,12 +306,12 @@ whenever(isOpen, async () => {
                 title="close"
                 @click="close(true)"
                 @keydown.tab="onCloseButtonTab">
-                <FontAwesomeIcon icon="fa-chevron-up" />
+                <FontAwesomeIcon :icon="faChevronUp" />
             </button>
         </fieldset>
         <button v-else ref="openButton" class="toggle-button" @click="open">
             {{ props.placeholder }}
-            <FontAwesomeIcon icon="fa-tags" />
+            <FontAwesomeIcon :icon="faTags" />
         </button>
 
         <Vue2Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
@@ -357,14 +354,14 @@ whenever(isOpen, async () => {
                         <template v-if="highlightedOption === i">
                             <FontAwesomeIcon
                                 class="headless-multiselect__needs-highlight"
-                                icon="fa-times"
+                                :icon="faTimes"
                                 fixed-width />
                             <span class="sr-only">remove tag</span>
                         </template>
-                        <FontAwesomeIcon v-else icon="fa-check" fixed-width />
+                        <FontAwesomeIcon v-else :icon="faCheck" fixed-width />
                     </span>
                     <span v-else class="headless-multiselect__info">
-                        <FontAwesomeIcon class="headless-multiselect__needs-highlight" icon="fa-plus" fixed-width />
+                        <FontAwesomeIcon class="headless-multiselect__needs-highlight" :icon="faPlus" fixed-width />
                         <span class="sr-only">add tag</span>
                     </span>
                 </button>

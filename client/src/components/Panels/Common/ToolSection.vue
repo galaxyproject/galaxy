@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFilter } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
@@ -12,8 +11,6 @@ import ariaAlert from "@/utils/ariaAlert";
 import Tool from "./Tool.vue";
 import ToolPanelLabel from "./ToolPanelLabel.vue";
 import ToolPanelLinks from "./ToolPanelLinks.vue";
-
-library.add(faFilter);
 
 const emit = defineEmits<{
     (e: "onClick", tool: any, evt: Event): void;

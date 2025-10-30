@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBars, faCog, faDatabase, faSave, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faCog, faDatabase, faSave, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BAlert, BSpinner, BTab, BTabs } from "bootstrap-vue";
@@ -25,8 +24,6 @@ import SuitableConvertersTab from "@/components/Collections/common/SuitableConve
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faBars, faCog, faDatabase, faSave, faTable, faUser);
 
 interface Props {
     collectionId: string;

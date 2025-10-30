@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faClock, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faClock, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -25,8 +24,6 @@ const filter = ref("");
 const showAdvanced = ref(false);
 const showSelectModal = ref(false);
 const initialLoaded = ref(false);
-
-library.add(faCheckSquare, faClock, faTimes, faUndo);
 
 const { currentUser } = storeToRefs(useUserStore());
 const { histories, currentHistory, historiesLoading } = storeToRefs(useHistoryStore());

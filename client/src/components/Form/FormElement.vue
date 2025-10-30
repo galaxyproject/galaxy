@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { sanitize } from "dompurify";
 import type { ComputedRef } from "vue";
@@ -85,8 +82,6 @@ const emit = defineEmits<{
     (e: "input", value: FormParameterValue, id: string): void;
     (e: "change", shouldRefresh: boolean): void;
 }>();
-
-library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSquareUp);
 
 /** TODO: remove attrs computed.
  useAttrs is *not* reactive, and does not play nice with type safety.

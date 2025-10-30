@@ -1,5 +1,4 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faEdit, faExclamation, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
@@ -10,8 +9,6 @@ import { computed, ref } from "vue";
 import { DEFAULT_FILE_NAME } from "./utils";
 
 import UploadSettings from "./UploadSettings.vue";
-
-library.add(faCheck, faEdit, faExclamation, faFolderOpen, faLaptop);
 
 const props = defineProps({
     fileContent: {
@@ -158,15 +155,15 @@ function onDrop(evt) {
                     text="Select"
                     :variant="fileSize > 0 ? 'secondary' : 'primary'">
                     <BDropdownItem @click="uploadFile.click()">
-                        <FontAwesomeIcon icon="fa-laptop" />
+                        <FontAwesomeIcon :icon="faLaptop" />
                         <span v-localize>Choose local file</span>
                     </BDropdownItem>
                     <BDropdownItem v-if="hasRemoteFiles" @click="inputRemoteFiles">
-                        <FontAwesomeIcon icon="fa-folder-open" />
+                        <FontAwesomeIcon :icon="faFolderOpen" />
                         <span v-localize>Choose from repository</span>
                     </BDropdownItem>
                     <BDropdownItem @click="inputPaste">
-                        <FontAwesomeIcon icon="fa-edit" />
+                        <FontAwesomeIcon :icon="faEdit" />
                         <span v-localize>Paste/Fetch data</span>
                     </BDropdownItem>
                 </BDropdown>
@@ -196,9 +193,9 @@ function onDrop(evt) {
             <div>
                 <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" icon="fa-spinner" spin fixed-width />
                 <FontAwesomeIcon v-else-if="status === 'error'" icon="fa-exclamation-triangle" fixed-width />
-                <FontAwesomeIcon v-else-if="fileSize > 0" icon="fa-check" fixed-width />
-                <FontAwesomeIcon v-else-if="optional" class="text-info" icon="fa-check" fixed-width />
-                <FontAwesomeIcon v-else icon="fa-exclamation" fixed-width />
+                <FontAwesomeIcon v-else-if="fileSize > 0" :icon="faCheck" fixed-width />
+                <FontAwesomeIcon v-else-if="optional" class="text-info" :icon="faCheck" fixed-width />
+                <FontAwesomeIcon v-else :icon="faExclamation" fixed-width />
             </div>
         </div>
         <div v-if="info" v-localize class="upload-text-message font-weight-bold">

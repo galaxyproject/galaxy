@@ -37,15 +37,15 @@
                         stacked>
                         <b-form-radio value="externalUrl">
                             Export URL from another Galaxy instance
-                            <FontAwesomeIcon icon="external-link-alt" />
+                            <FontAwesomeIcon :icon="faExternalLinkAlt" />
                         </b-form-radio>
                         <b-form-radio value="upload">
                             Upload local file from your computer
-                            <FontAwesomeIcon icon="upload" />
+                            <FontAwesomeIcon :icon="faUpload" />
                         </b-form-radio>
                         <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
                             Select a repository (e.g. Galaxy's FTP)
-                            <FontAwesomeIcon icon="folder-open" />
+                            <FontAwesomeIcon :icon="faFolderOpen" />
                         </b-form-radio>
                     </b-form-radio-group>
                 </b-form-group>
@@ -90,7 +90,6 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
@@ -112,9 +111,6 @@ import ExternalLink from "./ExternalLink";
 import GButton from "./BaseComponents/GButton.vue";
 import FilesInput from "components/FilesDialog/FilesInput.vue";
 
-library.add(faFolderOpen);
-library.add(faUpload);
-library.add(faExternalLinkAlt);
 Vue.use(BootstrapVue);
 
 export default {
@@ -158,6 +154,9 @@ export default {
             jobError: null,
             jobId: null,
             hasFileSources: false,
+            faExternalLinkAlt,
+            faFolderOpen,
+            faUpload,
         };
     },
     computed: {
