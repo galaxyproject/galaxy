@@ -228,7 +228,7 @@ describe("useResourceWatcher", () => {
             expect(mockAddEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
         });
 
-        it("should restart watching with short interval when app becomes visible", async () => {
+        it("should switch to short interval when app becomes visible without restarting watcher", async () => {
             const { startWatchingResource } = useResourceWatcher(mockWatchHandler);
 
             startWatchingResource();
@@ -242,22 +242,22 @@ describe("useResourceWatcher", () => {
             mockDocument.visibilityState = "hidden";
             visibilityChangeHandler();
 
-            // Clear the handler calls from the visibility change restart
+            // Clear the handler calls
             mockWatchHandler.mockClear();
 
             // Simulate app becoming visible again
             mockDocument.visibilityState = "visible";
             visibilityChangeHandler();
 
-            // Should immediately call the handler (from startWatchingResource)
+            // Should NOT immediately call the handler (watcher already running, no restart)
             await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(1);
+            expect(mockWatchHandler).toHaveBeenCalledTimes(0);
 
-            // Should continue with short polling interval
+            // But should continue with short polling interval on next scheduled poll
             jest.advanceTimersByTime(3000);
             await flushPromises();
 
-            expect(mockWatchHandler).toHaveBeenCalledTimes(2);
+            expect(mockWatchHandler).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -494,25 +494,25 @@ describe("useResourceWatcher", () => {
             mockDocument.visibilityState = "hidden";
             visibilityChangeHandler();
 
-            // Change to visible - this restarts the watcher
+            // Change to visible - this changes currentPollingInterval back to short but doesn't restart
             mockDocument.visibilityState = "visible";
             visibilityChangeHandler();
             await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(2); // + 1 from becoming visible
+            expect(mockWatchHandler).toHaveBeenCalledTimes(1); // No additional call from becoming visible
 
-            // Change to hidden again - this changes currentPollingInterval but doesn't restart timer
+            // The timer continues with the short interval
+            jest.advanceTimersByTime(3000);
+            await flushPromises();
+            expect(mockWatchHandler).toHaveBeenCalledTimes(2); // + 1 from short interval timer
+
+            // Change to hidden again
             mockDocument.visibilityState = "hidden";
             visibilityChangeHandler();
 
-            // The timer that was started when becoming visible is still running with short interval
-            jest.advanceTimersByTime(3000);
-            await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(3); // + 1 from short interval timer
-
-            // Now the next timer should be using the long interval
+            // The next timer should use the long interval
             jest.advanceTimersByTime(10000);
             await flushPromises();
-            expect(mockWatchHandler).toHaveBeenCalledTimes(4); // + 1 from long interval timer
+            expect(mockWatchHandler).toHaveBeenCalledTimes(3); // + 1 from long interval timer
         });
     });
 });
