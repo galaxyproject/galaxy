@@ -1397,7 +1397,11 @@ rule_builder:
     workbook_upload_file_input: '[data-description="workbook-file-input"]'
     create_collections: '[data-creating-what="collections"]'
     wizard_import: ".wizard-actions .btn-primary"
-
+    wizard_next: ".wizard-actions .go-next-btn"
+    data_import_source_from: '[data-import-source-from="${source}"]'
+    workbook_download_link: '[data-description="workbook download link"]'
+    workbook_upload_link: '[data-description="workbook upload card"] [data-description="workbook upload link"]'
+    workbook_upload_file_input_explicit: '[data-description="workbook upload card"] [data-description="workbook-file-input"]'
 
 charts:
   selectors:

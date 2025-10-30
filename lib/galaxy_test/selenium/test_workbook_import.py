@@ -61,13 +61,27 @@ class TestWorkbookImport(SeleniumTestCase, UploadStoriesMixin):
         """
         self.setup_rules_import()
         self.upload_workbook_example_1()
-        # Verify the rule builder mapping
+        self._verify_example_1()
+
+    def _verify_example_1(self):
         rule_json = self.rule_builder_show_and_get_source_as_json()
         mapping = self._assert_rules_have_mapping(rule_json)
 
         self._assert_maps_to_one_column_of_type(mapping, 0, "name", 0)
         self._assert_maps_to_one_column_of_type(mapping, 1, "url", 1)
         self._assert_maps_to_one_column_of_type(mapping, 2, "dbkey", 2)
+
+    @selenium_test
+    def test_dataset_import_from_workbook_full_wizard(self):
+        """Same test as above but using the wizard instead of upload shortcut."""
+        self.setup_rules_import()
+        self.upload_example_1_full_wizard()
+        self._verify_example_1()
+
+    @selenium_test
+    def test_collection_type_selection_for_import(self):
+        self.setup_rules_import()
+        self.upload_workbook_example_2_prereq_pick_a_collection()
 
     @selenium_test
     def test_simple_list_collection_import(self):

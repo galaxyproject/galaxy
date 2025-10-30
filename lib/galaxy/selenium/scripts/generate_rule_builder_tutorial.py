@@ -53,8 +53,12 @@ def generate_rule_builder_tutorial(has_driver, include_result=False):
     has_driver.ensure_rules_activity_enabled()
 
     with example_history(has_driver, "Workbook Example 1"):
+        has_driver.upload_example_1_full_wizard()
+        has_driver.home()
         has_driver.upload_workbook_example_1(include_result=include_result)
     with example_history(has_driver, "Workbook Example 2"):
+        has_driver.upload_workbook_example_2_prereq_pick_a_collection()
+        has_driver.home()
         has_driver.upload_workbook_example_2(include_result=include_result)
     with example_history(has_driver, "Workbook Example 3"):
         has_driver.upload_workbook_example_3(include_result=include_result)

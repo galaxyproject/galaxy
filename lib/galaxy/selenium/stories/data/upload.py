@@ -2,7 +2,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 from galaxy.selenium.navigates_galaxy_mixin import NavigatesGalaxyMixin
-from ..data import get_example_path
+from ..data import (
+    get_document_fragment_path,
+    get_example_path,
+)
 
 # Convenience constants for workbook examples
 WORKBOOK_EXAMPLE_1 = get_example_path("workbook_example_1.tsv")
@@ -33,8 +36,8 @@ For this example, we'll create a collection rather than individual datasets. Cli
 class UploadStoriesMixin(NavigatesGalaxyMixin):
     """Mixin describing upload user stories around the workbooks and rules."""
 
-    def upload_workbook_example_1(self, include_result: bool = False):
-        """Importing datasets from a workbook with automatic column mapping.
+    def upload_example_1_full_wizard(self):
+        """Importing datasets from a workbook with automatic column mapping using the full wizard.
 
         Demonstrates that Galaxy can:
         - Automatically infer column mappings from common header patterns
@@ -44,7 +47,7 @@ class UploadStoriesMixin(NavigatesGalaxyMixin):
         self.home()
         self.document(
             """
-## Example 1: Uploading Simple Datasets with Automatic Metadata Detection
+## Example 1: Uploading Simple Datasets with Automatic Metadata Detection (the wizard)
 
 In this first example, we'll upload a set of FASTQ sequencing files from a spreadsheet. Galaxy's auto-detection feature will automatically recognize the column headers and map them to the appropriate metadata fields without any manual configuration.
 
@@ -53,19 +56,62 @@ This is the easiest way to upload multiple datasets when your spreadsheet has cl
         )
         self.document(DOC_CLICK_RULES_ACTIVITY)
         self.click_rules_activity()
-        self.screenshot("workbook_example_1_landing", CAPTION_RULES_WIZARD)
-
+        self.screenshot("workbook_example_1_full_landing", CAPTION_RULES_WIZARD)
+        rule_builder = self.components.rule_builder
+        rule_builder.wizard_next.wait_for_and_click()
+        from_workbook = rule_builder.data_import_source_from(source="workbook")
+        self.document(
+            """Select 'External Workbook' as the import source. This will let you download an annotated Excel workbook that can be filled and uploaded."""
+        )
+        from_workbook.wait_for_and_click()
+        with from_workbook.wait_for_and_highlight():
+            self.screenshot("workbook_import_1_full_select_from_workbook")
+        rule_builder.wizard_next.wait_for_and_click()
+        download_link = rule_builder.workbook_download_link
+        with download_link.wait_for_and_highlight():
+            self.document("""This button lets you download an example workbook and fill it out.""")
+            self.screenshot("workbook_import_1_full_download_workbook")
+        download_link.wait_for_and_click()
+        upload_link = rule_builder.workbook_upload_link
+        with upload_link.wait_for_and_highlight():
+            self.document(
+                """When you're ready to upload your completed workbook, click the upload link in Step 3 of this wizard page."""
+            )
+            self.screenshot("workbook_import_1_full_upload_workbook", "The upload link is highlighted here.")
         self.document_file(WORKBOOK_EXAMPLE_1, "Example workbook with dataset name, URL, and genome columns")
+        self.workbook_upload(WORKBOOK_EXAMPLE_1)
+        self.document(
+            """After uploading, the wizard will jump the last step automatically. You will be presented with how the tabular data was parsed into metadata by Galaxy."""
+        )
+        self.document_embed(get_document_fragment_path("workbook_column_mapping.md"))
+
+    def upload_workbook_example_1(self, include_result: bool = False):
+        """Importing datasets from a workbook with automatic column mapping (the shortcut)."""
+        self.home()
+        self.document(
+            """
+## Example 1: Uploading Simple Datasets with Automatic Metadata Detection (shortcut)
+
+Here we redo Example 1 but using the upload shortcut instead of the full wizard. This is a quicker way to get started when you just want to upload data without going through all the wizard steps.
+"""
+        )
+        self.document(DOC_CLICK_RULES_ACTIVITY)
+        self.click_rules_activity()
+        self.screenshot("workbook_example_1_shortcut_landing", CAPTION_RULES_WIZARD)
+
+        self.document(
+            "When we already have a completed workbook, we can use the upload shortcut to get started quickly and jump to the end of the wizard. You can either click the upload shortcut button and pick a spreadsheet/tabular file to upload or simply drag-and-drop the file onto the button."
+        )
+        with self.components.rule_builder.workbook_upload_button.wait_for_and_highlight():
+            self.screenshot(
+                "workbook_example_1_shortcut_upload_button", "The workbook upload shortcut button is highlighted here."
+            )
+
         self.workbook_upload(WORKBOOK_EXAMPLE_1)
 
         self.document(
             """
-Galaxy has automatically detected the column mappings based on the header names:
-- The **name** column is recognized as the dataset name
-- The **url** column is identified as the download URL for each file
-- The **genome** column is mapped to the reference genome (also called build or dbkey)
-
-Notice that we didn't have to configure any rules manually - Galaxy recognized these standard column patterns and set up the import automatically. This is perfect for straightforward data uploads where you have clear metadata in your spreadsheet.
+Just like using the full wizard. Galaxy has selected pulled out all the metadata correctly from this spreadsheet.
 """
         )
         self.screenshot(
@@ -79,6 +125,48 @@ Notice that we didn't have to configure any rules manually - Galaxy recognized t
             # In next iteration - wait on the "uploading" message to disappear.
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot("workbook_example_1_complete", "Final datasets created and available in the history.")
+
+    def upload_workbook_example_2_prereq_pick_a_collection(self):
+        self.home()
+        self.click_rules_activity()
+        self.document(
+            """
+## Collection Examples
+
+When uploading individual datasets - Galaxy is able to assume row of the workbook is a single datasets and expect
+a single URL column for each dataset. As a result there is only a single example workbook template to download from
+Galaxy and start filling out.
+
+For collection uploads - there is more variety in workbook templates that can be downloaded from Galaxy
+depending on the type of collection you want to create. If you select to pick a collection on this first
+page of the wizard and then select "External Workbook" again - you will be presented with additional options
+to pick the type of collection you want to create.
+"""
+        )
+        rule_builder = self.components.rule_builder
+        rule_builder.create_collections.wait_for_and_click()
+        rule_builder.wizard_next.wait_for_and_click()
+        from_workbook = rule_builder.data_import_source_from(source="workbook")
+        from_workbook.wait_for_and_click()
+        rule_builder.wizard_next.wait_for_and_click()
+
+        self.screenshot(
+            "workbook_example_2_prereq_pick_collection_type",
+            "Picking collection type before downloading workbook template",
+        )
+        rule_builder.wizard_next.wait_for_and_click()
+        self.screenshot(
+            "workbook_example_2_prereq_upload_download_card",
+            "The process of downloading, filling out, and re-uploading the workbook is the same for collections from here though.",
+        )
+        self.document(
+            """Like with datasets though, any workbook with column names that are
+deducible by Galaxy will work for collections as well and these workbooks can be
+uploaded directly with the upload shortcut button from the first page of the wizard
+(as long as you've selected 'Collection' mode first). The rest of these examples will
+use that shortcut method to upload the workbooks describing collections.
+"""
+        )
 
     def upload_workbook_example_2(self, include_result: bool = False):
         """Importing a simple list collection from a workbook.

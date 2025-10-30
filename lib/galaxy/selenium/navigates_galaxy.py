@@ -1165,16 +1165,23 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             file_upload = self.wait_for_selector(f'div#{tab_id} input[type="file"]')
             file_upload.send_keys(test_path)
 
-    def workbook_upload(self, test_path: str):
+    def workbook_upload(self, test_path: str, which: Literal["shortcut", "card"] = "shortcut"):
         rule_builder = self.components.rule_builder
         if self.backend_type == "playwright":
             with self.page.expect_file_chooser() as fc_info:
-                rule_builder.workbook_upload_button.wait_for_and_click()
+                if which == "shortcut":
+                    rule_builder.workbook_upload_button.wait_for_and_click()
+                else:
+                    rule_builder.workbook_upload_link.wait_for_and_click()
             file_chooser = fc_info.value
             file_chooser.set_files(test_path)
         else:
-            rule_builder.workbook_upload_button.wait_for_and_click()
-            file_upload = rule_builder.workbook_upload_file_input.wait_for_present()
+            if which == "shortcut":
+                rule_builder.workbook_upload_button.wait_for_and_click()
+                file_upload = rule_builder.workbook_upload_file_input.wait_for_present()
+            else:
+                rule_builder.workbook_upload_link.wait_for_and_click()
+                file_upload = rule_builder.workbook_upload_file_input_explicit.wait_for_present()
             file_upload.send_keys(test_path)
 
     def upload_paste_data(self, pasted_content, tab_id="regular"):
@@ -1226,6 +1233,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         upload.rule_dataset_selector_row(rowindex=row).wait_for_and_click()
 
     def ensure_rules_activity_enabled(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+
         if self.components.rule_builder.activity.is_absent:
             activity_bar = self.components.activity_bar
             # Odd problems here - settings bar may be clickable but not yet wired up?
@@ -1233,6 +1242,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.sleep_for(self.wait_types.UX_RENDER)
             activity_bar.settings.wait_for_and_click()
             activity_bar.additional_activities.wait_for_present()
+            self.sleep_for(self.wait_types.UX_RENDER)
             assert activity_bar.show_activity(activity_id="rules").wait_for_present()
             activity_bar.show_activity(activity_id="rules").wait_for_and_click()
             self.components.rule_builder.activity.wait_for_visible()
