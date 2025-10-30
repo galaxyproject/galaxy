@@ -46,7 +46,7 @@ async function render() {
 
                     if (plugin?.entry_point?.attr?.src) {
                         const script = iframeDocument.createElement("script");
-                        script.type = "module";
+                        script.type = plugin.entry_point.attr.type || "module";
                         script.src = `${pluginPath}/${plugin.entry_point.attr.src}`;
                         iframeDocument.body.appendChild(script);
                     } else {
