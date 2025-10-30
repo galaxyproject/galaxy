@@ -381,6 +381,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def go_to_history_sharing(self, history_id: str) -> None:
         self.navigate_to(self.build_url(f"histories/sharing?id={history_id}"))
 
+    def make_history_private(self):
+        self.click_history_option_sharing()
+        sharing = self.components.histories.sharing
+        sharing.tab_make_private.wait_for_and_click()
+        sharing.make_private.wait_for_and_click()
+
     def go_to_import_zip(self) -> None:
         self.navigate_to(self.build_url("import/zip"))
         self.components.masthead._.wait_for_visible()

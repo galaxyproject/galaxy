@@ -533,6 +533,12 @@ histories:
       share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible label'
       make_publishable: '.make-publishable label'
+      tab_make_private: '[aria-controls="history-make-private-tab"]'
+      make_private: '[data-description="history make private"]'
+      permissions_change_required: '[data-description="sharing permissions change required"]'
+      permissions_change_required_how: '[data-description="sharing permissions change required how"]'
+      permissions_change_required_ok: '[data-description="sharing permissions change required"] .btn-primary'
+
     labels:
       unshare: 'Unshare'
 
