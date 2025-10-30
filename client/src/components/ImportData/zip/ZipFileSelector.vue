@@ -207,12 +207,14 @@ function onSearch(value: string) {
 </template>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 .zip-file-selector {
     .zip-file-selector-footer {
         display: flex;
         justify-content: center;
         padding: 1rem 0;
-        border-top: 1px solid #dee2e6;
+        border-top: 1px solid $brand-secondary;
     }
 }
 </style>
