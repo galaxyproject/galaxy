@@ -192,7 +192,7 @@ function onSearch(value: string) {
             No files found matching "{{ searchQuery }}". Try a different search term.
         </BAlert>
 
-        <div v-if="showPagination" class="zip-file-selector-footer mt-3">
+        <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
             <BPagination
                 :value="currentPage"
                 :total-rows="totalItems"
@@ -205,16 +205,3 @@ function onSearch(value: string) {
         </div>
     </div>
 </template>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-
-.zip-file-selector {
-    .zip-file-selector-footer {
-        display: flex;
-        justify-content: center;
-        padding: 1rem 0;
-        border-top: 1px solid $brand-secondary;
-    }
-}
-</style>

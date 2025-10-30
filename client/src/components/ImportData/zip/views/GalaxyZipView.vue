@@ -30,7 +30,7 @@ const {
 
         <ZipFileEntryCard v-for="file in paginatedFiles" :key="file.path" :file="file" />
 
-        <div v-if="showPagination" class="galaxy-zip-footer mt-3">
+        <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
             <BPagination
                 :value="currentPage"
                 :total-rows="files.length"
@@ -43,14 +43,3 @@ const {
         </div>
     </div>
 </template>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-
-.galaxy-zip-footer {
-    display: flex;
-    justify-content: center;
-    padding: 1rem 0;
-    border-top: 1px solid $brand-secondary;
-}
-</style>

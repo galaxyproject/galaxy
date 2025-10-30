@@ -96,7 +96,7 @@ const fileBadges: CardBadge[] = [
             </GCard>
         </div>
 
-        <div v-if="showPagination" class="zip-summary-footer mt-3">
+        <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
             <BPagination
                 :value="currentPage"
                 :total-rows="totalItems"
@@ -109,14 +109,3 @@ const fileBadges: CardBadge[] = [
         </div>
     </div>
 </template>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-
-.zip-summary-footer {
-    display: flex;
-    justify-content: center;
-    padding: 1rem 0;
-    border-top: 1px solid $brand-secondary;
-}
-</style>
