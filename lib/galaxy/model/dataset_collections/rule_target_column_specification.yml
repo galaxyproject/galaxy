@@ -1,8 +1,32 @@
-# The idea that we reserve some column names for reserved purposes in Galaxy
-# is going to span fetch workbooks and sample sheet workbooks - and we need
-# to validate it both on the backend and the frontend. So having a set of tests
-# that validate what are reserved column names that we can run across both languages
-# utilities for doing this is valuable.
+# Test Specification: Column Header to Target Type Mappings
+#
+# This file defines test cases for Galaxy's flexible column header parsing system.
+# Each test case specifies:
+#   - doc: Human-readable description
+#   - column_header: The user-provided column header (as it appears in workbook)
+#   - maps_to: The expected internal target type key
+#
+# Purpose:
+#   Galaxy needs to recognize column headers in workbooks (Excel/CSV) across different
+#   naming conventions and formats. This specification serves as:
+#   1. Test cases for backend Python parsing (column_title_to_target_type)
+#   2. Test cases for frontend TypeScript parsing (when implemented)
+#   3. Documentation of supported column header variations
+#
+# The parsing is case-insensitive and ignores:
+#   - Whitespace
+#   - Special characters: ( ) - _
+#   - The word "optional"
+#
+# Examples of flexible parsing:
+#   "Name", "name", "NAME"                     -> "name"
+#   "MD5 Sum", "MD5", "Hash MD5", "md5sum"     -> "hash_md5"
+#   "URI 1 (Forward)", "url", "URL"            -> "url"
+#   "Genome Build", "DBKey", "genome"          -> "dbkey"
+#
+# Test Execution:
+#   Python: test/unit/data/dataset_collections/test_column_to_target_mapping.py
+#   TypeScript: (future implementation)
 
 - doc: "Name (with uppercase) maps directly to the name target type"
   column_header: "Name"
