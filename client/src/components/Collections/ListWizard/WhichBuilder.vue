@@ -34,7 +34,7 @@ function toggleAdvanced() {
                     <b>Flat List</b>
                 </BCardTitle>
                 <div>
-                    This options creates a simple flat list of files. If your data isn't nested and does not contained
+                    This option creates a simple flat list of files. If your data isn't nested and does not contained
                     paired datasets, this is the the option to choose.
                 </div>
             </BCard>
@@ -47,8 +47,8 @@ function toggleAdvanced() {
                     <b>List of Paired Datasets</b>
                 </BCardTitle>
                 <div>
-                    This options creates a uniform list of paired datasets, use this option if all of your data should
-                    be paired off.
+                    This option creates a uniform list of paired datasets, use this option if all of your data should be
+                    paired off.
                 </div>
             </BCard>
             <BCard
