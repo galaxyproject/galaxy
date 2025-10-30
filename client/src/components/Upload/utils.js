@@ -14,7 +14,6 @@ export const AUTO_EXTENSION = {
 };
 export const COLLECTION_TYPES = [
     { id: "list", text: "List" },
-    { id: "paired", text: "Pair" },
     { id: "list:paired", text: "List of Pairs" },
 ];
 export const DEFAULT_DBKEY = "?";

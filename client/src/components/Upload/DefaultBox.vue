@@ -76,9 +76,7 @@ const queue = ref(createUploadQueue());
 const selectedItemsForModal = ref<HDASummary[]>([]);
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
-const creatingPairedType = computed(
-    () => props.isCollection && ["list:paired", "paired"].includes(collectionType.value),
-);
+const creatingPairedType = computed(() => props.isCollection && collectionType.value === "list:paired");
 const enableBuild = computed(
     () =>
         !isRunning.value &&
