@@ -1,3 +1,10 @@
+import { configureCompat } from "@vue/compat";
+
+configureCompat({
+  MODE: 2,
+  SET: true
+});
+
 import { createPinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
