@@ -399,6 +399,14 @@ mapping:
           This will prevent problems with some specific packages (perl, R), at the cost
           of extra disk space usage and extra time spent copying packages.
 
+      apptainer_prefix:
+        type: str
+        default: _apptainer
+        path_resolves_to: tool_dependency_dir
+        required: false
+        desc: |
+          Apptainer installation prefix.
+
       local_conda_mapping_file:
         type: str
         default: 'local_conda_mapping.yml'

@@ -32,6 +32,7 @@ class AppInfo:
         involucro_path: Optional[str] = None,
         involucro_auto_init: bool = True,
         mulled_channels: List[str] = DEFAULT_CHANNELS,
+        apptainer_prefix: Optional[str] = None,
     ) -> None:
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
@@ -48,6 +49,7 @@ class AppInfo:
         self.involucro_path = involucro_path
         self.involucro_auto_init = involucro_auto_init
         self.mulled_channels = mulled_channels
+        self.apptainer_prefix = apptainer_prefix
 
 
 class ToolInfo:
