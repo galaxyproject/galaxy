@@ -4301,3 +4301,10 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all failed Galaxy job's working directories from the filesystem (every 24 hours by default) if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.
+ 
+      enable_beta_tool_formats:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable user defined tools. In order to enable users to use this feature create a role of type `Custom Tool Execution` in the admin user interface and assign users or groups to this role.

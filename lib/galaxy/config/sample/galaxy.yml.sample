@@ -23,7 +23,8 @@ gravity:
   # Process manager to use.
   # ``supervisor`` is the default process manager when Gravity is invoked as a non-root user.
   # ``systemd`` is the default when Gravity is invoked as root.
-  # Valid options are: supervisor, systemd
+  # ``multiprocessing`` is the default when Gravity is invoked as the foreground shortcut ``galaxy`` instead of ``galaxyctl``
+  # Valid options are: supervisor, systemd, multiprocessing
   # process_manager:
 
   # What command to write to the process manager configs
@@ -3103,4 +3104,9 @@ galaxy:
   # default) if enable_failed_jobs_working_directory_cleanup is
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
+
+  # Enable user defined tools. In order to enable users to use this
+  # feature create a role of type `Custom Tool Execution` in the admin
+  # user interface and assign users or groups to this role.
+  #enable_beta_tool_formats: false
 
