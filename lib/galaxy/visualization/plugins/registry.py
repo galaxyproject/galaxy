@@ -8,6 +8,10 @@ Lower level of visualization framework which does three main things:
 import logging
 import os
 import weakref
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
