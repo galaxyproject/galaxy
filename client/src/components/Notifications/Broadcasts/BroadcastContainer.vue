@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+    faChevronLeft,
+    faChevronRight,
+    faExclamationCircle,
+    faExclamationTriangle,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -132,18 +139,18 @@ function dismiss() {
             class="arrow left inline-icon-button area-l"
             title="Previous"
             @click="currentPage -= 1">
-            <FontAwesomeIcon fixed-width icon="fa-chevron-left" />
+            <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
         </BButton>
 
         <div class="info-icon area-i">
             <FontAwesomeIcon
                 v-if="displayedBroadcast.variant === 'warning'"
                 class="warning"
-                icon="fa-exclamation-triangle" />
+                :icon="faExclamationTriangle" />
             <FontAwesomeIcon
                 v-if="displayedBroadcast.variant === 'urgent'"
                 class="urgent"
-                icon="fa-exclamation-circle" />
+                :icon="faExclamationCircle" />
         </div>
 
         <section class="main-content area-m">
@@ -165,11 +172,11 @@ function dismiss() {
         </section>
 
         <BButton v-if="multiple" class="arrow right inline-icon-button area-r" title="Next" @click="currentPage += 1">
-            <FontAwesomeIcon fixed-width icon="fa-chevron-right" />
+            <FontAwesomeIcon fixed-width :icon="faChevronRight" />
         </BButton>
 
         <BButton class="dismiss-button inline-icon-button area-x" title="Dismiss" @click="dismiss">
-            <FontAwesomeIcon fixed-width icon="fa-times" />
+            <FontAwesomeIcon fixed-width :icon="faTimes" />
         </BButton>
     </div>
 </template>

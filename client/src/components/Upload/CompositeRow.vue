@@ -1,5 +1,13 @@
 <script setup>
-import { faCheck, faEdit, faExclamation, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCheck,
+    faEdit,
+    faExclamation,
+    faExclamationTriangle,
+    faFolderOpen,
+    faLaptop,
+    faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { filesDialog } from "utils/dataModals";
@@ -191,8 +199,8 @@ function onDrop(evt) {
                 </div>
             </div>
             <div>
-                <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" icon="fa-spinner" spin fixed-width />
-                <FontAwesomeIcon v-else-if="status === 'error'" icon="fa-exclamation-triangle" fixed-width />
+                <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" :icon="faSpinner" spin fixed-width />
+                <FontAwesomeIcon v-else-if="status === 'error'" :icon="faExclamationTriangle" fixed-width />
                 <FontAwesomeIcon v-else-if="fileSize > 0" :icon="faCheck" fixed-width />
                 <FontAwesomeIcon v-else-if="optional" class="text-info" :icon="faCheck" fixed-width />
                 <FontAwesomeIcon v-else :icon="faExclamation" fixed-width />

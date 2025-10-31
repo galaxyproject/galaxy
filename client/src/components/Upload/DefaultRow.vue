@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCheck,
+    faEdit,
+    faExclamation,
+    faExclamationTriangle,
+    faFolderOpen,
+    faLaptop,
+    faSpinner,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
@@ -174,26 +183,26 @@ initializeExplorableArchive();
                 </div>
             </div>
             <div>
-                <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" icon="fa-spinner" spin />
+                <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" :icon="faSpinner" spin />
                 <FontAwesomeIcon
                     v-else-if="status === 'error'"
                     class="cursor-pointer"
-                    icon="fa-exclamation-triangle"
+                    :icon="faExclamationTriangle"
                     fixed-width
                     @click="removeUpload" />
                 <FontAwesomeIcon
                     v-else-if="status === 'init'"
                     class="cursor-pointer"
-                    icon="fa-trash"
+                    :icon="faTrash"
                     fixed-width
                     @click="removeUpload" />
                 <FontAwesomeIcon
                     v-else-if="status === 'success'"
                     class="cursor-pointer"
-                    icon="fa-check"
+                    :icon="faCheck"
                     fixed-width
                     @click="removeUpload" />
-                <FontAwesomeIcon v-else icon="fa-exclamation" />
+                <FontAwesomeIcon v-else :icon="faExclamation" />
             </div>
 
             <GButton
