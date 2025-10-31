@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { faCheck, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
@@ -91,7 +92,7 @@ function onCopyOut() {
             @click="onCopy"
             @mouseout="onCopyOut"
             @blur="onCopyOut">
-            <FontAwesomeIcon :icon="['far', 'copy']" fixed-width />
+            <FontAwesomeIcon :icon="faCopy" fixed-width />
         </BButton>
     </div>
 </template>

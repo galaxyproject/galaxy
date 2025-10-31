@@ -5,7 +5,7 @@
             class="details-btn"
             title="Show location details"
             data-testid="loc-details-btn">
-            <FontAwesomeIcon icon="info-circle" /> {{ detailsCaption }}
+            <FontAwesomeIcon :icon="faInfoCircle" /> {{ detailsCaption }}
         </b-button>
 
         <b-modal
@@ -61,6 +61,7 @@
 </template>
 
 <script>
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { buildFields } from "components/Libraries/library-utils";
@@ -90,6 +91,7 @@ export default {
     },
     data() {
         return {
+            faInfoCircle,
             detailsCaption: _l("Details"),
             folderHeader: _l("Folder"),
             libraryHeader: _l("Library"),

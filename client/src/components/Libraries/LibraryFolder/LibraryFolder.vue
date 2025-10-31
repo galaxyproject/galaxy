@@ -142,8 +142,8 @@
                 </div>
             </template>
             <template v-slot:cell(type_icon)="row">
-                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
-                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
+                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="faFolder" title="Folder" />
+                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="faFile" />
             </template>
             <template v-slot:cell(type)="row">
                 <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
@@ -176,14 +176,14 @@
                         class="primary-button btn-sm permission_folder_btn save_folder_btn"
                         :title="'save ' + row.item.name"
                         @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
-                        <FontAwesomeIcon :icon="['far', 'save']" />
+                        <FontAwesomeIcon :icon="faSave" />
                         Save
                     </button>
                     <button
                         class="primary-button btn-sm permission_folder_btn"
                         title="Discard Changes"
                         @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon :icon="['fas', 'times']" />
+                        <FontAwesomeIcon :icon="faTimes" />
                         Cancel
                     </button>
                 </div>
@@ -196,7 +196,7 @@
                         class="lib-btn permission_folder_btn edit_folder_btn"
                         :title="'Edit ' + row.item.name"
                         @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon icon="pencil-alt" />
+                        <FontAwesomeIcon :icon="faPencilAlt" />
                         Edit
                     </b-button>
                     <b-button
@@ -205,7 +205,7 @@
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
                         :to="{ path: `${navigateToPermission(row.item)}` }">
-                        <FontAwesomeIcon icon="users" />
+                        <FontAwesomeIcon :icon="faUsers" />
                         Manage
                     </b-button>
                     <button
@@ -214,7 +214,7 @@
                         class="lib-btn primary-button btn-sm undelete_dataset_btn"
                         type="button"
                         @click="undelete(row.item, folder_id)">
-                        <FontAwesomeIcon icon="unlock" />
+                        <FontAwesomeIcon :icon="faUnlock" />
                         Undelete
                     </button>
                 </div>
@@ -262,7 +262,17 @@
 </template>
 
 <script>
-import { faBan, faGlobe, faKey, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import { faFile, faFolder, faSave } from "@fortawesome/free-regular-svg-icons";
+import {
+    faBan,
+    faGlobe,
+    faKey,
+    faPencilAlt,
+    faShieldAlt,
+    faTimes,
+    faUnlock,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
@@ -322,9 +332,16 @@ export default {
             ...{
                 // Icons
                 faBan,
+                faFile,
+                faFolder,
                 faGlobe,
                 faKey,
+                faPencilAlt,
+                faSave,
                 faShieldAlt,
+                faTimes,
+                faUnlock,
+                faUsers,
                 // Data
                 currentPage: 1,
                 sortBy: "name",
