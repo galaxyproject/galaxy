@@ -3,6 +3,10 @@ Test lib/galaxy/visualization/plugins/registry.
 """
 
 import os
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import (
