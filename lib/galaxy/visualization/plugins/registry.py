@@ -58,7 +58,7 @@ class VisualizationsRegistry:
         self.config_parser = config_parser.VisualizationsConfigParser()
         self.base_url = self.BASE_URL
         self.skip_bad_plugins = skip_bad_plugins
-        self.plugins = {}
+        self.plugins: dict[str, VisualizationPlugin] = {}
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
         self.directories.append(os.path.join(app.config.root, self.BASE_DIR))
         self._load_plugins()
