@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { faExclamationTriangle, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useUserStore } from "@/stores/userStore";
+import STATES from "@/utils/datasetStates";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
@@ -75,6 +78,14 @@ watch(
         {{ errorMessage }}
     </BAlert>
     <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset content" />
+    <BAlert v-else-if="STATES.PENDING_STATES.includes(dataset.state)" show variant="warning">
+        <FontAwesomeIcon :icon="faSpinner" spin />
+        <span>Waiting for dataset to become available. Please check the history panel for details.</span>
+    </BAlert>
+    <BAlert v-else-if="dataset.state !== STATES.OK" show variant="danger">
+        <FontAwesomeIcon :icon="faExclamationTriangle" />
+        <span>Dataset is unavailable. Please check the history panel for details.</span>
+    </BAlert>
     <div v-else class="dataset-display h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">
             {{ sanitizedMessage }}
