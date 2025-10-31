@@ -66,7 +66,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
     def test_plugin_load_from_repo(self):
         """should attempt load if criteria met"""
         mock_app = galaxy_mock.MockApp(root=glx_dir)
-        plugin_mgr = VisualizationsRegistry(mock_app, directories_setting=vis_reg_path, template_cache_dir=None)
+        plugin_mgr = VisualizationsRegistry(mock_app, directories_setting=vis_reg_path)
 
         expected_plugins_path = os.path.join(glx_dir, vis_reg_path)
         assert expected_plugins_path in plugin_mgr.directories
