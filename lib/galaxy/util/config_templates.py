@@ -13,6 +13,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -55,6 +56,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
 from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
@@ -78,12 +80,12 @@ class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
     help: Optional[MarkdownContent]
+    validators: Optional[Sequence[AnySafeValidatorModel]] = None
 
 
 class TemplateVariableString(BaseTemplateVariable):
     type: Literal["string"]
     default: str = ""
-    # add non-empty validation?
 
 
 class TemplateVariableInteger(BaseTemplateVariable):
@@ -341,6 +343,17 @@ def find_template_by(templates: List[T], template_id: str, template_version: int
     raise ObjectNotFound(f"Could not find a {what} template with id {template_id} and version {template_version}")
 
 
+def _run_variable_validator(validator: AnySafeValidatorModel, value: Any, variable_name: str) -> None:
+    """Run a single validator on a variable value.
+
+    Raises RequestParameterInvalidException if validation fails.
+    """
+    try:
+        validator.statically_validate(value)
+    except ValueError as e:
+        raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {str(e)}")
+
+
 def validate_variable_types(instance: InstanceDefinition, template: Template) -> None:
     pass
 
@@ -394,6 +407,11 @@ def validate_specified_datatypes_variables(variables: Dict[str, Any], template: 
         if template_type == "boolean":
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
+
+        # Run custom validators if present and value is not None or empty
+        if template_variable.validators and variable_value is not None and variable_value != "":
+            for validator in template_variable.validators:
+                _run_variable_validator(validator, variable_value, name)
 
 
 def validate_no_extra_secrets_defined(secrets: Dict[str, str], template: Template) -> None:

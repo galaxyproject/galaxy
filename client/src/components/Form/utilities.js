@@ -100,6 +100,107 @@ export function matchInputs(index, response) {
     return result;
 }
 
+/** Validate value against a regular expression pattern
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateRegex(validator, value) {
+    try {
+        const regex = new RegExp(validator.expression);
+        const matches = regex.test(String(value));
+        const isValid = validator.negate ? !matches : matches;
+        return {
+            isValid: isValid,
+            message: isValid ? null : validator.message,
+        };
+    } catch (error) {
+        return {
+            isValid: false,
+            message: `Invalid validation pattern: ${error.message}`,
+        };
+    }
+}
+
+/** Validate value length is within specified bounds
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateLength(validator, value) {
+    const valueLength = String(value).length;
+    let isValid = true;
+
+    if (validator.min !== undefined && valueLength < validator.min) {
+        isValid = false;
+    }
+    if (validator.max !== undefined && valueLength > validator.max) {
+        isValid = false;
+    }
+    if (validator.negate) {
+        isValid = !isValid;
+    }
+
+    return {
+        isValid: isValid,
+        message: isValid ? null : validator.message,
+    };
+}
+
+/** Validate numeric value is within specified range
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateInRange(validator, value) {
+    const numericValue = Number(value);
+
+    if (isNaN(numericValue)) {
+        return {
+            isValid: false,
+            message: "Value must be numeric for range validation",
+        };
+    }
+
+    let isValid = true;
+
+    if (validator.min !== undefined && numericValue < validator.min) {
+        isValid = false;
+    }
+    if (validator.max !== undefined && numericValue > validator.max) {
+        isValid = false;
+    }
+    if (validator.negate) {
+        isValid = !isValid;
+    }
+
+    return {
+        isValid: isValid,
+        message: isValid ? null : validator.message,
+    };
+}
+
+// Map validator types to their validation functions
+const validatorFunctions = {
+    regex: validateRegex,
+    length: validateLength,
+    in_range: validateInRange,
+};
+
+/** Run a single validator
+ * @param{object} validator - Validator definition with type, expression, message, etc.
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function runValidator(validator, value) {
+    const validatorFunc = validatorFunctions[validator.type];
+    if (validatorFunc) {
+        return validatorFunc(validator, value);
+    }
+    // Unknown validator type - consider valid by default
+    return { isValid: true, message: null };
+}
+
 /** Validates input parameters to identify issues before submitting a server request, where comprehensive validation is performed.
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
@@ -156,6 +257,16 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
                     inputId,
                     `Please make sure that you select the same number of inputs for all batch mode fields. This field contains ${n} selection(s) while a previous field contains ${batchN}.`,
                 ];
+            }
+        }
+
+        // Run custom validators if present
+        if (inputDef.validators && inputValue != null && inputValue !== "") {
+            for (const validator of inputDef.validators) {
+                const validationResult = runValidator(validator, inputValue);
+                if (!validationResult.isValid) {
+                    return [inputId, validationResult.message];
+                }
             }
         }
     }
