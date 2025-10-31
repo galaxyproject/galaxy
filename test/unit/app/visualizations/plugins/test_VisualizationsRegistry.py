@@ -17,6 +17,9 @@ from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from . import VisualizationsBase_TestCase
 
+if TYPE_CHECKING:
+    from galaxy.structured_app import StructuredApp
+
 glx_dir = galaxy_directory()
 template_cache_dir = os.path.join(glx_dir, "database", "compiled_templates")
 vis_reg_path = "config/plugins/visualizations"
