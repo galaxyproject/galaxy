@@ -1029,10 +1029,10 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         tool_dir: Optional[StrPath] = None,
     ):
         """Load a tool from the config named by `config_file`"""
-        self.config_file = config_file
+        self.config_file = os.path.realpath(config_file) if config_file else None
         # Determine the full path of the directory where the tool config is
-        if config_file is not None:
-            tool_dir = tool_dir or os.path.dirname(config_file)
+        if self.config_file is not None:
+            tool_dir = tool_dir or os.path.dirname(self.config_file)
         self.tool_dir = tool_dir
 
         self.app = app
@@ -1098,7 +1098,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
-            global_tool_errors.add_error(config_file, "Tool Loading", e)
+            global_tool_errors.add_error(self.config_file, "Tool Loading", e)
             raise e
         mem_optimize = getattr(self.tool_source, "mem_optimize", None)
         if mem_optimize is not None:

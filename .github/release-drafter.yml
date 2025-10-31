@@ -1,0 +1,83 @@
+# Release Drafter Configuration for Galaxy
+# Implements YY.N.P versioning scheme using existing Galaxy labels
+#
+# IMPORTANT: Galaxy's versioning scheme is YY.N.P where:
+# - YY = Two-digit year (25 for 2025)
+# - N = Feature release number (0, 1, 2... - typically 2-3 per year)
+# - P = Patch/point release number (0, 1, 2, 3...)
+#
+# Year transitions (24→25) must be handled manually when creating releases.
+
+name-template: 'Galaxy $RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+# Categories for organizing release notes using existing Galaxy labels
+categories:
+  - title: '🎉 Major Changes'
+    labels:
+      - 'major'
+      - 'highlight'
+  - title: '🚀 New Features'
+    labels:
+      - 'kind/feature'
+  - title: '🔧 Enhancements'
+    labels:
+      - 'kind/enhancement'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'kind/bug'
+  - title: '🔒 Security Updates'
+    labels:
+      - 'area/security'
+  - title: '⚡ Performance'
+    labels:
+      - 'area/performance'
+  - title: '🧰 Refactoring'
+    labels:
+      - 'kind/refactoring'
+  - title: '📚 Documentation'
+    labels:
+      - 'area/documentation'
+  - title: '🔧 Admin & Configuration'
+    labels:
+      - 'area/admin'
+      - 'area/configuration'
+  - title: '🛠️ API Changes'
+    labels:
+      - 'area/API'
+  - title: '🧪 Testing'
+    labels:
+      - 'area/testing'
+      - 'area/testing/api'
+      - 'area/testing/integration'
+      - 'area/testing/selenium'
+  - title: '🏗️ Infrastructure & Dependencies'
+    labels:
+      - 'area/dependencies'
+      - 'area/client-build'
+
+# Exclude certain labels from release notes
+exclude-labels:
+  - 'triage'
+  - 'procedures'
+  - 'planning'
+  - 'merge'
+  - 'status/needs feedback'
+  - 'status/planning'
+
+# Template for each change line
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+
+# Characters to escape in titles
+change-title-escapes: '\<*_&'
+
+# Version is read from lib/galaxy/version.py by the workflow
+# No version-resolver needed since Galaxy manages versions manually
+
+# Template for the release body
+template: |
+  ## Changes in $RESOLVED_VERSION
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

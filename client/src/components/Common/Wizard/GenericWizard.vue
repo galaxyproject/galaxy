@@ -344,6 +344,11 @@ const bodyStyle = computed(() => {
         .card-header {
             border-radius: 0;
         }
+
+        &:hover {
+            border-color: lighten($brand-primary, 20%);
+            cursor: pointer;
+        }
     }
 }
 </style>
