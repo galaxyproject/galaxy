@@ -1,11 +1,20 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-// Auto-generated Galaxy icons as IconDefinition objects
-// This allows direct imports instead of using library registration and string arrays
+// Galaxy custom icons
 // Generated from: /Users/dannon/work/galaxy/client/src/assets/icons.json
-// To regenerate, run: node icons/generate_ts_icons.js
+// To regenerate, run: npm run icons
 
-export const galaxyLogo: IconDefinition = {
+// Matches FontAwesome's structure
+export interface GalaxyIconDefinition {
+    iconName: string;
+    prefix: string;
+    icon: [number, number, never[], string, string | string[]];
+}
+
+// Accepts both FA and Galaxy icons
+export type IconLike = IconDefinition | GalaxyIconDefinition;
+
+export const galaxyLogo: GalaxyIconDefinition = {
     iconName: "galaxyLogo",
     prefix: "gxd",
     icon: [
@@ -20,7 +29,7 @@ export const galaxyLogo: IconDefinition = {
     ],
 };
 
-export const textLarger: IconDefinition = {
+export const textLarger: GalaxyIconDefinition = {
     iconName: "textLarger",
     prefix: "gxd",
     icon: [
@@ -35,7 +44,7 @@ export const textLarger: IconDefinition = {
     ],
 };
 
-export const textSmaller: IconDefinition = {
+export const textSmaller: GalaxyIconDefinition = {
     iconName: "textSmaller",
     prefix: "gxd",
     icon: [

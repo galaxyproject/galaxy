@@ -66,7 +66,6 @@ function stageLibs(callback) {
 
 async function icons() {
     await buildIcons("./src/assets/icons.json");
-    // Generate TypeScript exports for Galaxy icons
     const generateIconsTypeScript = require("./icons/generate_ts_icons");
     generateIconsTypeScript();
 }
