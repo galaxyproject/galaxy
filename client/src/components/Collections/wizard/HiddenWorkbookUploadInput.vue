@@ -19,6 +19,6 @@ defineExpose({
 
 <template>
     <label style="display: none">
-        <input ref="fileInputRef" type="file" accept=".xlsx" @change="onFileUpload" />
+        <input ref="fileInputRef" type="file" accept=".xlsx,.xls,.tsv,.csv,.tabular" @change="onFileUpload" />
     </label>
 </template>

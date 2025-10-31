@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCardGroup } from "bootstrap-vue";
+import { BAlert, BCardGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -11,6 +11,7 @@ import { forBuilder, type ForBuilderResponse } from "@/components/Collections/wi
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { useToolRouting } from "@/composables/route";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type {
     ParsedFetchWorkbook,
@@ -112,7 +113,7 @@ const wizard = useWizard({
     },
     "upload-workbook": {
         label: "Upload workbook",
-        instructions: "Upload a workbook containing with URIs and metadata",
+        instructions: "Upload a workbook containing URIs with metadata",
         isValid: () => sourceFrom.value === "workbook" && workbookCompleted.value,
         isSkippable: () => sourceFrom.value !== "workbook",
     },
@@ -239,7 +240,7 @@ async function handleWorkbook(base64Content: string) {
         handleUploadedData(data);
     } else {
         console.log(error);
-        uploadErrorMessage.value = "There was an error processing the file.";
+        uploadErrorMessage.value = "There was an error processing the file. " + errorMessageAsString(error);
     }
 }
 
@@ -260,17 +261,26 @@ const {
 <template>
     <GenericWizard :use="wizard" :submit-button-label="importButtonLabel" :title="title" @submit="submit">
         <template v-slot:header>
+            <BAlert
+                :show="!!uploadErrorMessage"
+                variant="danger"
+                class="my-2"
+                dismissible
+                @dismissed="uploadErrorMessage = ''">
+                {{ uploadErrorMessage }}
+            </BAlert>
             <h2 data-galaxy-file-drop-target>
                 {{ title }}
-                <FontAwesomeIcon
-                    class="workbook-upload-helper mr-1"
-                    :class="dropZoneClasses"
-                    :title="dropWorkbookTitle"
-                    :icon="faUpload"
-                    @click.prevent="browseFiles"
-                    @drop.prevent="handleDrop"
-                    @dragover.prevent="isDragging = true"
-                    @dragleave.prevent="isDragging = false" />
+                <a v-b-tooltip.hover aria-label="Upload Completed Workbook" :title="dropWorkbookTitle" href="#">
+                    <FontAwesomeIcon
+                        class="workbook-upload-helper mr-1"
+                        :class="dropZoneClasses"
+                        :icon="faUpload"
+                        @click.prevent="browseFiles"
+                        @drop.prevent="handleDrop"
+                        @dragover.prevent="isDragging = true"
+                        @dragleave.prevent="isDragging = false" />
+                </a>
                 <HiddenWorkbookUploadInput ref="uploadRef" @onFileUpload="onFileUpload" />
             </h2>
         </template>
@@ -337,5 +347,8 @@ const {
 // modeled a bit after upload-helper in the upload component...
 .workbook-upload-helper {
     color: $border-color;
+    &:hover {
+        color: $brand-primary;
+    }
 }
 </style>
