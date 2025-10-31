@@ -70,7 +70,7 @@ jobs:
           playwright install
         working-directory: 'galaxy root'
       - name: Run tests
-        run: ./run_tests.sh -toolshed
+        run: ./run_tests.sh -toolshed --structured_data_report_file run_toolshed_tests.json
         env:
           TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
           TOOL_SHED_API_VERSION: ${{ matrix.shed-api }}
@@ -81,3 +81,8 @@ jobs:
         with:
           name: Toolshed test results (${{ matrix.python-version }}, ${{ matrix.shed-api }}, ${{ matrix.test-install-client }})
           path: 'galaxy root/run_toolshed_tests.html'
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: Toolshed test results JSON (${{ matrix.python-version }}, ${{ matrix.shed-api }}, ${{ matrix.test-install-client }})
+          path: 'galaxy root/run_toolshed_tests.json'

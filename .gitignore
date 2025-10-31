@@ -193,3 +193,4 @@ involucro
 .DS_Store
 *.rej
 *~
+/database/pr_reviews/
