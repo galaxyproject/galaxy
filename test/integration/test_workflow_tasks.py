@@ -74,6 +74,54 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
             bco = json.load(f)
         self.workflow_populator.validate_biocompute_object(bco)
 
+    def test_export_ro_crate_with_optional_parameter_without_value(self):
+        """Test exporting invocation with optional text parameter that has no value.
+
+        This tests the fix for the bug where step.output_value is None for optional
+        parameters that weren't provided, which caused AttributeError when creating RO-Crate.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow_with_optional_parameter_without_value(history_id)
+            invocation_id = summary.invocation_id
+
+            # Export to RO-Crate - this should succeed without AttributeError
+            ro_crate_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="rocrate.zip")
+
+            # Verify the RO-Crate was created successfully
+            with CompressedFile(ro_crate_path) as cf:
+                assert cf.file_type == "zip"
+
+    def _run_workflow_with_optional_parameter_without_value(self, history_id: str) -> RunJobsSummary:
+        """Run a workflow with an optional text parameter that is not provided."""
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+  optional_text_param:
+    type: text
+    optional: true
+steps:
+  cat_step:
+    tool_id: cat
+    in:
+      input1: input_data
+outputs:
+  output_data:
+    outputSource: cat_step/out_file1
+"""
+        test_data = """
+input_data:
+  value: 1.bed
+  type: File
+"""
+        summary = self.workflow_populator.run_workflow(
+            workflow,
+            test_data=test_data,
+            history_id=history_id,
+        )
+        return summary
+
     def _export_invocation_to_format(self, extension: str, to_uri: bool):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
