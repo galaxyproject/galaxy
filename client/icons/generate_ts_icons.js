@@ -41,7 +41,7 @@ function generateIconsTypeScript() {
                 icon: icon.icon,
             },
             null,
-            4
+            4,
         )};
 
 `;
