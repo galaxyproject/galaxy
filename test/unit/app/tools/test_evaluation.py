@@ -322,6 +322,7 @@ class MockTool:
         self.version_string_cmd = ""
         self.credentials = []
         self.id = "tool_id"
+        self.tool_type = "default"
 
     def test_thresh_param(self):
         elem = XML('<param name="thresh" type="integer" value="5" />')

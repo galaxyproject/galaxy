@@ -452,12 +452,15 @@ class ExecutionTracker:
     def on_text(self) -> Optional[str]:
         collection_info = self.collection_info
         if self._on_text is None and collection_info is not None:
-            collection_hids, element_ids = self._collection_info_to_collection_hids_element_ids(
-                collection_info.collections.values()
-            )
-            self._on_text = on_text_for_dataset_and_collections(
-                collection_hids=collection_hids, element_ids=element_ids
-            )
+            if not collection_info.uses_ephemeral_collections:
+                collection_hids, element_ids = self._collection_info_to_collection_hids_element_ids(
+                    collection_info.collections.values()
+                )
+                self._on_text = on_text_for_dataset_and_collections(
+                    collection_hids=collection_hids, element_ids=element_ids
+                )
+            else:
+                self._on_text = "implicitly created collection from inputs"
         return self._on_text
 
     def output_name(self, trans, history, params, output):

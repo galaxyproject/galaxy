@@ -4,6 +4,7 @@ import os
 import shlex
 import tempfile
 from collections.abc import (
+    ItemsView,
     Iterable,
     Iterator,
     KeysView,
@@ -73,7 +74,7 @@ class ToolParameterValueWrapper:
     Base class for object that Wraps a Tool Parameter and Value.
     """
 
-    value: Optional[Union[str, list[str]]]
+    value: Any
     input: "ToolParameter"
 
     def __bool__(self) -> bool:
@@ -127,7 +128,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
     def __init__(
         self,
         input: "ToolParameter",
-        value: Optional[str],
+        value: Any,
         other_values: Optional[dict[str, str]] = None,
         profile: Optional[float] = None,
     ) -> None:
@@ -728,6 +729,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         if not self.__input_supplied:
             return []
         return self.__element_instances.keys()
+
+    def items(self) -> ItemsView[str, Union["DatasetCollectionWrapper", DatasetFilenameWrapper]]:
+        return self.__element_instances.items()
 
     @property
     def is_collection(self) -> bool:
