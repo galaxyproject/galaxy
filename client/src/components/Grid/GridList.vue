@@ -339,7 +339,7 @@ watch(operationMessage, () => {
                         outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
-                        <Icon :icon="action.icon" class="mr-1" />
+                        <FontAwesomeIcon :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
                     </GButton>
                 </div>
@@ -518,7 +518,7 @@ watch(operationMessage, () => {
                             color="blue"
                             :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
                             @click="onBatchOperation(batchOperation, Array.from(selected))">
-                            <Icon :icon="batchOperation.icon" class="mr-1" />
+                            <FontAwesomeIcon :icon="batchOperation.icon" class="mr-1" />
                             <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
                         </GButton>
                     </div>
