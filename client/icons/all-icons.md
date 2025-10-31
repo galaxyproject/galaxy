@@ -18,8 +18,8 @@ import { galaxyLogo } from "@/components/icons/galaxyIcons";
 
 ---
 
-- **galaxyLogo**: `import { galaxyLogo } from '@/components/icons/galaxyIcons';`
-- **textLarger**: `import { textLarger } from '@/components/icons/galaxyIcons';`
-- **textSmaller**: `import { textSmaller } from '@/components/icons/galaxyIcons';`
+- **galaxyLogo**: `import { galaxyLogo } from "@/components/icons/galaxyIcons";`
+- **textLarger**: `import { textLarger } from "@/components/icons/galaxyIcons";`
+- **textSmaller**: `import { textSmaller } from "@/components/icons/galaxyIcons";`
 
 ---
