@@ -7,6 +7,7 @@ import { BButton, BButtonGroup } from "bootstrap-vue";
 import { sanitize } from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import { textLarger, textSmaller } from "@/components/icons/galaxyIcons";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TextWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
@@ -243,14 +244,14 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 variant="primary"
                 :title="decreaseFontSizeTitle"
                 @click="decreaseFontSize">
-                <FontAwesomeIcon :icon="['gxd', 'textSmaller']" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="textSmaller" class="prevent-zoom" />
             </BButton>
             <BButton
                 class="button prevent-zoom"
                 variant="primary"
                 :title="increaseFontSizeTitle"
                 @click="increaseFontSize">
-                <FontAwesomeIcon :icon="['gxd', 'textLarger']" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="textLarger" class="prevent-zoom" />
             </BButton>
             <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
                 <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />

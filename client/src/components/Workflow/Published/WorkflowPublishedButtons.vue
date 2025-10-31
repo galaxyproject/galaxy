@@ -5,6 +5,7 @@ import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { galaxyLogo } from "@/components/icons/galaxyIcons";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
@@ -103,7 +104,7 @@ function logInTitle(title: string) {
             variant="primary"
             size="md"
             class="view-button font-weight-bold">
-            <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" />
+            <FontAwesomeIcon :icon="galaxyLogo" />
             View In Galaxy
         </BButton>
     </span>
