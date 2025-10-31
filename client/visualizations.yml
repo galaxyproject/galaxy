@@ -41,7 +41,7 @@ hivtrace:
     version: 0.0.1
 hyphyvision:
     package: "@galaxyproject/hyphyvision"
-    version: 0.0.1
+    version: 0.0.2
 igv:
     package: "@galaxyproject/igv"
     version: 0.0.21
