@@ -15,10 +15,14 @@ const props = withDefaults(
     }>(),
     {
         height: 400,
+        title: "visualization",
     },
 );
 
-const emit = defineEmits(["change", "load"]);
+const emit = defineEmits<{
+    (event: "change", payload: Record<string, any>): void;
+    (event: "load"): void;
+}>();
 
 const errorMessage = ref("");
 const expand = ref(false);
@@ -35,7 +39,7 @@ const fixedHeight = computed(() =>
     <div v-else class="position-relative h-100">
         <div :class="`visualization-pop${expand ? 'out' : 'in'}`">
             <VisualizationFrame
-                title="visualization"
+                :title="title"
                 :config="props.config"
                 :name="props.name"
                 :style="fixedHeight"
