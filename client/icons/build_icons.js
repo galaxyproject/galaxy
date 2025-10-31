@@ -101,16 +101,16 @@ function makeMarkdown(iconDefinitions) {
     content += "## Usage\n\n";
     content += "```vue\n";
     content += "<script setup>\n";
-    content += "import { galaxyLogo } from '@/components/icons/galaxyIcons';\n";
+    content += 'import { galaxyLogo } from "@/components/icons/galaxyIcons";\n';
     content += "</script>\n\n";
     content += "<template>\n";
-    content += '  <FontAwesomeIcon :icon="galaxyLogo" />\n';
+    content += '    <FontAwesomeIcon :icon="galaxyLogo" />\n';
     content += "</template>\n";
     content += "```\n\n";
     content += "---\n\n";
 
     iconDefinitions.forEach((icon) => {
-        content += `- **${icon.iconName}**: \`import { ${icon.iconName} } from '@/components/icons/galaxyIcons';\`\n`;
+        content += `-   **${icon.iconName}**: \`import { ${icon.iconName} } from "@/components/icons/galaxyIcons";\`\n`;
     });
 
     content += "\n---\n";

@@ -23,7 +23,7 @@ function generateIconsTypeScript() {
 
 // Galaxy custom icons
 // Generated from: ${iconsJsonPath}
-// To regenerate, run: npm run icons
+// To regenerate: node icons/generate_ts_icons.js
 
 // Matches FontAwesome's structure
 export interface GalaxyIconDefinition {
@@ -41,21 +41,29 @@ export type IconLike = IconDefinition | GalaxyIconDefinition;
         // Convert icon name to camelCase for JavaScript export
         const exportName = icon.iconName;
 
-        content += `export const ${exportName}: GalaxyIconDefinition = ${JSON.stringify(
-            {
-                iconName: icon.iconName,
-                prefix: icon.prefix,
-                icon: icon.icon,
-            },
-            null,
-            4,
-        )};
+        // Format the icon data manually to match the expected style
+        const iconData = icon.icon;
+        const formattedIcon = `{
+    iconName: "${icon.iconName}",
+    prefix: "${icon.prefix}",
+    icon: [
+        ${iconData[0]},
+        ${iconData[1]},
+        [],
+        "",
+        [
+            ${iconData[4].map((path) => `"${path}"`).join(",\n            ")},
+        ],
+    ],
+};`;
+
+        content += `export const ${exportName}: GalaxyIconDefinition = ${formattedIcon}
 
 `;
     });
 
     // Write the TypeScript file
-    fs.writeFileSync(outputPath, content);
+    fs.writeFileSync(outputPath, content.trimEnd() + "\n");
     console.log(`Generated Galaxy icons TypeScript exports at: ${outputPath}`);
     console.log(`Exported ${icons.length} icons: ${icons.map((i) => i.iconName).join(", ")}`);
 }
