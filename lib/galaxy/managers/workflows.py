@@ -1242,9 +1242,16 @@ class WorkflowContentsManager(UsesAnnotations):
         """Get workflow scheduling resource parameters for this user and workflow or None if not configured."""
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
-    def _workflow_to_dict_editor(self, trans, stored, workflow, tooltip=True, is_subworkflow=False):
+    def _workflow_to_dict_editor(
+        self,
+        trans,
+        stored: Optional[StoredWorkflow],
+        workflow: Workflow,
+        tooltip: bool = True,
+        is_subworkflow: bool = False,
+    ):
         # Pack workflow data into a dictionary and return
-        data = {}
+        data: dict[str, Any] = {}
         data["name"] = workflow.name
         data["steps"] = {}
         data["upgrade_messages"] = {}
@@ -1258,7 +1265,9 @@ class WorkflowContentsManager(UsesAnnotations):
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
         data["comments"] = [comment.to_dict() for comment in workflow.comments]
-        data["tags"] = stored.make_tag_string_list()
+        if stored:
+            # subworkflow may not have StoredWorkflow
+            data["tags"] = stored.make_tag_string_list()
 
         output_label_index = set()
         input_step_types = set(workflow.input_step_types)
