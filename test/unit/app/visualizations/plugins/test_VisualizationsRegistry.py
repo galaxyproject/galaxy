@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from galaxy.structured_app import StructuredApp
 
 glx_dir = galaxy_directory()
-template_cache_dir = os.path.join(glx_dir, "database", "compiled_templates")
 vis_reg_path = "config/plugins/visualizations"
 
 config1 = """\
@@ -105,9 +104,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
             }
         )
         mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
-        plugin_mgr = VisualizationsRegistry(
-            mock_app, directories_setting="plugins", template_cache_dir=template_cache_dir
-        )
+        plugin_mgr = VisualizationsRegistry(mock_app, directories_setting="plugins")
 
         expected_plugins_path = os.path.join(mock_app_dir.root_path, "plugins")
         expected_plugin_names = ["vis1", "vis2"]
@@ -159,9 +156,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
             }
         )
         mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
-        plugin_mgr = VisualizationsRegistry(
-            mock_app, directories_setting="plugins", template_cache_dir=template_cache_dir
-        )
+        plugin_mgr = VisualizationsRegistry(mock_app, directories_setting="plugins")
         script_entry = plugin_mgr.plugins["jstest"]
 
         assert isinstance(script_entry, plugin.VisualizationPlugin)
