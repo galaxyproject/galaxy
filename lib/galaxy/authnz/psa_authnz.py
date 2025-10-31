@@ -213,8 +213,8 @@ class PSAAuthnz(IdentityProvider):
         return (
             extra_data.get("expires", None)
             or extra_data.get("expires_in", None)
-            or extra_data["refresh_token"].get("expires", None)
-            or extra_data["refresh_token"].get("expires_in", None)
+            or (extra_data.get("refresh_token") or {}).get("expires", None)
+            or (extra_data.get("refresh_token") or {}).get("expires_in", None)
         )
 
     def authenticate(self, trans, idphint=None):
