@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { faStop } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCopy,
+    faEyeSlash,
+    faFile,
+    faInfoCircle,
+    faPen,
+    faStop,
+    faTrash,
+    faTrashRestore,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BButton, BDropdown } from "bootstrap-vue";
@@ -108,7 +117,7 @@ function onDisplay($event: MouseEvent) {
             variant="link"
             :href="showCollectionDetailsUrl"
             @click.prevent.stop="emit('showCollectionInfo')">
-            <icon icon="info-circle" />
+            <FontAwesomeIcon :icon="faInfoCircle" />
         </BButton>
         <!-- Common for all content items -->
         <BButton
@@ -134,7 +143,7 @@ function onDisplay($event: MouseEvent) {
             variant="link"
             :href="editUrl"
             @click.prevent.stop="emit('edit')">
-            <icon icon="pen" />
+            <FontAwesomeIcon :icon="faPen" />
         </BButton>
         <BButton
             v-if="isRunningInteractiveTool"
@@ -155,17 +164,17 @@ function onDisplay($event: MouseEvent) {
             size="sm"
             variant="link"
             @click.stop="onDelete($event)">
-            <icon v-if="isDataset" icon="trash" />
+            <FontAwesomeIcon v-if="isDataset" :icon="faTrash" />
             <BDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
                 <template v-slot:button-content>
-                    <icon icon="trash" />
+                    <FontAwesomeIcon :icon="faTrash" />
                 </template>
                 <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
-                    <icon icon="file" />
+                    <FontAwesomeIcon :icon="faFile" />
                     Collection only
                 </b-dropdown-item>
                 <b-dropdown-item title="Delete collection and elements" @click.prevent.stop="onDeleteItemRecursively">
-                    <icon icon="copy" />
+                    <FontAwesomeIcon :icon="faCopy" />
                     Collection and elements
                 </b-dropdown-item>
             </BDropdown>
@@ -179,7 +188,7 @@ function onDisplay($event: MouseEvent) {
             size="sm"
             variant="link"
             @click.stop="emit('undelete')">
-            <icon icon="trash-restore" />
+            <FontAwesomeIcon :icon="faTrashRestore" />
         </BButton>
         <BButton
             v-if="writable && isHistoryItem && !isVisible"
@@ -190,7 +199,7 @@ function onDisplay($event: MouseEvent) {
             size="sm"
             variant="link"
             @click.stop="emit('unhide')">
-            <icon icon="eye-slash" />
+            <FontAwesomeIcon :icon="faEyeSlash" />
         </BButton>
     </span>
 </template>

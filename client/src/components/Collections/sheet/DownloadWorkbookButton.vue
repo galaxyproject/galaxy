@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExcel } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-
-library.add(faFileExcel);
 
 interface Props {
     title: string;
@@ -17,6 +14,6 @@ const emit = defineEmits(["click"]);
 
 <template>
     <BButton :title="title" role="button" variant="link" size="sm" class="ml-0" @click="emit('click')">
-        <FontAwesomeIcon icon="file-excel" />
+        <FontAwesomeIcon :icon="faFileExcel" />
     </BButton>
 </template>

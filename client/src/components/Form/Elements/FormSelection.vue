@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItemButton } from "bootstrap-vue";
@@ -12,8 +11,6 @@ import FormCheck from "./FormCheck.vue";
 import FormRadio from "./FormRadio.vue";
 import FormSelect from "./FormSelect.vue";
 import FormSelectMany from "./FormSelectMany/FormSelectMany.vue";
-
-library.add(faCaretDown);
 
 export interface SelectOption {
     label: string;
@@ -140,7 +137,7 @@ defineExpose({
 
             <BDropdown toggle-class="inline-icon-button d-block px-1" variant="link" no-caret>
                 <template v-slot:button-content>
-                    <FontAwesomeIcon icon="fa-caret-down"></FontAwesomeIcon>
+                    <FontAwesomeIcon :icon="faCaretDown"></FontAwesomeIcon>
                     <span class="sr-only">select element preferences</span>
                 </template>
                 <BDropdownItemButton

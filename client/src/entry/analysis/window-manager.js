@@ -1,6 +1,7 @@
 /** Adds window manager masthead icon and functionality **/
 import "winbox/src/css/winbox.css";
 
+import { faTh } from "@fortawesome/free-solid-svg-icons";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
 import WinBox from "winbox/src/js/winbox.js";
@@ -16,7 +17,7 @@ export class WindowManager {
     getTab() {
         return {
             id: "enable-window-manager",
-            icon: "fa-th",
+            icon: faTh,
             tooltip: _l("Enable/Disable Window Manager"),
             visible: true,
             onclick: () => {

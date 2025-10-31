@@ -10,11 +10,7 @@ import "@fontsource/atkinson-hyperlegible";
 import "@fontsource/atkinson-hyperlegible/700.css";
 
 // Client-side configuration variables (based on environment)
-import { library } from "@fortawesome/fontawesome-svg-core";
 import config from "config";
-
-// Custom Icons
-import customIconPack from "@/assets/icons.json";
 
 import { overrideProductionConsole } from "./console";
 
@@ -30,5 +26,3 @@ if (!config.testBuild === true) {
     console.log(`Galaxy Client '${config.name}' build, dated ${config.buildTimestamp}`);
     console.debug("Full configuration:", config);
 }
-
-library.add(customIconPack);

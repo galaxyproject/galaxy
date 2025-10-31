@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { AxiosError } from "axios";
@@ -15,8 +14,6 @@ import Heading from "../Common/Heading.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
 
 interface Props {
     datasetId: string;

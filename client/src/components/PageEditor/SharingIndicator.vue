@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, watch } from "vue";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -28,9 +30,9 @@ watch(props, () => {
     <div>
         <LoadingSpan v-if="accessible == null || makingAccessible" spinner-only> </LoadingSpan>
         <div v-else-if="typeof accessible == 'string'">
-            <Icon
+            <FontAwesomeIcon
                 :title="accessible"
-                icon="exclamation-triangle"
+                :icon="faExclamationTriangle"
                 class="make-page-object-accessible-sharing-error-icon" />
         </div>
         <BFormCheckbox

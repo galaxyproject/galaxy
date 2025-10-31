@@ -1,5 +1,4 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -7,8 +6,6 @@ import { useEventStore } from "stores/eventStore";
 import { computed } from "vue";
 
 import TextShort from "@/components/Common/TextShort.vue";
-
-library.add(faPaperPlane);
 
 const eventStore = useEventStore();
 const { multipleDragData } = storeToRefs(eventStore);

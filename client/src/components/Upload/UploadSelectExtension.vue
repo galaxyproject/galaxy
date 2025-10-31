@@ -1,5 +1,4 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
@@ -9,8 +8,6 @@ import { findExtension } from "./utils";
 import UploadExtension from "./UploadExtension.vue";
 import UploadSelect from "./UploadSelect.vue";
 import Popper from "@/components/Popper/Popper.vue";
-
-library.add(faExclamationCircle);
 
 const props = defineProps({
     disabled: {
@@ -45,7 +42,7 @@ const warnText = computed(() => details.value.upload_warning);
             @input="(newValue) => emit('input', newValue)" />
         <Popper v-if="warnText" placement="bottom" mode="light">
             <template v-slot:reference>
-                <FontAwesomeIcon icon="fa-exclamation-circle" class="selection-warning" />
+                <FontAwesomeIcon :icon="faExclamationCircle" class="selection-warning" />
             </template>
             <div class="p-2">
                 {{ warnText }}

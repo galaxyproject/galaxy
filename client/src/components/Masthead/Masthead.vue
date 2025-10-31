@@ -1,4 +1,6 @@
 <script setup>
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import {
     getOIDCIdpsWithRegistration,
@@ -215,7 +217,7 @@ onMounted(() => {
                 ]"
                 @click="user" />
         </BNavbarNav>
-        <Icon v-else icon="spinner" class="fa-spin mr-2 text-light" />
+        <FontAwesomeIcon v-else :icon="faSpinner" class="fa-spin mr-2 text-light" />
     </BNavbar>
 </template>
 

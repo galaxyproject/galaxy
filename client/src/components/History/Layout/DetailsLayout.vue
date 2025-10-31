@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BFormInput, BFormTextarea } from "bootstrap-vue";
@@ -14,8 +13,6 @@ import type { DetailsLayoutSummarized } from "./types";
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-
-library.add(faPen, faSave, faUndo);
 
 interface Props {
     name?: string;
@@ -225,12 +222,7 @@ function selectText() {
                 <span v-localize>Save</span>
             </BButton>
 
-            <BButton
-                class="cancel-button mb-1"
-                data-description="editor cancel button"
-                size="sm"
-                icon="undo"
-                @click="onToggle">
+            <BButton class="cancel-button mb-1" data-description="editor cancel button" size="sm" @click="onToggle">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 <span v-localize>Cancel</span>
             </BButton>

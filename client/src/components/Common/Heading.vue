@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
+
+import type { IconLike } from "@/components/icons/galaxyIcons";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
@@ -17,7 +18,7 @@ interface Props {
     separator?: boolean;
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
-    icon?: IconDefinition | string[];
+    icon?: IconLike;
     truncate?: boolean;
     collapse?: "open" | "closed" | "none";
 }

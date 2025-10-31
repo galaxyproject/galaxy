@@ -8,7 +8,7 @@
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
                 <span class="popper-close align-items-center cursor-pointer" @click="visible = false">
-                    <FontAwesomeIcon icon="fa-times-circle" />
+                    <FontAwesomeIcon :icon="faTimesCircle" />
                 </span>
             </div>
             <slot />
@@ -17,7 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
@@ -25,8 +24,6 @@ import type { PropType } from "vue";
 import { ref } from "vue";
 
 import { type Trigger, usePopper } from "./usePopper";
-
-library.add(faTimesCircle);
 
 const props = defineProps({
     arrow: { type: Boolean, default: true },
