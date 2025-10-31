@@ -222,12 +222,7 @@ function selectText() {
                 <span v-localize>Save</span>
             </BButton>
 
-            <BButton
-                class="cancel-button mb-1"
-                data-description="editor cancel button"
-                size="sm"
-                icon="undo"
-                @click="onToggle">
+            <BButton class="cancel-button mb-1" data-description="editor cancel button" size="sm" @click="onToggle">
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
                 <span v-localize>Cancel</span>
             </BButton>
