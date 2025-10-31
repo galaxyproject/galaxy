@@ -2,7 +2,7 @@
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
             <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
-                <FontAwesomeIcon icon="home" />
+                <FontAwesomeIcon :icon="faHome" />
             </b-button>
             <b-button
                 v-if="currentUser && currentUser.is_admin"
@@ -10,7 +10,7 @@
                 v-b-toggle.collapse-2
                 title="Create new folder"
                 class="mr-1">
-                <FontAwesomeIcon icon="plus" />
+                <FontAwesomeIcon :icon="faPlus" />
                 {{ titleLibrary }}
             </b-button>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
@@ -34,7 +34,7 @@
                         <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
                         <template v-slot:append>
                             <b-button id="save_new_library" type="submit" :title="titleSave">
-                                <FontAwesomeIcon :icon="['far', 'save']" />
+                                <FontAwesomeIcon :icon="faSave" />
                                 {{ titleSave }}
                             </b-button>
                         </template>
@@ -89,7 +89,7 @@
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
+                <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" :icon="faGlobe" />
             </template>
             <template v-slot:cell(buttons)="row">
                 <b-button
@@ -97,7 +97,7 @@
                     size="sm"
                     :title="'Undelete ' + row.item.name"
                     @click="undelete(row.item)">
-                    <FontAwesomeIcon icon="unlock" />
+                    <FontAwesomeIcon :icon="faUnlock" />
                     {{ titleUndelete }}
                 </b-button>
                 <b-button
@@ -106,7 +106,7 @@
                     class="lib-btn permission_folder_btn"
                     :title="'Permissions of ' + row.item.name"
                     @click="saveChanges(row.item)">
-                    <FontAwesomeIcon :icon="['far', 'save']" />
+                    <FontAwesomeIcon :icon="faSave" />
                     {{ titleSave }}
                 </b-button>
                 <b-button
@@ -116,11 +116,11 @@
                     :title="`Edit ${row.item.name}`"
                     @click="toggleEditMode(row.item)">
                     <div v-if="!row.item.editMode">
-                        <FontAwesomeIcon icon="pencil-alt" />
+                        <FontAwesomeIcon :icon="faPencilAlt" />
                         {{ titleEdit }}
                     </div>
                     <div v-else>
-                        <FontAwesomeIcon :icon="['fas', 'times']" />
+                        <FontAwesomeIcon :icon="faTimes" />
                         {{ titleCancel }}
                     </div>
                 </b-button>
@@ -130,7 +130,7 @@
                     class="lib-btn permission_library_btn"
                     :title="'Permissions of ' + row.item.name"
                     :to="{ path: `/libraries/${row.item.id}/permissions` }">
-                    <FontAwesomeIcon icon="users" />
+                    <FontAwesomeIcon :icon="faUsers" />
                     Manage
                 </b-button>
                 <b-button
@@ -139,7 +139,7 @@
                     class="lib-btn delete-lib-btn"
                     :title="`Delete ${row.item.name}`"
                     @click="deleteLibrary(row.item)">
-                    <FontAwesomeIcon icon="trash" />
+                    <FontAwesomeIcon :icon="faTrash" />
                     {{ titleDelete }}
                 </b-button>
             </template>
@@ -181,9 +181,19 @@
 </template>
 
 <script>
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+import {
+    faGlobe,
+    faHome,
+    faPencilAlt,
+    faPlus,
+    faTimes,
+    faTrash,
+    faUnlock,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { initLibrariesIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 import SearchField from "components/Libraries/LibraryFolder/SearchField";
@@ -198,8 +208,6 @@ import { useUserStore } from "@/stores/userStore";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
-initLibrariesIcons();
-
 Vue.use(BootstrapVue);
 
 export default {
@@ -210,6 +218,17 @@ export default {
     },
     data() {
         return {
+            // Icons
+            faGlobe,
+            faHome,
+            faPencilAlt,
+            faPlus,
+            faSave,
+            faTimes,
+            faTrash,
+            faUnlock,
+            faUsers,
+            // Data
             newDescriptionProperty: "newDescription",
             newSynopsisProperty: "newSynopsis",
             isNewLibFormVisible: false,
