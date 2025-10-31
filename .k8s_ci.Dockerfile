@@ -150,12 +150,14 @@ RUN set -xe; \
         locales \
         vim-tiny \
         nano-tiny \
+        netcat-openbsd \
         curl \
         procps \
         less \
         bzip2 \
         tini \
         nodejs \
+        wget \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
     && echo "set nocompatible\nset backspace=indent,eol,start" >> /usr/share/vim/vimrc.tiny \

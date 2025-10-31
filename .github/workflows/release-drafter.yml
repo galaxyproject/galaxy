@@ -1,0 +1,43 @@
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - dev
+      - master
+      - 'release_*'
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    permissions:
+      contents: write
+      pull-requests: write
+    if: github.repository == 'galaxyproject/galaxy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          sparse-checkout: |
+            lib/galaxy/version.py
+
+      - name: Read Galaxy version
+        id: galaxy-version
+        run: |
+          # Extract VERSION_MAJOR from version.py (e.g., "25.1")
+          VERSION_MAJOR=$(grep '^VERSION_MAJOR' lib/galaxy/version.py | cut -d'"' -f2)
+          RELEASE_VERSION="${VERSION_MAJOR}.0"
+          echo "version=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
+          echo "Galaxy release version: ${RELEASE_VERSION}"
+
+      - uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+          version: ${{ steps.galaxy-version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -303,7 +303,14 @@ export default {
             const { setSelectedItems } = useCollectionBuilderItemSelection();
             const selection = Array.from(this.contentSelection.values());
             setSelectedItems(selection);
-            this.$router.push({ path: `/collection/new_list?advanced=${advanced}` });
+
+            if (this.$route.path === "/collection/new_list") {
+                // vue-router 4 supports a native force push with clean URLs, but we're using a __vkey__
+                // bit as a workaround to allow the builder to be invoked consecutively
+                this.$router.push({ path: `/collection/new_list?advanced=${advanced}` }, { force: true });
+            } else {
+                this.$router.push(`/collection/new_list?advanced=${advanced}`);
+            }
         },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {

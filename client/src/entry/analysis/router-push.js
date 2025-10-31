@@ -15,7 +15,16 @@ export function patchRouterPush(VueRouter) {
         // add key to location to force component refresh
         const { title, force, preventWindowManager } = options;
         if (force) {
-            location = addSearchParams(location, { __vkey__: Date.now() });
+            // since location can either be string or object, we need to pass the string url to addSearchParams
+            if (typeof location === "string") {
+                location = addSearchParams(location, { __vkey__: Date.now() });
+            } else if (typeof location === "object") {
+                // convert to string version addSearchParams can handle
+                let url = this.resolve(location).href;
+                url = addSearchParams(url, { __vkey__: Date.now() });
+                // convert back to object version
+                location = this.resolve(url).route;
+            }
         }
         // verify if confirmation is required
         if (this.confirmation) {
