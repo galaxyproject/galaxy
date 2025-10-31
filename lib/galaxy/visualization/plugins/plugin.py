@@ -5,6 +5,7 @@ from a query string and render a webpage based on those data.
 
 import logging
 import os
+from typing import Any
 
 from galaxy.web import url_for
 
