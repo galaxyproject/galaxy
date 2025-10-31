@@ -6,7 +6,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { copy } from "utils/clipboard";
+
+import { copy } from "@/utils/clipboard";
 
 library.add(faCopy);
 

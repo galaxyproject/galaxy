@@ -1,6 +1,5 @@
-import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
-
 import { fetchCollectionDetails, fetchCollectionSummary } from "@/api/datasetCollections";
+import { SingleQueryProvider } from "@/components/providers/SingleQueryProvider";
 
 // There isn't really a good way to know when to stop polling for HDCA updates,
 // but we know the populated_state should at least be ok.

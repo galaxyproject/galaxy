@@ -2,10 +2,6 @@
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BModal, BPopover } from "bootstrap-vue";
-import Heading from "components/Common/Heading";
-import FormMessage from "components/Form/FormMessage";
-import ToolFooter from "components/Tool/ToolFooter";
-import ToolHelp from "components/Tool/ToolHelp";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -14,18 +10,21 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
-import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
-import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
-
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
+import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
+import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
-import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
-import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
-import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
+import FormMessage from "@/components/Form/FormMessage.vue";
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
+import ToolOptionsButton from "@/components/Tool/Buttons/ToolOptionsButton.vue";
+import ToolVersionsButton from "@/components/Tool/Buttons/ToolVersionsButton.vue";
+import ToolFooter from "@/components/Tool/ToolFooter.vue";
+import ToolHelp from "@/components/Tool/ToolHelp.vue";
 
 const props = defineProps({
     id: {

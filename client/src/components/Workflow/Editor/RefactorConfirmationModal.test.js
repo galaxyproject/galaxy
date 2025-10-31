@@ -3,7 +3,8 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { refactor } from "./modules/services";
-import RefactorConfirmationModal from "./RefactorConfirmationModal";
+
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 
 jest.mock("./modules/services");
 

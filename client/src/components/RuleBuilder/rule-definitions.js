@@ -1,6 +1,7 @@
 import pyre from "pyre-to-regexp";
 import _ from "underscore";
-import _l from "utils/localization";
+
+import _l from "@/utils/localization";
 
 import MAPPING_TARGETS from "./rule_targets.yml";
 

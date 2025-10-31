@@ -233,8 +233,8 @@ function keyForIndex(index: number) {
 </template>
 
 <style lang="scss">
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-editor-drawable-connection {
     .connection {

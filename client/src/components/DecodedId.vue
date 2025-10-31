@@ -2,10 +2,11 @@
     <span v-if="decoded_id">({{ decoded_id }})</span>
 </template>
 <script>
-import { getGalaxyInstance } from "app";
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getGalaxyInstance } from "@/app";
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export default {
     props: {

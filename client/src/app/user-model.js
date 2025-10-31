@@ -1,5 +1,5 @@
-import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
+import { getAppRoot } from "@/onload/loadConfig";
+import _l from "@/utils/localization";
 
 const CURRENT_ID_STR = "current";
 

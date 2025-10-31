@@ -96,7 +96,7 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .ui-drilldown {
     $ui-drilldown-padding: 1rem;
     $ui-drilldown-border: 0.5px solid $gray-500;

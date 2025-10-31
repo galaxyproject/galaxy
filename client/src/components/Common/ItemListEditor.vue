@@ -157,7 +157,7 @@ function resetForm() {
 </template>
 
 <style lang="scss" scoped>
-@import "custom_theme_variables.scss";
+@import "@/style/scss/custom_theme_variables.scss";
 .error {
     color: var(--color-red-500);
 }

@@ -179,7 +179,7 @@ const emit = defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .history-card-list {
     container: cards-list / inline-size;

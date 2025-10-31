@@ -4,7 +4,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-import FormOutputLabel from "./FormOutputLabel";
+import FormOutputLabel from "./FormOutputLabel.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

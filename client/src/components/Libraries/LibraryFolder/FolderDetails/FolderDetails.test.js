@@ -4,8 +4,9 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FolderDetails from "./FolderDetails";
 import apiResponse from "./response.test.json";
+
+import FolderDetails from "./FolderDetails.vue";
 
 const LIBRARY_ID = "lib_test_id";
 const FOLDER_ID = "folder_test_id";

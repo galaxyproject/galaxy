@@ -1,7 +1,8 @@
 import { createLocalVue, mount } from "@vue/test-utils";
 
 import { Services } from "../services";
-import Categories from "./Categories";
+
+import Categories from "./Categories.vue";
 
 jest.mock("../services");
 

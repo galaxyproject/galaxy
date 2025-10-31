@@ -7,7 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import FormTool from "./FormTool";
+import FormTool from "./FormTool.vue";
 
 jest.mock("@/api/schema");
 

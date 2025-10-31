@@ -77,18 +77,20 @@
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import { initPermissionsIcons } from "components/Libraries/icons";
-import { extractRoles } from "components/Libraries/library-utils";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
-import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
-import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
+
+import { getGalaxyInstance } from "@/app";
+import { initPermissionsIcons } from "@/components/Libraries/icons";
+import { extractRoles } from "@/components/Libraries/library-utils";
+import { Services } from "@/components/Libraries/LibraryPermissions/services";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+
+import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
+import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
+import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
 
 Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);

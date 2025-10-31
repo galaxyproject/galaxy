@@ -1,4 +1,4 @@
-import { keyedColorScheme } from "utils/color";
+import { keyedColorScheme } from "@/utils/color";
 
 describe("Color Utilities", () => {
     test("Test Color Scheme Generation", () => {

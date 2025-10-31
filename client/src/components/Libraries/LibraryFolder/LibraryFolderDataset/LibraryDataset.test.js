@@ -1,16 +1,18 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getAppRoot } from "onload/loadConfig";
 import { createPinia } from "pinia";
-import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { getAppRoot } from "@/onload/loadConfig";
+import { useUserStore } from "@/stores/userStore";
+
 import { Services } from "../services";
-import LibraryDataset from "./LibraryDataset";
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
 import cannotModifyDatasetResponse from "./testData/cannotModifyDataset.json";
 import restrictedDatasetResponse from "./testData/restrictedDataset.json";
 import unrestrictedDatasetResponse from "./testData/unrestrictedDataset.json";
+
+import LibraryDataset from "./LibraryDataset.vue";
 
 jest.mock("app");
 jest.mock("onload/loadConfig");

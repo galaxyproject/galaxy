@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-//@ts-ignore
-import { errorMessageAsString } from "utils/simple-error";
 import { computed, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
+//@ts-ignore
+import { errorMessageAsString } from "@/utils/simple-error";
 
 interface Props {
     historyId: string;

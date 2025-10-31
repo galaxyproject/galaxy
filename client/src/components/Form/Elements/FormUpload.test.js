@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FormUpload from "./FormUpload";
+import FormUpload from "./FormUpload.vue";
 
 const localVue = getLocalVue();
 

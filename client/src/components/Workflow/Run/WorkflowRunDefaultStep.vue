@@ -33,16 +33,17 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faKey, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import FormMessage from "components/Form/FormMessage";
-import { visitInputs } from "components/Form/utilities";
-import WorkflowIcons from "components/Workflow/icons";
 import { mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
+
+import { visitInputs } from "@/components/Form/utilities";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 
 import { getTool } from "./services";
 
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormMessage from "@/components/Form/FormMessage.vue";
 import ToolCredentials from "@/components/Tool/ToolCredentials.vue";
 
 library.add(faEdit, faUndo);

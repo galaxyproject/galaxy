@@ -2,19 +2,21 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { Placement } from "@popperjs/core";
 import { BNavItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
+import type { PropType } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
-import Popper from "components/Popper/Popper.vue";
+import Popper from "@/components/Popper/Popper.vue";
 
 library.add(faBell);
 
 defineProps({
     tooltipPlacement: {
-        type: String,
+        type: String as PropType<Placement>,
         default: "right",
     },
 });
@@ -48,7 +50,7 @@ function onClick() {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .nav-item {
     display: flex;

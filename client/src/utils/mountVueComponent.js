@@ -3,9 +3,10 @@
 // the same plugins and events.
 
 import BootstrapVue from "bootstrap-vue";
-import { iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 import { createPinia, getActivePinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
+
+import { iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "@/components/plugins";
 
 // Load Pinia
 Vue.use(PiniaVuePlugin);

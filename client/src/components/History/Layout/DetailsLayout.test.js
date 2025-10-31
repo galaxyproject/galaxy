@@ -1,9 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import DetailsLayout from "./DetailsLayout";
+import { useUserStore } from "@/stores/userStore";
+
+import DetailsLayout from "./DetailsLayout.vue";
 
 const localVue = getLocalVue();
 

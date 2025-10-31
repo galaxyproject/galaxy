@@ -4,11 +4,11 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { findViaNavigation, getLocalVue } from "tests/jest/helpers";
-import { ROOT_COMPONENT } from "utils/navigation";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { ROOT_COMPONENT } from "@/utils/navigation";
 
-import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
+import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 
 const localVue = getLocalVue(true);
 

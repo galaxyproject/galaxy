@@ -148,7 +148,7 @@
 </template>
 
 <script>
-import { HistoryFilters } from "components/History/HistoryFilters";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 import {
     addTagsToSelectedContent,
     changeDatatypeOfSelectedContent,
@@ -159,15 +159,14 @@ import {
     removeTagsFromSelectedContent,
     undeleteSelectedContent,
     unhideSelectedContent,
-} from "components/History/model/crud";
-import { DatatypesProvider, DbKeyProvider } from "components/providers";
-import SingleItemSelector from "components/SingleItemSelector";
-import { StatelessTags } from "components/Tags";
-
+} from "@/components/History/model/crud";
+import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
+import { StatelessTags } from "@/components/Tags";
 import { useConfig } from "@/composables/config";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 export default {
     components: {
