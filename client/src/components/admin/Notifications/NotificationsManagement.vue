@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
@@ -40,12 +41,12 @@ function goToCreateNewBroadcast() {
                     outline
                     color="blue"
                     @click="goToCreateNewNotification">
-                    <FontAwesomeIcon icon="plus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     Send new notification
                 </GButton>
 
                 <GButton id="create-broadcast-button" class="mb-2" outline color="blue" @click="goToCreateNewBroadcast">
-                    <FontAwesomeIcon icon="plus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     Create new broadcast
                 </GButton>
             </div>

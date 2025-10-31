@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faCaretDown, faCaretUp, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
@@ -107,7 +108,7 @@ const emit = defineEmits(["onChange"]);
                             size="sm"
                             class="ml-0"
                             @click="() => swap(index, index - 1, 'up')">
-                            <FontAwesomeIcon icon="caret-up" />
+                            <FontAwesomeIcon :icon="faCaretUp" />
                         </b-button>
                         <b-button
                             :id="getButtonId(index, 'down')"
@@ -118,7 +119,7 @@ const emit = defineEmits(["onChange"]);
                             size="sm"
                             class="ml-0"
                             @click="() => swap(index, index + 1, 'down')">
-                            <FontAwesomeIcon icon="caret-down" />
+                            <FontAwesomeIcon :icon="faCaretDown" />
                         </b-button>
                     </b-button-group>
 
@@ -130,7 +131,7 @@ const emit = defineEmits(["onChange"]);
                             size="sm"
                             class="ml-0"
                             @click="() => onRemove(index)">
-                            <FontAwesomeIcon icon="trash-alt" />
+                            <FontAwesomeIcon :icon="faTrashAlt" />
                         </b-button>
                     </span>
                 </span>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
@@ -223,7 +224,7 @@ if (props.id) {
                                     1,
                                 )
                             ">
-                            <FontAwesomeIcon icon="times" />
+                            <FontAwesomeIcon :icon="faTimes" />
                         </GButton>
                     </BCol>
                 </BRow>
@@ -234,7 +235,7 @@ if (props.id) {
                     outline
                     color="blue"
                     @click="addActionLink">
-                    <FontAwesomeIcon icon="plus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     Add action link
                 </GButton>
             </BFormGroup>
