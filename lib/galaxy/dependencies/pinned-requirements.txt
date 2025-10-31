@@ -119,6 +119,7 @@ markupsafe==3.0.3
 mdurl==0.1.2
 mercurial==7.1.1
 mistune==3.0.2
+more-itertools==10.8.0
 mrcfile==1.5.4
 msal==1.34.0
 msgpack==1.1.2

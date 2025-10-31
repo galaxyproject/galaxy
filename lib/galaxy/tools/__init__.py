@@ -2325,6 +2325,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
         credentials_context: Optional[CredentialsContext] = None,
         input_format: InputFormatT = "legacy",
+        tags: Optional[list[str]] = None,
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -2358,7 +2359,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
         # Reserved global tags parameter. Applies to all tool outputs.
         # This may change in the future if per-output tags are introduced.
-        tags = incoming.get("__tags", [])
         if tags:
             tag_handler = trans.tag_handler
             for _, hda in execution_tracker.output_datasets:
