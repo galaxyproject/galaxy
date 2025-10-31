@@ -38,7 +38,9 @@ class VisualizationsRegistry:
     def __str__(self):
         return self.__class__.__name__
 
-    def __init__(self, app, directories_setting=None, skip_bad_plugins=True, **kwargs):
+    def __init__(
+        self, app: "StructuredApp", directories_setting: Union[str, None] = None, skip_bad_plugins: bool = True
+    ) -> None:
         """
         Set up the manager and load all visualization plugins.
 
