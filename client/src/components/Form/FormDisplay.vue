@@ -70,11 +70,11 @@ export default {
             default: "Disable",
         },
         collapsedEnableIcon: {
-            type: [String, Object],
+            type: Object,
             default: () => faCaretSquareDown,
         },
         collapsedDisableIcon: {
-            type: [String, Object],
+            type: Object,
             default: () => faCaretSquareUp,
         },
         validationScrollTo: {

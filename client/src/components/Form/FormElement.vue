@@ -6,6 +6,7 @@ import { sanitize } from "dompurify";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
+import type { IconLike } from "@/components/icons/galaxyIcons";
 import { linkify } from "@/utils/utils";
 
 import { type ExtendedCollectionType, isDataUri } from "./Elements/FormData/types";
@@ -52,12 +53,12 @@ interface FormElementProps {
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
-    collapsedEnableIcon?: string | object;
-    collapsedDisableIcon?: string | object;
+    collapsedEnableIcon?: IconLike;
+    collapsedDisableIcon?: IconLike;
     connectedEnableText?: string;
     connectedDisableText?: string;
-    connectedEnableIcon?: string | object;
-    connectedDisableIcon?: string | object;
+    connectedEnableIcon?: IconLike;
+    connectedDisableIcon?: IconLike;
     workflowBuildingMode?: boolean;
     /** If true, this element is part of a workflow run form. */
     workflowRun?: boolean;
