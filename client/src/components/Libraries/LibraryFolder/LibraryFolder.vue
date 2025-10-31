@@ -161,13 +161,13 @@
                 <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
-                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" icon="ban"></FontAwesomeIcon>
-                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
+                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" :icon="faGlobe" />
+                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" :icon="faBan"></FontAwesomeIcon>
+                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" :icon="faKey" />
                 <FontAwesomeIcon
                     v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
                     title="Restricted dataset"
-                    icon="shield-alt" />
+                    :icon="faShieldAlt" />
             </template>
 
             <template v-slot:cell(buttons)="row">
@@ -262,9 +262,9 @@
 </template>
 
 <script>
+import { faBan, faGlobe, faKey, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
 import { usePersistentRef } from "composables/persistentRef";
@@ -281,8 +281,6 @@ import { useUserStore } from "@/stores/userStore";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-
-initFolderTableIcons();
 
 Vue.use(BootstrapVue);
 
@@ -322,6 +320,12 @@ export default {
         return {
             ...initialFolderState(),
             ...{
+                // Icons
+                faBan,
+                faGlobe,
+                faKey,
+                faShieldAlt,
+                // Data
                 currentPage: 1,
                 sortBy: "name",
                 sortDesc: false,
