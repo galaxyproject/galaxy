@@ -14,6 +14,7 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
+    Path,
     Query,
     Request,
     Response,
@@ -38,6 +39,8 @@ from galaxy.managers.context import (
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.landing import LandingRequestManager
+from galaxy.managers.tools import ToolRunReference
+from galaxy.model import ToolRequest
 from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
@@ -45,10 +48,18 @@ from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ClaimLandingPayload,
     CreateToolLandingRequestPayload,
     ToolLandingRequest,
+    ToolRequestDetailedModel,
+)
+from galaxy.tool_util.parameters import (
+    LandingRequestToolState,
+    RequestToolState,
+    TestCaseToolState,
+    ToolParameterT,
 )
 from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util_models import UserToolSource
@@ -76,6 +87,7 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api.common import serve_workbook
+from galaxy.webapps.galaxy.services.base import tool_request_detailed_to_model
 from galaxy.webapps.galaxy.services.tools import ToolsService
 from . import (
     APIContentTypeRoute,
@@ -83,6 +95,7 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    json_schema_response_for_tool_state_model,
     LandingUuidPathParam,
     Router,
 )
@@ -129,6 +142,13 @@ FetchWorkbookFilenameQueryParam: Optional[str] = Query(
 router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
+
+ToolIDPathParam: str = Path(
+    ...,
+    title="Tool ID",
+    description="The tool ID for the lineage stored in Galaxy's toolbox.",
+)
+ToolVersionQueryParam: Optional[str] = Query(default=None, title="Tool Version", description="")
 
 
 async def get_files(request: Request, files: Optional[list[UploadFile]] = None):
@@ -269,6 +289,54 @@ class FetchTools:
         tool_landing_request = self.service.data_landing_to_tool_landing(trans, data_landing_request)
         return self.landing_manager.create_tool_landing_request(tool_landing_request)
 
+    @router.get(
+        "/api/tool_requests/{id}",
+        summary="Get tool request state.",
+    )
+    def get_tool_request(
+        self,
+        id: DecodedDatabaseIdField,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ToolRequestDetailedModel:
+        tool_request = self._get_tool_request_or_raise_not_found(trans, id)
+        return tool_request_detailed_to_model(tool_request)
+
+    @router.get(
+        "/api/tool_requests/{id}/state",
+        summary="Get tool request state.",
+    )
+    def tool_request_state(
+        self,
+        id: DecodedDatabaseIdField,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> str:
+        tool_request = self._get_tool_request_or_raise_not_found(trans, id)
+        state = tool_request.state
+        if not state:
+            raise exceptions.InconsistentDatabase()
+        return state
+
+    @router.get(
+        "/api/tools/{tool_id}/inputs",
+        summary="Get tool inputs.",
+    )
+    def tool_inputs(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> list[ToolParameterT]:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        return self.service.inputs(trans, tool_run_ref)
+
+    def _get_tool_request_or_raise_not_found(
+        self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField
+    ) -> ToolRequest:
+        tool_request = trans.app.model.context.get(ToolRequest, id)
+        if tool_request is None:
+            raise exceptions.ObjectNotFound()
+        return tool_request
+
     @router.post("/api/tool_landings", public=True, allow_cors=True)
     def create_landing(
         self,
@@ -298,6 +366,61 @@ class FetchTools:
         uuid: UUID4 = LandingUuidPathParam,
     ) -> ToolLandingRequest:
         return self.landing_manager.get_tool_landing_request(trans, uuid)
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_request_schema",
+        operation_id="tools__parameter_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point",
+        description="The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.",
+    )
+    def tool_state_request(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            RequestToolState,
+            inputs,
+        )
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_landing_request_schema",
+        operation_id="tools__parameter_landing_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
+    )
+    def tool_state_landing_request(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            LandingRequestToolState,
+            inputs,
+        )
+
+    @router.get(
+        "/api/tools/{tool_id}/parameter_test_case_xml_schema",
+        operation_id="tools__parameter_test_case_xml_schema",
+        summary="Return a JSON schema description of the tool's inputs for test case construction.",
+    )
+    def tool_state_test_case_xml(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(
+            TestCaseToolState,
+            inputs,
+        )
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -787,16 +910,20 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
-        if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException(
-                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-            )
+        validate_not_protected(tool_id)
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         __tags = payload.get("__tags", [])
         if not isinstance(__tags, list) or not all(isinstance(tag, str) for tag in __tags):
             raise exceptions.RequestParameterInvalidException("__tags must be a list of strings.")
         return self.service._create(trans, payload, **kwd)
+
+
+def validate_not_protected(tool_id: Optional[str]):
+    if tool_id in PROTECTED_TOOLS:
+        raise exceptions.RequestParameterInvalidException(
+            f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+        )
 
 
 def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:

@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import (
+    Literal,
     Optional,
 )
 from uuid import UUID
@@ -151,3 +152,20 @@ class TaskResult(Model):
         title="Result",
         description="The result message of the task. Empty if the task is still running. If the task failed, this will contain the exception message.",
     )
+
+
+TOOL_SOURCE_CLASS = Literal["XmlToolSource", "YamlToolSource", "CwlToolSource"]
+
+
+class ToolSource(Model):
+    raw_tool_source: str
+    tool_dir: str
+    tool_source_class: TOOL_SOURCE_CLASS = "XmlToolSource"
+
+
+class QueueJobs(Model):
+    tool_source: ToolSource
+    tool_request_id: int  # links to request ("incoming") and history
+    user: RequestUser  # TODO: test anonymous users through this submission path
+    use_cached_jobs: bool
+    rerun_remap_job_id: Optional[int]  # link to a job to rerun & remap

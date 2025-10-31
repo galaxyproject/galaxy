@@ -1,6 +1,7 @@
 """Utilities for converting between request states."""
 
 import logging
+from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -8,21 +9,32 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from galaxy.tool_util_models.parameters import (
+    BooleanParameterModel,
     ConditionalParameterModel,
     ConditionalWhen,
     create_job_runtime_model,
+    DataCollectionParameterModel,
     DataCollectionRequest,
+    DataColumnParameterModel,
+    DataParameterModel,
+    DataRequestCollectionUri,
     DataRequestHda,
     DataRequestInternalHda,
+    DataRequestInternalHdca,
     DataRequestUri,
     DiscriminatorType,
+    DrillDownParameterModel,
     FloatParameterModel,
+    GenomeBuildParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
+    RepeatParameterModel,
+    SectionParameterModel,
+    SelectParameterModel,
+    TextParameterModel,
     ToolParameterBundle,
     ToolParameterT,
 )
@@ -34,6 +46,7 @@ from .state import (
     JobInternalToolState,
     LandingRequestInternalToolState,
     LandingRequestToolState,
+    RelaxedRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
@@ -52,6 +65,7 @@ log = logging.getLogger(__name__)
 DecodeFunctionT = Callable[[str], int]
 EncodeFunctionT = Callable[[int], str]
 DereferenceCallable = Callable[[DataRequestUri], DataRequestInternalHda]
+DereferenceCollectionCallable = Callable[[DataRequestCollectionUri], DataRequestInternalHdca]
 # interfaces for adapting test data dictionaries to tool request dictionaries
 # e.g. {class: File, path: foo.bed} => {src: hda, id: ab1235cdfea3}
 AdaptDatasets = Callable[[JsonTestDatasetDefDict], DataRequestHda]
@@ -79,11 +93,14 @@ def cwl_runtime_model(input_models: ToolParameterBundle):
 
 
 def decode(
-    external_state: RequestToolState, input_models: ToolParameterBundle, decode_id: Callable[[str], int]
+    external_state: RequestToolState,
+    input_models: ToolParameterBundle,
+    decode_id: Callable[[str], int],
+    name_base: Optional[str] = None,
 ) -> RequestInternalToolState:
     """Prepare an internal representation of tool state (request_internal) for storing in the database."""
 
-    external_state.validate(input_models)
+    external_state.validate(input_models, f"{name_base} (request model)")
     decode_callback = _decode_callback_for(decode_id)
     internal_state_dict = visit_input_values(
         input_models,
@@ -92,7 +109,7 @@ def decode(
     )
 
     internal_request_state = RequestInternalToolState(internal_state_dict)
-    internal_request_state.validate(input_models)
+    internal_request_state.validate(input_models, f"{name_base} (request internal model)")
     return internal_request_state
 
 
@@ -146,29 +163,95 @@ def landing_encode(
     return request_state
 
 
+def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParameterBundle) -> RequestToolState:
+    """Convert a relaxed request state into a strict request state by applying legacy behavior."""
+
+    tool_state = deepcopy(relaxed_state.input_state)
+
+    def _strictify_parameter(tool_state: Dict[str, Any], parameter: ToolParameterT) -> None:
+        if isinstance(parameter, ConditionalParameterModel):
+            conditional_state = _initialize_conditional_state(parameter, tool_state)
+
+            test_parameter = parameter.test_parameter
+            test_parameter_name = test_parameter.name
+
+            explicit_test_value: Optional[DiscriminatorType] = (
+                conditional_state[test_parameter_name] if test_parameter_name in conditional_state else None
+            )
+            test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
+            when = _select_which_when(parameter, test_value, conditional_state)
+            _strictify_parameter(conditional_state, test_parameter)
+            _strictify_parameters(conditional_state, when)
+        elif isinstance(parameter, RepeatParameterModel):
+            repeat_instances = _initialize_repeat_state(parameter, tool_state)
+            for instance_state in repeat_instances:
+                _strictify_parameters(instance_state, parameter)
+        elif isinstance(parameter, SectionParameterModel):
+            section_state = _initialize_section_state(parameter, tool_state)
+            _fill_defaults(section_state, parameter)
+        elif isinstance(parameter, TextParameterModel):
+            parameter_name = parameter.name
+            if parameter_name not in tool_state:
+                if not parameter.optional:
+                    # restore legacy behavior of allowing empty string implicit default
+                    # for these non-optional inputs.
+                    tool_state[parameter_name] = ""
+                else:
+                    tool_state[parameter_name] = None
+            else:
+                # legacy behavior of converting explicit None into implicit null. We should introduce
+                # a layer somewhere to deal with this behavior further up the stack and clean up these models.
+                if not parameter.optional and tool_state[parameter_name] is None:
+                    tool_state[parameter_name] = ""
+
+    def _strictify_parameters(tool_state: Dict[str, Any], input_models: ToolParameterBundle) -> None:
+        for parameter in input_models.parameters:
+            _strictify_parameter(tool_state, parameter)
+
+    _strictify_parameters(tool_state, input_models)
+
+    request_state = RequestToolState(tool_state)
+    request_state.validate(input_models)
+    return request_state
+
+
 def dereference(
-    internal_state: RequestInternalToolState, input_models: ToolParameterBundle, dereference: DereferenceCallable
+    internal_state: RequestInternalToolState,
+    input_models: ToolParameterBundle,
+    dereference: DereferenceCallable,
+    dereference_collection: DereferenceCollectionCallable,
 ) -> RequestInternalDereferencedToolState:
 
-    def derefrence_dict(src_dict: dict):
+    def dereference_dict(src_dict: dict):
         src = src_dict.get("src")
+        clazz = src_dict.get("class")
         if src == "url":
             data_request_uri: DataRequestUri = DataRequestUri.model_validate(src_dict)
             data_request_hda: DataRequestInternalHda = dereference(data_request_uri)
             return data_request_hda.model_dump()
+        elif clazz == "Collection":
+            data_request_collection_from_uri: DataRequestCollectionUri = DataRequestCollectionUri.model_validate(
+                src_dict
+            )
+            data_request_hdca: DataRequestInternalHdca = dereference_collection(data_request_collection_from_uri)
+            return data_request_hdca.model_dump()
         else:
             return src_dict
 
     def dereference_callback(parameter: ToolParameterT, value: Any):
-        if parameter.parameter_type == "gx_data":
+        if isinstance(parameter, DataParameterModel):
             if value is None:
                 return VISITOR_NO_REPLACEMENT
-            if parameter.multiple:
-                assert isinstance(value, list), str(value)
-                return list(map(derefrence_dict, value))
+            if parameter.multiple and isinstance(value, list):
+                return list(map(dereference_dict, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return derefrence_dict(value)
+                return dereference_dict(value)
+        elif isinstance(parameter, DataCollectionParameterModel):
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
+            assert isinstance(value, dict), str(value)
+            return dereference_dict(value)
         else:
             return VISITOR_NO_REPLACEMENT
 
@@ -190,7 +273,7 @@ def encode_test(
 ):
 
     def encode_callback(parameter: ToolParameterT, value: Any):
-        if parameter.parameter_type == "gx_data":
+        if isinstance(parameter, DataParameterModel):
             if value is not None:
                 if parameter.multiple:
                     assert isinstance(value, list), str(value)
@@ -200,22 +283,22 @@ def encode_test(
                     assert isinstance(value, dict), str(value)
                     test_dataset = cast(JsonTestDatasetDefDict, value)
                     return adapt_datasets(test_dataset).model_dump()
-        elif parameter.parameter_type == "gx_data_collection":
+        elif isinstance(parameter, DataCollectionParameterModel):
             if value is not None:
                 assert isinstance(value, dict), str(value)
                 test_collection = cast(JsonTestCollectionDefDict, value)
                 return adapt_collections(test_collection).model_dump()
-        elif parameter.parameter_type == "gx_select":
+        elif isinstance(parameter, SelectParameterModel):
             if parameter.multiple and value is not None:
                 return [v.strip() for v in value.split(",")]
             else:
                 return VISITOR_NO_REPLACEMENT
-        elif parameter.parameter_type == "gx_drill_down":
+        elif isinstance(parameter, DrillDownParameterModel):
             if parameter.multiple and value is not None:
                 return [v.strip() for v in value.split(",")]
             else:
                 return VISITOR_NO_REPLACEMENT
-        elif parameter.parameter_type == "gx_data_column":
+        elif isinstance(parameter, DataColumnParameterModel):
             if parameter.multiple and value is not None and isinstance(value, (str,)):
                 return [int(v.strip()) for v in value.split(",")]
             else:
@@ -255,27 +338,19 @@ def _fill_defaults(tool_state: Dict[str, Any], input_models: ToolParameterBundle
 
 def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> None:
     parameter_name = parameter.name
-    if parameter.parameter_type == "gx_boolean":
+    if isinstance(parameter, BooleanParameterModel):
         if parameter_name not in tool_state:
             # even optional parameters default to false if not in the body of the request :_(
             # see test_tools.py -> expression_null_handling_boolean or test cases for gx_boolean_optional.xml
             tool_state[parameter_name] = parameter.value or False
 
-    if parameter.parameter_type in ["gx_integer", "gx_float", "gx_hidden"]:
-        has_value_parameter = cast(
-            Union[
-                IntegerParameterModel,
-                FloatParameterModel,
-                HiddenParameterModel,
-            ],
-            parameter,
-        )
+    if isinstance(parameter, (IntegerParameterModel, FloatParameterModel, HiddenParameterModel)):
         if parameter_name not in tool_state:
-            tool_state[parameter_name] = has_value_parameter.value
-    elif parameter.parameter_type == "gx_genomebuild":
+            tool_state[parameter_name] = parameter.value
+    elif isinstance(parameter, GenomeBuildParameterModel):
         if parameter_name not in tool_state and parameter.optional:
             tool_state[parameter_name] = None
-    elif parameter.parameter_type == "gx_select":
+    elif isinstance(parameter, SelectParameterModel):
         # don't fill in dynamic parameters - wait for runtime to specify the default
         if parameter.dynamic_options:
             return
@@ -285,7 +360,7 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
                 tool_state[parameter_name] = parameter.default_value
             else:
                 tool_state[parameter_name] = None
-    elif parameter.parameter_type == "gx_drill_down":
+    elif isinstance(parameter, DrillDownParameterModel):
         if parameter_name not in tool_state:
             if parameter.multiple:
                 options = parameter.default_options
@@ -295,13 +370,8 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
                 option = parameter.default_option
                 if option is not None:
                     tool_state[parameter_name] = option
-    elif parameter.parameter_type == "gx_conditional":
-        if parameter_name not in tool_state:
-            tool_state[parameter_name] = {}
-
-        raw_conditional_state = tool_state[parameter_name]
-        assert isinstance(raw_conditional_state, dict)
-        conditional_state = cast(Dict[str, Any], raw_conditional_state)
+    elif isinstance(parameter, ConditionalParameterModel):
+        conditional_state = _initialize_conditional_state(parameter, tool_state)
 
         test_parameter = parameter.test_parameter
         test_parameter_name = test_parameter.name
@@ -313,21 +383,60 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
         when = _select_which_when(parameter, test_value, conditional_state)
         _fill_default_for(conditional_state, test_parameter)
         _fill_defaults(conditional_state, when)
-    elif parameter.parameter_type == "gx_repeat":
-        if parameter_name not in tool_state:
-            tool_state[parameter_name] = []
-        repeat_instances = cast(List[Dict[str, Any]], tool_state[parameter_name])
-        if parameter.min:
-            while len(repeat_instances) < parameter.min:
-                repeat_instances.append({})
-
-        for instance_state in tool_state[parameter_name]:
+    elif isinstance(parameter, RepeatParameterModel):
+        repeat_instances = _initialize_repeat_state(parameter, tool_state)
+        for instance_state in repeat_instances:
             _fill_defaults(instance_state, parameter)
-    elif parameter.parameter_type == "gx_section":
-        if parameter_name not in tool_state:
-            tool_state[parameter_name] = {}
-        section_state = cast(Dict[str, Any], tool_state[parameter_name])
+    elif isinstance(parameter, SectionParameterModel):
+        section_state = _initialize_section_state(parameter, tool_state)
         _fill_defaults(section_state, parameter)
+    elif isinstance(parameter, DataCollectionParameterModel):
+        collection_parameter = parameter
+        if parameter_name not in tool_state and collection_parameter.optional:
+            tool_state[parameter_name] = None
+    elif isinstance(parameter, TextParameterModel):
+        if parameter_name not in tool_state:
+            if not parameter.optional:
+                # restore legacy behavior of allowing empty string implicit default
+                # for these non-optional inputs.
+                tool_state[parameter_name] = parameter.default_value or ""
+            else:
+                tool_state[parameter_name] = parameter.default_value or None
+        else:
+            # legacy behavior of converting explicit None into implicit null. We should introduce
+            # a layer somewhere to deal with this behavior further up the stack and clean up these models.
+            if not parameter.optional and tool_state[parameter_name] is None:
+                tool_state[parameter_name] = parameter.default_value or ""
+
+
+def _initialize_section_state(parameter: SectionParameterModel, tool_state: Dict[str, Any]) -> Dict[str, Any]:
+    parameter_name = parameter.name
+    if parameter_name not in tool_state:
+        tool_state[parameter_name] = {}
+    section_state = cast(Dict[str, Any], tool_state[parameter_name])
+    return section_state
+
+
+def _initialize_conditional_state(parameter: ConditionalParameterModel, tool_state: Dict[str, Any]) -> Dict[str, Any]:
+    parameter_name = parameter.name
+    if parameter_name not in tool_state:
+        tool_state[parameter_name] = {}
+
+    raw_conditional_state = tool_state[parameter_name]
+    assert isinstance(raw_conditional_state, dict)
+    conditional_state = cast(Dict[str, Any], raw_conditional_state)
+    return conditional_state
+
+
+def _initialize_repeat_state(parameter: RepeatParameterModel, tool_state: Dict[str, Any]) -> List[Dict[str, Any]]:
+    parameter_name = parameter.name
+    if parameter_name not in tool_state:
+        tool_state[parameter_name] = []
+    repeat_instances = cast(List[Dict[str, Any]], tool_state[parameter_name])
+    if parameter.min:
+        while len(repeat_instances) < parameter.min:
+            repeat_instances.append({})
+    return repeat_instances
 
 
 def _select_which_when(
@@ -354,17 +463,25 @@ def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
         else:
             return src_dict
 
+    def encode_element(element: dict):
+        if element.get("__class__") == "Batch":
+            encoded = element.copy()
+            values = encoded.pop("values")
+            encoded["values"] = list(map(encode_src_dict, values))
+            return encoded
+        else:
+            return encode_src_dict(element)
+
     def encode_callback(parameter: ToolParameterT, value: Any):
-        if parameter.parameter_type == "gx_data":
-            if parameter.multiple:
-                assert isinstance(value, list), str(value)
-                return list(map(encode_src_dict, value))
+        if isinstance(parameter, DataParameterModel):
+            if parameter.multiple and isinstance(value, list):
+                return list(map(encode_element, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return encode_src_dict(value)
-        elif parameter.parameter_type == "gx_data_collection":
+                return encode_element(value)
+        elif isinstance(parameter, DataCollectionParameterModel):
             assert isinstance(value, dict), str(value)
-            return encode_src_dict(value)
+            return encode_element(value)
         else:
             return VISITOR_NO_REPLACEMENT
 
@@ -381,17 +498,25 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
         else:
             return src_dict
 
+    def decode_element(element: dict):
+        if element.get("__class__") == "Batch":
+            decoded = element.copy()
+            values = decoded.pop("values")
+            decoded["values"] = list(map(decode_src_dict, values))
+            return decoded
+        else:
+            return decode_src_dict(element)
+
     def decode_callback(parameter: ToolParameterT, value: Any):
-        if parameter.parameter_type == "gx_data":
+        if isinstance(parameter, DataParameterModel):
             if value is None:
                 return VISITOR_NO_REPLACEMENT
-            if parameter.multiple:
-                assert isinstance(value, list), str(value)
-                return list(map(decode_src_dict, value))
+            if parameter.multiple and isinstance(value, list):
+                return list(map(decode_element, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return decode_src_dict(value)
-        elif parameter.parameter_type == "gx_data_collection":
+                return decode_element(value)
+        elif isinstance(parameter, DataCollectionParameterModel):
             if value is None:
                 return VISITOR_NO_REPLACEMENT
             assert isinstance(value, dict), str(value)

@@ -1,0 +1,52 @@
+<tool id="gx_conditional_select_dynamic" name="gx_conditional_select_dynamic" version="1.0.0">
+    <command><![CDATA[
+echo '$conditional_parameter.parameter' >> '$output'
+    ]]></command>
+    <code file="gx_select_dynamic_options.py"/>
+    <inputs>
+        <conditional name="conditional_parameter">
+            <param name="case_parameter" type="select">
+                <option value="use_select">Use Select</option>
+                <option value="no_select">No Select</option>
+            </param>
+            <when value="use_select">
+                <param name="ref_parameter" type="data" ext="txt" >
+                </param>
+                <param name="parameter" type="select" dynamic_options="every_other_word(ref_parameter.dataset.get_file_name())">
+                </param>
+            </when>
+            <when value="no_select">
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <conditional name="conditional_parameter">
+                <param name="case_parameter" value="use_select" />
+                <param name="ref_parameter" value="simple_line.txt" />
+                <param name="parameter" value="of" />
+            </conditional>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="of" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- Selects implicitly default to the first option as the default option.
+            -->
+            <conditional name="conditional_parameter">
+                <param name="case_parameter" value="use_select" />
+                <param name="ref_parameter" value="simple_line.txt" />
+            </conditional>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="This" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

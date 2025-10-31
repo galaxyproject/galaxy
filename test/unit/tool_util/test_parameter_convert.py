@@ -5,7 +5,9 @@ from typing import (
 )
 
 from galaxy.tool_util.parameters import (
+    DataRequestCollectionUri,
     DataRequestInternalHda,
+    DataRequestInternalHdca,
     DataRequestUri,
     decode,
     dereference,
@@ -15,9 +17,11 @@ from galaxy.tool_util.parameters import (
     landing_decode,
     landing_encode,
     LandingRequestToolState,
+    RelaxedRequestToolState,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
     RequestToolState,
+    strictify,
 )
 from galaxy.tool_util.parser.util import parse_profile_version
 from .test_parameter_test_cases import tool_source_for
@@ -43,7 +47,19 @@ def test_decode_data():
     assert decoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1
 
 
-def test_encode_collection():
+def test_decode_data_batch():
+    tool_source = tool_source_for("parameters/gx_data")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = RequestToolState(
+        {"parameter": {"__class__": "Batch", "values": [{"src": "hda", "id": EXAMPLE_ID_1_ENCODED}]}}
+    )
+    request_state.validate(bundle)
+    decoded_state = decode(request_state, bundle, _fake_decode)
+    assert decoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert decoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1
+
+
+def test_decode_collection():
     tool_source = tool_source_for("parameters/gx_data_collection")
     bundle = input_models_for_tool_source(tool_source)
     request_state = RequestToolState({"parameter": {"src": "hdca", "id": EXAMPLE_ID_1_ENCODED}})
@@ -119,6 +135,22 @@ def test_landing_encode_data():
     assert encoded_state.input_state["parameter"]["id"] == EXAMPLE_ID_1_ENCODED
 
 
+def test_landing_encode_data_batch():
+    tool_source = tool_source_for("parameters/gx_data")
+    bundle = input_models_for_tool_source(tool_source)
+    request_state = LandingRequestToolState(
+        {"parameter": {"__class__": "Batch", "values": [{"src": "hda", "id": EXAMPLE_ID_1_ENCODED}]}}
+    )
+    request_state.validate(bundle)
+    decoded_state = landing_decode(request_state, bundle, _fake_decode)
+    assert decoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert decoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1
+
+    encoded_state = landing_encode(decoded_state, bundle, _fake_encode)
+    assert encoded_state.input_state["parameter"]["values"][0]["src"] == "hda"
+    assert encoded_state.input_state["parameter"]["values"][0]["id"] == EXAMPLE_ID_1_ENCODED
+
+
 def test_dereference():
     tool_source = tool_source_for("parameters/gx_data")
     bundle = input_models_for_tool_source(tool_source)
@@ -135,7 +167,7 @@ def test_dereference():
         exception = e
     assert exception is not None
 
-    dereferenced_state = dereference(request_state, bundle, _fake_dereference)
+    dereferenced_state = dereference(request_state, bundle, _fake_dereference, _fake_collection_deference)
     assert isinstance(dereferenced_state, RequestInternalDereferencedToolState)
     dereferenced_state.validate(bundle)
 
@@ -231,8 +263,31 @@ def test_fill_defaults():
     assert with_defaults["conditional_parameter"]["boolean_parameter"] is False
 
 
+def test_strictify():
+    strict_state = strictify_for({"parameter": 1}, "parameters/gx_int")
+    assert strict_state["parameter"] == 1
+
+    strict_state = strictify_for({}, "parameters/gx_text_optional_false")
+    assert strict_state["parameter"] == ""
+
+    strict_state = strictify_for({"parameter": None}, "parameters/gx_text_optional_false")
+    assert strict_state["parameter"] == ""
+
+
+def strictify_for(tool_state: Dict[str, Any], tool_path: str) -> Dict[str, Any]:
+    tool_source = tool_source_for(tool_path)
+    bundle = input_models_for_tool_source(tool_source)
+    relaxed_state = RelaxedRequestToolState(tool_state)
+    relaxed_state.validate(bundle)
+    return strictify(relaxed_state, bundle).input_state
+
+
 def _fake_dereference(input: DataRequestUri) -> DataRequestInternalHda:
     return DataRequestInternalHda(id=EXAMPLE_ID_1, src="hda")
+
+
+def _fake_collection_deference(input: DataRequestCollectionUri) -> DataRequestInternalHdca:
+    return DataRequestInternalHdca(id=EXAMPLE_ID_1, src="hdca")
 
 
 def _fake_decode(input: str) -> int:

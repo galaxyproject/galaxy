@@ -174,6 +174,7 @@ TOOL_WITH_SHELL_COMMAND = {
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
 SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR", None)
+INPUT_FORMAT_T = Literal["legacy", "21.01", "request"]
 
 PRIVATE_ROLE_TYPE = "private"
 
@@ -1210,6 +1211,16 @@ class BaseDatasetPopulator(BasePopulator):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         return self.tools_post(payload)
 
+    def tool_request_raw(self, tool_id: str, inputs: dict[str, Any], history_id: str, strict: bool = True) -> Response:
+        payload = {
+            "tool_id": tool_id,
+            "history_id": history_id,
+            "inputs": inputs,
+            "strict": strict,
+        }
+        response = self._post("jobs", data=payload, json=True)
+        return response
+
     def run_tool(self, tool_id: str, inputs: dict, history_id: str, **kwds):
         tool_response = self.run_tool_raw(tool_id, inputs, history_id, **kwds)
         api_asserts.assert_status_code_is(tool_response, 200)
@@ -1752,8 +1763,38 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(is_ready, "waiting for download to become ready")
         assert is_ready()
 
+    def wait_on_tool_request(self, tool_request_id: str):
+        # should this to defer to interactor's copy of this method?
+
+        def state():
+            state_response = self._get(f"tool_requests/{tool_request_id}/state")
+            state_response.raise_for_status()
+            return state_response.json()
+
+        def is_ready():
+            is_complete = state() in ["submitted", "failed"]
+            return True if is_complete else None
+
+        wait_on(is_ready, "waiting for tool request to submit")
+        return state() == "submitted"
+
+    def get_tool_request(self, tool_request_id: str) -> dict[str, Any]:
+        response = self._get(f"tool_requests/{tool_request_id}")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def get_history_tool_requests(self, history_id: str) -> list[dict[str, Any]]:
+        response = self._get(f"histories/{history_id}/tool_requests")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def wait_on_task(self, async_task_response: Response):
-        task_id = async_task_response.json()["id"]
+        response_json = async_task_response.json()
+        return self.wait_on_task_object(response_json)
+
+    def wait_on_task_object(self, async_task_json: dict[str, Any]):
+        assert "id" in async_task_json, f"Task response {async_task_json} does not contain expected 'id' field."
+        task_id = async_task_json["id"]
         return self.wait_on_task_id(task_id)
 
     def wait_on_task_id(self, task_id: str):
@@ -3969,8 +4010,9 @@ class DescribeJob:
 
 
 class DescribeFailure:
-    def __init__(self, response: Response):
+    def __init__(self, response: Response, tool_request: Optional[dict[str, Any]] = None):
         self._response = response
+        self._tool_request = tool_request
 
     def __call__(self) -> Self:
         return self
@@ -3980,7 +4022,14 @@ class DescribeFailure:
         return self
 
     def with_error_containing(self, message: str) -> Self:
-        assert message in self._response.text
+        actual_text = self._response.text
+        if message not in actual_text:
+            if self._tool_request:
+                state_message = self._tool_request["state_message"]
+                if message not in state_message:
+                    raise AssertionError(f"'{message}' not found in '{state_message}'")
+            else:
+                raise AssertionError(f"'{message}' not found in '{actual_text}'")
         return self
 
 
@@ -4000,10 +4049,10 @@ class RequiredTool:
 
 
 class DescribeToolInputs:
-    _input_format: str = "legacy"
+    _input_format: INPUT_FORMAT_T = "legacy"
     _inputs: Optional[dict[str, Any]]
 
-    def __init__(self, input_format: str):
+    def __init__(self, input_format: INPUT_FORMAT_T):
         self._input_format = input_format
         self._inputs = None
 
@@ -4017,9 +4066,18 @@ class DescribeToolInputs:
         return self
 
     def nested(self, inputs: dict[str, Any]) -> Self:
-        if self._input_format == "21.01":
+        if self._input_format in ["21.01", "request"]:
             self._inputs = inputs
         return self
+
+    def request(self, inputs: dict[str, Any]) -> Self:
+        if self._input_format in ["request"]:
+            self._inputs = inputs
+        return self
+
+    @property
+    def is_request(self) -> bool:
+        return self._input_format == "request"
 
     # aliases for self to create silly little English sentense... inputs.when.flat().when.legacy()
     @property
@@ -4030,8 +4088,9 @@ class DescribeToolInputs:
 class DescribeToolExecution:
     _history_id: Optional[str] = None
     _execute_response: Optional[Response] = None
-    _input_format: Optional[str] = None
+    _input_format: Optional[INPUT_FORMAT_T] = None
     _inputs: dict[str, Any]
+    _tool_request_id: Optional[str] = None  # if input_format == "request" request ID
 
     def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str):
         self._dataset_populator = dataset_populator
@@ -4059,14 +4118,29 @@ class DescribeToolExecution:
         self._input_format = "21.01"
         return self
 
+    def with_request(self, inputs: dict[str, Any]) -> Self:
+        self._inputs = inputs
+        self._input_format = "request"
+        return self
+
     def _execute(self):
         kwds = {}
         if self._input_format is not None:
             kwds["input_format"] = self._input_format
         history_id = self._ensure_history_id
-        self._execute_response = self._dataset_populator.run_tool_raw(
-            self._tool_id, self._inputs, history_id, assert_ok=False, **kwds
-        )
+        if self._input_format == "request":
+            execute_response = self._dataset_populator.tool_request_raw(
+                self._tool_id, self._inputs, history_id, strict=False
+            )
+            if execute_response.status_code == 200:
+                response_json = execute_response.json()
+                tool_request_id = response_json.get("tool_request_id")
+                self._dataset_populator.wait_on_tool_request(tool_request_id)
+            self._execute_response = execute_response
+        else:
+            self._execute_response = self._dataset_populator.run_tool_raw(
+                self._tool_id, self._inputs, history_id, assert_ok=False, **kwds
+            )
 
     @property
     def _ensure_history_id(self) -> str:
@@ -4084,25 +4158,58 @@ class DescribeToolExecution:
         execute_response = self._execute_response
         assert execute_response is not None
         api_asserts.assert_status_code_is_ok(execute_response)
+        if self._input_format == "request":
+            response_json = execute_response.json()
+            tool_request_id = response_json.get("tool_request_id")
+            task_result = response_json["task_result"]
+            self._dataset_populator.wait_on_task_object(task_result)
+            self._tool_request_id = tool_request_id
+
         return execute_response.json()
 
+    @property
+    def _jobs(self) -> list[dict[str, Any]]:
+        if self._input_format == "request":
+            tool_request_id = self._tool_request_id
+            assert tool_request_id, "request not exected"
+            jobs = self._dataset_populator.galaxy_interactor.jobs_for_tool_request(tool_request_id)
+        else:
+            response = self._assert_executed_ok()
+            jobs = response["jobs"]
+        return jobs
+
     def assert_has_n_jobs(self, n: int) -> Self:
-        response = self._assert_executed_ok()
-        jobs = response["jobs"]
-        if len(jobs) != n:
-            raise AssertionError(f"Expected tool execution to produce {n} jobs but it produced {len(jobs)}")
+        self._assert_executed_ok()
+        jobs = self._jobs
+        num_jobs = len(jobs)
+        if num_jobs != n:
+            raise AssertionError(f"Expected tool execution to produce {n} jobs but it produced {num_jobs}")
         return self
 
-    def assert_creates_n_implicit_collections(self, n: int) -> Self:
+    @property
+    def _tool_request(self):
+        tool_request_id = self._tool_request_id
+        assert tool_request_id, "No tool request set - was tool executed as a request"
+        return self._dataset_populator.get_tool_request(tool_request_id)
+
+    @property
+    def _implicit_collections(self) -> list:
         response = self._assert_executed_ok()
-        collections = response["implicit_collections"]
+        if self._input_format == "request":
+            tool_request = self._tool_request
+            collections = tool_request["implicit_collections"]
+        else:
+            collections = response["implicit_collections"]
+        return collections
+
+    def assert_creates_n_implicit_collections(self, n: int) -> Self:
+        collections = self._implicit_collections
         if len(collections) != n:
             raise AssertionError(f"Expected tool execution to produce {n} implicit but it produced {len(collections)}")
         return self
 
     def assert_creates_implicit_collection(self, index: Union[str, int]) -> "DescribeToolExecutionOutputCollection":
-        response = self._assert_executed_ok()
-        collections = response["implicit_collections"]
+        collections = self._implicit_collections
         assert isinstance(index, int)  # TODO: implement and then prefer str.
         history_id = self._ensure_history_id
         return DescribeToolExecutionOutputCollection(self._dataset_populator, history_id, collections[index]["id"])
@@ -4112,8 +4219,8 @@ class DescribeToolExecution:
         return self.assert_has_n_jobs(1).assert_has_job(0)
 
     def assert_has_job(self, job_index: int = 0) -> DescribeJob:
-        response = self._assert_executed_ok()
-        job = response["jobs"][job_index]
+        self._assert_executed_ok()
+        job = self._jobs[job_index]
         history_id = self._ensure_history_id
         return DescribeJob(self._dataset_populator, history_id, job["id"])
 
@@ -4122,15 +4229,18 @@ class DescribeToolExecution:
         self._ensure_executed()
         execute_response = self._execute_response
         assert execute_response is not None
+        tool_request = None
         if execute_response.status_code != 200:
             return DescribeFailure(execute_response)
         else:
-            response = self._assert_executed_ok()
-            jobs = response["jobs"]
+            self._assert_executed_ok()
+            jobs = self._jobs
             for job in jobs:
                 final_state = self._dataset_populator.wait_for_job(job["id"])
                 assert final_state == "error"
-            return DescribeFailure(execute_response)
+            if self._tool_request_id:
+                tool_request = self._tool_request
+            return DescribeFailure(execute_response, tool_request)
 
     # alternative assert_ syntax for cases where it reads better.
     @property

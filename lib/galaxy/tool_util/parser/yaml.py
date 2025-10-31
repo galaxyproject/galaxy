@@ -332,6 +332,8 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
 
 
 def to_test_assert_list(assertions) -> AssertionList:
+    assertions = assertions or []
+
     def expand_dict_form(item):
         key, value = item
         new_value = value.copy()

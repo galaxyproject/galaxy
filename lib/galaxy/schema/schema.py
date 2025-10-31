@@ -1668,6 +1668,7 @@ class JobIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
     implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = None
+    tool_request_id: Optional[DecodedDatabaseIdField] = None
     order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
     search: Optional[str] = None
     limit: int = 500
@@ -3980,6 +3981,22 @@ class ToolRequestModel(Model):
     request: dict[str, Any]
     state: ToolRequestState
     state_message: Optional[str]
+
+
+class ToolRequestJobReference(Model):
+    src: Literal["job"]
+    id: EncodedDatabaseIdField
+
+
+class ToolRequestImplicitCollectionReference(Model):
+    src: Literal["hdca"]
+    id: EncodedDatabaseIdField
+    output_name: str
+
+
+class ToolRequestDetailedModel(ToolRequestModel):
+    jobs: list[ToolRequestJobReference] = Field(default=[])
+    implicit_collections: list[ToolRequestImplicitCollectionReference] = Field(default=[])
 
 
 class AsyncFile(Model):

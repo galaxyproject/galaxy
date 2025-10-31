@@ -16,17 +16,32 @@
 # - non optional, multi-selects require a selection (see TODO below...)
 # - https://github.com/galaxyproject/galaxy/issues/18541
 gx_int:
-  request_valid:
+  request_valid: &gx_int_request_valid
     - parameter: 5
     - parameter: 6
     # galaxy parameters created with a value - so doesn't need to appear in request even though non-optional
     - {}
-  request_invalid:
+  request_invalid: &gx_int_request_invalid
+    - parameter: "5"
     - parameter: null
     - parameter: "null"
     - parameter: "None"
     - parameter: { 5 }
     - parameter: {__class__: 'ConnectedValue'}
+  # int parameters have no differences between relaxed and strict, internal or external
+  # requests, or dereferenced or not.
+  relaxed_request_valid:
+    *gx_int_request_valid
+  relaxed_request_invalid:
+    *gx_int_request_invalid
+  request_internal_valid:
+    *gx_int_request_valid
+  request_internal_invalid:
+    *gx_int_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_int_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_int_request_invalid
   job_internal_valid:
    - parameter: 5
   job_internal_invalid:
@@ -114,16 +129,28 @@ gx_boolean:
     - parameter: {__class__: 'ConnectedValue3'}
 
 gx_int_optional:
-  request_valid:
+  request_valid: &gx_int_optional_request_valid
    - parameter: 5
    - parameter: null
    - {}
-  request_invalid:
+  request_invalid: &gx_int_optional_request_invalid
    - parameter: "5"
    - parameter: "None"
    - parameter: "null"
    - parameter: [5]
    - parameter: {__class__: 'ConnectedValue'}
+  relaxed_request_valid:
+    *gx_int_optional_request_valid
+  relaxed_request_invalid:
+    *gx_int_optional_request_invalid
+  request_internal_valid:
+    *gx_int_optional_request_valid
+  request_internal_invalid:
+    *gx_int_optional_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_int_optional_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_int_optional_request_invalid
   job_internal_valid:
    - parameter: 5
    - parameter: null
@@ -263,8 +290,9 @@ gx_text:
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
+    # The legacy API behavior is to make these non-null request parameters into implicit
+    # "" values for text parameters.
     - {}
-    # need to explicitly mark these as non-optional
     - parameter: null
   request_invalid: &gx_text_request_invalid
     - parameter: 5
@@ -361,6 +389,81 @@ gx_text_optional:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
+
+gx_text_optional_false:
+  request_valid:
+  - parameter: "mytext"
+  # Should this be invalid? -John
+  - {}
+  request_invalid:
+  - parameter: null
+  relaxed_request_valid:
+  - parameter: "mytext"
+  - parameter: null
+  - {}
+  relaxed_request_invalid:
+  - parameter: 5
+
+gx_text_default:
+  request_valid: &gx_text_default_request_valid
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    # these are implicitly null just like gx_text
+    - parameter: null
+  request_invalid: &gx_text_default_request_invalid
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {__class__: 'ConnectedValue'}
+  request_internal_valid:
+    *gx_text_default_request_valid
+  request_internal_invalid:
+    *gx_text_default_request_invalid
+  request_internal_dereferenced_valid:
+    *gx_text_default_request_valid
+  request_internal_dereferenced_invalid:
+    *gx_text_default_request_invalid
+  landing_request_valid:
+    *gx_text_default_request_valid
+  landing_request_invalid:
+    *gx_text_default_request_invalid
+  landing_request_internal_valid:
+    *gx_text_default_request_valid
+  landing_request_internal_invalid:
+    *gx_text_default_request_invalid
+  job_internal_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - parameter: null
+  job_internal_invalid:
+    - {}
+    - parameter: { "moo": "cow" }
+  workflow_step_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: null
+  workflow_step_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: null
+  workflow_step_linked_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {"class": 'ConnectedValue'}
 
 gx_text_length_validation: 
   request_valid:
@@ -627,10 +730,16 @@ gx_genomebuild_optional:
 gx_genomebuild_multiple:
   request_valid:
   - parameter: ["hg18", hg19"]
+  # I don't love this but this is how the legacy API works and the tool parameters
+  # wrappers work this way also. Not sure how I would change this.
+  - parameter: null
   request_invalid:
   - parameter: 6
-  # DIVERGES_FROM_CURRENT_API
+  job_internal_valid:
+  - parameter: ["hg18", hg19"]
   - parameter: null
+  job_internal_invalid:
+  - {}
 
 gx_directory_uri:
   request_valid:
@@ -1193,6 +1302,7 @@ gx_data_multiple_optional:
 gx_data_collection:
   request_valid:
    - parameter: {src: hdca, id: abcdabcd}
+   - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_invalid:
    - parameter: {src: hdca, id: 7}
    - parameter: null
@@ -1203,8 +1313,10 @@ gx_data_collection:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+   - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_valid:
    - parameter: {src: hdca, id: 5}
+   - parameter: {class: "Collection", collection_type: "list", elements: []}
   request_internal_invalid:
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: null
@@ -1215,10 +1327,15 @@ gx_data_collection:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+   - parameter: {class: "CollectionX", collection_type: "list", elements: []}
   request_internal_dereferenced_valid:
    - parameter: {src: hdca, id: 5}
   request_internal_dereferenced_invalid:
    - parameter: {src: hdca, id: abcdabcd}
+   # At thsi point the collection should have been dereferenced into datasets,
+   # so we don't allow these json collection representations anymore - must have
+   # an ID.
+   - parameter: {class: "Collection", collection_type: "list", elements: []}
   landing_request_valid:
    - parameter: {src: hdca, id: abcdabcd}
    - {}
@@ -1793,7 +1910,6 @@ gx_data_column:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: 3 }
   test_case_xml_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "3" }
-  test_case_xml_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "c2: With name" }
 
 gx_data_column_optional:
