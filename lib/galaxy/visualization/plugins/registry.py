@@ -16,6 +16,9 @@ from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins.datasource_testing import is_object_applicable
 from galaxy.visualization.plugins.plugin import VisualizationPlugin
 
+if TYPE_CHECKING:
+    from galaxy.structured_app import StructuredApp
+
 log = logging.getLogger(__name__)
 
 
