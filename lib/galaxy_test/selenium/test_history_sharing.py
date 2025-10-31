@@ -1,3 +1,4 @@
+from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     selenium_only,
     selenium_test,
@@ -157,6 +158,7 @@ class TestPrivateHistorySharingRequiresPermissionChanges(SeleniumTestCase):
     me and users this history is shared with" rather than "Make datasets public".
     """
 
+    @transient_failure(issue=21224)
     @selenium_test
     def test_sharing_private_history_default_permission(self):
         # Create two test users - one to own the history, one to share with

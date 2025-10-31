@@ -74,7 +74,7 @@ jobs:
       - name: Run tests
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh --coverage -integration test/integration --structured_data_report_file run_integration_tests.json -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v5
         with:
@@ -85,3 +85,8 @@ jobs:
         with:
           name: Integration test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_integration_tests.html'
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: Integration test results JSON (${{ matrix.python-version }}, ${{ matrix.chunk }})
+          path: 'galaxy root/run_integration_tests.json'

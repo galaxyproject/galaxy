@@ -1,3 +1,4 @@
+from galaxy.util.unittest_utils import transient_failure
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -15,6 +16,7 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
     advanced search, and list vs grid view toggling.
     """
 
+    @transient_failure(issue=21225)
     @selenium_test
     def test_tool_discovery_landing(self):
         """Test navigation to the tool discovery view."""

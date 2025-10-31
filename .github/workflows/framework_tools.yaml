@@ -62,7 +62,7 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework
       - name: Run tests
-        run: GALAXY_TEST_USE_LEGACY_TOOL_API="${{ matrix.use-legacy-api }}" ./run_tests.sh --coverage --framework-tools
+        run: GALAXY_TEST_USE_LEGACY_TOOL_API="${{ matrix.use-legacy-api }}" ./run_tests.sh --coverage --framework-tools --structured_data_report_file run_framework_tests.json
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v5
         with:
@@ -73,3 +73,8 @@ jobs:
         with:
           name: Tool framework test results (${{ matrix.python-version }})
           path: 'galaxy root/run_framework_tests.html'
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: Tool framework test results JSON (${{ matrix.python-version }})
+          path: 'galaxy root/run_framework_tests.json'
