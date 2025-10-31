@@ -1,21 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, type Ref, ref } from "vue";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { onMounted, ref } from "vue";
 
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-interface BasicItem extends SelectionItem {
-    time: string | null;
-}
-
 interface Props {
     detailsKey?: string;
     getData: () => Promise<Array<object> | undefined>;
     isEncoded?: boolean;
     labelKey?: string;
-    leafIcon?: string;
+    leafIcon?: IconDefinition;
     timeKey?: string;
     title: string;
 }
@@ -24,7 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
     detailsKey: "",
     isEncoded: false,
     labelKey: "id",
-    leafIcon: "",
+    leafIcon: undefined,
     timeKey: "update_time",
 });
 
@@ -35,21 +32,10 @@ const emit = defineEmits<{
 }>();
 
 const errorMessage = ref("");
-const items: Ref<Array<SelectionItem>> = ref([]);
+const items = ref<SelectionItem[]>([]);
 const modalShow = ref(true);
 const optionsShow = ref(false);
 const showTime = ref(false);
-
-const fields = computed(() => {
-    const fields = [{ key: "label" }];
-    if (props.detailsKey) {
-        fields.push({ key: "details" });
-    }
-    if (showTime.value) {
-        fields.push({ key: "time" });
-    }
-    return fields;
-});
 
 async function load() {
     optionsShow.value = false;
@@ -61,15 +47,17 @@ async function load() {
             items.value = incoming.map((entry: any) => {
                 const timeStamp = entry[props.timeKey];
                 showTime.value = !!timeStamp;
-                const item: BasicItem = {
+
+                const item: SelectionItem = {
                     id: entry.id,
                     label: entry[props.labelKey] || null,
                     details: entry[props.detailsKey] || null,
-                    time: timeStamp || null,
+                    update_time: timeStamp || null,
                     entry: entry,
                     isLeaf: true,
                     url: "",
                 };
+
                 return item;
             });
         }
@@ -79,13 +67,16 @@ async function load() {
     }
 }
 
+function onClick(record: SelectionItem) {
+    emit("onOk", record);
+}
+
 onMounted(() => load());
 </script>
 
 <template>
     <SelectionDialog
         :error-message="errorMessage"
-        :fields="fields"
         :options-show="optionsShow"
         :modal-show="modalShow"
         :is-encoded="isEncoded"
@@ -93,5 +84,5 @@ onMounted(() => load());
         :items="items"
         :title="title"
         @onCancel="emit('onCancel')"
-        @onClick="emit('onOk', $event)" />
+        @onClick="onClick" />
 </template>
