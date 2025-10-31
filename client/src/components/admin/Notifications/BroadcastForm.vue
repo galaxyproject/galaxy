@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
@@ -270,7 +270,7 @@ if (props.id) {
             <BRow class="m-2" align-h="center">
                 <AsyncButton
                     id="broadcast-submit"
-                    icon="save"
+                    :icon="faSave"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
                     color="blue"
                     size="medium"

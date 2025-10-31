@@ -50,14 +50,14 @@
                     class="select-checkbox cursor-pointer"
                     size="lg"
                     title="Check to select all datasets"
-                    icon="minus-square"
+                    :icon="faMinusSquare"
                     @click="toggleSelect" />
                 <FontAwesomeIcon
                     v-else
                     class="select-checkbox cursor-pointer"
                     size="lg"
                     title="Check to select all datasets"
-                    :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
+                    :icon="isAllSelectedOnPage() ? faCheckSquare : faSquare"
                     @click="toggleSelect" />
             </template>
             <template v-slot:cell(selected)="row">
@@ -262,11 +262,12 @@
 </template>
 
 <script>
-import { faFile, faFolder, faSave } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faFile, faFolder, faSave, faSquare } from "@fortawesome/free-regular-svg-icons";
 import {
     faBan,
     faGlobe,
     faKey,
+    faMinusSquare,
     faPencilAlt,
     faShieldAlt,
     faTimes,
@@ -332,13 +333,16 @@ export default {
             ...{
                 // Icons
                 faBan,
+                faCheckSquare,
                 faFile,
                 faFolder,
                 faGlobe,
                 faKey,
+                faMinusSquare,
                 faPencilAlt,
                 faSave,
                 faShieldAlt,
+                faSquare,
                 faTimes,
                 faUnlock,
                 faUsers,
