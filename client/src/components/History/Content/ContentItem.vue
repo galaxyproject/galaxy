@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faExchangeAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowCircleDown,
+    faArrowCircleUp,
+    faBurn,
+    faCheckCircle,
+    faExchangeAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
@@ -362,7 +368,7 @@ function unexpandedClick(event: Event) {
                         <FontAwesomeIcon class="text-info" :icon="faArrowCircleDown" />
                     </BButton>
                     <span v-if="hasStateIcon" class="state-icon">
-                        <icon
+                        <FontAwesomeIcon
                             fixed-width
                             :icon="contentState.icon"
                             :spin="contentState.spin"
@@ -373,7 +379,7 @@ function unexpandedClick(event: Event) {
                 </span>
                 <span v-if="item.purged" class="ml-auto align-self-start btn-group p-1">
                     <BBadge variant="secondary" title="This dataset has been permanently deleted">
-                        <icon icon="burn" /> Purged
+                        <FontAwesomeIcon :icon="faBurn" /> Purged
                     </BBadge>
                 </span>
                 <span class="align-self-start btn-group">

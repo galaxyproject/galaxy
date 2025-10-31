@@ -1,5 +1,5 @@
 <script setup>
-import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faEyeSlash, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import CopyToClipboard from "components/CopyToClipboard";
@@ -40,7 +40,7 @@ const deleteKey = () => {
                 <b-input-group class="w-100">
                     <b-input-group-prepend>
                         <b-input-group-text>
-                            <icon icon="key" />
+                            <FontAwesomeIcon :icon="faKey" />
                         </b-input-group-text>
                     </b-input-group-prepend>
 
@@ -60,7 +60,7 @@ const deleteKey = () => {
                         </b-button>
 
                         <b-button title="Delete api key" @click="toggleDeleteModal">
-                            <icon icon="trash" />
+                            <FontAwesomeIcon :icon="faTrash" />
                         </b-button>
                     </b-input-group-append>
                 </b-input-group>
