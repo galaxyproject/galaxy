@@ -46,8 +46,6 @@ class VisualizationsRegistry:
 
         :type   app:        galaxy.app.UniverseApplication
         :param  app:        the application (and its configuration) using this manager
-        :type   base_url:   string
-        :param  base_url:   url to prefix all plugin urls with
         """
         self.app = weakref.ref(app)
         self.config_parser = config_parser.VisualizationsConfigParser()
