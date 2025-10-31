@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
+import { faArrowsAltH, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { sanitize } from "dompurify";
 import type { ComputedRef } from "vue";
@@ -50,12 +52,12 @@ interface FormElementProps {
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
-    collapsedEnableIcon?: string;
-    collapsedDisableIcon?: string;
+    collapsedEnableIcon?: string | object;
+    collapsedDisableIcon?: string | object;
     connectedEnableText?: string;
     connectedDisableText?: string;
-    connectedEnableIcon?: string;
-    connectedDisableIcon?: string;
+    connectedEnableIcon?: string | object;
+    connectedDisableIcon?: string | object;
     workflowBuildingMode?: boolean;
     /** If true, this element is part of a workflow run form. */
     workflowRun?: boolean;
@@ -67,12 +69,12 @@ const props = withDefaults(defineProps<FormElementProps>(), {
     disabled: false,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
-    collapsedEnableIcon: "far fa-caret-square-down",
-    collapsedDisableIcon: "far fa-caret-square-up",
+    collapsedEnableIcon: () => faCaretSquareDown,
+    collapsedDisableIcon: () => faCaretSquareUp,
     connectedEnableText: "Remove connection from module.",
     connectedDisableText: "Add connection to module.",
-    connectedEnableIcon: "fa fa-times",
-    connectedDisableIcon: "fa fa-arrows-alt-h",
+    connectedEnableIcon: () => faTimes,
+    connectedDisableIcon: () => faArrowsAltH,
     helpFormat: "html",
     workflowBuildingMode: false,
     workflowRun: false,
