@@ -23,7 +23,7 @@
         </span>
         <a v-if="orcidLink" v-b-tooltip.hover title="View orcid.org profile" :href="orcidLink" target="_blank">
             <link itemprop="identifier" :href="orcidLink" />
-            <FontAwesomeIcon :icon="['fab', 'orcid']" />
+            <FontAwesomeIcon :icon="faOrcid" />
         </a>
         <a v-if="url" v-b-tooltip.hover title="URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />

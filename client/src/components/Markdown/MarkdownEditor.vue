@@ -18,7 +18,7 @@
                             :options="editorOptions" />
                         <slot name="buttons" />
                         <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
-                            <FontAwesomeIcon icon="question" />
+                            <FontAwesomeIcon :icon="faQuestion" />
                         </b-button>
                     </div>
                 </div>
@@ -45,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
