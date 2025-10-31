@@ -16,7 +16,7 @@ class VisualizationPlugin:
     A plugin that instantiates resources, serves static files.
     """
 
-    def __init__(self, path, name, config, **kwargs):
+    def __init__(self, path: str, name: str, config: dict[str, Any]) -> None:
         self.path = path
         self.name = name
         self.config = config
