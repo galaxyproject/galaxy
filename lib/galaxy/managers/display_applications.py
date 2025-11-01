@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Optional
 from urllib.parse import unquote_plus
 
@@ -12,7 +11,6 @@ from galaxy.datatypes.display_applications.util import (
 from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import MessageException
 from galaxy.structured_app import StructuredApp
-from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 

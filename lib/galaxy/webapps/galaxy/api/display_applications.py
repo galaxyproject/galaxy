@@ -19,9 +19,6 @@ from galaxy.managers.display_applications import (
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
-)
-from . import (
-    depends,
     Router,
 )
 
