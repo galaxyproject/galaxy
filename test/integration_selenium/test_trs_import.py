@@ -1,6 +1,9 @@
 import os
 
-from .framework import SeleniumIntegrationTestCase
+from .framework import (
+    selenium_test,
+    SeleniumIntegrationTestCase,
+)
 
 TRS_API_URL_DOCKSTORE = "https://dockstore.org/api"
 TRS_API_URL_WORKFLOWHUB = "https://workflowhub.eu"
@@ -53,10 +56,12 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.workflow_index_search_for(f'"{name}"')
         assert len(self.workflow_card_elements()) == 1, f"workflow ${name} not imported"
 
+    @selenium_test
     def test_import_workflow_by_url_dockstore(self):
         import_url = f"workflows/trs_import?trs_server=dockstore.org&trs_version={TRS_VERSION_DOCKSTORE}&trs_id=%23{TRS_ID_DOCKSTORE}"
         self._import_workflow_by_url(import_url)
 
+    @selenium_test
     def test_import_workflow_by_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_server=workflowhub&trs_version={TRS_VERSION_WORKFLOWHUB}&trs_id={TRS_ID_WORKFLOWHUB}"
         self._import_workflow_by_url(import_url)
@@ -67,6 +72,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.workflows.workflow_cards.wait_for_visible()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
+    @selenium_test
     def test_import_by_search_dockstore(self):
         self.go_to_trs_search()
         self.components.trs_search.search.wait_for_and_send_keys("This is the documentation for the workflow.")
@@ -78,6 +84,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.workflow_index_open()
         self.assert_workflow_imported("Test Workflow")
 
+    @selenium_test
     def test_import_by_organization_search_dockstore(self):
         self.go_to_trs_search()
         self.components.trs_search.search.wait_for_and_send_keys("organization: iwc-workflows")
@@ -89,6 +96,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.workflows.trs_icon.wait_for_visible()
         self.screenshot("workflow_imported_via_dockstore_search")
 
+    @selenium_test
     def test_import_by_search_workflowhub(self):
         self.go_to_trs_search()
         self.components.trs_search.select_server_button.wait_for_and_click()
@@ -100,22 +108,28 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
+    @selenium_test
     def test_import_by_id_dockstore(self):
         self._import_by_id(f"#{TRS_ID_DOCKSTORE}", server="dockstore")
 
+    @selenium_test
     def test_import_by_id_workflowhub(self):
         self._import_by_id(TRS_ID_WORKFLOWHUB, server="workflowhub")
 
+    @selenium_test
     def test_import_by_trs_url_dockstore(self):
         self._import_by_trs_url(TRS_URL_DOCKSTORE)
 
+    @selenium_test
     def test_import_by_trs_url_workflowhub(self):
         self._import_by_trs_url(TRS_URL_WORKFLOWHUB)
 
+    @selenium_test
     def test_auto_import_by_trs_url_dockstore(self):
         import_url = f"workflows/trs_import?trs_url={TRS_URL_DOCKSTORE}"
         self._import_workflow_by_url(import_url)
 
+    @selenium_test
     def test_auto_import_by_trs_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_url={TRS_URL_WORKFLOWHUB}"
         self._import_workflow_by_url(import_url)

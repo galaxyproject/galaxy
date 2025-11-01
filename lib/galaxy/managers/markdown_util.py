@@ -16,21 +16,12 @@ import base64
 import logging
 import os
 import re
-import shutil
-import tempfile
 from datetime import datetime
 from re import Match
 from typing import (
     Any,
     Optional,
 )
-
-import markdown
-
-try:
-    import weasyprint
-except Exception:
-    weasyprint = None
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
@@ -54,9 +45,11 @@ from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
 )
-from galaxy.util.markdown import literal_via_fence
-from galaxy.util.resources import resource_string
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.markdown import (
+    literal_via_fence,
+    to_pdf_raw,
+    weasyprint_available,
+)
 from .markdown_parse import (
     EMBED_DIRECTIVE_REGEX,
     GALAXY_MARKDOWN_FUNCTION_CALL_LINE,
@@ -913,38 +906,6 @@ def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
     resolved_invocations_markdown = resolve_invocation_markdown(trans, internal_galaxy_markdown)
     _, plain_markdown = directive_handler.walk(trans, resolved_invocations_markdown)
     return plain_markdown
-
-
-def to_html(basic_markdown: str) -> str:
-    # Allow data: urls so we can embed images.
-    html = sanitize_html(markdown.markdown(basic_markdown, extensions=["tables"]), allow_data_urls=True)
-    return html
-
-
-def to_pdf_raw(basic_markdown: str, css_paths: Optional[list[str]] = None) -> bytes:
-    """Convert RAW markdown with specified CSS paths into bytes of a PDF."""
-    css_paths = css_paths or []
-    as_html = to_html(basic_markdown)
-    directory = tempfile.mkdtemp("gxmarkdown")
-    index = os.path.join(directory, "index.html")
-    try:
-        output_file = open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
-        output_file.write(as_html)
-        output_file.close()
-        html = weasyprint.HTML(filename=index)
-        stylesheets = [weasyprint.CSS(string=resource_string(__name__, "markdown_export_base.css"))]
-        for css_path in css_paths:
-            with open(css_path) as f:
-                css_content = f.read()
-            css = weasyprint.CSS(string=css_content)
-            stylesheets.append(css)
-        return html.write_pdf(stylesheets=stylesheets)
-    finally:
-        shutil.rmtree(directory)
-
-
-def weasyprint_available() -> bool:
-    return weasyprint is not None
 
 
 def _check_can_convert_to_pdf_or_raise():

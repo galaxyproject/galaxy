@@ -6,17 +6,24 @@ GALAXY_URL_DESCRIPTION = "URL of Galaxy instance to target."
 HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwise this requires pyvirtualdisplay)."
 BACKEND_DESCRIPTION = "Browser automation backend to use (selenium or playwright)."
 
-from typing import Literal
+import os
+from typing import (
+    Literal,
+    Optional,
+)
 from urllib.parse import urljoin
 
 from .driver_factory import (
     ConfiguredDriver,
     virtual_display_if_enabled,
 )
-from .navigates_galaxy import (
-    galaxy_timeout_handler,
-    NavigatesGalaxy,
+from .navigates_galaxy import galaxy_timeout_handler
+from .stories import (
+    NoopStory,
+    Story,
+    StoryProtocol,
 )
+from .stories.data.upload import UploadStoriesMixin
 
 
 def add_selenium_arguments(parser):
@@ -60,11 +67,41 @@ def add_selenium_arguments(parser):
         choices=["selenium", "playwright"],
         help=BACKEND_DESCRIPTION,
     )
+    parser.add_argument(
+        "--timeout-multiplier",
+        type=float,
+        default=1.0,
+        help="Multiplier to apply to all timeout values (for slower environments).",
+    )
+    return parser
+
+
+def add_story_arguments(parser):
+    """Add story generation arguments for CLI scripts.
+
+    All the browser automation arguments (add_selenium_arguments) are also added.
+    """
+    add_selenium_arguments(parser)
+    parser.add_argument(
+        "--story-output",
+        default=None,
+        help="Directory to generate story documentation (markdown, HTML, PDF)",
+    )
+    parser.add_argument(
+        "--story-title",
+        default=None,
+        help="Title for the generated story",
+    )
+    parser.add_argument(
+        "--story-description",
+        default=None,
+        help="Description for the generated story",
+    )
 
     return parser
 
 
-class DriverWrapper(NavigatesGalaxy):
+class DriverWrapper(UploadStoriesMixin):
     """Adapt argparse command-line options to a browser automation driver."""
 
     def __init__(self, args):
@@ -81,9 +118,8 @@ class DriverWrapper(NavigatesGalaxy):
             self.display = virtual_display_if_enabled(args.selenium_headless)
 
         # Create configured driver with the specified backend
-        # TODO: parameterize timeout multiplier
         self.configured_driver = ConfiguredDriver(
-            galaxy_timeout_handler(1.0),
+            galaxy_timeout_handler(args.timeout_multiplier),
             browser=browser,
             remote=args.selenium_remote,
             remote_host=args.selenium_remote_host,
@@ -93,6 +129,18 @@ class DriverWrapper(NavigatesGalaxy):
         )
         self.target_url = args.galaxy_url
 
+        # Initialize story (real or noop)
+        # Scripts opt-in by calling add_story_arguments()
+        if hasattr(args, "story_output") and args.story_output:
+            if not os.path.exists(args.story_output):
+                os.makedirs(args.story_output)
+
+            title = args.story_title or "Galaxy Tutorial"
+            description = args.story_description or ""
+            self.story: StoryProtocol = Story(title, description, args.story_output)
+        else:
+            self.story = NoopStory()
+
     @property
     def _driver_impl(self):
         """Provide driver implementation from configured_driver."""
@@ -101,11 +149,23 @@ class DriverWrapper(NavigatesGalaxy):
     def build_url(self, url="", for_selenium: bool = True):
         return urljoin(self.target_url, url)
 
-    def screenshot(self, label: str) -> None:
-        """No-op in this context, not saving debugging/testing screenshots.
+    def screenshot(self, label: str, caption: Optional[str] = None) -> None:
+        """Save screenshot if story tracking is enabled.
 
-        Consider a verbose or debug option for saving these.
+        Args:
+            label: Base filename for screenshot
+            caption: Optional caption for the screenshot in the story
         """
+        if self.story.enabled:
+            # Generate screenshot path with sequential numbering
+            target = os.path.join(self.story.output_directory, f"{self.story.screenshot_counter:03d}_{label}.png")
+            self.story.screenshot_counter += 1
+
+            # Save screenshot
+            self.save_screenshot(target)
+
+            # Add to story
+            self.story.add_screenshot(target, caption or label)
 
     @property
     def default_timeout(self):
@@ -130,3 +190,6 @@ class DriverWrapper(NavigatesGalaxy):
 
         if exception is not None:
             raise exception
+
+    def _screenshot_path(self, label: str, extension: str = ".png") -> Optional[str]:
+        return None

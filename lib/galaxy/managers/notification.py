@@ -36,7 +36,6 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     ObjectNotFound,
 )
-from galaxy.managers.markdown_util import to_html
 from galaxy.model import (
     GroupRoleAssociation,
     Notification,
@@ -64,6 +63,7 @@ from galaxy.schema.notifications import (
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
+from galaxy.util.markdown import to_html
 
 log = logging.getLogger(__name__)
 

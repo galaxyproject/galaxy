@@ -101,7 +101,7 @@ terminal sessions.
 ::
 
     $ GALAXY_SKIP_CLIENT_BUILD=1 GALAXY_RUN_WITH_TEST_TOOLS=1 sh run.sh
-    $ make client-watch
+    $ make client-dev-server
 
 Copy ``lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml.sample`` to
 ``lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml`` and specify a
