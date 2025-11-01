@@ -38,7 +38,7 @@ async function requestLink() {
         app_name: props.appName,
         dataset_id: props.datasetId,
         link_name: props.linkName,
-    }
+    };
     try {
         const buildUrl = withPrefix("/api/display_applications/create_link");
         const { data } = await axios.post(buildUrl, params);

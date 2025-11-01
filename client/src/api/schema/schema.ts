@@ -1011,6 +1011,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/display_applications/create_link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a link for display applications.
+         * @description Creates a link for display applications.
+         *
+         *     :param  app_name:  display application name
+         *     :type   app_name:  string
+         *     :param  dataset_id:  encoded dataset_id
+         *     :type   dataset_id:  string
+         *     :param  link_name:  link name
+         *     :type   link_name:  string
+         */
+        post: operations["display_applications_create_link_api_display_applications_create_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/display_applications/reload": {
         parameters: {
             query?: never;
@@ -27014,6 +27041,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisplayApplication"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    display_applications_create_link_api_display_applications_create_link_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                } | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */
