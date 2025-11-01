@@ -59,6 +59,7 @@ dependencies = [
     "MarkupSafe",
     "mercurial>=6.8.2",  # Python 3.13 support
     "mrcfile",
+    "more-itertools",
     "msal",
     "nodejs-wheel>=22,<23",
     "numpy>=1.26.0",  # Python 3.12 support

@@ -257,43 +257,43 @@ function onToggleView(newView: ListViewMode) {
                 </GButton>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center">
-                <ToolsListSectionFilters
-                    :filter-class="ToolFilters"
-                    :filter-text="filterText"
-                    :disabled="loading"
-                    @apply-filter="applyFilter" />
+            <ToolsListSectionFilters
+                :filter-class="ToolFilters"
+                :filter-text="filterText"
+                :disabled="loading"
+                @apply-filter="applyFilter">
+                <template v-slot:list-view-controls>
+                    <!-- TODO: This div here and in ListHeader.vue needs to be a reusable component -->
+                    <div class="d-flex flex-gapx-1 align-items-center">
+                        Display:
+                        <GButtonGroup>
+                            <GButton
+                                id="view-grid"
+                                tooltip
+                                title="Grid view"
+                                size="small"
+                                :pressed="currentListViewMode === 'grid'"
+                                outline
+                                color="blue"
+                                @click="onToggleView('grid')">
+                                <FontAwesomeIcon :icon="faGripVertical" />
+                            </GButton>
 
-                <!-- TODO: This div here and in ListHeader.vue needs to be a reusable component -->
-                <div>
-                    Display:
-                    <GButtonGroup>
-                        <GButton
-                            id="view-grid"
-                            tooltip
-                            title="Grid view"
-                            size="small"
-                            :pressed="currentListViewMode === 'grid'"
-                            outline
-                            color="blue"
-                            @click="onToggleView('grid')">
-                            <FontAwesomeIcon :icon="faGripVertical" />
-                        </GButton>
-
-                        <GButton
-                            id="view-list"
-                            tooltip
-                            title="List view"
-                            size="small"
-                            :pressed="currentListViewMode === 'list'"
-                            outline
-                            color="blue"
-                            @click="onToggleView('list')">
-                            <FontAwesomeIcon :icon="faBars" />
-                        </GButton>
-                    </GButtonGroup>
-                </div>
-            </div>
+                            <GButton
+                                id="view-list"
+                                tooltip
+                                title="List view"
+                                size="small"
+                                :pressed="currentListViewMode === 'list'"
+                                outline
+                                color="blue"
+                                @click="onToggleView('list')">
+                                <FontAwesomeIcon :icon="faBars" />
+                            </GButton>
+                        </GButtonGroup>
+                    </div>
+                </template>
+            </ToolsListSectionFilters>
         </div>
 
         <div class="tools-list-body">

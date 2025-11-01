@@ -393,9 +393,9 @@ export default {
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
                 tool_uuid: this.toolUuid,
+                __tags: this.tags,
                 inputs: {
                     ...this.formData,
-                    __tags: this.tags,
                 },
             };
             if (this.useEmail) {

@@ -235,17 +235,24 @@ def load_workbook_from_base64(content: str) -> ReadOnlyWorkbook:
     is_excel = file_like.read(4) == b"\x50\x4b\x03\x04"
     workbook: ReadOnlyWorkbook
     file_like.seek(0)
-    try:
-        if is_excel:
+    if is_excel:
+        try:
             workbook = ExcelReadOnlyWorkbook(load_workbook(file_like, data_only=True))
-        else:
+        except Exception as e:
+            extra_message = str(e)
+            raise RequestParameterInvalidException(
+                f"The provided content is not a valid Excel file (or at least not one Galaxy knows how to parse). Please check the content and try again. The underlying error was [{extra_message}]"
+            )
+    else:
+        try:
             tabular = decoded_content.decode("utf-8")
             file_like_as_utf8 = StringIO(tabular)
             workbook = CsvReaderReadOnlyWorkbook(file_like_as_utf8)
-    except Exception:
-        raise RequestParameterInvalidException(
-            "The provided content is not a valid Excel file. Please check the content and try again."
-        )
+        except Exception as e:
+            extra_message = str(e)
+            raise RequestParameterInvalidException(
+                f"The provided content is not a parsable as a valid CSV or TSV (or at least not one Galaxy knows how to parse). Please check the content and try again. The underlying error was [{extra_message}]"
+            )
     return workbook
 
 

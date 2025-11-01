@@ -79,8 +79,8 @@ def on_text_for_numeric_ids(ids: Optional[list[int]], prefix: Optional[str] = No
     # and once as param_name1.
     groups = []
     unique_ids = sorted(set(ids))
-    for group in consecutive_groups(unique_ids):
-        group = list(group)
+    for group_it in consecutive_groups(unique_ids):
+        group = list(group_it)
         if len(group) == 1:
             groups.append(str(group[0]))
         elif len(group) == 2:
