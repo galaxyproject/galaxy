@@ -193,7 +193,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 message, status = self.resend_activation_email(trans, user.email, user.username)
                 return self.message_exception(trans, message, sanitize=False)
         else:  # activation is OFF
-            pw_expires = getattr(trans.app.config, "password_expiration_period", None)
+            pw_expires = trans.app.config.password_expiration_period
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
                 return {
