@@ -20,7 +20,7 @@ import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
-import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
+import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
@@ -189,7 +189,7 @@ watch(
             </BNavItem>
         </BNav>
         <div v-if="tab === 'preview'" class="tab-content-panel">
-            <VisualizationFrame
+            <VisualizationDisplay
                 v-if="preferredVisualization"
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
