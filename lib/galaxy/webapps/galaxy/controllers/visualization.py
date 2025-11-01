@@ -1,10 +1,6 @@
 import logging
 
 from markupsafe import escape
-from paste.httpexceptions import (
-    HTTPBadRequest,
-    HTTPNotFound,
-)
 
 from galaxy import (
     model,
@@ -214,65 +210,3 @@ class VisualizationController(
                 trans.sa_session.add(v)
                 trans.sa_session.commit()
             return {"message": f"Attributes of '{v.title}' successfully saved.", "status": "success"}
-
-    # ------------------------- registry.
-    @web.expose
-    def render(self, trans, visualization_name, embedded=None, **kwargs):
-        """
-        Render the appropriate visualization template, parsing the `kwargs`
-        into appropriate variables and resources (such as ORM models)
-        based on this visualizations `param` data in visualizations_conf.xml.
-
-        URL: /visualization/show/{visualization_name}
-        """
-        plugin = self._get_plugin_from_registry(trans, visualization_name)
-        try:
-            return plugin.render(trans=trans, embedded=embedded, **kwargs)
-        except Exception as exception:
-            return self._handle_plugin_error(trans, visualization_name, exception)
-
-    def _get_plugin_from_registry(self, trans, visualization_name):
-        """
-        Get the named plugin from the registry.
-        :raises HTTPNotFound: if registry has been turned off in config.
-        :raises HTTPNotFound: if visualization_name isn't a registered plugin.
-        """
-        if not trans.app.visualizations_registry:
-            raise HTTPNotFound("No visualization registry (possibly disabled in galaxy.ini)")
-        return trans.app.visualizations_registry.get_plugin(visualization_name)
-
-    def _handle_plugin_error(self, trans, visualization_name, exception):
-        """
-        Log, raise if debugging; log and show html message if not.
-        """
-        if isinstance(exception, MessageException):
-            log.debug("error rendering visualization (%s): %s", visualization_name, exception)
-        else:
-            log.exception("error rendering visualization (%s)", visualization_name)
-        if trans.debug:
-            raise exception
-        return trans.show_error_message(
-            "There was an error rendering the visualization. "
-            "Contact your Galaxy administrator if the problem persists."
-            f"<br/>Details: {exception}",
-            use_panels=False,
-        )
-
-    @web.expose
-    def saved(self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs):
-        """
-        Load a visualization and render it.
-        """
-        # check the id and load the saved visualization
-        if id is None:
-            return HTTPBadRequest("A valid visualization id is required to load a visualization")
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-
-        # re-add title to kwargs for passing to render
-        if title:
-            kwargs["title"] = title
-        plugin = self._get_plugin_from_registry(trans, visualization.type)
-        try:
-            return plugin.render_saved(visualization, trans=trans, **kwargs)
-        except Exception as exception:
-            self._handle_plugin_error(trans, visualization.type, exception)

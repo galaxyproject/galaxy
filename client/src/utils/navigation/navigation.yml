@@ -728,7 +728,7 @@ visualization:
 igv:
   selectors:
     _: ".igv-container"
-    shadow_host: '#app .grid .overflow-hidden .overflow-auto div'
+    shadow_host: '#viewport'
     current_genome: '.igv-current-genome'
     settings_button: button.n-button
     save_button: '[data-description="sidepanel save button"]'
