@@ -1,21 +1,17 @@
 import logging
 import os
 from typing import Optional
-
 from urllib.parse import unquote_plus
 
-from galaxy.exceptions import MessageException
+from pydantic import BaseModel
 
 from galaxy.datatypes.display_applications.util import (
     decode_dataset_user,
     encode_dataset_user,
 )
-
-from pydantic import BaseModel
-
 from galaxy.datatypes.registry import Registry
+from galaxy.exceptions import MessageException
 from galaxy.structured_app import StructuredApp
-
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -97,7 +93,6 @@ class DisplayApplicationsManager:
             message = 'Reloaded {} requested display applications ("{}").'.format(len(reloaded), '", "'.join(reloaded))
         return ReloadFeedback(message=message, reloaded=reloaded, failed=failed)
 
-
     def create_link(
         self,
         trans,
@@ -138,9 +133,7 @@ class DisplayApplicationsManager:
             display_app = trans.app.datatypes_registry.display_applications.get(app_name)
             if not display_app:
                 log.debug("Unknown display application has been requested: %s", app_name)
-                raise MessageException(
-                    f"The requested display application ({app_name}) is not available."
-                )
+                raise MessageException(f"The requested display application ({app_name}) is not available.")
             dataset_hash, user_hash = encode_dataset_user(trans, data, user)
             try:
                 display_link = display_app.get_link(link_name, data, dataset_hash, user_hash, trans, app_kwds)
@@ -200,7 +193,6 @@ class DisplayApplicationsManager:
                 preparable_steps=preparable_steps,
             )
         raise MessageException("You do not have permission to view this dataset at an external display application.")
-
 
     def _can_access_dataset(self, trans, dataset_association, allow_admin=True, additional_roles=None):
         roles = trans.get_current_user_roles()

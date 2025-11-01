@@ -11,20 +11,18 @@ from typing import (
 from fastapi import Body
 
 from galaxy.managers.context import ProvidesUserContext
-
 from galaxy.managers.display_applications import (
     DisplayApplication,
     DisplayApplicationsManager,
     ReloadFeedback,
 )
-from . import (
-    depends,
-    Router,
-)
-
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
+)
+from . import (
+    depends,
+    Router,
 )
 
 log = logging.getLogger(__name__)
@@ -50,11 +48,10 @@ class FastAPIDisplayApplications:
         """
         return self.manager.index()
 
-
     @router.post(
         "/api/display_applications/create_link",
         summary="Creates a link for display applications.",
-        name="display_applications_create_link"
+        name="display_applications_create_link",
     )
     def create_link(
         self,
