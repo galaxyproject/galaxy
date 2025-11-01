@@ -57,3 +57,39 @@ def skip_unless_environ(env_var: str) -> Union[Callable[[Callable[P, T]], Callab
         return _identity
 
     return pytest.mark.skip(f"{env_var} must be set for this test")
+
+
+def transient_failure(issue: int) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Mark test as known transient failure with GitHub issue tracking.
+
+    This decorator catches exceptions from tests and rewraps them with a marker
+    indicating this is a known transient failure. This allows automated tooling
+    to categorize failures and helps reviewers quickly identify flaky tests.
+
+    Args:
+        issue: GitHub issue number tracking this transient failure
+
+    Example:
+        @transient_failure(issue=12345)
+        def test_flaky_selenium(self):
+            # Test that sometimes fails due to race condition
+            ...
+    """
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                msg = f"TRANSIENT FAILURE [Issue #{issue}]: {str(e)}"
+                # Try to preserve exception type, fallback to plain Exception
+                try:
+                    raise type(e)(msg) from e
+                except (TypeError, AttributeError):
+                    # type(e) doesn't accept single string arg
+                    raise Exception(msg) from e
+
+        return wrapper
+
+    return decorator

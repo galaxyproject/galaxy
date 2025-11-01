@@ -10,6 +10,7 @@ import pytest
 import requests
 from dateutil.parser import isoparse
 
+from galaxy.util.unittest_utils import transient_failure
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.populators import (
@@ -851,6 +852,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="multi_data_param", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
+    @transient_failure(issue=21230)
     @pytest.mark.require_new_history
     def test_search_delete_hdca_output(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
