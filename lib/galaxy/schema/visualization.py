@@ -163,11 +163,6 @@ class VisualizationPluginResponse(Model):
         title="Title",
         description="The title of the plugin.",
     )
-    target: str = Field(
-        ...,
-        title="Target",
-        description="The target of the plugin.",
-    )
     embeddable: bool = Field(
         ...,
         title="Embeddable",
