@@ -6,7 +6,6 @@ import DisplayCollectionAsSheet from "components/Collections/common/DisplayColle
 import DatasetList from "components/Dataset/DatasetList";
 import DatasetView from "components/Dataset/DatasetView";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
-import DisplayApplication from "components/Visualizations/DisplayApplication";
 import FormGeneric from "components/Form/FormGeneric";
 import GalaxyWizard from "components/GalaxyWizard";
 import HelpTerm from "components/Help/HelpTerm";
@@ -37,6 +36,7 @@ import { ExternalIdentities } from "components/User/ExternalIdentities";
 import NotificationsPreferences from "components/User/Notifications/NotificationsPreferences";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
+import DisplayApplication from "components/Visualizations/DisplayApplication";
 import VisualizationsList from "components/Visualizations/Index";
 import VisualizationCreate from "components/Visualizations/VisualizationCreate";
 import VisualizationDisplay from "components/Visualizations/VisualizationDisplay";

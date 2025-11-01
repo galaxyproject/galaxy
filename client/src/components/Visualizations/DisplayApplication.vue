@@ -1,12 +1,14 @@
 <script setup>
-import axios from "axios";
-import { BAlert } from "bootstrap-vue";
-import { withPrefix } from "@/utils/redirect";
-import LoadingSpan from "../LoadingSpan.vue";
-import { computed, onMounted, ref } from "vue";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import { BAlert } from "bootstrap-vue";
+import { computed, onMounted, ref } from "vue";
+
+import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import LoadingSpan from "../LoadingSpan.vue";
 
 const TIMEOUT = 2000;
 
