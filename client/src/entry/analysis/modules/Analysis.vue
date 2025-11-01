@@ -16,11 +16,19 @@ const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
 
+const historyPanel = ref(null);
+
 const { historyPanelWidth } = storeToRefs(useUserStore());
 
 // methods
 function hideCenter() {
     showCenter.value = false;
+}
+
+function onShow(showPanel) {
+    if (historyPanel.value) {
+        historyPanel.value.show = showPanel;
+    }
 }
 
 function onLoad() {
@@ -48,8 +56,8 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" side="right" :reactive-width.sync="historyPanelWidth">
-            <HistoryIndex />
+        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
+            <HistoryIndex @show="onShow" />
         </FlexPanel>
         <DragAndDropModal />
     </div>

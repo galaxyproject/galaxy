@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExchangeAlt, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faChevronRight, faExchangeAlt, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -10,6 +10,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import HistoryOptions from "@/components/History/HistoryOptions.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
@@ -21,6 +22,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     minimal: false,
 });
+
+const emit = defineEmits<{
+    (e: "show", showPanel: boolean): void;
+}>();
 
 const historyStore = useHistoryStore();
 const { histories, changingCurrentHistory } = storeToRefs(historyStore);
@@ -45,7 +50,10 @@ function userTitle(title: string) {
         <nav
             :class="{ 'd-flex justify-content-between mx-3 my-2': !props.minimal }"
             aria-label="current history management">
-            <h2 v-if="!props.minimal" class="m-1 h-sm">History</h2>
+            <GButton v-if="!props.minimal" size="small" transparent @click="emit('show', false)">
+                <FontAwesomeIcon fixed-width :icon="faChevronRight" />
+                <span>History</span>
+            </GButton>
 
             <BButtonGroup>
                 <BButton
