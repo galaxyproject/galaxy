@@ -44,7 +44,7 @@ class OIDC(JSAppLauncher):
             rtv.append(
                 {"id": trans.app.security.encode_id(authnz.id), "provider": authnz.provider, "email": authnz.uid}
             )
-        # Add cilogon and custos identities
+        # Add cilogon and keycloak identities
         for token in trans.user.custos_auth:
             # for purely displaying the info to user, we bypass verification of
             # signature, audience, and expiration as that's potentially useful

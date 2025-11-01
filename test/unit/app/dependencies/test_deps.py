@@ -30,9 +30,6 @@ runners:
   runner1:
     load: job_runner_A
 """
-VAULT_CONF_CUSTOS = """
-type: custos
-"""
 VAULT_CONF_HASHICORP = """
 type: hashicorp
 """
@@ -102,17 +99,6 @@ def test_yaml_jobconf_runners():
         assert "job_runner_A" in cds.job_runners
 
 
-def test_vault_custos_configured():
-    with _config_context() as cc:
-        vault_conf = cc.write_config("vault_conf.yml", VAULT_CONF_CUSTOS)
-        config = {
-            "vault_config_file": vault_conf,
-        }
-        cds = cc.get_cond_deps(config=config)
-        assert cds.check_custos_sdk()
-        assert not cds.check_hvac()
-
-
 def test_vault_hashicorp_configured():
     with _config_context() as cc:
         vault_conf = cc.write_config("vault_conf.yml", VAULT_CONF_HASHICORP)
@@ -121,7 +107,6 @@ def test_vault_hashicorp_configured():
         }
         cds = cc.get_cond_deps(config=config)
         assert cds.check_hvac()
-        assert not cds.check_custos_sdk()
 
 
 @pytest.mark.parametrize(

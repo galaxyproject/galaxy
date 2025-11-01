@@ -9,14 +9,6 @@ galaxy.authnz package
 Submodules
 ----------
 
-galaxy.authnz.custos\_authnz module
------------------------------------
-
-.. automodule:: galaxy.authnz.custos_authnz
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.authnz.managers module
 -----------------------------
 
