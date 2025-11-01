@@ -4097,7 +4097,7 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
 
 class FilterEmptyDatasetsTool(FilterDatasetsTool):
     tool_type = "filter_empty_datasets_collection"
-    require_dataset_ok = False
+    require_dataset_ok = True
 
     @staticmethod
     def element_is_valid(element: model.DatasetCollectionElement):
