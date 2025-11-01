@@ -138,7 +138,7 @@ class DisplayApplicationsManager:
             display_app = trans.app.datatypes_registry.display_applications.get(app_name)
             if not display_app:
                 log.debug("Unknown display application has been requested: %s", app_name)
-                return MessageException(
+                raise MessageException(
                     f"The requested display application ({app_name}) is not available."
                 )
             dataset_hash, user_hash = encode_dataset_user(trans, data, user)
@@ -147,10 +147,10 @@ class DisplayApplicationsManager:
             except Exception as e:
                 log.debug("Error generating display_link: %s", e)
                 # User can sometimes recover from, e.g. conversion errors by fixing input metadata, so use conflict
-                return MessageException(f"Error generating display_link: {e}")
+                raise MessageException(f"Error generating display_link: {e}")
             if not display_link:
                 log.debug("Unknown display link has been requested: %s", link_name)
-                return MessageException(f"Unknown display link has been requested: {link_name}")
+                raise MessageException(f"Unknown display link has been requested: {link_name}")
             if data.state == data.states.ERROR:
                 msg.append(
                     (

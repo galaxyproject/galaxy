@@ -42,7 +42,7 @@ async function requestLink() {
         const { data } = await axios.post(buildUrl, params);
         applicationData.value = data;
         if (applicationData.value.resource) {
-            window.location.url = data.resource;
+            window.open(applicationData.value.resource, "_blank");
         } else if (applicationData.value.refresh) {
             setTimeout(() => requestLink(), TIMEOUT);
         }
@@ -60,9 +60,11 @@ onMounted(() => {
 </script>
 
 <template>
-    <BAlert v-if="errorMessage" variant="danger" show>
-        {{ errorMessage }}
-    </BAlert>
+    <div v-if="errorMessage">
+        <BAlert variant="danger" show>
+            {{ errorMessage }}
+        </BAlert>
+    </div>
     <LoadingSpan v-else-if="isLoading" />
     <div v-else-if="hasData">
         <div v-for="(message, messageIndex) in applicationData.msg" :key="messageIndex">
