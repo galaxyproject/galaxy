@@ -8,7 +8,7 @@
             v-else
             :class="targetClass"
             :data-tool-id="tool.id"
-            :href="tool.link"
+            :href="`/?tool_id=${encodeURIComponent(tool.id)}&version=latest`"
             :target="tool.target"
             :title="tool.help"
             @click="onClick">
