@@ -33,7 +33,7 @@ router = Router(tags=["display_applications"])
 
 
 @router.cbv
-class FastAPIDisplay:
+class FastAPIDisplayApplications:
     manager: DisplayApplicationsManager = depends(DisplayApplicationsManager)
 
     @router.get(
