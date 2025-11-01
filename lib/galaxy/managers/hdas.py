@@ -14,6 +14,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from urllib.parse import quote_plus
 
 from sqlalchemy import (
     and_,
@@ -29,8 +30,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.session import object_session
-
-from urllib.parse import quote_plus
 
 from galaxy import (
     datatypes,
