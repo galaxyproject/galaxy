@@ -18,10 +18,10 @@ export interface Props {
 
 const props = defineProps<Props>();
 
-const errorMessage = ref("");
+const errorMessage = ref<string>("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
-const isLoading = ref(true);
-const hasUnsavedChanges = ref(false);
+const isLoading = ref<boolean>(true);
+const hasUnsavedChanges = ref<boolean>(false);
 const visualizationConfig = ref();
 
 function handleLoad() {
