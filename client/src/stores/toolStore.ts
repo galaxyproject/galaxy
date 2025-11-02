@@ -103,6 +103,25 @@ export const useToolStore = defineStore("toolStore", () => {
         return toolSections.value[effectiveView] || {};
     });
 
+    const getLinkById = computed(() => {
+        return (toolId: string) => {
+            const tool = toolsById.value[toolId];
+            const appRoot = getAppRoot();
+            if (tool && tool.model_class === "DataSourceTool") {
+                return `${appRoot}tool_runner/data_source_redirect?tool_id=${encodeURIComponent(toolId)}`;
+            } else {
+                return `${appRoot}?tool_id=${encodeURIComponent(toolId)}&version=latest`;
+            }
+        };
+    });
+
+    const getTargetById = computed(() => {
+        return (toolId: string) => {
+            const tool = toolsById.value[toolId];
+            return tool?.model_class === "DataSourceTool" ? "_top" : "galaxy_main";
+        };
+    });
+
     const getToolsById = computed(() => {
         return (q?: string) => {
             if (!q?.trim()) {
@@ -299,6 +318,8 @@ export const useToolStore = defineStore("toolStore", () => {
         fetchPanels,
         fetchToolForId,
         fetchTools,
+        getLinkById,
+        getTargetById,
         helpDataCached,
         initializePanel,
         isPanelPopulated,
