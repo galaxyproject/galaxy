@@ -627,7 +627,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         msg.append((f"Invalid action provided: {app_action}", "error"))
                 else:
-                    raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
+                    if app_action is None:
+                        msg.append((
+                            "Launching this display application requires additional datasets to be generated.",
+                            "info",
+                        ))
+                    else:
+                        raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
             return dict(msg=msg)
         return trans.show_error_message(
             "You do not have permission to view this dataset at an external display application."
