@@ -65,7 +65,7 @@
                     v-if="!row.item.isNewFolder && !row.item.deleted"
                     class="select-checkbox lib-folder-checkbox"
                     size="lg"
-                    :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']" />
+                    :icon="row.rowSelected ? faCheckSquare : faSquare" />
             </template>
             <!-- Name -->
             <template v-slot:cell(name)="row">
