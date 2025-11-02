@@ -88,17 +88,21 @@ class TestKeycloakPKCE:
 
         assert backend.PKCE_ENABLED is True
 
-    @patch("galaxy.authnz.keycloak.generate_pkce_pair")
-    def test_pkce_params_added_to_auth_request(self, mock_generate_pkce):
+    @patch("galaxy.authnz.oidc.generate_pkce_pair")
+    @patch.object(KeycloakOpenIdConnect, "oidc_config")
+    def test_pkce_params_added_to_auth_request(self, mock_oidc_config, mock_generate_pkce):
         """PKCE parameters should be added to authorization request when enabled."""
+        mock_oidc_config.return_value = {
+            "authorization_endpoint": "https://example.com/auth",
+            "token_endpoint": "https://example.com/token"
+        }
         mock_generate_pkce.return_value = ("verifier123", "challenge456")
 
         strategy = MockStrategy({"SOCIAL_AUTH_KEYCLOAK_PKCE_SUPPORT": True})
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
-        # Mock parent's auth_params
-        with patch.object(KeycloakOpenIdConnect.__bases__[0], "auth_params", return_value={}):
-            params = backend.auth_params(state="test_state")
+        # Get auth params - now handled by GalaxyOpenIdConnect base class
+        params = backend.auth_params(state="test_state")
 
         assert "code_challenge" in params
         assert params["code_challenge"] == "challenge456"
@@ -106,15 +110,21 @@ class TestKeycloakPKCE:
         assert params["code_challenge_method"] == "S256"
         assert strategy.session.get("pkce_code_verifier") == "verifier123"
 
-    def test_pkce_verifier_added_to_token_request(self):
+    @patch.object(KeycloakOpenIdConnect, "oidc_config")
+    def test_pkce_verifier_added_to_token_request(self, mock_oidc_config):
         """PKCE verifier should be added to token request."""
+        mock_oidc_config.return_value = {
+            "authorization_endpoint": "https://example.com/auth",
+            "token_endpoint": "https://example.com/token"
+        }
+
         strategy = MockStrategy({"SOCIAL_AUTH_KEYCLOAK_PKCE_SUPPORT": True})
         strategy.session["pkce_code_verifier"] = "verifier123"
 
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
-        with patch.object(KeycloakOpenIdConnect.__bases__[0], "auth_complete_params", return_value={}):
-            params = backend.auth_complete_params(state="test_state")
+        # Get auth complete params - handled by GalaxyOpenIdConnect base class
+        params = backend.auth_complete_params(state="test_state")
 
         assert "code_verifier" in params
         assert params["code_verifier"] == "verifier123"
@@ -123,24 +133,36 @@ class TestKeycloakPKCE:
 class TestKeycloakIDPHint:
     """Test IDP hint parameter support in Keycloak backend."""
 
-    def test_idphint_default_value(self):
+    @patch.object(KeycloakOpenIdConnect, "oidc_config")
+    def test_idphint_default_value(self, mock_oidc_config):
         """Default IDP hint should be 'oidc'."""
+        mock_oidc_config.return_value = {
+            "authorization_endpoint": "https://example.com/auth",
+            "token_endpoint": "https://example.com/token"
+        }
+
         strategy = MockStrategy()
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
-        with patch.object(KeycloakOpenIdConnect.__bases__[0], "auth_params", return_value={}):
-            params = backend.auth_params()
+        # Get auth params - IDP hint is added by GalaxyOpenIdConnect base class
+        params = backend.auth_params()
 
         assert "kc_idp_hint" in params
         assert params["kc_idp_hint"] == "oidc"
 
-    def test_idphint_custom_value(self):
+    @patch.object(KeycloakOpenIdConnect, "oidc_config")
+    def test_idphint_custom_value(self, mock_oidc_config):
         """Custom IDP hint should be used when configured."""
+        mock_oidc_config.return_value = {
+            "authorization_endpoint": "https://example.com/auth",
+            "token_endpoint": "https://example.com/token"
+        }
+
         strategy = MockStrategy({"SOCIAL_AUTH_KEYCLOAK_IDPHINT": "custom_idp"})
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
-        with patch.object(KeycloakOpenIdConnect.__bases__[0], "auth_params", return_value={}):
-            params = backend.auth_params()
+        # Get auth params - IDP hint is added by GalaxyOpenIdConnect base class
+        params = backend.auth_params()
 
         assert params["kc_idp_hint"] == "custom_idp"
 
@@ -214,13 +236,19 @@ class TestCILogonSpecificFeatures:
 
         assert endpoint == "https://cilogon.org"
 
-    def test_cilogon_idphint_default(self):
+    @patch.object(CILogonOpenIdConnect, "oidc_config")
+    def test_cilogon_idphint_default(self, mock_oidc_config):
         """CILogon should use 'cilogon' as default IDP hint."""
+        mock_oidc_config.return_value = {
+            "authorization_endpoint": "https://cilogon.org/auth",
+            "token_endpoint": "https://cilogon.org/token"
+        }
+
         strategy = MockStrategy()
         backend = CILogonOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
-        with patch.object(CILogonOpenIdConnect.__bases__[0], "auth_params", return_value={}):
-            params = backend.auth_params()
+        # Get auth params - IDP hint is added by GalaxyOpenIdConnect base class
+        params = backend.auth_params()
 
         assert params["idphint"] == "cilogon"
 
@@ -257,12 +285,13 @@ class TestLocalhostDevelopmentMode:
     def test_localhost_sets_insecure_transport(self):
         """Should set OAUTHLIB_INSECURE_TRANSPORT for localhost."""
         import os
+        from galaxy.authnz.oidc import GalaxyOpenIdConnect
 
         strategy = MockStrategy()
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost:8080/callback")
 
-        # Mock access_token parameter
-        with patch.object(KeycloakOpenIdConnect.__bases__[0], "user_data", return_value={}):
+        # Mock parent's user_data to avoid actual API calls
+        with patch.object(GalaxyOpenIdConnect.__bases__[0], "user_data", return_value={}):
             backend.user_data({"access_token": "test"})
 
         assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") == "1"

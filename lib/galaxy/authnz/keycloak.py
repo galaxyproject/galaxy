@@ -1,30 +1,37 @@
 """
-Enhanced Keycloak OpenID Connect backend for Galaxy.
+Keycloak OpenID Connect backend for Galaxy.
 
-This backend extends PSA's OpenIdConnectAuth with Keycloak-specific features
+This backend extends Galaxy's base OIDC implementation with Keycloak-specific features.
 """
-import logging
-import os
-
-from pkce import generate_pkce_pair
-from social_core.backends.open_id_connect import OpenIdConnectAuth
-
-log = logging.getLogger(__name__)
+from galaxy.authnz.oidc import GalaxyOpenIdConnect
 
 
-class KeycloakOpenIdConnect(OpenIdConnectAuth):
+class KeycloakOpenIdConnect(GalaxyOpenIdConnect):
+    """
+    Keycloak OIDC backend for Galaxy.
+
+    Inherits PKCE support, localhost development mode, and refresh token support
+    from GalaxyOpenIdConnect. Adds Keycloak-specific configuration:
+    - Custom URL endpoint handling
+    - Keycloak-specific IDP hint parameter (kc_idp_hint)
+    """
+
     name = "keycloak"
 
-    # Use PKCE if enabled in configuration
-    PKCE_ENABLED = False
+    def auth_params(self, state=None):
+        """
+        Add Keycloak-specific parameters to the authorization request.
 
-    # Support refresh tokens
-    REFRESH_TOKEN_METHOD = "POST"
+        Adds kc_idp_hint parameter for Keycloak IDP routing.
+        """
+        params = super().auth_params(state)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Check if PKCE is enabled via strategy config
-        self.PKCE_ENABLED = self.setting("PKCE_SUPPORT", False)
+        # Add Keycloak IDP hint (default: "oidc")
+        idphint = self.setting("IDPHINT", "oidc")
+        if idphint:
+            params["kc_idp_hint"] = idphint
+
+        return params
 
     def oidc_endpoint(self):
         """
@@ -32,6 +39,8 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
 
         Keycloak typically uses URLs like:
         https://keycloak.example.com/realms/myrealm
+
+        This allows administrators to configure the full Keycloak realm URL.
         """
         # Check if custom URL is configured
         base_url = self.setting("URL")
@@ -40,59 +49,3 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
             return base_url.rstrip("/")
         # Fall back to default OIDC endpoint discovery
         return super().oidc_endpoint()
-
-    def auth_params(self, state=None):
-        """
-        Add Keycloak-specific parameters to the authorization request.s
-        """
-        params = super().auth_params(state)
-
-        # Add Keycloak idp hint if configured
-        idphint = self.setting("IDPHINT", "oidc")
-        if idphint:
-            params["kc_idp_hint"] = idphint
-
-        # Add PKCE parameters if enabled
-        if self.PKCE_ENABLED:
-            # Generate PKCE challenge
-            code_verifier, code_challenge = generate_pkce_pair(code_length=96)
-            params["code_challenge"] = code_challenge
-            params["code_challenge_method"] = "S256"
-            # Store verifier in session for later use
-            self.strategy.session_set("pkce_code_verifier", code_verifier)
-
-        return params
-
-    def auth_complete_params(self, state=None):
-        """
-        Add PKCE code verifier to token request if PKCE is enabled.
-        """
-        params = super().auth_complete_params(state)
-
-        # Add PKCE code verifier if it was used
-        if self.PKCE_ENABLED:
-            code_verifier = self.strategy.session_get("pkce_code_verifier")
-            if code_verifier:
-                params["code_verifier"] = code_verifier
-                # Clean up the session
-                try:
-                    self.strategy.session_pop("pkce_code_verifier")
-                except NotImplementedError:
-                    # Strategy.session_pop is not implemented, that's ok
-                    pass
-
-        return params
-
-    def user_data(self, access_token, *args, **kwargs):
-        """
-        Fetch user data from the userinfo endpoint.
-
-        Override to ensure SSL verification settings are respected.
-        """
-        # Allow insecure transport ONLY for HTTP (not HTTPS) localhost development
-        if self.redirect_uri and self.redirect_uri.startswith("http://localhost:"):
-            if os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") != "1":
-                log.warning("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' for localhost development")
-                os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
-        return super().user_data(access_token, *args, **kwargs)

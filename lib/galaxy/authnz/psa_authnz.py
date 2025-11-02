@@ -50,7 +50,7 @@ BACKENDS = {
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
-    "oidc": "social_core.backends.open_id_connect.OpenIdConnectAuth",
+    "oidc": "galaxy.authnz.oidc.GalaxyOpenIdConnect",
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
     "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
     "cilogon": "galaxy.authnz.cilogon.CILogonOpenIdConnect",
