@@ -57,7 +57,6 @@ async function requestLink() {
         console.error(error);
     } else {
         errorMessage.value = "";
-        console.log(data);
         applicationData.value = data;
         if (applicationData.value.resource) {
             //window.open(applicationData.value.resource, "_blank");
@@ -102,12 +101,12 @@ onMounted(() => {
                 </table>
             </div>
             <BAlert v-if="applicationData.resource" variant="info" show>
-                <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 <span>
-                    Display application is ready to be viewed at
+                    <span>Display application is ready and can be viewed at</span>
                     <a :href="applicationData.resource" target="_blank">
-                        {{ hostUrl }}
-                    </a>.
+                        <span>{{ hostUrl }}</span>
+                        <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                    </a>
                 </span>
             </BAlert>
         </div>
