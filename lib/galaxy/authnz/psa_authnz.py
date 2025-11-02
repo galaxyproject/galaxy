@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-
 from urllib.parse import quote
 
 import jwt
@@ -903,9 +902,7 @@ def check_user_creation_confirmation(
     return
 
 
-def set_redirect_url(
-    strategy=None, backend=None, details=None, user=None, is_new=False, social=None, **kwargs
-):
+def set_redirect_url(strategy=None, backend=None, details=None, user=None, is_new=False, social=None, **kwargs):
     """
     Placeholder pipeline step for redirect URL handling.
 

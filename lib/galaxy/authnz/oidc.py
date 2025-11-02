@@ -10,6 +10,7 @@ that extends PSA's OpenIdConnectAuth with Galaxy-specific features:
 
 Specific providers (Keycloak, CILogon, etc.) should inherit from this class.
 """
+
 import logging
 import os
 

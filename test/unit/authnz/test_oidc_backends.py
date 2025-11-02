@@ -8,11 +8,16 @@ This test suite covers additional functionality such as:
 - Token verification
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import (
+    MagicMock,
+    Mock,
+    patch,
+)
 
-from galaxy.authnz.keycloak import KeycloakOpenIdConnect
+import pytest
+
 from galaxy.authnz.cilogon import CILogonOpenIdConnect
+from galaxy.authnz.keycloak import KeycloakOpenIdConnect
 
 
 class MockStrategy:
@@ -68,7 +73,8 @@ class MockStrategy:
         """Generate random string for state/nonce."""
         import secrets
         import string
-        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
+
+        return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 
 class TestKeycloakPKCE:
@@ -94,7 +100,7 @@ class TestKeycloakPKCE:
         """PKCE parameters should be added to authorization request when enabled."""
         mock_oidc_config.return_value = {
             "authorization_endpoint": "https://example.com/auth",
-            "token_endpoint": "https://example.com/token"
+            "token_endpoint": "https://example.com/token",
         }
         mock_generate_pkce.return_value = ("verifier123", "challenge456")
 
@@ -115,7 +121,7 @@ class TestKeycloakPKCE:
         """PKCE verifier should be added to token request."""
         mock_oidc_config.return_value = {
             "authorization_endpoint": "https://example.com/auth",
-            "token_endpoint": "https://example.com/token"
+            "token_endpoint": "https://example.com/token",
         }
 
         strategy = MockStrategy({"SOCIAL_AUTH_KEYCLOAK_PKCE_SUPPORT": True})
@@ -138,7 +144,7 @@ class TestKeycloakIDPHint:
         """Default IDP hint should be 'oidc'."""
         mock_oidc_config.return_value = {
             "authorization_endpoint": "https://example.com/auth",
-            "token_endpoint": "https://example.com/token"
+            "token_endpoint": "https://example.com/token",
         }
 
         strategy = MockStrategy()
@@ -155,7 +161,7 @@ class TestKeycloakIDPHint:
         """Custom IDP hint should be used when configured."""
         mock_oidc_config.return_value = {
             "authorization_endpoint": "https://example.com/auth",
-            "token_endpoint": "https://example.com/token"
+            "token_endpoint": "https://example.com/token",
         }
 
         strategy = MockStrategy({"SOCIAL_AUTH_KEYCLOAK_IDPHINT": "custom_idp"})
@@ -241,7 +247,7 @@ class TestCILogonSpecificFeatures:
         """CILogon should use 'cilogon' as default IDP hint."""
         mock_oidc_config.return_value = {
             "authorization_endpoint": "https://cilogon.org/auth",
-            "token_endpoint": "https://cilogon.org/token"
+            "token_endpoint": "https://cilogon.org/token",
         }
 
         strategy = MockStrategy()
@@ -285,6 +291,7 @@ class TestLocalhostDevelopmentMode:
     def test_localhost_sets_insecure_transport(self):
         """Should set OAUTHLIB_INSECURE_TRANSPORT for localhost."""
         import os
+
         from galaxy.authnz.oidc import GalaxyOpenIdConnect
 
         strategy = MockStrategy()
@@ -375,8 +382,8 @@ class TestPSADisconnect:
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         # Verify backend has required attributes for disconnect
-        assert hasattr(backend, 'name')
-        assert backend.name == 'keycloak'
+        assert hasattr(backend, "name")
+        assert backend.name == "keycloak"
 
     def test_both_backends_support_disconnect(self):
         """Verify both backends can be disconnected."""
@@ -397,9 +404,7 @@ class TestPSALogout:
     @patch.object(KeycloakOpenIdConnect, "oidc_config")
     def test_logout_endpoint_available(self, mock_oidc_config):
         """Test that logout endpoint is available from OIDC config."""
-        mock_oidc_config.return_value = {
-            "end_session_endpoint": "https://keycloak.example.com/logout"
-        }
+        mock_oidc_config.return_value = {"end_session_endpoint": "https://keycloak.example.com/logout"}
 
         strategy = MockStrategy()
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
@@ -411,9 +416,7 @@ class TestPSALogout:
     @patch.object(CILogonOpenIdConnect, "oidc_config")
     def test_cilogon_logout_endpoint(self, mock_oidc_config):
         """Test CILogon logout endpoint discovery."""
-        mock_oidc_config.return_value = {
-            "end_session_endpoint": "https://cilogon.org/logout"
-        }
+        mock_oidc_config.return_value = {"end_session_endpoint": "https://cilogon.org/logout"}
 
         strategy = MockStrategy()
         backend = CILogonOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
@@ -431,7 +434,7 @@ class TestPSAUserCreation:
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         # Verify backend has user_data method
-        assert hasattr(backend, 'user_data')
+        assert hasattr(backend, "user_data")
         assert callable(backend.user_data)
 
     def test_both_backends_support_user_data(self):
@@ -441,8 +444,8 @@ class TestPSAUserCreation:
         keycloak = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
         cilogon = CILogonOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
-        assert hasattr(keycloak, 'user_data')
-        assert hasattr(cilogon, 'user_data')
+        assert hasattr(keycloak, "user_data")
+        assert hasattr(cilogon, "user_data")
 
 
 class TestPSARegressionCoverage:
@@ -477,9 +480,7 @@ class TestPSARegressionCoverage:
 
     def test_extra_scopes_support(self):
         """Test that extra scopes can be added to backends."""
-        strategy = MockStrategy({
-            "SOCIAL_AUTH_KEYCLOAK_SCOPE": ["openid", "email", "profile", "custom_scope"]
-        })
+        strategy = MockStrategy({"SOCIAL_AUTH_KEYCLOAK_SCOPE": ["openid", "email", "profile", "custom_scope"]})
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         # Backend should accept custom scopes via strategy
@@ -506,14 +507,19 @@ class TestRequireCreateConfirmation:
         they should be redirected to a confirmation page instead of having their
         account created immediately.
         """
-        from galaxy.authnz.psa_authnz import check_user_creation_confirmation, setting_name
+        from galaxy.authnz.psa_authnz import (
+            check_user_creation_confirmation,
+            setting_name,
+        )
 
         # Setup strategy with require_create_confirmation enabled
-        strategy = MockStrategy({
-            "REQUIRE_CREATE_CONFIRMATION": True,
-            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
-            "provider": "keycloak",
-        })
+        strategy = MockStrategy(
+            {
+                "REQUIRE_CREATE_CONFIRMATION": True,
+                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+                "provider": "keycloak",
+            }
+        )
 
         backend = Mock()
         details = {"email": "newuser@example.com", "username": "newuser"}
@@ -544,7 +550,7 @@ class TestRequireCreateConfirmation:
                 details=details,
                 response=response,
                 is_new=True,  # This is a new user
-                user=None,    # No user exists yet
+                user=None,  # No user exists yet
             )
 
             # Assertions matching the original custos test
@@ -555,24 +561,25 @@ class TestRequireCreateConfirmation:
             # (This is implicit - the pipeline is interrupted)
 
             # 3. Redirect URL should contain confirmation parameters
-            assert "http://localhost:8080/login/start?confirm=true&provider_token=" in result, \
-                "Should redirect to confirmation page"
-            assert "&provider=keycloak" in result, \
-                "Should include provider in redirect URL"
+            assert (
+                "http://localhost:8080/login/start?confirm=true&provider_token=" in result
+            ), "Should redirect to confirmation page"
+            assert "&provider=keycloak" in result, "Should include provider in redirect URL"
 
             # 4. Token should be stored in session for later use
-            assert strategy.session.get("pending_oidc_token_keycloak") is not None, \
-                "Token should be stored in session"
+            assert strategy.session.get("pending_oidc_token_keycloak") is not None, "Token should be stored in session"
 
     def test_user_created_normally_when_confirmation_not_required(self):
         """Test that user creation proceeds normally when confirmation is not required."""
         from galaxy.authnz.psa_authnz import check_user_creation_confirmation
 
         # Setup strategy without require_create_confirmation
-        strategy = MockStrategy({
-            "REQUIRE_CREATE_CONFIRMATION": False,
-            "provider": "keycloak",
-        })
+        strategy = MockStrategy(
+            {
+                "REQUIRE_CREATE_CONFIRMATION": False,
+                "provider": "keycloak",
+            }
+        )
 
         backend = Mock()
         details = {"email": "newuser@example.com"}
@@ -596,10 +603,12 @@ class TestRequireCreateConfirmation:
         from galaxy.authnz.psa_authnz import check_user_creation_confirmation
 
         # Setup strategy with require_create_confirmation enabled
-        strategy = MockStrategy({
-            "REQUIRE_CREATE_CONFIRMATION": True,
-            "provider": "keycloak",
-        })
+        strategy = MockStrategy(
+            {
+                "REQUIRE_CREATE_CONFIRMATION": True,
+                "provider": "keycloak",
+            }
+        )
 
         backend = Mock()
         details = {"email": "existing@example.com"}
@@ -627,10 +636,12 @@ class TestRequireCreateConfirmation:
         from galaxy.authnz.psa_authnz import check_user_creation_confirmation
 
         # Setup
-        strategy = MockStrategy({
-            "REQUIRE_CREATE_CONFIRMATION": True,
-            "provider": "keycloak",
-        })
+        strategy = MockStrategy(
+            {
+                "REQUIRE_CREATE_CONFIRMATION": True,
+                "provider": "keycloak",
+            }
+        )
 
         backend = Mock()
         details = {"email": "existing@example.com"}
@@ -670,13 +681,18 @@ class TestFixedDelegatedAuth:
 
     def test_fixed_delegated_auth_auto_associates_existing_user(self):
         """Test that fixed_delegated_auth automatically associates with existing user."""
-        from galaxy.authnz.psa_authnz import associate_by_email_if_logged_in, setting_name
+        from galaxy.authnz.psa_authnz import (
+            associate_by_email_if_logged_in,
+            setting_name,
+        )
 
-        strategy = MockStrategy({
-            "FIXED_DELEGATED_AUTH": True,
-            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
-            "provider": "keycloak",
-        })
+        strategy = MockStrategy(
+            {
+                "FIXED_DELEGATED_AUTH": True,
+                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+                "provider": "keycloak",
+            }
+        )
 
         backend = Mock()
         details = {"email": "existinguser@example.com", "username": "existinguser"}
@@ -709,13 +725,18 @@ class TestFixedDelegatedAuth:
 
     def test_fixed_delegated_auth_continues_when_no_user(self):
         """Test that fixed_delegated_auth continues to user creation when no user exists."""
-        from galaxy.authnz.psa_authnz import associate_by_email_if_logged_in, setting_name
+        from galaxy.authnz.psa_authnz import (
+            associate_by_email_if_logged_in,
+            setting_name,
+        )
 
-        strategy = MockStrategy({
-            "FIXED_DELEGATED_AUTH": True,
-            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
-            "provider": "keycloak",
-        })
+        strategy = MockStrategy(
+            {
+                "FIXED_DELEGATED_AUTH": True,
+                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+                "provider": "keycloak",
+            }
+        )
 
         backend = Mock()
         details = {"email": "newuser@example.com", "username": "newuser"}
@@ -744,14 +765,19 @@ class TestFixedDelegatedAuth:
 
     def test_without_fixed_delegated_auth_prompts_for_login(self):
         """Test that without fixed_delegated_auth, users are prompted to log in."""
-        from galaxy.authnz.psa_authnz import associate_by_email_if_logged_in, setting_name
+        from galaxy.authnz.psa_authnz import (
+            associate_by_email_if_logged_in,
+            setting_name,
+        )
 
-        strategy = MockStrategy({
-            "FIXED_DELEGATED_AUTH": False,
-            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
-            "provider": "keycloak",
-            "LABEL": "Keycloak",
-        })
+        strategy = MockStrategy(
+            {
+                "FIXED_DELEGATED_AUTH": False,
+                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+                "provider": "keycloak",
+                "LABEL": "Keycloak",
+            }
+        )
 
         backend = Mock()
         details = {"email": "existinguser@example.com", "username": "existinguser"}
@@ -789,12 +815,17 @@ class TestRedirectURL:
 
     def test_fixed_delegated_auth_redirects_to_root(self):
         """Test that fixed_delegated_auth redirects to root URL."""
-        from galaxy.authnz.psa_authnz import set_redirect_url, setting_name
+        from galaxy.authnz.psa_authnz import (
+            set_redirect_url,
+            setting_name,
+        )
 
-        strategy = MockStrategy({
-            "FIXED_DELEGATED_AUTH": True,
-            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
-        })
+        strategy = MockStrategy(
+            {
+                "FIXED_DELEGATED_AUTH": True,
+                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+            }
+        )
 
         backend = Mock()
 
@@ -810,12 +841,17 @@ class TestRedirectURL:
 
     def test_without_fixed_delegated_auth_redirects_to_external_ids(self):
         """Test that without fixed_delegated_auth, redirect goes to user/external_ids."""
-        from galaxy.authnz.psa_authnz import set_redirect_url, setting_name
+        from galaxy.authnz.psa_authnz import (
+            set_redirect_url,
+            setting_name,
+        )
 
-        strategy = MockStrategy({
-            "FIXED_DELEGATED_AUTH": False,
-            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
-        })
+        strategy = MockStrategy(
+            {
+                "FIXED_DELEGATED_AUTH": False,
+                setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+            }
+        )
 
         backend = Mock()
 

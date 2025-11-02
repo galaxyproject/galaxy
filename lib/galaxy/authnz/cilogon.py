@@ -3,6 +3,7 @@ CILogon OpenID Connect backend for Galaxy.
 
 This backend extends Galaxy's base OIDC implementation with CILogon-specific features.
 """
+
 from galaxy.authnz.oidc import GalaxyOpenIdConnect
 
 

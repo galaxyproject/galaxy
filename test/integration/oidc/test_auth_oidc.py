@@ -50,9 +50,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 
 # Debug authentication pipeline that saves access token data
 #   for testing
-DEBUG_AUTH_PIPELINE_EXTRA = (
-    "galaxy.authnz.util.debug_access_token_data",
-)
+DEBUG_AUTH_PIPELINE_EXTRA = ("galaxy.authnz.util.debug_access_token_data",)
 
 
 def wait_till_app_ready(url, timeout=60):
@@ -678,7 +676,7 @@ class TestWithoutFixedDelegatedAuth(AbstractTestCases.BaseKeycloakIntegrationTes
             "gxyuser_existing",  # This user's email matches user_b
             KEYCLOAK_TEST_PASSWORD,
             save_cookies=False,
-            session=session
+            session=session,
         )
 
         # Should redirect to user/external_ids with both notification and email_exists

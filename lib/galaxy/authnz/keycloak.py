@@ -3,6 +3,7 @@ Keycloak OpenID Connect backend for Galaxy.
 
 This backend extends Galaxy's base OIDC implementation with Keycloak-specific features.
 """
+
 from galaxy.authnz.oidc import GalaxyOpenIdConnect
 
 

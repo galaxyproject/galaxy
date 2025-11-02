@@ -61,7 +61,7 @@ class OIDC(BaseUIController):
                 try:
                     userinfo = jwt.decode(
                         authnz.extra_data["id_token"],
-                        options={"verify_signature": False, "verify_aud": False, "verify_exp": False}
+                        options={"verify_signature": False, "verify_aud": False, "verify_exp": False},
                     )
                     if "exp" in userinfo:
                         token_info["expiration"] = str(datetime.datetime.utcfromtimestamp(userinfo["exp"]))
