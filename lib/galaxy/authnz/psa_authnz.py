@@ -2,6 +2,8 @@ import json
 import logging
 import time
 
+from urllib.parse import quote
+
 import jwt
 from jwt import InvalidTokenError
 from msal import ConfidentialClientApplication
@@ -17,6 +19,7 @@ from social_core.utils import (
     module_member,
     setting_name,
 )
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.exceptions import MalformedContents
@@ -25,10 +28,12 @@ from galaxy.model import (
     PSACode,
     PSANonce,
     PSAPartial,
+    User,
     UserAuthnzToken,
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    ready_name_for_url,
     requests,
 )
 from . import IdentityProvider
@@ -140,6 +145,7 @@ class PSAAuthnz(IdentityProvider):
         self.config["REQUESTS_TIMEOUT"] = oidc_config.get("REQUESTS_TIMEOUT")
         self.config["ID_TOKEN_MAX_AGE"] = oidc_config.get("ID_TOKEN_MAX_AGE")
         self.config["FORCE_EMAIL_LOWERCASE"] = oidc_config.get("FORCE_EMAIL_LOWERCASE", True)
+        self.config["FIXED_DELEGATED_AUTH"] = app_config.fixed_delegated_auth
 
         # The following config sets PSA to call the `_login_user` function for
         # logging in a user. If this setting is set to false, the `_login_user`
@@ -271,7 +277,6 @@ class PSAAuthnz(IdentityProvider):
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         on_the_fly_config(trans.sa_session)
         self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
-        self.config["FIXED_DELEGATED_AUTH"] = trans.app.config.fixed_delegated_auth
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
@@ -294,7 +299,6 @@ class PSAAuthnz(IdentityProvider):
             separator = "&" if "?" in redirect_url else "?"
 
             # Add notification message
-            from urllib.parse import quote
             notification_msg = quote(f"Your {provider_label} identity has been linked to your Galaxy account.")
             redirect_url = f"{redirect_url}{separator}notification={notification_msg}"
 
@@ -334,7 +338,6 @@ class PSAAuthnz(IdentityProvider):
             if end_session_endpoint:
                 # Construct logout URL with optional post_logout_redirect_uri
                 if post_user_logout_href:
-                    from urllib.parse import quote
                     logout_url = f"{end_session_endpoint}?post_logout_redirect_uri={quote(post_user_logout_href)}"
                 else:
                     logout_url = end_session_endpoint
@@ -376,8 +379,6 @@ class PSAAuthnz(IdentityProvider):
             user_id = decoded_jwt["sub"]
 
             # Look up the user by their OIDC uid
-            from galaxy.model import UserAuthnzToken
-
             user_authnz_token = (
                 sa_session.query(UserAuthnzToken)
                 .filter(
@@ -434,10 +435,7 @@ class PSAAuthnz(IdentityProvider):
             username = username.split("@")[0]
 
         # Clean username for Galaxy
-        from galaxy import util
-        from galaxy.model import User
-
-        username = util.ready_name_for_url(username).lower()
+        username = ready_name_for_url(username).lower()
 
         # Check if username already exists, append number if needed
         if trans.sa_session.query(User).filter_by(username=username).first():
@@ -802,9 +800,6 @@ def associate_by_email_if_logged_in(
         return
 
     # User is not logged in - check if an account with this email exists
-    from galaxy.model import User
-    from sqlalchemy import func
-
     sa_session = UserAuthnzToken.sa_session
     existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
 
@@ -821,8 +816,6 @@ def associate_by_email_if_logged_in(
         # Redirect to page prompting user to log in and link accounts
         provider = strategy.config.get("provider", "unknown")
         login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
-
-        from urllib.parse import quote
 
         redirect_url = (
             f"{login_redirect_url}login/start"
@@ -859,9 +852,6 @@ def check_user_creation_confirmation(
         # Check if there's an existing user with this email
         email = details.get("email")
         if email:
-            from galaxy.model import User
-            from sqlalchemy import func
-
             sa_session = UserAuthnzToken.sa_session
             existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
 
@@ -877,8 +867,6 @@ def check_user_creation_confirmation(
                 strategy.session_set(f"pending_oidc_token_{provider}", token_json)
 
                 # Construct redirect URL to confirmation page
-                from urllib.parse import quote
-
                 redirect_url = (
                     f"{login_redirect_url}login/start"
                     f"?confirm=true"
