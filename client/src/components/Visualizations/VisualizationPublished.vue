@@ -1,7 +1,10 @@
 <template>
     <PublishedItem :item="visualization">
         <template v-slot>
-            <VisualizationFrame :name="visualization.type" :config="visualization.latest_revision.config" />
+            <VisualizationFrame
+                v-if="visualization && visualization.type"
+                :name="visualization.type"
+                :config="visualization.latest_revision?.config" />
         </template>
     </PublishedItem>
 </template>
