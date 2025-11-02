@@ -8490,6 +8490,41 @@ export interface components {
              */
             synopsis: string | null;
         };
+        /** CreateLinkFeedback */
+        CreateLinkFeedback: {
+            /** Messages */
+            messages?: [string, string][] | null;
+            /** Preparable Steps */
+            preparable_steps?: {
+                [key: string]: components["schemas"]["CreateLinkStep"];
+            } | null;
+            /** Refresh */
+            refresh?: boolean | null;
+            /** Resource */
+            resource?: string | null;
+        };
+        /** CreateLinkIncoming */
+        CreateLinkIncoming: {
+            /** App Name */
+            app_name: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Kwd */
+            kwd?: {
+                [key: string]: string;
+            } | null;
+            /** Link Name */
+            link_name: string;
+        };
+        /** CreateLinkStep */
+        CreateLinkStep: {
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+            /** State */
+            state: string;
+        };
         /** CreateMetricsPayload */
         CreateMetricsPayload: {
             /**
@@ -27073,11 +27108,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                } | null;
+                "application/json": components["schemas"]["CreateLinkIncoming"];
             };
         };
         responses: {
@@ -27087,7 +27120,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["CreateLinkFeedback"];
                 };
             };
             /** @description Request Error */

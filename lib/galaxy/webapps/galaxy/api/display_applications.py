@@ -12,6 +12,8 @@ from fastapi import Body
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.display_applications import (
+    CreateLinkFeedback,
+    CreateLinkIncoming,
     DisplayApplication,
     DisplayApplicationsManager,
     ReloadFeedback,
@@ -53,8 +55,8 @@ class FastAPIDisplayApplications:
     def create_link(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Optional[dict[str, Any]] = Body(default=None),
-    ) -> Any:
+        payload: CreateLinkIncoming = Body(...),
+    ) -> CreateLinkFeedback:
         """
         Creates a link for display applications.
 

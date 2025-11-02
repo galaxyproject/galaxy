@@ -15,6 +15,26 @@ from galaxy.structured_app import StructuredApp
 log = logging.getLogger(__name__)
 
 
+class CreateLinkStep(BaseModel):
+    name: str
+    state: str
+    ready: bool
+
+
+class CreateLinkFeedback(BaseModel):
+    messages: Optional[list[tuple[str, str]]] = None
+    refresh: Optional[bool] = None
+    resource: Optional[str] = None
+    preparable_steps: Optional[dict[str, CreateLinkStep]] = None
+
+
+class CreateLinkIncoming(BaseModel):
+    app_name: str
+    dataset_id: str
+    link_name: str
+    kwd: Optional[dict[str, str]] = None
+
+
 class Link(BaseModel):
     name: str
 
@@ -99,7 +119,7 @@ class DisplayApplicationsManager:
         app_name=None,
         link_name=None,
         **kwds,
-    ):
+    ) -> CreateLinkFeedback:
         """Access to external display applications"""
         if None in [app_name, link_name]:
             raise MessageException("A display application name and link name must be provided.")
@@ -125,7 +145,7 @@ class DisplayApplicationsManager:
             user_roles = []
         # Decode application name and link name
         if self._can_access_dataset(trans, data, additional_roles=user_roles):
-            msg = []
+            messages = []
             preparable_steps = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get(app_name)
@@ -143,18 +163,18 @@ class DisplayApplicationsManager:
                 log.debug("Unknown display link has been requested: %s", link_name)
                 raise MessageException(f"Unknown display link has been requested: {link_name}")
             if data.state == data.states.ERROR:
-                msg.append(
+                messages.append(
                     (
                         "This dataset is in an error state, you cannot view it at an external display application.",
                         "error",
                     )
                 )
             elif data.deleted:
-                msg.append(
+                messages.append(
                     ("This dataset has been deleted, you cannot view it at an external display application.", "error")
                 )
             elif data.state != data.states.OK:
-                msg.append(
+                messages.append(
                     (
                         "You must wait for this dataset to be created before you can view it at an external display application.",
                         "info",
@@ -168,7 +188,7 @@ class DisplayApplicationsManager:
                     return dict(resource=display_link.display_url())
                 else:
                     if trans.history != data.history:
-                        msg.append(
+                        messages.append(
                             (
                                 "You must import this dataset into your current history before you can view it at the desired display application.",
                                 "error",
@@ -176,7 +196,7 @@ class DisplayApplicationsManager:
                         )
                     else:
                         refresh = True
-                        msg.append(
+                        messages.append(
                             (
                                 "Launching this display application required additional datasets to be generated, you can view the status of these jobs below. ",
                                 "info",
@@ -186,7 +206,7 @@ class DisplayApplicationsManager:
                             display_link.prepare_display()
                         preparable_steps = display_link.get_prepare_steps()
             return dict(
-                msg=msg,
+                messages=messages,
                 refresh=refresh,
                 preparable_steps=preparable_steps,
             )
