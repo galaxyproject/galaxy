@@ -67,11 +67,10 @@ class FastAPIDisplayApplications:
         :param  link_name:  link name
         :type   link_name:  string
         """
-        payload = payload or {}
-        app_name = payload.get("app_name")
-        dataset_id = payload.get("dataset_id")
-        link_name = payload.get("link_name")
-        kwd = payload.get("kwd", {})
+        app_name = payload.app_name
+        dataset_id = payload.dataset_id
+        link_name = payload.link_name
+        kwd = payload.kwd or {}
         result = self.manager.create_link(
             trans,
             app_name=app_name,

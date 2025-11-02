@@ -105,8 +105,9 @@ onMounted(() => {
                 <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 <span>
                     Display application is ready to be viewed at
-                    <a :href="applicationData.resource" target="_blank">{{ hostUrl }}</a
-                    >.
+                    <a :href="applicationData.resource" target="_blank">
+                        {{ hostUrl }}
+                    </a>.
                 </span>
             </BAlert>
         </div>
