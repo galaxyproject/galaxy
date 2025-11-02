@@ -93,23 +93,6 @@ class CILogonOpenIdConnect(OpenIdConnectAuth):
 
         return params
 
-    def get_jwks_keys(self):
-        """
-        Get JWKS keys from the OIDC provider for token verification.
-
-        This enables proper JWT signature verification using the provider's
-        public keys.
-
-        Returns the 'keys' array from the JWKS document.
-        """
-        oidc_config = self.oidc_config()
-        jwks_uri = oidc_config.get("jwks_uri")
-        if jwks_uri:
-            jwks_response = self.get_json(jwks_uri)
-            # The JWKS document has a 'keys' array containing the actual keys
-            return jwks_response.get("keys", [])
-        return []
-
     def user_data(self, access_token, *args, **kwargs):
         """
         Fetch user data from the userinfo endpoint.

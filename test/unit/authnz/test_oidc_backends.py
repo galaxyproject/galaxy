@@ -226,35 +226,28 @@ class TestCILogonSpecificFeatures:
 
 
 class TestJWKSSupport:
-    """Test JWKS key retrieval support."""
+    """
+    Test JWKS key retrieval support.
+    """
 
-    @patch.object(KeycloakOpenIdConnect, "get_json")
+    @patch.object(KeycloakOpenIdConnect, "request")
     @patch.object(KeycloakOpenIdConnect, "oidc_config")
-    def test_get_jwks_keys(self, mock_oidc_config, mock_get_json):
-        """Should retrieve JWKS keys from provider."""
+    def test_get_jwks_keys_inherited_from_psa(self, mock_oidc_config, mock_request):
+        """Verify that JWKS key retrieval works via PSA's inherited implementation."""
         mock_oidc_config.return_value = {"jwks_uri": "https://keycloak.example.com/jwks"}
-        mock_get_json.return_value = {"keys": [{"kid": "key1", "kty": "RSA"}]}
+
+        # Mock the response from PSA's request() method
+        mock_response = Mock()
+        mock_response.text = '{"keys": [{"kid": "key1", "kty": "RSA"}]}'
+        mock_request.return_value = mock_response
 
         strategy = MockStrategy()
         backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
 
         result = backend.get_jwks_keys()
 
-        mock_get_json.assert_called_once_with("https://keycloak.example.com/jwks")
-        # Should return just the keys array, not the full response
+        # Should return the keys array from PSA's implementation
         assert result == [{"kid": "key1", "kty": "RSA"}]
-
-    @patch.object(KeycloakOpenIdConnect, "oidc_config")
-    def test_get_jwks_keys_no_uri(self, mock_oidc_config):
-        """Should return empty list when no JWKS URI in config."""
-        mock_oidc_config.return_value = {}
-
-        strategy = MockStrategy()
-        backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost/callback")
-
-        result = backend.get_jwks_keys()
-
-        assert result == []
 
 
 class TestLocalhostDevelopmentMode:
