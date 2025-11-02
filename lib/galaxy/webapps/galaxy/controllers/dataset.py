@@ -628,10 +628,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         msg.append((f"Invalid action provided: {app_action}", "error"))
                 else:
                     if app_action is None:
-                        msg.append((
-                            "Launching this display application requires additional datasets to be generated.",
-                            "info",
-                        ))
+                        msg.append(
+                            (
+                                "Launching this display application requires additional datasets to be generated.",
+                                "info",
+                            )
+                        )
                     else:
                         raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
             return dict(msg=msg)
