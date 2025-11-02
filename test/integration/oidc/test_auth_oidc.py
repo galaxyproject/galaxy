@@ -109,6 +109,7 @@ class AbstractTestCases:
         # regex to find the action attribute on the HTML login page
         #   returned by Keycloak
         REGEX_KEYCLOAK_LOGIN_ACTION = re.compile(r"action=\"(.*?)\"\s+")
+        REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token\": \"(.*)\"")
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
@@ -623,3 +624,80 @@ class TestWithoutFixedDelegatedAuth(AbstractTestCases.BaseKeycloakIntegrationTes
         response = self._get("users/current")
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_new_no_fixed@galaxy.org"
+
+    def test_logged_in_user_links_identity_with_different_email(self):
+        """
+        Test: User is logged in, links OIDC identity with email matching a different user's account
+        Expected: Identity linked to logged-in user, redirect includes email_exists parameter
+
+        This tests the scenario where:
+        1. User A is logged in
+        2. User A links an OIDC identity
+        3. The OIDC identity's email matches User B's email (different account)
+        4. The identity gets linked to User A anyway (the logged-in user)
+        5. The redirect URL includes email_exists parameter to warn the user
+        """
+        # Create User A manually - will be the logged-in user
+        sa_session = self._app.model.session
+        user_a = model.User(email="user_a@galaxy.org", username="user_a")
+        user_a.set_password_cleartext("test123")
+        sa_session.add(user_a)
+        sa_session.commit()
+
+        # Create User B manually - has email matching the OIDC identity
+        # gxyuser_existing@galaxy.org already exists in Keycloak
+        user_b = model.User(email="gxyuser_existing@galaxy.org", username="user_b")
+        user_b.set_password_cleartext("test456")
+        sa_session.add(user_b)
+        sa_session.commit()
+
+        # Establish a web session and log in as User A
+        session = requests.Session()
+        response = session.get(self._api_url("../login/start"))
+        matches = self.REGEX_GALAXY_CSRF_TOKEN.search(response.text)
+        assert matches
+        session_csrf_token = str(matches.groups(1)[0])
+        response = session.post(
+            self._api_url("../user/login"),
+            data={
+                "login": "user_a@galaxy.org",
+                "password": "test123",
+                "session_csrf_token": session_csrf_token,
+            },
+        )
+
+        # Verify we're logged in as User A
+        response = session.get(self._api_url("users/current"))
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "user_a@galaxy.org"
+        assert response.json()["username"] == "user_a"
+
+        # Now User A tries to link an OIDC identity using gxyuser_existing Keycloak account
+        # which has email matching User B
+        _, response = self._login_via_keycloak(
+            "gxyuser_existing",  # This user's email matches user_b
+            KEYCLOAK_TEST_PASSWORD,
+            save_cookies=False,
+            session=session
+        )
+
+        # Should redirect to user/external_ids with both notification and email_exists
+        parsed_url = parse.urlparse(response.url)
+        assert "user/external_ids" in parsed_url.path or "user/external_ids" in response.url
+
+        # Should have notification
+        query_params = parse.parse_qs(parsed_url.query)
+        assert "notification" in query_params
+        notification = query_params["notification"][0]
+        assert "Your Keycloak identity has been linked" in notification
+
+        # Should have email_exists parameter warning about the email conflict
+        assert "email_exists" in query_params
+        email_exists = query_params["email_exists"][0]
+        assert email_exists == "gxyuser_existing@galaxy.org"
+
+        # Verify the identity was linked to User A (not User B)
+        response = session.get(self._api_url("users/current"))
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "user_a@galaxy.org"
+        assert response.json()["username"] == "user_a"

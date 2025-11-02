@@ -295,6 +295,8 @@ class PSAAuthnz(IdentityProvider):
         # Adjust redirect URL based on fixed_delegated_auth setting
         # Check if this is a successful authentication (not a redirect to login/start or confirmation)
         fixed_delegated_auth = self.config.get("FIXED_DELEGATED_AUTH", False)
+        email_exists = self.config.get("EMAIL_EXISTS")  # Set by pipeline if email matches different user
+
         if redirect_url and isinstance(redirect_url, str) and not redirect_url.startswith("?"):
             # Check if PSA returned a redirect to login/start or confirmation page
             # If so, keep it as-is (don't modify for these special cases)
@@ -304,12 +306,16 @@ class PSAAuthnz(IdentityProvider):
                     # Redirect to user/external_ids instead of root
                     redirect_url = f"{login_redirect_url}user/external_ids"
 
-            # Add notification message
+            # Add notification and email_exists parameters
             if "?confirm" not in redirect_url and "login/start" not in redirect_url:
                 provider_label = self.config.get("LABEL", self.config["provider"].capitalize())
                 separator = "&" if "?" in redirect_url else "?"
                 notification_msg = quote(f"Your {provider_label} identity has been linked to your Galaxy account.")
                 redirect_url = f"{redirect_url}{separator}notification={notification_msg}"
+
+                # Add email_exists parameter if identity email matched a different account
+                if email_exists:
+                    redirect_url = f"{redirect_url}&email_exists={quote(email_exists)}"
 
         return redirect_url, user
 
@@ -791,6 +797,7 @@ def associate_by_email_if_logged_in(
 
     This replaces social_core.pipeline.social_auth.associate_by_email with Galaxy-specific logic:
     - If user is currently logged in (passed from trans.user): auto-associate the OIDC identity
+      - If identity email matches a different user's account, store that info for notification
     - If user is NOT logged in but an account with that email exists:
       - If fixed_delegated_auth is enabled: auto-associate with existing user
       - Otherwise: prompt for confirmation
@@ -798,20 +805,25 @@ def associate_by_email_if_logged_in(
 
     Returns a dict with 'user' if association happened, or a redirect URL to stop the pipeline.
     """
-    if user:
-        # User is already logged in (from trans.user in callback) or was found by social_user step
-        # In either case, we can proceed with association
-        return
-
     email = details.get("email")
     if not email:
         # No email to match, continue with user creation
         return
 
-    # User is not logged in - check if an account with this email exists
+    # Check if an account with this email exists
     sa_session = UserAuthnzToken.sa_session
     existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
 
+    if user:
+        # User is already logged in (from trans.user in callback) or was found by social_user step
+        # Check if the identity email matches a different user's account
+        if existing_user and existing_user.id != user.id:
+            # Store this info so callback can add email_exists parameter
+            strategy.config["EMAIL_EXISTS"] = email
+        # Proceed with association to the logged-in user
+        return
+
+    # User is not logged in - check if an account with this email exists
     if existing_user:
         # Check if fixed_delegated_auth is enabled
         fixed_delegated_auth = strategy.config.get("FIXED_DELEGATED_AUTH", False)
