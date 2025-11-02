@@ -59,7 +59,7 @@ async function requestLink() {
         errorMessage.value = "";
         applicationData.value = data;
         if (applicationData.value.resource) {
-            //window.open(applicationData.value.resource, "_blank");
+            window.open(applicationData.value.resource, "_blank");
         } else if (applicationData.value.refresh) {
             setTimeout(() => requestLink(), TIMEOUT);
         }
