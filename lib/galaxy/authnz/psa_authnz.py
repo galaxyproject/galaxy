@@ -276,7 +276,10 @@ class PSAAuthnz(IdentityProvider):
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         on_the_fly_config(trans.sa_session)
+        # Always set LOGIN_REDIRECT_URL to the base URL for pipeline steps
+        # We'll adjust the final redirect based on fixed_delegated_auth after do_complete
         self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
+
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
@@ -289,18 +292,24 @@ class PSAAuthnz(IdentityProvider):
 
         user = self.config.get("user", None)
 
-        # Add notification message to redirect URL if authentication succeeded
-        # Check if we successfully authenticated/linked an account
+        # Adjust redirect URL based on fixed_delegated_auth setting
+        # Check if this is a successful authentication (not a redirect to login/start or confirmation)
+        fixed_delegated_auth = self.config.get("FIXED_DELEGATED_AUTH", False)
         if redirect_url and isinstance(redirect_url, str) and not redirect_url.startswith("?"):
-            # Get provider label for the notification message
-            provider_label = self.config.get("LABEL", self.config["provider"].capitalize())
-
-            # Check if the redirect already has query parameters
-            separator = "&" if "?" in redirect_url else "?"
+            # Check if PSA returned a redirect to login/start or confirmation page
+            # If so, keep it as-is (don't modify for these special cases)
+            if "login/start" not in redirect_url and "?confirm" not in redirect_url:
+                # This is a successful authentication redirect
+                if not fixed_delegated_auth:
+                    # Redirect to user/external_ids instead of root
+                    redirect_url = f"{login_redirect_url}user/external_ids"
 
             # Add notification message
-            notification_msg = quote(f"Your {provider_label} identity has been linked to your Galaxy account.")
-            redirect_url = f"{redirect_url}{separator}notification={notification_msg}"
+            if "?confirm" not in redirect_url and "login/start" not in redirect_url:
+                provider_label = self.config.get("LABEL", self.config["provider"].capitalize())
+                separator = "&" if "?" in redirect_url else "?"
+                notification_msg = quote(f"Your {provider_label} identity has been linked to your Galaxy account.")
+                redirect_url = f"{redirect_url}{separator}notification={notification_msg}"
 
         return redirect_url, user
 
@@ -886,23 +895,14 @@ def set_redirect_url(
     strategy=None, backend=None, details=None, user=None, is_new=False, social=None, **kwargs
 ):
     """
-    Custom pipeline step to set the redirect URL based on context.
+    Placeholder pipeline step for redirect URL handling.
 
-    This mirrors the custos implementation's redirect logic:
-    - If fixed_delegated_auth is enabled: redirect to root (LOGIN_REDIRECT_URL)
-    - Otherwise: redirect to user/external_ids with appropriate parameters
+    The actual redirect URL logic is handled in the callback() method
+    based on the fixed_delegated_auth setting, where LOGIN_REDIRECT_URL
+    is set before calling do_complete().
 
-    This should be the last step in the pipeline, after the user has been created/associated.
+    This step exists to maintain compatibility with the pipeline but
+    doesn't need to do anything.
     """
-    login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
-    fixed_delegated_auth = strategy.config.get("FIXED_DELEGATED_AUTH", False)
-
-    if fixed_delegated_auth:
-        # For fixed_delegated_auth, redirect to the base URL without extra parameters
-        strategy.session_set("next", login_redirect_url)
-    else:
-        # Default: redirect to user/external_ids
-        # The callback method will add the notification message
-        strategy.session_set("next", f"{login_redirect_url}user/external_ids")
-
+    # No action needed - redirect URL is set in callback() method
     return
