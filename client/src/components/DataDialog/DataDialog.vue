@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { onMounted, type Ref, ref, watch } from "vue";
-import Vue from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import Vue, { onMounted, ref, watch } from "vue";
 
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
@@ -52,7 +52,7 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 
 const errorMessage = ref("");
 const filter = ref("");
-const items: Ref<Array<Record>> = ref([]);
+const items = ref<SelectionItem[]>([]);
 const hasValue = ref(false);
 const modalShow = ref(true);
 const optionsShow = ref(true);
@@ -61,22 +61,6 @@ const undoShow = ref(false);
 const services = new Services();
 const model = new Model({ multiple: props.multiple, format: props.format });
 let urlTracker = new UrlTracker(getHistoryUrl());
-
-/** Specifies data columns to be shown in the dialog's table */
-const fields = [
-    {
-        key: "label",
-    },
-    {
-        key: "extension",
-    },
-    {
-        key: "tags",
-    },
-    {
-        key: "update_time",
-    },
-];
 
 /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
 function formatRows() {
@@ -192,7 +176,6 @@ watch(
     <SelectionDialog
         :error-message="errorMessage"
         :disable-ok="!hasValue"
-        :fields="fields"
         :items="items"
         :total-items="items.length"
         :modal-show="modalShow"
@@ -206,7 +189,7 @@ watch(
         @onUndo="load()">
         <template v-slot:buttons>
             <GButton v-if="allowUpload" size="small" @click="onUpload">
-                <Icon :icon="faUpload" />
+                <FontAwesomeIcon :icon="faUpload" />
                 Upload
             </GButton>
         </template>

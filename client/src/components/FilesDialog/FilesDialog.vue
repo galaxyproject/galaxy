@@ -90,18 +90,7 @@ const showFTPHelper = ref(false);
 const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
 const totalItems = ref(0);
-
-const fields = computed(() => {
-    const fields = [];
-    fields.push({ key: "label" });
-    if (showDetails.value) {
-        fields.push({ key: "details" });
-    }
-    if (showTime.value) {
-        fields.push({ key: "time" });
-    }
-    return fields;
-});
+const selectionDialog = ref();
 
 const fileMode = computed(() => props.mode == "file");
 
@@ -198,7 +187,6 @@ function selectDirectoryRecursive(record: SelectionItem) {
                     selectedDirectories.value.push(subRecord);
                 }
             });
-            totalItems.value = incoming.totalMatches;
             isBusy.value = false;
         });
     }
@@ -258,6 +246,8 @@ function open(record: SelectionItem) {
 
 /** Performs server request to retrieve data records **/
 function load() {
+    selectionDialog.value.resetPagination();
+
     showFTPHelper.value = currentDirectory.value?.url === "gxftp://";
     filter.value = undefined;
     optionsShow.value = false;
@@ -380,11 +370,10 @@ function filterByMode(results: RemoteEntry[]): RemoteEntry[] {
 }
 
 function entryToRecord(entry: RemoteEntry): SelectionItem {
-    const result = {
+    const result: SelectionItem = {
         id: entry.uri,
         label: entry.name,
-        time: entry.class === "File" ? entry.ctime : "",
-        details: entry.class === "File" ? entry.ctime : "",
+        update_time: entry.class === "File" ? entry.ctime : "",
         isLeaf: entry.class === "File",
         url: entry.uri,
         size: entry.class === "File" ? entry.size : 0,
@@ -469,7 +458,6 @@ onMounted(() => {
         :disable-ok="okButtonDisabled"
         :error-message="errorMessage"
         :file-mode="fileMode"
-        :fields="fields"
         :is-busy="isBusy"
         :items="items"
         :items-provider="itemsProvider"
