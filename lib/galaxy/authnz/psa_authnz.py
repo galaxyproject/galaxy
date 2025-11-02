@@ -113,6 +113,8 @@ AUTH_PIPELINE = (
     # Update the user record with any changed info from the auth service.
     "social_core.pipeline.user.user_details",
     "galaxy.authnz.psa_authnz.decode_access_token",
+    # Set appropriate redirect URL based on context
+    "galaxy.authnz.psa_authnz.set_redirect_url",
 )
 
 DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy.authnz.psa_authnz.disconnect")
@@ -269,6 +271,7 @@ class PSAAuthnz(IdentityProvider):
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         on_the_fly_config(trans.sa_session)
         self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
+        self.config["FIXED_DELEGATED_AUTH"] = trans.app.config.fixed_delegated_auth
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
@@ -781,10 +784,12 @@ def associate_by_email_if_logged_in(
 
     This replaces social_core.pipeline.social_auth.associate_by_email with Galaxy-specific logic:
     - If user is currently logged in (passed from trans.user): auto-associate the OIDC identity
-    - If user is NOT logged in but an account with that email exists: prompt for confirmation
+    - If user is NOT logged in but an account with that email exists:
+      - If fixed_delegated_auth is enabled: auto-associate with existing user
+      - Otherwise: prompt for confirmation
     - If no account exists: continue with user creation
 
-    Returns a dict with 'user' if association happened, or raises StopPipeline with redirect.
+    Returns a dict with 'user' if association happened, or a redirect URL to stop the pipeline.
     """
     if user:
         # User is already logged in (from trans.user in callback) or was found by social_user step
@@ -804,17 +809,26 @@ def associate_by_email_if_logged_in(
     existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
 
     if existing_user:
-        # An account exists but user is not logged in - prompt for confirmation
+        # Check if fixed_delegated_auth is enabled
+        fixed_delegated_auth = strategy.config.get("FIXED_DELEGATED_AUTH", False)
+
+        if fixed_delegated_auth:
+            # Auto-associate the OIDC identity with the existing user
+            # Return the user to continue the pipeline with association
+            return {"user": existing_user}
+
+        # An account exists but user is not logged in and fixed_delegated_auth is False
+        # Redirect to page prompting user to log in and link accounts
         provider = strategy.config.get("provider", "unknown")
         login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
 
-        # Redirect to page prompting user to log in and link accounts
         from urllib.parse import quote
 
         redirect_url = (
-            f"{login_redirect_url}user/external_ids"
+            f"{login_redirect_url}login/start"
             f"?connect_external_provider={provider}"
-            f"&email_exists={quote(email)}"
+            f"&connect_external_email={quote(email)}"
+            f"&connect_external_label={strategy.config.get('LABEL', provider.capitalize())}"
         )
 
         # Return the redirect URL - PSA will use this to redirect and stop the pipeline
@@ -877,4 +891,30 @@ def check_user_creation_confirmation(
                 return redirect_url
 
     # Continue with user creation if confirmation is not required or user already exists
+    return
+
+
+def set_redirect_url(
+    strategy=None, backend=None, details=None, user=None, is_new=False, social=None, **kwargs
+):
+    """
+    Custom pipeline step to set the redirect URL based on context.
+
+    This mirrors the custos implementation's redirect logic:
+    - If fixed_delegated_auth is enabled: redirect to root (LOGIN_REDIRECT_URL)
+    - Otherwise: redirect to user/external_ids with appropriate parameters
+
+    This should be the last step in the pipeline, after the user has been created/associated.
+    """
+    login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
+    fixed_delegated_auth = strategy.config.get("FIXED_DELEGATED_AUTH", False)
+
+    if fixed_delegated_auth:
+        # For fixed_delegated_auth, redirect to the base URL without extra parameters
+        strategy.session_set("next", login_redirect_url)
+    else:
+        # Default: redirect to user/external_ids
+        # The callback method will add the notification message
+        strategy.session_set("next", f"{login_redirect_url}user/external_ids")
+
     return

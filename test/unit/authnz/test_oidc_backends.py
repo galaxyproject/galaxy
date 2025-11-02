@@ -665,5 +665,170 @@ class TestRequireCreateConfirmation:
             assert result is None, "Should continue pipeline when user exists"
 
 
+class TestFixedDelegatedAuth:
+    """Test the fixed_delegated_auth feature for auto-associating accounts by email."""
+
+    def test_fixed_delegated_auth_auto_associates_existing_user(self):
+        """Test that fixed_delegated_auth automatically associates with existing user."""
+        from galaxy.authnz.psa_authnz import associate_by_email_if_logged_in, setting_name
+
+        strategy = MockStrategy({
+            "FIXED_DELEGATED_AUTH": True,
+            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+            "provider": "keycloak",
+        })
+
+        backend = Mock()
+        details = {"email": "existinguser@example.com", "username": "existinguser"}
+
+        with patch("galaxy.authnz.psa_authnz.UserAuthnzToken") as mock_token:
+            mock_session = Mock()
+            mock_query = Mock()
+            mock_where = Mock()
+            existing_user = Mock()
+            existing_user.email = "existinguser@example.com"
+
+            mock_session.query.return_value = mock_query
+            mock_query.where.return_value = mock_where
+            mock_where.first.return_value = existing_user
+
+            mock_token.sa_session = mock_session
+
+            result = associate_by_email_if_logged_in(
+                strategy=strategy,
+                backend=backend,
+                details=details,
+                user=None,  # Not logged in
+                is_new=True,
+            )
+
+            # Should return the existing user for auto-association
+            assert result is not None
+            assert "user" in result
+            assert result["user"] == existing_user
+
+    def test_fixed_delegated_auth_continues_when_no_user(self):
+        """Test that fixed_delegated_auth continues to user creation when no user exists."""
+        from galaxy.authnz.psa_authnz import associate_by_email_if_logged_in, setting_name
+
+        strategy = MockStrategy({
+            "FIXED_DELEGATED_AUTH": True,
+            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+            "provider": "keycloak",
+        })
+
+        backend = Mock()
+        details = {"email": "newuser@example.com", "username": "newuser"}
+
+        with patch("galaxy.authnz.psa_authnz.UserAuthnzToken") as mock_token:
+            mock_session = Mock()
+            mock_query = Mock()
+            mock_where = Mock()
+
+            mock_session.query.return_value = mock_query
+            mock_query.where.return_value = mock_where
+            mock_where.first.return_value = None  # No existing user
+
+            mock_token.sa_session = mock_session
+
+            result = associate_by_email_if_logged_in(
+                strategy=strategy,
+                backend=backend,
+                details=details,
+                user=None,  # Not logged in
+                is_new=True,
+            )
+
+            # Should return None to continue with user creation
+            assert result is None
+
+    def test_without_fixed_delegated_auth_prompts_for_login(self):
+        """Test that without fixed_delegated_auth, users are prompted to log in."""
+        from galaxy.authnz.psa_authnz import associate_by_email_if_logged_in, setting_name
+
+        strategy = MockStrategy({
+            "FIXED_DELEGATED_AUTH": False,
+            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+            "provider": "keycloak",
+            "LABEL": "Keycloak",
+        })
+
+        backend = Mock()
+        details = {"email": "existinguser@example.com", "username": "existinguser"}
+
+        with patch("galaxy.authnz.psa_authnz.UserAuthnzToken") as mock_token:
+            mock_session = Mock()
+            mock_query = Mock()
+            mock_where = Mock()
+            existing_user = Mock()
+
+            mock_session.query.return_value = mock_query
+            mock_query.where.return_value = mock_where
+            mock_where.first.return_value = existing_user
+
+            mock_token.sa_session = mock_session
+
+            result = associate_by_email_if_logged_in(
+                strategy=strategy,
+                backend=backend,
+                details=details,
+                user=None,  # Not logged in
+                is_new=True,
+            )
+
+            # Should return redirect URL prompting for login
+            assert result is not None
+            assert isinstance(result, str)
+            assert "login/start" in result
+            assert "connect_external_provider=keycloak" in result
+            assert "connect_external_email=" in result
+
+
+class TestRedirectURL:
+    """Test the set_redirect_url pipeline step."""
+
+    def test_fixed_delegated_auth_redirects_to_root(self):
+        """Test that fixed_delegated_auth redirects to root URL."""
+        from galaxy.authnz.psa_authnz import set_redirect_url, setting_name
+
+        strategy = MockStrategy({
+            "FIXED_DELEGATED_AUTH": True,
+            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+        })
+
+        backend = Mock()
+
+        set_redirect_url(
+            strategy=strategy,
+            backend=backend,
+            details={},
+            user=Mock(),
+        )
+
+        # Should set redirect to root URL
+        assert strategy.session.get("next") == "http://localhost:8080/"
+
+    def test_without_fixed_delegated_auth_redirects_to_external_ids(self):
+        """Test that without fixed_delegated_auth, redirect goes to user/external_ids."""
+        from galaxy.authnz.psa_authnz import set_redirect_url, setting_name
+
+        strategy = MockStrategy({
+            "FIXED_DELEGATED_AUTH": False,
+            setting_name("LOGIN_REDIRECT_URL"): "http://localhost:8080/",
+        })
+
+        backend = Mock()
+
+        set_redirect_url(
+            strategy=strategy,
+            backend=backend,
+            details={},
+            user=Mock(),
+        )
+
+        # Should set redirect to user/external_ids
+        assert strategy.session.get("next") == "http://localhost:8080/user/external_ids"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
