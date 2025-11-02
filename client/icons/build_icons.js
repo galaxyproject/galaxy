@@ -110,7 +110,7 @@ function makeMarkdown(iconDefinitions) {
     content += "---\n\n";
 
     iconDefinitions.forEach((icon) => {
-        content += `-   **${icon.iconName}**: \`import { ${icon.iconName} } from "@/components/icons/galaxyIcons";\`\n`;
+        content += `- **${icon.iconName}**: \`import { ${icon.iconName} } from "@/components/icons/galaxyIcons";\`\n`;
     });
 
     content += "\n---\n";
