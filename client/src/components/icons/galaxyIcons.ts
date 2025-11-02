@@ -1,7 +1,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 // Galaxy custom icons
-// Generated from: /Users/dannon/work/galaxy/client/src/assets/icons.json
+// Generated from: client/src/assets/icons.json
 // To regenerate: node icons/generate_ts_icons.js
 
 // Matches FontAwesome's structure

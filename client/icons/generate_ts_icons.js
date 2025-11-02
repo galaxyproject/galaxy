@@ -22,7 +22,7 @@ function generateIconsTypeScript() {
     let content = `import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 // Galaxy custom icons
-// Generated from: ${iconsJsonPath}
+// Generated from: client/src/assets/icons.json
 // To regenerate: node icons/generate_ts_icons.js
 
 // Matches FontAwesome's structure
