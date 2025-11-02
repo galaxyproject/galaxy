@@ -18,7 +18,6 @@ from unittest.mock import (
 from urllib import parse
 
 from galaxy import model
-from galaxy.authnz.custos_authnz import OIDCAuthnzBaseKeycloak
 from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
@@ -134,7 +133,7 @@ class AbstractTestCases:
         def setUpClass(cls):
             cls.backend_config_file = cls.generate_oidc_config_file(provider_name=cls.provider_name)
             # Patch the OIDC implementation so it can get the
-            #   current Galaxy port to set the redirect_uri
+            # current Galaxy port to set the redirect_uri
             cls.patch_oidc_config()
 
             # By default, the oidc callback must be done over a secure transport, so
@@ -223,6 +222,8 @@ class AbstractTestCases:
 class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTestCase):
     """
     Test Galaxy's keycloak-based OIDC login integration.
+
+    This test now uses the unified PSA-based Keycloak backend.
     """
 
     REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token = \"(.*)\"")
@@ -230,18 +231,25 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
 
     @classmethod
     def patch_oidc_config(cls):
-        keycloak_authnz_init = OIDCAuthnzBaseKeycloak.__init__
+        """
+        Patch PSAAuthnz to set the redirect_uri dynamically based on the test server port.
 
-        def patched_keycloak_authnz_init(self, *args, **kwargs):
+        This is necessary because the redirect_uri must match the actual Galaxy URL,
+        which is only known at test runtime.
+        """
+        # Save a reference to the original init function
+        psa_authnz_init = PSAAuthnz.__init__
+
+        def patched_psa_authnz_init(self, *args, **kwargs):
             server_wrapper = cls._test_driver.server_wrappers[0]
-            keycloak_authnz_init(self, *args, **kwargs)
-            self.config.redirect_uri = (
-                f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
-            )
+            psa_authnz_init(self, *args, **kwargs)
+            # Only patch if this is the keycloak provider
+            if self.config.get("provider") == cls.provider_name:
+                self.config["redirect_uri"] = (
+                    f"http://{server_wrapper.host}:{server_wrapper.port}/authnz/{cls.provider_name}/callback"
+                )
 
-        cls.config_patcher = patch(
-            "galaxy.authnz.custos_authnz.OIDCAuthnzBaseKeycloak.__init__", patched_keycloak_authnz_init
-        )
+        cls.config_patcher = patch("galaxy.authnz.psa_authnz.PSAAuthnz.__init__", patched_psa_authnz_init)
         cls.config_patcher.start()
 
     def _get_keycloak_access_token(

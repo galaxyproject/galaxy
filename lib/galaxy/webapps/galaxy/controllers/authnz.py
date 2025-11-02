@@ -40,39 +40,40 @@ class OIDC(BaseUIController):
         :return: a list of third-party identities associated with the user account.
         """
         rtv = []
+
+        # Process PSA tokens (unified authentication system)
         for authnz in trans.user.social_auth:
-            rtv.append(
-                {"id": trans.app.security.encode_id(authnz.id), "provider": authnz.provider, "email": authnz.uid}
+            token_info = {
+                "id": trans.app.security.encode_id(authnz.id),
+                "provider": authnz.provider,
+                "email": authnz.uid,
+            }
+
+            # Add provider label if available
+            provider_label = trans.app.authnz_manager.oidc_backends_config.get(authnz.provider, {}).get(
+                "label", authnz.provider
             )
-        # Add cilogon and keycloak identities
-        for token in trans.user.custos_auth:
-            # for purely displaying the info to user, we bypass verification of
-            # signature, audience, and expiration as that's potentially useful
-            # information to share with the end user
-            try:
-                userinfo = jwt.decode(
-                    token.id_token, options={"verify_signature": False, "verify_aud": False, "verify_exp": False}
-                )
-                provider_label = trans.app.authnz_manager.oidc_backends_config.get(token.provider, {}).get(
-                    "label", token.provider
-                )
-                rtv.append(
-                    {
-                        "id": trans.app.security.encode_id(token.id),
-                        "provider": token.provider,
-                        "provider_label": provider_label,
-                        "email": userinfo["email"],
-                        "expiration": str(datetime.datetime.utcfromtimestamp(userinfo["exp"])),
-                    }
-                )
-            except Exception:
-                rtv.append(
-                    {
-                        "id": trans.app.security.encode_id(token.id),
-                        "provider": token.provider,
-                        "error": "Unable to decode token",
-                    }
-                )
+            if provider_label != authnz.provider:
+                token_info["provider_label"] = provider_label
+
+            # Try to extract expiration from id_token if available
+            if authnz.extra_data and "id_token" in authnz.extra_data:
+                try:
+                    userinfo = jwt.decode(
+                        authnz.extra_data["id_token"],
+                        options={"verify_signature": False, "verify_aud": False, "verify_exp": False}
+                    )
+                    if "exp" in userinfo:
+                        token_info["expiration"] = str(datetime.datetime.utcfromtimestamp(userinfo["exp"]))
+                    # Update email from token if available and different
+                    if "email" in userinfo:
+                        token_info["email"] = userinfo["email"]
+                except Exception:
+                    # If token decoding fails, continue without expiration info
+                    pass
+
+            rtv.append(token_info)
+
         return rtv
 
     @web.json

@@ -52,6 +52,8 @@ BACKENDS = {
     "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
     "oidc": "social_core.backends.open_id_connect.OpenIdConnectAuth",
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
+    "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
+    "cilogon": "galaxy.authnz.cilogon.CILogonOpenIdConnect",
 }
 
 BACKENDS_NAME = {
@@ -66,6 +68,8 @@ BACKENDS_NAME = {
     "egi_checkin": "egi-checkin",
     "oidc": "oidc",
     "tapis": "tapis",
+    "keycloak": "keycloak",
+    "cilogon": "cilogon",
 }
 
 AUTH_PIPELINE = (
@@ -92,9 +96,13 @@ AUTH_PIPELINE = (
     "social_core.pipeline.user.get_username",
     # Send a validation email to the user to verify its email address.
     # 'social_core.pipeline.mail.mail_validation',
-    # Associates the current social details with another user account with
-    # a similar email address.
-    "social_core.pipeline.social_auth.associate_by_email",
+    # Custom Galaxy step: Associates by email only if user is logged in,
+    # otherwise prompts for confirmation. Replaces social_core's associate_by_email.
+    "galaxy.authnz.psa_authnz.associate_by_email_if_logged_in",
+    # Custom Galaxy step: Check if user creation requires confirmation.
+    # If require_create_confirmation is enabled and this is a new user,
+    # redirect to confirmation page instead of creating user immediately.
+    "galaxy.authnz.psa_authnz.check_user_creation_confirmation",
     # Create a user account if we haven't found one yet.
     "social_core.pipeline.user.create_user",
     # Create the record that associated the social account with this user.
@@ -129,6 +137,7 @@ class PSAAuthnz(IdentityProvider):
         self.config["VERIFY_SSL"] = oidc_config.get("VERIFY_SSL")
         self.config["REQUESTS_TIMEOUT"] = oidc_config.get("REQUESTS_TIMEOUT")
         self.config["ID_TOKEN_MAX_AGE"] = oidc_config.get("ID_TOKEN_MAX_AGE")
+        self.config["FORCE_EMAIL_LOWERCASE"] = oidc_config.get("FORCE_EMAIL_LOWERCASE", True)
 
         # The following config sets PSA to call the `_login_user` function for
         # logging in a user. If this setting is set to false, the `_login_user`
@@ -154,6 +163,13 @@ class PSAAuthnz(IdentityProvider):
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
         self.config["accepted_audiences"] = oidc_backend_config.get("accepted_audiences")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
+
+        # OIDC-specific configurations
+        self.config["PKCE_SUPPORT"] = oidc_backend_config.get("pkce_support", False)
+        self.config["IDPHINT"] = oidc_backend_config.get("idphint")
+        self.config["REQUIRE_CREATE_CONFIRMATION"] = oidc_backend_config.get("require_create_confirmation", False)
+        self.config["LABEL"] = oidc_backend_config.get("label", self.config["provider"].capitalize())
+
         if oidc_backend_config.get("oidc_endpoint"):
             self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
         if oidc_backend_config.get("prompt") is not None:
@@ -222,12 +238,17 @@ class PSAAuthnz(IdentityProvider):
         return False
 
     def _try_to_locate_refresh_token_expiration(self, extra_data):
-        return (
-            extra_data.get("expires", None)
-            or extra_data.get("expires_in", None)
-            or (extra_data.get("refresh_token") or {}).get("expires", None)
-            or (extra_data.get("refresh_token") or {}).get("expires_in", None)
-        )
+        # Try to get expiration from top-level keys
+        expires = extra_data.get("expires", None) or extra_data.get("expires_in", None)
+        if expires:
+            return expires
+
+        # Try to get expiration from refresh_token if it's a dict
+        refresh_token = extra_data.get("refresh_token")
+        if refresh_token and isinstance(refresh_token, dict):
+            return refresh_token.get("expires", None) or refresh_token.get("expires_in", None)
+
+        return None
 
     def authenticate(self, trans, idphint=None):
         on_the_fly_config(trans.sa_session)
@@ -258,7 +279,23 @@ class PSAAuthnz(IdentityProvider):
             state=state_token,
         )
 
-        return redirect_url, self.config.get("user", None)
+        user = self.config.get("user", None)
+
+        # Add notification message to redirect URL if authentication succeeded
+        # Check if we successfully authenticated/linked an account
+        if redirect_url and isinstance(redirect_url, str) and not redirect_url.startswith("?"):
+            # Get provider label for the notification message
+            provider_label = self.config.get("LABEL", self.config["provider"].capitalize())
+
+            # Check if the redirect already has query parameters
+            separator = "&" if "?" in redirect_url else "?"
+
+            # Add notification message
+            from urllib.parse import quote
+            notification_msg = quote(f"Your {provider_label} identity has been linked to your Galaxy account.")
+            redirect_url = f"{redirect_url}{separator}notification={notification_msg}"
+
+        return redirect_url, user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
         on_the_fly_config(trans.sa_session)
@@ -271,6 +308,157 @@ class PSAAuthnz(IdentityProvider):
         if isinstance(response, str):
             return True, "", response
         return response.get("success", False), response.get("message", ""), ""
+
+    def logout(self, trans, post_user_logout_href=None):
+        """
+        Logout from the identity provider.
+
+        Constructs a logout URL using the OIDC end_session_endpoint if available.
+
+        :param trans: Galaxy transaction object
+        :param post_user_logout_href: URL to redirect to after logout
+        :return: Logout redirect URI
+        """
+        on_the_fly_config(trans.sa_session)
+        strategy = Strategy(trans.request, trans.session, Storage, self.config)
+        backend = self._load_backend(strategy, self.config["redirect_uri"])
+
+        # Get OIDC configuration to find end_session_endpoint
+        try:
+            oidc_config = backend.oidc_config()
+            end_session_endpoint = oidc_config.get("end_session_endpoint")
+
+            if end_session_endpoint:
+                # Construct logout URL with optional post_logout_redirect_uri
+                if post_user_logout_href:
+                    from urllib.parse import quote
+                    logout_url = f"{end_session_endpoint}?post_logout_redirect_uri={quote(post_user_logout_href)}"
+                else:
+                    logout_url = end_session_endpoint
+
+                return logout_url
+            else:
+                # No end_session_endpoint available
+                log.warning(f"No end_session_endpoint found in OIDC configuration for {self.config['provider']}")
+                return post_user_logout_href or "/"
+
+        except Exception as e:
+            log.exception(f"Error getting logout URL for {self.config['provider']}: {e}")
+            return post_user_logout_href or "/"
+
+    def decode_user_access_token(self, sa_session, access_token):
+        """
+        Verifies and decodes an access token against this provider, returning the user and
+        a dict containing the decoded token data.
+
+        This is used for API authentication with Bearer tokens.
+
+        :param sa_session: SQLAlchemy database session
+        :param access_token: An OIDC access token
+        :return: A tuple containing the user and decoded jwt data, or (None, None) if token is for different provider
+        :rtype: Tuple[User, dict]
+        :raises Exception: If token is valid but user hasn't logged in, or token validation fails
+        """
+        try:
+            on_the_fly_config(sa_session)
+            # Create a minimal strategy and backend just for token verification
+            strategy = Strategy(None, {}, Storage, self.config)
+            backend = self._load_backend(strategy, self.config["redirect_uri"])
+
+            # Decode and verify the access token using the helper function
+            # This will raise exceptions for: expired tokens, invalid audience, invalid signature, etc.
+            decoded_jwt = _decode_access_token_helper(access_token, backend)
+
+            # JWT verified, now fetch the user
+            user_id = decoded_jwt["sub"]
+
+            # Look up the user by their OIDC uid
+            from galaxy.model import UserAuthnzToken
+
+            user_authnz_token = (
+                sa_session.query(UserAuthnzToken)
+                .filter(
+                    UserAuthnzToken.uid == user_id, UserAuthnzToken.provider == BACKENDS_NAME[self.config["provider"]]
+                )
+                .first()
+            )
+
+            user = user_authnz_token.user if user_authnz_token else None
+
+            if not user:
+                # User hasn't logged in via OIDC at least once
+                # Return (None, decoded_jwt) to signal that token is valid but user is not registered
+                return None, decoded_jwt
+
+            return user, decoded_jwt
+
+        except jwt.exceptions.InvalidIssuerError:
+            # Token is for a different provider - return (None, None) to try next provider
+            log.debug(f"Invalid issuer for access token with provider: {self.config['provider']}")
+            return None, None
+        except Exception:
+            # Any other exception (expired token, invalid audience, etc.) should be raised
+            # so the authentication fails with a proper error message
+            raise
+
+    def create_user(self, token, trans, login_redirect_url):
+        """
+        Create a user from a stored token (deferred user creation).
+
+        This is used when require_create_confirmation is enabled. After the user
+        confirms they want to create an account, this method completes the user
+        creation process using the stored token from the authentication callback.
+
+        :param token: JSON-encoded token from the initial authentication
+        :param trans: Galaxy transaction object
+        :param login_redirect_url: URL to redirect after user creation
+        :return: Tuple of (redirect_url, user)
+        """
+        on_the_fly_config(trans.sa_session)
+        token_dict = json.loads(token)
+
+        # Decode the ID token to get user info
+        id_token = token_dict.get("id_token")
+        if not id_token:
+            raise Exception("Missing id_token in stored authentication data")
+
+        # Decode without verification (already verified during initial auth)
+        userinfo = jwt.decode(id_token, options={"verify_signature": False})
+
+        email = userinfo.get("email")
+        username = userinfo.get("preferred_username", email)
+        if "@" in username:
+            username = username.split("@")[0]
+
+        # Clean username for Galaxy
+        from galaxy import util
+        from galaxy.model import User
+
+        username = util.ready_name_for_url(username).lower()
+
+        # Check if username already exists, append number if needed
+        if trans.sa_session.query(User).filter_by(username=username).first():
+            count = 0
+            while trans.sa_session.query(User).filter_by(username=f"{username}{count}").first():
+                count += 1
+            username = f"{username}{count}"
+
+        # Create the user
+        user = trans.app.user_manager.create(email=email, username=username)
+        if trans.app.config.user_activation_on:
+            trans.app.user_manager.send_activation_email(trans, email, username)
+
+        # Create the UserAuthnzToken record
+        user_id = userinfo.get("sub")
+        user_authnz_token = UserAuthnzToken(
+            user=user, uid=user_id, provider=BACKENDS_NAME[self.config["provider"]], extra_data=token_dict
+        )
+
+        trans.sa_session.add(user)
+        trans.sa_session.add(user_authnz_token)
+        trans.sa_session.commit()
+
+        return login_redirect_url, user
 
 
 class Strategy(BaseStrategy):
@@ -479,6 +667,7 @@ def allowed_to_disconnect(
     :type details: dict
     :return: empty dict
     """
+    pass
 
 
 def disconnect(
@@ -572,6 +761,120 @@ def _decode_access_token_helper(token_str: str, backend: OpenIdConnectAuth) -> d
         algorithms=[jwk.algorithm_name],
         audience=backend.strategy.config["accepted_audiences"],
         issuer=backend.id_token_issuer(),
-        options={"verify_signature": True, "verify_exp": True, "verify_aud": True},
+        options={
+            "verify_signature": True,
+            "verify_exp": True,
+            "verify_nbf": True,
+            "verify_iat": True,
+            "verify_aud": bool(backend.strategy.config["accepted_audiences"]),
+            "verify_iss": True,
+        },
     )
     return decoded
+
+
+def associate_by_email_if_logged_in(
+    strategy=None, backend=None, details=None, user=None, is_new=False, *args, **kwargs
+):
+    """
+    Custom pipeline step to handle email-based account association.
+
+    This replaces social_core.pipeline.social_auth.associate_by_email with Galaxy-specific logic:
+    - If user is currently logged in (passed from trans.user): auto-associate the OIDC identity
+    - If user is NOT logged in but an account with that email exists: prompt for confirmation
+    - If no account exists: continue with user creation
+
+    Returns a dict with 'user' if association happened, or raises StopPipeline with redirect.
+    """
+    if user:
+        # User is already logged in (from trans.user in callback) or was found by social_user step
+        # In either case, we can proceed with association
+        return
+
+    email = details.get("email")
+    if not email:
+        # No email to match, continue with user creation
+        return
+
+    # User is not logged in - check if an account with this email exists
+    from galaxy.model import User
+    from sqlalchemy import func
+
+    sa_session = UserAuthnzToken.sa_session
+    existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
+
+    if existing_user:
+        # An account exists but user is not logged in - prompt for confirmation
+        provider = strategy.config.get("provider", "unknown")
+        login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
+
+        # Redirect to page prompting user to log in and link accounts
+        from urllib.parse import quote
+
+        redirect_url = (
+            f"{login_redirect_url}user/external_ids"
+            f"?connect_external_provider={provider}"
+            f"&email_exists={quote(email)}"
+        )
+
+        # Return the redirect URL - PSA will use this to redirect and stop the pipeline
+        strategy.session_set("redirect_url", redirect_url)
+        return redirect_url
+
+    # No existing user, continue with user creation
+    return
+
+
+def check_user_creation_confirmation(
+    strategy=None, backend=None, details=None, response=None, is_new=False, user=None, **kwargs
+):
+    """
+    Pipeline step to handle deferred user creation (require_create_confirmation).
+
+    This was a feature from custos where new users could be shown a confirmation
+    page before their account is created. If require_create_confirmation is enabled
+    and this is a new user (no existing Galaxy account), the pipeline is interrupted
+    and the user is redirected to a confirmation page with the token stored for later.
+
+    This step should be placed before create_user in the pipeline.
+    """
+    require_confirmation = strategy.config.get("REQUIRE_CREATE_CONFIRMATION", False)
+
+    # Only apply if confirmation is required, this is a new association, and no user exists yet
+    if require_confirmation and is_new and not user:
+        # Check if there's an existing user with this email
+        email = details.get("email")
+        if email:
+            from galaxy.model import User
+            from sqlalchemy import func
+
+            sa_session = UserAuthnzToken.sa_session
+            existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
+
+            # If no existing user, redirect to confirmation page
+            if not existing_user:
+                provider = strategy.config.get("provider", "unknown")
+                login_redirect_url = strategy.config.get(setting_name("LOGIN_REDIRECT_URL"), "/")
+
+                # Store the token response for later use
+                token_json = json.dumps(response)
+
+                # Store in session for the create_user_from_token endpoint
+                strategy.session_set(f"pending_oidc_token_{provider}", token_json)
+
+                # Construct redirect URL to confirmation page
+                from urllib.parse import quote
+
+                redirect_url = (
+                    f"{login_redirect_url}login/start"
+                    f"?confirm=true"
+                    f"&provider_token={quote(token_json)}"
+                    f"&provider={provider}"
+                )
+
+                # Return the redirect URL - PSA will detect this and stop the pipeline
+                # This prevents user creation until they confirm
+                return redirect_url
+
+    # Continue with user creation if confirmation is not required or user already exists
+    return
