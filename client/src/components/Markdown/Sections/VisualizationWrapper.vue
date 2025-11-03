@@ -6,22 +6,21 @@ import { computed, ref } from "vue";
 
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
-const props = withDefaults(
-    defineProps<{
-        config: object;
-        name: string;
-        title?: string;
-        height?: number;
-    }>(),
-    {
-        height: 400,
-        title: "visualization",
-    },
-);
+interface Props {
+    config: object;
+    name: string;
+    title?: string;
+    height?: number;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    title: "visualization",
+    height: 400,
+});
 
 const emit = defineEmits<{
-    (event: "change", payload: Record<string, any>): void;
-    (event: "load"): void;
+    (e: "change", payload: Record<string, any>): void;
+    (e: "load"): void;
 }>();
 
 const errorMessage = ref("");
@@ -39,7 +38,7 @@ const fixedHeight = computed(() =>
     <div v-else class="position-relative h-100">
         <div :class="`visualization-pop${expand ? 'out' : 'in'}`">
             <VisualizationFrame
-                :title="title"
+                :title="props.title"
                 :config="props.config"
                 :name="props.name"
                 :style="fixedHeight"
