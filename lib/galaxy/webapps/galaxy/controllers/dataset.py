@@ -440,39 +440,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
 
-    def _display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
-        """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
-        dataset = self._check_dataset(trans, slug)
-        # Filename used for composite types.
-        if filename:
-            return self.display(trans, dataset_id=slug, filename=filename)
-
-        truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
-        dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.user, dataset)
-
-        # If dataset is chunkable, get first chunk.
-        first_chunk = None
-        if dataset.datatype.CHUNKABLE:
-            first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
-
-        # If data is binary or an image, stream without template; otherwise, use display template.
-        # TODO: figure out a way to display images in display template.
-        if (
-            isinstance(dataset.datatype, datatypes.binary.Binary)
-            or isinstance(dataset.datatype, datatypes.images.Image)
-            or isinstance(dataset.datatype, datatypes.text.Html)
-        ):
-            trans.response.set_content_type(dataset.get_mime())
-            return open(dataset.get_file_name(), "rb")
-        else:
-            return trans.fill_template_mako(
-                "/dataset/display.mako",
-                item=dataset,
-                item_data=dataset_data,
-                truncated=truncated,
-                first_chunk=first_chunk,
-            )
-
     @web.expose
     def display_at(self, trans, dataset_id, filename=None, **kwd):
         """Sets up a dataset permissions so it is viewable at an external site"""
