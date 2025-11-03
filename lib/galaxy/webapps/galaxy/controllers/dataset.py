@@ -9,7 +9,6 @@ import paste.httpexceptions
 from markupsafe import escape
 
 from galaxy import (
-    datatypes,
     util,
     web,
 )
