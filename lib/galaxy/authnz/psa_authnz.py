@@ -117,8 +117,6 @@ AUTH_PIPELINE = (
     # Update the user record with any changed info from the auth service.
     "social_core.pipeline.user.user_details",
     "galaxy.authnz.psa_authnz.decode_access_token",
-    # Set appropriate redirect URL based on context
-    "galaxy.authnz.psa_authnz.set_redirect_url",
 )
 
 DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy.authnz.psa_authnz.disconnect")
@@ -810,7 +808,10 @@ def associate_by_email_if_logged_in(
         return
 
     # Check if an account with this email exists
+    # sa_session is guaranteed to be set by on_the_fly_config() before pipeline runs
     sa_session = UserAuthnzToken.sa_session
+    if sa_session is None:
+        raise RuntimeError("sa_session must be set by on_the_fly_config before pipeline execution")
     existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
 
     if user:
@@ -872,7 +873,10 @@ def check_user_creation_confirmation(
         # Check if there's an existing user with this email
         email = details.get("email")
         if email:
+            # sa_session is guaranteed to be set by on_the_fly_config() before pipeline runs
             sa_session = UserAuthnzToken.sa_session
+            if sa_session is None:
+                raise RuntimeError("sa_session must be set by on_the_fly_config before pipeline execution")
             existing_user = sa_session.query(User).where(func.lower(User.email) == email.lower()).first()
 
             # If no existing user, redirect to confirmation page
@@ -899,19 +903,4 @@ def check_user_creation_confirmation(
                 return redirect_url
 
     # Continue with user creation if confirmation is not required or user already exists
-    return
-
-
-def set_redirect_url(strategy=None, backend=None, details=None, user=None, is_new=False, social=None, **kwargs):
-    """
-    Placeholder pipeline step for redirect URL handling.
-
-    The actual redirect URL logic is handled in the callback() method
-    based on the fixed_delegated_auth setting, where LOGIN_REDIRECT_URL
-    is set before calling do_complete().
-
-    This step exists to maintain compatibility with the pipeline but
-    doesn't need to do anything.
-    """
-    # No action needed - redirect URL is set in callback() method
     return

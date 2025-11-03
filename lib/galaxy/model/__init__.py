@@ -10945,7 +10945,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     )
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: ClassVar[Optional[Session]] = None
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider

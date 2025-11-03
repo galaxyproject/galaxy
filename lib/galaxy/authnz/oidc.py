@@ -57,7 +57,7 @@ class GalaxyOpenIdConnect(OpenIdConnectAuth):
         # Add PKCE parameters if enabled
         if self.PKCE_ENABLED:
             # Generate PKCE challenge
-            code_verifier, code_challenge = generate_pkce_pair(code_length=96)
+            code_verifier, code_challenge = generate_pkce_pair(96)
             params["code_challenge"] = code_challenge
             params["code_challenge_method"] = "S256"
             # Store verifier in session for later use
