@@ -2815,7 +2815,7 @@ mapping:
           Show the site's welcome page (see welcome_url) alongside the login page
           (even if require_login is true).
 
-      prefer_cilogon_login:
+      prefer_oidc_login:
         type: bool
         default: false
         required: False
