@@ -9,7 +9,6 @@ This test suite covers additional functionality such as:
 """
 
 from unittest.mock import (
-    MagicMock,
     Mock,
     patch,
 )
