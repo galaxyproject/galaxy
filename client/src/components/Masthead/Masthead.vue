@@ -1,5 +1,5 @@
 <script setup>
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faGear, faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -163,7 +163,7 @@ onMounted(() => {
                 @click="extensionTabClick(tab)" />
             <MastheadItem
                 id="help"
-                icon="fa-question"
+                :icon="faQuestion"
                 url="/about"
                 tooltip="Support, Contact, and Community"
                 @click="openUrl('/about')" />
@@ -186,18 +186,18 @@ onMounted(() => {
                 v-if="currentUser && !isAnonymous && !config.single_user"
                 id="user"
                 class="loggedin-only"
-                icon="fa-user"
+                :icon="faUser"
                 :title="currentUser.username"
                 tooltip="User Preferences"
                 :menu="[
                     {
                         title: 'Preferences',
-                        icon: 'fa-gear',
+                        icon: faGear,
                         handler: () => openUrl('/user'),
                     },
                     {
                         title: 'Sign Out',
-                        icon: 'fa-sign-out-alt',
+                        icon: faSignOutAlt,
                         handler: () => userLogout(),
                     },
                 ]"
@@ -206,13 +206,13 @@ onMounted(() => {
                 v-if="currentUser && !isAnonymous && config.single_user"
                 id="user"
                 class="loggedin-only"
-                icon="fa-user"
+                :icon="faUser"
                 :title="currentUser.username"
                 tooltip="User Preferences"
                 :menu="[
                     {
                         title: 'Preferences',
-                        icon: 'fa-gear',
+                        icon: faGear,
                         handler: () => openUrl('/user'),
                     },
                 ]"

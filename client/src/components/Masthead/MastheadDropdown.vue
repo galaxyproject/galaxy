@@ -1,6 +1,9 @@
-<script setup>
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdownItem, BNavItemDropdown, VBTooltipPlugin } from "bootstrap-vue";
-import Vue, { ref } from "vue";
+import Vue, { type PropType, ref } from "vue";
+
+import type { IconLike } from "@/components/icons/galaxyIcons";
 
 import TextShort from "@/components/Common/TextShort.vue";
 
@@ -14,7 +17,8 @@ defineProps({
         type: String,
     },
     icon: {
-        type: String,
+        type: Object as PropType<IconLike>,
+        required: false,
     },
     target: {
         type: String,
@@ -35,12 +39,12 @@ defineProps({
     <BNavItemDropdown :id="id" ref="dropdown" v-b-tooltip.noninteractive.hover.bottom :title="tooltip" right>
         <template v-if="icon" v-slot:button-content>
             <span class="sr-only">{{ tooltip || id }}</span>
-            <span class="fa fa-fw" :class="icon" />
+            <FontAwesomeIcon fixed-width :icon="icon" />
             <TextShort :text="title" />
         </template>
         <template>
             <BDropdownItem v-for="(item, idx) in menu" :key="idx" role="menuitem" @click="item.handler">
-                <span class="fa fa-fw" :class="item.icon" />
+                <FontAwesomeIcon v-if="item.icon" fixed-width :icon="item.icon" />
                 <span>{{ item.title }}</span>
             </BDropdownItem>
         </template>
