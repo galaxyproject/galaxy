@@ -80,7 +80,7 @@ import UserPreferences from "@/components/User/UserPreferences.vue";
 import UserPreferencesForm from "@/components/User/UserPreferencesForm.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationCreate from "@/components/Visualizations/VisualizationCreate.vue";
-import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
+import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";
 import VisualizationPublished from "@/components/Visualizations/VisualizationPublished.vue";
 import HistoryInvocations from "@/components/Workflow/HistoryInvocations.vue";
 import TrsImport from "@/components/Workflow/Import/TrsImport.vue";
