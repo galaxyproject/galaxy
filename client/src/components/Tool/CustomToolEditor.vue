@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSave } from "@fortawesome/free-regular-svg-icons";
+import { faArrowAltCircleUp, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
@@ -104,6 +104,25 @@ async function saveTool() {
         router.push(`/tools/editor/${data.uuid}`);
     }
 }
+
+async function importFromUrl() {
+    const url = prompt("Enter the URL to import YAML from:");
+    if (!url) {
+        return;
+    }
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("Failed to fetch YAML");
+        }
+
+        const yaml = await response.text();
+        yamlRepresentation.value = yaml;
+    } catch (error) {
+        errorMsg.value = { err_code: -1, err_msg: `Couldn't import YAML from URL: ${error}` };
+    }
+}
 </script>
 
 <template>
@@ -113,6 +132,14 @@ async function saveTool() {
         </b-alert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
+            <b-button
+                variant="secondary"
+                size="m"
+                title="Import from URL"
+                data-description="Import from a URL"
+                @click="importFromUrl"
+                ><FontAwesomeIcon :icon="faArrowAltCircleUp"
+            /></b-button>
             <b-button
                 variant="primary"
                 size="m"
