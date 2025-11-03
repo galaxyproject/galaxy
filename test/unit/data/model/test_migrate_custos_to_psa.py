@@ -8,7 +8,6 @@ from custos_authnz_token to oidc_user_authnz_tokens.
 # Import the core migration function
 # We need to use importlib since the filename has a revision prefix
 import importlib.util
-import json
 from datetime import (
     datetime,
     timedelta,
@@ -21,7 +20,6 @@ from sqlalchemy import (
     create_engine,
     DateTime,
     Integer,
-    select,
     String,
     Text,
     VARCHAR,

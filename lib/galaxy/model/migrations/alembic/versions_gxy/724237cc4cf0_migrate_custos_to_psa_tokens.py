@@ -1,12 +1,11 @@
 """migrate custos to psa tokens
 
 Revision ID: 724237cc4cf0
-Revises: a5c5455b849a
+Revises: 1d1d7bf6ac02
 Create Date: 2025-11-03 15:22:13.111461
 
 """
 
-import json
 from datetime import datetime
 
 from alembic import op
@@ -21,7 +20,6 @@ from sqlalchemy import (
     Text,
     VARCHAR,
 )
-from sqlalchemy.orm import Session
 
 from galaxy.model.custom_types import MutableJSONType
 from galaxy.model.migrations.util import (
@@ -30,7 +28,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "724237cc4cf0"
-down_revision = "a5c5455b849a"
+down_revision = "1d1d7bf6ac02"
 branch_labels = None
 depends_on = None
 
@@ -179,7 +177,6 @@ def upgrade():
     """
     with transaction():
         connection = op.get_bind()
-        session = Session(bind=connection)
 
         # Get table definitions
         custos_table = get_custos_table(connection)
