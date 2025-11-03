@@ -744,7 +744,7 @@ def _run_deferred(
 
 
 @requires_tool_id("cat|cat1")
-def test_deferred_with_cached_input(required_tool: RequiredTool, target_history: TargetHistory):
+def test_deferred_with_cached_input(required_tool: RequiredTool, target_history: TargetHistory) -> None:
     # Basic deferred dataset
     _run_deferred(required_tool, target_history)
     # Should just work because input is deferred

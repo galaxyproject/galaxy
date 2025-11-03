@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from typing import (
     Any,
     Optional,
+    TYPE_CHECKING,
 )
 from urllib.parse import (
     urlencode,
@@ -29,6 +30,9 @@ from .api_util import (
     TEST_USER,
 )
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
+
+if TYPE_CHECKING:
+    from requests import Response
 
 CONFIG_PREFIXES = ["GALAXY_TEST_CONFIG_", "GALAXY_CONFIG_OVERRIDE_", "GALAXY_CONFIG_"]
 CELERY_BROKER = get_from_env("CELERY_BROKER", CONFIG_PREFIXES, "memory://")
@@ -198,7 +202,7 @@ class UsesApiTestCaseMixin:
     def _assert_status_code_is_ok(self, response):
         assert_status_code_is_ok(response)
 
-    def _assert_status_code_is(self, response, expected_status_code):
+    def _assert_status_code_is(self, response: "Response", expected_status_code: int) -> None:
         assert_status_code_is(response, expected_status_code)
 
     def _assert_has_keys(self, response, *keys):
