@@ -66,7 +66,7 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Run tests
-        run: ./run_tests.sh --coverage --skip_flakey_fails -api lib/galaxy_test/api --structured_data_report_file run_api_tests.json -- --num-shards=2 --shard-id=${{ matrix.chunk }}
+        run: ./run_tests.sh --coverage --skip_flakey_fails -api lib/galaxy_test/api -- --num-shards=2 --shard-id=${{ matrix.chunk }} --json-report --json-report-file=run_api_tests.json
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v5
         with:

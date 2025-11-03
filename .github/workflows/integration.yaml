@@ -74,7 +74,7 @@ jobs:
       - name: Run tests
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh --coverage -integration test/integration --structured_data_report_file run_integration_tests.json -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }} --json-report --json-report-file=run_integration_tests.json
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v5
         with:

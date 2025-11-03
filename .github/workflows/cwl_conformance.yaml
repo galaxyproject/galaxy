@@ -58,7 +58,7 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Run tests
-        run: ./run_tests.sh --coverage --skip_flakey_fails -cwl lib/galaxy_test/api/cwl --structured_data_report_file run_cwl_tests.json -- -m "${{ matrix.marker }} and ${{ matrix.conformance-version }}"
+        run: ./run_tests.sh --coverage --skip_flakey_fails -cwl lib/galaxy_test/api/cwl -- -m "${{ matrix.marker }} and ${{ matrix.conformance-version }}" --json-report --json-report-file=run_cwl_tests.json
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v5
         with:

@@ -70,7 +70,7 @@ jobs:
           playwright install
         working-directory: 'galaxy root'
       - name: Run tests
-        run: ./run_tests.sh -toolshed --structured_data_report_file run_toolshed_tests.json
+        run: ./run_tests.sh -toolshed -- --json-report --json-report-file=run_toolshed_tests.json
         env:
           TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
           TOOL_SHED_API_VERSION: ${{ matrix.shed-api }}

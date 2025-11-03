@@ -74,7 +74,7 @@ jobs:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
       - name: Run tests
-        run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium --structured_data_report_file run_selenium_tests.json -- --num-shards=3 --shard-id=${{ matrix.chunk }}
+        run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }} --json-report --json-report-file=run_selenium_tests.json
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v5
         with:

@@ -54,7 +54,7 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework
       - name: Run tests
-        run: ./run_tests.sh --coverage --main_tools --structured_data_report_file run_framework_tests.json
+        run: ./run_tests.sh --coverage --main_tools -- --json-report --json-report-file=run_framework_tests.json
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v5
         with:
