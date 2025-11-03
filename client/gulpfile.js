@@ -66,6 +66,8 @@ function stageLibs(callback) {
 
 async function icons() {
     await buildIcons("./src/assets/icons.json");
+    const generateIconsTypeScript = require("./icons/generate_ts_icons");
+    generateIconsTypeScript();
 }
 
 function cleanPlugins(callback) {

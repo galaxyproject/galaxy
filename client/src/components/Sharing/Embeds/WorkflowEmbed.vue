@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce } from "@vueuse/core";
@@ -11,8 +10,6 @@ import { copy } from "@/utils/clipboard";
 
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
-
-library.add(faCopy);
 
 const props = defineProps<{
     id: string;
@@ -141,7 +138,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                             variant="primary"
                             @click="onCopy"
                             @blur="onCopyOut">
-                            <FontAwesomeIcon icon="copy" />
+                            <FontAwesomeIcon :icon="faCopy" />
                         </BButton>
                     </BInputGroupAppend>
                 </BInputGroup>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import type { AxiosError } from "axios";
 import { BFormInput } from "bootstrap-vue";
@@ -11,8 +10,6 @@ import { Toast } from "@/composables/toast";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
-
-library.add(faCheck);
 
 interface Pros {
     showHeading: boolean;

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
@@ -13,8 +12,6 @@ import CollectionPanel from "@/components/History/CurrentCollection/CollectionPa
 import HistoryNavigation from "@/components/History/CurrentHistory/HistoryNavigation.vue";
 import HistoryPanel from "@/components/History/CurrentHistory/HistoryPanel.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faTimes);
 
 interface Props {
     source: {

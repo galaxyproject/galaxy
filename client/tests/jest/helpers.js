@@ -3,7 +3,6 @@
  */
 import { createLocalVue, shallowMount } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
-import { iconPlugin } from "components/plugins/icons";
 import { localizationPlugin } from "components/plugins/localization";
 import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
 import { PiniaVuePlugin } from "pinia";
@@ -192,7 +191,6 @@ export function getLocalVue(instrumentLocalization = false) {
     const l = instrumentLocalization ? testLocalize : _l;
     localVue.use(localizationPlugin, l);
     localVue.use(vueRxShortcutPlugin);
-    localVue.use(iconPlugin);
     localVue.directive("b-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
     return localVue;

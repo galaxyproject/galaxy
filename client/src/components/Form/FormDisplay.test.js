@@ -1,3 +1,4 @@
+import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -87,8 +88,8 @@ describe("FormDisplay", () => {
             sustainConditionals: false,
             collapsedEnableText: "Enable",
             collapsedDisableText: "Disable",
-            collapsedEnableIcon: "collapsedEnableIcon",
-            collapsedDisableIcon: "collapsedDisableIcon",
+            collapsedEnableIcon: faCaretSquareDown,
+            collapsedDisableIcon: faCaretSquareUp,
         };
         wrapper = mount(FormDisplay, {
             propsData,

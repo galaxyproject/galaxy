@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, toRef, watch } from "vue";
 
 import { useJobStore } from "@/stores/jobStore";
@@ -62,7 +64,7 @@ watch(
     <b-card nobody>
         <b-card-title v-if="title">
             <b>{{ title }}</b>
-            <icon ref="info" icon="info-circle" size="sm" />
+            <FontAwesomeIcon ref="info" :icon="faInfoCircle" size="sm" />
             <ToolLinkPopover :target="() => $refs.info" :tool-id="toolId" :tool-version="toolVersion" />
         </b-card-title>
         <JobSelection

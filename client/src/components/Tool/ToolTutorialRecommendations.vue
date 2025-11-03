@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCollapse } from "bootstrap-vue";
@@ -18,8 +17,6 @@ const props = defineProps<{
     version: string;
     owner?: string;
 }>();
-
-library.add(faCaretDown);
 
 const { trainingAvailable, trainingCategories, tutorialDetails, allTutorialsUrl, versionAvailable } =
     useToolTrainingMaterial(props.id, props.name, props.version, props.owner);
@@ -61,13 +58,13 @@ const tutorialText = computed(() => {
                 Tutorials available in {{ trainingCategories.length }}
                 {{ trainingCategories.length > 1 ? "categories" : "category" }}
             </b>
-            <FontAwesomeIcon icon="caret-down" />
+            <FontAwesomeIcon :icon="faCaretDown" />
         </BButton>
         <BCollapse :id="collapseId">
             <div v-for="category in trainingCategories" :key="category">
                 <BButton v-b-toggle="idForCategory(category)" class="ui-link ml-3">
                     {{ category }} ({{ tutorialsInCategory(category).length }})
-                    <FontAwesomeIcon icon="caret-down" />
+                    <FontAwesomeIcon :icon="faCaretDown" />
                 </BButton>
                 <BCollapse :id="idForCategory(category)">
                     <ul class="d-flex flex-column my-1">

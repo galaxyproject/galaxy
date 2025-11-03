@@ -17,7 +17,7 @@
                             size="sm"
                             title="Edit Creator"
                             @click="onEdit(index)">
-                            <FontAwesomeIcon icon="edit" />
+                            <FontAwesomeIcon :icon="faEdit" />
                         </BButton>
                         <BButton
                             v-b-tooltip.hover
@@ -26,7 +26,7 @@
                             size="sm"
                             title="Remove Creator"
                             @click="onRemove(index)">
-                            <FontAwesomeIcon icon="times" />
+                            <FontAwesomeIcon :icon="faTimes" />
                         </BButton>
                     </template>
                 </CreatorViewer>
@@ -43,16 +43,12 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import CreatorViewer from "./CreatorViewer";
 import OrganizationForm from "./OrganizationForm";
 import PersonForm from "./PersonForm";
-
-library.add(faTimes);
-library.add(faEdit);
 
 export default {
     components: {
@@ -69,6 +65,8 @@ export default {
     },
     data() {
         return {
+            faEdit,
+            faTimes,
             creatorsCurrent: [],
             editIndex: null,
         };

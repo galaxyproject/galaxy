@@ -8,7 +8,7 @@
                 class="mr-1 mb-2"
                 data-test-id="download-btn"
                 @click="download(datasetDownloadFormat, dataset_id)">
-                <FontAwesomeIcon icon="download" />
+                <FontAwesomeIcon :icon="faDownload" />
                 Download
             </b-button>
             <b-button
@@ -16,7 +16,7 @@
                 class="mr-1 mb-2"
                 data-test-id="import-history-btn"
                 @click="importToHistory">
-                <FontAwesomeIcon icon="book" />
+                <FontAwesomeIcon :icon="faBook" />
                 to History
             </b-button>
             <span v-if="dataset.can_user_modify">
@@ -25,7 +25,7 @@
                     class="mr-1 mb-2"
                     data-test-id="modify-btn"
                     @click="isEditMode = true">
-                    <FontAwesomeIcon icon="pencil-alt" />
+                    <FontAwesomeIcon :icon="faPencilAlt" />
                     Modify
                 </b-button>
                 <b-button
@@ -33,7 +33,7 @@
                     class="mr-1 mb-2"
                     data-test-id="auto-detect-btn"
                     @click="detectDatatype">
-                    <FontAwesomeIcon icon="redo" />
+                    <FontAwesomeIcon :icon="faRedo" />
                     Auto-detect datatype
                 </b-button>
             </span>
@@ -46,7 +46,7 @@
                     params: { folder_id: folder_id, dataset_id: dataset_id },
                 }"
                 data-test-id="permissions-btn">
-                <FontAwesomeIcon icon="users" />
+                <FontAwesomeIcon :icon="faUsers" />
                 Permissions
             </b-button>
         </div>
@@ -114,11 +114,11 @@
         <!-- Edit Controls -->
         <div v-if="isEditMode">
             <b-button class="mr-1 mb-2" @click="isEditMode = false">
-                <FontAwesomeIcon :icon="['fas', 'times']" />
+                <FontAwesomeIcon :icon="faTimes" />
                 Cancel
             </b-button>
             <b-button class="mr-1 mb-2" @click="updateDataset">
-                <FontAwesomeIcon :icon="['far', 'save']" />
+                <FontAwesomeIcon :icon="faSave" />
                 Save
             </b-button>
         </div>
@@ -128,7 +128,6 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -145,8 +144,6 @@ import { Toast } from "composables/toast";
 import { mapState } from "pinia";
 
 import { useUserStore } from "@/stores/userStore";
-
-library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
 export default {
     components: {
@@ -169,6 +166,13 @@ export default {
     },
     data() {
         return {
+            faBook,
+            faDownload,
+            faPencilAlt,
+            faRedo,
+            faSave,
+            faTimes,
+            faUsers,
             dataset: undefined,
             modifiedDataset: {},
             currentRouteName: window.location.href,

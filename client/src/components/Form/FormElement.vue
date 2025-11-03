@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowsAltH, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { sanitize } from "dompurify";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
+import type { IconLike } from "@/components/icons/galaxyIcons";
 import { linkify } from "@/utils/utils";
 
 import { type ExtendedCollectionType, isDataUri } from "./Elements/FormData/types";
@@ -53,12 +53,12 @@ interface FormElementProps {
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
-    collapsedEnableIcon?: string;
-    collapsedDisableIcon?: string;
+    collapsedEnableIcon?: IconLike;
+    collapsedDisableIcon?: IconLike;
     connectedEnableText?: string;
     connectedDisableText?: string;
-    connectedEnableIcon?: string;
-    connectedDisableIcon?: string;
+    connectedEnableIcon?: IconLike;
+    connectedDisableIcon?: IconLike;
     workflowBuildingMode?: boolean;
     /** If true, this element is part of a workflow run form. */
     workflowRun?: boolean;
@@ -70,12 +70,12 @@ const props = withDefaults(defineProps<FormElementProps>(), {
     disabled: false,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
-    collapsedEnableIcon: "far fa-caret-square-down",
-    collapsedDisableIcon: "far fa-caret-square-up",
+    collapsedEnableIcon: () => faCaretSquareDown,
+    collapsedDisableIcon: () => faCaretSquareUp,
     connectedEnableText: "Remove connection from module.",
     connectedDisableText: "Add connection to module.",
-    connectedEnableIcon: "fa fa-times",
-    connectedDisableIcon: "fa fa-arrows-alt-h",
+    connectedEnableIcon: () => faTimes,
+    connectedDisableIcon: () => faArrowsAltH,
     helpFormat: "html",
     workflowBuildingMode: false,
     workflowRun: false,
@@ -85,8 +85,6 @@ const emit = defineEmits<{
     (e: "input", value: FormParameterValue, id: string): void;
     (e: "change", shouldRefresh: boolean): void;
 }>();
-
-library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSquareUp);
 
 /** TODO: remove attrs computed.
  useAttrs is *not* reactive, and does not play nice with type safety.

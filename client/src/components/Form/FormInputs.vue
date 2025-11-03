@@ -137,11 +137,11 @@ export default {
             default: null,
         },
         collapsedEnableIcon: {
-            type: String,
+            type: Object,
             default: null,
         },
         collapsedDisableIcon: {
-            type: String,
+            type: Object,
             default: null,
         },
         onChange: {

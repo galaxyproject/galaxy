@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faMarkdown } from "@fortawesome/free-brands-svg-icons";
 import {
     faChevronDown,
@@ -34,20 +33,6 @@ import { useToolLogic } from "./useToolLogic";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
-
-library.add(
-    faMarkdown,
-    faChevronDown,
-    faChevronUp,
-    faClone,
-    faEraser,
-    faMagnet,
-    faMousePointer,
-    faObjectGroup,
-    faPen,
-    faTimes,
-    faTrash,
-);
 
 const { toolbarStore, undoRedoStore, commentStore, workflowId } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
@@ -173,7 +158,7 @@ function autoLayout() {
                         title="Pointer Tool (Ctrl + 1)"
                         :pressed="currentTool === 'pointer'"
                         @click="onClickPointer">
-                        <FontAwesomeIcon icon="fa-mouse-pointer" size="lg" />
+                        <FontAwesomeIcon :icon="faMousePointer" size="lg" />
                     </GButton>
                     <GButton
                         tooltip
@@ -184,7 +169,7 @@ function autoLayout() {
                         data-tool="toggle_snap"
                         :title="snapButtonTitle"
                         :pressed.sync="snapActive">
-                        <FontAwesomeIcon icon="fa-magnet" size="lg" />
+                        <FontAwesomeIcon :icon="faMagnet" size="lg" />
                     </GButton>
                 </GButtonGroup>
 
@@ -211,7 +196,7 @@ function autoLayout() {
                         title="Markdown comment (Ctrl + 4)"
                         :pressed="currentTool === 'markdownComment'"
                         @click="() => onCommentToolClick('markdownComment')">
-                        <FontAwesomeIcon :icon="['fab', 'markdown']" size="lg" />
+                        <FontAwesomeIcon :icon="faMarkdown" size="lg" />
                     </GButton>
                     <GButton
                         tooltip
@@ -223,7 +208,7 @@ function autoLayout() {
                         title="Frame comment (Ctrl + 5)"
                         :pressed="currentTool === 'frameComment'"
                         @click="() => onCommentToolClick('frameComment')">
-                        <FontAwesomeIcon icon="fa-object-group" size="lg" />
+                        <FontAwesomeIcon :icon="faObjectGroup" size="lg" />
                     </GButton>
                 </GButtonGroup>
 
@@ -238,7 +223,7 @@ function autoLayout() {
                         :pressed="currentTool === 'freehandComment'"
                         class="button"
                         @click="() => onCommentToolClick('freehandComment')">
-                        <FontAwesomeIcon icon="fa-pen" size="lg" />
+                        <FontAwesomeIcon :icon="faPen" size="lg" />
                     </GButton>
                     <GButton
                         tooltip
@@ -250,7 +235,7 @@ function autoLayout() {
                         :pressed="currentTool === 'freehandEraser'"
                         class="button"
                         @click="() => onCommentToolClick('freehandEraser')">
-                        <FontAwesomeIcon icon="fa-eraser" size="lg" />
+                        <FontAwesomeIcon :icon="faEraser" size="lg" />
                     </GButton>
                 </GButtonGroup>
 
@@ -290,8 +275,8 @@ function autoLayout() {
                 class="toggle-visibility-button"
                 :title="toggleVisibilityButtonTitle"
                 @click="toolbarVisible = !toolbarVisible">
-                <FontAwesomeIcon v-if="toolbarVisible" icon="fa-chevron-up" />
-                <FontAwesomeIcon v-else icon="fa-chevron-down" />
+                <FontAwesomeIcon v-if="toolbarVisible" :icon="faChevronUp" />
+                <FontAwesomeIcon v-else :icon="faChevronDown" />
             </GButton>
         </div>
         <div v-if="toolbarVisible" class="options">
@@ -300,13 +285,13 @@ function autoLayout() {
 
                 <GButtonGroup>
                     <GButton class="button" title="clear selection" @click="deselectAll">
-                        Clear <FontAwesomeIcon icon="fa-times" />
+                        Clear <FontAwesomeIcon :icon="faTimes" />
                     </GButton>
                     <GButton class="button" title="duplicate selected" @click="duplicateSelection">
-                        Duplicate <FontAwesomeIcon icon="fa-clone" />
+                        Duplicate <FontAwesomeIcon :icon="faClone" />
                     </GButton>
                     <GButton class="button" title="delete selected" @click="deleteSelection">
-                        Delete <FontAwesomeIcon icon="fa-trash" />
+                        Delete <FontAwesomeIcon :icon="faTrash" />
                     </GButton>
                 </GButtonGroup>
             </div>
