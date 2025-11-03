@@ -32,8 +32,6 @@ class VisualizationsConfigParser:
             -- what information needs to be added to the query string
     """
 
-    #: what are the allowed 'entry_point_type' for entry_point elements
-    ALLOWED_ENTRY_POINT_TYPES = ["mako", "html", "script"]
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = ["galaxy_main", "_top", "_blank"]
 
@@ -41,7 +39,6 @@ class VisualizationsConfigParser:
         # what parsers should be used for sub-components
         self.data_source_parser = DataSourceParser()
         self.param_parser = ParamParser()
-        self.param_modifier_parser = ParamModifierParser()
 
     def parse_file(self, xml_filepath):
         """
@@ -114,27 +111,6 @@ class VisualizationsConfigParser:
         if params:
             returned["params"] = params
 
-        # param modifiers provide extra information for other params (e.g. hda_ldda='hda' -> dataset_id is an hda id)
-        # store these modifiers in a 2-level dictionary { target_param: { param_modifier_key: { param_mod_data }
-        # ugh - wish we didn't need these
-        param_modifiers: dict[str, Any] = {}
-        param_modifier_elements = param_confs.findall("param_modifier") if param_confs is not None else []
-        for param_modifier_conf in param_modifier_elements:
-            param_modifier = self.param_modifier_parser.parse(param_modifier_conf)
-            # param modifiers map accrd. to the params they modify (for faster lookup)
-            target_param = param_modifier_conf.get("modifies")
-            param_modifier_key = param_modifier_conf.text
-            if param_modifier and target_param in params:
-                # multiple params can modify a single, other param,
-                #   so store in a sub-dict, initializing if this is the first
-                if target_param not in param_modifiers:
-                    param_modifiers[target_param] = {}
-                param_modifiers[target_param][param_modifier_key] = param_modifier
-
-        # not required
-        if param_modifiers:
-            returned["param_modifiers"] = param_modifiers
-
         # entry_point: how will this plugin render/load? mako, script tag, or static html file?
         returned["entry_point"] = self.parse_entry_point(xml_tree)
 
@@ -176,27 +152,16 @@ class VisualizationsConfigParser:
 
     def parse_entry_point(self, xml_tree):
         """
-        Parse the config file for an appropriate entry point: a mako template, a script tag,
-        or an html file, returning as dictionary with: ``type``, ``file``, and ``attr`` (-ibutes) of
-        the element.
+        Parse the config file for script entry point attributes like ``src`` and ``css`.
         """
-        # (older) mako-only syntax: the template to use in rendering the visualization
-        template = xml_tree.find("template")
-        if template is not None and template.text:
-            log.info("template syntax is deprecated: use entry_point instead")
-            return {"type": "mako", "file": template.text, "attr": {}}
-
-        # need one of the two: (the deprecated) template or entry_point
+        # verify entry_point exists
         entry_point = xml_tree.find("entry_point")
         if entry_point is None:
             raise ParsingException("template or entry_point required")
 
-        # parse by returning a sub-object and simply copying any attributes unused here
+        # parse by returning a sub-object
         entry_point_attrib = dict(entry_point.attrib)
-        entry_point_type = entry_point_attrib.pop("entry_point_type", "mako")
-        if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
-            raise ParsingException(f"Unknown entry_point type: {entry_point_type}")
-        return {"type": entry_point_type, "file": entry_point.text, "attr": entry_point_attrib}
+        return {"attr": entry_point_attrib}
 
 
 # -------------------------------------------------------------------
@@ -407,7 +372,8 @@ class ParamParser:
         if not param_key:
             raise ParsingException("Param entry requires text")
 
-        returned["type"] = self.parse_param_type(xml_tree)
+        # determine parameter type
+        returned["type"] = xml_tree.get("type") or self.DEFAULT_PARAM_TYPE
 
         # is the parameter required in the template and,
         #   if not, what is the default value?
@@ -421,47 +387,4 @@ class ParamParser:
                 # convert default based on param_type here
             returned["default"] = default
 
-        # does the param have to be within a list of certain values
-        # NOTE: the interpretation of this list is deferred till parsing and based on param type
-        #   e.g. it could be 'val in constrain_to', or 'constrain_to is min, max for number', etc.
-        # TODO: currently unused
-        if constrain_to := xml_tree.get("constrain_to"):
-            returned["constrain_to"] = constrain_to.split(",")
-
-        # is the param a comma-separated-value list?
-        returned["csv"] = xml_tree.get("csv") == "true"
-
-        # remap keys in the params/query string to the var names used in the template
-        if var_name_in_template := xml_tree.get("var_name_in_template"):
-            returned["var_name_in_template"] = var_name_in_template
-
-        return returned
-
-    def parse_param_type(self, xml_tree):
-        """
-        Parse a param type from the given `xml_tree`.
-        """
-        # default to string as param_type
-        param_type = xml_tree.get("type") or self.DEFAULT_PARAM_TYPE
-        # TODO: set parsers and validaters, convert here
-        return param_type
-
-
-class ParamModifierParser(ParamParser):
-    """
-    Component class of VisualizationsConfigParser that parses param_modifier
-    elements within visualization elements.
-
-    param_modifiers are params from a dictionary (such as a query string)
-    that are not standalone but modify the parsing/conversion of a separate
-    (normal) param (e.g. 'hda_ldda' can equal 'hda' or 'ldda' and control
-    whether a visualizations 'dataset_id' param is for an HDA or LDDA).
-    """
-
-    def parse(self, element):
-        # modifies is required
-        modifies = element.get("modifies")
-        if not modifies:
-            raise ParsingException('param_modifier entry requires a target param key (attribute "modifies")')
-        returned = super().parse(element)
         return returned

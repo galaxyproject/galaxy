@@ -31,8 +31,8 @@ import ToolStd from "./Elements/ToolStd.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
+import VisualizationWrapper from "./VisualizationWrapper.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 import WorkflowInvocationInputs from "@/components/WorkflowInvocationState/WorkflowInvocationInputs.vue";
 import WorkflowInvocationOutputs from "@/components/WorkflowInvocationState/WorkflowInvocationOutputs.vue";
 
