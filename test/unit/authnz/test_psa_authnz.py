@@ -292,6 +292,7 @@ def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backe
         oidc_auth_pipeline=custom_auth_pipeline,
         oidc_auth_pipeline_extra=None,
         oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
     )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
@@ -315,6 +316,7 @@ def test_oidc_config_auth_pipeline_extra(mock_oidc_config_file, mock_oidc_backen
         oidc_auth_pipeline=None,
         oidc_auth_pipeline_extra=custom_auth_pipeline_extra,
         oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
     )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
@@ -340,6 +342,7 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
         oidc_auth_pipeline=custom_auth_pipeline,
         oidc_auth_pipeline_extra=custom_auth_pipeline_extra,
         oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
     )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
