@@ -8,19 +8,24 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 const DELAY = 300;
 
-const props = defineProps<{
-    config: object;
+interface Props {
     name: string;
+    config: object;
     title?: string;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "change", payload: Record<string, any>): void;
+    (e: "load"): void;
 }>();
 
-const emit = defineEmits(["change", "load"]);
-
-const emitChange = debounce((newValue: string) => {
+const emitChange = debounce((newValue: Record<string, any>) => {
     emit("change", newValue);
 }, DELAY);
 
-const errorMessage = ref("");
+const errorMessage = ref<string>("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 
 async function render() {
