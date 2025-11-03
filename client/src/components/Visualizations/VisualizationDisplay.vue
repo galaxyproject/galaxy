@@ -5,10 +5,8 @@ import { onBeforeRouteLeave } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 
-import VisualizationFrame from "./VisualizationFrame.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-const emit = defineEmits(["load"]);
+import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
 export interface Props {
     datasetId?: string;
@@ -17,6 +15,10 @@ export interface Props {
 }
 
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "load"): void;
+}>();
 
 const errorMessage = ref<string>("");
 const iframeRef = ref<HTMLIFrameElement | null>(null);
@@ -111,10 +113,11 @@ onMounted(async () => {
         <div v-else-if="isLoading" class="iframe-loading bg-light">
             <LoadingSpan message="Loading visualization" />
         </div>
+
         <VisualizationFrame
             v-if="visualizationConfig"
             :config="visualizationConfig"
-            :name="visualization"
+            :name="props.visualization"
             @load="handleLoad" />
     </div>
 </template>
