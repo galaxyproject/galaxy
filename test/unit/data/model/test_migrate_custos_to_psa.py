@@ -13,6 +13,7 @@ from datetime import (
     timedelta,
 )
 from pathlib import Path
+from typing import Any
 
 import pytest
 from sqlalchemy import (
@@ -33,17 +34,24 @@ from galaxy.model.custom_types import MutableJSONType
 
 import galaxy.model.migrations
 
-migrations_path = Path(galaxy.model.migrations.__file__).parent / "alembic" / "versions_gxy" / "724237cc4cf0_migrate_custos_to_psa_tokens.py"
+migrations_path = (
+    Path(galaxy.model.migrations.__file__).parent
+    / "alembic"
+    / "versions_gxy"
+    / "724237cc4cf0_migrate_custos_to_psa_tokens.py"
+)
 spec = importlib.util.spec_from_file_location("migration_module", migrations_path)
+assert spec is not None, f"Could not load spec from {migrations_path}"
+assert spec.loader is not None, f"Spec has no loader for {migrations_path}"
 migration_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(migration_module)
 migrate_custos_tokens_to_psa = migration_module.migrate_custos_tokens_to_psa
 
 # Create test tables
-Base = declarative_base()
+_Base: Any = declarative_base()
 
 
-class CustosAuthnzTokenTest(Base):
+class CustosAuthnzTokenTest(_Base):
     """Test model for custos_authnz_token table."""
 
     __tablename__ = "custos_authnz_token"
@@ -59,7 +67,7 @@ class CustosAuthnzTokenTest(Base):
     refresh_expiration_time = Column(DateTime)
 
 
-class UserAuthnzTokenTest(Base):
+class UserAuthnzTokenTest(_Base):
     """Test model for oidc_user_authnz_tokens table."""
 
     __tablename__ = "oidc_user_authnz_tokens"
@@ -77,7 +85,7 @@ class UserAuthnzTokenTest(Base):
 def db_session():
     """Create an in-memory SQLite database for testing."""
     engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
+    _Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
     yield session

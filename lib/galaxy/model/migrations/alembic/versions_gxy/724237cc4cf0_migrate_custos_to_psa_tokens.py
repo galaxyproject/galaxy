@@ -43,13 +43,12 @@ def get_custos_table(connection):
 
     This function can be reused by both migration scripts and tests.
     """
+    from sqlalchemy import MetaData
+
+    metadata = MetaData()
     return Table(
         CUSTOS_TABLE,
-        (
-            op.get_bind().dialect.get_columns(op.get_bind(), CUSTOS_TABLE)
-            if hasattr(op.get_bind().dialect, "get_columns")
-            else []
-        ),
+        metadata,
         Column("id", Integer, primary_key=True),
         Column("user_id", Integer),
         Column("external_user_id", String(255)),
@@ -70,13 +69,12 @@ def get_psa_table(connection):
 
     This function can be reused by both migration scripts and tests.
     """
+    from sqlalchemy import MetaData
+
+    metadata = MetaData()
     return Table(
         PSA_TABLE,
-        (
-            op.get_bind().dialect.get_columns(op.get_bind(), PSA_TABLE)
-            if hasattr(op.get_bind().dialect, "get_columns")
-            else []
-        ),
+        metadata,
         Column("id", Integer, primary_key=True),
         Column("user_id", Integer, ForeignKey("galaxy_user.id")),
         Column("uid", VARCHAR(255)),
