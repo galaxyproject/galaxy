@@ -134,16 +134,17 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { mapState } from "pinia";
 
 import { buildFields } from "@/components/Libraries/library-utils";
-import CopyToClipboard from "@/components/CopyToClipboard.vue";
-import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import { fieldTitles } from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
 import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
-import SingleItemSelector from "@/components/SingleItemSelector.vue";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+
+import CopyToClipboard from "@/components/CopyToClipboard.vue";
+import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 export default {
     components: {

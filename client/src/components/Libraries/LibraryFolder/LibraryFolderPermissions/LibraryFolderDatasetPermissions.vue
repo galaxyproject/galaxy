@@ -84,12 +84,13 @@ import VueObserveVisibility from "vue-observe-visibility";
 
 import { getGalaxyInstance } from "@/app";
 import { extractRoles } from "@/components/Libraries/library-utils";
-import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
-import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
-import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
 import { Services } from "@/components/Libraries/LibraryPermissions/services";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
+
+import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
+import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
+import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
 
 Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);

@@ -4,10 +4,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+
+import svc from "./model/service";
+
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-import svc from "./model/service";
 defineProps({
     item: {
         type: Object,

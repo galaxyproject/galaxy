@@ -4,11 +4,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
-import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+
+import svc from "./model/service";
 
 import APIKeyItem from "./APIKeyItem.vue";
-import svc from "./model/service";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const apiKey = ref(null);
 const loading = ref(false);
