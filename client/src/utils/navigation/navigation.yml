@@ -45,20 +45,16 @@ masthead:
     help: '#help'
     home: '#analysis'
     login: '#user'
-    logout:
-      selector: 'user sign out'
-      type: data-description
+    logout: '#user .dropdown-menu [data-description="user sign out"]'
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
-    preferences:
-      selector: 'user preferences'
-      type: data-description
+    preferences: '#user .dropdown-menu [data-description="user preferences"]'
     login_masthead_button: '[data-description="login masthead button"]'
     register_masthead_button: '[data-description="register masthead button"]'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
-    user: '#user.loggedin-only svg'
+    user: '#user.loggedin-only > a.nav-link'
     username:
       type: xpath
       selector: '//a[contains(text(), "Signed in as")]'
