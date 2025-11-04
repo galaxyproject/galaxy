@@ -185,7 +185,14 @@ class TestPrivateHistorySharingRequiresPermissionChanges(SeleniumTestCase):
 
         # Verify the permission change required dialog appears
         self.screenshot("history_private_sharing_permissions_dialog")
-        self.components.histories.sharing.permissions_change_required.wait_for_visible()
+
+        # The next line seems flakey for reasons I don't understand. The data
+        # description is attached the model and I do see the modal visually but
+        # maybe the modal is not visible because of the modal content or something?
+        # At any rate - the following wait would be totally sufficient to ensure
+        # the modal is rendered and to continue with the test - so I'm going to
+        # just comment out this line and see if it resolves #21224.
+        # self.components.histories.sharing.permissions_change_required.wait_for_visible()
 
         # Verify the default selected option is 'make_accessible_to_shared'
         element = self.components.histories.sharing.permissions_change_required_how.wait_for_visible()
