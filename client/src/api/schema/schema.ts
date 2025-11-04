@@ -20057,6 +20057,11 @@ export interface components {
         /** SearchJobsPayload */
         SearchJobsPayload: {
             /**
+             * History ID
+             * @description The encoded ID of the history associated with this job.
+             */
+            history_id?: string | null;
+            /**
              * Inputs
              * @description The inputs of the job.
              */

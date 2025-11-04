@@ -445,6 +445,7 @@ class JobSearch:
         param: ToolStateJobInstancePopulatedT,
         param_dump: ToolStateDumpedToJsonInternalT,
         job_state: Optional[JobStatesT] = (Job.states.OK,),
+        history_id: Union[int, None] = None,
         require_name_match: bool = True,
     ):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
@@ -489,6 +490,7 @@ class JobSearch:
             job_state=job_state,
             param_dump=param_dump,
             wildcard_param_dump=wildcard_param_dump,
+            history_id=history_id,
             require_name_match=require_name_match,
         )
 
@@ -501,6 +503,7 @@ class JobSearch:
         job_state: Optional[JobStatesT],
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
+        history_id: Union[int, None] = None,
         require_name_match: bool = True,
     ):
         search_timer = ExecutionTimer()
@@ -566,7 +569,7 @@ class JobSearch:
                     return None
 
         stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids)
-        stmt = self._filter_jobs(stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump)
+        stmt = self._filter_jobs(stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump, history_id)
         stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
         for job in self.sa_session.execute(stmt):
@@ -634,8 +637,15 @@ class JobSearch:
         return None
 
     def _filter_jobs(
-        self, stmt, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
-    ):
+        self,
+        stmt: "Select[tuple[int]]",
+        tool_id: str,
+        user_id: int,
+        tool_version: Optional[str],
+        job_state: Union[JobStatesT, None],
+        wildcard_param_dump,
+        history_id: Union[int, None],
+    ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
         job_ids_materialized_cte = stmt.cte("job_ids_cte")
         outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
@@ -656,6 +666,9 @@ class JobSearch:
         )
         if tool_version:
             stmt = stmt.where(Job.tool_version == str(tool_version))
+
+        if history_id is not None:
+            stmt = stmt.where(Job.history_id == history_id)
 
         if job_state is None:
             job_states: set[str] = {
