@@ -2,15 +2,14 @@
 Model Context Protocol (MCP) server integration for Galaxy.
 
 This module provides MCP tools that allow AI assistants to interact
-with Galaxy programmatically.
+with Galaxy programmatically. Tools are thin wrappers around the
+AgentOperationsManager which provides the actual functionality.
 """
 
 import logging
 from typing import Any
 
-from fastmcp import Context, FastMCP
-
-from .mcp_helpers import GalaxyAPIClient
+from fastmcp import FastMCP
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +37,10 @@ def get_mcp_app(gx_app):
 
     logger.info(f"MCP server configured to use Galaxy API at: {base_url}")
 
-    # Helper function to get API client from context
-    def get_api_client(api_key: str) -> GalaxyAPIClient:
+    # Helper function to create AgentOperationsManager
+    def get_operations_manager(api_key: str):
         """
-        Create Galaxy API client with provided API key.
+        Create AgentOperationsManager for external mode.
 
         Args:
             api_key: Galaxy API key for authentication
@@ -52,9 +51,12 @@ def get_mcp_app(gx_app):
                 "under User -> Preferences -> Manage API Key."
             )
 
-        return GalaxyAPIClient(base_url=base_url, api_key=api_key)
+        from galaxy.managers.agent_operations import AgentOperationsManager
+
+        return AgentOperationsManager(api_key=api_key, base_url=base_url)
 
     # Define MCP tools
+    # All tools are thin wrappers around AgentOperationsManager
 
     @mcp.tool()
     def connect(api_key: str) -> dict[str, Any]:
@@ -71,26 +73,8 @@ def get_mcp_app(gx_app):
             Server configuration, version info, and current user details
         """
         try:
-            client = get_api_client(api_key)
-
-            # Get server information
-            config = client.get_config()
-            version = client.get_version()
-            user = client.get_current_user()
-
-            return {
-                "connected": True,
-                "server": {
-                    "version": version.get("version_major"),
-                    "brand": config.get("brand", "Galaxy"),
-                    "url": base_url,
-                },
-                "user": {
-                    "id": user.get("id"),
-                    "email": user.get("email"),
-                    "username": user.get("username"),
-                },
-            }
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.connect()
         except Exception as e:
             logger.error(f"Failed to connect to Galaxy: {str(e)}")
             raise ValueError(f"Failed to connect to Galaxy: {str(e)}") from e
@@ -111,22 +95,8 @@ def get_mcp_app(gx_app):
             List of matching tools with their IDs, names, and descriptions
         """
         try:
-            client = get_api_client(api_key)
-            tools = client.search_tools(query=query)
-
-            # Format the response to be more useful
-            formatted_tools = []
-            for tool in tools:
-                formatted_tools.append(
-                    {
-                        "id": tool.get("id"),
-                        "name": tool.get("name"),
-                        "description": tool.get("description", ""),
-                        "version": tool.get("version"),
-                    }
-                )
-
-            return {"query": query, "tools": formatted_tools, "count": len(formatted_tools)}
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.search_tools(query)
         except Exception as e:
             logger.error(f"Failed to search tools: {str(e)}")
             raise ValueError(f"Failed to search tools: {str(e)}") from e
@@ -149,11 +119,8 @@ def get_mcp_app(gx_app):
             Tool details including parameters, inputs, outputs, and documentation
         """
         try:
-            client = get_api_client(api_key)
-            tool_info = client.get_tool_details(tool_id=tool_id, io_details=io_details)
-
-            # Return the full tool info - it's already well-structured
-            return tool_info
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_tool_details(tool_id, io_details)
         except Exception as e:
             logger.error(f"Failed to get tool details for {tool_id}: {str(e)}")
             raise ValueError(f"Failed to get tool details for '{tool_id}': {str(e)}") from e
@@ -175,28 +142,8 @@ def get_mcp_app(gx_app):
             List of histories with their IDs, names, and states
         """
         try:
-            client = get_api_client(api_key)
-            histories = client.list_histories(limit=limit, offset=offset)
-
-            # Format the response
-            formatted_histories = []
-            for hist in histories:
-                formatted_histories.append(
-                    {
-                        "id": hist.get("id"),
-                        "name": hist.get("name"),
-                        "state": hist.get("state"),
-                        "deleted": hist.get("deleted", False),
-                        "published": hist.get("published", False),
-                        "update_time": hist.get("update_time"),
-                    }
-                )
-
-            return {
-                "histories": formatted_histories,
-                "count": len(formatted_histories),
-                "pagination": {"limit": limit, "offset": offset},
-            }
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.list_histories(limit, offset)
         except Exception as e:
             logger.error(f"Failed to list histories: {str(e)}")
             raise ValueError(f"Failed to list histories: {str(e)}") from e
@@ -219,10 +166,8 @@ def get_mcp_app(gx_app):
             Job execution information including job IDs and output dataset IDs
         """
         try:
-            client = get_api_client(api_key)
-            result = client.run_tool(history_id=history_id, tool_id=tool_id, inputs=inputs)
-
-            return result
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.run_tool(history_id, tool_id, inputs)
         except Exception as e:
             logger.error(f"Failed to run tool {tool_id}: {str(e)}")
             raise ValueError(f"Failed to run tool '{tool_id}' in history '{history_id}': {str(e)}") from e
