@@ -30,9 +30,8 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
-from galaxy.model.custom_types import MutableJSONType
-
 import galaxy.model.migrations
+from galaxy.model.custom_types import MutableJSONType
 
 migrations_path = (
     Path(galaxy.model.migrations.__file__).parent
