@@ -198,6 +198,43 @@ def include_tus(app: FastAPI, gx_app):
     app.include_router(job_files_tus_router)
 
 
+def include_mcp(app: FastAPI, gx_app):
+    """
+    Include Model Context Protocol (MCP) server if enabled in configuration.
+
+    This mounts an MCP endpoint that allows AI assistants to interact with Galaxy.
+    """
+    if not gx_app.config.enable_mcp_server:
+        return
+
+    try:
+        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+
+        # Get MCP app instance
+        mcp_app = get_mcp_app(gx_app)
+
+        # Get mount path from config
+        mcp_path = gx_app.config.mcp_server_path
+
+        # Mount the MCP app
+        app.mount(mcp_path, mcp_app)
+
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.info(f"MCP server mounted at {mcp_path}")
+    except ImportError as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to import MCP module (fastmcp may not be installed): {e}")
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to initialize MCP server: {e}")
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
     app = get_fastapi_instance(root_path=root_path)
@@ -214,6 +251,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     include_tus(app, gx_app)
+    include_mcp(app, gx_app)  # Mount MCP server if enabled
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
