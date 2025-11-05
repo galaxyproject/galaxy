@@ -8,9 +8,9 @@ import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
+import STATES from "@/utils/datasetStates";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
-import STATES from "@/utils/datasetStates";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
@@ -81,10 +81,8 @@ const preferredVisualization = computed(
 );
 
 // Match dataset state
-const showError = computed(
-    () => dataset.value && STATES.ERROR_STATES.includes(dataset.value.state),
-);
-const showOk = computed(() => dataset.value && dataset.value.state === STATES.OK);
+const showError = computed(() => dataset.value && STATES.ERROR === dataset.value.state);
+const showOk = computed(() => dataset.value && STATES.OK_STATES.includes(dataset.value.state));
 
 // Watch for changes to the dataset to fetch datatype info
 watch(

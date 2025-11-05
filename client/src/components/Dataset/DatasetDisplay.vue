@@ -82,7 +82,7 @@ watch(
         <FontAwesomeIcon :icon="faSpinner" spin />
         <span>Waiting for dataset to become available. Please check the history panel for details.</span>
     </BAlert>
-    <BAlert v-else-if="dataset.state !== STATES.OK" show variant="danger">
+    <BAlert v-else-if="!STATES.OK_STATES.includes(dataset.state)" show variant="danger">
         <FontAwesomeIcon :icon="faExclamationTriangle" />
         <span>Dataset is unavailable. Please check the history panel for details.</span>
     </BAlert>

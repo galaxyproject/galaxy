@@ -16,6 +16,7 @@ import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import DATASET_STATES from "@/utils/datasetStates";
 import { clearDrag } from "@/utils/setDrag";
 
 import { getContentItemState, type State, STATES } from "./model/states";
@@ -174,7 +175,7 @@ const itemUrls = computed<ItemUrls>(() => {
     let display = `/datasets/${id}`;
     if (props.item.extension == "tool_markdown") {
         display = `/datasets/${id}/report`;
-    } else if (contentState.value !== STATES.ok) {
+    } else if (!DATASET_STATES.OK_STATES.includes(state.value)) {
         display = `/datasets/${id}/details`;
     }
     return {
