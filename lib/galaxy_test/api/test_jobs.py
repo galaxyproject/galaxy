@@ -1082,7 +1082,7 @@ steps:
     def test_delete_job_with_message(self, history_id):
         # Setup a job that will take a while to run so we can verify our cancelling
         input_dataset_id = self.__history_with_ok_dataset(history_id)
-        inputs = json.dumps({"input1": {"src": "hda", "id": input_dataset_id}, "sleep_time": 60 })
+        inputs = json.dumps({"input1": {"src": "hda", "id": input_dataset_id}, "sleep_time": 60})
         tool_run_payload = dict(
             tool_id="cat_data_and_sleep",
             inputs=inputs,
@@ -1092,8 +1092,8 @@ steps:
         tool_response = self._post("tools", data=tool_run_payload)
         assert_status_code_is_ok(tool_response)
         tool_response_json = tool_response.json()
-        assert "jobs" in tool_response.json()
-        assert "outputs" in tool_response.json()
+        assert "jobs" in tool_response_json
+        assert "outputs" in tool_response_json
         job_id = tool_response_json["jobs"][0]["id"]
         output_dataset_id = tool_response_json["outputs"][0]["id"]
         # delete the job with message
