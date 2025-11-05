@@ -4,10 +4,10 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
-from galaxy.tool_util.parser.cwl import CwlInputSource
 from galaxy.tool_util.parser.interface import (
     InputSource,
     PageSource,
@@ -59,6 +59,9 @@ from galaxy.tool_util_models.parameters import (
     ToolParameterT,
 )
 from galaxy.util import string_as_bool
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.parser.cwl import CwlInputSource
 
 
 class ParameterDefinitionError(Exception):
@@ -366,7 +369,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         )
 
 
-def _simple_cwl_type_to_model(simple_type: str, input_source: CwlInputSource):
+def _simple_cwl_type_to_model(simple_type: str, input_source: "CwlInputSource"):
     if simple_type == "int":
         return CwlIntegerParameterModel(
             name=input_source.parse_name(),
@@ -415,7 +418,7 @@ def _text_validators(input_source: InputSource) -> List[TextCompatiableValidator
     return text_validators
 
 
-def _from_input_source_cwl(input_source: CwlInputSource) -> ToolParameterT:
+def _from_input_source_cwl(input_source: "CwlInputSource") -> ToolParameterT:
     schema_salad_field = input_source.field
     if schema_salad_field is None:
         raise NotImplementedError("Cannot generate tool parameter model for this CWL artifact yet.")
@@ -470,8 +473,8 @@ def input_models_for_page(page_source: PageSource, profile: float) -> List[ToolP
 
 def from_input_source(input_source: InputSource, profile: float) -> ToolParameterT:
     tool_parameter: ToolParameterT
-    if isinstance(input_source, CwlInputSource):
-        tool_parameter = _from_input_source_cwl(input_source)
+    if input_source.input_class == "cwl":
+        tool_parameter = _from_input_source_cwl(cast("CwlInputSource", input_source))
     else:
         tool_parameter = _from_input_source_galaxy(input_source, profile)
     return tool_parameter

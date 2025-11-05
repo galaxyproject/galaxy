@@ -2,6 +2,7 @@ import json
 from collections.abc import MutableMapping
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -11,6 +12,10 @@ from typing import (
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.parameters.convert import _select_which_when
+from galaxy.tool_util.parameters.factory import input_models_for_tool_source
+from galaxy.tool_util.parameters.state import TestCaseJsonToolState
+from galaxy.tool_util.parameters.visitor import validate_explicit_conditional_test_value
 from galaxy.tool_util.parser.util import (
     DEFAULT_DECOMPRESS,
     DEFAULT_DELTA,
@@ -18,6 +23,12 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_SORT,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.parameters import (
+    DiscriminatorType,
+    ToolParameterBundle,
+    ToolParameterBundleModel,
+    ToolParameterT,
+)
 from galaxy.tool_util_models.tool_source import (
     HelpContent,
     XrefDict,
@@ -250,9 +261,73 @@ class YamlToolSource(ToolSource):
         rval: ToolSourceTests = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
-            tests.append(_parse_test(i, test_dict))
+            inputs = test_dict.get("inputs", {})
+            state = TestCaseJsonToolState(inputs)
+            parameters = self._parse_parameters()
+            state.validate(parameters, name=f"test case json {i}")
+
+            flat_inputs: Dict[str, Any] = {}
+            self._flatten_parameters(inputs, parameters, flat_inputs=flat_inputs)
+            test_dict["inputs"] = flat_inputs
+            parsed_test = _parse_test(i, test_dict)
+            tests.append(parsed_test)
 
         return rval
+
+    def _flatten_parameters(
+        self, test_dict: Dict[str, Any], input_models: ToolParameterBundle, flat_inputs, prefix=None
+    ):
+        for parameter in input_models.parameters:
+            self._flatten_parameter(test_dict, parameter, flat_inputs, prefix=prefix)
+
+    def _flatten_parameter(self, test_dict: Dict[str, Any], parameter: ToolParameterT, flat_inputs, prefix=None):
+        name = parameter.name
+        if prefix:
+            flat_name = f"{prefix}|{name}"
+        else:
+            flat_name = name
+
+        if parameter.parameter_type == "gx_conditional":
+            if name not in test_dict:
+                test_dict[name] = {}
+
+            raw_conditional_state = test_dict[name]
+            assert isinstance(raw_conditional_state, dict)
+            conditional_state = cast(Dict[str, Any], raw_conditional_state)
+
+            test_parameter = parameter.test_parameter
+            test_parameter_name = test_parameter.name
+
+            explicit_test_value: Optional[DiscriminatorType] = (
+                conditional_state[test_parameter_name] if test_parameter_name in conditional_state else None
+            )
+            test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
+            when = _select_which_when(parameter, test_value, conditional_state)
+            self._flatten_parameter(conditional_state, test_parameter, flat_inputs, prefix=flat_name)
+            self._flatten_parameters(conditional_state, when, flat_inputs, prefix=flat_name)
+        elif parameter.parameter_type == "gx_repeat":
+            if name not in test_dict:
+                test_dict[name] = []
+            repeat_instances = cast(List[Dict[str, Any]], test_dict[name])
+            if parameter.min:
+                while len(repeat_instances) < parameter.min:
+                    repeat_instances.append({})
+
+            for i, instance_state in enumerate(repeat_instances):
+                if prefix:
+                    instance_prefix = f"{prefix}|{name}_{i}"
+                else:
+                    instance_prefix = f"{name}_{i}"
+
+                self._flatten_parameters(instance_state, parameter, flat_inputs, prefix=instance_prefix)
+
+        else:
+            if name in test_dict:
+                flat_inputs[flat_name] = test_dict[name]
+
+    def _parse_parameters(self) -> ToolParameterBundleModel:
+        parameter_bundle = input_models_for_tool_source(self)
+        return parameter_bundle
 
     def parse_profile(self) -> str:
         return self.root_dict.get("profile") or "16.04"
@@ -328,6 +403,7 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
     test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
+    test_dict["value_state_representation"] = "test_case_json"
     return test_dict
 
 

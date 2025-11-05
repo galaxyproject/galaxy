@@ -22,6 +22,7 @@ from galaxy.tool_util_models.parameters import (
     create_request_internal_dereferenced_model,
     create_request_internal_model,
     create_request_model,
+    create_test_case_json_model,
     create_test_case_model,
     create_workflow_step_linked_model,
     create_workflow_step_model,
@@ -135,8 +136,15 @@ class TestCaseToolState(ToolState):
 
     @classmethod
     def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
-        # implement a test case model...
         return create_test_case_model(parameters, name)
+
+
+class TestCaseJsonToolState(ToolState):
+    state_representation: Literal["test_case_json"] = "test_case_json"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+        return create_test_case_json_model(parameters, name)
 
 
 class WorkflowStepToolState(ToolState):
