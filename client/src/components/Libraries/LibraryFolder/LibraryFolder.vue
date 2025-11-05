@@ -349,6 +349,8 @@ export default {
                 faTimes,
                 faUnlock,
                 faUsers,
+                // Utilities
+                purify,
                 // Data
                 currentPage: 1,
                 sortBy: "name",
