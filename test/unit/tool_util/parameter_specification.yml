@@ -65,6 +65,12 @@ gx_int:
   test_case_xml_invalid:
     - parameter: null
     - parameter: "5"
+  test_case_json_valid:
+    - parameter: 5
+    - {}
+  test_case_json_invalid:
+    - parameter: null
+    - parameter: "5"
   workflow_step_valid:
     - parameter: 5
     - {}
@@ -528,6 +534,13 @@ gx_select:
   test_case_xml_invalid:
   - parameter: {}
   - parameter: null
+  test_case_json_valid:
+  - parameter: 'ex2'
+  - parameter: '--ex1'
+  - {}
+  test_case_json_invalid:
+  - parameter: {}
+  - parameter: null
   workflow_step_valid:
   - parameter: "--ex1"
   - {}
@@ -645,6 +658,20 @@ gx_select_multiple:
   - parameter: 5
   - parameter: {__class__: 'ConnectedValue'}
   - parameter: [{__class__: 'ConnectedValue'}]
+  test_case_xml_valid:
+  # XML test cases use comma-separated strings for multiple values
+  - parameter: "--ex1,ex2"
+  - parameter: "--ex1"
+  - parameter: ["--ex1"]
+  test_case_xml_invalid:
+  - parameter: {}
+  test_case_json_valid:
+  # JSON test cases accept lists directly (no string splitting)
+  - parameter: ["--ex1"]
+  - parameter: ["--ex1", "ex2"]
+  test_case_json_invalid:
+  - parameter: "--ex1"
+  - parameter: {}
   workflow_step_linked_valid:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
@@ -1127,6 +1154,13 @@ gx_data:
    - parameter: foo.bed
    - parameter: null
    - {}
+  test_case_json_valid:
+   - parameter: {class: File, path: foo.bed}
+   - parameter: {class: File, location: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"}
+  test_case_json_invalid:
+   - parameter: foo.bed
+   - parameter: null
+   - {}
   workflow_step_valid:
    - {}
   workflow_step_invalid:
@@ -1401,6 +1435,17 @@ gx_data_collection:
        elements:
        - {identifier: "forward", path: "1_f.bed", class: File}
        - {identifier: "reverse", path: "1_r.bed", class: FileX}
+  test_case_json_valid:
+  - parameter: {class: Collection, collection_type: list, elements: []}
+  - parameter:
+     class: Collection
+     collection_type: list
+     elements:
+     - {identifier: "first", path: "1.bed", class: File}
+     - {identifier: "second", path: "2.bed", class: File}
+  test_case_json_invalid:
+  # collection type is required
+  - parameter: {class: Collection, elements: []}
   job_internal_valid:
     - parameter: {src: hdca, id: 5}
   job_internal_invalid:
@@ -1911,6 +1956,10 @@ gx_data_column:
   test_case_xml_invalid:
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "3" }
   - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "c2: With name" }
+  test_case_json_valid:
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: 3 }
+  test_case_json_invalid:
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "3" }
 
 gx_data_column_optional:
   request_valid:
@@ -1949,6 +1998,14 @@ gx_data_column_multiple:
   request_internal_invalid:
   - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
   - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
+  test_case_xml_valid:
+  # XML test cases use comma-separated strings for multiple column indices
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "1,2,3" }
+  test_case_json_valid:
+  # JSON test cases accept lists directly (no string splitting)
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: [1, 2, 3] }
+  test_case_json_invalid:
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "1,2,3" }
 
 gx_data_column_multiple_accept_default:
   request_valid:

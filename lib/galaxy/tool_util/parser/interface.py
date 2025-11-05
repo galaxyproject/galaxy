@@ -63,6 +63,7 @@ if TYPE_CHECKING:
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+INPUT_CLASS_T = Literal["galaxy", "cwl"]
 
 
 class AssertionDict(TypedDict):
@@ -132,6 +133,7 @@ class ToolSourceTest(TypedDict):
     expect_num_outputs: Optional[XmlInt]
     command: AssertionList
     command_version: AssertionList
+    value_state_representation: Literal["test_case_xml", "test_case_json"]
 
 
 class ToolSourceTests(TypedDict):
@@ -494,6 +496,10 @@ class DrillDownDynamicOptions(metaclass=ABCMeta):
 
 class InputSource(metaclass=ABCMeta):
     default_optional = False
+
+    @property
+    def input_class(self) -> INPUT_CLASS_T:
+        return "galaxy"
 
     def elem(self):
         # For things in transition that still depend on XML - provide a way

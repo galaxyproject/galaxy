@@ -138,7 +138,7 @@ def test_validate_framework_test_tools():
                 # tool conf (toolbox) files or sample datatypes
                 continue
             tool_path = os.path.join(test_directory, tool_name)
-            if not tool_path.endswith(".xml") or os.path.isdir(tool_path):
+            if not (tool_path.endswith(".xml") or tool_path.endswith(".yml")) or os.path.isdir(tool_path):
                 continue
 
             try:
@@ -254,6 +254,18 @@ def test_test_case_state_conversion():
     ]
     dict_verify_each(state.tool_state.input_state, expectations)
 
+    index = 0
+    tool_source = tool_source_for("simple_constructs_y")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[index])
+    expectations = [
+        (["booltest"], True),
+        (["simp_file", "path"], "simple_line.txt"),
+        (["more_files", 0, "nestinput", "path"], "simple_line_alternative.txt"),
+    ]
+    print(state.tool_state.input_state)
+    dict_verify_each(state.tool_state.input_state, expectations)
+
 
 def test_convert_to_requests():
     tools = [
@@ -313,6 +325,10 @@ def case_state_for(tool_source: ToolSource, test_case: ToolSourceTest) -> TestCa
 
 def tool_source_for(tool_name: str) -> ToolSource:
     test_tool_directory = functional_test_tool_directory()
-    tool_path = os.path.join(test_tool_directory, f"{tool_name}.xml")
+    if tool_name.endswith("_y"):
+        yaml_name = tool_name[:-2]
+        tool_path = os.path.join(test_tool_directory, f"{yaml_name}.yml")
+    else:
+        tool_path = os.path.join(test_tool_directory, f"{tool_name}.xml")
     tool_source = get_tool_source(tool_path)
     return tool_source

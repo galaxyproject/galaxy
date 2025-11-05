@@ -85,6 +85,7 @@ StateRepresentationT = Literal[
     "job_runtime",
     "job_internal",
     "test_case_xml",
+    "test_case_json",
     "workflow_step",
     "workflow_step_linked",
 ]
@@ -748,6 +749,8 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
             return dynamic_model_information_from_py_type(self, self.py_type_internal_json, requires_value=True)
         elif state_representation == "test_case_xml":
             return dynamic_model_information_from_py_type(self, self.py_type_test_case)
+        elif state_representation == "test_case_json":
+            return dynamic_model_information_from_py_type(self, self.py_type_test_case)
         elif state_representation == "workflow_step":
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
         elif state_representation == "workflow_step_linked":
@@ -916,6 +919,8 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
         elif state_representation == "test_case_xml":
+            return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
+        elif state_representation == "test_case_json":
             return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
         else:
             raise NotImplementedError(
@@ -1158,6 +1163,10 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             if self.multiple:
                 validators = {"from_string": field_validator(self.name, mode="before")(SelectParameterModel.split_str)}
             py_type = optional_if_needed(py_type, self.optional)
+        elif state_representation == "test_case_json":
+            # in JSON test case representation, lists are already validated as lists (no string splitting)
+            py_type = self.py_type_if_required(allow_connections=False)
+            py_type = optional_if_needed(py_type, self.optional)
         elif state_representation in ("job_internal", "job_runtime"):
             requires_value = True
             py_type = self.py_type
@@ -1280,6 +1289,9 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type_test_case_xml if state_representation == "test_case_xml" else self.py_type
+        if state_representation == "test_case_json":
+            # JSON test cases use the normal type (not string-based)
+            py_type = self.py_type
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
@@ -1374,6 +1386,12 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
             requires_value = self.request_requires_value
             return dynamic_model_information_from_py_type(
                 self, self.py_type, validators=validators, requires_value=requires_value
+            )
+        elif state_representation == "test_case_json":
+            # JSON test cases accept lists directly (no string splitting)
+            requires_value = self.request_requires_value
+            return dynamic_model_information_from_py_type(
+                self, self.py_type, validators={}, requires_value=requires_value
             )
         else:
             requires_value = self.request_requires_value
@@ -1883,6 +1901,7 @@ create_landing_request_internal_model = create_model_factory("landing_request_in
 create_job_internal_model = create_model_factory("job_internal")
 create_job_runtime_model = create_model_factory("job_runtime")
 create_test_case_model = create_model_factory("test_case_xml")
+create_test_case_json_model = create_model_factory("test_case_json")
 create_workflow_step_model = create_model_factory("workflow_step")
 create_workflow_step_linked_model = create_model_factory("workflow_step_linked")
 
