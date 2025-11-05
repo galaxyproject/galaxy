@@ -10,6 +10,7 @@ import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
+import STATES from "@/utils/datasetStates";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
@@ -81,9 +82,9 @@ const preferredVisualization = computed(
 
 // Match dataset state
 const showError = computed(
-    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
+    () => dataset.value && STATES.ERROR_STATES.includes(dataset.value.state),
 );
-const showOk = computed(() => dataset.value && dataset.value.state === "ok");
+const showOk = computed(() => dataset.value && dataset.value.state === STATES.OK);
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
