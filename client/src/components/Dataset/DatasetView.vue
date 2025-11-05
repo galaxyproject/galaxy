@@ -83,9 +83,7 @@ const preferredVisualization = computed(
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
 );
-const showOk = computed(
-    () => dataset.value && (dataset.value.state === "ok"),
-);
+const showOk = computed(() => dataset.value && dataset.value.state === "ok");
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
