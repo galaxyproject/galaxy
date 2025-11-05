@@ -300,6 +300,7 @@ xunit_report_file=""
 structured_data_report_file=""
 structured_data_html=0
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
+export GALAXY_TEST_LOAD_PYDANTIC_PARAMETERS=1
 if [ "$SKIP_CLIENT_BUILD" = "1" ]; then
     skip_client_build="--skip-client-build"
 else

@@ -1673,11 +1673,15 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.inputs: ToolInputsT = {}
         pages = tool_source.parse_input_pages()
         enctypes: set[str] = set()
-        try:
-            parameters = input_models_for_pages(pages, self.profile)
-            self.parameters = parameters
-        except Exception:
-            pass
+        if os.getenv("GALAXY_TEST_LOAD_PYDANTIC_PARAMETERS"):
+            # storing parameter for all tools increases steady state memory.
+            # we're not currently making use of these outside of testing.
+            # xref: https://github.com/galaxyproject/galaxy/issues/21247
+            try:
+                parameters = input_models_for_pages(pages, self.profile)
+                self.parameters = parameters
+            except Exception:
+                pass
         if pages.inputs_defined:
             if hasattr(pages, "input_elem"):
                 input_elem = pages.input_elem
