@@ -26,7 +26,6 @@ import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
 import DatasetList from "@/components/Dataset/DatasetList.vue";
 import DatasetView from "@/components/Dataset/DatasetView.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
-import DisplayApplication from "@/components/Visualizations/DisplayApplication.vue";
 import RecentDownloads from "@/components/Downloads/RecentDownloads.vue";
 import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateInstance.vue";
 import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
@@ -79,6 +78,7 @@ import NotificationsPreferences from "@/components/User/Notifications/Notificati
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import UserPreferences from "@/components/User/UserPreferences.vue";
 import UserPreferencesForm from "@/components/User/UserPreferencesForm.vue";
+import DisplayApplication from "@/components/Visualizations/DisplayApplication.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationCreate from "@/components/Visualizations/VisualizationCreate.vue";
 import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";

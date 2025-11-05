@@ -7,7 +7,7 @@ import { computed, onMounted, ref } from "vue";
 import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import LoadingSpan from "../LoadingSpan.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type CreateLinkFeedback = components["schemas"]["CreateLinkFeedback"];
 

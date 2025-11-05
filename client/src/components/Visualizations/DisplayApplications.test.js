@@ -1,8 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import MockProvider from "@/components/providers/MockProvider";
-
 import DisplayApplications from "./DisplayApplications.vue";
 
 const localVue = getLocalVue();
