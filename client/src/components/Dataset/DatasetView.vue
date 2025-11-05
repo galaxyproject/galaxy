@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
 const iframeLoading = ref(true);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
+const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
 // Track datatype loading state
@@ -51,18 +52,9 @@ const isLoading = computed(() => {
     return datasetStore.isLoadingDataset(props.datasetId) || isDatatypeLoading.value || datatypesMapperStore.loading;
 });
 
-const showError = computed(
-    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
-);
-const showOk = computed(
-    () => dataset.value && (dataset.value.state === "ok"),
-);
+// Match datatype variant
 const isAutoDownloadType = computed(
     () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
-);
-const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
-const preferredVisualization = computed(
-    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
 const isBinaryDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
@@ -70,7 +62,6 @@ const isBinaryDataset = computed(() => {
     }
     return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, ["galaxy.datatypes.binary"]);
 });
-
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
@@ -79,10 +70,22 @@ const isImageDataset = computed(() => {
         "galaxy.datatypes.images.Image",
     ]);
 });
-
 const isPdfDataset = computed(() => {
     return dataset.value?.file_ext === "pdf";
 });
+
+// Has a preferred visualization?
+const preferredVisualization = computed(
+    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
+);
+
+// Match dataset state
+const showError = computed(
+    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
+);
+const showOk = computed(
+    () => dataset.value && (dataset.value.state === "ok"),
+);
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
