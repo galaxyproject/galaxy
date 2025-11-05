@@ -1,6 +1,5 @@
 <script setup>
 import { DatasetProvider } from "components/providers";
-import { withPrefix } from "utils/redirect";
 import { defineProps } from "vue";
 
 const props = defineProps({
@@ -10,7 +9,7 @@ const props = defineProps({
     },
 });
 function getUrl(link) {
-    return withPrefix(`/display_applications/${props.datasetId}/${link.app_name}/${link.link_name}`);
+    return `/display_applications/${props.datasetId}/${link.app_name}/${link.link_name}`;
 }
 </script>
 <template>
