@@ -25,8 +25,7 @@ class CreateLinkFeedback(BaseModel):
     messages: Optional[list[tuple[str, str]]] = None
     refresh: Optional[bool] = None
     resource: Optional[str] = None
-    preparable_steps: Optional[dict[str, CreateLinkStep]] = None
-
+    preparable_steps: Optional[list[CreateLinkStep]] = None
 
 class CreateLinkIncoming(BaseModel):
     app_name: str
