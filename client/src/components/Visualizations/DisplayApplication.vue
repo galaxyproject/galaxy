@@ -53,7 +53,7 @@ async function requestLink() {
         },
     });
     if (error) {
-        errorMessage.value = `Failed to create link: ${errorMessageAsString(error.err_msg)}.`;
+        errorMessage.value = `Failed to create link: ${errorMessageAsString(error.err_msg)}`;
         console.error(error);
     } else {
         errorMessage.value = "";
