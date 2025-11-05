@@ -27,6 +27,7 @@ class CreateLinkFeedback(BaseModel):
     resource: Optional[str] = None
     preparable_steps: Optional[list[CreateLinkStep]] = None
 
+
 class CreateLinkIncoming(BaseModel):
     app_name: str
     dataset_id: str

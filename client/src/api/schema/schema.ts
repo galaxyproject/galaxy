@@ -8495,9 +8495,7 @@ export interface components {
             /** Messages */
             messages?: [string, string][] | null;
             /** Preparable Steps */
-            preparable_steps?: {
-                [key: string]: components["schemas"]["CreateLinkStep"];
-            } | null;
+            preparable_steps?: components["schemas"]["CreateLinkStep"][] | null;
             /** Refresh */
             refresh?: boolean | null;
             /** Resource */
