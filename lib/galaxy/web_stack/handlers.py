@@ -319,7 +319,7 @@ class ConfiguresHandlers:
     @property
     def handler_tags(self):
         """Get an iterable of all configured handler tags."""
-        return filter(lambda k: isinstance(self.handlers[k], list), self.handlers.keys())
+        return filter(lambda k: self.handlers[k] != [k], self.handlers.keys())
 
     @property
     def self_handler_tags(self):
