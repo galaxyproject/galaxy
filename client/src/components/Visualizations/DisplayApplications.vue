@@ -1,6 +1,12 @@
-<script setup>
-import { DatasetProvider } from "components/providers";
+<script setup lang="ts">
 import { defineProps } from "vue";
+
+import { DatasetProvider } from "@/components/providers";
+
+interface LinkType {
+    app_name: string;
+    link_name: string;
+}
 
 const props = defineProps({
     datasetId: {
@@ -8,7 +14,7 @@ const props = defineProps({
         required: true,
     },
 });
-function getUrl(link) {
+function getUrl(link: LinkType) {
     return `/display_applications/${props.datasetId}/${link.app_name}/${link.link_name}`;
 }
 </script>

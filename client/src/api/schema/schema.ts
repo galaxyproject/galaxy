@@ -8518,10 +8518,13 @@ export interface components {
         CreateLinkStep: {
             /** Name */
             name: string;
-            /** Ready */
-            ready: boolean;
+            /**
+             * Ready
+             * @default false
+             */
+            ready: boolean | null;
             /** State */
-            state: string;
+            state?: string | null;
         };
         /** CreateMetricsPayload */
         CreateMetricsPayload: {

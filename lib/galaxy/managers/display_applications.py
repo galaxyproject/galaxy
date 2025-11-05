@@ -17,8 +17,8 @@ log = logging.getLogger(__name__)
 
 class CreateLinkStep(BaseModel):
     name: str
-    state: str
-    ready: bool
+    state: Optional[str] = None
+    ready: Optional[bool] = False
 
 
 class CreateLinkFeedback(BaseModel):
