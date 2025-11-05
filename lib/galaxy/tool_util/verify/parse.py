@@ -13,6 +13,7 @@ from typing import (
 )
 
 from packaging.version import Version
+from typing_extensions import Literal
 
 from galaxy.tool_util.parameters import (
     input_models_for_tool_source,
@@ -133,6 +134,7 @@ def _description_from_tool_source(
         request = request_and_schema.request.input_state
         request_schema = request_and_schema.request_schema.dict()
 
+    value_state_representation = raw_test_dict.get("value_state_representation", "test_case_xml")
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
     try:
@@ -140,6 +142,7 @@ def _description_from_tool_source(
             tool_source,
             input_sources(tool_source),
             raw_test_dict["inputs"],
+            value_state_representation,
             required_files,
             required_data_tables,
             required_loc_files,
@@ -196,6 +199,7 @@ def _process_raw_inputs(
     tool_source: ToolSource,
     input_sources: List[InputSource],
     raw_inputs: ToolSourceTestInputs,
+    value_state_representation: Literal["test_case_xml", "test_case_json"],
     required_files: RequiredFilesT,
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
@@ -229,6 +233,7 @@ def _process_raw_inputs(
                         tool_source,
                         [case_input_source],
                         raw_inputs,
+                        value_state_representation,
                         required_files,
                         required_data_tables,
                         required_loc_files,
@@ -260,6 +265,7 @@ def _process_raw_inputs(
                     tool_source,
                     [section_input_source],
                     raw_inputs,
+                    value_state_representation,
                     required_files,
                     required_data_tables,
                     required_loc_files,
@@ -278,6 +284,7 @@ def _process_raw_inputs(
                         tool_source,
                         [r_value],
                         raw_inputs,
+                        value_state_representation,
                         required_files,
                         required_data_tables,
                         required_loc_files,
@@ -315,6 +322,8 @@ def _process_raw_inputs(
                     else:
                         if not isinstance(param_value, list):
                             param_value = [param_value]
+                        if value_state_representation == "test_case_json":
+                            param_value = [v["path"] for v in param_value]
                         for v in param_value:
                             _add_uploaded_dataset(context.for_state(), v, param_extra, input_source, required_files)
                     processed_value = param_value

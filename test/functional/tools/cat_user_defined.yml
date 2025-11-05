@@ -16,6 +16,8 @@ outputs:
     from_work_dir: output.txt
 tests:
   - inputs:
-      input1: simple_line.txt
+      input1:
+        class: File
+        path: simple_line.txt
     outputs:
       output1: simple_line.txt
