@@ -54,6 +54,9 @@ const isLoading = computed(() => {
 const showError = computed(
     () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
 );
+const showOk = computed(
+    () => dataset.value && (dataset.value.state === "ok"),
+);
 const isAutoDownloadType = computed(
     () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
 );
@@ -149,20 +152,21 @@ watch(
         </header>
         <BNav v-if="!displayOnly" pills class="my-2 p-2 bg-light border-bottom">
             <BNavItem
+                v-if="showOk"
                 title="View a preview of the dataset contents"
                 :active="tab === 'preview'"
                 :to="`/datasets/${datasetId}/preview`">
                 <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
             </BNavItem>
             <BNavItem
-                v-if="preferredVisualization"
+                v-if="showOk && preferredVisualization"
                 title="View raw dataset contents"
                 :active="tab === 'raw'"
                 :to="`/datasets/${datasetId}/raw`">
                 <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Raw
             </BNavItem>
             <BNavItem
-                v-if="!showError"
+                v-if="showOk"
                 title="Explore available visualizations for this dataset"
                 :active="tab === 'visualize'"
                 :to="`/datasets/${datasetId}/visualize`">
