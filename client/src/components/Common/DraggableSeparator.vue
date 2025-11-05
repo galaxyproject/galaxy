@@ -121,7 +121,7 @@ const style = computed(() => ({
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 $border-width: 6px;
 

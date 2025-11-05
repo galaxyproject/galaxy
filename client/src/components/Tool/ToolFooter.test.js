@@ -4,7 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import ToolFooter from "./ToolFooter";
+import ToolFooter from "./ToolFooter.vue";
 
 const localVue = getLocalVue(true);
 

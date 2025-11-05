@@ -44,12 +44,12 @@
 </template>
 
 <script>
-import ContainerDescription from "./ContainerDescription";
-import ContainerResolver from "./ContainerResolver";
-import Requirements from "./Requirements";
-import StatusDisplay from "./StatusDisplay";
-import ToolDisplay from "./ToolDisplay";
-import Tools from "./Tools";
+import ContainerDescription from "./ContainerDescription.vue";
+import ContainerResolver from "./ContainerResolver.vue";
+import Requirements from "./Requirements.vue";
+import StatusDisplay from "./StatusDisplay.vue";
+import ToolDisplay from "./ToolDisplay.vue";
+import Tools from "./Tools.vue";
 
 export default {
     components: { ContainerDescription, ContainerResolver, Requirements, StatusDisplay, ToolDisplay, Tools },

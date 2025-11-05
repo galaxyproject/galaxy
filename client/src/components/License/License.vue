@@ -18,10 +18,10 @@
 </template>
 
 <script>
-import ExternalLink from "components/ExternalLink";
-import LoadingSpan from "components/LoadingSpan";
-
 import { GalaxyApi } from "@/api";
+
+import ExternalLink from "@/components/ExternalLink.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {

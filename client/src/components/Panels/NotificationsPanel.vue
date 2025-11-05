@@ -75,7 +75,7 @@ async function onMarkAllAsRead() {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .notifications-box-list {
     overflow-y: scroll;

@@ -31,7 +31,7 @@ const emit = defineEmits(["stop-flagging"]);
 </template>
 
 <style scoped lang="scss">
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .form-input-changed-input-badge {
     display: flex;

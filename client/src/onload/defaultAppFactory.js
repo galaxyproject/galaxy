@@ -1,4 +1,4 @@
-import { setGalaxyInstance } from "app";
+import { setGalaxyInstance } from "@/app";
 
 /**
  * Most of the time, all we do is launch a GalaxyApp with the passed configs

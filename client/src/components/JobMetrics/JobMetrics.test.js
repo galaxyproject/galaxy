@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import JobMetrics from "./JobMetrics";
+import JobMetrics from "./JobMetrics.vue";
 
 const NO_METRICS_MESSAGE = "No metrics available for this job.";
 

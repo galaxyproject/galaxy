@@ -1,12 +1,14 @@
 <script setup>
 import { faEye, faEyeSlash, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
-import CopyToClipboard from "components/CopyToClipboard";
-import UtcDate from "components/UtcDate";
 import { ref } from "vue";
 
+import { getGalaxyInstance } from "@/app";
+
 import svc from "./model/service";
+
+import CopyToClipboard from "@/components/CopyToClipboard.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 defineProps({
     item: {

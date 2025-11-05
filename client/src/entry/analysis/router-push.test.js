@@ -1,4 +1,4 @@
-import { getGalaxyInstance } from "app/singleton";
+import { getGalaxyInstance } from "@/app/singleton";
 
 import { patchRouterPush } from "./router-push";
 

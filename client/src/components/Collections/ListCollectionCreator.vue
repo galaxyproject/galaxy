@@ -703,7 +703,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
 
 <style scoped lang="scss">
 @import "base.scss";
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .list-collection-creator {
     .footer {

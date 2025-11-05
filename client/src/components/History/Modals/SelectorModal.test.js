@@ -9,7 +9,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import SelectorModal from "./SelectorModal.vue";
-import GCard from "components/Common/GCard.vue";
+import GCard from "@/components/Common/GCard.vue";
 
 const localVue = getLocalVue();
 

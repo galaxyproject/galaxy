@@ -1,5 +1,6 @@
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 // ============================================================================
 // HELPER FUNCTIONS

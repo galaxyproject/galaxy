@@ -4,7 +4,7 @@ import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { textLarger, textSmaller } from "@/components/icons/galaxyIcons";
@@ -46,7 +46,7 @@ useResizable(
 );
 
 function escapeAndSanitize(text: string) {
-    return sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
+    return purify.sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
 }
 
 const editableElement = ref<HTMLSpanElement>();
@@ -267,7 +267,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "buttonGroup.scss";
 
 .text-workflow-comment {

@@ -93,18 +93,18 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import { Toast } from "composables/toast";
-import { sanitize } from "dompurify";
-import { userLogout } from "utils/logout";
+import purify from "dompurify";
 import Vue from "vue";
 
+import { getGalaxyInstance } from "@/app";
+import { Toast } from "@/composables/toast";
+import { userLogout } from "@/utils/logout";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import svc from "./service";
 
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
+import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
@@ -156,7 +156,7 @@ export default {
     },
     mounted() {
         const params = new URLSearchParams(window.location.search);
-        const notificationMessage = sanitize(params.get("notification"));
+        const notificationMessage = purify.sanitize(params.get("notification"));
         Toast.success(notificationMessage);
     },
     methods: {
@@ -230,12 +230,12 @@ export default {
 </script>
 
 <style lang="scss">
-@import "~bootstrap/scss/functions";
-@import "~bootstrap/scss/variables";
-@import "~bootstrap/scss/mixins";
-@import "~bootstrap/scss/utilities/spacing";
-@import "scss/theme/blue.scss";
-@import "scss/mixins";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities/spacing";
+@import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/mixins";
 
 .operations {
     margin-bottom: 0;

@@ -52,14 +52,14 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
-import JobOutputs from "../JobInformation/JobOutputs";
-import JobParametersArrayValue from "./JobParametersArrayValue";
+import { getAppRoot } from "@/onload/loadConfig";
 
 import Heading from "../Common/Heading.vue";
+import JobOutputs from "../JobInformation/JobOutputs.vue";
 import DataFetchRequestParameter from "./DataFetchRequestParameter.vue";
+import JobParametersArrayValue from "./JobParametersArrayValue.vue";
 
 Vue.use(BootstrapVue);
 

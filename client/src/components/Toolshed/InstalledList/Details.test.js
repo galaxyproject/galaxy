@@ -1,8 +1,10 @@
 import { createLocalVue, shallowMount } from "@vue/test-utils";
-import { getAppRoot } from "onload/loadConfig";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 import { Services } from "../services";
-import Details from "./Details";
+
+import Details from "./Details.vue";
 
 jest.mock("app");
 jest.mock("onload/loadConfig");

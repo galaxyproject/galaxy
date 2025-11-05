@@ -214,7 +214,7 @@ function toggleMenu(nextState = !opened.value) {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .inline-icon-button {
     font-size: 75%;

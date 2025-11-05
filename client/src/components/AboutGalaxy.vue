@@ -117,7 +117,7 @@ const versionUserDocumentationUrl = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .about-galaxy h1 {
     --fa-primary-color: #{$brand-primary};

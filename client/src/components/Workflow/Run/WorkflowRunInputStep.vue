@@ -15,9 +15,10 @@
 </template>
 
 <script>
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import WorkflowIcons from "components/Workflow/icons";
+import WorkflowIcons from "@/components/Workflow/icons";
+
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
 
 export default {
     components: {

@@ -1,6 +1,7 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export async function copyCollection(hdcaId, historyId) {
     const url = `${getAppRoot()}api/histories/${historyId}/contents/dataset_collections`;

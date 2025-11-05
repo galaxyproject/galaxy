@@ -340,7 +340,7 @@ const {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "@/components/Collections/wizard/workbook-dropzones.scss";
 
 // modeled a bit after upload-helper in the upload component...

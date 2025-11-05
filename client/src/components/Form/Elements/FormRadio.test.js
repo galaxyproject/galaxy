@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import MountTarget from "./FormRadio";
+import MountTarget from "./FormRadio.vue";
 
 const localVue = getLocalVue(true);
 

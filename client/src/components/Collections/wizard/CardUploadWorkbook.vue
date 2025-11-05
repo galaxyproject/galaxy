@@ -48,7 +48,7 @@ const emit = defineEmits(["workbookContents"]);
 </template>
 
 <style scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "@/components/Collections/wizard/workbook-dropzones.scss";
 
 .dropzone {

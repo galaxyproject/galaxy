@@ -126,7 +126,7 @@ async function onKeyDown(evt: KeyboardEvent) {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .list-container {
     .history-picker {
         min-width: 15rem;

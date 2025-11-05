@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import CollectionProgress from "./CollectionProgress";
 import { JobStateSummary } from "./JobStateSummary";
+
+import CollectionProgress from "./CollectionProgress.vue";
 
 const localVue = getLocalVue();
 

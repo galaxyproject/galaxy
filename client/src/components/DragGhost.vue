@@ -2,8 +2,9 @@
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { useEventStore } from "stores/eventStore";
 import { computed } from "vue";
+
+import { useEventStore } from "@/stores/eventStore";
 
 import TextShort from "@/components/Common/TextShort.vue";
 
@@ -28,7 +29,7 @@ const name = computed(() => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 #drag-ghost {
     background: $brand-light;

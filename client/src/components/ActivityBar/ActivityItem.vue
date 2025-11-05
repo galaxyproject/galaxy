@@ -112,7 +112,7 @@ const meta = computed(() => store.metaForId(props.id));
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-item {
     position: relative;

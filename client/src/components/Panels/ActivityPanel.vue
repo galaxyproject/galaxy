@@ -55,7 +55,7 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-panel {
     height: 100%;

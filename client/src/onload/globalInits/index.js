@@ -7,7 +7,7 @@
  * will more properly be run inside a lifecycle handler inside of a component.
  */
 
-import { monitorInit } from "utils/installMonitor";
+import { monitorInit } from "@/utils/installMonitor";
 
 import { prependInitialization } from "../initQueue";
 import { initSentry } from "./initSentry";

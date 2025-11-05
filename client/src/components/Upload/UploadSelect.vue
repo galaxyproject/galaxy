@@ -71,7 +71,7 @@ const currentValue = computed({
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .upload-settings-select.multiselect {
     display: inline-block;
     min-height: unset;

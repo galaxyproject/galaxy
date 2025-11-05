@@ -15,12 +15,13 @@
 </template>
 <script>
 import { BCard } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 import { Services } from "../services";
 
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {

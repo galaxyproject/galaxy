@@ -110,31 +110,31 @@
 </template>
 
 <script>
-import ButtonSpinner from "components/Common/ButtonSpinner";
-import Heading from "components/Common/Heading";
-import FormDisplay from "components/Form/FormDisplay";
-import FormElement from "components/Form/FormElement";
-import LoadingSpan from "components/LoadingSpan";
-import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState, storeToRefs } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
-import { useJobStore } from "stores/jobStore";
 
 import { canMutateHistory } from "@/api";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useJobStore } from "@/stores/jobStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
-import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
-import ToolCard from "./ToolCard";
 
+import ToolRecommendation from "../ToolRecommendation.vue";
+import ToolCard from "./ToolCard.vue";
 import ToolFormTags from "./ToolFormTags.vue";
+import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
+import Heading from "@/components/Common/Heading.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 export default {
     components: {

@@ -2,7 +2,7 @@ import { mapState } from "pinia";
 
 import { useConfigStore } from "@/stores/configurationStore";
 
-import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
+import ShowSelectedObjectStore from "./ShowSelectedObjectStore.vue";
 
 export default {
     components: {

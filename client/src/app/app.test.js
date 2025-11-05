@@ -1,6 +1,7 @@
 import galaxyOptions from "@tests/test-data/bootstrapped";
-import { getGalaxyInstance, setGalaxyInstance } from "app";
 import { suppressDebugConsole } from "tests/jest/helpers";
+
+import { getGalaxyInstance, setGalaxyInstance } from "@/app";
 
 export function setupTestGalaxy(galaxyOptions_ = null) {
     galaxyOptions_ = galaxyOptions_ || galaxyOptions;

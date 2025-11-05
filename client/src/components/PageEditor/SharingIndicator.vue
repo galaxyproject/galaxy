@@ -52,7 +52,7 @@ watch(props, () => {
 
 <style lang="scss">
 /* scoped doesn't seem to work to prefixing with a class name */
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .make-page-object-accessible-sharing-error-icon {
     color: $brand-danger;

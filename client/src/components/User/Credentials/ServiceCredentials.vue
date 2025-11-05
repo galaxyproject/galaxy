@@ -642,7 +642,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
 </template>
 
 <style scoped lang="scss">
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .service-title {
     font-size: 1rem;

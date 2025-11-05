@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import MountTarget from "./LoginIndex";
+import MountTarget from "./LoginIndex.vue";
 
 const localVue = getLocalVue();
 

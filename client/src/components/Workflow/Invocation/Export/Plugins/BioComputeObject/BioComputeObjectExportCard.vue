@@ -91,8 +91,9 @@
 
 <script>
 import axios from "axios";
-import { getRootFromIndexLink } from "onload";
-import { getAppRoot } from "onload/loadConfig";
+
+import { getRootFromIndexLink } from "@/onload";
+import { getAppRoot } from "@/onload/loadConfig";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 export default {

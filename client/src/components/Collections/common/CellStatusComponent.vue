@@ -64,7 +64,7 @@ export default defineComponent({
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .status-ok {
     color: $brand-success;

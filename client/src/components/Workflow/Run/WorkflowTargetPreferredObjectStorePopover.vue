@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import showTargetPopoverMixin from "components/ObjectStore/showTargetPopoverMixin";
+import showTargetPopoverMixin from "@/components/ObjectStore/showTargetPopoverMixin";
 
 export default {
     mixins: [showTargetPopoverMixin],

@@ -1,8 +1,9 @@
-import { Toast } from "composables/toast";
 import $ from "jquery";
 import _ from "underscore";
-import _l from "utils/localization";
-import Modal from "utils/modal";
+
+import { Toast } from "@/composables/toast";
+import _l from "@/utils/localization";
+import Modal from "@/utils/modal";
 
 import mod_library_model from "./library-model";
 

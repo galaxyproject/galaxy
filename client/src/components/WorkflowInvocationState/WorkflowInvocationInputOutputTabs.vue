@@ -10,7 +10,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import Heading from "../Common/Heading.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowInvocationInputs from "./WorkflowInvocationInputs.vue";
-import GenericHistoryItem from "components/History/Content/GenericItem.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 const OUTPUTS_NOT_AVAILABLE_YET_MSG =
     "Either no outputs have been produced yet, or no steps were checked to " +
@@ -75,7 +75,7 @@ const parameters = computed(() => Object.values(props.invocation.input_step_para
             <div v-for="([key, output], index) in outputs" :key="index" data-description="terminal invocation output">
                 <Heading size="text" bold separator>{{ key }}</Heading>
                 <GenericHistoryItem
-                    :item-id="output.id"
+                    :item-id="output.id ?? ''"
                     :item-src="output.src"
                     data-description="terminal invocation output item" />
             </div>

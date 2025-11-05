@@ -182,7 +182,7 @@ function dismiss() {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 $margin: 1rem;
 

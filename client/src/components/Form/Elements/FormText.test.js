@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FormText from "./FormText";
+import FormText from "./FormText.vue";
 
 const localVue = getLocalVue();
 

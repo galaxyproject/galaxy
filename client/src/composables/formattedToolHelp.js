@@ -1,5 +1,6 @@
-import { getAppRoot } from "onload/loadConfig";
 import { computed, unref } from "vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
 
 /**
  * Increase the heading levels of all child nodes of a node

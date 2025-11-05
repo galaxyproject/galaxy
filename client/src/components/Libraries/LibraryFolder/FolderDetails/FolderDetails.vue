@@ -64,10 +64,12 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { buildFields } from "components/Libraries/library-utils";
-import UtcDate from "components/UtcDate";
-import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
+
+import { buildFields } from "@/components/Libraries/library-utils";
+import { getAppRoot } from "@/onload/loadConfig";
+import _l from "@/utils/localization";
+
+import UtcDate from "@/components/UtcDate.vue";
 
 export default {
     components: {

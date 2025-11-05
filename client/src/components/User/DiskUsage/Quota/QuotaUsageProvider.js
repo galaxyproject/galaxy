@@ -1,6 +1,5 @@
-import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
-
 import { fetchCurrentUserQuotaSourceUsage } from "@/api/users";
+import { SingleQueryProvider } from "@/components/providers/SingleQueryProvider";
 
 /**
  * Fetches the disk usage corresponding to one quota source label -

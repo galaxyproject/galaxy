@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FormDefault from "./FormDefault";
+import FormDefault from "./FormDefault.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

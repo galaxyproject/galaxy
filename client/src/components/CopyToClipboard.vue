@@ -5,7 +5,8 @@
 <script>
 import { faCopy } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { copy } from "utils/clipboard";
+
+import { copy } from "@/utils/clipboard";
 
 export default {
     components: {

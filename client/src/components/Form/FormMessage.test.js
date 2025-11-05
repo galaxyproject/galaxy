@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import FormMessage from "./FormMessage";
+import FormMessage from "./FormMessage.vue";
 
 jest.mock("app");
 

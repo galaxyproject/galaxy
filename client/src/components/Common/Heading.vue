@@ -95,7 +95,7 @@ const element = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 // prettier-ignore
 h1, h2, h3, h4, h5, h6 {

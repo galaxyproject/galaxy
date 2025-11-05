@@ -128,7 +128,9 @@
                             <span
                                 class="shrinked-description"
                                 :title="getMessage(row.item)"
-                                v-html="linkify(sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
+                                v-html="
+                                    linkify(purify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))
+                                ">
                             </span>
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
@@ -137,7 +139,7 @@
                             </a>
                         </div>
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>
+                        <div v-else v-html="linkify(purify.sanitize(getMessage(row.item)))"></div>
                     </div>
                 </div>
             </template>
@@ -276,22 +278,23 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
-import UtcDate from "components/UtcDate";
-import { usePersistentRef } from "composables/persistentRef";
-import { Toast } from "composables/toast";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import linkifyHtml from "linkify-html";
-import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
-import Utils from "utils/utils";
 import Vue from "vue";
 
+import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
+import { usePersistentRef } from "@/composables/persistentRef";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
+import Utils from "@/utils/utils";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";
-import FolderTopBar from "./TopToolbar/FolderTopBar";
+
+import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 Vue.use(BootstrapVue);
 
@@ -346,6 +349,8 @@ export default {
                 faTimes,
                 faUnlock,
                 faUsers,
+                // Utilities
+                purify,
                 // Data
                 currentPage: 1,
                 sortBy: "name",
@@ -391,7 +396,7 @@ export default {
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        sanitize,
+        purify,
         getFolder(folder_id, page) {
             this.currentFolderId = folder_id;
             this.currentPage = page;

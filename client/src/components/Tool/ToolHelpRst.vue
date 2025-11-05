@@ -1,5 +1,5 @@
 <script setup>
-import { useFormattedToolHelp } from "composables/formattedToolHelp";
+import { useFormattedToolHelp } from "@/composables/formattedToolHelp";
 
 const props = defineProps({
     content: {
@@ -16,7 +16,7 @@ const { formattedContent } = useFormattedToolHelp(props.content);
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .form-help {
     &:deep(h3) {
