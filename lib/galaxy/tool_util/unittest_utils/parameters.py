@@ -39,7 +39,11 @@ def parameter_tool_source(basename: str) -> ToolSource:
     path_prefix = os.path.join(galaxy_directory(), "test/functional/tools/parameters", basename)
     if os.path.exists(f"{path_prefix}.xml"):
         path = f"{path_prefix}.xml"
-    else:
+    elif os.path.exists(f"{path_prefix}.yml"):
+        path = f"{path_prefix}.yml"
+    elif os.path.exists(f"{path_prefix}.cwl"):
         path = f"{path_prefix}.cwl"
+    else:
+        raise FileNotFoundError(f"Could not find tool file for base name: {basename}")
     tool_source = get_tool_source(path, macro_paths=[])
     return tool_source
