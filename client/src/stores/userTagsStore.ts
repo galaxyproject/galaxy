@@ -65,6 +65,10 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
         return tags.value.map((o) => o.tag).reverse();
     });
 
+    const userTagsDetail = computed(() => {
+        return tags.value.sort((a, b) => b.lastUsed - a.lastUsed);
+    });
+
     async function onNewTagSeen(tag: string) {
         await until(dbLoaded).toBe(true);
 
@@ -125,5 +129,5 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
         }
     }
 
-    return { userTags, onNewTagSeen, onTagUsed, onMultipleNewTagsSeen };
+    return { userTags, userTagsDetail, onNewTagSeen, onTagUsed, onMultipleNewTagsSeen };
 });
