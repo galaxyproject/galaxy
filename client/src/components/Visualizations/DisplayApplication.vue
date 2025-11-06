@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExternalLinkAlt, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
@@ -85,19 +85,13 @@ onMounted(() => {
                 </BAlert>
             </div>
             <div v-if="applicationData.preparable_steps">
-                <h2>Preparation Status</h2>
-                <table class="colored">
-                    <tr>
-                        <th>Step Name</th>
-                        <th>Ready</th>
-                        <th>Dataset Status</th>
-                    </tr>
-                    <tr v-for="(step, stepIndex) in applicationData.preparable_steps" :key="stepIndex">
-                        <td>{{ step.name }}</td>
-                        <td>{{ step.ready }}</td>
-                        <td>{{ step.state }}</td>
-                    </tr>
-                </table>
+                <h4 class="my-2">Display Application Initialization</h4>
+                <div v-for="(step, stepIndex) in applicationData.preparable_steps" class="my-2" :key="stepIndex">
+                    <FontAwesomeIcon v-if="step.ready" class="text-success" :icon="faCheck" />
+                    <FontAwesomeIcon v-else class="text-primary" spin :icon="faSpinner" />
+                    <span class="ml-1">{{ step.name }}</span>
+                    <span>('{{step.state}}')</span>
+                </div>
             </div>
             <BAlert v-if="applicationData.resource" variant="info" show>
                 <span>
