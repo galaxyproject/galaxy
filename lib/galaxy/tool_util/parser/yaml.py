@@ -1,5 +1,6 @@
 import json
 from collections.abc import MutableMapping
+from copy import deepcopy
 from typing import (
     Any,
     cast,
@@ -189,7 +190,7 @@ class YamlToolSource(ToolSource):
             return None
 
     def parse_outputs(self, app: Optional[ToolOutputActionApp]):
-        outputs = self.root_dict.get("outputs", [])
+        outputs = deepcopy(self.root_dict.get("outputs", []))
         if isinstance(outputs, MutableMapping):
             for name, output_dict in outputs.items():
                 output_dict["name"] = name
@@ -260,7 +261,8 @@ class YamlToolSource(ToolSource):
         tests: List[ToolSourceTest] = []
         rval: ToolSourceTests = dict(tests=tests)
 
-        for i, test_dict in enumerate(self.root_dict.get("tests", [])):
+        raw_tests = deepcopy(self.root_dict.get("tests", []))
+        for i, test_dict in enumerate(raw_tests):
             inputs = test_dict.get("inputs", {})
             state = TestCaseJsonToolState(inputs)
             parameters = self._parse_parameters()
