@@ -28,7 +28,7 @@ const props = defineProps({
     },
 });
 
-const applicationData = ref<CreateLinkFeedback>({});
+const applicationData = ref<CreateLinkFeedback>({refresh: false});
 const errorMessage = ref("");
 const isLoading = ref(true);
 
