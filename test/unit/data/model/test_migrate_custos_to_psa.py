@@ -5,14 +5,10 @@ This test suite verifies the migration script that moves authentication tokens
 from custos_authnz_token to oidc_user_authnz_tokens.
 """
 
-# Import the core migration function
-# We need to use importlib since the filename has a revision prefix
-import importlib.util
 from datetime import (
     datetime,
     timedelta,
 )
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -30,21 +26,8 @@ from sqlalchemy.orm import (
     sessionmaker,
 )
 
-import galaxy.model.migrations
 from galaxy.model.custom_types import MutableJSONType
-
-migrations_path = (
-    Path(galaxy.model.migrations.__file__).parent
-    / "alembic"
-    / "versions_gxy"
-    / "724237cc4cf0_migrate_custos_to_psa_tokens.py"
-)
-spec = importlib.util.spec_from_file_location("migration_module", migrations_path)
-assert spec is not None, f"Could not load spec from {migrations_path}"
-assert spec.loader is not None, f"Spec has no loader for {migrations_path}"
-migration_module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(migration_module)
-migrate_custos_tokens_to_psa = migration_module.migrate_custos_tokens_to_psa
+from galaxy.model.migrations.data_fixes.custos_to_psa import migrate_custos_tokens_to_psa
 
 # Create test tables
 _Base: Any = declarative_base()
