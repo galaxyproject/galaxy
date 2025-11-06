@@ -23,7 +23,7 @@ class CreateLinkStep(BaseModel):
 
 class CreateLinkFeedback(BaseModel):
     messages: Optional[list[tuple[str, str]]] = None
-    refresh: Optional[bool] = None
+    refresh: Optional[bool] = False
     resource: Optional[str] = None
     preparable_steps: Optional[list[CreateLinkStep]] = None
 

@@ -1,4 +1,5 @@
 import random
+import time
 
 from galaxy.util import UNKNOWN
 from galaxy_test.base.decorators import requires_admin
@@ -63,13 +64,22 @@ class TestDisplayApplicationsApi(ApiTestCase):
             details = self.dataset_populator.new_dataset(history_id, content=contents, file_type="interval")
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             payload = {"app_name": "igv_interval_as_bed", "link_name": "local_default", "dataset_id": details["id"]}
-            response = self._post("display_applications/create_link", data=payload, admin=False, json=True)
+            response = self._post("display_applications/create_link", data=payload, json=True)
             self._assert_status_code_is(response, 200)
             response_json = response.json()
-            print(response.text)
-            assert response_json["refresh"] == True
+            assert response_json["refresh"]
             assert response_json["preparable_steps"][0]["name"] == "bed_file"
             assert "required additional datasets" in response_json["messages"][0][0]
+            for _ in range(10):
+                response = self._post("display_applications/create_link", data=payload, json=True)
+                self._assert_status_code_is(response, 200)
+                response_json = response.json()
+                if response_json["refresh"] is False:
+                    break
+                time.sleep(2)
+            assert response_json["refresh"] is False
+            assert "http://localhost:60151/load?file=http" in response_json["resource"]
+            assert "name=Test_Dataset" in response_json["resource"]
 
     def _get_half_random_items(self, collection: list[str]) -> list[str]:
         half_num_items = int(len(collection) / 2)
