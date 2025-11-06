@@ -391,7 +391,6 @@
     <datatype extension="wiff2.tar" type="galaxy.datatypes.binary:Wiff2Tar" display_in_upload="true"/>
     <datatype extension="mascotxml" type="galaxy.datatypes.proteomics:MascotXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="mztab" type="galaxy.datatypes.proteomics:MzTab" display_in_upload="true"/>
-    <datatype extension="mztab2" type="galaxy.datatypes.proteomics:MzTab2" display_in_upload="true"/>
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true">
         <infer_from suffix="mzml" />
     </datatype>
@@ -460,6 +459,9 @@
     </datatype>
     <datatype extension="colab.tar" auto_compressed_types="gz" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
+    <!-- Metabolomics Datatypes -->
+    <datatype extension="metabolomics.mztab" type="galaxy.datatypes.metabolomics:MzTabM" display_in_upload="true"/>
+    <!-- End Metabolomics Datatypes -->
     <!-- FlowCytometry -->
     <datatype extension="fcs" type="galaxy.datatypes.flow:FCS" mimetype="application/octet-stream" display_in_upload="true" description="A FCS binary sequence file with a '.fcs' file extension." />
     <datatype extension="flowtext" type="galaxy.datatypes.tabular:Tabular" subclass="true" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow text file with a '.flowtext' file extension." />
@@ -1329,7 +1331,6 @@
     <sniffer type="galaxy.datatypes.proteomics:MzML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzTab"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzTab2"/>
     <sniffer type="galaxy.datatypes.proteomics:ParamXml"/>
     <sniffer type="galaxy.datatypes.proteomics:MzXML"/>
     <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
@@ -1349,6 +1350,7 @@
     <sniffer type="galaxy.datatypes.proteomics:QCML"/>
     <sniffer type="galaxy.datatypes.proteomics:Wiff"/>
     <sniffer type="galaxy.datatypes.proteomics:PEFF"/>
+    <sniffer type="galaxy.datatypes.metabolomics:MzTabM"/>
     <sniffer type="galaxy.datatypes.molecules:CML"/>
     <sniffer type="galaxy.datatypes.triples:Sbol"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>

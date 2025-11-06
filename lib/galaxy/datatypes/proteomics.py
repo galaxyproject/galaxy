@@ -118,13 +118,13 @@ class Wiff2(Binary):
 @build_sniff_from_prefix
 class MzTab(Text):
     """
-    exchange format for proteomics and metabolomics results
+    exchange format for proteomics results
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.mztab')
     >>> MzTab().sniff(fname)
     True
-    >>> fname = get_test_fname('test.mztab2')
+    >>> fname = get_test_fname('test.metabolomics.mztab')
     >>> MzTab().sniff(fname)
     False
     """
@@ -173,37 +173,6 @@ class MzTab(Text):
             elif columns[0] not in self._sections:
                 return False
         return has_version and found_man_mtd == set(self._man_mtd.keys())
-
-
-class MzTab2(MzTab):
-    """
-    exchange format for proteomics and metabolomics results
-
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.mztab2')
-    >>> MzTab2().sniff(fname)
-    True
-    >>> fname = get_test_fname('test.mztab')
-    >>> MzTab2().sniff(fname)
-    False
-    """
-
-    file_ext = "mztab2"
-    _sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
-    _version_re = r"(2)(\.[0-9])?(\.[0-9])?-M$"
-    _man_mtd = {"mzTab-ID": None}
-
-    def __init__(self, **kwd):
-        super().__init__(**kwd)
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        """Set the peek and blurb text"""
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.get_file_name())
-            dataset.blurb = "mzTab2 Format"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
 
 
 @build_sniff_from_prefix
