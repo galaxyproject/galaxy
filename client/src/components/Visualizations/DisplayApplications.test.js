@@ -33,6 +33,33 @@ const raw = {
             ],
         },
     ],
+    display_types: [
+        {
+            label: "type-1",
+            links: [
+                {
+                    href: "http://example.com/type-1-a",
+                    target: "_blank",
+                    text: "type-text-1a",
+                },
+                {
+                    href: "http://example.com/type-1-b",
+                    target: "_blank",
+                    text: "type-text-1b",
+                },
+            ],
+        },
+        {
+            label: "type-2",
+            links: [
+                {
+                    href: "http://example.com/type-2-a",
+                    target: "_blank",
+                    text: "type-text-2a",
+                },
+            ],
+        },
+    ],
 };
 
 jest.mock("../providers/DatasetProvider", () => ({
@@ -68,14 +95,30 @@ function getUrl(i) {
 describe("DisplayApplications", () => {
     it("check props", async () => {
         const wrapper = mountTarget();
+
         const labels = wrapper.findAll(".font-weight-bold");
-        for (let i = 0; i < 2; i++) {
-            expect(labels.at(i).text()).toBe(`app-${i + 1}`);
-        }
+        expect(labels.at(0).text()).toBe("app-1");
+        expect(labels.at(1).text()).toBe("app-2");
+        expect(labels.at(2).text()).toBe("type-1");
+        expect(labels.at(3).text()).toBe("type-2");
+
         const links = wrapper.findAll("a");
-        for (let i = 0; i < 3; i++) {
-            expect(links.at(i).attributes("href")).toBe(getUrl(i));
-            expect(links.at(i).text()).toBe(`link-text-${i + 1}`);
-        }
+        expect(links.at(0).attributes("href")).toBe(getUrl(0));
+        expect(links.at(0).text()).toBe("link-text-1");
+
+        expect(links.at(1).attributes("href")).toBe(getUrl(1));
+        expect(links.at(1).text()).toBe("link-text-2");
+
+        expect(links.at(2).attributes("href")).toBe(getUrl(2));
+        expect(links.at(2).text()).toBe("link-text-3");
+
+        expect(links.at(3).attributes("href")).toBe("http://example.com/type-1-a");
+        expect(links.at(3).text()).toBe("type-text-1a");
+
+        expect(links.at(4).attributes("href")).toBe("http://example.com/type-1-b");
+        expect(links.at(4).text()).toBe("type-text-1b");
+
+        expect(links.at(5).attributes("href")).toBe("http://example.com/type-2-a");
+        expect(links.at(5).text()).toBe("type-text-2a");
     });
 });

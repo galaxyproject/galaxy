@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BAlert, BLink } from "bootstrap-vue";
-import { defineProps } from "vue";
 
 import { DatasetProvider } from "@/components/providers";
 
