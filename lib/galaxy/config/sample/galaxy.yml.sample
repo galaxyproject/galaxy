@@ -3110,15 +3110,15 @@ galaxy:
   # enabled, Galaxy exposes an MCP endpoint that provides tools for
   # searching, executing tools, managing histories, and more.
   # The MCP server requires API key authentication and uses the existing
-  # Galaxy REST API internally. This feature is experimental and disabled
-  # by default.
+  # Galaxy REST API internally. This feature is experimental and
+  # disabled by default.
   #enable_mcp_server: false
 
   # URL path where the MCP server endpoint will be mounted (default:
   # /api/mcp).
-  # This setting only takes effect when 'enable_mcp_server' is true.
-  # The MCP endpoint will be accessible at this path relative to the
-  # Galaxy base URL.
+  # This setting only takes effect when 'enable_mcp_server' is true. The
+  # MCP endpoint will be accessible at this path relative to the Galaxy
+  # base URL.
   #mcp_server_path: /api/mcp
 
   # The interval in seconds between attempts to delete all expired

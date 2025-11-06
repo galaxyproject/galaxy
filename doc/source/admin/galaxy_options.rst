@@ -5758,6 +5758,37 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``enable_mcp_server``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the Model Context Protocol (MCP) server integration.
+    MCP allows AI assistants (like Claude, ChatGPT, etc.) to interact
+    with Galaxy programmatically through a standardized protocol. When
+    enabled, Galaxy exposes an MCP endpoint that provides tools for
+    searching, executing tools, managing histories, and more.
+    The MCP server requires API key authentication and uses the
+    existing Galaxy REST API internally. This feature is experimental
+    and disabled by default.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~
+``mcp_server_path``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL path where the MCP server endpoint will be mounted (default:
+    /api/mcp).
+    This setting only takes effect when 'enable_mcp_server' is true.
+    The MCP endpoint will be accessible at this path relative to the
+    Galaxy base URL.
+:Default: ``/api/mcp``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``expired_notifications_cleanup_interval``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
