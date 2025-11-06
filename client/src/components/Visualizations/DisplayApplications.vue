@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BAlert, BLink } from "bootstrap-vue";
 import { defineProps } from "vue";
 
 import { DatasetProvider } from "@/components/providers";
@@ -21,7 +22,7 @@ function getUrl(link: LinkType) {
 <template>
     <div>
         <DatasetProvider :id="props.datasetId" v-slot="{ result: dataset }">
-            <b-alert
+            <BAlert
                 v-if="
                     (dataset && dataset.display_apps && dataset.display_apps.length > 0) ||
                     (dataset && dataset.display_types && dataset.display_types.length > 0)
@@ -46,7 +47,7 @@ function getUrl(link: LinkType) {
                             <span class="font-weight-bold">{{ displayType.label }}</span>
                             <span v-for="(link, linkKey) in displayType.links" :key="`display-type-link-${linkKey}`">
                                 <span v-if="linkKey == 0">(</span>
-                                <a :href="link.href">{{ link.text }}</a>
+                                <BLink :href="link.href" :target="link.target">{{ link.text }}</BLink>
                                 <span v-if="linkKey != displayType.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>
@@ -54,7 +55,7 @@ function getUrl(link: LinkType) {
                     </ol>
                 </div>
                 <div>or select a visualization from below.</div>
-            </b-alert>
+            </BAlert>
         </DatasetProvider>
     </div>
 </template>
