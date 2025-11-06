@@ -180,9 +180,7 @@ def restore_custos_tokens_from_psa(
     if psa_table is None:
         psa_table = get_psa_table(connection)
 
-    psa_records = connection.execute(
-        select(psa_table).where(psa_table.c.assoc_type == CUSTOS_ASSOC_TYPE)
-    ).fetchall()
+    psa_records = connection.execute(select(psa_table).where(psa_table.c.assoc_type == CUSTOS_ASSOC_TYPE)).fetchall()
 
     restored_count = 0
     for record in psa_records:
