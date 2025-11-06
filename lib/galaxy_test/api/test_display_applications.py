@@ -58,7 +58,7 @@ class TestDisplayApplicationsApi(ApiTestCase):
         response = self._post("display_applications/reload")
         self._assert_status_code_is(response, 403)
 
-    def test_create_link(self):
+    def test_create_link_igv_interval_as_bed(self):
         contents = open(self.get_filename("1.interval")).read()
         with self.dataset_populator.test_history() as history_id:
             details = self.dataset_populator.new_dataset(history_id, content=contents, file_type="interval")
