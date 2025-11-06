@@ -99,3 +99,34 @@ it("renders error", async () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain("Failed to create link");
 });
+
+it("renders initialization steps", async () => {
+    GalaxyApi().POST.mockResolvedValueOnce({
+        data: {
+            refresh: false,
+            resource: null,
+            messages: [["Preparing", "info"]],
+            preparable_steps: [
+                { name: "alpha", ready: false, state: "running" },
+                { name: "beta", ready: true, state: "ok" },
+            ],
+        },
+        error: null,
+    });
+    const wrapper = mount(DisplayApplicationCreateLink, {
+        localVue,
+        propsData: {
+            appName: "igv",
+            datasetId: "1",
+            linkName: "local_default",
+        },
+    });
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("Display Application Initialization");
+    expect(wrapper.text()).toContain("alpha");
+    expect(wrapper.text()).toContain("running");
+    expect(wrapper.text()).toContain("beta");
+    expect(wrapper.text()).toContain("ok");
+    expect(window.open).not.toHaveBeenCalled();
+});

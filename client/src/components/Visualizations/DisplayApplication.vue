@@ -86,11 +86,11 @@ onMounted(() => {
             </div>
             <div v-if="applicationData.preparable_steps">
                 <h4 class="my-2">Display Application Initialization</h4>
-                <div v-for="(step, stepIndex) in applicationData.preparable_steps" class="my-2" :key="stepIndex">
+                <div v-for="(step, stepIndex) in applicationData.preparable_steps" :key="stepIndex" class="my-2">
                     <FontAwesomeIcon v-if="step.ready" class="text-success" :icon="faCheck" />
                     <FontAwesomeIcon v-else class="text-primary" spin :icon="faSpinner" />
                     <span class="ml-1">{{ step.name }}</span>
-                    <span>('{{step.state}}')</span>
+                    <span>('{{ step.state }}')</span>
                 </div>
             </div>
             <BAlert v-if="applicationData.resource" variant="info" show>
