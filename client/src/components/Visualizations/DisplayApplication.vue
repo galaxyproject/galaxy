@@ -28,7 +28,7 @@ const props = defineProps({
     },
 });
 
-const applicationData = ref<CreateLinkFeedback>({refresh: false});
+const applicationData = ref<CreateLinkFeedback>({ refresh: false });
 const errorMessage = ref("");
 const isLoading = ref(true);
 
@@ -54,7 +54,6 @@ async function requestLink() {
     });
     if (error) {
         errorMessage.value = `Failed to create link: ${errorMessageAsString(error.err_msg)}`;
-        console.error(error);
     } else {
         errorMessage.value = "";
         applicationData.value = data;
