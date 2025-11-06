@@ -27,7 +27,12 @@ from sqlalchemy.orm import (
 )
 
 from galaxy.model.custom_types import MutableJSONType
-from galaxy.model.migrations.data_fixes.custos_to_psa import migrate_custos_tokens_to_psa
+from galaxy.model.migrations.data_fixes.custos_to_psa import (
+    CUSTOS_ASSOC_TYPE,
+    migrate_custos_tokens_to_psa,
+    remove_migrated_psa_tokens,
+    restore_custos_tokens_from_psa,
+)
 
 # Create test tables
 _Base: Any = declarative_base()
@@ -110,6 +115,7 @@ class TestCustosToPSAMigration:
         assert migrated is not None
         assert migrated.uid == "user123"
         assert migrated.provider == "keycloak"
+        assert migrated.assoc_type == CUSTOS_ASSOC_TYPE
         assert migrated.extra_data["access_token"] == "access_token_value"
         assert migrated.extra_data["id_token"] == "id_token_value"
         assert migrated.extra_data["refresh_token"] == "refresh_token_value"
@@ -143,6 +149,7 @@ class TestCustosToPSAMigration:
         # Verify
         migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=2).first()
         assert migrated is not None
+        assert migrated.assoc_type == CUSTOS_ASSOC_TYPE
         assert "refresh_token" not in migrated.extra_data
         assert "refresh_expires_in" not in migrated.extra_data
 
@@ -176,6 +183,7 @@ class TestCustosToPSAMigration:
             migrated = db_session.query(UserAuthnzTokenTest).filter_by(provider=provider).first()
             assert migrated is not None
             assert migrated.provider == provider
+            assert migrated.assoc_type == CUSTOS_ASSOC_TYPE
 
     def test_migration_handles_expired_tokens(self, db_session):
         """Test migration of already-expired tokens."""
@@ -203,6 +211,7 @@ class TestCustosToPSAMigration:
         # Verify - should still migrate, but with default 1 hour expiry
         migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=3).first()
         assert migrated is not None
+        assert migrated.assoc_type == CUSTOS_ASSOC_TYPE
         # Migration sets default 3600 (1 hour) for expired/invalid tokens
         assert migrated.extra_data["expires"] == 3600
 
@@ -261,6 +270,7 @@ class TestCustosToPSAMigration:
         # Verify all migrated
         total_count = db_session.query(UserAuthnzTokenTest).count()
         assert total_count == 5
+        assert all(token.assoc_type == CUSTOS_ASSOC_TYPE for token in db_session.query(UserAuthnzTokenTest))
 
     def test_token_data_structure(self, db_session):
         """Test that migrated token has correct data structure."""
@@ -289,12 +299,57 @@ class TestCustosToPSAMigration:
         # Verify structure
         migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=5).first()
         assert migrated is not None
+        assert migrated.assoc_type == CUSTOS_ASSOC_TYPE
         extra_data = migrated.extra_data
         assert isinstance(extra_data, dict)
         assert all(key in extra_data for key in ["access_token", "id_token", "refresh_token"])
         assert isinstance(extra_data["auth_time"], int)
         assert isinstance(extra_data["expires"], int)
         assert isinstance(extra_data["refresh_expires_in"], int)
+
+    def test_restore_and_remove(self, db_session):
+        """Test restoring Custos tokens from PSA and removing migrated records."""
+        now = datetime.now()
+        expiration = now + timedelta(hours=2)
+        refresh_expiration = now + timedelta(days=1)
+
+        custos_token = CustosAuthnzTokenTest(
+            user_id=42,
+            external_user_id="restore_me",
+            provider="custos",
+            access_token="access",
+            id_token="id_token",
+            refresh_token="refresh",
+            expiration_time=expiration,
+            refresh_expiration_time=refresh_expiration,
+        )
+        db_session.add(custos_token)
+        db_session.commit()
+
+        custos_table = CustosAuthnzTokenTest.__table__
+        psa_table = UserAuthnzTokenTest.__table__
+
+        migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
+        assert migrated_count == 1
+
+        # Simulate drop by clearing Custos table contents
+        db_session.query(CustosAuthnzTokenTest).delete()
+        db_session.commit()
+
+        restored = restore_custos_tokens_from_psa(db_session.connection(), custos_table, psa_table)
+        assert restored == 1
+
+        restored_row = db_session.query(CustosAuthnzTokenTest).filter_by(user_id=42).first()
+        assert restored_row is not None
+        assert restored_row.access_token == "access"
+        assert restored_row.refresh_token == "refresh"
+        assert restored_row.expiration_time is not None
+
+        removed = remove_migrated_psa_tokens(db_session.connection(), custos_table, psa_table)
+        assert removed == 1
+
+        remaining = db_session.query(UserAuthnzTokenTest).filter_by(user_id=42).first()
+        assert remaining is None
 
 
 if __name__ == "__main__":
