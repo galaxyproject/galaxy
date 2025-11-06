@@ -4,6 +4,7 @@ import os
 import time
 import urllib.parse
 from operator import itemgetter
+from typing import Union
 from unittest import SkipTest
 
 import pytest
@@ -903,9 +904,7 @@ steps:
                 "f2": {"src": "hdca", "id": new_list_a},
             }
         )
-        search_payload = self._search_payload(
-            history_id=new_history_id, tool_id="multi_data_param", inputs=copied_inputs
-        )
+        search_payload = self._search_payload(history_id=history_id, tool_id="multi_data_param", inputs=copied_inputs)
         self._search(search_payload, expected_search_count=1)
         # Now we delete the original input HDCA that was used -- we should still be able to find the job
         delete_response = self._delete(f"histories/{history_id}/contents/dataset_collections/{list_id_a}")
@@ -1150,7 +1149,9 @@ steps:
         self._search(search_payload, expected_search_count=1)
         return tool_response
 
-    def _search_payload(self, history_id, tool_id, inputs, state="ok"):
+    def _search_payload(
+        self, tool_id: str, inputs: str, state: str = "ok", history_id: Union[str, None] = None
+    ) -> dict[str, Union[str, None]]:
         search_payload = dict(tool_id=tool_id, inputs=inputs, history_id=history_id, state=state)
         return search_payload
 

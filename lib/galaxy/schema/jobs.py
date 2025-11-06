@@ -126,6 +126,11 @@ class SearchJobsPayload(Model):
         title="State",
         description="Current state of the job.",
     )
+    history_id: Union[DecodedDatabaseIdField, None] = Field(
+        default=None,
+        title="History ID",
+        description="The encoded ID of the history associated with this job.",
+    )
     model_config = ConfigDict(extra="allow")  # This is used for items named file_ and __file_
 
     @field_validator("inputs", mode="before")
