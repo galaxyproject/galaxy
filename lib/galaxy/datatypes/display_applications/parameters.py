@@ -181,7 +181,9 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                 if target_ext and not converted_dataset:
                     if isinstance(data, DisplayDataValueWrapper):
                         data = data.value
-                    data.datatype.convert_dataset(trans, data, target_ext, return_output=True, visible=False)
+                    data.datatype.convert_dataset(
+                        trans, data, target_ext, return_output=True, visible=False, history=data.history
+                    )
                 elif converted_dataset and converted_dataset.state == DatasetState.ERROR:
                     raise Exception(f"Dataset conversion failed for data parameter: {self.name}")
         return self.get_value(other_values, dataset_hash, user_hash, trans)
