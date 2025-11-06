@@ -38,7 +38,6 @@ dependencies = [
     "dparse",
     "edam-ontology",
     "fastapi>=0.124.0",  # https://github.com/fastapi/fastapi/pull/14453
-    "fastmcp>=2.3.0",
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
