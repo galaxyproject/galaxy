@@ -131,6 +131,11 @@ async function onCopy() {
 }
 
 onMounted(loadHistories);
+
+defineExpose({
+    sourceContentSelection,
+    toggleAll,
+});
 </script>
 
 <template>
