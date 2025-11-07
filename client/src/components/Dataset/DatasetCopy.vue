@@ -1,41 +1,50 @@
 <script setup lang="ts">
-import { BAlert, BButton, BFormCheckbox, BFormInput, BFormSelect } from "bootstrap-vue";
+import { faArrowRight, faStream } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BFormCheckbox, BFormInput } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
+import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
 
 import Heading from "@/components/Common/Heading.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowRight, faStream } from "@fortawesome/free-solid-svg-icons";
+
+type HistoryItem = { id: string; name: string };
+type SourceEntry = { id: string; name: string; hid: number; type: string };
+type SelectedPayload = { id: string; type: string };
 
 const loading = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
-const histories = ref<Array<{ id: string; name: string }>>([]);
+const histories = ref<HistoryItem[]>([]);
 
-const sourceHistoryId = ref<string | null>(null);
-const targetSingleId = ref<string | null>(null);
-const targetMultiIds = ref<Record<string, boolean>>({});
+const sourceHistory = ref<HistoryItem | null>(null);
+const targetSingleHistory = ref<HistoryItem | null>(null);
+const targetMultiSelections = ref<Record<string, boolean>>({});
 const newHistoryName = ref("");
 const useMultipleTargets = ref(false);
 
-const sourceContents = ref<Array<{ id: string; name: string; hid: number; type: string }>>([]);
+const sourceContents = ref<SourceEntry[]>([]);
 const sourceContentSelection = ref<Record<string, boolean>>({});
 
 async function loadInitial() {
     loading.value = true;
     errorMessage.value = "";
     successMessage.value = "";
+
     const { data, error } = await GalaxyApi().GET("/api/histories");
     if (error) {
         errorMessage.value = error.err_msg;
+        loading.value = false;
+        return;
     }
+
     if (Array.isArray(data)) {
         histories.value = data.map((h: any) => ({ id: h.id, name: h.name }));
         if (histories.value.length > 0) {
-            const [first] = histories.value as [{ id: string; name: string }];
-            sourceHistoryId.value = first.id;
-            targetSingleId.value = first.id;
+            const [first] = histories.value as [HistoryItem];
+            sourceHistory.value = first;
+            targetSingleHistory.value = first;
             await loadSourceContents();
         }
     }
@@ -43,16 +52,18 @@ async function loadInitial() {
 }
 
 async function loadSourceContents() {
-    if (!sourceHistoryId.value) {
+    if (!sourceHistory.value) {
         return;
     }
     errorMessage.value = "";
     successMessage.value = "";
+
     const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
-        params: { path: { history_id: sourceHistoryId.value } },
+        params: { path: { history_id: sourceHistory.value.id } },
     });
     if (error) {
         errorMessage.value = error.err_msg;
+        return;
     }
     if (Array.isArray(data)) {
         sourceContents.value = data.map((c: any) => ({
@@ -74,8 +85,8 @@ function toggleAll(v: boolean) {
     }
 }
 
-const selectedContent = computed(() => {
-    const out: Array<{ id: string; type: string }> = [];
+const selectedContent = computed<SelectedPayload[]>(() => {
+    const out: SelectedPayload[] = [];
     for (const item of sourceContents.value) {
         const key = `${item.type}|${item.id}`;
         if (sourceContentSelection.value[key]) {
@@ -85,33 +96,44 @@ const selectedContent = computed(() => {
     return out;
 });
 
-const resolvedTargetIds = computed(() => {
+const resolvedTargetHistories = computed<HistoryItem[]>(() => {
     if (newHistoryName.value) {
         return [];
     }
     if (useMultipleTargets.value) {
-        return Object.keys(targetMultiIds.value).filter((k) => targetMultiIds.value[k]);
+        const out: HistoryItem[] = [];
+        for (const h of histories.value) {
+            if (targetMultiSelections.value[h.id]) {
+                out.push(h);
+            }
+        }
+        return out;
     }
-    return targetSingleId.value ? [targetSingleId.value] : [];
+    return targetSingleHistory.value ? [targetSingleHistory.value] : [];
 });
 
 async function submitCopy() {
-    if (!sourceHistoryId.value || selectedContent.value.length === 0) {
+    if (!sourceHistory.value || selectedContent.value.length === 0) {
         return;
     }
     loading.value = true;
     errorMessage.value = "";
     successMessage.value = "";
+
+    const targetIds = resolvedTargetHistories.value.map((h) => h.id);
+
     const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
         body: {
-            source_history: sourceHistoryId.value,
+            source_history: sourceHistory.value.id,
             source_content: selectedContent.value,
-            target_history_ids: newHistoryName.value ? [] : resolvedTargetIds.value,
+            target_history_ids: newHistoryName.value ? [] : targetIds,
             target_history_name: newHistoryName.value || null,
         },
     });
     if (error) {
         errorMessage.value = error.err_msg;
+        loading.value = false;
+        return;
     }
     if (response) {
         const targets = response.history_ids.length;
@@ -129,21 +151,28 @@ onMounted(loadInitial);
     <div>
         <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="successMessage" variant="success" show>{{ successMessage }}</BAlert>
+
         <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
+
         <b-row>
+            <!-- Source column -->
             <b-col cols="6">
                 <Heading h2 size="sm">
                     <FontAwesomeIcon :icon="faStream" />
                     <span>From History</span>
                 </Heading>
-                <label class="form-label">Source History</label>
-                <BFormSelect v-model="sourceHistoryId" class="mb-3" @change="loadSourceContents">
-                    <option v-for="h in histories" :key="h.id" :value="h.id">
-                        {{ h.name }}
-                    </option>
-                </BFormSelect>
 
-                <div class="d-flex mb-2">
+                <label class="form-label">Source History</label>
+                <Multiselect
+                    v-model="sourceHistory"
+                    :options="histories"
+                    label="name"
+                    track-by="id"
+                    deselect-label=""
+                    select-label=""
+                    @input="loadSourceContents" />
+
+                <div class="d-flex mb-2 mt-3">
                     <BButton size="sm" variant="secondary" class="me-2" @click="toggleAll(true)">All</BButton>
                     <BButton size="sm" variant="secondary" @click="toggleAll(false)">None</BButton>
                 </div>
@@ -155,6 +184,8 @@ onMounted(loadInitial);
                     <span>{{ item.hid }}: {{ item.name }}</span>
                 </div>
             </b-col>
+
+            <!-- Destination column -->
             <b-col cols="6">
                 <Heading h2 size="sm">
                     <FontAwesomeIcon :icon="faArrowRight" />
@@ -163,20 +194,22 @@ onMounted(loadInitial);
 
                 <div v-if="!useMultipleTargets">
                     <label class="form-label">Target History</label>
-                    <BFormSelect v-model="targetSingleId" class="mb-2">
-                        <option v-for="h in histories" :key="h.id" :value="h.id">
-                            {{ h.name }}
-                        </option>
-                    </BFormSelect>
+                    <Multiselect
+                        v-model="targetSingleHistory"
+                        :options="histories"
+                        label="name"
+                        track-by="id"
+                        deselect-label=""
+                        select-label="" />
 
-                    <BButton variant="link" class="p-0" @click="useMultipleTargets = true">
+                    <BButton variant="link" class="p-0 mt-2" @click="useMultipleTargets = true">
                         Choose multiple histories
                     </BButton>
                 </div>
 
                 <div v-else>
                     <div v-for="h in histories" :key="h.id" class="d-flex align-items-center mb-1">
-                        <BFormCheckbox v-model="targetMultiIds[h.id]" class="me-2" />
+                        <BFormCheckbox v-model="targetMultiSelections[h.id]" class="me-2" />
                         <span>{{ h.name }}</span>
                     </div>
                 </div>
