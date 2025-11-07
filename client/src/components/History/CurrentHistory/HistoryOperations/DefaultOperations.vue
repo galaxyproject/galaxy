@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
+import { BDropdown, BDropdownItem, BModal } from "bootstrap-vue";
 import { toRef } from "vue";
 
 import type { HistorySummaryExtended } from "@/api";

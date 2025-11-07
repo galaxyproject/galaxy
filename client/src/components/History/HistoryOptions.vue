@@ -3,6 +3,7 @@ import {
     faArchive,
     faBars,
     faBurn,
+    faClone,
     faColumns,
     faCopy,
     faFileArchive,
@@ -18,6 +19,7 @@ import axios from "axios";
 import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormCheckbox, BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { canMutateHistory, type HistorySummary } from "@/api";
 import { iframeRedirect } from "@/components/plugins/legacyNavigation";
@@ -30,6 +32,8 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import CopyModal from "@/components/History/Modals/CopyModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const router = useRouter();
 
 interface Props {
     history: HistorySummary;
@@ -156,8 +160,16 @@ function onDelete() {
                 :disabled="isAnonymous"
                 :title="userTitle('Copy History to a New History')"
                 @click="showCopyModal = !showCopyModal">
+                <FontAwesomeIcon fixed-width :icon="faClone" />
+                <span v-localize>Copy History</span>
+            </BDropdownItem>
+
+            <BDropdownItem
+                :disabled="isAnonymous"
+                :title="userTitle('Copy Datasets to Another History')"
+                @click="router.push('/datasets/copy')">
                 <FontAwesomeIcon fixed-width :icon="faCopy" />
-                <span v-localize>Copy this History</span>
+                <span v-localize>Copy Datasets</span>
             </BDropdownItem>
 
             <BDropdownItem
@@ -166,7 +178,7 @@ function onDelete() {
                 @click="showDeleteModal = !showDeleteModal">
                 <FontAwesomeIcon fixed-width :icon="isDeletedNotPurged ? faBurn : faTrash" />
                 <span v-if="isDeletedNotPurged" v-localize>Permanently Delete History</span>
-                <span v-else v-localize>Delete this History</span>
+                <span v-else v-localize>Delete History</span>
             </BDropdownItem>
 
             <BDropdownItem
