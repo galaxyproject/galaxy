@@ -44,7 +44,6 @@ async function loadInitial() {
         if (histories.value.length > 0) {
             const [first] = histories.value as [HistoryItem];
             sourceHistory.value = first;
-            targetSingleHistory.value = first;
             await loadSourceContents();
         }
     }
@@ -148,21 +147,20 @@ onMounted(loadInitial);
 </script>
 
 <template>
-    <div>
-        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-        <BAlert v-if="successMessage" variant="success" show>{{ successMessage }}</BAlert>
-
-        <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
-
-        <b-row>
-            <!-- Source column -->
-            <b-col cols="6">
+    <div class="d-flex flex-column">
+        <div>
+            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+            <BAlert v-if="successMessage" variant="success" show>{{ successMessage }}</BAlert>
+            <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
+        </div>
+        <div class="dataset-copy-columns d-flex flex-grow-1">
+            <!-- Left column -->
+            <div class="d-flex flex-column flex-grow-1 w-50 pr-1">
                 <Heading h2 size="sm">
                     <FontAwesomeIcon :icon="faStream" />
                     <span>From History</span>
                 </Heading>
-
-                <label class="form-label">Source History</label>
+                <span class="text-sm mt-1">Select a Source History:</span>
                 <Multiselect
                     v-model="sourceHistory"
                     :options="histories"
@@ -171,58 +169,62 @@ onMounted(loadInitial);
                     deselect-label=""
                     select-label=""
                     @input="loadSourceContents" />
-
-                <div class="d-flex mb-2 mt-3">
-                    <BButton size="sm" variant="secondary" class="me-2" @click="toggleAll(true)">All</BButton>
-                    <BButton size="sm" variant="secondary" @click="toggleAll(false)">None</BButton>
+                <span class="text-sm mt-1">Select Datasets and Collections:</span>
+                <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
+                    <div v-if="sourceContents.length === 0" class="text-muted">This history has no datasets</div>
+                    <div v-for="item in sourceContents" :key="item.id" class="d-flex align-items-center mb-1">
+                        <BFormCheckbox v-model="sourceContentSelection[`${item.type}|${item.id}`]" class="me-2" />
+                        <span>{{ item.hid }}: {{ item.name }}</span>
+                    </div>
                 </div>
-
-                <div v-if="sourceContents.length === 0" class="text-muted">This history has no datasets</div>
-
-                <div v-for="item in sourceContents" :key="item.id" class="d-flex align-items-center mb-1">
-                    <BFormCheckbox v-model="sourceContentSelection[`${item.type}|${item.id}`]" class="me-2" />
-                    <span>{{ item.hid }}: {{ item.name }}</span>
+                <div class="d-flex mt-2">
+                    <BButton size="sm" variant="outline-primary" class="mr-2"v-localize  @click="toggleAll(true)">
+                        Select All
+                    </BButton>
+                    <BButton size="sm" variant="outline-primary" v-localize @click="toggleAll(false)">
+                        Unselect All
+                    </BButton>
                 </div>
-            </b-col>
+            </div>
 
-            <!-- Destination column -->
-            <b-col cols="6">
+            <!-- Right column -->
+            <div class="d-flex flex-column flex-grow-1 w-50 pl-1">
                 <Heading h2 size="sm">
                     <FontAwesomeIcon :icon="faArrowRight" />
                     <span>To History</span>
                 </Heading>
-
-                <div v-if="!useMultipleTargets">
-                    <label class="form-label">Target History</label>
-                    <Multiselect
-                        v-model="targetSingleHistory"
-                        :options="histories"
-                        label="name"
-                        track-by="id"
-                        deselect-label=""
-                        select-label="" />
-
-                    <BButton variant="link" class="p-0 mt-2" @click="useMultipleTargets = true">
-                        Choose multiple histories
-                    </BButton>
-                </div>
-
-                <div v-else>
+                <span class="text-sm mt-1">Select a Target History:</span>
+                <Multiselect
+                    v-model="targetSingleHistory"
+                    :options="histories"
+                    :allow-empty="true"
+                    label="name"
+                    track-by="id"
+                    deselect-label=""
+                    select-label="" />
+                <span class="text-sm mt-1"><b>OR</b> Select Multiple Target Histories:</span>
+                <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
+                    <div v-if="histories.length === 0" class="text-muted">There are not histories</div>
                     <div v-for="h in histories" :key="h.id" class="d-flex align-items-center mb-1">
                         <BFormCheckbox v-model="targetMultiSelections[h.id]" class="me-2" />
                         <span>{{ h.name }}</span>
                     </div>
                 </div>
-
-                <hr class="my-4" />
-
-                <label class="form-label">New history name</label>
-                <BFormInput v-model="newHistoryName" class="mb-3" />
-
-                <div class="text-center">
-                    <BButton variant="primary" :disabled="loading" @click="submitCopy"> Copy items </BButton>
+                <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
+                <BFormInput v-model="newHistoryName" />
+                <div class="text-right mt-2">
+                    <BButton size="sm" variant="primary" :disabled="loading" v-localize @click="submitCopy"> Copy Selected Items </BButton>
                 </div>
-            </b-col>
-        </b-row>
+            </div>
+        </div>
     </div>
 </template>
+
+<style scoped>
+.dataset-copy-columns {
+    min-height: 0;
+}
+.dataset-copy-contents {
+    min-height: 10rem;
+}
+</style>
