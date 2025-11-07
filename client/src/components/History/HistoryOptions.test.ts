@@ -26,12 +26,7 @@ const expectedOptions = [
 ];
 
 // options enabled for logged-out users
-const anonymousOptions = [
-    "Resume Paused Jobs",
-    "Delete History",
-    "Export Tool References",
-    "Export History to File",
-];
+const anonymousOptions = ["Resume Paused Jobs", "Delete History", "Export Tool References", "Export History to File"];
 
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
