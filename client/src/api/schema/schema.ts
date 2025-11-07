@@ -8225,14 +8225,21 @@ export interface components {
         };
         /** CopyDatasetsPayload */
         CopyDatasetsPayload: {
-            /** Source Content Ids */
-            source_content_ids: string[];
+            /** Source Content */
+            source_content: components["schemas"]["CopyDatasetsPayloadSourceEntry"][];
             /** Source History */
             source_history: string;
             /** Target History Ids */
             target_history_ids?: string[] | null;
             /** Target History Name */
             target_history_name?: string | null;
+        };
+        /** CopyDatasetsPayloadSourceEntry */
+        CopyDatasetsPayloadSourceEntry: {
+            /** Id */
+            id: string;
+            /** Type */
+            type: string;
         };
         /** CopyDatasetsResponse */
         CopyDatasetsResponse: {

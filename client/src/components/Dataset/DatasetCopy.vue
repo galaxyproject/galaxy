@@ -76,14 +76,14 @@ function toggleAll(v: boolean) {
 }
 
 const selectedContent = computed(() => {
-    const out: Array<{ id: string; type: string }> = []
+    const out: Array<{ id: string; type: string }> = [];
     for (const item of sourceContents.value) {
-        const key = `${item.type}|${item.id}`
+        const key = `${item.type}|${item.id}`;
         if (sourceContentSelection.value[key]) {
-            out.push({ id: item.id, type: item.type })
+            out.push({ id: item.id, type: item.type });
         }
     }
-    return out
+    return out;
 });
 
 const resolvedTargetIds = computed(() => {
@@ -162,9 +162,7 @@ onMounted(loadInitial);
                     <div v-if="sourceContents.length === 0" class="text-gray-500">This history has no datasets</div>
 
                     <div v-for="item in sourceContents" :key="item.id" class="flex space-x-2 mb-1">
-                        <input
-                            v-model="sourceContentSelection[`${item.type}|${item.id}`]"
-                            type="checkbox" />
+                        <input v-model="sourceContentSelection[`${item.type}|${item.id}`]" type="checkbox" />
                         <span>{{ item.hid }}: {{ item.name }}</span>
                     </div>
                 </div>
