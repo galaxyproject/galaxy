@@ -14887,7 +14887,19 @@ export interface components {
             /** Message */
             message: string;
         };
-        /** InferredColumnMapping */
+        /**
+         * InferredColumnMapping
+         * @description Records that a column at a specific index was successfully parsed and mapped.
+         *
+         *     Used in parse logs to show users which columns were recognized and how they were interpreted.
+         *
+         *     Example log entry:
+         *         InferredColumnMapping(
+         *             column_index=2,
+         *             column_title="MD5 Sum",
+         *             parsed_column=ParsedColumn(type="hash_md5", type_index=0, title="MD5 Sum")
+         *         )
+         */
         InferredColumnMapping: {
             /** Column Index */
             column_index: number;
@@ -18660,7 +18672,12 @@ export interface components {
              */
             content: string;
         };
-        /** ParsedColumn */
+        /**
+         * ParsedColumn
+         * @description Serializable representation of a parsed column (Pydantic model version of HeaderColumn).
+         *
+         *     Used in API responses and logging to communicate which columns were recognized.
+         */
         ParsedColumn: {
             /** Title */
             title: string;
