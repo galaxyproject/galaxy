@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import axios from "axios";
 import { computed, onMounted, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
+
 const loading = ref(false);
-const error = ref("");
-const done = ref("");
+const errorMessage = ref("");
+const successMessage = ref("");
 const histories = ref<Array<{ id: string; name: string }>>([]);
 
 const sourceHistoryId = ref<string | null>(null);
@@ -18,43 +19,53 @@ const sourceContentSelection = ref<Record<string, boolean>>({});
 
 async function loadInitial() {
     loading.value = true;
-    error.value = "";
-    done.value = "";
+    errorMessage.value = "";
+    successMessage.value = "";
 
-    const res = await axios.get("/api/histories");
-    histories.value = res.data.map((h: any) => ({ id: h.id, name: h.name }));
-
-    if (histories.value.length > 0) {
-        sourceHistoryId.value = histories.value[0]?.id || null;
-        targetSingleId.value = histories.value[0]?.id || null;
-        await loadSourceContents();
+    const { data, error } = await GalaxyApi().GET("/api/histories");
+    if (error) {
+        errorMessage.value = error.err_msg;
+    }
+    if (Array.isArray(data)) {
+        histories.value = data.map((h: any) => ({ id: h.id, name: h.name }));
+        if (histories.value.length > 0) {
+            sourceHistoryId.value = histories.value[0]?.id || null;
+            targetSingleId.value = histories.value[0]?.id || null;
+            await loadSourceContents();
+        }
     }
 
     loading.value = false;
 }
 
 async function loadSourceContents() {
-    if (!sourceHistoryId.value) {
-        return;
-    }
+    if (sourceHistoryId.value) {
+        errorMessage.value = "";
+        successMessage.value = "";
+        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
+            params: {
+                path: {
+                    history_id: sourceHistoryId.value,
+                },
+            },
+        });
+        if (error) {
+            errorMessage.value = error.err_msg;
+        }
+        if (Array.isArray(data)) {
+            sourceContents.value = data.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                hid: c.hid,
+                type: c.history_content_type,
+            }));
 
-    error.value = "";
-    done.value = "";
-
-    const res = await axios.get(`/api/histories/${sourceHistoryId.value}/contents?types=dataset,dataset_collection`);
-    const items = res.data;
-
-    sourceContents.value = items.map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        hid: c.hid,
-        type: c.history_content_type,
-    }));
-
-    sourceContentSelection.value = {};
-    for (const item of sourceContents.value) {
-        const key = `${item.type}|${item.id}`;
-        sourceContentSelection.value[key] = false;
+            sourceContentSelection.value = {};
+            for (const item of sourceContents.value) {
+                const key = `${item.type}|${item.id}`;
+                sourceContentSelection.value[key] = false;
+            }
+        }
     }
 }
 
@@ -98,29 +109,30 @@ const resolvedTargetIds = computed(() => {
 });
 
 async function submitCopy() {
-    loading.value = true;
-    error.value = "";
-    done.value = "";
-
-    const body = {
-        source_history: sourceHistoryId.value,
-        source_content_ids: selectedContentIds.value,
-        target_history_ids: newHistoryName.value ? null : resolvedTargetIds.value,
-        target_history_name: newHistoryName.value || null,
-    };
-
-    try {
-        const res = await axios.post("/api/datasets/copy", body);
-        const historyIds = res.data.history_ids || [];
-        const count = selectedContentIds.value.length;
-        const targets = historyIds.length;
-        done.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`;
-        await loadSourceContents();
-    } catch (e: any) {
-        error.value = e?.response?.data?.err_msg || "Copy failed";
+    if (sourceHistoryId.value && selectedContentIds.value) {
+        loading.value = true;
+        errorMessage.value = "";
+        successMessage.value = "";
+        const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
+            body: {
+                source_history: sourceHistoryId.value,
+                source_content_ids: selectedContentIds.value,
+                target_history_ids: newHistoryName.value ? null : resolvedTargetIds.value,
+                target_history_name: newHistoryName.value || null,
+            },
+        });
+        if (error) {
+            errorMessage.value = error.err_msg;
+        }
+        if (response) {
+            const historyIds = response.history_ids || [];
+            const count = selectedContentIds.value.length;
+            const targets = historyIds.length;
+            successMessage.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`;
+            await loadSourceContents();
+        }
+        loading.value = false;
     }
-
-    loading.value = false;
 }
 
 onMounted(loadInitial);
@@ -128,8 +140,8 @@ onMounted(loadInitial);
 
 <template>
     <div class="p-4 space-y-4">
-        <div v-if="error" class="text-red-600">{{ error }}</div>
-        <div v-if="done" class="text-green-700">{{ done }}</div>
+        <div v-if="errorMessage" class="text-red-600">{{ errorMessage }}</div>
+        <div v-if="successMessage" class="text-green-700">{{ successMessage }}</div>
 
         <div class="text-gray-700">Copy history items</div>
 
