@@ -27,6 +27,7 @@ from starlette.responses import (
 )
 
 from galaxy.datatypes.dataproviders.base import MAX_LIMIT
+
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -39,6 +40,10 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DatasetSourceType,
     ToolReportForDataset,
+)
+from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
 )
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.base.api import GalaxyFileResponse
@@ -513,6 +518,20 @@ class FastAPIDatasets:
         no other checks or restrictions are made.
         """
         return self.service.delete_batch(trans, payload)
+
+    @router.post(
+        "/api/datasets/copy",
+        summary="Copy datasets or dataset collections between histories."
+    )
+    def copy_datasets(
+        self,
+        trans=DependsOnTrans,
+        payload: CopyDatasetsPayload = Body(...),
+    ) -> CopyDatasetsResponse:
+        return self.service.copy_datasets(
+            trans=trans,
+            payload=payload,
+        )
 
     @router.put(
         "/api/datasets/{dataset_id}/hash",

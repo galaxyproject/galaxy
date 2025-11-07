@@ -5,6 +5,9 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
+
+from pydantic import BaseModel
+
 from typing import (
     Any,
     Optional,
@@ -17,6 +20,7 @@ from galaxy import (
     exceptions,
     model,
 )
+
 from galaxy.datatypes import sniff
 from galaxy.managers import (
     base,
@@ -30,10 +34,14 @@ from galaxy.model import (
     DatasetHash,
     DatasetInstance,
     DatasetPermissions,
+    History,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
 )
 from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
     ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
 )
@@ -67,6 +75,85 @@ class DatasetManager(
 
     def copy(self, item, **kwargs):
         raise exceptions.NotImplemented("Datasets cannot be copied")
+
+    def copy_datasets(
+        self,
+        trans,
+        payload: CopyDatasetsPayload,
+    ) -> CopyDatasetsResponse:
+        # Verify that user is available
+        user = trans.get_user()
+        if user is None:
+            raise exceptions.MessageException("Please login to copy datasets between histories.")
+
+        # Parse payload
+        source_history = payload.source_history
+        source_content_ids = payload.source_content_ids
+        target_history_ids_in = payload.target_history_ids or []
+        target_history_name = payload.target_history_name
+
+        # Identify source history
+        decoded_source_id = self.app.security.decode_id(source_history)
+        history = self.app.history_manager.get_owned(decoded_source_id, user, current_history=trans.history)
+        if not source_content_ids:
+            raise exceptions.MessageException("Select at least one item to copy.")
+
+        # Parse and decode selected datasets and dataset collections
+        encoded_dc = [s[len("dataset_collection|"):] for s in source_content_ids if s.startswith("dataset_collection|")]
+        encoded_ds = [s[len("dataset|"):] for s in source_content_ids if s.startswith("dataset|")]
+        decoded_dc = set(map(self.app.security.decode_id, encoded_dc))
+        decoded_ds = set(map(self.app.security.decode_id, encoded_ds))
+        decoded_target_ids: list[int] = []
+
+        # Either create a new history or collect existing histories as destination
+        if target_history_name:
+            if not user:
+                raise exceptions.MessageException("Authentication required to create a new history.")
+            new_history = History()
+            new_history.name = target_history_name
+            new_history.user = user
+            trans.sa_session.add(new_history)
+            trans.sa_session.commit()
+            decoded_target_ids.append(new_history.id)
+        else:
+            if not target_history_ids_in:
+                raise exceptions.MessageException("Select a destination history or provide a target history name.")
+            decoded_target_ids.extend(self.app.security.decode_id(h) for h in target_history_ids_in)
+
+        # Ensure that user owns the target histories
+        target_histories = [
+            h for h in map(trans.sa_session.query(History).get, decoded_target_ids)
+            if h is not None and h.user == user
+        ]
+        if len(target_histories) != len(decoded_target_ids):
+            raise exceptions.MessageException("You lack permission for one or more destination histories.")
+
+        # Collect contents to be copied
+        contents = list(map(trans.sa_session.query(HistoryDatasetAssociation).get, decoded_ds))
+        contents.extend(map(trans.sa_session.query(HistoryDatasetCollectionAssociation).get, decoded_dc))
+        contents.sort(key=lambda c: c.hid)
+        for c in contents:
+            if c is None:
+                raise exceptions.MessageException("You tried to copy a dataset that does not exist.")
+            if c.history != history:
+                raise exceptions.MessageException("You tried to copy a dataset not in the source history.")
+            for h in target_histories:
+                if c.history_content_type == "dataset":
+                    copy = c.copy(flush=False)
+                    h.stage_addition(copy)
+                else:
+                    copy = c.copy(element_destination=h)
+                copy.copy_tags_from(user, c)
+
+        # Copy to target histories
+        for h in target_histories:
+            h.add_pending_items()
+        trans.sa_session.commit()
+
+        # Respond with target history ids after successfully datasets
+        history_ids = [self.app.security.encode_id(i) for i in decoded_target_ids]
+        return CopyDatasetsResponse(history_ids=history_ids)
+
 
     def purge(self, item, flush=True, **kwargs):
         """

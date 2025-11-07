@@ -118,6 +118,17 @@ class ComputeDatasetHashTaskRequest(Model):
     user: Optional[RequestUser] = None  # access checks should be done pre-celery so this is optional
 
 
+class CopyDatasetsPayload(Model):
+    source_history: str
+    source_content_ids: list[str]
+    target_history_ids: Optional[list[str]] = None
+    target_history_name: Optional[str] = None
+
+
+class CopyDatasetsResponse(Model):
+    history_ids: list[str]
+
+
 class PurgeDatasetsTaskRequest(Model):
     dataset_ids: list[int]
 

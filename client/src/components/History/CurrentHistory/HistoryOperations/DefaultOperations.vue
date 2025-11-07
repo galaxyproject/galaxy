@@ -3,6 +3,7 @@ import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
 import { toRef } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import type { HistorySummaryExtended } from "@/api";
 import {
@@ -10,12 +11,12 @@ import {
     purgeAllDeletedContent,
     unhideAllHiddenContent,
 } from "@/components/History/model/crud";
-import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 
 interface Props {
     history: HistorySummaryExtended;
 }
+const router = useRouter();
 
 const props = defineProps<Props>();
 
@@ -24,7 +25,7 @@ const emit = defineEmits(["update:operation-running"]);
 const { numItemsDeleted, numItemsHidden } = useHistoryContentStats(toRef(props, "history"));
 
 function onCopy() {
-    iframeRedirect("/dataset/copy_datasets");
+    router.push("/datasets/copy");
 }
 
 function unhideAll() {

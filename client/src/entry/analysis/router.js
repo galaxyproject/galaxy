@@ -23,6 +23,7 @@ import CollectionEditView from "@/components/Collections/common/CollectionEditVi
 import DisplayCollectionAsSheet from "@/components/Collections/common/DisplayCollectionAsSheet.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
+import DatasetCopy from "@/components/Dataset/DatasetCopy.vue";
 import DatasetList from "@/components/Dataset/DatasetList.vue";
 import DatasetView from "@/components/Dataset/DatasetView.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
@@ -263,6 +264,10 @@ export function getRouter(Galaxy) {
                         path: "collection/:collectionId/sheet",
                         component: DisplayCollectionAsSheet,
                         props: true,
+                    },
+                    {
+                        path: "datasets/copy",
+                        component: DatasetCopy,
                     },
                     {
                         path: "datasets/list",
