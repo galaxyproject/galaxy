@@ -84,29 +84,32 @@ class DatasetManager(
 
         # Parse payload
         source_history = payload.source_history
-        source_content_ids = payload.source_content_ids
+        source_content = payload.source_content
         target_history_ids_in = payload.target_history_ids or []
         target_history_name = payload.target_history_name
+
+        # Verify source content
+        if len(source_content) == 0:
+            raise exceptions.MessageException("Select at least one item to copy.")
 
         # Identify source history
         decoded_source_id = self.app.security.decode_id(source_history)
         history = self.app.history_manager.get_owned(decoded_source_id, user, current_history=trans.history)
-        if not source_content_ids:
-            raise exceptions.MessageException("Select at least one item to copy.")
 
         # Parse and decode selected datasets and dataset collections
-        encoded_dc = [
-            s[len("dataset_collection|") :] for s in source_content_ids if s.startswith("dataset_collection|")
-        ]
-        encoded_ds = [s[len("dataset|") :] for s in source_content_ids if s.startswith("dataset|")]
-        decoded_dc = set(map(self.app.security.decode_id, encoded_dc))
-        decoded_ds = set(map(self.app.security.decode_id, encoded_ds))
-        decoded_target_ids: list[int] = []
+        decoded_dc = []
+        decoded_ds = []
+        for entry in source_content:
+            if entry.type == "dataset":
+                decoded_ds.append(self.app.security.decode_id(entry.id))
+            elif entry.type == "dataset_collection":
+                decoded_dc.append(self.app.security.decode_id(entry.id))
+            else:
+                raise exceptions.MessageException("Unknown content type.")
 
         # Either create a new history or collect existing histories as destination
+        decoded_target_ids: list[int] = []
         if target_history_name:
-            if not user:
-                raise exceptions.MessageException("Authentication required to create a new history.")
             new_history = History()
             new_history.name = target_history_name
             new_history.user = user

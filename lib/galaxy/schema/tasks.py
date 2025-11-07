@@ -120,9 +120,14 @@ class ComputeDatasetHashTaskRequest(Model):
 
 class CopyDatasetsPayload(Model):
     source_history: str
-    source_content_ids: list[str]
+    source_content: list[CopyDatasetsPayloadSourceEntry]
     target_history_ids: Optional[list[str]] = None
     target_history_name: Optional[str] = None
+
+
+class CopyDatasetsPayloadSourceEntry(Model):
+    id: str
+    type: str
 
 
 class CopyDatasetsResponse(Model):

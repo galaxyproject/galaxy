@@ -75,14 +75,15 @@ function toggleAll(v: boolean) {
     }
 }
 
-const selectedContentIds = computed(() => {
-    const out: string[] = [];
-    for (const key in sourceContentSelection.value) {
+const selectedContent = computed(() => {
+    const out: Array<{ id: string; type: string }> = []
+    for (const item of sourceContents.value) {
+        const key = `${item.type}|${item.id}`
         if (sourceContentSelection.value[key]) {
-            out.push(key);
+            out.push({ id: item.id, type: item.type })
         }
     }
-    return out;
+    return out
 });
 
 const resolvedTargetIds = computed(() => {
@@ -109,14 +110,14 @@ const resolvedTargetIds = computed(() => {
 });
 
 async function submitCopy() {
-    if (sourceHistoryId.value && selectedContentIds.value) {
+    if (sourceHistoryId.value && selectedContent.value) {
         loading.value = true;
         errorMessage.value = "";
         successMessage.value = "";
         const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
             body: {
                 source_history: sourceHistoryId.value,
-                source_content_ids: selectedContentIds.value,
+                source_content: selectedContent.value,
                 target_history_ids: newHistoryName.value ? null : resolvedTargetIds.value,
                 target_history_name: newHistoryName.value || null,
             },
@@ -163,8 +164,7 @@ onMounted(loadInitial);
                     <div v-for="item in sourceContents" :key="item.id" class="flex space-x-2 mb-1">
                         <input
                             v-model="sourceContentSelection[`${item.type}|${item.id}`]"
-                            type="checkbox"
-                            :value="`${item.type}|${item.id}`" />
+                            type="checkbox" />
                         <span>{{ item.hid }}: {{ item.name }}</span>
                     </div>
                 </div>
