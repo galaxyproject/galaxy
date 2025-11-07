@@ -3,7 +3,6 @@ import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
 import { toRef } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import type { HistorySummaryExtended } from "@/api";
 import {
@@ -16,17 +15,12 @@ import { useHistoryContentStats } from "@/composables/historyContentStats";
 interface Props {
     history: HistorySummaryExtended;
 }
-const router = useRouter();
 
 const props = defineProps<Props>();
 
 const emit = defineEmits(["update:operation-running"]);
 
 const { numItemsDeleted, numItemsHidden } = useHistoryContentStats(toRef(props, "history"));
-
-function onCopy() {
-    router.push("/datasets/copy");
-}
 
 function unhideAll() {
     runOperation(() => unhideAllHiddenContent(props.history));
@@ -48,9 +42,9 @@ async function runOperation(operation: () => Promise<unknown>) {
 </script>
 
 <template>
-    <section>
+    <section v-if="numItemsHidden || numItemsHidden || numItemsDeleted">
         <BDropdown
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             no-caret
             size="sm"
             variant="link"
@@ -63,14 +57,6 @@ async function runOperation(operation: () => Promise<unknown>) {
 
                 <FontAwesomeIcon :icon="faCog" />
             </template>
-
-            <BDropdownText id="history-op-all-content">
-                <span v-localize>With entire history...</span>
-            </BDropdownText>
-
-            <BDropdownItem data-description="copy datasets" @click="onCopy">
-                <span v-localize>Copy Datasets</span>
-            </BDropdownItem>
 
             <BDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
                 <span v-localize>Unhide All Hidden Content</span>
