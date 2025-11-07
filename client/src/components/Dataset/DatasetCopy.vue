@@ -5,6 +5,8 @@ import { computed, onMounted, ref } from "vue";
 import { GalaxyApi } from "@/api";
 
 import Heading from "@/components/Common/Heading.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faArrowRight, faStream } from "@fortawesome/free-solid-svg-icons";
 
 const loading = ref(false);
 const errorMessage = ref("");
@@ -130,7 +132,11 @@ onMounted(loadInitial);
         <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
         <b-row>
             <b-col cols="6">
-                <h6 class="mb-2">Source history</h6>
+                <Heading h2 size="sm">
+                    <FontAwesomeIcon :icon="faStream" />
+                    <span>From History</span>
+                </Heading>
+                <label class="form-label">Source History</label>
                 <BFormSelect v-model="sourceHistoryId" class="mb-3" @change="loadSourceContents">
                     <option v-for="h in histories" :key="h.id" :value="h.id">
                         {{ h.name }}
@@ -149,12 +155,14 @@ onMounted(loadInitial);
                     <span>{{ item.hid }}: {{ item.name }}</span>
                 </div>
             </b-col>
-
             <b-col cols="6">
-                <h6 class="mb-2">Destination histories</h6>
+                <Heading h2 size="sm">
+                    <FontAwesomeIcon :icon="faArrowRight" />
+                    <span>To History</span>
+                </Heading>
 
                 <div v-if="!useMultipleTargets">
-                    <label class="form-label">Target</label>
+                    <label class="form-label">Target History</label>
                     <BFormSelect v-model="targetSingleId" class="mb-2">
                         <option v-for="h in histories" :key="h.id" :value="h.id">
                             {{ h.name }}
