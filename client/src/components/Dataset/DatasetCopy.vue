@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faArrowRight, faStream } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormCheckbox, BFormInput } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
@@ -145,7 +145,7 @@ onMounted(loadHistories);
             <!-- Left column -->
             <div class="d-flex flex-column flex-grow-1 w-50 pr-1">
                 <Heading h2 size="sm">
-                    <FontAwesomeIcon :icon="faStream" />
+                    <FontAwesomeIcon :icon="faCopy" />
                     <span>From History</span>
                 </Heading>
                 <span class="text-sm mt-1">Select a Source History:</span>
