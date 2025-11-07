@@ -6,6 +6,8 @@ import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
+
+import LoadingSpan from "../LoadingSpan.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 type HistoryItem = { id: string; name: string };
@@ -68,6 +70,7 @@ async function loadHistories() {
 }
 
 async function loadContents() {
+    loading.value = true;
     if (sourceHistory.value) {
         const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
             params: { path: { history_id: sourceHistory.value.id } },
@@ -88,6 +91,7 @@ async function loadContents() {
             sourceContentSelection.value = updated;
         }
     }
+    loading.value = false;
 }
 
 function toggleAll(v: boolean) {
@@ -155,7 +159,8 @@ onMounted(loadHistories);
                     @input="loadContents" />
                 <span class="text-sm mt-1">Select Datasets and Collections:</span>
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
-                    <div v-if="sourceContents.length === 0" class="text-muted">This history has no datasets</div>
+                    <LoadingSpan v-if="loading" />
+                    <div v-else-if="sourceContents.length === 0" class="text-muted">This history has no datasets</div>
                     <div v-for="item in sourceContents" :key="item.id" class="d-flex align-items-center mb-1">
                         <BFormCheckbox v-model="sourceContentSelection[`${item.type}|${item.id}`]" class="me-2" />
                         <span>{{ item.hid }}: {{ item.name }}</span>
@@ -165,9 +170,7 @@ onMounted(loadHistories);
                     <BButton class="mr-2" size="sm" variant="outline-primary" @click="toggleAll(true)">
                         Select All
                     </BButton>
-                    <BButton size="sm" variant="outline-primary" @click="toggleAll(false)">
-                        Unselect All
-                    </BButton>
+                    <BButton size="sm" variant="outline-primary" @click="toggleAll(false)"> Unselect All </BButton>
                 </div>
             </div>
 
@@ -180,21 +183,37 @@ onMounted(loadHistories);
                 <span class="text-sm mt-1">Select a Target History:</span>
                 <Multiselect
                     v-model="targetSingleHistory"
+                    :allow-empty="true"
                     :options="histories"
                     label="name"
                     track-by="id"
                     deselect-label=""
-                    select-label="" />
+                    select-label=""
+                    @input="
+                        newHistoryName = '';
+                        targetMultiSelections = {};
+                    " />
                 <span class="text-sm mt-1"><b>OR</b> Select Multiple Target Histories:</span>
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
                     <div v-if="histories.length === 0" class="text-muted">There are not histories</div>
                     <div v-for="h in histories" :key="h.id" class="d-flex align-items-center mb-1">
-                        <BFormCheckbox v-model="targetMultiSelections[h.id]" class="me-2" />
+                        <BFormCheckbox
+                            v-model="targetMultiSelections[h.id]"
+                            class="me-2"
+                            @change="
+                                newHistoryName = '';
+                                targetSingleHistory = null;
+                            " />
                         <span>{{ h.name }}</span>
                     </div>
                 </div>
                 <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
-                <BFormInput v-model="newHistoryName" />
+                <BFormInput
+                    v-model="newHistoryName"
+                    @input="
+                        targetMultiSelections = {};
+                        targetSingleHistory = null;
+                    " />
                 <div class="text-right mt-2">
                     <BButton size="sm" variant="primary" :disabled="loading" @click="onCopy">
                         Copy Selected Items
