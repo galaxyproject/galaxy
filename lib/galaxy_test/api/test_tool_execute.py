@@ -681,6 +681,17 @@ def test_select_multiple_does_not_select_first_by_default(
         ).with_contents_stripped("None")
 
 
+@requires_tool_id("gx_select_multiple_one_default")
+def test_select_multiple_does_default_to_select_values_marked_as_selected(
+    required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs
+):
+    empty = tool_input_format.when.any({})
+    for required_tool in required_tools:
+        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "--ex3"
+        )
+
+
 @requires_tool_id("gx_text")
 @requires_tool_id("gx_text_optional_false")
 def test_null_to_text_tools(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
