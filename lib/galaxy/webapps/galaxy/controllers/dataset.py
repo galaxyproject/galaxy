@@ -6,7 +6,6 @@ from urllib.parse import (
 )
 
 import paste.httpexceptions
-from markupsafe import escape
 
 from galaxy import (
     util,
@@ -30,9 +29,7 @@ from galaxy.managers.hdas import (
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import (
     Dataset,
-    History,
     HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
 )
 from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.item_attrs import (
@@ -40,16 +37,12 @@ from galaxy.model.item_attrs import (
     UsesItemRatings,
 )
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    inflector,
-    sanitize_text,
-)
+from galaxy.util import sanitize_text
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
 from galaxy.webapps.base.controller import (
     BaseUIController,
-    url_for,
     UsesExtendedMetadataMixin,
 )
 from galaxy.webapps.galaxy.services.datasets import DatasetsService

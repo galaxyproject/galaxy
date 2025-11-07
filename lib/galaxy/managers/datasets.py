@@ -5,9 +5,6 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
-
-from pydantic import BaseModel
-
 from typing import (
     Any,
     Optional,
@@ -20,7 +17,6 @@ from galaxy import (
     exceptions,
     model,
 )
-
 from galaxy.datatypes import sniff
 from galaxy.managers import (
     base,
@@ -40,9 +36,9 @@ from galaxy.model import (
 )
 from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.tasks import (
+    ComputeDatasetHashTaskRequest,
     CopyDatasetsPayload,
     CopyDatasetsResponse,
-    ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
 )
 from galaxy.structured_app import MinimalManagerApp
@@ -99,8 +95,10 @@ class DatasetManager(
             raise exceptions.MessageException("Select at least one item to copy.")
 
         # Parse and decode selected datasets and dataset collections
-        encoded_dc = [s[len("dataset_collection|"):] for s in source_content_ids if s.startswith("dataset_collection|")]
-        encoded_ds = [s[len("dataset|"):] for s in source_content_ids if s.startswith("dataset|")]
+        encoded_dc = [
+            s[len("dataset_collection|") :] for s in source_content_ids if s.startswith("dataset_collection|")
+        ]
+        encoded_ds = [s[len("dataset|") :] for s in source_content_ids if s.startswith("dataset|")]
         decoded_dc = set(map(self.app.security.decode_id, encoded_dc))
         decoded_ds = set(map(self.app.security.decode_id, encoded_ds))
         decoded_target_ids: list[int] = []
@@ -122,8 +120,7 @@ class DatasetManager(
 
         # Ensure that user owns the target histories
         target_histories = [
-            h for h in map(trans.sa_session.query(History).get, decoded_target_ids)
-            if h is not None and h.user == user
+            h for h in map(trans.sa_session.query(History).get, decoded_target_ids) if h is not None and h.user == user
         ]
         if len(target_histories) != len(decoded_target_ids):
             raise exceptions.MessageException("You lack permission for one or more destination histories.")
@@ -153,7 +150,6 @@ class DatasetManager(
         # Respond with target history ids after successfully datasets
         history_ids = [self.app.security.encode_id(i) for i in decoded_target_ids]
         return CopyDatasetsResponse(history_ids=history_ids)
-
 
     def purge(self, item, flush=True, **kwargs):
         """

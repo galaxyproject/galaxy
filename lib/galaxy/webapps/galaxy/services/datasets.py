@@ -78,8 +78,8 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
-    CopyDatasetsResponse,
     CopyDatasetsPayload,
+    CopyDatasetsResponse,
 )
 from galaxy.schema.types import RelativeUrl
 from galaxy.security.idencoding import IdEncodingHelper
