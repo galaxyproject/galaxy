@@ -216,7 +216,8 @@ onMounted(loadHistories);
                     " />
                 <div class="text-right mt-2">
                     <BButton size="sm" variant="primary" :disabled="loading" @click="onCopy">
-                        Copy Selected Items
+                        <FontAwesomeIcon :icon="faCopy" class="mr-1" />
+                        <span v-localize>Copy Selected Items</span>
                     </BButton>
                 </div>
             </div>
