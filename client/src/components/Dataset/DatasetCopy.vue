@@ -1,204 +1,193 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { ref, computed, onMounted } from "vue"
+import { BAlert, BButton, BFormSelect, BFormInput, BFormCheckbox } from "bootstrap-vue"
+import { GalaxyApi } from "@/api"
+import Heading from "@/components/Common/Heading.vue";
 
-import { GalaxyApi } from "@/api";
+const loading = ref(false)
+const errorMessage = ref("")
+const successMessage = ref("")
+const histories = ref<Array<{ id: string; name: string }>>([])
 
-const loading = ref(false);
-const errorMessage = ref("");
-const successMessage = ref("");
-const histories = ref<Array<{ id: string; name: string }>>([]);
+const sourceHistoryId = ref<string | null>(null)
+const targetSingleId = ref<string | null>(null)
+const targetMultiIds = ref<Record<string, boolean>>({})
+const newHistoryName = ref("")
+const useMultipleTargets = ref(false)
 
-const sourceHistoryId = ref<string | null>(null);
-const targetSingleId = ref<string | null>(null);
-const targetMultiIds = ref<Record<string, boolean>>({});
-const newHistoryName = ref("");
-const useMultipleTargets = ref(false);
-
-const sourceContents = ref<Array<{ id: string; name: string; hid: number; type: string }>>([]);
-const sourceContentSelection = ref<Record<string, boolean>>({});
+const sourceContents = ref<Array<{ id: string; name: string; hid: number; type: string }>>([])
+const sourceContentSelection = ref<Record<string, boolean>>({})
 
 async function loadInitial() {
-    loading.value = true;
-    errorMessage.value = "";
-    successMessage.value = "";
-
-    const { data, error } = await GalaxyApi().GET("/api/histories");
+    loading.value = true
+    errorMessage.value = ""
+    successMessage.value = ""
+    const { data, error } = await GalaxyApi().GET("/api/histories")
     if (error) {
-        errorMessage.value = error.err_msg;
+        errorMessage.value = error.err_msg
     }
     if (Array.isArray(data)) {
-        histories.value = data.map((h: any) => ({ id: h.id, name: h.name }));
+        histories.value = data.map((h: any) => ({ id: h.id, name: h.name }))
         if (histories.value.length > 0) {
-            sourceHistoryId.value = histories.value[0]?.id || null;
-            targetSingleId.value = histories.value[0]?.id || null;
-            await loadSourceContents();
+            const [first] = histories.value as [ { id: string; name: string } ]
+            sourceHistoryId.value = first.id
+            targetSingleId.value = first.id
+            await loadSourceContents()
         }
     }
-
-    loading.value = false;
+    loading.value = false
 }
 
 async function loadSourceContents() {
-    if (sourceHistoryId.value) {
-        errorMessage.value = "";
-        successMessage.value = "";
-        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
-            params: {
-                path: {
-                    history_id: sourceHistoryId.value,
-                },
-            },
-        });
-        if (error) {
-            errorMessage.value = error.err_msg;
-        }
-        if (Array.isArray(data)) {
-            sourceContents.value = data.map((c: any) => ({
-                id: c.id,
-                name: c.name,
-                hid: c.hid,
-                type: c.history_content_type,
-            }));
-
-            sourceContentSelection.value = {};
-            for (const item of sourceContents.value) {
-                const key = `${item.type}|${item.id}`;
-                sourceContentSelection.value[key] = false;
-            }
+    if (!sourceHistoryId.value) {
+        return
+    }
+    errorMessage.value = ""
+    successMessage.value = ""
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
+        params: { path: { history_id: sourceHistoryId.value } },
+    })
+    if (error) {
+        errorMessage.value = error.err_msg
+    }
+    if (Array.isArray(data)) {
+        sourceContents.value = data.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            hid: c.hid,
+            type: c.history_content_type,
+        }))
+        sourceContentSelection.value = {}
+        for (const item of sourceContents.value) {
+            sourceContentSelection.value[`${item.type}|${item.id}`] = false
         }
     }
 }
 
 function toggleAll(v: boolean) {
-    for (const key in sourceContentSelection.value) {
-        sourceContentSelection.value[key] = v;
+    for (const k in sourceContentSelection.value) {
+        sourceContentSelection.value[k] = v
     }
 }
 
 const selectedContent = computed(() => {
-    const out: Array<{ id: string; type: string }> = [];
+    const out: Array<{ id: string; type: string }> = []
     for (const item of sourceContents.value) {
-        const key = `${item.type}|${item.id}`;
+        const key = `${item.type}|${item.id}`
         if (sourceContentSelection.value[key]) {
-            out.push({ id: item.id, type: item.type });
+            out.push({ id: item.id, type: item.type })
         }
     }
-    return out;
-});
+    return out
+})
 
 const resolvedTargetIds = computed(() => {
-    const out: string[] = [];
-
     if (newHistoryName.value) {
-        return out;
+        return []
     }
-
     if (useMultipleTargets.value) {
-        for (const id in targetMultiIds.value) {
-            if (targetMultiIds.value[id]) {
-                out.push(id);
-            }
-        }
-        return out;
+        return Object.keys(targetMultiIds.value).filter(k => targetMultiIds.value[k])
     }
-
-    if (targetSingleId.value) {
-        out.push(targetSingleId.value);
-    }
-
-    return out;
-});
+    return targetSingleId.value ? [targetSingleId.value] : []
+})
 
 async function submitCopy() {
-    if (sourceHistoryId.value && selectedContent.value) {
-        loading.value = true;
-        errorMessage.value = "";
-        successMessage.value = "";
-        const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
-            body: {
-                source_history: sourceHistoryId.value,
-                source_content: selectedContent.value,
-                target_history_ids: newHistoryName.value ? null : resolvedTargetIds.value,
-                target_history_name: newHistoryName.value || null,
-            },
-        });
-        if (error) {
-            errorMessage.value = error.err_msg;
-        }
-        if (response) {
-            const historyIds = response.history_ids || [];
-            const count = selectedContent.value.length;
-            const targets = historyIds.length;
-            successMessage.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`;
-            await loadSourceContents();
-        }
-        loading.value = false;
+    if (!sourceHistoryId.value || selectedContent.value.length === 0) {
+        return
     }
+    loading.value = true
+    errorMessage.value = ""
+    successMessage.value = ""
+    const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
+        body: {
+            source_history: sourceHistoryId.value,
+            source_content: selectedContent.value,
+            target_history_ids: newHistoryName.value ? [] : resolvedTargetIds.value,
+            target_history_name: newHistoryName.value || null,
+        },
+    })
+    if (error) {
+        errorMessage.value = error.err_msg
+    }
+    if (response) {
+        const targets = response.history_ids.length
+        const count = selectedContent.value.length
+        successMessage.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`
+        await loadSourceContents()
+    }
+    loading.value = false
 }
 
-onMounted(loadInitial);
+onMounted(loadInitial)
 </script>
 
 <template>
-    <div class="p-4 space-y-4">
-        <div v-if="errorMessage" class="text-red-600">{{ errorMessage }}</div>
-        <div v-if="successMessage" class="text-green-700">{{ successMessage }}</div>
+    <div>
+        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+        <BAlert v-if="successMessage" variant="success" show>{{ successMessage }}</BAlert>
+        <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
+        <b-row>
+            <b-col cols="6">
+                <h6 class="mb-2">Source history</h6>
+                <BFormSelect v-model="sourceHistoryId" @change="loadSourceContents" class="mb-3">
+                    <option v-for="h in histories" :key="h.id" :value="h.id">
+                        {{ h.name }}
+                    </option>
+                </BFormSelect>
 
-        <div class="text-gray-700">Copy history items</div>
-
-        <div class="grid grid-cols-2 gap-6">
-            <div>
-                <div class="font-semibold mb-2">Source history</div>
-                <select v-model="sourceHistoryId" class="border p-2 w-full" @change="loadSourceContents">
-                    <option v-for="h in histories" :key="h.id" :value="h.id">{{ h.name }}</option>
-                </select>
-
-                <div class="mt-4">
-                    <div class="flex space-x-2 mb-2">
-                        <button type="button" class="px-2 py-1 border" @click="toggleAll(true)">All</button>
-                        <button type="button" class="px-2 py-1 border" @click="toggleAll(false)">None</button>
-                    </div>
-
-                    <div v-if="sourceContents.length === 0" class="text-gray-500">This history has no datasets</div>
-
-                    <div v-for="item in sourceContents" :key="item.id" class="flex space-x-2 mb-1">
-                        <input v-model="sourceContentSelection[`${item.type}|${item.id}`]" type="checkbox" />
-                        <span>{{ item.hid }}: {{ item.name }}</span>
-                    </div>
+                <div class="d-flex mb-2">
+                    <BButton size="sm" variant="secondary" class="me-2" @click="toggleAll(true)">All</BButton>
+                    <BButton size="sm" variant="secondary" @click="toggleAll(false)">None</BButton>
                 </div>
-            </div>
 
-            <div>
-                <div class="font-semibold mb-2">Destination histories</div>
+                <div v-if="sourceContents.length === 0" class="text-muted">
+                    This history has no datasets
+                </div>
+
+                <div v-for="item in sourceContents" :key="item.id" class="d-flex align-items-center mb-1">
+                    <BFormCheckbox v-model="sourceContentSelection[`${item.type}|${item.id}`]" class="me-2" />
+                    <span>{{ item.hid }}: {{ item.name }}</span>
+                </div>
+
+            </b-col>
+
+            <b-col cols="6">
+
+                <h6 class="mb-2">Destination histories</h6>
 
                 <div v-if="!useMultipleTargets">
-                    <label>Target</label>
-                    <select v-model="targetSingleId" class="border p-2 w-full">
-                        <option v-for="h in histories" :key="h.id" :value="h.id">{{ h.name }}</option>
-                    </select>
-                    <div class="text-blue-700 mt-2 cursor-pointer" @click="useMultipleTargets = true">
+                    <label class="form-label">Target</label>
+                    <BFormSelect v-model="targetSingleId" class="mb-2">
+                        <option v-for="h in histories" :key="h.id" :value="h.id">
+                            {{ h.name }}
+                        </option>
+                    </BFormSelect>
+
+                    <BButton variant="link" class="p-0" @click="useMultipleTargets = true">
                         Choose multiple histories
-                    </div>
+                    </BButton>
                 </div>
 
                 <div v-else>
-                    <div v-for="h in histories" :key="h.id" class="flex space-x-2 mb-1">
-                        <input v-model="targetMultiIds[h.id]" type="checkbox" />
+                    <div v-for="h in histories" :key="h.id" class="d-flex align-items-center mb-1">
+                        <BFormCheckbox v-model="targetMultiIds[h.id]" class="me-2" />
                         <span>{{ h.name }}</span>
                     </div>
                 </div>
 
-                <div class="mt-6 border-t pt-4">
-                    <label>New history name</label>
-                    <input v-model="newHistoryName" type="text" class="border p-2 w-full" />
+                <hr class="my-4" />
+
+                <label class="form-label">New history name</label>
+                <BFormInput v-model="newHistoryName" class="mb-3" />
+
+                <div class="text-center">
+                    <BButton variant="primary" :disabled="loading" @click="submitCopy">
+                        Copy items
+                    </BButton>
                 </div>
 
-                <div class="mt-6 text-center">
-                    <button type="button" class="px-4 py-2 border bg-gray-100" :disabled="loading" @click="submitCopy">
-                        Copy items
-                    </button>
-                </div>
-            </div>
-        </div>
+            </b-col>
+        </b-row>
+
     </div>
 </template>
