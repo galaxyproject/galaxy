@@ -112,15 +112,15 @@ def column_title_to_target_type(column_title: str) -> Optional[RuleBuilderMappin
 
     Examples:
         >>> column_title_to_target_type("Name")
-        "name"
+        'name'
         >>> column_title_to_target_type("MD5 Sum")
-        "hash_md5"
+        'hash_md5'
         >>> column_title_to_target_type("URI 1 (Forward)")
-        "url"
+        'url'
         >>> column_title_to_target_type("Genome Build")
-        "dbkey"
-        >>> column_title_to_target_type("Unknown Column")
-        None
+        'dbkey'
+        >>> column_title_to_target_type("Unknown Column") is None
+        True
     """
     # Normalize: lowercase, remove whitespace/parens/dashes/underscores and "optional"
     normalized_title = re.sub(r"[\s\(\)\-\_]|optional", "", column_title.lower())
