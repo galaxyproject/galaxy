@@ -6,7 +6,6 @@ import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
-
 import Heading from "@/components/Common/Heading.vue";
 
 type HistoryItem = { id: string; name: string };
@@ -82,25 +81,28 @@ async function loadContents() {
                 hid: c.hid,
                 type: c.history_content_type,
             }));
-            sourceContentSelection.value = {};
+            const updated: Record<string, boolean> = {};
             for (const item of sourceContents.value) {
-                sourceContentSelection.value[`${item.type}|${item.id}`] = false;
+                updated[`${item.type}|${item.id}`] = false;
             }
+            sourceContentSelection.value = updated;
         }
     }
 }
 
 function toggleAll(v: boolean) {
-    for (const k in sourceContentSelection.value) {
-        sourceContentSelection.value[k] = v;
+    const updated: Record<string, boolean> = {};
+    for (const key in sourceContentSelection.value) {
+        updated[key] = v;
     }
+    sourceContentSelection.value = updated;
 }
 
 async function onCopy() {
+    errorMessage.value = "";
+    successMessage.value = "";
     if (sourceHistory.value && selectedContent.value.length > 0) {
         loading.value = true;
-        errorMessage.value = "";
-        successMessage.value = "";
         const targetIds = selectedTargets.value.map((h) => h.id);
         const { data, error } = await GalaxyApi().POST("/api/datasets/copy", {
             body: {
@@ -134,6 +136,7 @@ onMounted(loadHistories);
             <BAlert v-if="successMessage" variant="success" show>{{ successMessage }}</BAlert>
             <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
         </div>
+
         <div class="dataset-copy-columns d-flex flex-grow-1">
             <!-- Left column -->
             <div class="d-flex flex-column flex-grow-1 w-50 pr-1">
@@ -159,10 +162,10 @@ onMounted(loadHistories);
                     </div>
                 </div>
                 <div class="d-flex mt-2">
-                    <BButton v-localize class="mr-2" size="sm" variant="outline-primary" @click="toggleAll(true)">
+                    <BButton class="mr-2" size="sm" variant="outline-primary" @click="toggleAll(true)">
                         Select All
                     </BButton>
-                    <BButton v-localize size="sm" variant="outline-primary" @click="toggleAll(false)">
+                    <BButton size="sm" variant="outline-primary" @click="toggleAll(false)">
                         Unselect All
                     </BButton>
                 </div>
@@ -178,7 +181,6 @@ onMounted(loadHistories);
                 <Multiselect
                     v-model="targetSingleHistory"
                     :options="histories"
-                    :allow-empty="true"
                     label="name"
                     track-by="id"
                     deselect-label=""
@@ -194,7 +196,7 @@ onMounted(loadHistories);
                 <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
                 <BFormInput v-model="newHistoryName" />
                 <div class="text-right mt-2">
-                    <BButton v-localize size="sm" variant="primary" :disabled="loading" @click="onCopy">
+                    <BButton size="sm" variant="primary" :disabled="loading" @click="onCopy">
                         Copy Selected Items
                     </BButton>
                 </div>
