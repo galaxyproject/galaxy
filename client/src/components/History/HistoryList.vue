@@ -142,6 +142,7 @@ const noItems = computed(() => !loading.value && historiesLoaded.value.length ==
 const noResults = computed(() => !loading.value && historiesLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted histories" : "Show deleted histories"));
 const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purged));
+const showBulkMultiview = computed(() => selectedHistories.value.length > 1);
 
 const historyListFilters = computed(() => getHistoryListFilters(props.activeList));
 const rawFilters = computed(() =>
@@ -457,15 +458,37 @@ async function onBulkTagsAdd(tags: string[]) {
     }
 }
 
+const MULTIVIEW_MAX_HISTORIES = 10;
+
 /**
  * Opens selected histories in the MultiviewPanel
  * Pins the selected histories and navigates to the multiview page
  */
-function onBulkOpenInMultiview() {
+async function onBulkOpenInMultiview() {
     const totalSelected = selectedHistories.value.length;
 
     if (totalSelected === 0) {
         return;
+    }
+
+    if (totalSelected > MULTIVIEW_MAX_HISTORIES) {
+        const confirmed = await confirm(
+            `You have selected ${totalSelected} histories to open in multiview.
+        However, the maximum number of histories allowed in multiview is ${MULTIVIEW_MAX_HISTORIES}.
+        Do you want to proceed with opening the first ${MULTIVIEW_MAX_HISTORIES} histories?`,
+            {
+                id: "bulk-open-multiview-histories",
+                title: `You can only open ${MULTIVIEW_MAX_HISTORIES} histories in multiview`,
+                okTitle: "Proceed",
+                okVariant: "primary",
+                cancelVariant: "outline-primary",
+                centered: true,
+            },
+        );
+        if (!confirmed) {
+            return;
+        }
+        selectedHistories.value.splice(MULTIVIEW_MAX_HISTORIES);
     }
 
     historyStore.clearPinnedHistories();
@@ -725,7 +748,7 @@ onMounted(async () => {
                 </BButton>
 
                 <BButton
-                    v-if="!showDeleted"
+                    v-if="showBulkMultiview"
                     id="history-list-footer-bulk-open-multiview-button"
                     v-b-tooltip.hover
                     title="Open selected histories in multiview"
