@@ -13,7 +13,7 @@ type HistoryItem = { id: string; name: string };
 type SourceEntry = { id: string; name: string; hid: number; type: string };
 type SelectedPayload = { id: string; type: string };
 
-const loading = ref(false);
+const loading = ref(true);
 const errorMessage = ref("");
 const successMessage = ref("");
 const histories = ref<HistoryItem[]>([]);
@@ -28,52 +28,42 @@ const sourceContents = ref<SourceEntry[]>([]);
 const sourceContentSelection = ref<Record<string, boolean>>({});
 
 async function loadInitial() {
-    loading.value = true;
-    errorMessage.value = "";
-    successMessage.value = "";
-
     const { data, error } = await GalaxyApi().GET("/api/histories");
     if (error) {
         errorMessage.value = error.err_msg;
-        loading.value = false;
-        return;
-    }
-
-    if (Array.isArray(data)) {
+    } else if (Array.isArray(data)) {
         histories.value = data.map((h: any) => ({ id: h.id, name: h.name }));
         if (histories.value.length > 0) {
             const [first] = histories.value as [HistoryItem];
             sourceHistory.value = first;
             await loadSourceContents();
         }
+    } else {
+        errorMessage.value = "No Histories found.";
     }
     loading.value = false;
 }
 
 async function loadSourceContents() {
-    if (!sourceHistory.value) {
-        return;
-    }
-    errorMessage.value = "";
-    successMessage.value = "";
-
-    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
-        params: { path: { history_id: sourceHistory.value.id } },
-    });
-    if (error) {
-        errorMessage.value = error.err_msg;
-        return;
-    }
-    if (Array.isArray(data)) {
-        sourceContents.value = data.map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            hid: c.hid,
-            type: c.history_content_type,
-        }));
-        sourceContentSelection.value = {};
-        for (const item of sourceContents.value) {
-            sourceContentSelection.value[`${item.type}|${item.id}`] = false;
+    if (sourceHistory.value) {
+        errorMessage.value = "";
+        successMessage.value = "";
+        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
+            params: { path: { history_id: sourceHistory.value.id } },
+        });
+        if (error) {
+            errorMessage.value = error.err_msg;
+        } else if (Array.isArray(data)) {
+            sourceContents.value = data.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                hid: c.hid,
+                type: c.history_content_type,
+            }));
+            sourceContentSelection.value = {};
+            for (const item of sourceContents.value) {
+                sourceContentSelection.value[`${item.type}|${item.id}`] = false;
+            }
         }
     }
 }
@@ -112,35 +102,31 @@ const resolvedTargetHistories = computed<HistoryItem[]>(() => {
 });
 
 async function submitCopy() {
-    if (!sourceHistory.value || selectedContent.value.length === 0) {
-        return;
-    }
-    loading.value = true;
-    errorMessage.value = "";
-    successMessage.value = "";
-
-    const targetIds = resolvedTargetHistories.value.map((h) => h.id);
-
-    const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
-        body: {
-            source_history: sourceHistory.value.id,
-            source_content: selectedContent.value,
-            target_history_ids: newHistoryName.value ? [] : targetIds,
-            target_history_name: newHistoryName.value || null,
-        },
-    });
-    if (error) {
-        errorMessage.value = error.err_msg;
+    if (sourceHistory.value && selectedContent.value.length > 0) {
+        loading.value = true;
+        errorMessage.value = "";
+        successMessage.value = "";
+        const targetIds = resolvedTargetHistories.value.map((h) => h.id);
+        const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
+            body: {
+                source_history: sourceHistory.value.id,
+                source_content: selectedContent.value,
+                target_history_ids: newHistoryName.value ? [] : targetIds,
+                target_history_name: newHistoryName.value || null,
+            },
+        });
+        if (error) {
+            errorMessage.value = error.err_msg;
+        } else if (response) {
+            const targets = response.history_ids.length;
+            const count = selectedContent.value.length;
+            successMessage.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`;
+            await loadSourceContents();
+        }
         loading.value = false;
-        return;
+    } else {
+        errorMessage.value = "Please select Datasets and Collections.";
     }
-    if (response) {
-        const targets = response.history_ids.length;
-        const count = selectedContent.value.length;
-        successMessage.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`;
-        await loadSourceContents();
-    }
-    loading.value = false;
 }
 
 onMounted(loadInitial);
@@ -178,10 +164,10 @@ onMounted(loadInitial);
                     </div>
                 </div>
                 <div class="d-flex mt-2">
-                    <BButton size="sm" variant="outline-primary" class="mr-2"v-localize  @click="toggleAll(true)">
+                    <BButton v-localize class="mr-2" size="sm" variant="outline-primary" @click="toggleAll(true)">
                         Select All
                     </BButton>
-                    <BButton size="sm" variant="outline-primary" v-localize @click="toggleAll(false)">
+                    <BButton v-localize size="sm" variant="outline-primary" @click="toggleAll(false)">
                         Unselect All
                     </BButton>
                 </div>
@@ -213,7 +199,9 @@ onMounted(loadInitial);
                 <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
                 <BFormInput v-model="newHistoryName" />
                 <div class="text-right mt-2">
-                    <BButton size="sm" variant="primary" :disabled="loading" v-localize @click="submitCopy"> Copy Selected Items </BButton>
+                    <BButton v-localize size="sm" variant="primary" :disabled="loading" @click="submitCopy">
+                        Copy Selected Items
+                    </BButton>
                 </div>
             </div>
         </div>
