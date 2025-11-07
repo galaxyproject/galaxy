@@ -1,0 +1,7 @@
+"URI 1"	"URI 2"	"Outer List Identifier"	"Inner List Identifier"
+ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/006/SRR5680996/SRR5680996_1.fastq.gz	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/006/SRR5680996/SRR5680996_2.fastq.gz	H3K4me3	rep1
+ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/007/SRR5680997/SRR5680997_1.fastq.gz	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/007/SRR5680997/SRR5680997_2.fastq.gz	H3K4me27	rep2
+ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/007/SRR5681007/SRR5681007_1.fastq.gz	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/007/SRR5681007/SRR5681007_2.fastq.gz	H3K4me27	rep1
+ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/006/SRR5681006/SRR5681006_1.fastq.gz	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/006/SRR5681006/SRR5681006_2.fastq.gz	H3K4me3	rep2
+ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/008/SRR5680998/SRR5680998_1.fastq.gz	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/008/SRR5680998/SRR5680998_2.fastq.gz	CTCF	rep1
+ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/008/SRR5681008/SRR5681008_1.fastq.gz	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR568/008/SRR5681008/SRR5681008_2.fastq.gz	CTCF	rep2
