@@ -127,7 +127,7 @@ async function submitCopy() {
         }
         if (response) {
             const historyIds = response.history_ids || [];
-            const count = selectedContentIds.value.length;
+            const count = selectedContent.value.length;
             const targets = historyIds.length;
             successMessage.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`;
             await loadSourceContents();
