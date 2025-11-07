@@ -468,6 +468,7 @@ function onBulkOpenInMultiview() {
         return;
     }
 
+    historyStore.clearPinnedHistories();
     for (const history of selectedHistories.value) {
         historyStore.pinHistory(history.id);
     }

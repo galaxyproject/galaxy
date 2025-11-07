@@ -72,7 +72,7 @@ async function createAndPin() {
 
 /** Reset to _default_ state; showing 4 latest updated histories */
 function pinRecent() {
-    historyStore.pinnedHistories = [];
+    historyStore.clearPinnedHistories();
     Toast.info(
         "Showing the 4 most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
         "History Multiview",

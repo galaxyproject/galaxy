@@ -168,6 +168,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         pinnedHistories.value = pinnedHistories.value.filter((h) => !historyIds.includes(h.id));
     }
 
+    function clearPinnedHistories() {
+        pinnedHistories.value = [];
+    }
+
     function selectHistory(history: HistorySummary) {
         setHistory(history);
         setCurrentHistoryId(history.id);
@@ -473,6 +477,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setHistories,
         pinHistory,
         unpinHistories,
+        clearPinnedHistories,
         selectHistory,
         applyFilters,
         copyHistory,

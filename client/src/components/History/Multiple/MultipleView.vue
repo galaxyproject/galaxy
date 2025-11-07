@@ -100,7 +100,7 @@ const showRecentTitle = computed(() => {
 
 /** Reset to _default_ state; showing 4 latest updated histories */
 function showRecent() {
-    historyStore.pinnedHistories = [];
+    historyStore.clearPinnedHistories();
     Toast.info(
         "Showing the 4 most recently updated histories. Pin histories to this view by clicking on Select Histories.",
         "History Multiview",
