@@ -8,7 +8,7 @@
  *
  * - Filtering and searching histories with advanced filter options
  * - Pagination for large history collections
- * - Bulk operations (delete, restore, add tags)
+ * - Bulk operations (delete, restore, purge, add tags, open in multiview)
  * - Individual history selection and management
  * - View mode switching (grid/list)
  * - Sorting capabilities
@@ -19,7 +19,7 @@
  * <HistoryList activeList="shared" />
  */
 
-import { faBurn, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
@@ -458,6 +458,28 @@ async function onBulkTagsAdd(tags: string[]) {
 }
 
 /**
+ * Opens selected histories in the MultiviewPanel
+ * Pins the selected histories and navigates to the multiview page
+ */
+function onBulkOpenInMultiview() {
+    const totalSelected = selectedHistories.value.length;
+
+    if (totalSelected === 0) {
+        return;
+    }
+
+    for (const history of selectedHistories.value) {
+        historyStore.pinHistory(history.id);
+    }
+
+    router.push("/histories/view_multiple");
+
+    resetSelection();
+
+    Toast.success(`Opened ${totalSelected} ${totalSelected === 1 ? "history" : "histories"} in multiview.`);
+}
+
+/**
  * Watches for changes in filter text, sort options, and sort direction
  * to reload the history list with updated parameters
  */
@@ -699,6 +721,18 @@ onMounted(async () => {
                         Add tags ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Adding tags" />
+                </BButton>
+
+                <BButton
+                    v-if="!showDeleted"
+                    id="history-list-footer-bulk-open-multiview-button"
+                    v-b-tooltip.hover
+                    title="Open selected histories in multiview"
+                    size="sm"
+                    variant="primary"
+                    @click="onBulkOpenInMultiview">
+                    <FontAwesomeIcon :icon="faColumns" fixed-width />
+                    Open in Multiview ({{ selectedHistories.length }})
                 </BButton>
             </div>
 
