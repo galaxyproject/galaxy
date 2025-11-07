@@ -11,6 +11,10 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from galaxy.managers.agent_operations import AgentOperationsManager
+from galaxy.managers.users import UserManager
+from galaxy.work.context import WorkRequestContext
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,23 +31,24 @@ def get_mcp_app(gx_app):
     # Create MCP server instance
     mcp = FastMCP("Galaxy", dependencies=["httpx>=0.27.0"])
 
-    # Get Galaxy base URL from config
-    # Use galaxy_infrastructure_url if available, otherwise construct from host/port
-    if hasattr(gx_app.config, "galaxy_infrastructure_url") and gx_app.config.galaxy_infrastructure_url:
-        base_url = gx_app.config.galaxy_infrastructure_url.rstrip("/")
-    else:
-        # Fallback to localhost for internal API calls
-        base_url = "http://localhost:8080"
-
-    logger.info(f"MCP server configured to use Galaxy API at: {base_url}")
-
-    # Helper function to create AgentOperationsManager
-    def get_operations_manager(api_key: str):
+    # Helper function to create AgentOperationsManager from API key
+    def get_operations_manager(api_key: str) -> AgentOperationsManager:
         """
-        Create AgentOperationsManager for external mode.
+        Create AgentOperationsManager by converting API key to user context.
+
+        This looks up the user from the API key and creates a WorkRequestContext,
+        then returns an AgentOperationsManager in internal mode. This means all
+        MCP tools (both external and internal) use the same code path through
+        direct Galaxy manager calls.
 
         Args:
             api_key: Galaxy API key for authentication
+
+        Returns:
+            AgentOperationsManager configured for internal mode
+
+        Raises:
+            ValueError: If API key is invalid or user not found
         """
         if not api_key:
             raise ValueError(
@@ -51,9 +56,21 @@ def get_mcp_app(gx_app):
                 "under User -> Preferences -> Manage API Key."
             )
 
-        from galaxy.managers.agent_operations import AgentOperationsManager
+        # Look up user from API key
+        user_manager = UserManager(gx_app)
+        user = user_manager.by_api_key(api_key=api_key)
 
-        return AgentOperationsManager(api_key=api_key, base_url=base_url)
+        if not user:
+            raise ValueError(
+                "Invalid API key. Please check your API key and try again. "
+                "You can create or view your API key in Galaxy under User -> Preferences -> Manage API Key."
+            )
+
+        # Create a work context for this user
+        trans = WorkRequestContext(app=gx_app, user=user)
+
+        # Return AgentOperationsManager in internal mode
+        return AgentOperationsManager(app=gx_app, trans=trans)
 
     # Define MCP tools
     # All tools are thin wrappers around AgentOperationsManager
@@ -172,10 +189,32 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to run tool {tool_id}: {str(e)}")
             raise ValueError(f"Failed to run tool '{tool_id}' in history '{history_id}': {str(e)}") from e
 
+    @mcp.tool()
+    def get_job_status(job_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get the status and details of a Galaxy job.
+
+        After running a tool with run_tool(), use this to check if the job has
+        finished and whether it succeeded or failed.
+
+        Args:
+            job_id: ID of the job to check (from run_tool() response)
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Job details including state (queued/running/ok/error), tool info, and timestamps
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_job_status(job_id)
+        except Exception as e:
+            logger.error(f"Failed to get job status for {job_id}: {str(e)}")
+            raise ValueError(f"Failed to get status for job '{job_id}': {str(e)}") from e
+
     # Create the HTTP app for mounting
     # The path="/mcp" parameter here is just for SSE endpoint naming
     # The actual mount point is determined by fast_app.py
     mcp_app = mcp.sse_app()
 
-    logger.info("MCP server initialized with 5 core tools")
+    logger.info("MCP server initialized with 6 tools")
     return mcp_app
