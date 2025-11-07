@@ -10,24 +10,48 @@ import { GalaxyApi } from "@/api";
 import Heading from "@/components/Common/Heading.vue";
 
 type HistoryItem = { id: string; name: string };
-type SourceEntry = { id: string; name: string; hid: number; type: string };
 type SelectedPayload = { id: string; type: string };
+type SourceEntry = { id: string; name: string; hid: number; type: string };
 
-const loading = ref(true);
 const errorMessage = ref("");
-const successMessage = ref("");
 const histories = ref<HistoryItem[]>([]);
-
+const loading = ref(true);
+const newHistoryName = ref("");
+const sourceContentSelection = ref<Record<string, boolean>>({});
+const sourceContents = ref<SourceEntry[]>([]);
 const sourceHistory = ref<HistoryItem | null>(null);
+const successMessage = ref("");
 const targetSingleHistory = ref<HistoryItem | null>(null);
 const targetMultiSelections = ref<Record<string, boolean>>({});
-const newHistoryName = ref("");
-const useMultipleTargets = ref(false);
 
-const sourceContents = ref<SourceEntry[]>([]);
-const sourceContentSelection = ref<Record<string, boolean>>({});
+const selectedContent = computed<SelectedPayload[]>(() => {
+    const out: SelectedPayload[] = [];
+    for (const item of sourceContents.value) {
+        const key = `${item.type}|${item.id}`;
+        if (sourceContentSelection.value[key]) {
+            out.push({ id: item.id, type: item.type });
+        }
+    }
+    return out;
+});
 
-async function loadInitial() {
+const selectedTargets = computed<HistoryItem[]>(() => {
+    if (newHistoryName.value) {
+        return [];
+    } else if (targetSingleHistory.value) {
+        return [targetSingleHistory.value];
+    } else {
+        const out: HistoryItem[] = [];
+        for (const h of histories.value) {
+            if (targetMultiSelections.value[h.id]) {
+                out.push(h);
+            }
+        }
+        return out;
+    }
+});
+
+async function loadHistories() {
     const { data, error } = await GalaxyApi().GET("/api/histories");
     if (error) {
         errorMessage.value = error.err_msg;
@@ -36,7 +60,7 @@ async function loadInitial() {
         if (histories.value.length > 0) {
             const [first] = histories.value as [HistoryItem];
             sourceHistory.value = first;
-            await loadSourceContents();
+            await loadContents();
         }
     } else {
         errorMessage.value = "No Histories found.";
@@ -44,10 +68,8 @@ async function loadInitial() {
     loading.value = false;
 }
 
-async function loadSourceContents() {
+async function loadContents() {
     if (sourceHistory.value) {
-        errorMessage.value = "";
-        successMessage.value = "";
         const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
             params: { path: { history_id: sourceHistory.value.id } },
         });
@@ -74,40 +96,13 @@ function toggleAll(v: boolean) {
     }
 }
 
-const selectedContent = computed<SelectedPayload[]>(() => {
-    const out: SelectedPayload[] = [];
-    for (const item of sourceContents.value) {
-        const key = `${item.type}|${item.id}`;
-        if (sourceContentSelection.value[key]) {
-            out.push({ id: item.id, type: item.type });
-        }
-    }
-    return out;
-});
-
-const resolvedTargetHistories = computed<HistoryItem[]>(() => {
-    if (newHistoryName.value) {
-        return [];
-    }
-    if (useMultipleTargets.value) {
-        const out: HistoryItem[] = [];
-        for (const h of histories.value) {
-            if (targetMultiSelections.value[h.id]) {
-                out.push(h);
-            }
-        }
-        return out;
-    }
-    return targetSingleHistory.value ? [targetSingleHistory.value] : [];
-});
-
-async function submitCopy() {
+async function onCopy() {
     if (sourceHistory.value && selectedContent.value.length > 0) {
         loading.value = true;
         errorMessage.value = "";
         successMessage.value = "";
-        const targetIds = resolvedTargetHistories.value.map((h) => h.id);
-        const { data: response, error } = await GalaxyApi().POST("/api/datasets/copy", {
+        const targetIds = selectedTargets.value.map((h) => h.id);
+        const { data, error } = await GalaxyApi().POST("/api/datasets/copy", {
             body: {
                 source_history: sourceHistory.value.id,
                 source_content: selectedContent.value,
@@ -117,11 +112,11 @@ async function submitCopy() {
         });
         if (error) {
             errorMessage.value = error.err_msg;
-        } else if (response) {
-            const targets = response.history_ids.length;
+        } else if (data) {
+            const targets = data.history_ids.length;
             const count = selectedContent.value.length;
             successMessage.value = `${count} item${count === 1 ? "" : "s"} copied to ${targets} histor${targets === 1 ? "y" : "ies"}.`;
-            await loadSourceContents();
+            await loadContents();
         }
         loading.value = false;
     } else {
@@ -129,7 +124,7 @@ async function submitCopy() {
     }
 }
 
-onMounted(loadInitial);
+onMounted(loadHistories);
 </script>
 
 <template>
@@ -154,7 +149,7 @@ onMounted(loadInitial);
                     track-by="id"
                     deselect-label=""
                     select-label=""
-                    @input="loadSourceContents" />
+                    @input="loadContents" />
                 <span class="text-sm mt-1">Select Datasets and Collections:</span>
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
                     <div v-if="sourceContents.length === 0" class="text-muted">This history has no datasets</div>
@@ -199,7 +194,7 @@ onMounted(loadInitial);
                 <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
                 <BFormInput v-model="newHistoryName" />
                 <div class="text-right mt-2">
-                    <BButton v-localize size="sm" variant="primary" :disabled="loading" @click="submitCopy">
+                    <BButton v-localize size="sm" variant="primary" :disabled="loading" @click="onCopy">
                         Copy Selected Items
                     </BButton>
                 </div>
