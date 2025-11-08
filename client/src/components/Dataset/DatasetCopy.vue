@@ -166,8 +166,7 @@ defineExpose({
                         <RouterLink :to="`/histories/view?id=${targetId}`" data-description="copy switch history">{{
                             getHistoryName(targetId)
                         }}</RouterLink>
-                        <span v-if="targetIndex == successTargetIds.length - 1">.</span>
-                        <span v-else>, </span>
+                        <span v-if="targetIndex != successTargetIds.length - 1">, </span>
                     </span>
                 </span>
             </BAlert>
