@@ -3,6 +3,7 @@ from .framework import (
     SeleniumTestCase,
 )
 
+
 class TestHistoryCopyElements(SeleniumTestCase):
     ensure_registered = True
 
@@ -29,11 +30,9 @@ class TestHistoryCopyElements(SeleniumTestCase):
         text_element.send_keys("new_history_to_copy")
 
         self.components.history_copy_elements.copy_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.components.history_copy_elements.done_link.wait_for_and_click()
+        self.components.history_copy_elements.new_history_link.wait_for_and_click()
+        self.components.history_view.switch_to_history.wait_for_and_click()
 
-        # I don't know why this sleep is necessary but it seems to be
-        self.sleep_for(self.wait_types.UX_RENDER)
         # Okay copied first
         self.history_panel_wait_for_hid_state(5, "ok")
         # Then 4 datasets and then the failed collection (this was six when coming from the original history)

@@ -55,6 +55,8 @@ const selectedTargets = computed<HistoryItem[]>(() => {
 });
 
 async function loadHistories() {
+    loading.value = true;
+    errorMessage.value = "";
     const { data, error } = await GalaxyApi().GET("/api/histories");
     if (error) {
         errorMessage.value = error.err_msg;
@@ -125,7 +127,7 @@ async function onCopy() {
         } else if (data) {
             successItemCount.value = selectedContent.value.length;
             successHistoryName.value = newHistoryName.value;
-            successTargetIds.value = data.history_ids;
+            successTargetIds.value = data.history_ids || [];
             await loadContents();
         }
         loading.value = false;

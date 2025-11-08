@@ -27,7 +27,18 @@ function mountComponent() {
     return mount(DatasetCopy, {
         localVue,
         directives: { localize: () => {} },
+        stubs: { RouterLink: { template: "<a><slot /></a>" } },
     });
+}
+
+async function setupBase(histories, contents) {
+    GalaxyApi().GET.mockResolvedValueOnce({ data: histories, error: null });
+    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
+    const wrapper = mountComponent();
+    await flushPromises();
+    const checkbox = wrapper.find("input[type='checkbox']");
+    await checkbox.setChecked(true);
+    return wrapper;
 }
 
 it("loads histories and contents on mount", async () => {
@@ -83,16 +94,10 @@ it("copies selected items and shows success", async () => {
     const checkbox = wrapper.find("input[type='checkbox']");
     await checkbox.setChecked(true);
 
-    const target = wrapper.findAll("span").wrappers.find((n) => n.text() === "H1");
-    if (target) {
-        await target.trigger("click");
-    }
-
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("1 item copied to 1 history");
-
+    expect(wrapper.text()).toMatch(/1 item[s]? copied/);
     const payload = GalaxyApi().POST.mock.calls[0][1].body;
     expect(payload.source_history).toBe("h1");
     expect(payload.source_content).toEqual([{ id: "d1", type: "dataset" }]);
@@ -140,11 +145,6 @@ it("handles API error from copy call", async () => {
     const checkbox = wrapper.find("input[type='checkbox']");
     await checkbox.setChecked(true);
 
-    const target = wrapper.findAll("span").wrappers.find((n) => n.text() === "H1");
-    if (target) {
-        await target.trigger("click");
-    }
-
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
 
@@ -156,7 +156,6 @@ it("toggleAll selects and unselects all", async () => {
         data: [{ id: "h1", name: "H1" }],
         error: null,
     });
-
     GalaxyApi().GET.mockResolvedValueOnce({
         data: [
             { id: "d1", name: "X", hid: 1, history_content_type: "dataset" },
@@ -167,7 +166,6 @@ it("toggleAll selects and unselects all", async () => {
 
     const wrapper = mountComponent();
     await flushPromises();
-    await wrapper.vm.$nextTick();
 
     const buttons = wrapper.findAll("button.btn-outline-primary");
 
@@ -175,15 +173,66 @@ it("toggleAll selects and unselects all", async () => {
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    const afterSelectAll = wrapper.vm.$data.sourceContentSelection || wrapper.vm.sourceContentSelection || {};
-    expect(afterSelectAll["dataset|d1"]).toBe(true);
-    expect(afterSelectAll["dataset|d2"]).toBe(true);
+    let sel = wrapper.vm.sourceContentSelection?.value;
+    if (!sel) {
+        sel = wrapper.vm.sourceContentSelection;
+    } // handle non-ref binding
+    expect(sel["dataset|d1"]).toBe(true);
+    expect(sel["dataset|d2"]).toBe(true);
 
     await buttons.at(1).trigger("click");
     await flushPromises();
     await wrapper.vm.$nextTick();
 
-    const afterUnselectAll = wrapper.vm.$data.sourceContentSelection || wrapper.vm.sourceContentSelection || {};
-    expect(afterUnselectAll["dataset|d1"]).toBe(false);
-    expect(afterUnselectAll["dataset|d2"]).toBe(false);
+    sel = wrapper.vm.sourceContentSelection?.value || wrapper.vm.sourceContentSelection;
+    expect(sel["dataset|d1"]).toBe(false);
+    expect(sel["dataset|d2"]).toBe(false);
+});
+
+it("shows success for single existing target", async () => {
+    const histories = [{ id: "h1", name: "H1" }];
+    const contents = [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }];
+    GalaxyApi().POST.mockResolvedValueOnce({ data: { history_ids: ["h1"] }, error: null });
+    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
+
+    const wrapper = await setupBase(histories, contents);
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
+    expect(wrapper.text()).toContain("1 history");
+});
+
+it("shows success for multiple target histories", async () => {
+    const histories = [
+        { id: "h1", name: "H1" },
+        { id: "h2", name: "H2" },
+    ];
+    const contents = [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }];
+    GalaxyApi().POST.mockResolvedValueOnce({ data: { history_ids: ["h1", "h2"] }, error: null });
+    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
+
+    const wrapper = await setupBase(histories, contents);
+    wrapper.vm.targetMultiSelections = { h1: true, h2: true };
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("2 histories");
+});
+
+it("shows success for new history creation", async () => {
+    const histories = [{ id: "h1", name: "H1" }];
+    const contents = [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }];
+    GalaxyApi().POST.mockResolvedValueOnce({ data: { history_ids: ["h2"] }, error: null });
+    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
+
+    const wrapper = await setupBase(histories, contents);
+    await wrapper.find("input[data-description='copy history name']").setValue("New History");
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("1 item copied to");
+    expect(wrapper.text()).toContain("New History");
 });

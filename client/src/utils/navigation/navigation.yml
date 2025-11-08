@@ -473,8 +473,12 @@ history_copy_elements:
     dataset_checkbox: '[data-description="copy dataset|${id}"] + label'
     collection_checkbox: '[data-description="copy dataset_collection|${id}"] + label'
     new_history_name: '[data-description="copy history name"]'
+    new_history_link: '[data-description="copy switch history"]'
     copy_button: '[data-description="copy button"]'
-    done_link: '.donemessage a'
+
+history_view:
+  selectors:
+    switch_to_history: '[data-description="switch to history button"]'
 
 collection_builders:
   selectors:
