@@ -165,6 +165,7 @@ function onDelete() {
             </BDropdownItem>
 
             <BDropdownItem
+                data-description="copy datasets"
                 :disabled="isAnonymous"
                 :title="userTitle('Copy Datasets to Another History')"
                 @click="router.push('/datasets/copy')">

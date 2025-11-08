@@ -165,10 +165,15 @@ defineExpose({
                 <span class="text-sm mt-1">Select Datasets and Collections:</span>
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
                     <LoadingSpan v-if="loading" />
-                    <div v-else-if="sourceContents.length === 0" class="text-muted">This history has no datasets</div>
-                    <div v-for="item in sourceContents" :key="item.id" class="d-flex align-items-center mb-1">
-                        <BFormCheckbox v-model="sourceContentSelection[`${item.type}|${item.id}`]" class="me-2" />
-                        <span>{{ item.hid }}: {{ item.name }}</span>
+                    <div v-else-if="sourceContents.length === 0" class="text-muted">This history has no datasets.</div>
+                    <div v-else>
+                        <div v-for="item in sourceContents" :key="item.id" class="d-flex align-items-center mb-1">
+                            <BFormCheckbox
+                                v-model="sourceContentSelection[`${item.type}|${item.id}`]"
+                                :data-description="`copy ${item.type}|${item.id}`">
+                                {{ item.hid }}: {{ item.name }}
+                            </BFormCheckbox>
+                        </div>
                     </div>
                 </div>
                 <div class="d-flex mt-2">
@@ -200,27 +205,33 @@ defineExpose({
                     " />
                 <span class="text-sm mt-1"><b>OR</b> Select Multiple Target Histories:</span>
                 <div class="dataset-copy-contents flex-grow-1 overflow-auto border rounded p-2">
-                    <div v-if="histories.length === 0" class="text-muted">There are not histories</div>
+                    <div v-if="histories.length === 0" class="text-muted">There are no histories.</div>
                     <div v-for="h in histories" :key="h.id" class="d-flex align-items-center mb-1">
                         <BFormCheckbox
                             v-model="targetMultiSelections[h.id]"
-                            class="me-2"
                             @change="
                                 newHistoryName = '';
                                 targetSingleHistory = null;
-                            " />
-                        <span>{{ h.name }}</span>
+                            ">
+                            {{ h.name }}
+                        </BFormCheckbox>
                     </div>
                 </div>
                 <span class="text-sm mt-1"><b>OR</b> Provide a New History Name:</span>
                 <BFormInput
                     v-model="newHistoryName"
+                    data-description="copy history name"
                     @input="
                         targetMultiSelections = {};
                         targetSingleHistory = null;
                     " />
                 <div class="text-right mt-2">
-                    <BButton size="sm" variant="primary" :disabled="loading" @click="onCopy">
+                    <BButton
+                        size="sm"
+                        variant="primary"
+                        :disabled="loading"
+                        data-description="copy button"
+                        @click="onCopy">
                         <FontAwesomeIcon :icon="faCopy" class="mr-1" />
                         <span v-localize>Copy Selected Items</span>
                     </BButton>

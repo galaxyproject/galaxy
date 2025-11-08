@@ -470,13 +470,10 @@ shared_histories:
 
 history_copy_elements:
   selectors:
-    # Following two don't really work as CSS would only work as jQuery/sizzle I think
-    # since the page is dynamically generated.
-    # https://stackoverflow.com/questions/10645552/is-it-possible-to-use-an-input-value-attribute-as-a-css-selector
-    dataset_checkbox: "input[id='dataset|${id}']"
-    collection_checkbox: 'input[id="dataset_collection|${id}"]'
-    new_history_name: '#new_history_name'
-    copy_button: "input[type='submit']"
+    dataset_checkbox: '[data-description="copy dataset|${id}"] + label'
+    collection_checkbox: '[data-description="copy dataset_collection|${id}"] + label'
+    new_history_name: '[data-description="copy history name"]'
+    copy_button: '[data-description="copy button"]'
     done_link: '.donemessage a'
 
 collection_builders:

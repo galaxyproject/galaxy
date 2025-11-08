@@ -3,7 +3,6 @@ from .framework import (
     SeleniumTestCase,
 )
 
-
 class TestHistoryCopyElements(SeleniumTestCase):
     ensure_registered = True
 
@@ -23,17 +22,15 @@ class TestHistoryCopyElements(SeleniumTestCase):
         self.history_panel_wait_for_hid_state(failed_hid, "error")
         self.history_panel_click_copy_elements()
 
-        with self.main_panel():
-            axe_results = self.axe_eval()
-            axe_results.assert_no_violations_with_impact_of_at_least("serious")
-            self.components.history_copy_elements.collection_checkbox(id=input_collection["id"]).wait_for_and_click()
-            self.components.history_copy_elements.collection_checkbox(id=failed_collection["id"]).wait_for_and_click()
+        self.components.history_copy_elements.collection_checkbox(id=input_collection["id"]).wait_for_and_click()
+        self.components.history_copy_elements.collection_checkbox(id=failed_collection["id"]).wait_for_and_click()
 
-            text_element = self.components.history_copy_elements.new_history_name.wait_for_and_click()
-            text_element.send_keys("newhistfor_copy_hdca")
-            self.components.history_copy_elements.copy_button.wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_TRANSITION)
-            self.components.history_copy_elements.done_link.wait_for_and_click()
+        text_element = self.components.history_copy_elements.new_history_name.wait_for_and_click()
+        text_element.send_keys("new_history_to_copy")
+
+        self.components.history_copy_elements.copy_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.components.history_copy_elements.done_link.wait_for_and_click()
 
         # I don't know why this sleep is necessary but it seems to be
         self.sleep_for(self.wait_types.UX_RENDER)

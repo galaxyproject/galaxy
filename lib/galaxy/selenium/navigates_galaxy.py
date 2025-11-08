@@ -2159,7 +2159,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def history_panel_click_copy_elements(self):
-        self.use_bootstrap_dropdown(option="copy datasets", menu="history action menu")
+        self.use_bootstrap_dropdown(option="copy datasets", menu="history options")
 
     def use_bootstrap_dropdown(self, option=None, menu=None):
         """uses bootstrap dropdown by data-description attributes"""
