@@ -21,8 +21,9 @@ const newHistoryName = ref("");
 const sourceContentSelection = ref<Record<string, boolean>>({});
 const sourceContents = ref<SourceEntry[]>([]);
 const sourceHistory = ref<HistoryItem | null>(null);
-const successCount = ref<number>(0);
-const successTargets = ref<Array<string>>([]);
+const successHistoryName = ref<string>("");
+const successItemCount = ref<number>(0);
+const successTargetIds = ref<Array<string>>([]);
 const targetSingleHistory = ref<HistoryItem | null>(null);
 const targetMultiSelections = ref<Record<string, boolean>>({});
 
@@ -105,8 +106,9 @@ function toggleAll(v: boolean) {
 
 async function onCopy() {
     errorMessage.value = "";
-    successCount.value = 0;
-    successTargets.value = [];
+    successHistoryName.value = "";
+    successItemCount.value = 0;
+    successTargetIds.value = [];
     if (sourceHistory.value && selectedContent.value.length > 0) {
         loading.value = true;
         const targetIds = selectedTargets.value.map((h) => h.id);
@@ -121,8 +123,9 @@ async function onCopy() {
         if (error) {
             errorMessage.value = error.err_msg;
         } else if (data) {
-            successCount.value = selectedContent.value.length;
-            successTargets.value = data.history_ids;
+            successItemCount.value = selectedContent.value.length;
+            successHistoryName.value = newHistoryName.value;
+            successTargetIds.value = data.history_ids;
             await loadContents();
         }
         loading.value = false;
@@ -143,13 +146,18 @@ defineExpose({
     <div class="d-flex flex-column">
         <div>
             <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-            <BAlert v-else-if="successTargets.length > 0" variant="success" show>
-                {{ successCount }} item{{ successCount === 1 ? "" : "s" }} copied to
-                <span v-if="newHistoryName">
-                    {{ newHistoryName }}
+            <BAlert v-else-if="successTargetIds.length > 0 && successTargetIds[0]" variant="success" show>
+                {{ successItemCount }} item{{ successItemCount === 1 ? "" : "s" }} copied to
+                <span v-if="successHistoryName">
+                    <RouterLink
+                        :to="`/histories/view?id=${successTargetIds[0]}`"
+                        data-description="copy switch history">
+                        {{ successHistoryName }}
+                    </RouterLink>
                 </span>
-                <span v-else> {{ successTargets.length }} histor{{ successTargets.length === 1 ? "y" : "ies" }} </span>
-                <span>.</span>
+                <span v-else>
+                    {{ successTargetIds.length }} histor{{ successTargetIds.length === 1 ? "y" : "ies" }}
+                </span>
             </BAlert>
             <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
         </div>
