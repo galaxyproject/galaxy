@@ -1,6 +1,8 @@
 import random
 import time
 
+from typing import Optional
+
 from galaxy.util import UNKNOWN
 from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import DatasetPopulator
@@ -59,7 +61,7 @@ class TestDisplayApplicationsApi(ApiTestCase):
         self._assert_status_code_is(response, 403)
 
     def test_create_link(self):
-        cases = [
+        cases: list[dict[str, Optional[str]]] = [
             {"file": "1.interval", "app": "igv_interval_as_bed", "step": "bed_file"},
             {"file": "1.bam", "app": "igv_bam", "step": None},
             {"file": "test.vcf", "app": "igv_vcf", "step": "bgzip_file"},
@@ -69,8 +71,7 @@ class TestDisplayApplicationsApi(ApiTestCase):
             {"file": "1.fasta", "app": "igv_fasta", "step": "fasta_file"},
         ]
         for case in cases:
-            case: dict[str, object]
-            test_file = self.get_filename(case["file"])
+            test_file = self.get_filename(str(case["file"]))
             with self.dataset_populator.test_history() as history_id:
                 ds = self.dataset_populator.new_dataset(
                     history_id,
