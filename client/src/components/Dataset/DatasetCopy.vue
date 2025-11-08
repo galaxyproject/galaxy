@@ -7,8 +7,8 @@ import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
 
-import LoadingSpan from "../LoadingSpan.vue";
 import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type HistoryItem = { id: string; name: string };
 type SelectedPayload = { id: string; type: string };
@@ -54,6 +54,11 @@ const selectedTargets = computed<HistoryItem[]>(() => {
     }
 });
 
+function getHistoryName(historyId: string) {
+    const history = histories.value.find((h) => h.id === historyId);
+    return history ? history.name : "...";
+}
+
 async function loadHistories() {
     loading.value = true;
     errorMessage.value = "";
@@ -63,8 +68,7 @@ async function loadHistories() {
     } else if (Array.isArray(data)) {
         histories.value = data.map((h: any) => ({ id: h.id, name: h.name }));
         if (histories.value.length > 0) {
-            const [first] = histories.value as [HistoryItem];
-            sourceHistory.value = first;
+            sourceHistory.value = histories.value[0] as HistoryItem;
             await loadContents();
         }
     } else {
@@ -149,7 +153,7 @@ defineExpose({
         <div>
             <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
             <BAlert v-else-if="successTargetIds.length > 0 && successTargetIds[0]" variant="success" show>
-                {{ successItemCount }} item{{ successItemCount === 1 ? "" : "s" }} copied to
+                {{ successItemCount }} item{{ successItemCount === 1 ? "" : "s" }} copied to:
                 <span v-if="successHistoryName">
                     <RouterLink
                         :to="`/histories/view?id=${successTargetIds[0]}`"
@@ -158,7 +162,13 @@ defineExpose({
                     </RouterLink>
                 </span>
                 <span v-else>
-                    {{ successTargetIds.length }} histor{{ successTargetIds.length === 1 ? "y" : "ies" }}
+                    <span v-for="(targetId, targetIndex) of successTargetIds" :key="`target-${targetIndex}`">
+                        <RouterLink :to="`/histories/view?id=${targetId}`" data-description="copy switch history">{{
+                            getHistoryName(targetId)
+                        }}</RouterLink>
+                        <span v-if="targetIndex == successTargetIds.length - 1">.</span>
+                        <span v-else>, </span>
+                    </span>
                 </span>
             </BAlert>
             <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
