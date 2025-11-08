@@ -1,6 +1,5 @@
 import random
 import time
-
 from typing import Optional
 
 from galaxy.util import UNKNOWN
