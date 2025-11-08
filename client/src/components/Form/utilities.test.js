@@ -134,4 +134,174 @@ describe("form component utilities", () => {
         expect(result["input_b_0"]).toEqual("error_b");
         expect(result["input_c|input_d"]).toEqual("error_d");
     });
+
+    it("test multiple validators", () => {
+        const index = {
+            path: {
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^.*[^/]$",
+                        message: "Value cannot end with a trailing slash",
+                        negate: false,
+                    },
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$).*$",
+                        message: "Value cannot have leading or trailing whitespace",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Valid path
+        let values = { path: "clean/path" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Invalid: trailing slash
+        values = { path: "path/" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["path", "Value cannot end with a trailing slash"]);
+
+        // Invalid: trailing whitespace
+        values = { path: "path " };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["path", "Value cannot have leading or trailing whitespace"]);
+    });
+
+    it("test validators skip empty optional values", () => {
+        const index = {
+            optional_field: {
+                optional: true,
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$)(?!.*/$).+$",
+                        message: "Value cannot have leading/trailing spaces or trailing slashes",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Empty value should not trigger validator
+        const values = { optional_field: "" };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test validators skip null values", () => {
+        const index = {
+            optional_field: {
+                optional: true, // Make it optional so null is allowed
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$)(?!.*/$).+$",
+                        message: "Value cannot have leading/trailing spaces or trailing slashes",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Null value should not trigger validator for optional fields
+        const values = { optional_field: null };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test length validator", () => {
+        const index = {
+            username: {
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        max: 20,
+                        message: "Username must be between 3 and 20 characters",
+                    },
+                ],
+            },
+        };
+
+        // Valid length
+        let values = { username: "john" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { username: "a".repeat(20) };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Too short
+        values = { username: "ab" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["username", "Username must be between 3 and 20 characters"]);
+
+        // Too long
+        values = { username: "a".repeat(21) };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["username", "Username must be between 3 and 20 characters"]);
+    });
+
+    it("test in_range validator", () => {
+        const index = {
+            age: {
+                validators: [
+                    {
+                        type: "in_range",
+                        min: 18,
+                        max: 120,
+                        message: "Age must be between 18 and 120",
+                    },
+                ],
+            },
+        };
+
+        // Valid range
+        let values = { age: 25 };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { age: 18 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { age: 120 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Too small
+        values = { age: 17 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Age must be between 18 and 120"]);
+
+        // Too large
+        values = { age: 121 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Age must be between 18 and 120"]);
+    });
+
+    it("test in_range validator with non-numeric value", () => {
+        const index = {
+            age: {
+                validators: [
+                    {
+                        type: "in_range",
+                        min: 18,
+                        max: 120,
+                        message: "Age must be between 18 and 120",
+                    },
+                ],
+            },
+        };
+
+        // Non-numeric value
+        const values = { age: "not a number" };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Value must be numeric for range validation"]);
+    });
 });

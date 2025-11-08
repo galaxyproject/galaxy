@@ -6,6 +6,7 @@ import type {
     TemplateSecret,
     TemplateSummary,
     TemplateVariable,
+    TemplateVariableValidator,
     VariableData,
     VariableValueType,
 } from "@/api/configTemplates";
@@ -18,6 +19,7 @@ export interface FormEntry {
     help?: string | null;
     type: string;
     value?: any;
+    validators?: TemplateVariableValidator[];
 }
 
 export function metadataFormEntryName(what: string): FormEntry {
@@ -45,6 +47,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
         name: variable.name,
         label: variable.label ?? variable.name,
         help: markup(variable.help || "", true),
+        validators: variable.validators ?? [],
     };
     if (variable.type == "string") {
         const defaultValue = variable.default ?? "";
@@ -55,7 +58,6 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
         };
     } else if (variable.type == "path_component") {
         const defaultValue = variable.default ?? "";
-        // TODO: do extra validation with form somehow...
         return {
             type: "text",
             value: variableValue == undefined ? defaultValue : variableValue,

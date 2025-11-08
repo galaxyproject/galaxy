@@ -21518,6 +21518,14 @@ export interface components {
              * @constant
              */
             type: "boolean";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariableInteger */
         TemplateVariableInteger: {
@@ -21537,6 +21545,14 @@ export interface components {
              * @constant
              */
             type: "integer";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariablePathComponent */
         TemplateVariablePathComponent: {
@@ -21553,6 +21569,14 @@ export interface components {
              * @constant
              */
             type: "path_component";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -21572,6 +21596,14 @@ export interface components {
              * @constant
              */
             type: "string";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TestUpdateInstancePayload */
         TestUpdateInstancePayload: {
