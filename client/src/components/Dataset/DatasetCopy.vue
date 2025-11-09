@@ -2,10 +2,12 @@
 import { faArrowRight, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormCheckbox, BFormInput } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { GalaxyApi } from "@/api";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -13,6 +15,8 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 type HistoryItem = { id: string; name: string };
 type SelectedPayload = { id: string; type: string };
 type SourceEntry = { id: string; name: string; hid: number; type: string };
+
+const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const errorMessage = ref("");
 const histories = ref<HistoryItem[]>([]);
@@ -67,8 +71,9 @@ async function loadHistories() {
         errorMessage.value = error.err_msg;
     } else if (Array.isArray(data)) {
         histories.value = data.map((h: any) => ({ id: h.id, name: h.name }));
-        if (histories.value.length > 0) {
-            sourceHistory.value = histories.value[0] as HistoryItem;
+        if (histories.value.length > 0 && histories.value[0]) {
+            const currentHistory = histories.value.find((h) => h.id === currentHistoryId.value);
+            sourceHistory.value = currentHistory || histories.value[0];
             await loadContents();
         }
     } else {
