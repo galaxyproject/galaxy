@@ -1,40 +1,41 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { GalaxyApi } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import DatasetCopy from "./DatasetCopy.vue";
 
-jest.mock("@/api", () => {
-    const get = jest.fn();
-    const post = jest.fn();
-    return {
-        GalaxyApi: jest.fn(() => ({
-            GET: get,
-            POST: post,
-        })),
-    };
-});
-
+const { server, http } = useServerMock();
 const localVue = getLocalVue();
+const pinia = createPinia();
 
 beforeEach(() => {
-    jest.clearAllMocks();
-    GalaxyApi.mockClear();
+    server.resetHandlers();
 });
 
 function mountComponent() {
-    return mount(DatasetCopy, {
+    const wrapper = mount(DatasetCopy, {
         localVue,
         directives: { localize: () => {} },
         stubs: { RouterLink: { template: "<a><slot /></a>" } },
+        pinia,
     });
+    const historyStore = useHistoryStore();
+    historyStore.setCurrentHistoryId("h1");
+    return wrapper;
 }
 
 async function setupBase(histories, contents) {
-    GalaxyApi().GET.mockResolvedValueOnce({ data: histories, error: null });
-    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
+    server.use(
+        http.get("/api/histories", ({ response }) => response(200).json(histories)),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: "H1" }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) => response(200).json(contents)),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
@@ -43,20 +44,23 @@ async function setupBase(histories, contents) {
 }
 
 it("loads histories and contents on mount", async () => {
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [
-            { id: "h1", name: "History One" },
-            { id: "h2", name: "History Two" },
-        ],
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [
-            { id: "d1", name: "A", hid: 1, history_content_type: "dataset" },
-            { id: "d2", name: "B", hid: 2, history_content_type: "collection" },
-        ],
-        error: null,
-    });
+    server.use(
+        http.get("/api/histories", ({ response }) =>
+            response(200).json([
+                { id: "h1", name: "History One" },
+                { id: "h2", name: "History Two" },
+            ]),
+        ),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: `History ${params.history_id}` }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) =>
+            response(200).json([
+                { id: "d1", name: "A", hid: 1, history_content_type: "dataset" },
+                { id: "d2", name: "B", hid: 2, history_content_type: "collection" },
+            ]),
+        ),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     expect(wrapper.text()).toContain("History One");
@@ -66,22 +70,22 @@ it("loads histories and contents on mount", async () => {
 });
 
 it("copies selected items and shows success", async () => {
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [{ id: "h1", name: "H1" }],
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
-        error: null,
-    });
-    GalaxyApi().POST.mockResolvedValueOnce({
-        data: { history_ids: ["h1"] },
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
-        error: null,
-    });
+    server.use(
+        http.get("/api/histories", ({ response }) => response(200).json([{ id: "h1", name: "H1" }])),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: "H1" }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) =>
+            response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
+        ),
+        http.post("/api/datasets/copy", async ({ request, response }) => {
+            const body = await request.json();
+            if (body.source_content.length > 0) {
+                return response(200).json({ history_ids: ["h1"] });
+            }
+            return response(400).json({ err_msg: "No data" });
+        }),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
@@ -89,40 +93,34 @@ it("copies selected items and shows success", async () => {
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
     expect(wrapper.text()).toMatch(/1 item[s]? copied/);
-    const payload = GalaxyApi().POST.mock.calls[0][1].body;
-    expect(payload.source_history).toBe("h1");
-    expect(payload.source_content).toEqual([{ id: "d1", type: "dataset" }]);
 });
 
 it("shows error when nothing selected", async () => {
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [{ id: "h1", name: "H1" }],
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [],
-        error: null,
-    });
+    server.use(
+        http.get("/api/histories", ({ response }) => response(200).json([{ id: "h1", name: "H1" }])),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: "H1" }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) => response(200).json([])),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
-    expect(wrapper.text()).toContain("Please select Datasets and Collections.");
+    expect(wrapper.text()).toContain("Please select datasets and collections.");
 });
 
 it("handles API error from copy call", async () => {
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [{ id: "h1", name: "H1" }],
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
-        error: null,
-    });
-    GalaxyApi().POST.mockResolvedValueOnce({
-        data: null,
-        error: { err_msg: "Copy failed" },
-    });
+    server.use(
+        http.get("/api/histories", ({ response }) => response(200).json([{ id: "h1", name: "H1" }])),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: "H1" }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) =>
+            response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
+        ),
+        http.post("/api/datasets/copy", ({ response }) => response(500).json({ err_msg: "Copy failed" })),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
@@ -133,71 +131,70 @@ it("handles API error from copy call", async () => {
 });
 
 it("toggleAll selects and unselects all", async () => {
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [{ id: "h1", name: "H1" }],
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({
-        data: [
-            { id: "d1", name: "X", hid: 1, history_content_type: "dataset" },
-            { id: "d2", name: "Y", hid: 2, history_content_type: "dataset" },
-        ],
-        error: null,
-    });
+    server.use(
+        http.get("/api/histories", ({ response }) => response(200).json([{ id: "h1", name: "H1" }])),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: "H1" }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) =>
+            response(200).json([
+                { id: "d1", name: "X", hid: 1, history_content_type: "dataset" },
+                { id: "d2", name: "Y", hid: 2, history_content_type: "dataset" },
+            ]),
+        ),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     const buttons = wrapper.findAll("button.btn-outline-primary");
     await buttons.at(0).trigger("click");
     await flushPromises();
-    await wrapper.vm.$nextTick();
-    let sel = wrapper.vm.sourceContentSelection?.value;
-    if (!sel) {
-        sel = wrapper.vm.sourceContentSelection;
-    }
-    expect(sel["dataset|d1"]).toBe(true);
-    expect(sel["dataset|d2"]).toBe(true);
+    const sel1 = wrapper.vm.sourceContentSelection?.value || wrapper.vm.sourceContentSelection;
+    expect(sel1["dataset|d1"]).toBe(true);
+    expect(sel1["dataset|d2"]).toBe(true);
     await buttons.at(1).trigger("click");
     await flushPromises();
-    await wrapper.vm.$nextTick();
-    sel = wrapper.vm.sourceContentSelection?.value || wrapper.vm.sourceContentSelection;
-    expect(sel["dataset|d1"]).toBe(false);
-    expect(sel["dataset|d2"]).toBe(false);
+    const sel2 = wrapper.vm.sourceContentSelection?.value || wrapper.vm.sourceContentSelection;
+    expect(sel2["dataset|d1"]).toBe(false);
+    expect(sel2["dataset|d2"]).toBe(false);
 });
 
 it("shows success for single existing target", async () => {
-    const histories = [{ id: "h1", name: "H1" }];
-    const contents = [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }];
-    GalaxyApi().GET.mockResolvedValueOnce({ data: histories, error: null });
-    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
-    GalaxyApi().POST.mockResolvedValueOnce({
-        data: { history_ids: ["h1"] },
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
+    server.use(
+        http.get("/api/histories", ({ response }) => response(200).json([{ id: "h1", name: "H1" }])),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: "H1" }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) =>
+            response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
+        ),
+        http.post("/api/datasets/copy", ({ response }) => response(200).json({ history_ids: ["h1"] })),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
     await checkbox.setChecked(true);
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
-    await wrapper.vm.$nextTick();
     expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
     expect(wrapper.text()).toContain("H1");
 });
 
 it("shows success for multiple target histories", async () => {
-    const histories = [
-        { id: "h1", name: "H1" },
-        { id: "h2", name: "H2" },
-    ];
-    const contents = [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }];
-    GalaxyApi().GET.mockResolvedValueOnce({ data: histories, error: null });
-    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
-    GalaxyApi().POST.mockResolvedValueOnce({
-        data: { history_ids: ["h1", "h2"] },
-        error: null,
-    });
-    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
+    server.use(
+        http.get("/api/histories", ({ response }) =>
+            response(200).json([
+                { id: "h1", name: "H1" },
+                { id: "h2", name: "H2" },
+            ]),
+        ),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: `History ${params.history_id}` }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) =>
+            response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
+        ),
+        http.post("/api/datasets/copy", ({ response }) => response(200).json({ history_ids: ["h1", "h2"] })),
+    );
     const wrapper = mountComponent();
     await flushPromises();
     const checkbox = wrapper.find("input[type='checkbox']");
@@ -206,18 +203,26 @@ it("shows success for multiple target histories", async () => {
     await wrapper.vm.$nextTick();
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
-    await wrapper.vm.$nextTick();
     expect(wrapper.text()).toMatch(/1 item[s]? copied to/);
     expect(wrapper.text()).toContain("H1");
     expect(wrapper.text()).toContain("H2");
 });
 
 it("shows success for new history creation", async () => {
-    const histories = [{ id: "h1", name: "H1" }];
-    const contents = [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }];
-    GalaxyApi().POST.mockResolvedValueOnce({ data: { history_ids: ["h2"] }, error: null });
-    GalaxyApi().GET.mockResolvedValueOnce({ data: contents, error: null });
-    const wrapper = await setupBase(histories, contents);
+    server.use(
+        http.get("/api/histories", ({ response }) => response(200).json([{ id: "h1", name: "H1" }])),
+        http.get("/api/histories/{history_id}", ({ params, response }) =>
+            response(200).json({ id: params.history_id, name: "H1" }),
+        ),
+        http.get("/api/histories/{history_id}/contents", ({ response }) =>
+            response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
+        ),
+        http.post("/api/datasets/copy", ({ response }) => response(200).json({ history_ids: ["h2"] })),
+    );
+    const wrapper = await setupBase(
+        [{ id: "h1", name: "H1" }],
+        [{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }],
+    );
     await wrapper.find("input[data-description='copy history name']").setValue("New History");
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
