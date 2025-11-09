@@ -143,7 +143,7 @@ async function onCopy() {
         }
         loading.value = false;
     } else {
-        errorMessage.value = "Please select Datasets and Collections.";
+        errorMessage.value = "Please select datasets and collections.";
     }
 }
 
