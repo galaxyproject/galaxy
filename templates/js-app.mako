@@ -70,17 +70,6 @@
         });
     </script>
 
-    %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
-    <script type="text/javascript">
-        $(document).ready( function() {
-            // Auto Focus on first item on form
-            if ( $("*:focus").html() == null ) {
-                $(":input:not([type=hidden]):visible:enabled:first").focus();
-            }
-        });
-    </script>
-    %endif
-
     ${ galaxy_client.config_sentry(app) }
     %if app.config.ga_code:
         ${ galaxy_client.config_google_analytics(app.config.ga_code) }
