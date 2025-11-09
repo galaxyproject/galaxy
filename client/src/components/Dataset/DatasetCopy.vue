@@ -81,7 +81,10 @@ async function loadContents() {
     loading.value = true;
     if (sourceHistory.value) {
         const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/contents", {
-            params: { path: { history_id: sourceHistory.value.id } },
+            params: {
+                path: { history_id: sourceHistory.value.id },
+                query: { deleted: false },
+            },
         });
         if (error) {
             errorMessage.value = error.err_msg;
