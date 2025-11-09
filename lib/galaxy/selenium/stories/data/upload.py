@@ -1,7 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from galaxy.selenium.navigates_galaxy_mixin import NavigatesGalaxyMixin
+from galaxy.selenium.context import GalaxySeleniumContext
 from ..data import (
     get_document_fragment_path,
     get_example_path,
@@ -33,7 +33,7 @@ For this example, we'll create a collection rather than individual datasets. Cli
 """
 
 
-class UploadStoriesMixin(NavigatesGalaxyMixin):
+class UploadStoriesMixin(GalaxySeleniumContext):
     """Mixin describing upload user stories around the workbooks and rules."""
 
     def upload_example_1_full_wizard(self):
