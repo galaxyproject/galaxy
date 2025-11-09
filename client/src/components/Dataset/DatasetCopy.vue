@@ -132,7 +132,6 @@ async function onCopy() {
             successItemCount.value = selectedContent.value.length;
             successHistoryName.value = newHistoryName.value;
             successTargetIds.value = data.history_ids || [];
-            await loadContents();
         }
         loading.value = false;
     } else {
