@@ -177,6 +177,7 @@ def _description_from_tool_source(
                 "test_index": test_index,
                 "maxseconds": maxseconds,
                 "error": False,
+                "value_state_representation": value_state_representation,
             }
         )
     except Exception:
@@ -189,6 +190,7 @@ def _description_from_tool_source(
                 "error": True,
                 "exception": unicodify(traceback.format_exc()),
                 "maxseconds": maxseconds,
+                "value_state_representation": value_state_representation,
             }
         )
 
