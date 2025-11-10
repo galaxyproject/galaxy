@@ -73,6 +73,7 @@ from ._types import (
     RequiredFilesT,
     RequiredLocFileT,
     ToolTestDescriptionDict,
+    ValueStateRepresentationT,
 )
 from .asserts import verify_assertions
 from .wait import wait_on
@@ -141,6 +142,7 @@ class ValidToolTestDict(TypedDict):
     tool_id: str
     tool_version: str
     test_index: int
+    value_state_representation: NotRequired[ValueStateRepresentationT]
 
 
 class InvalidToolTestDict(TypedDict):
@@ -151,6 +153,7 @@ class InvalidToolTestDict(TypedDict):
     inputs: Any
     exception: str
     maxseconds: Optional[int]
+    value_state_representation: NotRequired[ValueStateRepresentationT]
 
 
 ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
@@ -698,6 +701,10 @@ class GalaxyInteractorApi:
         request = testdef.request
         request_schema = testdef.request_schema
         submit_with_legacy_api = use_legacy_api == "always" or (use_legacy_api == "if_needed" and request is None)
+        if testdef.value_state_representation == "test_case_json":
+            # Don't submit user / YAML tools to the old endpoint.
+            submit_with_legacy_api = False
+
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
             for key, value in inputs_tree.items():
@@ -1948,6 +1955,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
         maxseconds = DEFAULT_TOOL_TEST_WAIT
         exception = invalid_test_dict.get("exception", DEFAULT_EXCEPTION)
+    value_state_representation = processed_dict.get("value_state_representation", "test_case_xml")
 
     return ToolTestDescriptionDict(
         test_index=test_index,
@@ -1973,6 +1981,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         inputs=inputs,
         request=request,
         request_schema=request_schema,
+        value_state_representation=value_state_representation,
     )
 
 
@@ -2036,6 +2045,7 @@ class ToolTestDescription:
     outputs: ToolSourceTestOutputs
     output_collections: List[TestCollectionOutputDef]
     maxseconds: Optional[int]
+    value_state_representation: ValueStateRepresentationT
 
     @staticmethod
     def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
@@ -2066,6 +2076,7 @@ class ToolTestDescription:
         self.tool_id = json_dict["tool_id"]
         self.tool_version = json_dict.get("tool_version")
         self.maxseconds = json_dict.get("maxseconds")
+        self.value_state_representation = json_dict.get("value_state_representation", "test_case_xml")
 
     def test_data(self):
         """
@@ -2098,6 +2109,7 @@ class ToolTestDescription:
             "request_schema": self.request_schema,
             "error": self.error,
             "exception": self.exception,
+            "value_state_representation": self.value_state_representation,
         }
         if self.maxseconds is not None:
             test_description_def["maxseconds"] = self.maxseconds
