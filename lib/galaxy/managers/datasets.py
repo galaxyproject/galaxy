@@ -30,9 +30,7 @@ from galaxy.model import (
     DatasetHash,
     DatasetInstance,
     DatasetPermissions,
-    History,
     HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
 )
 from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.schema.tasks import (
