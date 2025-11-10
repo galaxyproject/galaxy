@@ -465,15 +465,15 @@ const MULTIVIEW_MAX_HISTORIES = 10;
  * Pins the selected histories and navigates to the multiview page
  */
 async function onBulkOpenInMultiview() {
-    const totalSelected = selectedHistories.value.length;
+    const selectedHistoriesCount = selectedHistories.value.length;
 
-    if (totalSelected === 0) {
+    if (selectedHistoriesCount === 0) {
         return;
     }
 
-    if (totalSelected > MULTIVIEW_MAX_HISTORIES) {
+    if (selectedHistoriesCount > MULTIVIEW_MAX_HISTORIES) {
         const confirmed = await confirm(
-            `You have selected ${totalSelected} histories to open in multiview.
+            `You have selected ${selectedHistoriesCount} histories to open in multiview.
         However, the maximum number of histories allowed in multiview is ${MULTIVIEW_MAX_HISTORIES}.
         Do you want to proceed with opening the first ${MULTIVIEW_MAX_HISTORIES} histories?`,
             {
@@ -498,9 +498,13 @@ async function onBulkOpenInMultiview() {
 
     router.push("/histories/view_multiple");
 
+    const totalSelectedHistories = selectedHistories.value.length;
+
     resetSelection();
 
-    Toast.success(`Opened ${totalSelected} ${totalSelected === 1 ? "history" : "histories"} in multiview.`);
+    Toast.success(
+        `Opened ${totalSelectedHistories} ${totalSelectedHistories === 1 ? "history" : "histories"} in multiview.`,
+    );
 }
 
 /**
