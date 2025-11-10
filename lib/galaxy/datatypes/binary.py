@@ -5239,7 +5239,9 @@ class SpatialData(CompressedZarrZipArchive):
                             pass
 
                     # Check for v3 format: zarr.json at root or one level deep
-                    elif file == "zarr.json" or (len(parts) == 2 and parts[0].endswith(".zarr") and parts[1] == "zarr.json"):
+                    elif file == "zarr.json" or (
+                        len(parts) == 2 and parts[0].endswith(".zarr") and parts[1] == "zarr.json"
+                    ):
                         try:
                             with zf.open(file) as f:
                                 metadata = json.load(f)
