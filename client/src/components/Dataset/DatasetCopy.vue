@@ -126,9 +126,11 @@ async function onCopy() {
     if (sourceHistory.value && selectedContent.value.length > 0) {
         loading.value = true;
         const targetIds = selectedTargets.value.map((h) => h.id);
-        const { data, error } = await GalaxyApi().POST("/api/datasets/copy", {
+        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/copy_contents", {
+            params: {
+                path: { history_id: sourceHistory.value.id },
+            },
             body: {
-                source_history: sourceHistory.value.id,
                 source_content: selectedContent.value,
                 target_history_ids: newHistoryName.value ? [] : targetIds,
                 target_history_name: newHistoryName.value || null,
