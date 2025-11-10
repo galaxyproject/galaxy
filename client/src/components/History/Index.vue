@@ -10,6 +10,10 @@ import CurrentCollection from "@/components/History/CurrentCollection/Collection
 import HistoryNavigation from "@/components/History/CurrentHistory/HistoryNavigation.vue";
 import HistoryPanel from "@/components/History/CurrentHistory/HistoryPanel.vue";
 
+const emit = defineEmits<{
+    (e: "show", showPanel: boolean): void;
+}>();
+
 const userStore = useUserStore();
 const historyStore = useHistoryStore();
 
@@ -37,7 +41,7 @@ function onViewCollection(collection: CollectionEntry, currentOffset?: number) {
             :filterable="true"
             @view-collection="onViewCollection">
             <template v-slot:navigation>
-                <HistoryNavigation :history="currentHistory" />
+                <HistoryNavigation :history="currentHistory" @show="(val) => emit('show', val)" />
             </template>
         </HistoryPanel>
 
