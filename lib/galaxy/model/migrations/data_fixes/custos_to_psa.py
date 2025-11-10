@@ -6,33 +6,29 @@ from typing import Optional
 from sqlalchemy import (
     Column,
     DateTime,
-    ForeignKey,
     Integer,
+    MetaData,
     select,
     String,
     Table,
     Text,
-    VARCHAR,
 )
 from sqlalchemy.engine import Connection
 
-from galaxy.model.custom_types import MutableJSONType
+from galaxy.model import UserAuthnzToken
 
 CUSTOS_TABLE = "custos_authnz_token"
 PSA_TABLE = "oidc_user_authnz_tokens"
 CUSTOS_ASSOC_TYPE = "custos_migrated"
 
 
-def get_custos_table(connection: Connection, metadata=None) -> Table:
+def get_custos_table(connection: Connection) -> Table:
     """
     Reflect the custos_authnz_token table for use in migrations or tests.
     """
-    from sqlalchemy import MetaData
-
-    metadata = metadata or MetaData()
     return Table(
         CUSTOS_TABLE,
-        metadata,
+        MetaData(),
         Column("id", Integer, primary_key=True),
         Column("user_id", Integer),
         Column("external_user_id", String(255)),
@@ -47,26 +43,11 @@ def get_custos_table(connection: Connection, metadata=None) -> Table:
     )
 
 
-def get_psa_table(connection: Connection, metadata=None) -> Table:
+def get_psa_table(connection: Connection) -> Table:
     """
-    Reflect the oidc_user_authnz_tokens table for use in migrations or tests.
+    Get the oidc_user_authnz_tokens table directly from the UserAuthnzToken model.
     """
-    from sqlalchemy import MetaData
-
-    metadata = metadata or MetaData()
-    return Table(
-        PSA_TABLE,
-        metadata,
-        Column("id", Integer, primary_key=True),
-        Column("user_id", Integer, ForeignKey("galaxy_user.id")),
-        Column("uid", VARCHAR(255)),
-        Column("provider", VARCHAR(32)),
-        Column("extra_data", MutableJSONType),
-        Column("lifetime", Integer),
-        Column("assoc_type", VARCHAR(64)),
-        extend_existing=True,
-        autoload_with=connection,
-    )
+    return UserAuthnzToken.table
 
 
 def migrate_custos_tokens_to_psa(
