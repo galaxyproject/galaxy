@@ -224,9 +224,7 @@ class HistoryContentsManager(base.SortableManager):
             decoded_target_ids.append(new_history.id)
         else:
             if not payload.target_history_ids:
-                raise glx_exceptions.MessageException(
-                    "Select a destination history or provide a target history name."
-                )
+                raise glx_exceptions.MessageException("Select a destination history or provide a target history name.")
             decoded_target_ids.extend(self.app.security.decode_id(h) for h in payload.target_history_ids)
 
         target_histories = [
@@ -265,9 +263,7 @@ class HistoryContentsManager(base.SortableManager):
             h.add_pending_items()
         trans.sa_session.commit()
 
-        return CopyDatasetsResponse(
-            history_ids=[self.app.security.encode_id(i) for i in decoded_target_ids]
-        )
+        return CopyDatasetsResponse(history_ids=[self.app.security.encode_id(i) for i in decoded_target_ids])
 
     def map_datasets(self, history, fn, **kwargs):
         """
