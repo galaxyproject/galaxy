@@ -12,11 +12,11 @@ Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
 
 window.addEventListener("load", async () => {
-    const galaxy = (await standardInit("app")) as any;
+    const Galaxy = await standardInit("app");
     console.log("App setup");
 
-    const router = getRouter(galaxy);
-    galaxy.router = router;
+    const router = getRouter(Galaxy);
+    Galaxy.router = router;
 
     new Vue({
         el: "#app",

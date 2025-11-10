@@ -1,3 +1,5 @@
 import { standardInit } from "@/onload";
 
-window.addEventListener("load", () => standardInit("generic"));
+window.addEventListener("load", async () => {
+    await standardInit("generic");
+});
