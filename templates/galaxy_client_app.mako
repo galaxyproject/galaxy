@@ -23,11 +23,6 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             session_csrf_token: '${ trans.session_csrf_token }'
         };
 
-        config.set({
-            options: options,
-            bootstrapped: bootstrapped
-        });
-
         %if app:
             console.warn("Does app ever run? Is it ever not-named app?", '${app}');
         %endif
@@ -46,10 +41,6 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
                     sentry.email = "${trans.user.email|h}";
                 %endif
             %endif
-
-            config.set({
-                sentry: sentry
-            });
 
         </script>
     %endif

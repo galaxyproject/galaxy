@@ -138,7 +138,7 @@ function redirectAnon(redirect = "") {
 // redirect logged in users
 function redirectLoggedIn() {
     const Galaxy = getGalaxyInstance();
-    if (Galaxy.user.id) {
+    if (!Galaxy.user || !Galaxy.user.id) {
         return "/";
     }
 }

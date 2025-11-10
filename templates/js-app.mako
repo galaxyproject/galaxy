@@ -62,12 +62,6 @@
         // js-app.mako
         var options = ${ h.dumps( options ) };
         var bootstrapped = ${ h.dumps( bootstrapped ) };
-
-        config.set({
-            options: options,
-            bootstrapped: bootstrapped,
-            form_input_auto_focus: ${h.to_js_bool(form_input_auto_focus)}
-        });
     </script>
 
     ${ galaxy_client.config_sentry(app) }
