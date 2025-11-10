@@ -1,7 +1,10 @@
 """Reusable helpers for migrating Custos authentication tokens into PSA format."""
 
 from datetime import datetime
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+)
 
 from sqlalchemy import (
     Column,
@@ -47,7 +50,7 @@ def get_psa_table(connection: Connection) -> Table:
     """
     Get the oidc_user_authnz_tokens table directly from the UserAuthnzToken model.
     """
-    return UserAuthnzToken.table
+    return cast(Table, UserAuthnzToken.table)
 
 
 def migrate_custos_tokens_to_psa(
