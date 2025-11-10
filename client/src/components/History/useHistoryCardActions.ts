@@ -248,25 +248,6 @@ export function useHistoryCardActions(
                 visible: history.value.deleted && !history.value.purged && isMyHistory(history.value),
             },
             {
-                id: "switch",
-                title: localize("Set as current history"),
-                label: localize("Set as Current"),
-                variant: "outline-primary",
-                icon: faExchangeAlt,
-                handler: () => historyStore.setCurrentHistory(String(history.value.id)),
-                visible:
-                    (isMyHistory(history.value) || archivedView) && historyStore.currentHistoryId !== history.value.id,
-            },
-            {
-                title: "current history",
-                id: "current",
-                label: "Current",
-                variant: "outline-primary",
-                disabled: true,
-                visible:
-                    (isMyHistory(history.value) || archivedView) && historyStore.currentHistoryId === history.value.id,
-            },
-            {
                 id: "import-copy",
                 label: localize("Import Copy"),
                 title: localize("Import a new copy of this history from the associated export record"),
@@ -291,8 +272,27 @@ export function useHistoryCardActions(
                 label: localize("View"),
                 title: localize("View this history"),
                 icon: faEye,
-                variant: "primary",
+                variant: "outline-primary",
                 to: `/histories/view?id=${history.value.id}`,
+            },
+            {
+                id: "switch",
+                title: localize("Set as current history"),
+                label: localize("Set as Current"),
+                variant: "primary",
+                icon: faExchangeAlt,
+                handler: () => historyStore.setCurrentHistory(String(history.value.id)),
+                visible:
+                    (isMyHistory(history.value) || archivedView) && historyStore.currentHistoryId !== history.value.id,
+            },
+            {
+                title: "current history",
+                id: "current",
+                label: "Current",
+                variant: "outline-primary",
+                disabled: true,
+                visible:
+                    (isMyHistory(history.value) || archivedView) && historyStore.currentHistoryId === history.value.id,
             },
         ];
     });
