@@ -57,6 +57,10 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
 )
+from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -596,6 +600,23 @@ class FastAPIHistoryContents:
             trans,
             id,
             contents_type=type,
+            payload=payload,
+        )
+
+    @router.post(
+        "/api/histories/{history_id}/copy_contents",
+        summary="Copy datasets or dataset collections to other histories.",
+        operation_id="history_contents__copy_contents",
+    )
+    def copy_contents(
+        self,
+        history_id: HistoryIDPathParam,
+        trans=DependsOnTrans,
+        payload: CopyDatasetsPayload = Body(...),
+    ) -> CopyDatasetsResponse:
+        return self.service.copy_contents(
+            trans=trans,
+            history_id=history_id,
             payload=payload,
         )
 

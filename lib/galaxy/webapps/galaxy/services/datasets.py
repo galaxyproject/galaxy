@@ -76,11 +76,7 @@ from galaxy.schema.schema import (
     ToolReportForDataset,
     UpdateDatasetPermissionsPayload,
 )
-from galaxy.schema.tasks import (
-    ComputeDatasetHashTaskRequest,
-    CopyDatasetsPayload,
-    CopyDatasetsResponse,
-)
+from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.schema.types import RelativeUrl
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.hash_util import HashFunctionNameEnum
@@ -512,19 +508,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             )
 
         return DatasetInheritanceChain(root=result)
-
-    def copy_datasets(
-        self,
-        trans: ProvidesHistoryContext,
-        payload: CopyDatasetsPayload,
-    ) -> CopyDatasetsResponse:
-        """
-        Service wrapper for copying datasets and dataset collections between histories.
-        """
-        return self.dataset_manager.copy_datasets(
-            trans=trans,
-            payload=payload,
-        )
 
     def compute_hash(
         self,

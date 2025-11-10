@@ -46,6 +46,10 @@ from galaxy.managers import (
 )
 from galaxy.managers.job_connections import JobConnectionsManager
 from galaxy.schema import ValueFilterQueryParams
+from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import listify
 from .base import (
@@ -200,6 +204,69 @@ class HistoryContentsManager(base.SortableManager):
             )
             .select_from(table_attr)
             .filter_by(history_id=history_id)
+        )
+
+    def copy_contents(self, trans, history_id, payload: CopyDatasetsPayload) -> CopyDatasetsResponse:
+        user = trans.get_user()
+        if not user:
+            raise glx_exceptions.MessageException("Please login to copy datasets between histories.")
+
+        source_history = self.app.history_manager.get_owned(history_id, user, current_history=trans.history)
+        source_content = payload.source_content or []
+        if not source_content:
+            raise glx_exceptions.MessageException("Select at least one item to copy.")
+
+        decoded_target_ids: list[int] = []
+        if payload.target_history_name:
+            new_history = model.History(name=payload.target_history_name, user=user)
+            trans.sa_session.add(new_history)
+            trans.sa_session.commit()
+            decoded_target_ids.append(new_history.id)
+        else:
+            if not payload.target_history_ids:
+                raise glx_exceptions.MessageException(
+                    "Select a destination history or provide a target history name."
+                )
+            decoded_target_ids.extend(self.app.security.decode_id(h) for h in payload.target_history_ids)
+
+        target_histories = [
+            h for h in map(trans.sa_session.query(model.History).get, decoded_target_ids) if h and h.user == user
+        ]
+        if len(target_histories) != len(decoded_target_ids):
+            raise glx_exceptions.MessageException("You lack permission for one or more destination histories.")
+
+        decoded_ds, decoded_dc = [], []
+        for entry in source_content:
+            if entry.type == "dataset":
+                decoded_ds.append(self.app.security.decode_id(entry.id))
+            elif entry.type == "dataset_collection":
+                decoded_dc.append(self.app.security.decode_id(entry.id))
+            else:
+                raise glx_exceptions.MessageException("Unknown content type.")
+
+        contents = list(map(trans.sa_session.query(model.HistoryDatasetAssociation).get, decoded_ds))
+        contents.extend(map(trans.sa_session.query(model.HistoryDatasetCollectionAssociation).get, decoded_dc))
+        contents.sort(key=lambda c: c.hid)
+
+        for c in contents:
+            if not c:
+                raise glx_exceptions.MessageException("You tried to copy a dataset that does not exist.")
+            if c.history != source_history:
+                raise glx_exceptions.MessageException("You tried to copy a dataset not in the source history.")
+            for h in target_histories:
+                if c.history_content_type == "dataset":
+                    copy = c.copy(flush=False)
+                    h.stage_addition(copy)
+                else:
+                    copy = c.copy(element_destination=h)
+                copy.copy_tags_from(user, c)
+
+        for h in target_histories:
+            h.add_pending_items()
+        trans.sa_session.commit()
+
+        return CopyDatasetsResponse(
+            history_ids=[self.app.security.encode_id(i) for i in decoded_target_ids]
         )
 
     def map_datasets(self, history, fn, **kwargs):

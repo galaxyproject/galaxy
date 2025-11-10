@@ -124,7 +124,6 @@ class CopyDatasetsPayloadSourceEntry(Model):
 
 
 class CopyDatasetsPayload(Model):
-    source_history: str
     source_content: list[CopyDatasetsPayloadSourceEntry]
     target_history_ids: Optional[list[str]] = None
     target_history_name: Optional[str] = None
