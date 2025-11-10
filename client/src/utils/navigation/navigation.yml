@@ -239,7 +239,7 @@ history_panel:
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations: '${_} .dataset-actions'
-      
+
       expiration_indicator_badge: '${_} .expiration-indicator .badge'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
@@ -523,6 +523,8 @@ histories:
     bulk_delete_confirm: '#bulk-delete-histories .btn.btn-danger'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
     bulk_restore_confirm: '#bulk-restore-histories .btn.btn-primary'
+    bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+    bulk_open_multiview_limit_confirm_button: '#bulk-open-multiview-histories .btn.btn-primary'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
