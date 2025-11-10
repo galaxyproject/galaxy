@@ -1,17 +1,18 @@
-import galaxyModule from "@/app/galaxy"
-import { getGalaxyInstance, setGalaxyInstance } from "@/app/singleton"
+import galaxyModule from "@/app/galaxy";
+import { getGalaxyInstance, setGalaxyInstance } from "@/app/singleton";
 
-import { globalInits } from "./globalInits"
-import { loadConfig } from "./loadConfig"
+import { initSentry } from "./globalInits/initSentry";
+import { onloadWebhooks } from "./globalInits/onloadWebhooks";
+import { loadConfig } from "./loadConfig";
 
-const { GalaxyApp } = galaxyModule
+const { GalaxyApp } = galaxyModule;
 
 export async function standardInit(label = "Galaxy") {
-    const config = await loadConfig()
-    const app = new GalaxyApp(config, {})
+    const config = await loadConfig();
+    const app = new GalaxyApp(config, {});
 
     // Register singleton
-    setGalaxyInstance(() => app)
+    setGalaxyInstance(() => app);
 
     // Expose Galaxy object in window
     if (!window.Galaxy) {
@@ -19,10 +20,14 @@ export async function standardInit(label = "Galaxy") {
             enumerable: true,
             configurable: true,
             get: () => getGalaxyInstance(),
-        })
+        });
     }
 
-    console.debug(`${label} app`)
-    await globalInits(app, config)
-    return app
+    // Initialize globals
+    await initSentry(app, config);
+    await onloadWebhooks(app);
+
+    // Initialization complete
+    console.debug(`${label} app`);
+    return app;
 }
