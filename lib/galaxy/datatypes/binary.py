@@ -5037,19 +5037,30 @@ class SpatialData(CompressedZarrZipArchive):
                 coordinate_systems = set()
                 spatialdata_version = ""
 
-                # Find the root zarr directory
+                # Find the root zarr directory and determine format version
                 root_zarr = None
+                is_zarr_v3 = False
                 for file in zf.namelist():
-                    if file.endswith(".zarr/.zattrs"):
+                    if file.endswith(".zarr/zarr.json"):
+                        root_zarr = file.replace("/zarr.json", "")
+                        is_zarr_v3 = True
+                        break
+                    elif file.endswith(".zarr/.zattrs"):
                         root_zarr = file.replace("/.zattrs", "")
                         break
 
                 # Read root attributes for version info
                 if root_zarr:
-                    root_attrs_path = f"{root_zarr}/.zattrs"
+                    if is_zarr_v3:
+                        root_attrs_path = f"{root_zarr}/zarr.json"
+                    else:
+                        root_attrs_path = f"{root_zarr}/.zattrs"
+
                     try:
                         with zf.open(root_attrs_path) as f:
-                            root_attrs = json.load(f)
+                            root_metadata = json.load(f)
+                            # In v3, attributes are nested under "attributes" key
+                            root_attrs = root_metadata.get("attributes", {}) if is_zarr_v3 else root_metadata
                             if "spatialdata_attrs" in root_attrs:
                                 spatialdata_attrs = root_attrs["spatialdata_attrs"]
                                 spatialdata_version = spatialdata_attrs.get("spatialdata_software_version", "")
@@ -5066,8 +5077,8 @@ class SpatialData(CompressedZarrZipArchive):
                             element_type = rel_parts[0]
                             element_name = rel_parts[1]
 
-                            # Skip metadata files and empty names
-                            if element_name and not element_name.startswith("."):
+                            # Skip metadata files (zarr.json, .zattrs, .zgroup, .zarray) and empty names
+                            if element_name and not element_name.startswith(".") and element_name != "zarr.json":
                                 if element_type == "images":
                                     images.add(element_name)
                                 elif element_type == "labels":
@@ -5079,13 +5090,34 @@ class SpatialData(CompressedZarrZipArchive):
                                 elif element_type == "tables":
                                     tables.add(element_name)
 
-                    # Extract coordinate system information from .zattrs files
-                    if file.endswith(".zattrs"):
+                    # Extract coordinate system information from metadata files
+                    # Support both v2 (.zattrs) and v3 (zarr.json) formats
+                    if file.endswith(".zattrs") or file.endswith("/zarr.json"):
                         try:
                             with zf.open(file) as f:
-                                attrs = json.load(f)
+                                metadata = json.load(f)
 
-                                # Check for coordinate transformations
+                                # In v3, attributes are nested under "attributes" key
+                                # In v2, attributes are at the root level
+                                if file.endswith("/zarr.json"):
+                                    attrs = metadata.get("attributes", {})
+                                    # For v3 OME-NGFF images, check inside "ome" key
+                                    if "ome" in attrs and "multiscales" in attrs["ome"]:
+                                        multiscales = attrs["ome"]["multiscales"]
+                                        if isinstance(multiscales, list):
+                                            for ms in multiscales:
+                                                if isinstance(ms, dict) and "coordinateTransformations" in ms:
+                                                    for ct in ms["coordinateTransformations"]:
+                                                        if isinstance(ct, dict) and "output" in ct:
+                                                            output = ct["output"]
+                                                            if isinstance(output, dict) and "name" in output:
+                                                                coordinate_systems.add(output["name"])
+                                                            elif isinstance(output, str):
+                                                                coordinate_systems.add(output)
+                                else:
+                                    attrs = metadata
+
+                                # Check for coordinate transformations (v2 and v3)
                                 if "coordinateTransformations" in attrs:
                                     transforms = attrs["coordinateTransformations"]
                                     if isinstance(transforms, list):
@@ -5097,7 +5129,7 @@ class SpatialData(CompressedZarrZipArchive):
                                                 elif isinstance(output, str):
                                                     coordinate_systems.add(output)
 
-                                # Check for multiscales (images/labels)
+                                # Check for multiscales (images/labels) - v2 format
                                 if "multiscales" in attrs:
                                     multiscales = attrs["multiscales"]
                                     if isinstance(multiscales, list):
@@ -5131,8 +5163,16 @@ class SpatialData(CompressedZarrZipArchive):
                 table_shapes = {}
                 for table_name in tables:
                     try:
-                        obs_index_path = f"{root_zarr}/tables/{table_name}/obs/_index/.zarray"
-                        var_index_path = f"{root_zarr}/tables/{table_name}/var/_index/.zarray"
+                        # Support both v2 and v3 formats
+                        if is_zarr_v3:
+                            # In v3, check zarr.json files for shape information
+                            obs_index_path = f"{root_zarr}/tables/{table_name}/obs/_index/zarr.json"
+                            var_index_path = f"{root_zarr}/tables/{table_name}/var/_index/zarr.json"
+                        else:
+                            # In v2, check .zarray files
+                            obs_index_path = f"{root_zarr}/tables/{table_name}/obs/_index/.zarray"
+                            var_index_path = f"{root_zarr}/tables/{table_name}/var/_index/.zarray"
+
                         n_obs = None
                         n_vars = None
                         if obs_index_path in zf.namelist():
@@ -5158,11 +5198,14 @@ class SpatialData(CompressedZarrZipArchive):
         Check if the file is a valid SpatialData zarr archive.
 
         SpatialData files are Zarr archives with specific structure containing
-        a root .zattrs file with spatialdata_attrs metadata and element directories
-        like images/, labels/, shapes/, points/, or tables/.
+        a root metadata file (.zattrs for v2 or zarr.json for v3) with spatialdata_attrs
+        metadata and element directories like images/, labels/, shapes/, points/, or tables/.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('subsampled_visium.spatialdata.zip')
+        >>> SpatialData().sniff(fname)
+        True
+        >>> fname = get_test_fname('subsampled_visium_v3.spatialdata.zip')
         >>> SpatialData().sniff(fname)
         True
         >>> fname = get_test_fname('Images.zarr.zip')
@@ -5176,17 +5219,32 @@ class SpatialData(CompressedZarrZipArchive):
                 if not super().sniff(filename):
                     return False
 
-                # Look for the root .zattrs file with spatialdata_attrs.
+                # Look for the root metadata file with spatialdata_attrs.
                 # This can distinguish spatialdata from other zarr archives.
+                # Support both v2 (.zattrs) and v3 (zarr.json) formats
                 for file in zf.namelist():
-                    # Look for .zattrs file at the root of the zarr store
+                    # Look for metadata file at the root of the zarr store
                     # The zarr store can be at root or one level deeper
                     parts = file.split("/")
-                    # Root level: .zattrs or one level deep: <name>.zarr/.zattrs
+
+                    # Check for v2 format: .zattrs at root or one level deep
                     if file == ".zattrs" or (len(parts) == 2 and parts[0].endswith(".zarr") and parts[1] == ".zattrs"):
                         try:
                             with zf.open(file) as f:
                                 attrs = json.load(f)
+                                # Check for SpatialData-specific metadata
+                                if "spatialdata_attrs" in attrs:
+                                    return True
+                        except Exception:
+                            pass
+
+                    # Check for v3 format: zarr.json at root or one level deep
+                    elif file == "zarr.json" or (len(parts) == 2 and parts[0].endswith(".zarr") and parts[1] == "zarr.json"):
+                        try:
+                            with zf.open(file) as f:
+                                metadata = json.load(f)
+                                # In v3, attributes are nested under "attributes" key
+                                attrs = metadata.get("attributes", {})
                                 # Check for SpatialData-specific metadata
                                 if "spatialdata_attrs" in attrs:
                                     return True
