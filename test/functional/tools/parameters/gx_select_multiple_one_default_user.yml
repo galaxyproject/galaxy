@@ -34,9 +34,9 @@ tests:
       output:
         asserts:
           - has_line:
-              line: "[ex2]"
+              line: '["ex2"]'
   - outputs:
       output:
         asserts:
           - has_line:
-              line: "[--ex3]"
+              line: '["--ex3"]'
