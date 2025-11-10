@@ -78,7 +78,7 @@ it("copies selected items and shows success", async () => {
         http.get("/api/histories/{history_id}/contents", ({ response }) =>
             response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
         ),
-        http.post("/api/datasets/copy", async ({ request, response }) => {
+        http.post("/api/histories/{history_id}/copy_contents", async ({ request, response }) => {
             const body = await request.json();
             if (body.source_content.length > 0) {
                 return response(200).json({ history_ids: ["h1"] });
@@ -119,7 +119,9 @@ it("handles API error from copy call", async () => {
         http.get("/api/histories/{history_id}/contents", ({ response }) =>
             response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
         ),
-        http.post("/api/datasets/copy", ({ response }) => response(500).json({ err_msg: "Copy failed" })),
+        http.post("/api/histories/{history_id}/copy_contents", ({ response }) =>
+            response(500).json({ err_msg: "Copy failed" }),
+        ),
     );
     const wrapper = mountComponent();
     await flushPromises();
@@ -167,7 +169,9 @@ it("shows success for single existing target", async () => {
         http.get("/api/histories/{history_id}/contents", ({ response }) =>
             response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
         ),
-        http.post("/api/datasets/copy", ({ response }) => response(200).json({ history_ids: ["h1"] })),
+        http.post("/api/histories/{history_id}/copy_contents", ({ response }) =>
+            response(200).json({ history_ids: ["h1"] }),
+        ),
     );
     const wrapper = mountComponent();
     await flushPromises();
@@ -193,7 +197,9 @@ it("shows success for multiple target histories", async () => {
         http.get("/api/histories/{history_id}/contents", ({ response }) =>
             response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
         ),
-        http.post("/api/datasets/copy", ({ response }) => response(200).json({ history_ids: ["h1", "h2"] })),
+        http.post("/api/histories/{history_id}/copy_contents", ({ response }) =>
+            response(200).json({ history_ids: ["h1", "h2"] }),
+        ),
     );
     const wrapper = mountComponent();
     await flushPromises();
@@ -217,7 +223,9 @@ it("shows success for new history creation", async () => {
         http.get("/api/histories/{history_id}/contents", ({ response }) =>
             response(200).json([{ id: "d1", name: "X", hid: 1, history_content_type: "dataset" }]),
         ),
-        http.post("/api/datasets/copy", ({ response }) => response(200).json({ history_ids: ["h2"] })),
+        http.post("/api/histories/{history_id}/copy_contents", ({ response }) =>
+            response(200).json({ history_ids: ["h2"] }),
+        ),
     );
     const wrapper = await setupBase(
         [{ id: "h1", name: "H1" }],
