@@ -1,4 +1,3 @@
-<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 <!DOCTYPE HTML>
 <html lang="en">
     <!--js-app.mako-->
@@ -23,16 +22,12 @@
             %endif
         </title>
 
-        ## relative href for site root
+        <!-- Set relative href for site root -->
         <link rel="index" href="${ h.url_for( '/' ) }"/>
 
-        ## TODO: use loaders to move everything but the essentials below the fold
-        ${ h.dist_css(
-            'base',
-        )}
-        ${ h.css(
-            'jquery-ui/smoothness/jquery-ui',
-        )}
+        <!-- Load stylesheets -->
+        ${ h.dist_css('base')}
+        ${ h.css('jquery-ui/smoothness/jquery-ui')}
     </head>
 
     <body scroll="no" class="full-content">
@@ -40,52 +35,19 @@
         <main>
             <div id="app"></div>
         </main>
-
-        ${ js_disabled_warning() }
-        ${ javascripts() }
-        ${ javascript_app() }
-    </body>
-</html>
-
-<%def name="javascripts()">
-    ${ h.dist_js(
-        'libs.bundled',
-        '%s.bundled' % js_app_name
-    )}
-</%def>
-
-<%def name="javascript_app()">
-
-    <script type="text/javascript">
-        console.debug("Initializing javascript application:", "${js_app_entry_fn}");
-
-        // js-app.mako
-        var options = ${ h.dumps( options ) };
-        var bootstrapped = ${ h.dumps( bootstrapped ) };
-    </script>
-
-    ${ galaxy_client.config_sentry(app) }
-    %if app.config.ga_code:
-        ${ galaxy_client.config_google_analytics(app.config.ga_code) }
-    %endif
-    %if app.config.plausible_server and app.config.plausible_domain:
-        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
-    %endif
-    %if app.config.matomo_server and app.config.matomo_site_id:
-        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
-    %endif
-</%def>
-
-<%def name="js_disabled_warning()">
-    <noscript>
-        <div class="overlay overlay-background noscript-overlay">
-            <div>
-                <h3 class="title">Javascript Required for Galaxy</h3>
+        <noscript>
+            <div class="overlay overlay-background noscript-overlay">
                 <div>
-                    The Galaxy analysis interface requires a browser with Javascript enabled.<br>
-                    Please enable Javascript and refresh this page.
+                    <h3 class="title">Javascript Required for Galaxy</h3>
+                    <div>
+                        The Galaxy analysis interface requires a browser with Javascript enabled.<br>
+                        Please enable Javascript and refresh this page.
+                    </div>
                 </div>
             </div>
-        </div>
-    </noscript>
-</%def>
+        </noscript>
+
+        <!-- Load application -->
+        ${ h.dist_js('libs.bundled', '%s.bundled' % js_app_name )}
+    </body>
+</html>
