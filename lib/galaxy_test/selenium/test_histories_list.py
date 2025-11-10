@@ -181,7 +181,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         # Create additional histories to exceed the limit (10 is the max)
         additional_histories = []
-        for i in range(10 + 1):
+        for _i in range(10 + 1):
             history_name = self._get_random_name()
             self.create_history(history_name)
             additional_histories.append(history_name)
