@@ -189,7 +189,7 @@ def list_docker_cached_mulled_images(
     if resolution_cache is not None and cache_key in resolution_cache:
         images_and_versions = resolution_cache.get(cache_key)
     else:
-        command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
+        command = build_docker_images_command(truncate=True, format="json", sudo=False, to_str=False)
         try:
             output = unicodify(subprocess.check_output(command)).strip()
         except subprocess.CalledProcessError:
