@@ -39,31 +39,20 @@ class FastAPIContext:
             "root": web.url_for("/"),
             "user": user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
             "config": config,
-            "sentry": self._get_sentry(trans),
             "session_csrf_token": self._get_csrf_token(trans, request),
         }
         return JSONResponse(js_options)
 
     def _get_extended_config(self, trans):
-        config = {
+        return {
             "active_view": "analysis",
             "enable_webhooks": bool(trans.app.webhooks_registry.webhooks),
             "message_box_visible": trans.app.config.message_box_visible,
             "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
             "tool_dynamic_configs": list(trans.app.toolbox.dynamic_conf_filenames()),
+            "sentry": self._get_sentry(trans),
+            "stored_workflow_menu_entries":  self._get_workflow_entries(trans),
         }
-        stored_workflow_menu_index = {}
-        stored_workflow_menu_entries = []
-        for menu_item in getattr(trans.user, "stored_workflow_menu_entries", []):
-            encoded_id = trans.security.encode_id(menu_item.stored_workflow_id)
-            if encoded_id not in stored_workflow_menu_index:
-                stored_workflow_menu_index[encoded_id] = True
-                stored_workflow_menu_entries.append({
-                    "id": encoded_id,
-                    "name": util.unicodify(menu_item.stored_workflow.name),
-                })
-        config["stored_workflow_menu_entries"] = stored_workflow_menu_entries
-        return config
 
     def _get_csrf_token(self, trans: ProvidesUserContext, request: Request):
         cookie = request.cookies.get("galaxysession")
@@ -89,3 +78,16 @@ class FastAPIContext:
             if trans.user:
                 sentry.email = trans.user.email
         return sentry
+
+    def _get_workflow_entries(self, trans: ProvidesUserContext):
+        stored_workflow_menu_index = {}
+        stored_workflow_menu_entries = []
+        for menu_item in getattr(trans.user, "stored_workflow_menu_entries", []):
+            encoded_id = trans.security.encode_id(menu_item.stored_workflow_id)
+            if encoded_id not in stored_workflow_menu_index:
+                stored_workflow_menu_index[encoded_id] = True
+                stored_workflow_menu_entries.append({
+                    "id": encoded_id,
+                    "name": util.unicodify(menu_item.stored_workflow.name),
+                })
+        return stored_workflow_menu_entries
