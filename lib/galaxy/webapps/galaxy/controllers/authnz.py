@@ -14,7 +14,7 @@ from galaxy import (
 )
 from galaxy.util import url_get
 from galaxy.web import url_for
-from galaxy.webapps.base.controller import JSAppLauncher
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
 LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
 
 
-class OIDC(JSAppLauncher):
+class OIDC(BaseUIController):
     @web.json
     @web.expose
     @web.require_login("list third-party identities")
