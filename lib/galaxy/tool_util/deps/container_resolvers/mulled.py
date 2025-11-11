@@ -1,5 +1,6 @@
 """This module describes the :class:`MulledContainerResolver` ContainerResolver plugin."""
 
+import json
 import logging
 import os
 import subprocess
@@ -190,11 +191,25 @@ def list_docker_cached_mulled_images(
     else:
         command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
         try:
-            images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
+            output = unicodify(subprocess.check_output(command)).strip()
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [":".join(line.split()[0:2]) for line in images_and_versions[1:]]
+
+        # Parse JSON output from docker images
+        images_and_versions = []
+        for line in output.splitlines():
+            if line.strip():
+                try:
+                    image_info = json.loads(line)
+                    repository = image_info.get("Repository", "")
+                    tag = image_info.get("Tag", "")
+                    if repository and tag:
+                        images_and_versions.append(f"{repository}:{tag}")
+                except json.JSONDecodeError:
+                    log.warning(f"Failed to parse docker image JSON: {line}")
+                    continue
+
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 

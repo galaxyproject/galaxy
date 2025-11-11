@@ -64,7 +64,9 @@ def build_docker_cache_command(image: str, **kwds) -> str:
 
 
 def build_docker_images_command(truncate=True, **kwds) -> Union[str, List[str]]:
-    args = ["--no-trunc"] if not truncate else []
+    args = ["--format", "json"]
+    if not truncate:
+        args.insert(0, "--no-trunc")
     return command_shell("images", args, **kwds)
 
 
