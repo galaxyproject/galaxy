@@ -1,11 +1,21 @@
 import logging
-from fastapi import Depends, Request
+
+from fastapi import Request
 from fastapi.responses import JSONResponse
+
+from galaxy import (
+    util,
+    web,
+)
+from galaxy.managers import (
+    configuration,
+    users,
+)
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.webapps.galaxy.api import DependsOnTrans, Router
-from galaxy.managers import users, configuration, workflows
-from galaxy import util
-from galaxy import web
+from galaxy.webapps.galaxy.api import (
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +32,7 @@ USER_KEYS = (
     "preferences",
 )
 
+
 @router.cbv
 class FastAPIContext:
     @router.get("/api/context", summary="Return bootstrapped client context")
@@ -30,9 +41,9 @@ class FastAPIContext:
         user_serializer = users.CurrentUserSerializer(trans.app)
         config_serializer = configuration.ConfigSerializer(trans.app)
         admin_config_serializer = configuration.AdminConfigSerializer(trans.app)
-
+        host = str(request.base_url).rstrip("/")
         serializer = admin_config_serializer if user_manager.is_admin(trans.user, trans=trans) else config_serializer
-        config = serializer.serialize_to_view(trans.app.config, view="all", host=trans.host)
+        config = serializer.serialize_to_view(trans.app.config, view="all", host=host)
         config.update(self._get_extended_config(trans))
 
         js_options = {
@@ -51,7 +62,7 @@ class FastAPIContext:
             "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
             "tool_dynamic_configs": list(trans.app.toolbox.dynamic_conf_filenames()),
             "sentry": self._get_sentry(trans),
-            "stored_workflow_menu_entries":  self._get_workflow_entries(trans),
+            "stored_workflow_menu_entries": self._get_workflow_entries(trans),
         }
 
     def _get_csrf_token(self, trans: ProvidesUserContext, request: Request):
@@ -76,7 +87,7 @@ class FastAPIContext:
         if trans.app.config.sentry_dsn:
             sentry["sentry_dsn_public"] = trans.app.config.sentry_dsn_public
             if trans.user:
-                sentry.email = trans.user.email
+                sentry["email"] = trans.user.email
         return sentry
 
     def _get_workflow_entries(self, trans: ProvidesUserContext):
@@ -86,8 +97,10 @@ class FastAPIContext:
             encoded_id = trans.security.encode_id(menu_item.stored_workflow_id)
             if encoded_id not in stored_workflow_menu_index:
                 stored_workflow_menu_index[encoded_id] = True
-                stored_workflow_menu_entries.append({
-                    "id": encoded_id,
-                    "name": util.unicodify(menu_item.stored_workflow.name),
-                })
+                stored_workflow_menu_entries.append(
+                    {
+                        "id": encoded_id,
+                        "name": util.unicodify(menu_item.stored_workflow.name),
+                    }
+                )
         return stored_workflow_menu_entries

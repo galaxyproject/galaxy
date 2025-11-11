@@ -6,7 +6,6 @@ import logging
 from typing import (
     Any,
     Callable,
-    Optional,
 )
 
 from webob.exc import (
@@ -24,7 +23,6 @@ from galaxy import (
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.managers import (
     base as managers_base,
-    configuration,
     users,
     workflows,
 )
