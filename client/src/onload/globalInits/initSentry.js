@@ -7,8 +7,9 @@ import Vue from "vue";
  *
  * @param {object} config Galaxy configuration object
  */
-export const initSentry = (galaxy, config) => {
+export const initSentry = (galaxy) => {
     console.log("initSentry");
+    const config = galaxy.config;
     if (config.sentry) {
         const router = galaxy.router;
         const { sentry_dsn_public, email } = config.sentry;

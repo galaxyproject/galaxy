@@ -3,6 +3,8 @@ import { createPinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
 import { standardInit } from "@/onload";
+import { initSentry } from "@/onload/globalInits/initSentry";
+import { onloadWebhooks } from "@/onload/globalInits/onloadWebhooks";
 
 import { getRouter } from "./router";
 
@@ -12,12 +14,17 @@ Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
 
 window.addEventListener("load", async () => {
+    // Create Galaxy object
     const Galaxy = await standardInit("app");
-    console.log("App setup");
 
+    // Build router
     const router = getRouter(Galaxy);
-    Galaxy.router = router;
 
+    // Initialize globals
+    await initSentry(Galaxy);
+    await onloadWebhooks(Galaxy);
+
+    // Mount application
     new Vue({
         el: "#app",
         render: (h) => h(App),
