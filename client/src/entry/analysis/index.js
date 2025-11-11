@@ -2,9 +2,9 @@
 import { createPinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
+import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
 import { initWebhooks } from "@/app/addons/webhooks";
-import { standardInit } from "@/onload";
 
 import { getRouter } from "./router";
 
@@ -15,7 +15,7 @@ const pinia = createPinia();
 
 window.addEventListener("load", async () => {
     // Create Galaxy object
-    const Galaxy = await standardInit("app");
+    const Galaxy = await initGalaxyInstance("app");
 
     // Build router
     const router = getRouter(Galaxy);

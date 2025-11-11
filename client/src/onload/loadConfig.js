@@ -1,23 +1,18 @@
 // loadConfig.ts
-export async function loadConfig() {
-    try {
-        const response = await fetch("/api/context");
-        if (!response.ok) {
-            throw new Error(`Failed to fetch /api/context (${response.status})`);
-        }
-        const config = await response.json();
-        return config;
-    } catch (err) {
-        console.error("Failed to load Galaxy configuration:", err);
-        return {};
-    }
-}
-
 let cachedConfig = null;
 
-export async function getConfig() {
+export async function loadConfig() {
     if (!cachedConfig) {
-        cachedConfig = await loadConfig();
+        try {
+            const response = await fetch("/api/context");
+            if (!response.ok) {
+                throw new Error(`Failed to fetch /api/context (${response.status})`);
+            }
+            cachedConfig = await response.json();
+        } catch (err) {
+            console.error("Failed to load Galaxy configuration:", err);
+            return {};
+        }
     }
     return cachedConfig;
 }

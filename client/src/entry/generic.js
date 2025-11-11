@@ -1,5 +1,5 @@
-import { standardInit } from "@/onload";
+import { initGalaxyInstance } from "@/app";
 
 window.addEventListener("load", async () => {
-    await standardInit("generic");
+    await initGalaxyInstance("generic");
 });
