@@ -1,9 +1,7 @@
-import galaxyModule from "@/app/galaxy";
+import { GalaxyApp } from "@/app/galaxy";
 import { getGalaxyInstance, setGalaxyInstance } from "@/app/singleton";
 
 import { loadConfig } from "./loadConfig";
-
-const { GalaxyApp } = galaxyModule;
 
 export async function standardInit(label = "Galaxy") {
     const config = await loadConfig();
