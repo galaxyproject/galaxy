@@ -39,7 +39,8 @@ class FastAPIContext:
             "root": web.url_for("/"),
             "user": user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
             "config": config,
-            "session_csrf_token": self._get_csrf_token(request, trans),
+            "sentry": self._get_sentry(trans),
+            "session_csrf_token": self._get_csrf_token(trans, request),
         }
         return JSONResponse(js_options)
 
@@ -64,7 +65,7 @@ class FastAPIContext:
         config["stored_workflow_menu_entries"] = stored_workflow_menu_entries
         return config
 
-    def _get_csrf_token(self, request: Request, trans: ProvidesUserContext):
+    def _get_csrf_token(self, trans: ProvidesUserContext, request: Request):
         cookie = request.cookies.get("galaxysession")
         if not cookie:
             return None
@@ -80,3 +81,11 @@ class FastAPIContext:
         except Exception:
             log.debug("Failed to derive CSRF token", exc_info=True)
         return None
+
+    def _get_sentry(self, trans: ProvidesUserContext):
+        sentry = {}
+        if trans.app.config.sentry_dsn:
+            sentry["sentry_dsn_public"] = trans.app.config.sentry_dsn_public
+            if trans.user:
+                sentry.email = trans.user.email
+        return sentry
