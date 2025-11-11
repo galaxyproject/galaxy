@@ -115,10 +115,10 @@ class DisplayApplicationsManager:
     def create_link(
         self,
         trans: ProvidesUserContext,
-        dataset_id: Optional[str] = None,
+        app_name: str,
+        dataset_id: str,
+        link_name: str,
         user_id: Optional[str] = None,
-        app_name: Optional[str] = None,
-        link_name: Optional[str] = None,
         **kwds,
     ) -> CreateLinkFeedback:
         """Access to external display applications"""
