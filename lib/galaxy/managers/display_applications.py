@@ -10,6 +10,7 @@ from galaxy.datatypes.display_applications.util import (
 )
 from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import MessageException
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
@@ -113,11 +114,11 @@ class DisplayApplicationsManager:
 
     def create_link(
         self,
-        trans,
-        dataset_id=None,
-        user_id=None,
-        app_name=None,
-        link_name=None,
+        trans: ProvidesUserContext,
+        dataset_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        app_name: Optional[str] = None,
+        link_name: Optional[str] = None,
         **kwds,
     ) -> CreateLinkFeedback:
         """Access to external display applications"""
