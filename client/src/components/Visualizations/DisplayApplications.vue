@@ -8,12 +8,11 @@ interface LinkType {
     link_name: string;
 }
 
-const props = defineProps({
-    datasetId: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    datasetId: string;
+}
+
+const props = defineProps<Props>();
 function getUrl(link: LinkType) {
     return `/display_applications/${props.datasetId}/${link.app_name}/${link.link_name}`;
 }
