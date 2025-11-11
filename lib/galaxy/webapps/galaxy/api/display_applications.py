@@ -56,13 +56,6 @@ class FastAPIDisplayApplications:
     ) -> CreateLinkFeedback:
         """
         Creates a link for display applications.
-
-        :param  app_name:  display application name
-        :type   app_name:  string
-        :param  dataset_id:  encoded dataset_id
-        :type   dataset_id:  string
-        :param  link_name:  link name
-        :type   link_name:  string
         """
         app_name = payload.app_name
         dataset_id = payload.dataset_id
