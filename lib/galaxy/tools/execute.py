@@ -659,7 +659,10 @@ class ExecutionTracker:
                 # We mark this here so that the job cache query in subsequent
                 # jobs considers this to be a valid cached input.
                 completed_job_ids = {job.id for job in self.completed_jobs.values() if job}
-                if all(job.copied_from_job_id in completed_job_ids for job in self.implicit_collection_jobs.job_list):
+                completed_implicit_jobs_copied_from = set(
+                    self.implicit_collection_jobs.get_job_attributes(["copied_from_job_id"]).all()
+                )
+                if completed_implicit_jobs_copied_from <= completed_job_ids:
                     completed_collections = {
                         jtodca.name: jtodca.dataset_collection_instance
                         for jtodca in self.completed_jobs[0].output_dataset_collection_instances

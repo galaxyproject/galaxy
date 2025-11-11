@@ -8,8 +8,8 @@
             v-else
             :class="targetClass"
             :data-tool-id="tool.id"
-            :href="tool.link"
-            :target="tool.target"
+            :href="toolLink"
+            :target="toolTarget"
             :title="tool.help"
             @click="onClick">
             <span class="labels">
@@ -35,6 +35,7 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import { useToolStore } from "@/stores/toolStore";
 import ariaAlert from "@/utils/ariaAlert";
 
 Vue.use(BootstrapVue);
@@ -67,7 +68,20 @@ export default {
             default: false,
         },
     },
+    setup() {
+        const toolStore = useToolStore();
+        return {
+            getLinkById: toolStore.getLinkById,
+            getTargetById: toolStore.getTargetById,
+        };
+    },
     computed: {
+        toolLink() {
+            return this.getLinkById(this.tool.id);
+        },
+        toolTarget() {
+            return this.getTargetById(this.tool.id);
+        },
         targetClass() {
             if (this.toolKey) {
                 return `tool-menu-item-${this.tool[this.toolKey]} title-link cursor-pointer`;

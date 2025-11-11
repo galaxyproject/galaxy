@@ -1664,7 +1664,17 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         back_populates="job"
     )
 
-    dict_collection_visible_keys = ["id", "state", "exit_code", "update_time", "create_time", "galaxy_version"]
+    dict_collection_visible_keys = [
+        "id",
+        "state",
+        "exit_code",
+        "update_time",
+        "create_time",
+        "galaxy_version",
+        "tool_id",
+        "tool_version",
+        "history_id",
+    ]
     dict_element_visible_keys = [
         "id",
         "state",
@@ -1675,6 +1685,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "command_version",
         "copied_from_job_id",
         "user_id",
+        "tool_id",
+        "tool_version",
+        "history_id",
     ]
 
     _numeric_metric = JobMetricNumeric
@@ -2210,9 +2223,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             rval = super().to_dict(view="collection")
         else:
             rval = super().to_dict(view=view)
-        rval["tool_id"] = self.tool_id
-        rval["tool_version"] = self.tool_version
-        rval["history_id"] = self.history_id
         if system_details or view == "admin_job_list":
             # System level details that only admins should have.
             rval["external_id"] = self.job_runner_external_id
@@ -2847,6 +2857,17 @@ class ImplicitCollectionJobs(Base, Serializable):
             .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
             .all()
         )
+
+    def get_job_attributes(self, attributes: list[str]):
+        session = required_object_session(self)
+        targets = [getattr(Job.table.columns, attr) for attr in attributes]
+        stmt = (
+            select(*targets)
+            .select_from(Job)
+            .join(ImplicitCollectionJobsJobAssociation, Job.id == ImplicitCollectionJobsJobAssociation.job_id)
+            .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+        )
+        return session.execute(stmt)
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
@@ -10169,6 +10190,15 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
 
         return step_attrs
 
+    def get_jobs_dict(self):
+        if self.implicit_collection_jobs:
+            result = self.implicit_collection_jobs.get_job_attributes(Job.dict_collection_visible_keys)
+            return [{"model_class": "Job", **row._mapping} for row in result]
+        elif self.job:
+            return [self.job.to_dict()]
+        else:
+            return []
+
     def to_dict(self, view="collection", value_mapper=None):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         rval["order_index"] = self.workflow_step.order_index
@@ -10177,9 +10207,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         # Following no longer makes sense...
         # rval['state'] = self.job.state if self.job is not None else None
         if view == "element":
-            jobs = []
-            for job in self.jobs:
-                jobs.append(job.to_dict())
+            jobs = self.get_jobs_dict()
 
             outputs = {}
             for output_assoc in self.output_datasets:
