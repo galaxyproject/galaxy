@@ -41,6 +41,16 @@ class RootController(controller.BaseUIController, UsesAnnotations):
         raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
+    def client(self, trans, **kwd):
+        """
+        Endpoint for clientside routes.  This ships the primary SPA client.
+
+        Should not be used with url_for -- see
+        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
+        """
+        return self.index(trans, **kwd)
+
+    @web.expose
     def index(
         self, trans: GalaxyWebTransaction, app_name="analysis", tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd
     ):
