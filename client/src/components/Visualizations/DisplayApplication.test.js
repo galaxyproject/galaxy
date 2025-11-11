@@ -41,7 +41,6 @@ it("renders success with resource and opens window", async () => {
         },
     });
     await flushPromises();
-    await wrapper.vm.$nextTick();
     expect(window.open).toHaveBeenCalledWith("http://example.com/res", "_blank");
     expect(wrapper.text()).toContain("Display application is ready");
     expect(wrapper.text()).toContain("http://example.com");
@@ -75,10 +74,8 @@ it("handles refresh loop once", async () => {
         },
     });
     await flushPromises();
-    await wrapper.vm.$nextTick();
     jest.runOnlyPendingTimers();
     await flushPromises();
-    await wrapper.vm.$nextTick();
     expect(window.open).toHaveBeenCalledWith("http://example.com/final", "_blank");
 });
 
@@ -96,7 +93,6 @@ it("renders error", async () => {
         },
     });
     await flushPromises();
-    await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain("Failed to create link");
 });
 
@@ -122,7 +118,6 @@ it("renders initialization steps", async () => {
         },
     });
     await flushPromises();
-    await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain("Display Application Initialization");
     expect(wrapper.text()).toContain("alpha");
     expect(wrapper.text()).toContain("running");
