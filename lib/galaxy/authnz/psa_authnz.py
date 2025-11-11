@@ -361,9 +361,9 @@ class PSAAuthnz(IdentityProvider):
             end_session_endpoint = oidc_config.get("end_session_endpoint")
 
             if end_session_endpoint:
-                # Construct logout URL with optional post_logout_redirect_uri
+                # Construct logout URL with optional redirect_uri
                 if post_user_logout_href:
-                    logout_url = f"{end_session_endpoint}?post_logout_redirect_uri={quote(post_user_logout_href)}"
+                    logout_url = f"{end_session_endpoint}?redirect_uri={quote(post_user_logout_href)}"
                 else:
                     logout_url = end_session_endpoint
 
