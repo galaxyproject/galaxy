@@ -72,6 +72,10 @@ List of behavior changes associated with profile versions:
 
 - require a valid `data_ref` attribute for `data_column` parameters
 
+### 25.1
+
+- Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
+
 ### Examples
 
 A normal tool:
