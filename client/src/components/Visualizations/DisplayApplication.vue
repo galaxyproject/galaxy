@@ -13,20 +13,13 @@ type CreateLinkFeedback = components["schemas"]["CreateLinkFeedback"];
 
 const TIMEOUT = 2000;
 
-const props = defineProps({
-    appName: {
-        type: String,
-        required: true,
-    },
-    datasetId: {
-        type: String,
-        required: true,
-    },
-    linkName: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    appName: string;
+    datasetId: string;
+    linkName: string;
+}
+
+const props = defineProps<Props>();
 
 const applicationData = ref<CreateLinkFeedback>({ refresh: false });
 const errorMessage = ref("");
