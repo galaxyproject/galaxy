@@ -148,7 +148,7 @@ class DisplayApplicationsManager:
             messages = []
             preparable_steps = []
             refresh = False
-            display_app = trans.app.datatypes_registry.display_applications.get(app_name)
+            display_app = self.datatypes_registry.display_applications.get(app_name)
             if not display_app:
                 log.debug("Unknown display application has been requested: %s", app_name)
                 raise MessageException(f"The requested display application ({app_name}) is not available.")
