@@ -7,11 +7,10 @@ import Vue from "vue";
  *
  * @param {object} config Galaxy configuration object
  */
-export const initSentry = (galaxy) => {
+export const initSentry = (galaxy, router) => {
     console.log("initSentry");
     const config = galaxy.config;
     if (config.sentry) {
-        const router = galaxy.router;
         const { sentry_dsn_public, email } = config.sentry;
         let release = galaxy.config.version_major;
         if (galaxy.config.version_minor) {

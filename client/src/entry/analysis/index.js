@@ -2,9 +2,9 @@
 import { createPinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
+import { initSentry } from "@/app/addons/sentry";
+import { initWebhooks } from "@/app/addons/webhooks";
 import { standardInit } from "@/onload";
-import { initSentry } from "@/onload/globalInits/initSentry";
-import { onloadWebhooks } from "@/onload/globalInits/onloadWebhooks";
 
 import { getRouter } from "./router";
 
@@ -21,8 +21,8 @@ window.addEventListener("load", async () => {
     const router = getRouter(Galaxy);
 
     // Initialize globals
-    await initSentry(Galaxy);
-    await onloadWebhooks(Galaxy);
+    await initSentry(Galaxy, router);
+    await initWebhooks(Galaxy);
 
     // Mount application
     new Vue({
