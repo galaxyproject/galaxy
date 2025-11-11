@@ -65,7 +65,7 @@ it("handles refresh loop once", async () => {
             },
             error: null,
         });
-    const wrapper = mount(DisplayApplicationCreateLink, {
+    mount(DisplayApplicationCreateLink, {
         localVue,
         propsData: {
             appName: "igv",
