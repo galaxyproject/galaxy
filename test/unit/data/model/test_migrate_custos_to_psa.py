@@ -5,6 +5,7 @@ This test suite verifies the migration script that moves authentication tokens
 from custos_authnz_token to oidc_user_authnz_tokens.
 """
 
+import jwt
 from datetime import (
     datetime,
     timedelta,
@@ -29,6 +30,7 @@ from sqlalchemy.orm import (
 from galaxy.model.custom_types import MutableJSONType
 from galaxy.model.migrations.data_fixes.custos_to_psa import (
     CUSTOS_ASSOC_TYPE,
+    _extract_iat_from_token,
     migrate_custos_tokens_to_psa,
     remove_migrated_psa_tokens,
     restore_custos_tokens_from_psa,
@@ -208,12 +210,12 @@ class TestCustosToPSAMigration:
         migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
         assert migrated_count == 1
 
-        # Verify - should still migrate, but with default 1 hour expiry
+        # Verify - should still migrate, but with expires=1 to trigger refresh
         migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=3).first()
         assert migrated is not None
         assert migrated.assoc_type == CUSTOS_ASSOC_TYPE
-        # Migration sets default 3600 (1 hour) for expired/invalid tokens
-        assert migrated.extra_data["expires"] == 3600
+        # Migration sets expires=1 for expired tokens to trigger immediate refresh
+        assert migrated.extra_data["expires"] == 1
 
     def test_duplicate_detection(self, db_session):
         """Test that duplicate migrations are prevented."""
@@ -350,6 +352,226 @@ class TestCustosToPSAMigration:
 
         remaining = db_session.query(UserAuthnzTokenTest).filter_by(user_id=42).first()
         assert remaining is None
+
+
+class TestExtractIatFromToken:
+    """Test the _extract_iat_from_token helper function."""
+
+    def test_extract_iat_from_valid_jwt(self):
+        """Test extracting iat from a valid JWT token."""
+        iat_value = 1234567890
+        token = jwt.encode({"iat": iat_value, "sub": "user123"}, "secret", algorithm="HS256")
+        result = _extract_iat_from_token(token)
+        assert result == iat_value
+
+    def test_extract_iat_from_jwt_without_iat(self):
+        """Test extracting iat from a JWT that doesn't have an iat claim."""
+        token = jwt.encode({"sub": "user123", "exp": 9999999999}, "secret", algorithm="HS256")
+        result = _extract_iat_from_token(token)
+        assert result is None
+
+    def test_extract_iat_from_opaque_token(self):
+        """Test extracting iat from an opaque (non-JWT) token."""
+        opaque_token = "this_is_not_a_jwt_token"
+        result = _extract_iat_from_token(opaque_token)
+        assert result is None
+
+    def test_extract_iat_from_none(self):
+        """Test extracting iat when token is None."""
+        result = _extract_iat_from_token(None)
+        assert result is None
+
+    def test_extract_iat_from_empty_string(self):
+        """Test extracting iat when token is empty string."""
+        result = _extract_iat_from_token("")
+        assert result is None
+
+    def test_extract_iat_from_malformed_jwt(self):
+        """Test extracting iat from a malformed JWT."""
+        malformed_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature"
+        result = _extract_iat_from_token(malformed_token)
+        assert result is None
+
+
+class TestAuthTimeExtraction:
+    """Test auth_time extraction from tokens during migration."""
+
+    def test_auth_time_from_access_token(self, db_session):
+        """Test that auth_time is extracted from access_token.iat when available."""
+        now = datetime.now()
+        access_iat = int(now.timestamp()) - 100  # 100 seconds ago
+        id_iat = int(now.timestamp()) - 200  # 200 seconds ago
+
+        access_token = jwt.encode({"iat": access_iat, "sub": "user"}, "secret", algorithm="HS256")
+        id_token = jwt.encode({"iat": id_iat, "sub": "user"}, "secret", algorithm="HS256")
+
+        custos_token = CustosAuthnzTokenTest(
+            user_id=100,
+            external_user_id="user_auth_time_test",
+            provider="keycloak",
+            access_token=access_token,
+            id_token=id_token,
+            expiration_time=now + timedelta(hours=1),
+        )
+        db_session.add(custos_token)
+        db_session.commit()
+
+        custos_table = CustosAuthnzTokenTest.__table__
+        psa_table = UserAuthnzTokenTest.__table__
+
+        migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
+        assert migrated_count == 1
+
+        migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=100).first()
+        assert migrated is not None
+        # Should use access_token.iat, not id_token.iat
+        assert migrated.extra_data["auth_time"] == access_iat
+
+    def test_auth_time_fallback_to_id_token(self, db_session):
+        """Test that auth_time falls back to id_token.iat when access_token is opaque."""
+        now = datetime.now()
+        id_iat = int(now.timestamp()) - 150
+
+        id_token = jwt.encode({"iat": id_iat, "sub": "user"}, "secret", algorithm="HS256")
+
+        custos_token = CustosAuthnzTokenTest(
+            user_id=101,
+            external_user_id="user_fallback_test",
+            provider="keycloak",
+            access_token="opaque_access_token",  # Not a JWT
+            id_token=id_token,
+            expiration_time=now + timedelta(hours=1),
+        )
+        db_session.add(custos_token)
+        db_session.commit()
+
+        custos_table = CustosAuthnzTokenTest.__table__
+        psa_table = UserAuthnzTokenTest.__table__
+
+        migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
+        assert migrated_count == 1
+
+        migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=101).first()
+        assert migrated is not None
+        # Should use id_token.iat since access_token is opaque
+        assert migrated.extra_data["auth_time"] == id_iat
+
+    def test_auth_time_fallback_to_migration_time(self, db_session):
+        """Test that auth_time falls back to migration time when both tokens are opaque."""
+        now = datetime.now()
+        migration_start = int(now.timestamp())
+
+        custos_token = CustosAuthnzTokenTest(
+            user_id=102,
+            external_user_id="user_no_jwt_test",
+            provider="keycloak",
+            access_token="opaque_access",
+            id_token="opaque_id",
+            expiration_time=now + timedelta(hours=1),
+        )
+        db_session.add(custos_token)
+        db_session.commit()
+
+        custos_table = CustosAuthnzTokenTest.__table__
+        psa_table = UserAuthnzTokenTest.__table__
+
+        migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
+        assert migrated_count == 1
+
+        migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=102).first()
+        assert migrated is not None
+        # Should use migration time (approximately)
+        auth_time = migrated.extra_data["auth_time"]
+        # Allow 5 second window for migration execution
+        assert migration_start - 5 <= auth_time <= int(datetime.now().timestamp())
+
+    def test_expires_calculation_with_valid_expiration(self, db_session):
+        """Test that expires is calculated correctly from expiration_time and auth_time."""
+        now = datetime.now()
+        access_iat = int(now.timestamp())
+        expiration_time = now + timedelta(hours=2)  # 2 hours = 7200 seconds
+
+        access_token = jwt.encode({"iat": access_iat, "sub": "user"}, "secret", algorithm="HS256")
+
+        custos_token = CustosAuthnzTokenTest(
+            user_id=103,
+            external_user_id="user_expires_test",
+            provider="keycloak",
+            access_token=access_token,
+            id_token="id_token",
+            expiration_time=expiration_time,
+        )
+        db_session.add(custos_token)
+        db_session.commit()
+
+        custos_table = CustosAuthnzTokenTest.__table__
+        psa_table = UserAuthnzTokenTest.__table__
+
+        migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
+        assert migrated_count == 1
+
+        migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=103).first()
+        assert migrated is not None
+        # expires = expiration_time - auth_time
+        # Should be approximately 7200 seconds (2 hours)
+        expires = migrated.extra_data["expires"]
+        assert 7195 <= expires <= 7205  # Allow small timing variance
+
+    def test_expires_set_to_one_for_expired_tokens(self, db_session):
+        """Test that expires is set to 1 for already-expired tokens."""
+        now = datetime.now()
+        # Token issued 2 hours ago, expired 1 hour ago (1 hour lifetime)
+        access_iat = int((now - timedelta(hours=2)).timestamp())
+        expiration_time = now - timedelta(hours=1)  # Expired 1 hour ago
+
+        access_token = jwt.encode({"iat": access_iat, "sub": "user"}, "secret", algorithm="HS256")
+
+        custos_token = CustosAuthnzTokenTest(
+            user_id=104,
+            external_user_id="user_expired_test",
+            provider="keycloak",
+            access_token=access_token,
+            id_token="id_token",
+            expiration_time=expiration_time,
+        )
+        db_session.add(custos_token)
+        db_session.commit()
+
+        custos_table = CustosAuthnzTokenTest.__table__
+        psa_table = UserAuthnzTokenTest.__table__
+
+        migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
+        assert migrated_count == 1
+
+        migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=104).first()
+        assert migrated is not None
+        # Expired tokens should have expires = 1 to trigger immediate refresh
+        # Note: expires = expiration_time - auth_time, and if already expired (expires < 0), set to 1
+        assert migrated.extra_data["expires"] == 1
+
+    def test_expires_set_to_one_when_expiration_missing(self, db_session):
+        """Test that expires is set to 1 when expiration_time is missing."""
+        custos_token = CustosAuthnzTokenTest(
+            user_id=105,
+            external_user_id="user_no_expiration",
+            provider="keycloak",
+            access_token="access_token",
+            id_token="id_token",
+            expiration_time=None,  # No expiration time
+        )
+        db_session.add(custos_token)
+        db_session.commit()
+
+        custos_table = CustosAuthnzTokenTest.__table__
+        psa_table = UserAuthnzTokenTest.__table__
+
+        migrated_count = migrate_custos_tokens_to_psa(db_session.connection(), custos_table, psa_table)
+        assert migrated_count == 1
+
+        migrated = db_session.query(UserAuthnzTokenTest).filter_by(user_id=105).first()
+        assert migrated is not None
+        # Missing expiration should result in expires = 1 to trigger refresh
+        assert migrated.extra_data["expires"] == 1
 
 
 if __name__ == "__main__":

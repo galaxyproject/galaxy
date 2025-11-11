@@ -26,6 +26,20 @@ PSA_TABLE = "oidc_user_authnz_tokens"
 CUSTOS_ASSOC_TYPE = "custos_migrated"
 
 
+def _extract_iat_from_token(token: str) -> Optional[int]:
+    """
+    Extract the 'iat' (issued at) claim from a JWT token.
+    Returns None if the token cannot be decoded or doesn't have an iat claim.
+    """
+    if not token:
+        return None
+    try:
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        return decoded.get("iat")
+    except Exception:
+        return None
+
+
 def get_custos_table(connection: Connection) -> Table:
     """
     Reflect the custos_authnz_token table for use in migrations or tests.
@@ -93,18 +107,14 @@ def migrate_custos_tokens_to_psa(
         if record.refresh_token:
             extra_data["refresh_token"] = record.refresh_token
 
-        # Extract auth_time from id_token's 'iat' claim (issued at time)
-        # Fall back to current time if id_token is missing or can't be decoded
-        auth_time = now_ts
-        if record.id_token:
-            try:
-                # Decode without verification since we just need the iat claim
-                decoded_token = jwt.decode(record.id_token, options={"verify_signature": False})
-                auth_time = decoded_token.get("iat", now_ts)
-            except Exception:
-                # If decode fails, use current time as fallback
-                auth_time = now_ts
-
+        # Extract auth_time from token's 'iat' claim (issued at time)
+        # Priority: access_token.iat > id_token.iat > current time
+        # We prefer access_token.iat since that's the token whose expiration we're tracking
+        auth_time = (
+            _extract_iat_from_token(record.access_token)
+            or _extract_iat_from_token(record.id_token)
+            or now_ts
+        )
         extra_data["auth_time"] = auth_time
 
         # Calculate expires from expiration_time
@@ -112,10 +122,14 @@ def migrate_custos_tokens_to_psa(
         # to trigger immediate refresh on next use
         if record.expiration_time:
             expires_at = int(record.expiration_time.timestamp())
-            expires = expires_at - auth_time
-            # If token already expired, set to 1 second to trigger refresh
-            # Otherwise use the calculated remaining time
-            extra_data["expires"] = expires if expires > 0 else 1
+            # Check if token is already expired (expiration_time < now)
+            if expires_at <= now_ts:
+                # Token already expired - set to 1 second to trigger refresh
+                extra_data["expires"] = 1
+            else:
+                # Token still valid - calculate original lifetime
+                expires = expires_at - auth_time
+                extra_data["expires"] = expires if expires > 0 else 1
         else:
             # No expiration_time - set to 1 second to trigger refresh
             extra_data["expires"] = 1
