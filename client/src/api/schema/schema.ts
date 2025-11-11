@@ -1011,6 +1011,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/display_applications/create_link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a link for display applications.
+         * @description Creates a link for display applications.
+         */
+        post: operations["display_applications_create_link_api_display_applications_create_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/display_applications/reload": {
         parameters: {
             query?: never;
@@ -8462,6 +8482,45 @@ export interface components {
              * @default
              */
             synopsis: string | null;
+        };
+        /** CreateLinkFeedback */
+        CreateLinkFeedback: {
+            /** Messages */
+            messages?: [string, string][] | null;
+            /** Preparable Steps */
+            preparable_steps?: components["schemas"]["CreateLinkStep"][] | null;
+            /**
+             * Refresh
+             * @default false
+             */
+            refresh: boolean | null;
+            /** Resource */
+            resource?: string | null;
+        };
+        /** CreateLinkIncoming */
+        CreateLinkIncoming: {
+            /** App Name */
+            app_name: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Kwd */
+            kwd?: {
+                [key: string]: string;
+            } | null;
+            /** Link Name */
+            link_name: string;
+        };
+        /** CreateLinkStep */
+        CreateLinkStep: {
+            /** Name */
+            name: string;
+            /**
+             * Ready
+             * @default false
+             */
+            ready: boolean | null;
+            /** State */
+            state?: string | null;
         };
         /** CreateMetricsPayload */
         CreateMetricsPayload: {
@@ -27046,6 +27105,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisplayApplication"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    display_applications_create_link_api_display_applications_create_link_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLinkIncoming"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateLinkFeedback"];
                 };
             };
             /** @description Request Error */

@@ -9,7 +9,6 @@ import paste.httpexceptions
 from markupsafe import escape
 
 from galaxy import (
-    datatypes,
     util,
     web,
 )
@@ -440,39 +439,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
 
-    def _display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
-        """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
-        dataset = self._check_dataset(trans, slug)
-        # Filename used for composite types.
-        if filename:
-            return self.display(trans, dataset_id=slug, filename=filename)
-
-        truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
-        dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.user, dataset)
-
-        # If dataset is chunkable, get first chunk.
-        first_chunk = None
-        if dataset.datatype.CHUNKABLE:
-            first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
-
-        # If data is binary or an image, stream without template; otherwise, use display template.
-        # TODO: figure out a way to display images in display template.
-        if (
-            isinstance(dataset.datatype, datatypes.binary.Binary)
-            or isinstance(dataset.datatype, datatypes.images.Image)
-            or isinstance(dataset.datatype, datatypes.text.Html)
-        ):
-            trans.response.set_content_type(dataset.get_mime())
-            return open(dataset.get_file_name(), "rb")
-        else:
-            return trans.fill_template_mako(
-                "/dataset/display.mako",
-                item=dataset,
-                item_data=dataset_data,
-                truncated=truncated,
-                first_chunk=first_chunk,
-            )
-
     @web.expose
     def display_at(self, trans, dataset_id, filename=None, **kwd):
         """Sets up a dataset permissions so it is viewable at an external site"""
@@ -546,8 +512,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Decode application name and link name
         if self._can_access_dataset(trans, data, additional_roles=user_roles):
             msg = []
-            preparable_steps = []
-            refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get(app_name)
             if not display_app:
                 log.debug("Unknown display application has been requested: %s", app_name)
@@ -582,7 +546,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         "info",
                     )
                 )
-                refresh = True
             else:
                 # We have permissions, dataset is not deleted and is in OK state, allow access
                 if display_link.display_ready():
@@ -631,33 +594,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         msg.append((f"Invalid action provided: {app_action}", "error"))
                 else:
                     if app_action is None:
-                        refresh = True
-                        trans.response.status = 202
                         msg.append(
                             (
-                                "Launching this display application requires additional datasets to be generated, you can view the status of these jobs below. ",
+                                "Launching this display application requires additional datasets to be generated.",
                                 "info",
                             )
                         )
-                        if not display_link.preparing_display():
-                            display_link.prepare_display()
-                        preparable_steps = display_link.get_prepare_steps()
                     else:
-                        # Ideally we should respond with 202 in both cases.
-                        # Since we don't exactly know if any consumer relies on this we'll just keep continuing to
-                        # respond with a 500 status code.
-                        trans.response.status = 500
-                        return trans.show_error_message(
-                            f"Attempted a view action ({app_action}) on a non-ready display application"
-                        )
-            return trans.fill_template_mako(
-                "dataset/display_application/display.mako",
-                msg=msg,
-                display_app=display_app,
-                display_link=display_link,
-                refresh=refresh,
-                preparable_steps=preparable_steps,
-            )
+                        raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
+            return dict(msg=msg)
         return trans.show_error_message(
             "You do not have permission to view this dataset at an external display application."
         )

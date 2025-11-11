@@ -1,7 +1,26 @@
+<script setup lang="ts">
+import { BAlert, BLink } from "bootstrap-vue";
+
+import { DatasetProvider } from "@/components/providers";
+
+interface LinkType {
+    app_name: string;
+    link_name: string;
+}
+
+interface Props {
+    datasetId: string;
+}
+
+const props = defineProps<Props>();
+function getUrl(link: LinkType) {
+    return `/display_applications/${props.datasetId}/${link.app_name}/${link.link_name}`;
+}
+</script>
 <template>
     <div>
-        <DatasetProvider :id="datasetId" v-slot="{ result: dataset }">
-            <b-alert
+        <DatasetProvider :id="props.datasetId" v-slot="{ result: dataset }">
+            <BAlert
                 v-if="
                     (dataset && dataset.display_apps && dataset.display_apps.length > 0) ||
                     (dataset && dataset.display_types && dataset.display_types.length > 0)
@@ -11,20 +30,22 @@
                 You can display your dataset with the following links:
                 <div class="p-2">
                     <ol>
-                        <li v-for="(displayApp, displayKey) in dataset.display_apps" :key="displayKey">
+                        <li v-for="(displayApp, displayKey) in dataset.display_apps" :key="`display-app-${displayKey}`">
                             <span class="font-weight-bold">{{ displayApp.label }}</span>
-                            <span v-for="(link, linkKey) in displayApp.links" :key="linkKey">
+                            <span v-for="(link, linkKey) in displayApp.links" :key="`display-app-link-${linkKey}`">
                                 <span v-if="linkKey == 0">(</span>
-                                <b-link :href="link.href" :target="link.target">{{ link.text }}</b-link>
+                                <router-link :to="getUrl(link)">{{ link.text }}</router-link>
                                 <span v-if="linkKey != displayApp.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>
                         </li>
-                        <li v-for="(displayType, displayKey) in dataset.display_types" :key="displayKey">
+                        <li
+                            v-for="(displayType, displayKey) in dataset.display_types"
+                            :key="`display-type-${displayKey}`">
                             <span class="font-weight-bold">{{ displayType.label }}</span>
-                            <span v-for="(link, linkKey) in displayType.links" :key="linkKey">
+                            <span v-for="(link, linkKey) in displayType.links" :key="`display-type-link-${linkKey}`">
                                 <span v-if="linkKey == 0">(</span>
-                                <b-link :href="link.href" :target="link.target">{{ link.text }}</b-link>
+                                <BLink :href="link.href" :target="link.target">{{ link.text }}</BLink>
                                 <span v-if="linkKey != displayType.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>
@@ -32,22 +53,7 @@
                     </ol>
                 </div>
                 <div>or select a visualization from below.</div>
-            </b-alert>
+            </BAlert>
         </DatasetProvider>
     </div>
 </template>
-<script>
-import { DatasetProvider } from "@/components/providers";
-
-export default {
-    components: {
-        DatasetProvider,
-    },
-    props: {
-        datasetId: {
-            type: String,
-            required: true,
-        },
-    },
-};
-</script>

@@ -78,6 +78,7 @@ import NotificationsPreferences from "@/components/User/Notifications/Notificati
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import UserPreferences from "@/components/User/UserPreferences.vue";
 import UserPreferencesForm from "@/components/User/UserPreferencesForm.vue";
+import DisplayApplication from "@/components/Visualizations/DisplayApplication.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
 import VisualizationCreate from "@/components/Visualizations/VisualizationCreate.vue";
 import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";
@@ -293,6 +294,12 @@ export function getRouter(Galaxy) {
                     {
                         path: "datatypes",
                         component: AvailableDatatypes,
+                    },
+                    {
+                        path: "display_applications/:datasetId/:appName/:linkName",
+                        component: DisplayApplication,
+                        props: true,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "histories/import",
