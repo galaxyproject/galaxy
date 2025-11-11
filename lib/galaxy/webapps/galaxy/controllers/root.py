@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class RootController(controller.JSAppLauncher, UsesAnnotations):
+class RootController(controller.BaseUIController, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
@@ -42,7 +42,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
 
     @web.expose
     def index(
-        self, trans: GalaxyWebTransaction, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd
+        self, trans: GalaxyWebTransaction, app_name="analysis", tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd
     ):
         """
         Root and entry point for client-side web app.
@@ -62,7 +62,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         controller and action as a url: (e.g. 'user/dbkeys').
         """
 
-        self._check_require_login(trans)
+        #self._check_require_login(trans)
 
         # if a history_id was sent, attempt to switch to that history
         history = trans.history
@@ -70,7 +70,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             unencoded_id = trans.security.decode_id(history_id)
             history = self.history_manager.get_owned(unencoded_id, trans.user)
             trans.set_history(history)
-        return self._bootstrapped_client(trans)
+        return trans.fill_template("/js-app.mako", js_app_name=app_name)
 
     @web.expose
     def login(self, trans: GalaxyWebTransaction, redirect=None, is_logout_redirect=False, **kwd):
