@@ -262,6 +262,28 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
 
+    def test_oidc_login_repeat_no_notification(self):
+        """
+        Test that repeat logins do NOT show the 'identity has been linked' notification.
+        """
+        # If this is the first time gxyuser logs in, it will show notification
+        # Otherwise (if test_oidc_login_new_user ran first), it won't
+        # Either way, the second login should NOT show notification
+
+        # First login in this test
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+
+        # Second login (repeat) - should NOT show notification
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        parsed_url = parse.urlparse(response.url)
+        query_params = parse.parse_qs(parsed_url.query)
+        assert "notification" not in query_params, "Repeat login should not show 'linked' notification"
+
+        # Verify user is still logged in
+        response = self._get("users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+
     def test_oidc_login_existing_user(self):
         # pre-create a user account manually
         sa_session = self._app.model.session
@@ -349,6 +371,12 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
 
         # Now that the accounts are associated, future logins through OIDC should just work
         session, response = self._login_via_keycloak("gxyuser_existing", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+
+        # On repeat login, should NOT show the "linked" notification
+        parsed_url = parse.urlparse(response.url)
+        query_params = parse.parse_qs(parsed_url.query)
+        assert "notification" not in query_params, "Repeat login should not show 'linked' notification"
+
         response = session.get(self._api_url("users/current"))
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_existing@galaxy.org"

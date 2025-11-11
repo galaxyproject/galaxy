@@ -289,6 +289,11 @@ class PSAAuthnz(IdentityProvider):
 
         user = self.config.get("user", None)
 
+        # Determine if this was a new association
+        # The associate_by_email_if_logged_in pipeline step sets this flag based on whether
+        # the social_user (UserAuthnzToken) already existed before associate_user
+        is_new_association = self.config.get("IS_NEW_ASSOCIATION", True)
+
         # Adjust redirect URL based on fixed_delegated_auth setting
         # Check if this is a successful authentication (not a redirect to login/start or confirmation)
         fixed_delegated_auth = self.config.get("FIXED_DELEGATED_AUTH", False)
@@ -299,12 +304,20 @@ class PSAAuthnz(IdentityProvider):
             # If so, keep it as-is (don't modify for these special cases)
             if "login/start" not in redirect_url and "?confirm" not in redirect_url:
                 # This is a successful authentication redirect
-                if not fixed_delegated_auth:
-                    # Redirect to user/external_ids instead of root
-                    redirect_url = f"{login_redirect_url}user/external_ids"
+                if is_new_association:
+                    # New association - redirect based on fixed_delegated_auth
+                    if not fixed_delegated_auth:
+                        # Redirect to user/external_ids
+                        redirect_url = f"{login_redirect_url}user/external_ids"
+                    else:
+                        # Redirect to root for fixed_delegated_auth
+                        redirect_url = login_redirect_url
+                else:
+                    # Repeat login - redirect to root
+                    redirect_url = login_redirect_url
 
-            # Add notification and email_exists parameters
-            if "?confirm" not in redirect_url and "login/start" not in redirect_url:
+            # Add notification and email_exists parameters only for new associations
+            if "?confirm" not in redirect_url and "login/start" not in redirect_url and is_new_association:
                 provider_label = self.config.get("LABEL", self.config["provider"].capitalize())
                 separator = "&" if "?" in redirect_url else "?"
                 notification_msg = quote(f"Your {provider_label} identity has been linked to your Galaxy account.")
@@ -787,7 +800,7 @@ def _decode_access_token_helper(token_str: str, backend: OpenIdConnectAuth) -> d
 
 
 def associate_by_email_if_logged_in(
-    strategy=None, backend=None, details=None, user=None, is_new=False, *args, **kwargs
+    strategy=None, backend=None, details=None, user=None, social=None, is_new=False, *args, **kwargs
 ):
     """
     Custom pipeline step to handle email-based account association.
@@ -802,6 +815,15 @@ def associate_by_email_if_logged_in(
 
     Returns a dict with 'user' if association happened, or a redirect URL to stop the pipeline.
     """
+    # Track if this is a new association by checking if social (UserAuthnzToken) already exists
+    # The social_user step (which runs before this) sets social=UserAuthnzToken if exists, or None
+    if social is not None:
+        # Association already exists - this is a repeat login
+        strategy.config["IS_NEW_ASSOCIATION"] = False
+    else:
+        # No association exists yet - this will be a new association
+        strategy.config["IS_NEW_ASSOCIATION"] = True
+
     email = details.get("email")
     if not email:
         # No email to match, continue with user creation
