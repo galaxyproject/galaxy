@@ -1,5 +1,6 @@
 """Reusable helpers for migrating Custos authentication tokens into PSA format."""
 
+import jwt
 from datetime import datetime
 from typing import (
     cast,
@@ -92,11 +93,32 @@ def migrate_custos_tokens_to_psa(
         if record.refresh_token:
             extra_data["refresh_token"] = record.refresh_token
 
+        # Extract auth_time from id_token's 'iat' claim (issued at time)
+        # Fall back to current time if id_token is missing or can't be decoded
+        auth_time = now_ts
+        if record.id_token:
+            try:
+                # Decode without verification since we just need the iat claim
+                decoded_token = jwt.decode(record.id_token, options={"verify_signature": False})
+                auth_time = decoded_token.get("iat", now_ts)
+            except Exception:
+                # If decode fails, use current time as fallback
+                auth_time = now_ts
+
+        extra_data["auth_time"] = auth_time
+
+        # Calculate expires from expiration_time
+        # If token is expired or expiration_time is missing, set expires to 1 second
+        # to trigger immediate refresh on next use
         if record.expiration_time:
             expires_at = int(record.expiration_time.timestamp())
-            expires = expires_at - now_ts
-            extra_data["auth_time"] = now_ts
-            extra_data["expires"] = expires if expires > 0 else 3600
+            expires = expires_at - auth_time
+            # If token already expired, set to 1 second to trigger refresh
+            # Otherwise use the calculated remaining time
+            extra_data["expires"] = expires if expires > 0 else 1
+        else:
+            # No expiration_time - set to 1 second to trigger refresh
+            extra_data["expires"] = 1
 
         if record.refresh_expiration_time and "refresh_token" in extra_data:
             refresh_expires_at = int(record.refresh_expiration_time.timestamp())
