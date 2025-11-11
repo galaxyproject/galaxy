@@ -2,16 +2,21 @@
 Manager for AI agent operations on Galaxy.
 
 This manager provides a unified interface for AI agents (both external via MCP
-and internal via pydantic-ai) to interact with Galaxy using Galaxy managers directly.
+and internal via pydantic-ai) to interact with Galaxy using the Galaxy API service layer.
 
 All agents (external MCP clients and internal pydantic-ai) use the same code path
-through this manager, ensuring consistent behavior and avoiding HTTP overhead.
+through this manager, which delegates to the service layer to ensure proper validation,
+rate limiting, pagination, and other API safeguards.
 """
 
 import logging
 from typing import Any
 
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema import (
+    FilterQueryParams,
+    SerializationParams,
+)
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -22,8 +27,9 @@ class AgentOperationsManager:
     Manager for AI agent operations on Galaxy.
 
     Provides a unified interface for AI agents to interact with Galaxy through
-    direct manager calls. Both external (MCP) and internal (pydantic-ai) agents
-    use the same implementation.
+    the service layer. Both external (MCP) and internal (pydantic-ai) agents
+    use the same implementation, which delegates to Galaxy services for proper
+    validation, permission checks, and API safeguards.
     """
 
     def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
@@ -36,7 +42,83 @@ class AgentOperationsManager:
         """
         self.app = app
         self.trans = trans
+
+        # Initialize services - these provide the proper API layer with validation,
+        # rate limiting, pagination, etc.
+        self._tools_service = None
+        self._histories_service = None
+        self._jobs_service = None
+
         log.debug("AgentOperationsManager initialized")
+
+    @property
+    def tools_service(self):
+        """Lazy-load ToolsService."""
+        if self._tools_service is None:
+            from galaxy.managers.histories import HistoryManager
+            from galaxy.tools.search import ToolBoxSearch
+            from galaxy.webapps.galaxy.services.tools import ToolsService
+
+            self._tools_service = ToolsService(
+                config=self.app.config,
+                toolbox_search=ToolBoxSearch(self.app.toolbox),
+                security=self.trans.security,
+                history_manager=HistoryManager(self.app),
+            )
+        return self._tools_service
+
+    @property
+    def histories_service(self):
+        """Lazy-load HistoriesService."""
+        if self._histories_service is None:
+            from galaxy.managers.citations import CitationsManager
+            from galaxy.managers.histories import (
+                HistoryDeserializer,
+                HistoryExportManager,
+                HistoryFilters,
+                HistoryManager,
+                HistorySerializer,
+            )
+            from galaxy.managers.users import UserManager
+            from galaxy.short_term_storage import ShortTermStorageAllocator
+            from galaxy.webapps.galaxy.services.histories import HistoriesService
+            from galaxy.webapps.galaxy.services.notifications import NotificationService
+
+            history_manager = HistoryManager(self.app)
+            self._histories_service = HistoriesService(
+                security=self.trans.security,
+                manager=history_manager,
+                user_manager=UserManager(self.app),
+                serializer=HistorySerializer(self.app),
+                deserializer=HistoryDeserializer(self.app),
+                citations_manager=CitationsManager(self.app),
+                history_export_manager=HistoryExportManager(self.app),
+                filters=HistoryFilters(self.app),
+                short_term_storage_allocator=ShortTermStorageAllocator(self.app.config),
+                notification_service=NotificationService(self.trans.sa_session, self.trans.security),
+            )
+        return self._histories_service
+
+    @property
+    def jobs_service(self):
+        """Lazy-load JobsService."""
+        if self._jobs_service is None:
+            from galaxy.managers.hdas import HDAManager
+            from galaxy.managers.histories import HistoryManager
+            from galaxy.managers.jobs import (
+                JobManager,
+                JobSearch,
+            )
+            from galaxy.webapps.galaxy.services.jobs import JobsService
+
+            self._jobs_service = JobsService(
+                security=self.trans.security,
+                job_manager=JobManager(self.app),
+                job_search=JobSearch(self.app),
+                hda_manager=HDAManager(self.app),
+                history_manager=HistoryManager(self.app),
+            )
+        return self._jobs_service
 
     def connect(self) -> dict[str, Any]:
         """
@@ -75,31 +157,27 @@ class AgentOperationsManager:
         Returns:
             List of matching tools with their IDs, names, and descriptions
         """
-        # Use toolbox directly
-        toolbox = self.app.toolbox
+        # Use the service layer's search which handles boosts and config properly
+        tool_ids = self.tools_service._search(query, view=None)
 
-        # Search tools by name/id
+        # Get tool details for each result
         tools = []
-        for tool_id, tool in toolbox.tools():
-            if tool is None:
+        for tool_id in tool_ids:
+            try:
+                tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+                if tool:
+                    tools.append(
+                        {
+                            "id": tool.id,
+                            "name": tool.name,
+                            "description": tool.description or "",
+                            "version": tool.version,
+                        }
+                    )
+            except Exception as e:
+                # Skip tools that fail to load or user doesn't have access to
+                log.debug(f"Skipping tool {tool_id}: {str(e)}")
                 continue
-
-            # Match against id, name, or description
-            matches = (
-                query.lower() in tool_id.lower()
-                or (tool.name and query.lower() in tool.name.lower())
-                or (tool.description and query.lower() in tool.description.lower())
-            )
-
-            if matches:
-                tools.append(
-                    {
-                        "id": tool_id,
-                        "name": tool.name,
-                        "description": tool.description or "",
-                        "version": tool.version,
-                    }
-                )
 
         return {"query": query, "tools": tools, "count": len(tools)}
 
@@ -114,9 +192,8 @@ class AgentOperationsManager:
         Returns:
             Tool details including parameters, inputs, outputs, and documentation
         """
-        # Use toolbox directly
-        toolbox = self.app.toolbox
-        tool = toolbox.get_tool(tool_id)
+        # Use service layer to get tool with proper permission checks
+        tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -168,31 +245,22 @@ class AgentOperationsManager:
         Returns:
             List of histories with their IDs, names, and states
         """
-        # Use history manager
-        from galaxy.managers.histories import HistoryManager
+        # Use the service layer for proper pagination and filtering
+        serialization_params = SerializationParams(view="summary")
+        filter_params = FilterQueryParams(limit=limit, offset=offset)
 
-        history_manager = HistoryManager(self.app)
-
-        # Get user's histories
-        histories = history_manager.list_for_user(self.trans, limit=limit, offset=offset)
-
-        # Format the response
-        formatted_histories = []
-        for hist in histories:
-            formatted_histories.append(
-                {
-                    "id": self.trans.security.encode_id(hist.id),
-                    "name": hist.name,
-                    "state": hist.state,
-                    "deleted": hist.deleted,
-                    "published": hist.published,
-                    "update_time": hist.update_time.isoformat() if hist.update_time else None,
-                }
-            )
+        # Get histories using the service layer
+        histories = self.histories_service.index(
+            trans=self.trans,
+            serialization_params=serialization_params,
+            filter_query_params=filter_params,
+            deleted_only=False,
+            all_histories=False,
+        )
 
         return {
-            "histories": formatted_histories,
-            "count": len(formatted_histories),
+            "histories": histories,
+            "count": len(histories),
             "pagination": {"limit": limit, "offset": offset},
         }
 
@@ -208,19 +276,16 @@ class AgentOperationsManager:
         Returns:
             Job execution information including job IDs and output dataset IDs
         """
-        # Use tools manager to execute the tool
-        from galaxy.managers.tools import ToolsManager
+        # Build tool execution payload matching the API format
+        payload = {
+            "history_id": history_id,
+            "tool_id": tool_id,
+            "inputs": inputs,
+        }
 
-        tools_manager = ToolsManager(self.app)
-
-        # Decode history ID
-        decoded_history_id = self.trans.security.decode_id(history_id)
-
-        # Build tool execution payload
-        payload = {"history_id": history_id, "tool_id": tool_id, "inputs": inputs}
-
-        # Execute the tool
-        result = tools_manager.create_tool_execution(self.trans, payload)
+        # Execute the tool using the service layer
+        # This ensures proper validation, permission checks, and all API safeguards
+        result = self.tools_service._create(self.trans, payload)
 
         return result
 
@@ -234,26 +299,15 @@ class AgentOperationsManager:
         Returns:
             Job details including state, tool info, and timestamps
         """
-        # Use jobs manager to get job details
-        from galaxy.managers.jobs import JobManager
-
-        job_manager = JobManager(self.app)
-
         # Decode job ID
         decoded_job_id = self.trans.security.decode_id(job_id)
 
-        # Get job details
-        job = job_manager.by_id(decoded_job_id)
+        # Get job details using the service layer
+        # This ensures proper permission checks and access control
+        job_details = self.jobs_service.show(
+            trans=self.trans,
+            id=decoded_job_id,
+            full=False,
+        )
 
-        # Build job info dict
-        job_info = {
-            "id": job_id,
-            "state": job.state,
-            "tool_id": job.tool_id,
-            "create_time": job.create_time.isoformat() if job.create_time else None,
-            "update_time": job.update_time.isoformat() if job.update_time else None,
-            "exit_code": job.exit_code,
-            "history_id": self.trans.security.encode_id(job.history_id) if job.history_id else None,
-        }
-
-        return {"job": job_info, "job_id": job_id}
+        return {"job": job_details, "job_id": job_id}
