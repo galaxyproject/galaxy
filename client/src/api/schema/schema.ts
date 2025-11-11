@@ -1023,13 +1023,6 @@ export interface paths {
         /**
          * Creates a link for display applications.
          * @description Creates a link for display applications.
-         *
-         *     :param  app_name:  display application name
-         *     :type   app_name:  string
-         *     :param  dataset_id:  encoded dataset_id
-         *     :type   dataset_id:  string
-         *     :param  link_name:  link name
-         *     :type   link_name:  string
          */
         post: operations["display_applications_create_link_api_display_applications_create_link_post"];
         delete?: never;
