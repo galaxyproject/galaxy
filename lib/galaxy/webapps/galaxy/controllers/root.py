@@ -41,45 +41,13 @@ class RootController(controller.BaseUIController, UsesAnnotations):
         raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
-    def client(self, trans, **kwd):
-        """
-        Endpoint for clientside routes.  This ships the primary SPA client.
-
-        Should not be used with url_for -- see
-        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
-        """
-        return self.index(trans, **kwd)
-
-    @web.expose
-    def index(
-        self, trans: GalaxyWebTransaction, app_name="analysis", tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd
-    ):
+    def client(self, trans: GalaxyWebTransaction, app_name="analysis", **kwd):
         """
         Root and entry point for client-side web app.
 
-        :type       tool_id: str or None
-        :param      tool_id: load center panel with given tool if not None
-        :type   workflow_id: encoded id or None
-        :param  workflow_id: load center panel with given workflow if not None
-        :type    history_id: encoded id or None
-        :param   history_id: switch current history to given history if not None
-        :type           m_c: str or None
-        :param          m_c: controller name (e.g. 'user')
-        :type           m_a: str or None
-        :param          m_a: controller method/action (e.g. 'dbkeys')
-
-        If m_c and m_a are present, the center panel will be loaded using the
-        controller and action as a url: (e.g. 'user/dbkeys').
+        :type       app_name: str or None
+        :param      app_name: javascript application bundle name
         """
-
-        #self._check_require_login(trans)
-
-        # if a history_id was sent, attempt to switch to that history
-        history = trans.history
-        if history_id:
-            unencoded_id = trans.security.decode_id(history_id)
-            history = self.history_manager.get_owned(unencoded_id, trans.user)
-            trans.set_history(history)
         return trans.fill_template("/js-app.mako", js_app_name=app_name)
 
     @web.expose
