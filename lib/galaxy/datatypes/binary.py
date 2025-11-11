@@ -5092,7 +5092,7 @@ class SpatialData(CompressedZarrZipArchive):
 
                     # Extract coordinate system information from metadata files
                     # Support both v2 (.zattrs) and v3 (zarr.json) formats
-                    if file.endswith(".zattrs") or file.endswith("/zarr.json"):
+                    if file.endswith(".zattrs") or file.endswith("zarr.json"):
                         try:
                             with zf.open(file) as f:
                                 metadata = json.load(f)
