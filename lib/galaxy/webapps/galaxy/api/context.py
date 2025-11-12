@@ -58,7 +58,6 @@ class FastAPIContext:
         return {
             "enable_webhooks": bool(trans.app.webhooks_registry.webhooks),
             "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            "tool_dynamic_configs": list(trans.app.toolbox.dynamic_conf_filenames()),
             "sentry": self._get_sentry(trans),
             "stored_workflow_menu_entries": self._get_workflow_entries(trans),
         }

@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
-import { useConfig } from "@/composables/config";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useToolStore } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -25,7 +24,6 @@ const props = defineProps({
 
 const services = new Services();
 
-const { config } = useConfig(true);
 const { toolSections, fetchToolSections } = useToolStore();
 
 const repositoryWatcher = useResourceWatcher(loadInstalledRepositories, {
@@ -267,7 +265,6 @@ function stopWatchingRepository() {
                         :changeset-revision="selectedChangeset"
                         :requires-panel="selectedRequiresPanel"
                         :current-panel="toolSections['default']"
-                        :tool-dynamic-configs="config.tool_dynamic_configs"
                         @hide="onHide"
                         @ok="onInstallRepository" />
                 </div>
