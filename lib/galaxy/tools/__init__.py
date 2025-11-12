@@ -50,6 +50,7 @@ from galaxy.job_execution.output_collect import (
 from galaxy.managers.credentials import build_credentials_context_response
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
+    GalaxyToolSourceAssociation,
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -57,6 +58,7 @@ from galaxy.model import (
     JobToOutputDatasetAssociation,
     StoredWorkflow,
     ToolRequest,
+    ToolSource as ModelToolSource,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.schema.credentials import CredentialsContext
@@ -552,6 +554,10 @@ class ToolBox(AbstractToolBox):
         """
         return self.app.model.context
 
+    def _get_toolbox_hashes(self):
+        stmt = select(model.ToolSource.hash).distinct()
+        return set(self.sa_session.execute(stmt).scalars())
+
     def reload_dependency_manager(self):
         self._init_dependency_manager()
 
@@ -598,7 +604,27 @@ class ToolBox(AbstractToolBox):
 
     def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
         tool_source = self.get_expanded_tool_source(config_file)
-        return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
+        tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
+        if tool.app and tool.id:
+            from galaxy.util.hash_util import md5_hash_str
+
+            source_string = tool_source.to_string()
+            tool_source_hash = md5_hash_str(source_string)
+            if tool_source_hash not in self.known_tool_source_hashes:
+                model_tool_source = ModelToolSource()
+
+                model_tool_source.hash = tool_source_hash
+                model_tool_source.source = source_string
+                model_tool_source.tool_source_class = type(tool_source).__name__
+                gtsa = GalaxyToolSourceAssociation()
+                gtsa.tool_id = tool.id
+                gtsa.tool_source = model_tool_source
+                gtsa.tool_dir = tool.tool_dir
+                tool.app.model.session.add(model_tool_source)
+                tool.app.model.session.add(gtsa)
+                tool.app.model.session.commit()
+                self.known_tool_source_hashes.add(tool_source_hash)
+        return tool
 
     def get_expanded_tool_source(self, config_file: StrPath) -> ToolSource:
         try:

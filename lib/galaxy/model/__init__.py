@@ -1392,6 +1392,17 @@ class ToolSource(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
     source: Mapped[dict] = mapped_column(JSONType)
+    tool_source_class: Mapped[str]
+
+
+class GalaxyToolSourceAssociation(Base, RepresentById):
+    __tablename__ = "galaxy_tool_source_association"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tool_id: Mapped[str] = mapped_column(Unicode(255))
+    tool_source_id: Mapped[int] = mapped_column(ForeignKey("tool_source.id"), index=True)
+    tool_source: Mapped[ToolSource] = relationship()
+    tool_dir: Mapped[Optional[str]] = mapped_column(Unicode(255))
 
 
 class ToolRequest(Base, Dictifiable, RepresentById):

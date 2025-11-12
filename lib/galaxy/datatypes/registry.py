@@ -755,9 +755,8 @@ class Registry:
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool(
-            os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml"))
-        )
+        toolbox.load_hidden_lib_tool(os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml")))
+        set_meta_tool = toolbox.get_tool("__SET_METADATA__")
         self.set_external_metadata_tool = cast("SetMetadataTool", set_meta_tool)
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 
