@@ -47,6 +47,13 @@ def is_valid_url(url: str) -> bool:
         return False  # Ensure there is exactly one scheme
     try:
         parsed = urlparse(url)
+
+        # Check if urlparse had to strip/modify any characters
+        # If the reconstructed URL differs from the original, the URL contained
+        # invalid characters (like tabs, newlines) that were silently removed
+        if parsed.geturl() != url:
+            return False
+
         return all([parsed.scheme in ALLOWED_SCHEMES, parsed.netloc])
     except ValueError:
         return False
@@ -104,6 +111,9 @@ class FastAPIProxy:
                     headers=response.headers,
                 )
 
+        except httpx.InvalidURL as e:
+            # Catch any URL validation errors that slip through our pre-validation
+            raise RequestParameterInvalidException(f"Invalid URL format: {e}")
         except httpx.RequestError as e:
             raise Exception(f"Request error: {e}")
         finally:
