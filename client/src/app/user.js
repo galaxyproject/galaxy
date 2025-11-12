@@ -3,7 +3,7 @@ import _l from "@/utils/localization";
 
 const CURRENT_ID_STR = "current";
 
-class User {
+export class User {
     constructor(data = {}) {
         this.defaults = {
             id: null,
@@ -74,5 +74,3 @@ class User {
         return `User(${userInfo.join(":")})`;
     }
 }
-
-export default { User };

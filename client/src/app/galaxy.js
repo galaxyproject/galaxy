@@ -1,7 +1,7 @@
 import { create, dialog } from "@/utils/data";
 import { _getUserLocale, _setUserLocale, localize } from "@/utils/localization";
 
-import userModel from "./user-model";
+import { User } from "./user";
 
 const DEFAULT_OPTIONS = {
     patchExisting: true,
@@ -83,7 +83,7 @@ export class GalaxyApp {
 
     _initUser(userJSON) {
         console.debug("_initUser:", userJSON);
-        this.user = new userModel.User(userJSON);
+        this.user = new User(userJSON);
     }
 
     toString() {
