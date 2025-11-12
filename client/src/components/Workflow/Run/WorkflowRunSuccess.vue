@@ -2,7 +2,7 @@
 import { computed, onMounted } from "vue";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import { startWatchingHistory } from "@/watch/watchHistoryProvided";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import Webhook from "@/components/Common/Webhook.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
@@ -13,8 +13,10 @@ const props = defineProps<{
     invocations: WorkflowInvocation[];
 }>();
 
+const historyStore = useHistoryStore();
+
 onMounted(() => {
-    startWatchingHistory();
+    historyStore.startWatchingHistory();
 });
 
 const targetHistories = computed(() =>

@@ -43,6 +43,9 @@ export function useResourceWatcher<T = unknown>(
     let currentPollingInterval = shortPollingInterval;
     let watchTimeout: NodeJS.Timeout | null = null;
     let isEventSetup = false;
+
+    /** ID to track the current request to prevent duplicate polling */
+    let currentRequestId = 0;
     const isWatchingResource = ref<boolean>(false);
 
     /**
@@ -81,6 +84,10 @@ export function useResourceWatcher<T = unknown>(
 
     function stopWatcher() {
         isWatchingResource.value = false;
+
+        // Update the request ID to invalidate any in-flight requests
+        currentRequestId++;
+
         if (watchTimeout) {
             clearTimeout(watchTimeout);
             watchTimeout = null;
@@ -88,12 +95,15 @@ export function useResourceWatcher<T = unknown>(
     }
 
     async function tryWatchResource(app?: T) {
+        // Capture the current request ID to ensure we only schedule the next poll
+        const requestId = currentRequestId;
         try {
             await watchHandler(app);
         } catch (error) {
             console.warn(error);
         } finally {
-            if (currentPollingInterval && isWatchingResource.value) {
+            // Only schedule next poll if still watching and no new requests have been made
+            if (currentPollingInterval && isWatchingResource.value && requestId === currentRequestId) {
                 watchTimeout = setTimeout(() => {
                     tryWatchResource(app);
                 }, currentPollingInterval);
@@ -113,7 +123,13 @@ export function useResourceWatcher<T = unknown>(
             currentPollingInterval = shortPollingInterval;
             startWatchingResourceIfNeeded();
         } else {
-            currentPollingInterval = enableBackgroundPolling ? longPollingInterval : undefined;
+            if (enableBackgroundPolling) {
+                currentPollingInterval = longPollingInterval;
+            } else {
+                // Stop watching when tab is not visible and background polling is disabled
+                currentPollingInterval = undefined;
+                stopWatchingResourceIfNeeded();
+            }
         }
     }
 

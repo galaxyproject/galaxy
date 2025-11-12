@@ -6,7 +6,6 @@ import Backbone from "backbone";
 import { createDatasetCollection } from "components/History/model/queries";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
-import { startWatchingHistory } from "watch/watchHistoryProvided";
 
 import { buildRuleCollectionModal } from "./buildCollectionModal";
 
@@ -26,7 +25,7 @@ export class HistoryPanelProxy {
         };
 
         // start watching the history with continuous queries
-        startWatchingHistory();
+        this.historyStore.startWatchingHistory();
     }
 
     syncCurrentHistoryModel(currentHistory) {

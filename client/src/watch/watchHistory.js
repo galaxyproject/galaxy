@@ -11,7 +11,6 @@ import { useHistoryStore } from "stores/historyStore";
 import { loadSet } from "utils/setCache";
 import { urlData } from "utils/url";
 
-import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { useDatasetStore } from "@/stores/datasetStore";
 
@@ -25,13 +24,6 @@ let lastUpdateTime = null;
 
 // last time changed history items have been requested
 let lastRequestDate = new Date();
-
-const { startWatchingResource: startWatchingHistory } = useResourceWatcher(watchHistory, {
-    shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-    longPollingInterval: INACTIVE_POLLING_INTERVAL,
-});
-
-export { startWatchingHistory };
 
 export async function watchHistory(app) {
     // GalaxyApp
