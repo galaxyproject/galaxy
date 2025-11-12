@@ -1,22 +1,28 @@
 import { GalaxyApp } from "@/app/galaxy";
-import { getGalaxyInstance, setGalaxyInstance } from "@/app/singleton";
 import { loadConfig } from "@/onload/loadConfig";
 
-export { getGalaxyInstance, setGalaxyInstance };
+export function getGalaxyInstance() {
+    return window._galaxyInstance;
+}
+
+export function setGalaxyInstance(instance) {
+    if (!(instance instanceof GalaxyApp)) {
+        throw new Error("Expected GalaxyApp instance.");
+    }
+    window._galaxyInstance = instance;
+    return instance;
+}
 
 export async function initGalaxyInstance() {
     const config = await loadConfig();
     const app = new GalaxyApp(config, {});
+    setGalaxyInstance(app);
 
-    // Register singleton
-    setGalaxyInstance(() => app);
-
-    // Expose Galaxy object in window
     if (!window.Galaxy) {
         Object.defineProperty(window, "Galaxy", {
             enumerable: true,
             configurable: true,
-            get: () => getGalaxyInstance(),
+            get: getGalaxyInstance,
         });
     }
 

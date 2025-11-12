@@ -1,7 +1,6 @@
 import { create, dialog } from "@/utils/data";
 import { _getUserLocale, _setUserLocale, localize } from "@/utils/localization";
 
-import { getGalaxyInstance } from "./singleton";
 import userModel from "./user-model";
 
 const DEFAULT_OPTIONS = {
@@ -14,11 +13,6 @@ export class GalaxyApp {
     constructor(options = {}, bootstrapped = {}) {
         this._processOptions(options);
         this._initConfig(options.config || {});
-
-        const existingGalaxy = getGalaxyInstance();
-        if (existingGalaxy) {
-            this._patchGalaxy(existingGalaxy);
-        }
 
         this.root = options.root || "/";
         this.params = options.params || {};
@@ -49,16 +43,6 @@ export class GalaxyApp {
 
     _initConfig(config) {
         this.config = config;
-    }
-
-    _patchGalaxy(patchWith) {
-        if (this.options.patchExisting && patchWith) {
-            for (const k in patchWith) {
-                if (Object.prototype.hasOwnProperty.call(patchWith, k)) {
-                    this[k] = patchWith[k];
-                }
-            }
-        }
     }
 
     _initLocale() {
