@@ -5,6 +5,7 @@ from unittest.mock import (
 )
 
 import pytest
+import requests
 
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.populators import DatasetPopulator
@@ -76,6 +77,35 @@ class TestProxyApi(ApiTestCase):
     )
     def test_invalid_url_format(self, invalid_url: str):
         response = self._get(f"proxy?url={invalid_url}")
+        self._assert_status_code_is(response, 400)
+        assert response.json()["err_msg"] == "Invalid URL format."
+
+    @pytest.mark.parametrize(
+        "url_with_nonprintable",
+        [
+            f"\t{URL_TO_TEST}",  # Tab at beginning
+            f"{URL_TO_TEST}\t",  # Tab at end
+            "https://example.com/path\twith\ttab",  # Tabs in path
+            "https://exam\tple.com/path",  # Tab in domain
+            f"\r\n{URL_TO_TEST}",  # CRLF at beginning
+            f"{URL_TO_TEST}\r\n",  # CRLF at end
+        ],
+    )
+    def test_url_with_nonprintable_characters(self, url_with_nonprintable: str):
+        """Test that URLs with non-printable characters return 400 instead of 500.
+
+        When non-printable characters like tabs or newlines are present in the URL,
+        they should be caught by validation and return 400, not trigger a 500 error.
+
+        This test manually constructs the URL with unencoded non-printable characters
+        to reproduce the actual issue that occurs when clients send malformed URLs,
+        bypassing the test framework's automatic URL encoding.
+        """
+        base_url = self.galaxy_interactor.api_url
+        full_url = f"{base_url}/proxy?url={url_with_nonprintable}"
+        headers = self.galaxy_interactor.api_key_header(key=None, admin=False, anon=False, headers=None)
+        response = requests.get(full_url, headers=headers)
+
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Invalid URL format."
 
