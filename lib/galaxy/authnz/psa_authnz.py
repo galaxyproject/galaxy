@@ -36,6 +36,12 @@ from galaxy.util import (
     requests,
 )
 from . import IdentityProvider
+from .oidc_utils import (
+    decode_access_token as decode_access_token_oidc,
+    is_decodable_jwt,
+    is_oidc_backend,
+    verify_oidc_response,
+)
 from ..config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
@@ -160,23 +166,35 @@ class PSAAuthnz(IdentityProvider):
             if "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT"]
 
+    def _is_oidc_backend(self) -> bool:
+        """
+        Check if the current backend is OIDC-based.
+
+        :return: True if backend is OpenID Connect, False for OAuth2/other backends
+        """
+        backend_class = BACKENDS.get(self.config["provider"], "")
+        return "OpenIdConnect" in backend_class or "openidconnect" in backend_class.lower()
+
     def _setup_idp(self, oidc_backend_config):
+        """
+        Configure backend-specific settings from oidc_backends_config.xml.
+
+        Sets up both universal settings (that work for all backends) and
+        OIDC-specific settings (only for OIDC backends).
+        """
+        # Universal settings (work for all backends: OIDC + OAuth2)
         self.config[setting_name("AUTH_EXTRA_ARGUMENTS")] = {"access_type": "offline"}
         self.config["KEY"] = oidc_backend_config.get("client_id")
         self.config["SECRET"] = oidc_backend_config.get("client_secret")
-        self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")
+        self.config["TENANT_ID"] = oidc_backend_config.get("tenant_id")  # Azure/Tapis
         self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
-        self.config["accepted_audiences"] = oidc_backend_config.get("accepted_audiences")
         self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
-
-        # OIDC-specific configurations
-        self.config["PKCE_SUPPORT"] = oidc_backend_config.get("pkce_support", False)
-        self.config["IDPHINT"] = oidc_backend_config.get("idphint")
-        self.config["REQUIRE_CREATE_CONFIRMATION"] = oidc_backend_config.get("require_create_confirmation", False)
         self.config["LABEL"] = oidc_backend_config.get("label", self.config["provider"].capitalize())
 
-        if oidc_backend_config.get("oidc_endpoint"):
-            self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
+        # Galaxy-specific pipeline settings (affect all backends)
+        self.config["REQUIRE_CREATE_CONFIRMATION"] = oidc_backend_config.get("require_create_confirmation", False)
+
+        # Optional generic settings
         if oidc_backend_config.get("prompt") is not None:
             self.config[setting_name("AUTH_EXTRA_ARGUMENTS")]["prompt"] = oidc_backend_config.get("prompt")
         if oidc_backend_config.get("api_url") is not None:
@@ -185,6 +203,14 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("URL")] = oidc_backend_config.get("url")
         if oidc_backend_config.get("username_key") is not None:
             self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
+
+        # OIDC-specific settings (only set for OIDC backends)
+        if self._is_oidc_backend():
+            self.config["PKCE_SUPPORT"] = oidc_backend_config.get("pkce_support", False)
+            self.config["IDPHINT"] = oidc_backend_config.get("idphint")
+            self.config["accepted_audiences"] = oidc_backend_config.get("accepted_audiences")
+            if oidc_backend_config.get("oidc_endpoint"):
+                self.config["OIDC_ENDPOINT"] = oidc_backend_config["oidc_endpoint"]
 
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
@@ -345,7 +371,8 @@ class PSAAuthnz(IdentityProvider):
         """
         Logout from the identity provider.
 
-        Constructs a logout URL using the OIDC end_session_endpoint if available.
+        For OIDC backends, constructs a logout URL using the end_session_endpoint.
+        For non-OIDC backends, returns the fallback URL.
 
         :param trans: Galaxy transaction object
         :param post_user_logout_href: URL to redirect to after logout
@@ -355,26 +382,32 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
 
-        # Get OIDC configuration to find end_session_endpoint
-        try:
-            oidc_config = backend.oidc_config()
-            end_session_endpoint = oidc_config.get("end_session_endpoint")
+        # Only OIDC backends support IDP logout
+        if is_oidc_backend(backend):
+            try:
+                # Get end_session_endpoint from OIDC discovery document
+                oidc_config = backend.oidc_config()
+                end_session_endpoint = oidc_config.get("end_session_endpoint")
 
-            if end_session_endpoint:
-                # Construct logout URL with optional redirect_uri
-                if post_user_logout_href:
-                    logout_url = f"{end_session_endpoint}?redirect_uri={quote(post_user_logout_href)}"
+                if end_session_endpoint:
+                    # Construct logout URL with optional redirect_uri
+                    if post_user_logout_href:
+                        logout_url = f"{end_session_endpoint}?redirect_uri={quote(post_user_logout_href)}"
+                    else:
+                        logout_url = end_session_endpoint
+
+                    return logout_url
                 else:
-                    logout_url = end_session_endpoint
+                    # No end_session_endpoint available
+                    log.warning(f"No end_session_endpoint found for {self.config['provider']}")
+                    return post_user_logout_href or "/"
 
-                return logout_url
-            else:
-                # No end_session_endpoint available
-                log.warning(f"No end_session_endpoint found in OIDC configuration for {self.config['provider']}")
+            except Exception as e:
+                log.exception(f"Error getting logout URL for {self.config['provider']}: {e}")
                 return post_user_logout_href or "/"
-
-        except Exception as e:
-            log.exception(f"Error getting logout URL for {self.config['provider']}: {e}")
+        else:
+            # Non-OIDC backends don't have IDP logout
+            log.debug(f"Backend {self.config['provider']} does not support IDP logout")
             return post_user_logout_href or "/"
 
     def decode_user_access_token(self, sa_session, access_token):
@@ -382,23 +415,28 @@ class PSAAuthnz(IdentityProvider):
         Verifies and decodes an access token against this provider, returning the user and
         a dict containing the decoded token data.
 
-        This is used for API authentication with Bearer tokens.
+        This is used for API authentication with Bearer tokens. Only works for OIDC backends.
 
         :param sa_session: SQLAlchemy database session
         :param access_token: An OIDC access token
         :return: A tuple containing the user and decoded jwt data, or (None, None) if token is for different provider
         :rtype: Tuple[User, dict]
         :raises Exception: If token is valid but user hasn't logged in, or token validation fails
+        :raises NotImplementedError: If backend is not OIDC-based
         """
+        # Only OIDC backends support JWT access tokens
+        if not self._is_oidc_backend():
+            raise NotImplementedError(f"Access token decoding not supported for {self.config['provider']}")
+
         try:
             on_the_fly_config(sa_session)
             # Create a minimal strategy and backend just for token verification
             strategy = Strategy(None, {}, Storage, self.config)
             backend = self._load_backend(strategy, self.config["redirect_uri"])
 
-            # Decode and verify the access token using the helper function
+            # Decode and verify the access token using oidc_utils
             # This will raise exceptions for: expired tokens, invalid audience, invalid signature, etc.
-            decoded_jwt = _decode_access_token_helper(access_token, backend)
+            decoded_jwt = decode_access_token_oidc(access_token, backend)
 
             # JWT verified, now fetch the user
             user_id = decoded_jwt["sub"]
@@ -568,7 +606,7 @@ def on_the_fly_config(sa_session):
     PSAAssociation.sa_session = sa_session
 
 
-def contains_required_data(response=None, is_new=False, **kwargs):
+def contains_required_data(response=None, is_new=False, backend=None, **kwargs):
     """
     This function is called as part of authentication and authorization
     pipeline before user is authenticated or authorized (see AUTH_PIPELINE).
@@ -576,6 +614,9 @@ def contains_required_data(response=None, is_new=False, **kwargs):
     This function asserts if all the data required by Galaxy for a user
     is provided. It raises an exception if any of the required data is missing,
     and returns void if otherwise.
+
+    For OIDC backends, verifies presence of id_token and iat claim.
+    For OAuth2 backends, performs basic validation only.
 
     :type  response: dict
     :param response:  a dictionary containing decoded response from
@@ -593,11 +634,12 @@ def contains_required_data(response=None, is_new=False, **kwargs):
     :type  is_new: bool
     :param is_new: has the user been authenticated?
 
+    :param backend: The PSA backend being used for authentication
+
     :param kwargs:      may contain the following keys among others:
 
                         -   uid:        user ID
                         -   user:       Galaxy user; if user is already authenticated
-                        -   backend:    the backend that is used for user authentication.
                         -   storage:    an instance of Storage class.
                         -   strategy:   an instance of the Strategy class.
                         -   state:      the state code received from identity provider.
@@ -619,10 +661,15 @@ def contains_required_data(response=None, is_new=False, **kwargs):
         # scenarios; however, this case is implemented to prevent uncaught
         # server-side errors.
         raise MalformedContents(err_msg=f"`response` not found. {hint_msg}")
-    if not response.get("id_token"):
-        # This can happen if a non-OIDC compliant backend is used;
-        # e.g., an OAuth2.0-based backend that only generates access token.
-        raise MalformedContents(err_msg=f"Missing identity token. {hint_msg}")
+
+    # OIDC-specific validation
+    if backend and is_oidc_backend(backend):
+        try:
+            verify_oidc_response(response)
+        except MalformedContents:
+            # Re-raise with hint message
+            raise MalformedContents(err_msg=f"Missing required OIDC data. {hint_msg}")
+
     if is_new and not response.get("refresh_token"):
         # An identity provider (e.g., Google) sends a refresh token the first
         # time user consents Galaxy's access (i.e., the first time user logs in
@@ -731,11 +778,12 @@ def disconnect(
     sa_session.commit()
 
 
-def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **kwargs):
+def decode_access_token(social: UserAuthnzToken, backend, **kwargs):
     """
     Auth pipeline step to decode the OIDC access token, if possible.
+
     Note that some OIDC providers return an opaque access token, which
-    cannot be decoded.
+    cannot be decoded. This step only works for OIDC backends.
 
     Returns the access token, making it available as a new argument
     "access_token" that can be used in future pipeline steps. If
@@ -745,58 +793,26 @@ def decode_access_token(social: UserAuthnzToken, backend: OpenIdConnectAuth, **k
     which should be handled by social_core.pipeline.social_auth.load_extra_data, so
     this step should be placed after load_extra_data in the pipeline.
     """
+    # Only decode for OIDC backends
+    if not is_oidc_backend(backend):
+        return {"access_token": None}
+
     if social.extra_data is None:
         return {"access_token": None}
     access_token_encoded = social.extra_data.get("access_token")
     if access_token_encoded is None:
         return {"access_token": None}
-    if not _is_decodable_jwt(access_token_encoded):
+    if not is_decodable_jwt(access_token_encoded):
         log.warning(
             "Access token is not in header.payload.signature format and can't be decoded (may be an opaque token)"
         )
         return {"access_token": None}
     try:
-        access_token_data = _decode_access_token_helper(token_str=access_token_encoded, backend=backend)
+        access_token_data = decode_access_token_oidc(token_str=access_token_encoded, backend=backend)
     except InvalidTokenError as e:
         log.warning(f"Access token couldn't be decoded: {e}")
         return {"access_token": None}
     return {"access_token": access_token_data}
-
-
-def _is_decodable_jwt(token_str: str) -> bool:
-    """
-    Check if a token string looks like a decodable JWT.
-    We assume decodable JWTs are in the format header.payload.signature
-    """
-    components = token_str.split(".")
-    return len(components) == 3
-
-
-def _decode_access_token_helper(token_str: str, backend: OpenIdConnectAuth) -> dict:
-    """
-    Decode the access token (verifying that signature, expiry and
-    audience are valid).
-
-    Requires accepted_audiences to be configured in the OIDC backend config
-    """
-    signing_key = backend.find_valid_key(token_str)
-    jwk = jwt.PyJWK(signing_key)
-    decoded = jwt.decode(
-        token_str,
-        key=jwk,
-        algorithms=[jwk.algorithm_name],
-        audience=backend.strategy.config["accepted_audiences"],
-        issuer=backend.id_token_issuer(),
-        options={
-            "verify_signature": True,
-            "verify_exp": True,
-            "verify_nbf": True,
-            "verify_iat": True,
-            "verify_aud": bool(backend.strategy.config["accepted_audiences"]),
-            "verify_iss": True,
-        },
-    )
-    return decoded
 
 
 def associate_by_email_if_logged_in(
