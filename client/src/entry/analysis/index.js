@@ -15,7 +15,7 @@ const pinia = createPinia();
 
 window.addEventListener("load", async () => {
     // Create Galaxy object
-    const Galaxy = await initGalaxyInstance("app");
+    const Galaxy = await initGalaxyInstance();
 
     // Build router
     const router = getRouter(Galaxy);
