@@ -1,12 +1,12 @@
 """Reusable helpers for migrating Custos authentication tokens into PSA format."""
 
-import jwt
 from datetime import datetime
 from typing import (
     cast,
     Optional,
 )
 
+import jwt
 from sqlalchemy import (
     Column,
     DateTime,
@@ -26,7 +26,7 @@ PSA_TABLE = "oidc_user_authnz_tokens"
 CUSTOS_ASSOC_TYPE = "custos_migrated"
 
 
-def _extract_iat_from_token(token: str) -> Optional[int]:
+def _extract_iat_from_token(token: Optional[str]) -> Optional[int]:
     """
     Extract the 'iat' (issued at) claim from a JWT token.
     Returns None if the token cannot be decoded or doesn't have an iat claim.
@@ -110,11 +110,7 @@ def migrate_custos_tokens_to_psa(
         # Extract auth_time from token's 'iat' claim (issued at time)
         # Priority: access_token.iat > id_token.iat > current time
         # We prefer access_token.iat since that's the token whose expiration we're tracking
-        auth_time = (
-            _extract_iat_from_token(record.access_token)
-            or _extract_iat_from_token(record.id_token)
-            or now_ts
-        )
+        auth_time = _extract_iat_from_token(record.access_token) or _extract_iat_from_token(record.id_token) or now_ts
         extra_data["auth_time"] = auth_time
 
         # Calculate expires from expiration_time

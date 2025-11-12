@@ -5,13 +5,13 @@ This test suite verifies the migration script that moves authentication tokens
 from custos_authnz_token to oidc_user_authnz_tokens.
 """
 
-import jwt
 from datetime import (
     datetime,
     timedelta,
 )
 from typing import Any
 
+import jwt
 import pytest
 from sqlalchemy import (
     Column,
@@ -29,8 +29,8 @@ from sqlalchemy.orm import (
 
 from galaxy.model.custom_types import MutableJSONType
 from galaxy.model.migrations.data_fixes.custos_to_psa import (
-    CUSTOS_ASSOC_TYPE,
     _extract_iat_from_token,
+    CUSTOS_ASSOC_TYPE,
     migrate_custos_tokens_to_psa,
     remove_migrated_psa_tokens,
     restore_custos_tokens_from_psa,

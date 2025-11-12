@@ -11,7 +11,6 @@ from social_core.actions import (
     do_complete,
     do_disconnect,
 )
-from social_core.backends.open_id_connect import OpenIdConnectAuth
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
 from social_core.utils import (

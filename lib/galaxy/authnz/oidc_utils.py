@@ -6,10 +6,8 @@ authentication. These should not be used with non-OIDC backends like OAuth2.
 """
 
 import logging
-from typing import Optional
 
 import jwt
-from jwt import InvalidTokenError
 from social_core.backends.open_id_connect import OpenIdConnectAuth
 
 from galaxy.exceptions import MalformedContents

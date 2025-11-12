@@ -197,7 +197,7 @@ def test_decode_access_token():
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
     # Make isinstance() checks pass by setting __class__ after configuring the mock
-    mock_backend.__class__ = OpenIdConnectAuth
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Check that access token is decoded successfully to return the original data
     data = decode_access_token(social=mock_social, backend=mock_backend)
     assert data["access_token"] == dummy_access_token.access_token_data
@@ -219,7 +219,7 @@ def test_decode_access_token_invalid_key():
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
     # Make isinstance() checks pass by setting __class__ after configuring the mock
-    mock_backend.__class__ = OpenIdConnectAuth
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Test that the decode function returns None for the access token
     result = decode_access_token(social=mock_social, backend=mock_backend)
     assert result["access_token"] is None
@@ -244,7 +244,7 @@ def test_decode_access_token_invalid_issuer():
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = "https://validissuer.com"
     # Make isinstance() checks pass by setting __class__ after configuring the mock
-    mock_backend.__class__ = OpenIdConnectAuth
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Test that the decode function returns None for the access token
     result = decode_access_token(social=mock_social, backend=mock_backend)
     assert result["access_token"] is None
@@ -269,7 +269,7 @@ def test_decode_access_token_invalid_audience():
     mock_backend.strategy.config = {"accepted_audiences": ["https://validaudience.url"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
     # Make isinstance() checks pass by setting __class__ after configuring the mock
-    mock_backend.__class__ = OpenIdConnectAuth
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Test that the decode function returns None for the access token
     result = decode_access_token(social=mock_social, backend=mock_backend)
     assert result["access_token"] is None
