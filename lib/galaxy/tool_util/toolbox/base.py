@@ -802,7 +802,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
                 # if we don't have a lineage_map for this tool we need to sort by version,
                 # so that the last tool in rval is the newest tool.
-                rval.sort(key=lambda t: t.version)
+                rval.sort(key=lambda t: t.version_object)
             if rval:
                 if get_all_versions:
                     return rval
