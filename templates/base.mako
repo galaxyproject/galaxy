@@ -79,7 +79,7 @@
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
         <script type="text/javascript">
             // Auto Focus on first item on form
-            config.addInitialization(function() {
+            window.addEventListener("load", function() {
                 console.log("base.mako", "auto focus on first item on form");
                 if ( $("*:focus").html() == null ) {
                     $(":input:not([type=hidden]):visible:enabled:first").focus();

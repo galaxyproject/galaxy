@@ -37,22 +37,6 @@ from markupsafe import escape
     %>
     
     <div id="tags-community-${controller_name}-${tagged_item_id}"></div>
-
-    <script type="text/javascript">
-        config.addInitialization(function(galaxy, config) {
-            var container = document.getElementById("tags-community-${controller_name}-${tagged_item_id}");
-            var options = {
-                tags: ${h.dumps(community_tag_names)},
-                id: "${tagged_item_id}",
-                itemClass: "${tagged_item.__class__.__name__}",
-                context: "${elt_context}",
-                tagClickFn: "${tag_click_fn}",
-                clickUrl: "${click_url}",
-                disabled: true
-            }
-            bundleEntries.mountMakoTags(options, container);
-        });
-    </script>
 </%def>
 
 

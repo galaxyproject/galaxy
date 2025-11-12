@@ -6,8 +6,6 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
-<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
-
 <% _=n_ %>
 
 <%def name="init()">
@@ -22,9 +20,8 @@
 <%def name="javascript_app()">
     <!-- message.mako javascript_app() -->
     ${parent.javascript_app()}
-    ${handle_refresh_frames()}
     <script type="text/javascript">
-        config.addInitialization(function() {
+        window.addEventListener("load", function() {
             if (parent.handle_minwidth_hint) {
                 parent.handle_minwidth_hint(-1);
             }

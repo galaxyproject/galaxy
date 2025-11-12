@@ -4,7 +4,7 @@
     <!-- no_access.mako javascript_app() -->
     ${parent.javascript_app()}
     <script type="text/javascript">
-        config.addInitialization(function() {
+        window.addEventListener("load", function() {
             if ( parent.force_left_panel ) {
                 parent.force_left_panel( 'hide' );
             }
