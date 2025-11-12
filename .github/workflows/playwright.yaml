@@ -72,7 +72,8 @@ jobs:
         working-directory: 'galaxy root'
       - name: Install Playwright
         run: |
-          . .venv/bin/activate && playwright install chromium --with-deps
+          . .venv/bin/activate
+          playwright install chromium --with-deps
         working-directory: 'galaxy root'
       - name: Restore client cache
         uses: actions/cache@v4
