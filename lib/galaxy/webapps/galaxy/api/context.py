@@ -56,7 +56,6 @@ class FastAPIContext:
 
     def _get_extended_config(self, trans):
         return {
-            "active_view": "analysis",
             "enable_webhooks": bool(trans.app.webhooks_registry.webhooks),
             "message_box_visible": trans.app.config.message_box_visible,
             "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
