@@ -1077,22 +1077,39 @@ steps:
         assert len(empty_search_response.json()) == 0
 
     @pytest.mark.require_new_history
+    @transient_failure(issue=21242, potentially_fixed=True)
     def test_delete_job_with_message(self, history_id):
+        # Setup a job that will take a while to run so we can verify our cancelling
         input_dataset_id = self.__history_with_ok_dataset(history_id)
-        inputs = json.dumps({"input1": {"src": "hda", "id": input_dataset_id}})
-        search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
+        inputs = json.dumps({"input1": {"src": "hda", "id": input_dataset_id}, "sleep_time": 60})
+        tool_run_payload = dict(
+            tool_id="cat_data_and_sleep",
+            inputs=inputs,
+            history_id=history_id,
+        )
         # create a job
-        tool_response = self._post("tools", data=search_payload).json()
-        job_id = tool_response["jobs"][0]["id"]
-        output_dataset_id = tool_response["outputs"][0]["id"]
+        tool_response = self._post("tools", data=tool_run_payload)
+        assert_status_code_is_ok(tool_response)
+        tool_response_json = tool_response.json()
+        assert "jobs" in tool_response_json
+        assert "outputs" in tool_response_json
+        job_id = tool_response_json["jobs"][0]["id"]
+        output_dataset_id = tool_response_json["outputs"][0]["id"]
         # delete the job with message
         expected_message = "test message"
         delete_job_response = self._delete(f"jobs/{job_id}", data={"message": expected_message}, json=True)
         self._assert_status_code_is(delete_job_response, 200)
-        # Check the output dataset is deleted and the info field contains the message
-        dataset_details = self._get(f"histories/{history_id}/contents/{output_dataset_id}").json()
-        assert dataset_details["deleted"] is True
-        assert dataset_details["misc_info"] == expected_message
+
+        def check():
+            # Check the output dataset is deleted and the info field contains the message
+            dataset_details = self._get(f"histories/{history_id}/contents/{output_dataset_id}").json()
+            if dataset_details["deleted"] is not True:
+                return False
+            if dataset_details["misc_info"] != expected_message:
+                return False
+            return True
+
+        assert wait_on(check, "dataset to be deleted with message")
 
     @pytest.mark.require_new_history
     def test_destination_params(self, history_id):
