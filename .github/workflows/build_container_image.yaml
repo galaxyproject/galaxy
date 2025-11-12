@@ -227,3 +227,42 @@ jobs:
           if [ "$appVersion" != "$apiVersion" ]; then
             exit 1
           fi
+
+  pr:
+    name: Create a PR to update the Galaxy Helm chart when a release is tagged
+    runs-on: ubuntu-latest
+    needs: [smoke-test, build]
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout Galaxy Helm chart
+        uses: actions/checkout@v5
+        with:
+          repository: galaxyproject/galaxy-helm
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Update Chart.yaml appVersion
+        run: |
+          sed -i "s/^appVersion:.*/appVersion: ${{ needs.build.outputs.version }}/" galaxy/Chart.yaml
+
+      - name: Update values.yaml image.tag
+        run: |
+          sed -i "s/^  tag:.*/  tag: ${{ needs.build.outputs.tag }}/" galaxy/values.yaml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update Galaxy to version ${{ needs.build.outputs.version }}"
+          title: "Update Galaxy to version ${{ needs.build.outputs.version }}"
+          body: |
+            This PR updates the Galaxy Helm chart to use the new Galaxy release.
+
+            Changes:
+            - appVersion: ${{ needs.build.outputs.version }}
+            - image.tag: ${{ needs.build.outputs.tag }}
+
+            Triggered by: ${{ github.ref }}
+          branch: update-galaxy-${{ needs.build.outputs.version }}
+          delete-branch: true
+          labels: patch
