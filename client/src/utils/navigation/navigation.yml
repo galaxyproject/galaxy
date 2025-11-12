@@ -239,7 +239,7 @@ history_panel:
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations: '${_} .dataset-actions'
-      
+
       expiration_indicator_badge: '${_} .expiration-indicator .badge'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
@@ -1408,6 +1408,8 @@ zip_import_wizard:
     selected_workflows_to_import_count_badge: '#g-card-badge-workflow-count-zip-workflows-summary'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_import_button: '.wizard-actions .go-next-btn.btn-primary'
+    search_input: '.zip-file-selector-search input'
+    select_all_checkbox: '.list-header-select-all'
     select_file:
       type: xpath
       selector: "//div[@role='button' and contains(@id, 'g-card-${file_path}')]"
