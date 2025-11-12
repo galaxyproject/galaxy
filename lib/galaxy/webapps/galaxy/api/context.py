@@ -35,7 +35,7 @@ USER_KEYS = (
 
 @router.cbv
 class FastAPIContext:
-    @router.get("/api/context", summary="Return bootstrapped client context")
+    @router.get("/context", summary="Return bootstrapped client context")
     def index(self, request: Request, trans: ProvidesUserContext = DependsOnTrans) -> JSONResponse:
         user_manager = users.UserManager(trans.app)
         user_serializer = users.CurrentUserSerializer(trans.app)

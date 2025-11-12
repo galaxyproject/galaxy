@@ -4,9 +4,9 @@ let cachedConfig = null;
 export async function loadConfig() {
     if (!cachedConfig) {
         try {
-            const response = await fetch("/api/context");
+            const response = await fetch("/context");
             if (!response.ok) {
-                throw new Error(`Failed to fetch /api/context (${response.status})`);
+                throw new Error(`Failed to fetch /context (${response.status})`);
             }
             cachedConfig = await response.json();
         } catch (err) {
