@@ -9,6 +9,9 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     const workflowsByInstanceId = ref<{ [index: string]: StoredWorkflowDetailed }>({});
     const fullWorkflowsByIdAndVersion = ref(new Map<string, any>());
 
+    /** Cached promises for fetching full workflows to prevent duplicate requests */
+    const fullWorkflowPromises = new Map<string, Promise<any>>();
+
     const getStoredWorkflowByInstanceId = computed(() => (workflowId: string) => {
         return workflowsByInstanceId.value[workflowId];
     });
@@ -31,16 +34,44 @@ export const useWorkflowStore = defineStore("workflowStore", () => {
     function uniqueIdAndVersionKey(workflowId: string, version?: number) {
         return `${workflowId}${version ? `_${version}` : "_latest"}`;
     }
+
+    /**
+     * Fetches full workflow details, avoiding multiple fetches occurring simultaneously.
+     * If a fetch is already in progress for the same workflow+version, subsequent callers
+     * will await the same promise instead of initiating a new request.
+     * @param workflowId workflow id
+     * @param version optional version number
+     */
     async function getFullWorkflowCached(workflowId: string, version?: number) {
         const key = uniqueIdAndVersionKey(workflowId, version);
+
+        // Return cached workflow if already fetched
         if (fullWorkflowsByIdAndVersion.value.has(key)) {
             return fullWorkflowsByIdAndVersion.value.get(key);
         }
-        const storedWorkflow = await getWorkflowFull(workflowId, version);
-        if (storedWorkflow) {
-            fullWorkflowsByIdAndVersion.value.set(key, storedWorkflow);
+
+        // Check if a fetch is already in progress for this workflow+version
+        const existingPromise = fullWorkflowPromises.get(key);
+        if (existingPromise) {
+            await existingPromise;
+            // After the promise resolves, the workflow should be in cache
+            return fullWorkflowsByIdAndVersion.value.get(key);
         }
-        return storedWorkflow;
+
+        // Fetch the full workflow and store the promise
+        const fetchPromise = getWorkflowFull(workflowId, version);
+        fullWorkflowPromises.set(key, fetchPromise);
+
+        try {
+            const storedWorkflow = await fetchPromise;
+            if (storedWorkflow) {
+                fullWorkflowsByIdAndVersion.value.set(key, storedWorkflow);
+            }
+            return storedWorkflow;
+        } finally {
+            // Remove promise from tracking map
+            fullWorkflowPromises.delete(key);
+        }
     }
 
     // stores in progress promises to avoid overlapping requests
