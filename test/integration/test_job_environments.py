@@ -26,6 +26,8 @@ JobEnvironmentProperties = collections.namedtuple(
         "home",
         "tmp",
         "some_env",
+        "jobconf_env_var",
+        "container_env_var",
     ],
 )
 
@@ -60,7 +62,9 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
         home = self.dataset_populator.get_history_dataset_content(history_id, hid=4).strip()
         tmp = self.dataset_populator.get_history_dataset_content(history_id, hid=5).strip()
         some_env = self.dataset_populator.get_history_dataset_content(history_id, hid=6).strip()
-        return JobEnvironmentProperties(user_id, group_id, pwd, home, tmp, some_env)
+        jobconf_env_var = self.dataset_populator.get_history_dataset_content(history_id, hid=7).strip()
+        container_env_var = self.dataset_populator.get_history_dataset_content(history_id, hid=8).strip()
+        return JobEnvironmentProperties(user_id, group_id, pwd, home, tmp, some_env, jobconf_env_var, container_env_var)
 
     def _check_completed_history(self, history_id):
         """Extension point that lets subclasses investigate the completed job."""
@@ -87,6 +91,12 @@ class TestDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase
         assert job_env.group_id == str(egid), job_env.group_id
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
+
+        # check that env variables job
+        # - variables defined via env in job_conf are set
+        # - container specific vars via <param id="docker_env_.."> are not
+        assert job_env.jobconf_env_var == "YEAH"
+        assert job_env.container_env_var == "UNSET"
 
         # Newer tools get isolated home directories in job_directory/home
         job_directory = os.path.dirname(job_env.pwd)
