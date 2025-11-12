@@ -4902,12 +4902,119 @@ class SpatialData(CompressedZarrZipArchive):
 
     file_ext = "spatialdata.zip"
 
+    def _extract_spatialdata_info(self, filename: str) -> Dict[str, Any]:
+        """Extract information about SpatialData elements from the zarr archive."""
+        info = {
+            "images": set(),
+            "labels": set(),
+            "shapes": set(),
+            "points": set(),
+            "tables": set(),
+            "table_shapes": {},
+        }
+
+        try:
+            with zipfile.ZipFile(filename) as zf:
+                # Find root zarr directory
+                root_zarr = None
+                is_zarr_v3 = False
+                for file in zf.namelist():
+                    if file.endswith(".zarr/zarr.json"):
+                        root_zarr = file.rsplit("/", 1)[0]
+                        is_zarr_v3 = True
+                        break
+                    elif file.endswith(".zarr/.zattrs"):
+                        root_zarr = file.rsplit("/", 1)[0]
+                        break
+
+                if not root_zarr:
+                    return info
+
+                # Extract elements from directory structure: <root>.zarr/<type>/<name>/...
+                for file in zf.namelist():
+                    if file.startswith(root_zarr + "/"):
+                        parts = file[len(root_zarr) + 1 :].split("/")
+                        if len(parts) >= 2:
+                            element_type, element_name = parts[0], parts[1]
+                            if element_name and not element_name.startswith(".") and element_name != "zarr.json":
+                                if element_type in info and element_type != "table_shapes":
+                                    info[element_type].add(element_name)
+
+                # Extract table shapes (AnnData dimensions)
+                for table_name in info["tables"]:
+                    try:
+                        def get_shape_from_path(path):
+                            """Helper to extract shape from zarr metadata."""
+                            if path in zf.namelist():
+                                with zf.open(path) as f:
+                                    return json.load(f).get("shape", [None])[0]
+                            return None
+
+                        n_obs = n_vars = None
+                        if is_zarr_v3:
+                            # Try obs/_index first, then look for index column in obs metadata
+                            n_obs = get_shape_from_path(f"{root_zarr}/tables/{table_name}/obs/_index/zarr.json")
+                            if n_obs is None:
+                                obs_meta_path = f"{root_zarr}/tables/{table_name}/obs/zarr.json"
+                                if obs_meta_path in zf.namelist():
+                                    with zf.open(obs_meta_path) as f:
+                                        index_col = json.load(f).get("attributes", {}).get("_index")
+                                        if index_col:
+                                            n_obs = get_shape_from_path(f"{root_zarr}/tables/{table_name}/obs/{index_col}/zarr.json")
+                            n_vars = get_shape_from_path(f"{root_zarr}/tables/{table_name}/var/_index/zarr.json")
+                        else:
+                            # Zarr v2 format
+                            n_obs = get_shape_from_path(f"{root_zarr}/tables/{table_name}/obs/_index/.zarray")
+                            n_vars = get_shape_from_path(f"{root_zarr}/tables/{table_name}/var/_index/.zarray")
+
+                        if n_obs is not None and n_vars is not None:
+                            info["table_shapes"][table_name] = (n_obs, n_vars)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        return info
+
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "SpatialData Zarr archive"
-            dataset.blurb = f"{nice_size(dataset.get_size())}"
+            info = self._extract_spatialdata_info(dataset.get_file_name())
+
+            # Build hierarchical tree display
+            peek_lines = ["SpatialData object"]
             if dataset.metadata.zarr_format:
-                dataset.blurb += f"\nZarr Format v{dataset.metadata.zarr_format}"
+                peek_lines[0] += f" (Zarr Format v{dataset.metadata.zarr_format})"
+
+            # Filter non-empty element types
+            element_types = [
+                ("images", "Images"),
+                ("labels", "Labels"),
+                ("shapes", "Shapes"),
+                ("points", "Points"),
+                ("tables", "Tables"),
+            ]
+            non_empty = [(key, label) for key, label in element_types if info[key]]
+
+            # Display each element type with tree structure
+            for idx, (element_type, label) in enumerate(non_empty):
+                is_last = idx == len(non_empty) - 1
+                elements = sorted(info[element_type])
+
+                # Main branch
+                branch = "└──" if is_last else "├──"
+                peek_lines.append(f"{branch} {label} ({len(elements)})")
+
+                # Sub-elements
+                prefix = "      " if is_last else "│     "
+                for elem_idx, element_name in enumerate(elements):
+                    sub_branch = "└──" if elem_idx == len(elements) - 1 else "├──"
+                    display = f"'{element_name}'"
+                    if element_type == "tables" and element_name in info["table_shapes"]:
+                        display += f": AnnData {info['table_shapes'][element_name]}"
+                    peek_lines.append(f"{prefix}{sub_branch} {display}")
+
+            dataset.peek = "\n".join(peek_lines)
+            dataset.blurb = f"SpatialData file ({nice_size(dataset.get_size())})"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -4916,9 +5023,7 @@ class SpatialData(CompressedZarrZipArchive):
         """
         Check if the file is a valid SpatialData zarr archive.
 
-        SpatialData files are Zarr archives with specific structure containing
-        a root metadata file (.zattrs for v2 or zarr.json for v3) with spatialdata_attrs
-        metadata and element directories like images/, labels/, shapes/, points/, or tables/.
+        SpatialData files are Zarr archives with spatialdata_attrs in root metadata.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('subsampled_visium.spatialdata.zip')
@@ -4933,53 +5038,32 @@ class SpatialData(CompressedZarrZipArchive):
         """
         try:
             with zipfile.ZipFile(filename) as zf:
-                zarr_meta_path = self._find_zarr_metadata_file(zf)
-                if zarr_meta_path is None:
+                if self._find_zarr_metadata_file(zf) is None:
                     return False
 
-                # Look for root-level metadata files that might contain spatialdata_attrs
-                # The zarr store can be at root or one level deep (e.g., "store.zarr/")
+                # Check root-level metadata files for spatialdata_attrs
                 for file in zf.namelist():
                     parts = file.split("/")
-
-                    # Check for v2 format: .zattrs at root or one level deep
-                    if file == ".zattrs" or (len(parts) == 2 and parts[0].endswith(".zarr") and parts[1] == ".zattrs"):
-                        try:
-                            with zf.open(file) as f:
-                                attrs = json.load(f)
-                                if "spatialdata_attrs" in attrs:
-                                    return True
-                        except Exception:
-                            pass
-
-                    # Check for v3 format: zarr.json at root or one level deep
-                    # In v3, consolidated metadata contains all metadata in one file
-                    elif file == "zarr.json" or (len(parts) == 2 and parts[0].endswith(".zarr") and parts[1] == "zarr.json"):
+                    # Root or one level deep: .zattrs or zarr.json
+                    if len(parts) <= 2 and parts[-1] in (".zattrs", "zarr.json"):
                         try:
                             with zf.open(file) as f:
                                 metadata = json.load(f)
-
-                                # In v3 consolidated metadata, check the root group's attributes
-                                # The structure is: {"metadata": {"root_path": {"attributes": {...}}}}
+                                # Check standard format
+                                if "spatialdata_attrs" in metadata.get("attributes", metadata):
+                                    return True
+                                # Check v3 consolidated metadata
                                 if "metadata" in metadata:
-                                    # V3 consolidated metadata format
-                                    for path, path_metadata in metadata["metadata"].items():
-                                        # Check the root zarr group (matches the .zarr directory name)
-                                        if isinstance(path_metadata, dict) and "attributes" in path_metadata:
-                                            attrs = path_metadata["attributes"]
-                                            if "spatialdata_attrs" in attrs:
-                                                return True
-                                else:
-                                    # Standard v3 format (non-consolidated)
-                                    attrs = metadata.get("attributes", {})
-                                    if "spatialdata_attrs" in attrs:
-                                        return True
+                                    for path_meta in metadata["metadata"].values():
+                                        if isinstance(path_meta, dict) and "spatialdata_attrs" in path_meta.get("attributes", {}):
+                                            return True
                         except Exception:
                             pass
-
                 return False
         except Exception:
             return False
+
+
 @build_sniff_from_prefix
 class Safetensors(Binary):
     """
