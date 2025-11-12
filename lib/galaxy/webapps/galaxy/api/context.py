@@ -12,6 +12,7 @@ from galaxy.managers import (
     users,
 )
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema import SerializationParams
 from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
@@ -37,15 +38,10 @@ USER_KEYS = (
 class FastAPIContext:
     @router.get("/context", summary="Return bootstrapped client context")
     def index(self, request: Request, trans: ProvidesUserContext = DependsOnTrans) -> JSONResponse:
-        user_manager = users.UserManager(trans.app)
         user_serializer = users.CurrentUserSerializer(trans.app)
-        config_serializer = configuration.ConfigSerializer(trans.app)
-        admin_config_serializer = configuration.AdminConfigSerializer(trans.app)
-        host = str(request.base_url).rstrip("/")
-        serializer = admin_config_serializer if user_manager.is_admin(trans.user, trans=trans) else config_serializer
-        config = serializer.serialize_to_view(trans.app.config, view="all", host=host)
+        configuration_manager = configuration.ConfigurationManager(trans.app)
+        config = configuration_manager.get_configuration(trans, SerializationParams(view="all"))
         config.update(self._get_extended_config(trans))
-
         js_options = {
             "root": web.url_for("/"),
             "user": user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
