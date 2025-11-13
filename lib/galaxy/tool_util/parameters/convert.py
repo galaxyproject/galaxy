@@ -362,7 +362,8 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             if not parameter.multiple:
                 tool_state[parameter_name] = parameter.default_value
             else:
-                tool_state[parameter_name] = None
+                default_values = parameter.default_values
+                tool_state[parameter_name] = default_values if default_values else None
     elif isinstance(parameter, DrillDownParameterModel):
         if parameter_name not in tool_state:
             if parameter.multiple:

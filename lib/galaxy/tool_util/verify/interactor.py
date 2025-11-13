@@ -1931,7 +1931,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
         maxseconds = DEFAULT_TOOL_TEST_WAIT
         exception = invalid_test_dict.get("exception", DEFAULT_EXCEPTION)
-    value_state_representation = processed_test_dict.get("value_state_representation", "test_case_xml")
+    value_state_representation = processed_dict.get("value_state_representation", "test_case_xml")
 
     return ToolTestDescriptionDict(
         test_index=test_index,
