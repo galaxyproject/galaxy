@@ -7,6 +7,8 @@ import {
     faDatabase,
     faDesktop,
     faFileArchive,
+    faHdd,
+    faSitemap,
     faSlidersH,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -18,7 +20,15 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
-type UploadMode = "local-file" | "paste-data" | "collection-upload" | "remote-files" | "data-library" | "explore-zip";
+type UploadMode =
+    | "local-file"
+    | "paste-data"
+    | "collection-upload"
+    | "remote-files"
+    | "data-library"
+    | "explore-zip"
+    | "import-history"
+    | "import-workflow";
 
 interface UploadMethod {
     id: UploadMode;
@@ -73,6 +83,20 @@ const uploadMethods: UploadMethod[] = [
         icon: faFileArchive,
         category: "archive",
     },
+    {
+        id: "import-history",
+        name: "Import History",
+        description: "Import an entire history from a file or URL",
+        icon: faHdd,
+        category: "import",
+    },
+    {
+        id: "import-workflow",
+        name: "Import Workflow",
+        description: "Import a workflow from a file or URL",
+        icon: faSitemap,
+        category: "import",
+    },
 ];
 
 const filteredMethods = computed(() => {
@@ -108,6 +132,12 @@ function selectUploadMethod(method: UploadMethod) {
             break;
         case "data-library":
             // Open data library import dialog
+            break;
+        case "import-history":
+            // Open history import dialog
+            break;
+        case "import-workflow":
+            // Open workflow import dialog
             break;
     }
 }
