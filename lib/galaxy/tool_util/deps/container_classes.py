@@ -52,7 +52,6 @@ python << EOF
 from __future__ import print_function
 
 import json
-import re
 import subprocess
 import tarfile
 
@@ -65,10 +64,16 @@ cmd = "${images_cmd}"
 proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 stdo, stde = proc.communicate()
 found = False
-for line in stdo.split("\n"):
-    tmp = re.split(r'\s+', line)
-    if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
-        found = True
+for line in stdo.split(b"\n"):
+    line = line.strip()
+    if line:
+        try:
+            img = json.loads(line)
+            if img.get("Repository") == tag and img.get("Tag") == rev and img.get("ID") == rev_value:
+                found = True
+                break
+        except (json.JSONDecodeError, ValueError):
+            pass
 if not found:
     print("Loading image")
     cmd = "cat ${cached_image_file} | ${load_cmd}"
@@ -502,7 +507,7 @@ _on_exit() {{
 {run_command}"""
 
     def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
-        images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
+        images_cmd = docker_util.build_docker_images_command(truncate=False, format="json", **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
         return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
