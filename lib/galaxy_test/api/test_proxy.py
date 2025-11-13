@@ -104,7 +104,9 @@ class TestProxyApi(ApiTestCase):
         base_url = self.galaxy_interactor.api_url
         full_url = f"{base_url}/proxy?url={url_with_nonprintable}"
         headers = self.galaxy_interactor.api_key_header(key=None, admin=False, anon=False, headers=None)
-        response = requests.get(full_url, headers=headers)
+        # Filter out None values for requests compatibility
+        filtered_headers = {k: v for k, v in headers.items() if v is not None}
+        response = requests.get(full_url, headers=filtered_headers)
 
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Invalid URL format."
