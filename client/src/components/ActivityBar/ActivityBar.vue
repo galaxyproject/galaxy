@@ -27,6 +27,7 @@ import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UploadPanel from "@/components/Panels/UploadPanel.vue";
 import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
 
@@ -352,6 +353,7 @@ defineExpose({
             :collapsible="false"
             :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
+            <UploadPanel v-else-if="isActiveSideBar('beta-upload')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
