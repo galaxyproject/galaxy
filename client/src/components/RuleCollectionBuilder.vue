@@ -631,12 +631,13 @@ import Select2 from "components/Select2";
 import UploadUtils from "components/Upload/utils";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import { mapActions } from "pinia";
 import _ from "underscore";
 import _l from "utils/localization";
 import Vue from "vue";
 
+import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import GButton from "./BaseComponents/GButton.vue";
 import TooltipOnHover from "components/TooltipOnHover.vue";
@@ -1340,6 +1341,7 @@ export default {
         }
     },
     methods: {
+        ...mapActions(useHistoryStore, ["startWatchingHistory"]),
         restoreRules(event) {
             const json = JSON.parse(event);
             this.rules = json.rules;
@@ -1458,7 +1460,7 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            startWatchingHistory();
+            this.startWatchingHistory();
             this.waitOnJob(response);
         },
         waitOnJob(response) {
@@ -1474,7 +1476,7 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    startWatchingHistory();
+                    this.startWatchingHistory();
                     this.$emit("onCreate", jobResponse.data);
                     if (this.oncreate) {
                         // legacy non-event handling

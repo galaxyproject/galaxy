@@ -1,8 +1,8 @@
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 
+import { useHistoryStore } from "@/stores/historyStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
 import { uploadSubmit } from "@/utils/upload-submit.js";
-import { startWatchingHistory } from "@/watch/watchHistory";
 
 import { getCurrentGalaxyHistory, mountSelectionDialog } from "./dataModalUtils";
 
@@ -41,7 +41,8 @@ export function create(galaxy, options) {
     getHistory().then((history_id) => {
         uploadSubmit({
             success: (response) => {
-                startWatchingHistory(galaxy);
+                const historyStore = useHistoryStore();
+                historyStore.startWatchingHistory();
                 if (options.success) {
                     options.success(response);
                 }
