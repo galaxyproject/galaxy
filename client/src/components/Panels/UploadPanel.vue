@@ -37,7 +37,6 @@ interface UploadMethod {
     name: string;
     description: string;
     icon: any;
-    category: string;
 }
 
 const query = ref("");
@@ -48,63 +47,54 @@ const uploadMethods: UploadMethod[] = [
         name: "Upload from Computer",
         description: "Select and upload files from your local device",
         icon: faDesktop,
-        category: "local",
     },
     {
         id: "paste-content",
         name: "Paste File Content",
         description: "Paste the content of a file directly",
         icon: faClipboard,
-        category: "direct",
     },
     {
         id: "paste-links",
         name: "Paste Links/URLs",
         description: "Paste URLs to fetch and import data from remote sources",
         icon: faLink,
-        category: "direct",
     },
     {
         id: "collection-upload",
         name: "Upload File Collection",
         description: "Upload multiple files as a collection",
         icon: faColumns,
-        category: "local",
     },
     {
         id: "remote-files",
         name: "Choose Remote Files",
         description: "Select files from configured remote file sources or file repositories",
         icon: faCloud,
-        category: "remote",
     },
     {
         id: "data-library",
         name: "Import from Data Library",
         description: "Select files from Galaxy's data library",
         icon: faDatabase,
-        category: "library",
     },
     {
         id: "explore-zip",
         name: "Explore Compressed Zip Archive",
         description: "Browse and select files directly from a compressed zip archive either locally or remotely",
         icon: faFileArchive,
-        category: "archive",
     },
     {
         id: "import-history",
         name: "Import History",
         description: "Import an entire history from a file or URL",
         icon: faHdd,
-        category: "import",
     },
     {
         id: "import-workflow",
         name: "Import Workflow",
         description: "Import a workflow from a file or URL",
         icon: faSitemap,
-        category: "import",
     },
 ];
 
@@ -115,7 +105,7 @@ const filteredMethods = computed(() => {
     }
     const tokens = rawTokens.map((token) => token.toLowerCase());
     return uploadMethods.filter((method) => {
-        const searchText = `${method.name} ${method.description} ${method.category}`.toLowerCase();
+        const searchText = `${method.name} ${method.description}`.toLowerCase();
         return tokens.every((token) => searchText.includes(token));
     });
 });
