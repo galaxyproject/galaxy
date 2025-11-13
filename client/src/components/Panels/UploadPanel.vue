@@ -195,7 +195,7 @@ function openGuidedMode() {
             </ScrollList>
         </ActivityPanel>
 
-        <GModal :show.sync="showModal" :title="selectedMethod?.name || 'Import Data'" size="large" footer>
+        <GModal :show.sync="showModal" :title="selectedMethod?.name || 'Import Data'" footer fullscreen>
             <template v-slot:body>
                 <div v-if="selectedMethod" class="upload-modal-content">
                     <!-- Dynamic content based on selected method -->
@@ -261,7 +261,7 @@ function openGuidedMode() {
             </template>
         </GModal>
 
-        <GModal :show.sync="showGuidedModal" title="Guided Import Wizard" size="large" footer>
+        <GModal :show.sync="showGuidedModal" title="Guided Import Wizard" footer fullscreen>
             <template v-slot:body>
                 <div class="guided-wizard-content">
                     <h4>Welcome to the Guided Import Wizard</h4>
@@ -276,7 +276,7 @@ function openGuidedMode() {
             </template>
         </GModal>
 
-        <GModal :show.sync="showAdvancedModal" title="Advanced Import" size="large" footer>
+        <GModal :show.sync="showAdvancedModal" title="Advanced Import" footer fullscreen>
             <template v-slot:body>
                 <div class="advanced-import-content">
                     <h4>Advanced Import Interface</h4>
