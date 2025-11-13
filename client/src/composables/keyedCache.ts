@@ -27,7 +27,7 @@ type ShouldFetchHandler<T> = (item?: T) => boolean;
  * Returns true if the item is not defined.
  * @param item The item to check.
  */
-const fetchIfAbsent = <T>(item?: T) => !item;
+const fetchIfAbsent = <T>(item?: T) => item === undefined;
 
 /**
  * A composable that provides a simple key-value cache for items fetched from the server.
