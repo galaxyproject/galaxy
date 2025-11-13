@@ -11,6 +11,7 @@ import {
     faKey,
     faLock,
     faPalette,
+    faPerson,
     faRadiation,
     faSignOut,
     faUsers,
@@ -59,6 +60,13 @@ const activePreferences = computed(() => {
     const enabledPreferences = Object.entries(userPreferencesEntries).filter(([, value]) => !value.disabled);
     return Object.fromEntries(enabledPreferences);
 });
+const showOidcProfile = computed(() => {
+    if (isConfigLoaded.value) {
+        return config.value.enable_oidc && config.value.oidc_profile_url;
+    } else {
+        return false;
+    }
+});
 const hasLogout = computed(() => {
     if (isConfigLoaded.value) {
         const Galaxy = getGalaxyInstance();
@@ -88,7 +96,7 @@ async function makeDataPrivate() {
                 "of your new data in these histories is created as private.  Any " +
                 "datasets within that are currently shared will need " +
                 "to be re-shared or published.  Are you sure you " +
-                "want to do this?",
+                "want to do this?"
         ),
         {
             title: "Do you want to make all data private?",
@@ -96,7 +104,7 @@ async function makeDataPrivate() {
             cancelTitle: "No, do not make data private",
             cancelVariant: "outline-primary",
             centered: true,
-        },
+        }
     );
     if (confirmed) {
         axios.post(withPrefix(`/history/make_private?all_histories=true`)).then(() => {
@@ -169,6 +177,14 @@ onMounted(async () => {
 
         <div class="d-flex flex-gapy-1 flex-column">
             <div class="d-flex flex-wrap mb-4 user-preferences-cards">
+                <UserPreferencesElement
+                    id="oidc-profile"
+                    :v-if="showOidcProfile"
+                    title="Manage my profile"
+                    :icon="faPerson"
+                    description="Manage my profile information (username, email, password)."
+                    to="/user/oidc-profile" />
+
                 <UserPreferencesElement
                     v-for="(link, index) in activePreferences"
                     :id="link.id"
