@@ -8,6 +8,7 @@ import {
     faDesktop,
     faFileArchive,
     faHdd,
+    faLink,
     faSitemap,
     faSlidersH,
 } from "@fortawesome/free-solid-svg-icons";
@@ -22,7 +23,8 @@ import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 type UploadMode =
     | "local-file"
-    | "paste-data"
+    | "paste-content"
+    | "paste-links"
     | "collection-upload"
     | "remote-files"
     | "data-library"
@@ -49,10 +51,17 @@ const uploadMethods: UploadMethod[] = [
         category: "local",
     },
     {
-        id: "paste-data",
-        name: "Paste/Fetch Data",
-        description: "Paste file contents or URLs directly",
+        id: "paste-content",
+        name: "Paste File Content",
+        description: "Paste the content of a file directly",
         icon: faClipboard,
+        category: "direct",
+    },
+    {
+        id: "paste-links",
+        name: "Paste Links/URLs",
+        description: "Paste URLs to fetch and import data from remote sources",
+        icon: faLink,
         category: "direct",
     },
     {
@@ -121,8 +130,11 @@ function selectUploadMethod(method: UploadMethod) {
         case "local-file":
             // Open local file upload dialog
             break;
-        case "paste-data":
-            // Open paste data dialog
+        case "paste-content":
+            // Open paste file content dialog
+            break;
+        case "paste-links":
+            // Open paste links/URLs dialog
             break;
         case "collection-upload":
             // Open collection upload dialog
