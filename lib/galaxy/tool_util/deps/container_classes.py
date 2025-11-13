@@ -61,10 +61,10 @@ meta = json.loads(meta_str)
 tag, tag_value = next(iter(meta.items()))
 rev, rev_value = next(iter(tag_value.items()))
 cmd = "${images_cmd}"
-proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, text=True)
 stdo, stde = proc.communicate()
 found = False
-for line in stdo.split(b"\n"):
+for line in stdo.split("\n"):
     line = line.strip()
     if line:
         try:
