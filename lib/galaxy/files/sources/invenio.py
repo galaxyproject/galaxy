@@ -372,10 +372,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                     page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
                 )
         except HTTPError as e:
-            # TODO: We can only download files from published records for now
             if e.code in [401, 403, 404]:
                 raise Exception(
-                    f"Cannot download file '{file_identifier}' from record '{container_id}'. Please make sure the record exists and it is public."
+                    f"Cannot download file '{file_identifier}' from record '{container_id}'. Please make sure the record exists and you have access to it."
                 )
 
     def _get_download_file_url(
@@ -387,6 +386,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         """
         file_details_url = self._get_file_details_url(record_id, filename)
         if self._is_published_record(record_id, context):
+            # For restricted content, we need to use the regular API endpoint with credentials
+            if self._is_record_content_restricted(record_id, context):
+                return f"{file_details_url}/content"
             return self._file_url_to_download_url(file_details_url)
         if self._is_draft_record(record_id, context):
             draft_download_url = f"{self._to_draft_url(file_details_url)}/content"
@@ -412,6 +414,15 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         headers = self._get_request_headers(context)
         response = requests.head(request_url, headers=headers)
         return response.status_code == 200
+
+    def _is_record_content_restricted(
+        self, record_id: str, context: FilesSourceRuntimeContext[RDMFileSourceConfiguration]
+    ):
+        request_url = self._get_record_url(record_id)
+        response_data = self._get_response(context, request_url)
+        metadata = response_data.get("metadata", {})
+        access_right = metadata.get("access_right", "public")
+        return access_right == "restricted"
 
     def _get_record_url(self, record_id: str):
         return f"{self.records_url}/{record_id}"

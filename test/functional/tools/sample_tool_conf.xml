@@ -251,6 +251,8 @@
     <tool file="multiple_versions_v01galaxy6.xml" />
     <tool file="multiple_versions_v02.xml" />
   </section>
+  <tool file="multiple_versions_sorting_v19.xml" />
+  <tool file="multiple_versions_sorting_v110.xml" />
 
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />

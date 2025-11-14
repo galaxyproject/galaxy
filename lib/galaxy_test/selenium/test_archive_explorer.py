@@ -74,6 +74,35 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
         self.wait_for_loading_indicator_to_finish()
         self.expect_preview_title_to_be("Simple Workflow")
 
+    @selenium_test
+    def test_search_filters_files(self):
+        self.login()
+        self.ensure_empty_history()
+        self.explore_local_zip(self.get_filename("example-bag.zip"))
+        self.expect_total_number_of_files_to_be(8)
+        self.go_to_next_step()
+
+        visible_cards = self.get_visible_item_cards()
+        assert len(visible_cards) == 8
+
+        self.search_for("README")
+
+        visible_cards = self.get_visible_item_cards()
+        assert len(visible_cards) == 1
+
+    @selenium_test
+    def test_select_all_functionality(self):
+        self.login()
+        self.ensure_empty_history()
+        self.explore_local_zip(self.get_filename("example-bag.zip"))
+        self.expect_total_number_of_files_to_be(8)
+        self.go_to_next_step()
+
+        self.select_all_files()
+
+        self.go_to_next_step()
+        self.expect_number_of_files_to_import(8)
+
     # Helper methods
     # ------------------------------------------------------------------
     def ensure_empty_history(self):
@@ -101,6 +130,18 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
         file_entry = self.components.zip_import_wizard.select_file(file_path=file_path)
         file_entry.wait_for_and_click()
         return file_entry
+
+    def select_all_files(self):
+        self.components.zip_import_wizard.select_all_checkbox.wait_for_and_click()
+
+    def get_visible_item_cards(self):
+        visible_cards = self.driver.find_elements(By.CSS_SELECTOR, ".zip-file-selector .g-card")
+        return visible_cards
+
+    def search_for(self, search_query: str):
+        search_input = self.components.zip_import_wizard.search_input.wait_for_visible()
+        search_input.send_keys(search_query)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def expect_total_number_of_files_to_be(self, file_count: int):
         zip_file_count_badge = self.components.zip_import_wizard.zip_file_count_badge
