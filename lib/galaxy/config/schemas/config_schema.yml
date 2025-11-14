@@ -2829,7 +2829,7 @@ mapping:
         deprecated_alias: allow_user_creation
         desc: |
           Allow unregistered users to create new local (non-OIDC) accounts (otherwise, they will have to
-          be created by an admin). This option will be overridden to false in case disable_local_accounts 
+          be created by an admin). This option will be overridden to false in case disable_local_accounts
           is set to true.
 
       disable_local_accounts:
@@ -2837,8 +2837,8 @@ mapping:
         default: false
         required: true
         desc: |
-          Disable local accounts. If this option is set to true, at least one OIDC provider needs 
-          to be configured and will serve as the account provider. If this option is set to true, 
+          Disable local accounts. If this option is set to true, at least one OIDC provider needs
+          to be configured and will serve as the account provider. If this option is set to true,
           allow_local_account creation will be overridden with false.
 
       allow_user_deletion:
@@ -3083,6 +3083,15 @@ mapping:
         required: false
         desc: |
           Enables and disables OpenID Connect (OIDC) support.
+
+      oidc_profile_url:
+        type: str
+        required: false
+        desc: |
+          If specified, user profile information (email, username, password) will be managed
+          by the OIDC provider. A widget will show the current email and username in the user menu,
+          with a link to the OIDC provider's user profile page to edit them.
+          Use with enable_account_interface=false.
 
       oidc_config_file:
         type: str
