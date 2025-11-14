@@ -5,6 +5,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 import datetime
 import json
 import logging
+from urllib.parse import quote
 
 import jwt
 
@@ -116,11 +117,17 @@ class OIDC(JSAppLauncher):
                 "Error handling authentication callback from `{}` identity provider for user `{}` login request."
                 " Error message: {}".format(provider, user, kwargs.get("error", "None"))
             )
-            return trans.show_error_message(
-                f"Failed to handle authentication callback from {provider}. "
-                "Please try again, and if the problem persists, contact "
-                "the Galaxy instance admin"
-            )
+            error_description = kwargs.get("error_description")
+            if error_description:
+                error_msg = error_description
+            else:
+                error_msg = (
+                    f"Failed to handle authentication callback from {provider}. "
+                    "Please try again, and if the problem persists, contact "
+                    "the Galaxy instance admin."
+                )
+            redirect_to = f"{trans.request.url_path + url_for('/')}login/start?message={quote(error_msg, safe='')}&status=danger"
+            return trans.response.send_redirect(redirect_to)
         try:
             success, message, (redirect_url, user) = trans.app.authnz_manager.callback(
                 provider,

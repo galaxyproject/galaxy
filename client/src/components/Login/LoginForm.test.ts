@@ -110,7 +110,7 @@ describe("LoginForm", () => {
         const provider_label = "Provider";
 
         const originalLocation = window.location;
-        jest.spyOn(window, "location", "get").mockImplementation(() => ({
+        const locationSpy = jest.spyOn(window, "location", "get").mockImplementation(() => ({
             ...originalLocation,
             search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
         }));
@@ -150,5 +150,21 @@ describe("LoginForm", () => {
         const postedURL = axiosMock.history.post?.[0]?.url;
         expect(postedURL).toBe("/user/login");
         await flushPromises();
+
+        locationSpy.mockRestore();
+    });
+
+    it("renders message from query params", async () => {
+        const originalUrl = window.location.href;
+        window.history.replaceState(null, "", "/login/start?message=auth-error&status=info");
+
+        const wrapper = await mountLoginForm();
+
+        const alert = wrapper.find(".alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toContain("auth-error");
+        expect(alert.classes()).toContain("alert-info");
+
+        window.history.replaceState(null, "", originalUrl);
     });
 });
