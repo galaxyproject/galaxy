@@ -57,6 +57,25 @@ describe("useKeyedCache", () => {
         expect(fetchItem).not.toHaveBeenCalled();
     });
 
+    it("should not fetch if the stored item is 0 (or any falsy value)", async () => {
+        const id = "1";
+        const item = 0;
+
+        fetchItem.mockResolvedValue(item);
+
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<number>(fetchItem);
+
+        storedItems.value[id] = item;
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+
+        getItemById.value(id);
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(fetchItem).not.toHaveBeenCalled();
+    });
+
     it("should fetch the item regardless of whether it is already stored if shouldFetch returns true", async () => {
         const id = "1";
         const item = { id: id, name: "Item 1" };
