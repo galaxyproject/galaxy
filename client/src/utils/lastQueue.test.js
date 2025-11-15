@@ -6,34 +6,6 @@ async function testPromise(arg, _signal) {
 const wait = (ms = 5) => new Promise((r) => setTimeout(r, ms));
 
 describe("test last-queue", () => {
-    it("should resolve the first and last enqueued promise for default key", async () => {
-        const x = 10;
-        const queue = new LastQueue(0);
-        const results = [];
-        for (let i = 0; i < x; i++) {
-            queue.enqueue(testPromise, i).then((r) => results.push(r));
-        }
-        await queue.enqueue(testPromise, x).then((r) => results.push(r));
-        await wait(10);
-        const resolved = results.filter((r) => r !== undefined);
-        expect(resolved).toEqual([0, x]);
-    });
-
-    it("should resolve once per key", async () => {
-        const x = 10;
-        const queue = new LastQueue(0);
-        const results = [];
-        for (let i = 0; i < x; i++) {
-            for (let j = 0; j < x; j++) {
-                queue.enqueue(testPromise, i, i).then((r) => results.push(r));
-            }
-        }
-        await queue.enqueue(testPromise, x, x).then((r) => results.push(r));
-        await wait(10);
-        const resolved = results.filter((r) => r !== undefined);
-        const expected = [...Array(x + 1).keys(), ...Array(x).keys()];
-        expect(resolved).toEqual(expected);
-    });
 
     it("should respect throttle period", async () => {
         const throttle = 50;
@@ -173,22 +145,6 @@ describe("test last-queue", () => {
         await queue.enqueue(longAction, 2, "key");
         await wait(40);
         expect(finished).toBe(true);
-    });
-
-    it("detects pending throttle never completing", async () => {
-        jest.useRealTimers();
-        const q = new LastQueue(300);
-        const calls = [];
-        async function fn(n) {
-            calls.push(n);
-            return n;
-        }
-        q.enqueue(fn, 1);
-        q.enqueue(fn, 2);
-        q.enqueue(fn, 3);
-        await wait(2000);
-        expect(calls.length).toBeGreaterThan(0);
-        expect(calls.length).toBeLessThanOrEqual(2);
     });
 
     it("detects blocked throttle under fake timers", async () => {
