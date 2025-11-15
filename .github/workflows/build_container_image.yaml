@@ -157,13 +157,13 @@ jobs:
         run: |
           helm install galaxy-deps galaxy/galaxy-deps \
           --namespace galaxy-deps \
-          --create-namespace \ 
+          --create-namespace \
           --set cvmfs.cvmfscsi.cache.alien.enabled=false \
           --wait \
           --timeout=1200s
       - name: Install Galaxy using the image we just pushed
         run: |
-          helm install galaxy galaxy/galaxy \          
+          helm install galaxy galaxy/galaxy \
           --namespace galaxy \
           --create-namespace \
           --set persistence.accessMode="ReadWriteOnce" \
