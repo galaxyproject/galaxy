@@ -249,7 +249,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PULL_REQUEST_TOKEN }}
           commit-message: "Update Galaxy to version ${{ needs.build.outputs.version }}"
           title: "Update Galaxy to version ${{ needs.build.outputs.version }}"
           body: |
