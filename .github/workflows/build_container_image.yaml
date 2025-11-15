@@ -136,8 +136,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build ]
     steps:
-      - name: Install Helm
-        run: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
       - name: Start k8s locally
         uses: jupyterhub/action-k3s-helm@v3
         with:
