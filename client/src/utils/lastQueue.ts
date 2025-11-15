@@ -40,8 +40,16 @@ export class LastQueue<T extends (arg: any, signal?: AbortSignal) => Promise<R>,
         }
     }
 
-    async enqueue(action: T, arg: Parameters<T>[0], key: string | number = "default"): Promise<R | undefined> {
+    async enqueue(
+        action: T,
+        arg: Parameters<T>[0],
+        key: string | number = "default",
+        options?: { signal?: AbortSignal },
+    ): Promise<R | undefined> {
         const controller = new AbortController();
+        if (options?.signal) {
+            options.signal.addEventListener("abort", () => controller.abort(), { once: true });
+        }
         const task: QueuedAction<T, R> = { action, arg, resolve: () => {}, reject: () => {}, controller };
         return new Promise((resolve, reject) => {
             task.resolve = resolve;

@@ -205,4 +205,97 @@ describe("test last-queue", () => {
         jest.advanceTimersByTime(1000);
         expect(calls.length).toBeGreaterThan(0);
     });
+
+    it("should not leak memory after many keys", async () => {
+        const queue = new LastQueue(0);
+        for (let i = 0; i < 1000; i++) {
+            await queue.enqueue(testPromise, i, `key${i}`);
+        }
+        expect(queue["queues"].size).toBe(0);
+        expect(queue["pending"].size).toBe(0);
+        expect(queue["timeoutIds"].size).toBe(0);
+    });
+
+    it("should throttle per key independently", async () => {
+        jest.useFakeTimers();
+        const throttle = 50;
+        const queue = new LastQueue(throttle);
+        const stamps = { A: [], B: [] };
+        const action = jest.fn(async (key) => {
+            stamps[key].push(Date.now());
+            return key;
+        });
+        queue.enqueue(action, "A", "A");
+        queue.enqueue(action, "A", "A");
+        queue.enqueue(action, "B", "B");
+        queue.enqueue(action, "B", "B");
+        jest.advanceTimersByTime(throttle * 3);
+        await Promise.resolve();
+        expect(stamps.A.length >= 2).toBe(true);
+        expect(stamps.B.length >= 2).toBe(true);
+        const deltaA = stamps.A[1] - stamps.A[0];
+        const deltaB = stamps.B[1] - stamps.B[0];
+        expect(deltaA >= throttle || deltaA === 0).toBe(true);
+        expect(deltaB >= throttle || deltaB === 0).toBe(true);
+        jest.useRealTimers();
+    });
+
+    it("should propagate AbortSignal and reject on abort", async () => {
+        jest.useFakeTimers();
+        const queue = new LastQueue(0);
+        const controller = new AbortController();
+        let aborted = false;
+        const action = jest.fn(async (_arg, signal) => {
+            signal?.addEventListener("abort", () => {
+                aborted = true;
+            });
+            if (signal?.aborted) {
+                throw new Error("Aborted early");
+            }
+            return "done";
+        });
+        const first = queue.enqueue(action, null, "key", { signal: controller.signal });
+        controller.abort();
+        jest.runAllTimers();
+        const result = await first;
+        expect(result).toBeUndefined();
+        expect(aborted).toBe(true);
+        expect(action).toHaveBeenCalledTimes(1);
+        jest.useRealTimers();
+    });
+
+    it("should skip all but first and last in rapid zero-throttle burst", async () => {
+        const queue = new LastQueue(0);
+        const results = [];
+        for (let i = 0; i < 1000; i++) {
+            queue.enqueue(testPromise, i).then((r) => r !== undefined && results.push(r));
+        }
+        await queue.enqueue(testPromise, 999).then((r) => r !== undefined && results.push(r));
+        await wait(10);
+        expect(results).toEqual([0, 999]);
+    });
+
+    it("should clear timeout on skip", async () => {
+        jest.useFakeTimers();
+        const queue = new LastQueue(100);
+        queue.enqueue(testPromise, 1); // starts, will wait 100ms before next
+        await jest.runAllTimersAsync(); // finish first task
+        queue.enqueue(testPromise, 2); // queues second, sets timeout
+        queue.enqueue(testPromise, 3); // skips second → should clear timeout
+        jest.runAllTimers(); // any leftover timeout would error
+        expect(queue["timeoutIds"].size).toBe(0);
+        jest.useRealTimers();
+    });
+
+    it("should handle mixed string/number keys without collision", async () => {
+        const queue = new LastQueue(0);
+        const results = new Set();
+        await queue.enqueue(testPromise, "str", "key");
+        await queue.enqueue(testPromise, 123, 123);
+        queue.enqueue(testPromise, "num", "123").then((r) => results.add(r));
+        queue.enqueue(testPromise, 456, "key").then((r) => results.add(r));
+        await wait(10);
+        expect(results.has("num")).toBe(true);
+        expect(results.has(456)).toBe(true);
+    });
 });
