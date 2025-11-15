@@ -240,11 +240,11 @@ jobs:
 
       - name: Update Chart.yaml appVersion
         run: |
-          sed -i "s/^appVersion:.*/appVersion: ${{ needs.build.outputs.version }}/" galaxy/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ needs.build.outputs.version }}\"/" galaxy/Chart.yaml
 
       - name: Update values.yaml image.tag
         run: |
-          sed -i "s/^  tag:.*/  tag: ${{ needs.build.outputs.tag }}/" galaxy/values.yaml
+          sed -i "s/^  tag:.*/  tag: \"${{ needs.build.outputs.tag }}\"/" galaxy/values.yaml
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
