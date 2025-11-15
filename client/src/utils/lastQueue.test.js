@@ -6,7 +6,6 @@ async function testPromise(arg, _signal) {
 const wait = (ms = 5) => new Promise((r) => setTimeout(r, ms));
 
 describe("test last-queue", () => {
-
     it("should respect throttle period", async () => {
         const throttle = 50;
         const queue = new LastQueue(throttle);
@@ -131,7 +130,6 @@ describe("test last-queue", () => {
     it("should not fail if a running task is replaced during execution", async () => {
         const queue = new LastQueue(0);
         let finished = false;
-
         async function longAction(arg, signal) {
             await new Promise((r) => setTimeout(r, 30));
             if (!signal.aborted) {
@@ -139,7 +137,6 @@ describe("test last-queue", () => {
             }
             return arg;
         }
-
         queue.enqueue(longAction, 1, "key");
         await wait(5);
         await queue.enqueue(longAction, 2, "key");
