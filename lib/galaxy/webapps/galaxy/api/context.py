@@ -7,13 +7,12 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.managers import (
-    configuration,
-    users,
-)
+from galaxy.managers.configuration import ConfigurationManager
+from galaxy.managers.users import CurrentUserSerializer
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema import SerializationParams
 from galaxy.webapps.galaxy.api import (
+    depends,
     DependsOnTrans,
     Router,
 )
@@ -36,15 +35,16 @@ USER_KEYS = (
 
 @router.cbv
 class FastAPIContext:
+    configuration_manager: ConfigurationManager = depends(ConfigurationManager)
+    user_serializer: CurrentUserSerializer = depends(CurrentUserSerializer)
+
     @router.get("/context", summary="Return bootstrapped client context")
     def index(self, request: Request, trans: ProvidesUserContext = DependsOnTrans) -> JSONResponse:
-        user_serializer = users.CurrentUserSerializer(trans.app)
-        configuration_manager = configuration.ConfigurationManager(trans.app)
-        config = configuration_manager.get_configuration(trans, SerializationParams(view="all"))
+        config = self.configuration_manager.get_configuration(trans, SerializationParams(view="all"))
         config.update(self._get_extended_config(trans))
         js_options = {
             "root": web.url_for("/"),
-            "user": user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
+            "user": self.user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
             "config": config,
             "session_csrf_token": self._get_csrf_token(trans, request),
         }
