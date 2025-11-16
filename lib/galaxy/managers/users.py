@@ -660,21 +660,16 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         self.add_view(
             "detailed",
             [
-                # 'update_time',
-                # 'create_time',
+                "deleted",
                 "is_admin",
-                "total_disk_usage",
                 "nice_total_disk_usage",
-                "quota_percent",
+                "preferences",
+                "preferred_object_store_id",
+                "purged",
                 "quota",
                 "quota_bytes",
-                "deleted",
-                "purged",
-                # 'active',
-                "preferences",
-                # all annotations
-                # 'annotations'
-                "preferred_object_store_id",
+                "quota_percent",
+                "total_disk_usage",
             ],
             include_keys_from="summary",
         )
