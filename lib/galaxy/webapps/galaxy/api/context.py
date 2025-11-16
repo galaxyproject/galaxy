@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Any,
+    Optional,
+)
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -8,9 +12,10 @@ from galaxy import (
     web,
 )
 from galaxy.managers.configuration import ConfigurationManager
-from galaxy.managers.users import CurrentUserSerializer
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.users import CurrentUserSerializer
 from galaxy.schema import SerializationParams
+from galaxy.schema.schema import Model
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -33,22 +38,28 @@ USER_KEYS = (
 )
 
 
+class ContextResponse(Model):
+    root: str
+    config: dict[str, Any]
+    session_csrf_token: Optional[str] = None
+    user: dict[str, Any]
+
+
 @router.cbv
 class FastAPIContext:
     configuration_manager: ConfigurationManager = depends(ConfigurationManager)
     user_serializer: CurrentUserSerializer = depends(CurrentUserSerializer)
 
     @router.get("/context", summary="Return bootstrapped client context")
-    def index(self, request: Request, trans: ProvidesUserContext = DependsOnTrans) -> JSONResponse:
+    def index(self, request: Request, trans: ProvidesUserContext = DependsOnTrans) -> ContextResponse:
         config = self.configuration_manager.get_configuration(trans, SerializationParams(view="all"))
         config.update(self._get_extended_config(trans))
-        js_options = {
-            "root": web.url_for("/"),
-            "user": self.user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
+        return {
             "config": config,
+            "root": web.url_for("/"),
             "session_csrf_token": self._get_csrf_token(trans, request),
+            "user": self.user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
         }
-        return JSONResponse(js_options)
 
     def _get_extended_config(self, trans):
         return {
