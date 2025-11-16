@@ -42,12 +42,12 @@ class FastAPIContext:
     def index(self, request: Request, trans: ProvidesUserContext = DependsOnTrans) -> ContextResponse:
         config = self.configuration_manager.get_configuration(trans, SerializationParams(view="all"))
         config.update(self._get_extended_config(trans))
-        return {
-            "config": config,
-            "root": web.url_for("/"),
-            "session_csrf_token": self._get_csrf_token(trans, request),
-            "user": self.user_serializer.serialize_to_view(trans.user, "detailed"),
-        }
+        return ContextResponse(
+            config=config,
+            root=web.url_for("/"),
+            session_csrf_token=self._get_csrf_token(trans, request),
+            user=self.user_serializer.serialize_to_view(trans.user, "detailed"),
+        )
 
     def _get_extended_config(self, trans):
         return {
