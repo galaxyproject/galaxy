@@ -5,7 +5,6 @@ from typing import (
 )
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
 
 from galaxy import (
     util,
