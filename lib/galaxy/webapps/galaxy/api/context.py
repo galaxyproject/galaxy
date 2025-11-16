@@ -26,17 +26,6 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["context"])
 
-USER_KEYS = (
-    "id",
-    "email",
-    "username",
-    "is_admin",
-    "total_disk_usage",
-    "nice_total_disk_usage",
-    "quota_percent",
-    "preferences",
-)
-
 
 class ContextResponse(Model):
     root: str
@@ -58,7 +47,7 @@ class FastAPIContext:
             "config": config,
             "root": web.url_for("/"),
             "session_csrf_token": self._get_csrf_token(trans, request),
-            "user": self.user_serializer.serialize(trans.user, USER_KEYS, trans=trans),
+            "user": self.user_serializer.serialize_to_view(trans.user, "detailed"),
         }
 
     def _get_extended_config(self, trans):
