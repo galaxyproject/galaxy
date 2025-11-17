@@ -53,7 +53,6 @@ class FastAPIContext:
         return {
             "enable_webhooks": bool(trans.app.webhooks_registry.webhooks),
             "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            "sentry": self._get_sentry(trans),
             "stored_workflow_menu_entries": self._get_workflow_entries(trans),
         }
 
@@ -73,14 +72,6 @@ class FastAPIContext:
         except Exception:
             log.debug("Failed to derive CSRF token", exc_info=True)
         return None
-
-    def _get_sentry(self, trans: ProvidesUserContext):
-        sentry = {}
-        if trans.app.config.sentry_dsn:
-            sentry["sentry_dsn_public"] = trans.app.config.sentry_dsn_public
-            if trans.user:
-                sentry["email"] = trans.user.email
-        return sentry
 
     def _get_workflow_entries(self, trans: ProvidesUserContext):
         stored_workflow_menu_index = {}

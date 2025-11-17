@@ -234,6 +234,7 @@ class ConfigSerializer(base.ModelSerializer):
             "install_repository_dependencies": _use_config,
             "install_resolver_dependencies": _use_config,
             "enable_tool_generated_tours": _use_config,
+            "sentry_dsn_public": lambda item, key, **context: item.sentry_dsn_public,
         }
 
 
