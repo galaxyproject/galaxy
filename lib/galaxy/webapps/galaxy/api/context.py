@@ -51,7 +51,6 @@ class FastAPIContext:
 
     def _get_extended_config(self, trans):
         return {
-            "enable_webhooks": bool(trans.app.webhooks_registry.webhooks),
             "stored_workflow_menu_entries": self._get_workflow_entries(trans),
         }
 
