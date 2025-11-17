@@ -165,7 +165,7 @@ describe("WorkflowAnnotation renders", () => {
         const { wrapper } = await mountWorkflowAnnotation("invocation");
 
         const timeInfo = wrapper.find(SELECTORS.TIME_INFO);
-        expect(timeInfo.text()).toContain("invoked");
+        expect(timeInfo.text()).toContain("updated");
         expect(timeInfo.find(SELECTORS.DATE).attributes("title")).toBe(INVOCATION_TIME);
     });
 });

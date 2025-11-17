@@ -123,7 +123,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                 :title-icon="{ icon: faSitemap }"
                 :title-n-lines="2"
                 title-size="text"
-                :update-time="invocation.create_time"
+                :update-time="invocation.update_time"
                 @title-click="workflowName(invocation.workflow_id)"
                 @click="() => cardClicked(invocation)">
                 <template v-slot:description>
