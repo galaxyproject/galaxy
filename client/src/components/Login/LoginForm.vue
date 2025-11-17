@@ -49,21 +49,20 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter();
 
-const getUrlParams = () => new URLSearchParams(window.location.search);
-const params = getUrlParams();
+const urlParams = new URLSearchParams(window.location.search);
 
 const login = ref("");
 const password = ref(null);
 const passwordState = ref<boolean | null>(null);
 const loading = ref(false);
-const networkMessage = params.get("message") || "";
+const networkMessage = urlParams.get("message") || "";
 const messageText = ref(networkMessage);
-const statusParam = params.get("status");
+const statusParam = urlParams.get("status");
 const messageVariant = ref<"info" | "danger">(statusParam === "info" ? "info" : "danger");
-const connectExternalEmail = ref(params.get("connect_external_email"));
-const connectExternalLabel = ref(params.get("connect_external_label"));
-const connectExternalProvider = ref(params.get("connect_external_provider"));
-const confirmURL = ref(params.has("confirm") && params.get("confirm") == "true");
+const connectExternalEmail = ref(urlParams.get("connect_external_email"));
+const connectExternalLabel = ref(urlParams.get("connect_external_label"));
+const connectExternalProvider = ref(urlParams.get("connect_external_provider"));
+const confirmURL = ref(urlParams.has("confirm") && urlParams.get("confirm") == "true");
 
 const excludeIdps = computed(() => (connectExternalProvider.value ? [connectExternalProvider.value] : undefined));
 
