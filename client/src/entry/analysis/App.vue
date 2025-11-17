@@ -61,10 +61,10 @@ import { useRouteQueryBool } from "@/composables/route";
 import { setToastComponentRef } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
-import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import { WindowManager } from "./window-manager";
 
@@ -106,6 +106,8 @@ export default {
         setGlobalUploadModal(uploadModal);
 
         const embedded = useRouteQueryBool("embed");
+        const historyStore = useHistoryStore();
+        historyStore.startWatchingHistory();
 
         watch(
             () => embedded.value,
@@ -196,8 +198,6 @@ export default {
             if (this.Galaxy.config.enable_notification_system) {
                 this.startWatchingNotifications();
             }
-            // start watching the history with continuous queries
-            startWatchingHistory();
         }
     },
     created() {

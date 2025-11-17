@@ -49,7 +49,7 @@ const workflowTags = computed(() => {
                 <i v-if="timeElapsed" data-description="workflow annotation time info">
                     <FontAwesomeIcon :icon="faClock" class="mr-1" />
                     <span v-localize>
-                        {{ props.invocationUpdateTime ? "invoked" : "edited" }}
+                        {{ props.invocationUpdateTime ? "updated" : "edited" }}
                     </span>
                     <UtcDate :date="timeElapsed" mode="elapsed" data-description="workflow annotation date" />
                 </i>
