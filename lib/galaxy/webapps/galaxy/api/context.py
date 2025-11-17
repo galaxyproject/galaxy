@@ -6,10 +6,7 @@ from typing import (
 
 from fastapi import Request
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import web
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.users import CurrentUserSerializer

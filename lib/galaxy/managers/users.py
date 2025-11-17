@@ -731,7 +731,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         )
 
     def serialize_workflow_menu_entries(self, user: model.User) -> list[UserWorkflowMenuEntry]:
-        stored_workflow_menu_index = dict()
+        stored_workflow_menu_index = {}
         stored_workflow_menu_entries: list[UserWorkflowMenuEntry] = []
         for menu_item in getattr(user, "stored_workflow_menu_entries", []):
             encoded_id = self.app.security.encode_id(menu_item.stored_workflow_id)
