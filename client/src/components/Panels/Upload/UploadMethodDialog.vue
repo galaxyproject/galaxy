@@ -83,11 +83,12 @@ function handleUploadError(error: Error | string) {
             <Heading v-else h2 class="m-0 g-modal-title"> Import Data </Heading>
         </template>
         <div v-if="method" class="upload-method-content">
-            <p class="text-muted mb-4">{{ method.description }}</p>
+            <p class="text-muted mb-2">{{ method.description }}</p>
 
             <!-- Dynamic component rendering -->
             <component
                 :is="method.component"
+                :method="method"
                 @upload-start="handleUploadStart"
                 @upload-complete="handleUploadComplete"
                 @upload-error="handleUploadError" />
@@ -97,3 +98,12 @@ function handleUploadError(error: Error | string) {
         </div>
     </GModal>
 </template>
+
+<style scoped lang="scss">
+.upload-method-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+</style>
