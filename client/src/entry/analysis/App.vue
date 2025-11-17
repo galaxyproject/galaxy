@@ -159,7 +159,7 @@ export default {
     },
     computed: {
         showInactivityWarning() {
-            return this.config.user_activation_on && this.Galaxy.user.id && !this.Galaxy.user.get("active");
+            return this.config.user_activation_on && this.Galaxy?.user?.id && !this.Galaxy.user.get("active");
         },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
