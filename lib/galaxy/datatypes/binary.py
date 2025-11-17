@@ -4899,9 +4899,9 @@ class SpatialData(CompressedZarrZipArchive):
 
     file_ext = "spatialdata.zip"
 
-    def _extract_spatialdata_info(self, filename: str) -> Dict[str, Any]:
+    def _extract_spatialdata_info(self, filename: str) -> dict[str, Any]:
         """Extract information about SpatialData elements from the zarr archive."""
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "images": set(),
             "labels": set(),
             "shapes": set(),
