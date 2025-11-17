@@ -52,7 +52,6 @@ class FastAPIContext:
     def _get_extended_config(self, trans):
         return {
             "enable_webhooks": bool(trans.app.webhooks_registry.webhooks),
-            "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
             "stored_workflow_menu_entries": self._get_workflow_entries(trans),
         }
 

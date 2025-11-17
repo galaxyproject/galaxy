@@ -660,6 +660,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         self.add_view(
             "detailed",
             [
+                "active",
                 "deleted",
                 "is_admin",
                 "nice_total_disk_usage",
@@ -683,6 +684,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "id": self.serialize_id,
                 "create_time": self.serialize_date,
                 "update_time": self.serialize_date,
+                "active": lambda i, k, **c: bool(i.active),
                 "is_admin": lambda i, k, **c: self.user_manager.is_admin(i),
                 "preferences": lambda i, k, **c: self.user_manager.preferences(i),
                 "total_disk_usage": lambda i, k, **c: float(i.total_disk_usage),
