@@ -798,8 +798,7 @@ class CurrentUserSerializer(UserSerializer):
         usage = 0
         percent = None
 
-        history = trans.history
-        if history:
+        if hasattr(trans, "history") and trans.history:
             usage = self.app.quota_agent.get_usage(trans, history=trans.history)
             percent = self.app.quota_agent.get_percent(trans=trans, usage=usage)
 
