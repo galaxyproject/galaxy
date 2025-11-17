@@ -826,6 +826,11 @@ class UserObjectstoreUsage(BaseModel):
     total_disk_usage: float
 
 
+class UserWorkflowMenuEntry(BaseModel):
+    id: str
+    name: str
+
+
 class User(Base, Dictifiable, RepresentById):
     """
     Data for a Galaxy user or admin and relations to their
