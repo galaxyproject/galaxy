@@ -51,5 +51,3 @@ jobs:
         if: "!github.event.release.prerelease"
         run: npm publish --provenance --access public
         working-directory: 'client'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
