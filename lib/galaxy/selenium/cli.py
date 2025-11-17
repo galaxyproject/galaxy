@@ -20,6 +20,8 @@ from .driver_factory import (
 from .navigates_galaxy import galaxy_timeout_handler
 from .stories import (
     NoopStory,
+    SectionMode,
+    SectionProxy,
     Story,
     StoryProtocol,
 )
@@ -97,6 +99,35 @@ def add_story_arguments(parser):
         default=None,
         help="Description for the generated story",
     )
+    parser.add_argument(
+        "--only-sections",
+        type=str,
+        default=None,
+        help='Comma-separated list of section anchors to generate (e.g., "basics,advanced")',
+    )
+    parser.add_argument(
+        "--skip-sections",
+        type=str,
+        default=None,
+        help="Comma-separated list of section anchors to skip",
+    )
+    parser.add_argument(
+        "--list-sections",
+        action="store_true",
+        help="List all available sections and exit (requires running the script)",
+    )
+    parser.add_argument(
+        "--merge-into",
+        type=str,
+        default=None,
+        help="Path to existing markdown file to merge sections into",
+    )
+    parser.add_argument(
+        "--section-mode",
+        choices=["replace", "append", "standalone"],
+        default="standalone",
+        help="How to handle sections: replace existing, append to existing, or standalone (default)",
+    )
 
     return parser
 
@@ -137,7 +168,28 @@ class DriverWrapper(UploadStoriesMixin):
 
             title = args.story_title or "Galaxy Tutorial"
             description = args.story_description or ""
-            self.story: StoryProtocol = Story(title, description, args.story_output)
+
+            # Parse section filters
+            only_sections = None
+            skip_sections = None
+            if hasattr(args, "only_sections") and args.only_sections:
+                only_sections = {s.strip() for s in args.only_sections.split(",")}
+            if hasattr(args, "skip_sections") and args.skip_sections:
+                skip_sections = {s.strip() for s in args.skip_sections.split(",")}
+
+            # Get section mode
+            section_mode: SectionMode = getattr(args, "section_mode", "standalone")
+            merge_target = getattr(args, "merge_into", None)
+
+            self.story: StoryProtocol = Story(
+                title,
+                description,
+                args.story_output,
+                only_sections=only_sections,
+                skip_sections=skip_sections,
+                merge_target=merge_target,
+                section_mode=section_mode,
+            )
         else:
             self.story = NoopStory()
 
@@ -166,6 +218,18 @@ class DriverWrapper(UploadStoriesMixin):
 
             # Add to story
             self.story.add_screenshot(target, caption or label)
+
+    def section(self, title: str, anchor: str) -> SectionProxy:
+        """Create a story section context manager.
+
+        Args:
+            title: Display title for the section
+            anchor: Unique identifier for the section (used for filtering/merging)
+
+        Returns:
+            SectionProxy context manager
+        """
+        return SectionProxy(self, title, anchor)
 
     @property
     def default_timeout(self):

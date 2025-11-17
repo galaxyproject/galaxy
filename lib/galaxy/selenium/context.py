@@ -10,6 +10,7 @@ from .navigates_galaxy import (
     galaxy_timeout_handler,
     NavigatesGalaxy,
 )
+from .stories import SectionProxy
 
 
 class GalaxySeleniumContext(NavigatesGalaxy):
@@ -115,6 +116,18 @@ class GalaxySeleniumContext(NavigatesGalaxy):
             markdown_parts.append(f"**{caption}**\n")
 
         self.document("\n".join(markdown_parts))
+
+    def section(self, title: str, anchor: str) -> SectionProxy:
+        """Create a story section context manager.
+
+        Args:
+            title: Display title for the section
+            anchor: Unique identifier for the section (used for filtering/merging)
+
+        Returns:
+            SectionProxy context manager
+        """
+        return SectionProxy(self, title, anchor)
 
     @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> Optional[str]:

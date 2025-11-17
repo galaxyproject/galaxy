@@ -2,23 +2,45 @@
 """Script to generate a tutorial for the Galaxy Rule Builder.
 
 This script demonstrates using the Story class to create user documentation
-outside of the test framework.
+outside of the test framework with composable, rerunnable sections.
 
 Usage:
+    # Generate full tutorial
+    python generate_rule_builder_tutorial.py \
+        --galaxy_url http://localhost:8081 \
+        --story-output ./rules_tutorial
+
+    # Generate only specific sections
     python generate_rule_builder_tutorial.py \
         --galaxy_url http://localhost:8081 \
         --story-output ./rules_tutorial \
+        --only-sections "workbook_example_1,rules_example_1"
+
+    # Skip sections
+    python generate_rule_builder_tutorial.py \
+        --galaxy_url http://localhost:8081 \
+        --story-output ./rules_tutorial \
+        --skip-sections "workbook_example_3,workbook_example_4"
+
+    # Regenerate one section and merge into existing
+    python generate_rule_builder_tutorial.py \
+        --galaxy_url http://localhost:8081 \
+        --story-output ./rules_tutorial_v2 \
+        --only-sections "workbook_example_1" \
+        --merge-into ./rules_tutorial/story.md \
+        --section-mode replace
 """
 import argparse
 import sys
 from contextlib import contextmanager
+from typing import Optional
 
 from galaxy.selenium import cli
 
 DESCRIPTION = __doc__
 
 
-def main(argv=None):
+def main(argv: Optional[list[str]] = None) -> None:
     if argv is None:
         argv = sys.argv[1:]
 
@@ -43,7 +65,7 @@ def main(argv=None):
         driver_wrapper.finish()
 
 
-def generate_rule_builder_tutorial(has_driver, include_result=False):
+def generate_rule_builder_tutorial(has_driver, include_result: bool = False) -> None:
     """Generate a tutorial documenting the Galaxy Rule Builder features."""
 
     has_driver.home()
@@ -52,31 +74,59 @@ def generate_rule_builder_tutorial(has_driver, include_result=False):
     has_driver.home()
     has_driver.ensure_rules_activity_enabled()
 
-    with example_history(has_driver, "Workbook Example 1"):
-        has_driver.upload_example_1_full_wizard()
-        has_driver.home()
-        has_driver.upload_workbook_example_1(include_result=include_result)
-    with example_history(has_driver, "Workbook Example 2"):
-        has_driver.upload_workbook_example_2_prereq_pick_a_collection()
-        has_driver.home()
-        has_driver.upload_workbook_example_2(include_result=include_result)
-    with example_history(has_driver, "Workbook Example 3"):
-        has_driver.upload_workbook_example_3(include_result=include_result)
-    with example_history(has_driver, "Workbook Example 4"):
-        has_driver.upload_workbook_example_4(include_result=include_result)
+    with has_driver.section("Workbook Example 1", "workbook_example_1") as section:
+        if section:
+            with example_history(has_driver, "Workbook Example 1"):
+                has_driver.upload_example_1_full_wizard()
+                has_driver.home()
+                has_driver.upload_workbook_example_1(include_result=include_result)
 
-    with example_history(has_driver, "Rules Example 1"):
-        has_driver.upload_rules_example_1(include_result=include_result)
-    with example_history(has_driver, "Rules Example 2"):
-        has_driver.upload_rules_example_2(include_result=include_result)
-    with example_history(has_driver, "Rules Example 3"):
-        has_driver.upload_rules_example_3(include_result=include_result)
-    with example_history(has_driver, "Rules Example 4"):
-        has_driver.upload_rules_example_4(include_result=include_result)
-    with example_history(has_driver, "Rules Example 5"):
-        has_driver.upload_rules_example_5(include_result=include_result)
-    with example_history(has_driver, "Rules Example 6"):
-        has_driver.upload_rules_example_6(include_result=include_result)
+    with has_driver.section("Workbook Example 2", "workbook_example_2") as section:
+        if section:
+            with example_history(has_driver, "Workbook Example 2"):
+                has_driver.upload_workbook_example_2_prereq_pick_a_collection()
+                has_driver.home()
+                has_driver.upload_workbook_example_2(include_result=include_result)
+
+    with has_driver.section("Workbook Example 3", "workbook_example_3") as section:
+        if section:
+            with example_history(has_driver, "Workbook Example 3"):
+                has_driver.upload_workbook_example_3(include_result=include_result)
+
+    with has_driver.section("Workbook Example 4", "workbook_example_4") as section:
+        if section:
+            with example_history(has_driver, "Workbook Example 4"):
+                has_driver.upload_workbook_example_4(include_result=include_result)
+
+    with has_driver.section("Rules Example 1", "rules_example_1") as section:
+        if section:
+            with example_history(has_driver, "Rules Example 1"):
+                has_driver.upload_rules_example_1(include_result=include_result)
+
+    with has_driver.section("Rules Example 2", "rules_example_2") as section:
+        if section:
+            with example_history(has_driver, "Rules Example 2"):
+                has_driver.upload_rules_example_2(include_result=include_result)
+
+    with has_driver.section("Rules Example 3", "rules_example_3") as section:
+        if section:
+            with example_history(has_driver, "Rules Example 3"):
+                has_driver.upload_rules_example_3(include_result=include_result)
+
+    with has_driver.section("Rules Example 4", "rules_example_4") as section:
+        if section:
+            with example_history(has_driver, "Rules Example 4"):
+                has_driver.upload_rules_example_4(include_result=include_result)
+
+    with has_driver.section("Rules Example 5", "rules_example_5") as section:
+        if section:
+            with example_history(has_driver, "Rules Example 5"):
+                has_driver.upload_rules_example_5(include_result=include_result)
+
+    with has_driver.section("Rules Example 6", "rules_example_6") as section:
+        if section:
+            with example_history(has_driver, "Rules Example 6"):
+                has_driver.upload_rules_example_6(include_result=include_result)
 
 
 @contextmanager
@@ -91,7 +141,7 @@ def example_history(driver, title: str):
         pass
 
 
-def _arg_parser():
+def _arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser = cli.add_story_arguments(parser)
     parser.add_argument(

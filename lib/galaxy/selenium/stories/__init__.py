@@ -6,8 +6,15 @@ standalone scripts, and Jupyter notebooks.
 """
 
 from .story import (
+    ElementMetadata,
+    ElementType,
     NoopStory,
+    SectionMetadata,
+    SectionMetadataInput,
+    SectionMode,
+    SectionProxy,
     Story,
+    StoryElement,
     StoryProtocol,
 )
 
@@ -15,4 +22,11 @@ __all__ = [
     "Story",
     "NoopStory",
     "StoryProtocol",
+    "SectionProxy",
+    "SectionMetadata",
+    "SectionMetadataInput",
+    "SectionMode",
+    "ElementMetadata",
+    "ElementType",
+    "StoryElement",
 ]
