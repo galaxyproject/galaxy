@@ -649,7 +649,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 )
             except yaml.scanner.ScannerError as e:
                 raise exceptions.MalformedContents(str(e))
-
         return RawWorkflowDescription(as_dict, workflow_path)
 
     def build_workflow_from_raw_description(

@@ -28,5 +28,6 @@ Galaxy Deployment & Administration
    db_migration
    reports
    useful_scripts
+   ga4gh
    options
    migrating_to_gunicorn

@@ -1,6 +1,6 @@
 # Location of virtualenv used for development.
 VENV?=.venv
-# Source virtualenv to execute command (darker, sphinx, twine, etc...)
+# Source virtualenv to execute command (black, isort, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
 RELEASE_CURR:=26.0
 RELEASE_UPSTREAM:=upstream
