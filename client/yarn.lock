@@ -12883,6 +12883,13 @@ vite@^5.0.0:
   optionalDependencies:
     fsevents "~2.3.3"
 
+vitest-location-mock@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/vitest-location-mock/-/vitest-location-mock-1.0.4.tgz#1e3c72d9eb55e4d2e1bf84e68c2739df017d51b9"
+  integrity sha512-8iR9Fkpy+/MTaVOHzt1x9qMuetI1/nbEyG7VQqF5DdxStziRPX2Y1gaJD52z8QRiY4lfVbN0ajIF6BZ0zDttUA==
+  dependencies:
+    "@jedmao/location" "^3.0.0"
+
 vitest@^1.2.0:
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/vitest/-/vitest-1.6.1.tgz#b4a3097adf8f79ac18bc2e2e0024c534a7a78d2f"

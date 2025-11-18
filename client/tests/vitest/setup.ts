@@ -1,10 +1,12 @@
 // Vitest setup file - mirrors Jest setup with Vitest-compatible APIs
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
-import { vi } from "vitest";
+import "vitest-location-mock";
 
+import { vi } from "vitest";
 // Vue configuration
 import Vue from "vue";
+
 Vue.config.productionTip = false;
 Vue.config.devtools = false;
 

@@ -1,12 +1,11 @@
-import "jest-location-mock";
-
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { vi } from "vitest";
 
 import StsDownloadButton from "./StsDownloadButton.vue";
 
@@ -50,7 +49,7 @@ describe("StsDownloadButton", () => {
     });
 
     it("should fallback to a URL if tasks not enabled", async () => {
-        const windowSpy = jest.spyOn(window, "open");
+        const windowSpy = vi.spyOn(window, "open");
         windowSpy.mockImplementation(() => {});
         const wrapper = await mountStsDownloadButtonWrapper(NO_TASKS_CONFIG);
         wrapper.vm.onDownload(NO_TASKS_CONFIG);

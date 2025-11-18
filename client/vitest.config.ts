@@ -71,8 +71,6 @@ export default defineConfig({
             "^i18n!(.*)": path.resolve(__dirname, "./tests/vitest/__mocks__/localization.js"),
             // Handle handsontable
             handsontable: "handsontable/dist/handsontable.js",
-            // Handle dexie
-            dexie: "dexie/dist/dexie.js",
             // Handle rxjs scheduler
             "rxjs/internal/scheduler/AsyncScheduler": "rxjs/dist/esm/internal/scheduler/AsyncScheduler.js",
         },

@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, type Wrapper } from "@vue/test-utils";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import flushPromises from "flush-promises";
-import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
@@ -46,10 +47,10 @@ import {
 import FilesDialog from "./FilesDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-jest.mock("app");
+vi.mock("app");
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: { ftp_upload_site: "Test ftp upload site" },
         isConfigLoaded: true,
     })),

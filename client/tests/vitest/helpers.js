@@ -3,11 +3,12 @@
  */
 import { createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
+import { PiniaVuePlugin } from "pinia";
+import { vi } from "vitest";
+
 import { localizationPlugin } from "@/components/plugins/localization";
 import { vueRxShortcutPlugin } from "@/components/plugins/vueRxShortcuts";
-import { PiniaVuePlugin } from "pinia";
 import _l from "@/utils/localization";
-import { vi } from "vitest";
 
 function testLocalize(text) {
     if (text) {
@@ -71,3 +72,51 @@ export function suppressLucideVue2Deprecation() {
         }),
     );
 }
+
+function isTestLocalized(received) {
+    return received && received.indexOf && received.indexOf("test_localized<") == 0;
+}
+
+// Custom matchers for localization testing
+expect.extend({
+    toBeLocalized(received) {
+        const pass = isTestLocalized(received);
+        if (pass) {
+            return {
+                message: () => `expected ${received} to be localized`,
+                pass: true,
+            };
+        } else {
+            return {
+                message: () => `expected ${received} to be localized`,
+                pass: false,
+            };
+        }
+    },
+    toBeLocalizationOf(received, str) {
+        let unlocalized;
+        if (received.indexOf("test_localized<") == 0) {
+            unlocalized = received.substr("test_localized<".length);
+            unlocalized = unlocalized.substr(0, unlocalized.length - 1);
+        } else {
+            unlocalized = received;
+        }
+        const pass = testLocalize(str) == received;
+        if (pass) {
+            return {
+                message: () => `expected ${unlocalized} to be localization of ${str}`,
+                pass: true,
+            };
+        } else if (!isTestLocalized(received)) {
+            return {
+                message: () => `expected ${received} to be localized`,
+                pass: false,
+            };
+        } else {
+            return {
+                message: () => `expected ${unlocalized} to be localization of ${str}`,
+                pass: false,
+            };
+        }
+    },
+});
