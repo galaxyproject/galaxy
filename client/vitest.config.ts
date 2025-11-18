@@ -28,6 +28,7 @@ export default defineConfig({
         setupFiles: ["./tests/vitest/setup.ts"],
         environmentOptions: {
             jsdom: {
+                url: "http://localhost/",
                 customExportConditions: ["msw"],
             },
         },
