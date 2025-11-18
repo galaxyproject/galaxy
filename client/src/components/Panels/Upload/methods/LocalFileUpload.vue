@@ -8,6 +8,7 @@ import { bytesToString } from "@/utils/utils";
 import type { UploadMethodConfig } from "../types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTip from "@/components/BaseComponents/GTip.vue";
 
 interface Props {
     method: UploadMethodConfig;
@@ -88,11 +89,9 @@ function handleStartUpload() {
 <template>
     <div class="local-file-upload data-galaxy-file-drop-target">
         <!-- Help Text -->
-        <div class="upload-help mb-3">
-            <small class="text-muted">
-                <strong>Tip:</strong> You can select multiple files at once. Supported formats will be auto-detected.
-            </small>
-        </div>
+        <GTip
+            tips="You can select multiple files at once. **TODO**: support filename edit, datatype selection, and upload configuration..."
+            class="mb-3" />
 
         <!-- Drop Zone -->
         <div
@@ -332,13 +331,5 @@ function handleStartUpload() {
     display: flex;
     gap: 0.5rem;
     justify-content: flex-end;
-}
-
-.upload-help {
-    flex-shrink: 0;
-    padding: 0.75rem;
-    background-color: $gray-100;
-    border-radius: $border-radius-base;
-    border-left: 3px solid $brand-primary;
 }
 </style>
