@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { useActivityStore } from "@/stores/activityStore";
 
 // mock Galaxy object
-jest.mock("./activitySetup", () => ({
+vi.mock("./activitySetup", () => ({
     defaultActivities: [
         {
             anonymous: false,
