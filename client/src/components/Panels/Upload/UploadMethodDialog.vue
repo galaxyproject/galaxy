@@ -10,6 +10,7 @@ import { getUploadMethod } from "./uploadMethodRegistry";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
 import Heading from "@/components/Common/Heading.vue";
+import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
 interface Props {
     methodId: UploadMode | null;
@@ -25,9 +26,10 @@ const emit = defineEmits<{
 }>();
 
 const isProcessing = ref(false);
+const showHistorySelector = ref(false);
 
 const historyStore = useHistoryStore();
-const { currentHistoryId } = storeToRefs(historyStore);
+const { currentHistoryId, histories } = storeToRefs(historyStore);
 
 const currentHistoryName = computed(() => {
     return currentHistoryId.value ? historyStore.getHistoryNameById(currentHistoryId.value) : undefined;
@@ -68,6 +70,16 @@ function handleUploadError(error: Error | string) {
     isProcessing.value = false;
     console.error("Upload error:", error);
 }
+
+function openHistorySelector() {
+    showHistorySelector.value = true;
+}
+
+function handleHistorySelected(history: { id: string }) {
+    // TODO: Change upload target history instead of current history?
+    historyStore.setCurrentHistory(history.id);
+    showHistorySelector.value = false;
+}
 </script>
 
 <template>
@@ -78,6 +90,13 @@ function handleUploadError(error: Error | string) {
                 {{ method.headerAction }}
                 <span v-if="method.isUploadToHistory">
                     to <strong>{{ currentHistoryName || "current history" }}</strong>
+                    <a
+                        title="Selecting a different history will set that history as your current one"
+                        href="#"
+                        class="select-history-link"
+                        @click.prevent="openHistorySelector">
+                        or select another
+                    </a>
                 </span>
             </Heading>
             <Heading v-else h2 class="m-0 g-modal-title"> Import Data </Heading>
@@ -96,6 +115,14 @@ function handleUploadError(error: Error | string) {
         <div v-else class="text-center text-muted py-5">
             <p>Loading...</p>
         </div>
+
+        <!-- History Selector Modal -->
+        <SelectorModal
+            v-if="method && method.isUploadToHistory"
+            :histories="histories"
+            :show-modal.sync="showHistorySelector"
+            title="Select a history for upload"
+            @selectHistory="handleHistorySelected" />
     </GModal>
 </template>
 
@@ -105,5 +132,15 @@ function handleUploadError(error: Error | string) {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+}
+
+.select-history-link {
+    font-size: 0.6em;
+    font-weight: normal;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
 }
 </style>
