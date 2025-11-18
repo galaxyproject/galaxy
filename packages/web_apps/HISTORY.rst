@@ -3,11 +3,29 @@ History
 
 .. to_doc
 
------------
-25.0.4.dev0
------------
+-------------------
+25.0.4 (2025-11-18)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix ``test_multiple_decorators`` unit test for FastAPI 0.118.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20982 <https://github.com/galaxyproject/galaxy/pull/20982>`_
+* Fix proxy url validation for non-printable characters by `@davelopez <https://github.com/davelopez>`_ in `#21280 <https://github.com/galaxyproject/galaxy/pull/21280>`_
+
+============
+Enhancements
+============
+
+* Harden proxy redirect validation by `@davelopez <https://github.com/davelopez>`_ in `#21185 <https://github.com/galaxyproject/galaxy/pull/21185>`_
+
+=============
+Other changes
+=============
+
+* Backport `Fix proxy endpoint encoding` by `@davelopez <https://github.com/davelopez>`_ in `#21184 <https://github.com/galaxyproject/galaxy/pull/21184>`_
 
 -------------------
 25.0.3 (2025-09-23)

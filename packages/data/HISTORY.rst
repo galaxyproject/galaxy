@@ -3,11 +3,30 @@ History
 
 .. to_doc
 
------------
-25.0.4.dev0
------------
+-------------------
+25.0.4 (2025-11-18)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Add safetensors datatype by `@nilchia <https://github.com/nilchia>`_ in `#20754 <https://github.com/galaxyproject/galaxy/pull/20754>`_
+* Skip sam metadata if we have too many references by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20820 <https://github.com/galaxyproject/galaxy/pull/20820>`_
+* Backport of #20984 by `@davelopez <https://github.com/davelopez>`_ in `#20994 <https://github.com/galaxyproject/galaxy/pull/20994>`_
+* Backport fix anndata datatype update by `@nilchia <https://github.com/nilchia>`_ in `#21111 <https://github.com/galaxyproject/galaxy/pull/21111>`_
+* Create new datasets when creating skipped database operation tool outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21142 <https://github.com/galaxyproject/galaxy/pull/21142>`_
+* Fix optional param unset in RO-Crate export by `@davelopez <https://github.com/davelopez>`_ in `#21192 <https://github.com/galaxyproject/galaxy/pull/21192>`_
+
+============
+Enhancements
+============
+
+* Add Auspice JSON datatype by `@pvanheus <https://github.com/pvanheus>`_ in `#20466 <https://github.com/galaxyproject/galaxy/pull/20466>`_
+* Add SpatialData datatype by `@nilchia <https://github.com/nilchia>`_ in `#21000 <https://github.com/galaxyproject/galaxy/pull/21000>`_
+* Use job cache also for implicit conversions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21021 <https://github.com/galaxyproject/galaxy/pull/21021>`_
+* support ZARR v3 for  Spatialdata dt by `@nilchia <https://github.com/nilchia>`_ in `#21265 <https://github.com/galaxyproject/galaxy/pull/21265>`_
 
 -------------------
 25.0.3 (2025-09-23)
