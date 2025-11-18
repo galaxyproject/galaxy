@@ -17,7 +17,7 @@ defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "upload-start"): void;
-    (e: "upload-complete", result: { success: boolean; message?: string }): void;
+    (e: "cancel"): void;
 }>();
 
 const isDragging = ref(false);
@@ -73,7 +73,7 @@ function handleBrowse() {
 }
 
 function handleCancel() {
-    emit("upload-complete", { success: false, message: "Upload cancelled by user" });
+    emit("cancel");
 }
 
 function handleStartUpload() {
@@ -82,20 +82,11 @@ function handleStartUpload() {
     console.log("Total size:", totalSize.value);
 
     emit("upload-start");
-
-    // Mock upload - in real implementation, this would send files to Galaxy
-    setTimeout(() => {
-        console.log("Upload completed (mock)");
-        emit("upload-complete", {
-            success: true,
-            message: `Successfully uploaded ${selectedFiles.value.length} file(s)`,
-        });
-    }, 1000);
 }
 </script>
 
 <template>
-    <div class="local-file-upload">
+    <div class="local-file-upload data-galaxy-file-drop-target">
         <!-- Help Text -->
         <div class="upload-help mb-3">
             <small class="text-muted">
@@ -107,7 +98,7 @@ function handleStartUpload() {
         <div
             role="button"
             tabindex="0"
-            class="drop-zone"
+            class="drop-zone data-galaxy-file-drop-target"
             :class="{ 'drop-zone-active': isDragging, 'has-files': hasFiles }"
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"

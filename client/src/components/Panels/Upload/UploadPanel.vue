@@ -6,7 +6,7 @@ import { computed, ref } from "vue";
 
 import { useConfig } from "@/composables/config";
 
-import type { UploadMethodConfig, UploadMode, UploadResult } from "./types";
+import type { UploadMethodConfig, UploadMode } from "./types";
 import { getAllUploadMethods } from "./uploadMethodRegistry";
 
 import UploadMethodDialog from "./UploadMethodDialog.vue";
@@ -60,12 +60,6 @@ function selectUploadMethod(method: UploadMethodConfig) {
 function closeModal() {
     showModal.value = false;
     selectedMethod.value = null;
-}
-
-function handleUploadComplete(result: UploadResult) {
-    console.log("Upload complete:", result);
-    closeModal();
-    // Handle successful upload (e.g., refresh history, show notification)
 }
 
 function openAdvancedMode() {
@@ -135,27 +129,21 @@ function openGuidedMode() {
             </ScrollList>
         </ActivityPanel>
 
-        <UploadMethodDialog
-            :method-id="selectedMethod"
-            :show.sync="showModal"
-            @close="closeModal"
-            @upload-complete="handleUploadComplete" />
+        <UploadMethodDialog :method-id="selectedMethod" :show.sync="showModal" @close="closeModal" />
 
         <GModal :show.sync="showGuidedModal" title="Guided Import Wizard" fullscreen>
             <div class="guided-wizard-content">
-                <h4>Welcome to the Guided Import Wizard</h4>
+                <h4>TODO</h4>
                 <p>This wizard will help you choose the best method to import your data into Galaxy.</p>
                 <!-- TODO: Add wizard steps here -->
-                <p class="text-muted">Wizard steps will go here...</p>
             </div>
         </GModal>
 
         <GModal :show.sync="showAdvancedModal" title="Advanced Import" fullscreen>
             <div class="advanced-import-content">
-                <h4>Advanced Import Interface</h4>
+                <h4>TODO</h4>
                 <p>Access all import options and advanced settings in one place.</p>
                 <!-- TODO: Add advanced import interface here -->
-                <p class="text-muted">Advanced import interface will go here...</p>
             </div>
         </GModal>
     </div>
