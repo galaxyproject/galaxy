@@ -73,20 +73,20 @@ const bDirectives = {
  */
 export function getLocalVue(withRouter = false) {
     const localVue = createLocalVue();
-    
+
     // Add Bootstrap Vue components
     Object.entries(bComponents).forEach(([name, component]) => {
         localVue.component(name, component);
     });
-    
+
     // Add Bootstrap Vue directives
     Object.entries(bDirectives).forEach(([name, directive]) => {
         localVue.directive(name, directive);
     });
-    
+
     // Add Pinia
     localVue.use(createPinia());
-    
+
     // Add localization
     localVue.directive("localize", {
         bind(el, binding) {
@@ -96,16 +96,16 @@ export function getLocalVue(withRouter = false) {
             el.textContent = mockLocalize(binding.value);
         },
     });
-    
+
     localVue.filter("localize", mockLocalize);
     localVue.prototype.l = mockLocalize;
     localVue.prototype.localize = mockLocalize;
-    
+
     // Add router if requested
     if (withRouter) {
         localVue.use(VueRouter);
     }
-    
+
     return localVue;
 }
 
@@ -117,29 +117,29 @@ expect.extend({
         const pass = typeof received === "string" && received.length > 0;
         return {
             pass,
-            message: () => pass 
-                ? `expected ${received} not to be localized`
-                : `expected ${received} to be localized`,
+            message: () => (pass ? `expected ${received} not to be localized` : `expected ${received} to be localized`),
         };
     },
-    
+
     toBeLocalizationOf(received, expected) {
         const pass = received === expected; // Since we mock localize to return input
         return {
             pass,
-            message: () => pass
-                ? `expected ${received} not to be localization of ${expected}`
-                : `expected ${received} to be localization of ${expected}`,
+            message: () =>
+                pass
+                    ? `expected ${received} not to be localization of ${expected}`
+                    : `expected ${received} to be localization of ${expected}`,
         };
     },
-    
+
     toContainLocalizationOf(received, expected) {
         const pass = received.includes(expected);
         return {
             pass,
-            message: () => pass
-                ? `expected ${received} not to contain localization of ${expected}`
-                : `expected ${received} to contain localization of ${expected}`,
+            message: () =>
+                pass
+                    ? `expected ${received} not to contain localization of ${expected}`
+                    : `expected ${received} to contain localization of ${expected}`,
         };
     },
 });
