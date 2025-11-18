@@ -5,7 +5,7 @@ import { computed, ref, watch } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
-import type { UploadMode, UploadResult } from "./types";
+import type { UploadMode } from "./types";
 import { getUploadMethod } from "./uploadMethodRegistry";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -22,10 +22,8 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "update:show", value: boolean): void;
     (e: "close"): void;
-    (e: "upload-complete", result: UploadResult): void;
 }>();
 
-const isProcessing = ref(false);
 const showHistorySelector = ref(false);
 
 const historyStore = useHistoryStore();
@@ -54,21 +52,12 @@ const method = computed(() => {
 });
 
 function handleUploadStart() {
-    isProcessing.value = true;
+    // TODO: Store and handle upload state in a composable to show progress, errors, etc.
+    modalShow.value = false;
 }
 
-function handleUploadComplete(result: UploadResult) {
-    isProcessing.value = false;
-    emit("upload-complete", result);
-    if (result.success) {
-        // Close dialog after successful upload
-        modalShow.value = false;
-    }
-}
-
-function handleUploadError(error: Error | string) {
-    isProcessing.value = false;
-    console.error("Upload error:", error);
+function handleUploadCancel() {
+    modalShow.value = false;
 }
 
 function openHistorySelector() {
@@ -109,8 +98,7 @@ function handleHistorySelected(history: { id: string }) {
                 :is="method.component"
                 :method="method"
                 @upload-start="handleUploadStart"
-                @upload-complete="handleUploadComplete"
-                @upload-error="handleUploadError" />
+                @cancel="handleUploadCancel" />
         </div>
         <div v-else class="text-center text-muted py-5">
             <p>Loading...</p>
