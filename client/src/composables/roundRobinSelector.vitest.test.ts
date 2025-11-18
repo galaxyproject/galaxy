@@ -1,5 +1,4 @@
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { MaybeRefOrGetter } from "@vueuse/core";
 import { defineComponent, nextTick, ref } from "vue";
 

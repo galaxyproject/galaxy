@@ -1,6 +1,5 @@
 import { createPopper } from "@popperjs/core";
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { nextTick, ref } from "vue";
 
 import { usePopper } from "./usePopper";

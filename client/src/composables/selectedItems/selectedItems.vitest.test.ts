@@ -1,7 +1,6 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { ref } from "vue";
-import { vi } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 
