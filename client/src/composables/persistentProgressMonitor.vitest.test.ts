@@ -8,8 +8,8 @@ import {
 } from "@/composables/persistentProgressMonitor";
 
 // Mocks for dependencies
-jest.mock("@vueuse/core", () => ({
-    useLocalStorage: jest.fn().mockImplementation((key, initialValue) => ref(initialValue)),
+vi.mock("@vueuse/core", () => ({
+    useLocalStorage: vi.fn().mockImplementation((key, initialValue) => ref(initialValue)),
     StorageSerializers: {
         object: {
             read: (value: string) => JSON.parse(value),
@@ -23,10 +23,10 @@ function useMonitorMock(): TaskMonitor {
     const taskStatus = ref();
 
     return {
-        waitForTask: jest.fn().mockImplementation(() => {
+        waitForTask: vi.fn().mockImplementation(() => {
             isRunning.value = true;
         }),
-        stopWaitingForTask: jest.fn(),
+        stopWaitingForTask: vi.fn(),
         isRunning,
         isCompleted: ref(false),
         hasFailed: ref(false),
@@ -34,11 +34,11 @@ function useMonitorMock(): TaskMonitor {
         requestHasFailed: ref(false),
         taskStatus,
         expirationTime: 1000,
-        isFinalState: jest.fn(),
+        isFinalState: vi.fn(),
         loadStatus(storedStatus) {
             taskStatus.value = storedStatus;
         },
-        fetchTaskStatus: jest.fn(),
+        fetchTaskStatus: vi.fn(),
     };
 }
 const mockUseMonitor = useMonitorMock();

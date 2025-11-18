@@ -1,12 +1,13 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { ref } from "vue";
+import { vi } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 
 import { useSelectedItems } from "./selectedItems";
 
-const querySelectionBreakMock = jest.fn();
+const querySelectionBreakMock = vi.fn();
 
 type ItemType = { id: number };
 
@@ -29,6 +30,7 @@ describe("useSelectedItems", () => {
 
     beforeEach(async () => {
         setActivePinia(createPinia());
+        querySelectionBreakMock.mockClear();
         selectionReturn = useSelectedItems<ItemType, any>(selectedItemsProps);
         await flushPromises();
 

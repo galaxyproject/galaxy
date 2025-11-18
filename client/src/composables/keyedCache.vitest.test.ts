@@ -8,8 +8,8 @@ interface ItemData {
     name: string;
 }
 
-const fetchItem = jest.fn();
-const shouldFetch = jest.fn();
+const fetchItem = vi.fn();
+const shouldFetch = vi.fn();
 
 describe("useKeyedCache", () => {
     beforeEach(() => {
