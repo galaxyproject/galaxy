@@ -5,7 +5,6 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 import datetime
 import json
 import logging
-from urllib.parse import quote
 
 import jwt
 
@@ -126,7 +125,7 @@ class OIDC(JSAppLauncher):
                     "Please try again, and if the problem persists, contact "
                     "the Galaxy instance admin."
                 )
-            redirect_to = trans.url_builder("/login/start", message=error_msg, status="danger")            
+            redirect_to = trans.url_builder("/login/start", message=error_msg, status="danger")
             return trans.response.send_redirect(redirect_to)
         try:
             success, message, (redirect_url, user) = trans.app.authnz_manager.callback(
