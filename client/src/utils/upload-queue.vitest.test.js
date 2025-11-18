@@ -2,8 +2,8 @@ import { sendPayload } from "@/utils/upload-submit.js";
 
 import { UploadQueue } from "./upload-queue.js";
 
-jest.mock("@/utils/upload-submit.js");
-sendPayload.mockImplementation(() => jest.fn());
+vi.mock("@/utils/upload-submit.js");
+sendPayload.mockImplementation(() => vi.fn());
 
 function StubFile(name = null, size = 0, mode = "local") {
     return { name, size, mode };
@@ -49,7 +49,7 @@ describe("UploadQueue", () => {
 
     test("calling start sets isRunning to true", () => {
         const q = instrumentedUploadQueue();
-        q._process = jest.fn(); // mock this, otherwise it'll reset isRunning after it's done.
+        q._process = vi.fn(); // mock this, otherwise it'll reset isRunning after it's done.
         expect(q.isRunning).toBe(false);
         q.start();
         expect(q.isRunning).toBe(true);
@@ -58,7 +58,7 @@ describe("UploadQueue", () => {
 
     test("calling start is a noop if queue is running", () => {
         const q = instrumentedUploadQueue();
-        const mockedProcess = jest.fn();
+        const mockedProcess = vi.fn();
         q._process = mockedProcess();
         q.isRunning = true;
         q.start();
@@ -80,8 +80,8 @@ describe("UploadQueue", () => {
                 };
             },
         });
-        const spy = jest.spyOn(q, "_process");
-        const mockedSubmit = jest.fn(() => q._process());
+        const spy = vi.spyOn(q, "_process");
+        const mockedSubmit = vi.fn(() => q._process());
         q._processSubmit = mockedSubmit;
         q.add([StubFile("a"), StubFile("b")]);
         q.start();
@@ -130,7 +130,7 @@ describe("UploadQueue", () => {
     });
 
     test("adding a file calls opts.announce with correct arguments", () => {
-        const mockAnnounce = jest.fn();
+        const mockAnnounce = vi.fn();
         const q = instrumentedUploadQueue({ announce: mockAnnounce });
         const file = StubFile("a");
         expect(mockAnnounce.mock.calls.length).toBe(0);
