@@ -66,7 +66,7 @@ module.exports = {
     testEnvironmentOptions: {
         customExportConditions: ["msw"],
     },
-    testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+    testPathIgnorePatterns: ["/node_modules/", "/dist/", "\\.vitest\\.test\\.[jt]s$"],
     transform: {
         "^.+\\.js$": "babel-jest",
         "^.*\\.(vue)$": "@vue/vue2-jest",
