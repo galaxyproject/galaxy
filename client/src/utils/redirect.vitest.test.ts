@@ -2,10 +2,10 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import { withPrefix } from "./redirect";
 
-jest.mock("@/onload/loadConfig");
+vi.mock("@/onload/loadConfig");
 
 test("route prefix changes", async () => {
-    jest.mocked(getAppRoot).mockReturnValue("/prefix");
+    vi.mocked(getAppRoot).mockReturnValue("/prefix");
     // test routes
     expect(withPrefix("http://")).toEqual("http://");
     expect(withPrefix("/")).toEqual("/prefix/");
