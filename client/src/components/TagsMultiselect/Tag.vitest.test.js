@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { getLocalVue } from "@tests/vitest/helpers";
 
 import Tag from "./Tag.vue";
 
