@@ -119,6 +119,20 @@ module.exports = {
             },
         },
         {
+            files: ["**/*.vitest.test.js", "**/*.vitest.test.ts", "**/tests/vitest/**"],
+            globals: {
+                vi: "readonly",
+                describe: "readonly",
+                it: "readonly",
+                expect: "readonly",
+                beforeEach: "readonly",
+                afterEach: "readonly",
+                beforeAll: "readonly",
+                afterAll: "readonly",
+                test: "readonly",
+            },
+        },
+        {
             files: ["**/*.vue"],
             parser: "vue-eslint-parser",
             parserOptions: {
