@@ -3,11 +3,24 @@ History
 
 .. to_doc
 
----------
-25.1.dev0
----------
+-------
+25.1rc1
+-------
 
 
+
+-------------------
+25.0.4 (2025-11-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix has_size assertion  by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21081 <https://github.com/galaxyproject/galaxy/pull/21081>`_
+* Fix workflow run form input restrictions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21095 <https://github.com/galaxyproject/galaxy/pull/21095>`_
+* Fix direct tool execution not using the latest version by `@jmchilton <https://github.com/jmchilton>`_ in `#21240 <https://github.com/galaxyproject/galaxy/pull/21240>`_
 
 -------------------
 25.0.3 (2025-09-23)

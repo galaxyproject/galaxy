@@ -3,11 +3,67 @@ History
 
 .. to_doc
 
----------
-25.1.dev0
----------
+-------
+25.1rc1
+-------
 
 
+
+-------------------
+25.0.4 (2025-11-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add safetensors datatype by `@nilchia <https://github.com/nilchia>`_ in `#20754 <https://github.com/galaxyproject/galaxy/pull/20754>`_
+* Skip sam metadata if we have too many references by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20820 <https://github.com/galaxyproject/galaxy/pull/20820>`_
+* Fix select field cut off in dataset view by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20947 <https://github.com/galaxyproject/galaxy/pull/20947>`_
+* Check for expiration in refresh token dictionary by `@jdavcs <https://github.com/jdavcs>`_ in `#20954 <https://github.com/galaxyproject/galaxy/pull/20954>`_
+* Deactivate user file source on unknown error by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20962 <https://github.com/galaxyproject/galaxy/pull/20962>`_
+* Don't create workflow outputs to recover input parameter outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20980 <https://github.com/galaxyproject/galaxy/pull/20980>`_
+* Fix ``test_multiple_decorators`` unit test for FastAPI 0.118.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20982 <https://github.com/galaxyproject/galaxy/pull/20982>`_
+* Fix PUT /api/workflows for user defined tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20987 <https://github.com/galaxyproject/galaxy/pull/20987>`_
+* Backport of #20984 by `@davelopez <https://github.com/davelopez>`_ in `#20994 <https://github.com/galaxyproject/galaxy/pull/20994>`_
+* Improves zip file type detection for uploads under windows by `@caroott <https://github.com/caroott>`_ in `#20999 <https://github.com/galaxyproject/galaxy/pull/20999>`_
+* Store pulsar job prep error messages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21013 <https://github.com/galaxyproject/galaxy/pull/21013>`_
+* Require OK datasets for filtering empty datasets by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21023 <https://github.com/galaxyproject/galaxy/pull/21023>`_
+* Fix `InvalidRequestError` when saving workflow step with dynamic tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21056 <https://github.com/galaxyproject/galaxy/pull/21056>`_
+* Fix has_size assertion  by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21081 <https://github.com/galaxyproject/galaxy/pull/21081>`_
+* Run landing request state through validator by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21087 <https://github.com/galaxyproject/galaxy/pull/21087>`_
+* Fix workflow run form input restrictions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21095 <https://github.com/galaxyproject/galaxy/pull/21095>`_
+* Backport fix anndata datatype update by `@nilchia <https://github.com/nilchia>`_ in `#21111 <https://github.com/galaxyproject/galaxy/pull/21111>`_
+* Prefix download link by `@martenson <https://github.com/martenson>`_ in `#21112 <https://github.com/galaxyproject/galaxy/pull/21112>`_
+* Create new datasets when creating skipped database operation tool outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21142 <https://github.com/galaxyproject/galaxy/pull/21142>`_
+* Fix workflow landing rendering if public query param not provided by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21165 <https://github.com/galaxyproject/galaxy/pull/21165>`_
+* Fix optional param unset in RO-Crate export by `@davelopez <https://github.com/davelopez>`_ in `#21192 <https://github.com/galaxyproject/galaxy/pull/21192>`_
+* Fix MIME type for LAZ datatype by `@kysrpex <https://github.com/kysrpex>`_ in `#21202 <https://github.com/galaxyproject/galaxy/pull/21202>`_
+* Fix refresh token expiration retrieval logic by `@nuwang <https://github.com/nuwang>`_ in `#21213 <https://github.com/galaxyproject/galaxy/pull/21213>`_
+* Fix direct tool execution not using the latest version by `@jmchilton <https://github.com/jmchilton>`_ in `#21240 <https://github.com/galaxyproject/galaxy/pull/21240>`_
+* Fix proxy url validation for non-printable characters by `@davelopez <https://github.com/davelopez>`_ in `#21280 <https://github.com/galaxyproject/galaxy/pull/21280>`_
+* Swap to NPM trusted publishing for prebuilt client by `@dannon <https://github.com/dannon>`_ in `#21290 <https://github.com/galaxyproject/galaxy/pull/21290>`_
+
+============
+Enhancements
+============
+
+* Add Auspice JSON datatype by `@pvanheus <https://github.com/pvanheus>`_ in `#20466 <https://github.com/galaxyproject/galaxy/pull/20466>`_
+* Add SpatialData datatype by `@nilchia <https://github.com/nilchia>`_ in `#21000 <https://github.com/galaxyproject/galaxy/pull/21000>`_
+* Use job cache also for implicit conversions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21021 <https://github.com/galaxyproject/galaxy/pull/21021>`_
+* Add LAS and LAZ file format by `@bgruening <https://github.com/bgruening>`_ in `#21049 <https://github.com/galaxyproject/galaxy/pull/21049>`_
+* New datatype addition: gam for vg toolkit by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#21096 <https://github.com/galaxyproject/galaxy/pull/21096>`_
+* Harden proxy redirect validation by `@davelopez <https://github.com/davelopez>`_ in `#21185 <https://github.com/galaxyproject/galaxy/pull/21185>`_
+* support ZARR v3 for  Spatialdata dt by `@nilchia <https://github.com/nilchia>`_ in `#21265 <https://github.com/galaxyproject/galaxy/pull/21265>`_
+
+=============
+Other changes
+=============
+
+* New datatype addition: beast.trees datatype by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#21055 <https://github.com/galaxyproject/galaxy/pull/21055>`_
+* Add display_in_upload to LAZ and LAS by `@bgruening <https://github.com/bgruening>`_ in `#21060 <https://github.com/galaxyproject/galaxy/pull/21060>`_
+* Backport `Fix proxy endpoint encoding` by `@davelopez <https://github.com/davelopez>`_ in `#21184 <https://github.com/galaxyproject/galaxy/pull/21184>`_
 
 -------------------
 25.0.3 (2025-09-23)

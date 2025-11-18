@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
----------
-25.1.dev0
----------
+-------
+25.1rc1
+-------
 
 
+
+-------------------
+25.0.4 (2025-11-18)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Run landing request state through validator by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21087 <https://github.com/galaxyproject/galaxy/pull/21087>`_
 
 -------------------
 25.0.3 (2025-09-23)
