@@ -1,6 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { format, parseISO } from "date-fns";
-import { getLocalVue } from "tests/jest/helpers";
 
 import UtcDate from "./UtcDate.vue";
 
