@@ -5,10 +5,19 @@ import { main } from "../selectManyMain";
 
 // Use vi.mock for Vitest, jest.mock for Jest
 // @ts-ignore - These are test globals
-const mockFn = typeof vi !== "undefined" ? vi.mock : jest.mock;
-mockFn("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
-    useSelectMany,
-}));
+if (typeof vi !== "undefined") {
+    // Vitest
+    // @ts-ignore - vi is a Vitest global
+    vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
+        useSelectMany,
+    }));
+} else {
+    // Jest
+    // @ts-ignore - jest is a Jest global
+    jest.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
+        useSelectMany,
+    }));
+}
 
 export const useSelectMany: typeof UseSelectMany = (options) => {
     const unselectedOptionsFiltered = ref([] as SelectOption[]);

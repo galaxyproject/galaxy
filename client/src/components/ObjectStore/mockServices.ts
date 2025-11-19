@@ -1,11 +1,18 @@
 import { createTestingPinia } from "@pinia/testing";
 
-import { getSelectableObjectStores } from "@/api/objectStores";
-
 // Use vi.mock for Vitest, jest.mock for Jest
 // @ts-ignore - These are test globals
-const mockFn = typeof vi !== "undefined" ? vi.mock : jest.mock;
-mockFn("@/api/objectStores");
+if (typeof vi !== "undefined") {
+    // Vitest
+    // @ts-ignore - vi is a Vitest global
+    vi.mock("@/api/objectStores");
+} else {
+    // Jest
+    // @ts-ignore - jest is a Jest global
+    jest.mock("@/api/objectStores");
+}
+
+import { getSelectableObjectStores } from "@/api/objectStores";
 
 const OBJECT_STORES = [
     {
