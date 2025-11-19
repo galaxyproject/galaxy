@@ -1,5 +1,5 @@
-import flushPromises from "flush-promises";
 import { suppressDebugConsole } from "@tests/vitest/helpers";
+import flushPromises from "flush-promises";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";

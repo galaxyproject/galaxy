@@ -1,7 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 

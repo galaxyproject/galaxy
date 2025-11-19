@@ -1,6 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, vi } from "vitest";
 import { ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
