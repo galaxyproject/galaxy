@@ -2,7 +2,10 @@ import { createTestingPinia } from "@pinia/testing";
 
 import { getSelectableObjectStores } from "@/api/objectStores";
 
-jest.mock("@/api/objectStores");
+// Use vi.mock for Vitest, jest.mock for Jest
+// @ts-ignore - These are test globals
+const mockFn = typeof vi !== "undefined" ? vi.mock : jest.mock;
+mockFn("@/api/objectStores");
 
 const OBJECT_STORES = [
     {
@@ -25,6 +28,7 @@ const OBJECT_STORES = [
 
 export function setupSelectableMock() {
     createTestingPinia();
-    const mockGetObjectStores = getSelectableObjectStores as jest.MockedFunction<typeof getSelectableObjectStores>;
+    // Support both Jest and Vitest MockedFunction types
+    const mockGetObjectStores = getSelectableObjectStores as any;
     mockGetObjectStores.mockResolvedValue(OBJECT_STORES);
 }
