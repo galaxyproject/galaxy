@@ -3,7 +3,10 @@ import { reactive, ref, watch } from "vue";
 import type { SelectOption, useSelectMany as UseSelectMany } from "../selectMany";
 import { main } from "../selectManyMain";
 
-jest.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
+// Use vi.mock for Vitest, jest.mock for Jest
+// @ts-ignore - These are test globals
+const mockFn = typeof vi !== "undefined" ? vi.mock : jest.mock;
+mockFn("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
     useSelectMany,
 }));
 

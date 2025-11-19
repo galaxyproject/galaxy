@@ -1,8 +1,9 @@
 import "./worker/__mocks__/selectMany";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { vi } from "vitest";
 import type { PropType } from "vue";
 
 import type { SelectOption } from "./worker/selectMany";
@@ -12,7 +13,7 @@ import FormSelectMany from "./FormSelectMany.vue";
 const pinia = createTestingPinia();
 const localVue = getLocalVue();
 
-jest.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
+vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
 
 function mountSelectMany(props: Partial<PropType<typeof FormSelectMany>>) {
     return mount(FormSelectMany as any, {
@@ -73,12 +74,12 @@ async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
 }
 
 // circumvent input debounce
-jest.useFakeTimers();
+vi.useFakeTimers();
 
 async function search(wrapper: ReturnType<typeof mountSelectMany>, value: string) {
     const searchInput = wrapper.find(selectors.search);
     await searchInput.setValue(value);
-    jest.runAllTimers();
+    vi.runAllTimers();
 }
 
 describe("FormSelectMany", () => {
