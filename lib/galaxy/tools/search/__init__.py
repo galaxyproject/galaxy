@@ -1,60 +1,28 @@
 """
 Module for building and searching the index of installed tools.
 
-Before changing index-building or searching related parts it is highly
-recommended to read the docs at https://whoosh.readthedocs.io.
-
-Schema - this is how we define the index, both for building and searching. A
-    field is created for each data element that we want to add e.g. tool name,
-    tool ID, description. The type of field and its attributes define how
-    entries for that field will be indexed and ultimately how they can be
-    searched. Score weighting (boost) is added here on a per-field bases, to
-    allow matches to important fields like "name" to receive a higher score.
-
-Tokenizers - these take an attribute (e.g. name) and parse it into "tokens" to
-    be stored in the index. Can be done in many ways for different search
-    functionality. For example, the IDTokenizer creates one token for an entire
-    entry, resulting in an index field that requires a full-field match. The
-    default tokenizer will break an entry into words, so that single word
-    matches are possible.
-
-Filters - various filters are available for processing content as the index is
-    built. A StopFilter removes common articles 'a', 'for', 'and' etc. A
-    StemmingFilter removes suffixes from words to create a 'base work' e.g.
-    stemming -> stem; opened -> open; philosophy -> philosoph.
-
+The previous implementation relied on Whoosh; this module now uses Tantivy
+via the `tantivy` Python bindings.  Each toolbox panel view has its own
+index directory so the rest of Galaxy's search infrastructure (tools service,
+reindex hooks, etc.) can continue to call `ToolPanelViewSearch` without
+changes.
 """
 
+import json
 import logging
 import os
 import re
 import shutil
+import sys
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
+    Iterable,
+    Optional,
     Union,
 )
 
-from whoosh import (
-    analysis,
-    index,
-)
-from whoosh.fields import (
-    ID,
-    KEYWORD,
-    NGRAMWORDS,
-    Schema,
-    TEXT,
-)
-from whoosh.qparser import (
-    MultifieldParser,
-    OrGroup,
-)
-from whoosh.scoring import (
-    BM25F,
-    Frequency,
-    MultiWeighting,
-)
-from whoosh.writing import AsyncWriter
+import tantivy
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.util import (
@@ -68,27 +36,8 @@ if TYPE_CHECKING:
         ToolBox,
     )
     from galaxy.tools.cache import ToolCache
-    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
-
-CanConvertToFloat = Union[str, int, float]
-CanConvertToInt = Union[str, int, float]
-
-
-def get_or_create_index(index_dir: "StrPath", schema: Schema) -> index.FileIndex:
-    """Get or create a reference to the index."""
-    os.makedirs(index_dir, exist_ok=True)
-    if index.exists_in(index_dir):
-        idx = index.open_dir(index_dir)
-        if idx.schema == schema:
-            return idx
-    log.warning(f"Index at '{index_dir}' uses outdated schema, creating a new index")
-
-    # Delete the old index and return a new index reference
-    shutil.rmtree(index_dir)
-    os.makedirs(index_dir)
-    return index.create_in(index_dir, schema=schema)
 
 
 class ToolBoxSearch:
@@ -127,11 +76,32 @@ class ToolBoxSearch:
         return panel_search.search(q, config)
 
 
+@dataclass(frozen=True)
+class SchemaFieldSpec:
+    name: str
+    tokenizer: str
+    stored: bool = False
+    fast: bool = False
+    index_option: str = "position"
+
+    def metadata(self) -> dict:
+        return {
+            "name": self.name,
+            "type": "text",
+            "options": {
+                "indexing": {
+                    "record": self.index_option,
+                    "fieldnorms": True,
+                    "tokenizer": self.tokenizer,
+                },
+                "stored": self.stored,
+                "fast": self.fast,
+            },
+        }
+
+
 class ToolPanelViewSearch:
-    """
-    Support searching tools in a toolbox. This implementation uses
-    the Whoosh search library.
-    """
+    """Support searching tools in a toolbox via a Tantivy index."""
 
     def __init__(
         self,
@@ -140,214 +110,34 @@ class ToolPanelViewSearch:
         config: GalaxyAppConfiguration,
         index_help: bool = True,
     ) -> None:
-        """Build the schema and validate against the index."""
-        schema_conf = {
-            # The stored ID field is not searchable
-            "id": ID(stored=True, unique=True),
-            # This exact field is searchable by exact matches only
-            "id_exact": NGRAMWORDS(
-                minsize=config.tool_ngram_minsize,
-                maxsize=config.tool_ngram_maxsize,
-                field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
-            ),
-            # The primary name field is searchable by exact match only, and is
-            # eligible for massive score boosting. A secondary ngram or text
-            # field for name is added below
-            "name_exact": TEXT(
-                field_boost=(config.tool_name_boost * config.tool_name_exact_multiplier),
-                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
-            ),
-            # The owner/repo/tool_id parsed from the GUID
-            "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
-            # The section where the tool is listed in the tool panel
-            "section": TEXT(field_boost=float(config.tool_section_boost)),
-            # The edam operations section where the tool is listed in the tool panel
-            "edam_operations": TEXT(field_boost=float(config.tool_section_boost)),
-            # The edam topics section where the tool is listed in the tool panel
-            "edam_topics": TEXT(field_boost=float(config.tool_section_boost)),
-            # The name of the repository the tool belongs to
-            "repository": TEXT(field_boost=float(config.tool_section_boost)),
-            # The owner id of the repository the tool belongs to
-            "owner": TEXT(field_boost=float(config.tool_section_boost)),
-            # Short description defined in the tool XML
-            "description": TEXT(
-                field_boost=config.tool_description_boost,
-                analyzer=analysis.StemmingAnalyzer(),
-            ),
-            # Help text parsed from the tool XML
-            "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
-            "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
-        }
-
-        if config.tool_enable_ngram_search:
-            schema_conf.update(
-                {
-                    "name": NGRAMWORDS(
-                        minsize=config.tool_ngram_minsize,
-                        maxsize=config.tool_ngram_maxsize,
-                        field_boost=(float(config.tool_name_boost) * config.tool_ngram_factor),
-                    ),
-                }
-            )
-        else:
-            schema_conf.update(
-                {
-                    "name": TEXT(
-                        field_boost=float(config.tool_name_boost),
-                    ),
-                }
-            )
-
-        self.schema = Schema(**schema_conf)
-        self.rex = analysis.RegexTokenizer()
-        self.index_dir = index_dir
         self.panel_view_id = panel_view_id
+        self.index_help = index_help
+        self.config = config
+        self.index_dir = index_dir
+        self._schema_fields = self._build_field_schemas()
+        self.schema_metadata = {field.name: field.metadata() for field in self._schema_fields}
+        self.schema = self._build_schema()
         self.index = self._index_setup()
+        self.field_boosts = self._build_field_boosts()
+        self.search_fields = self._build_search_fields()
+        self._search_limit = self._resolve_search_limit()
 
-    def _index_setup(self) -> index.FileIndex:
-        """Get or create a reference to the index."""
-        return get_or_create_index(self.index_dir, self.schema)
+    def _resolve_search_limit(self) -> int:
+        limit = getattr(self.config, "tool_search_limit", None)
+        if isinstance(limit, int) and limit > 0:
+            return limit
+        return sys.maxsize
 
-    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
-        """Prepare search index for tools loaded in toolbox.
-
-        Use `tool_cache` to determine which tools need indexing and which
-        should be removed.
-        """
-        log.debug(f"Starting to build toolbox index of panel {self.panel_view_id}.")
-        execution_timer = ExecutionTimer()
-
-        with self.index.reader() as reader:
-            # Index ocasionally contains empty stored fields
-            self.indexed_tool_ids = {f["id"] for f in reader.all_stored_fields() if f}
-
-        tool_ids_to_remove = self._get_tools_to_remove(tool_cache)
-        tools_to_index = self._get_tool_list(
-            toolbox,
-            tool_cache,
-        )
-
-        with AsyncWriter(self.index) as writer:
-            for tool_id in tool_ids_to_remove:
-                writer.delete_by_term("id", tool_id)
-            for tool in tools_to_index:
-                add_doc_kwds = self._create_doc(
-                    tool=tool,
-                    index_help=index_help,
-                )
-                # Add tool document to index (or overwrite if existing)
-                writer.update_document(**add_doc_kwds)
-
-        log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
-
-    def _get_tools_to_remove(self, tool_cache: "ToolCache") -> list[str]:
-        """Return list of tool IDs to be removed from index."""
-        tool_ids_to_remove = (self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
-            tool_cache._removed_tool_ids
-        )
-
-        for indexed_tool_id in self.indexed_tool_ids:
-            indexed_tool = tool_cache.get_tool_by_id(indexed_tool_id)
-            if indexed_tool:
-                if indexed_tool.is_latest_version:
-                    continue
-                latest_version = indexed_tool.latest_version
-                if latest_version and latest_version.hidden:
-                    continue
-            tool_ids_to_remove.add(indexed_tool_id)
-
-        return list(tool_ids_to_remove)
-
-    def _get_tool_list(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> list["Tool"]:
-        """Return list of tools to add and remove from index."""
-        tools_to_index: list[Tool] = []
-
-        for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
-            tool = toolbox.get_tool(tool_id)
-            if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
-                if tool.hidden:
-                    # Check if there is an older tool we can return
-                    if tool.lineage:
-                        tool_versions = reversed(tool.lineage.get_versions())
-                        for tool_version in tool_versions:
-                            tool = tool_cache.get_tool_by_id(tool_version.id)
-                            if tool and not tool.hidden:
-                                break
-                        else:
-                            continue
-                    else:
-                        continue
-                tools_to_index.append(tool)
-
-        return tools_to_index
-
-    def _create_doc(
-        self,
-        tool: "Tool",
-        index_help: bool = True,
-    ) -> dict[str, Union[str, list[str]]]:
-        def clean(s: str) -> str:
-            """Remove hyphens as they are Whoosh wildcards."""
-            if "-" in s:
-                return " ".join(token.text for token in self.rex(s))
-            else:
-                return s
-
-        if tool.tool_type == "manage_data":
-            #  Do not add data managers to the public index
-            return {}
-        add_doc_kwds: dict[str, Union[str, list[str]]] = {
-            "id": unicodify(tool.id),
-            "id_exact": unicodify(tool.id),
-            "name": clean(tool.name),
-            "description": unicodify(tool.description),
-            "section": tool.get_panel_section()[1] or "",
-            "edam_operations": [clean(_) for _ in tool.edam_operations or []],
-            "edam_topics": [clean(_) for _ in tool.edam_topics or []],
-            "repository": unicodify(tool.repository_name),
-            "owner": unicodify(tool.repository_owner),
-            "help": unicodify(""),
-        }
-        if tool.guid:
-            # Create a stub consisting of owner, repo, and tool from guid
-            slash_indexes = [m.start() for m in re.finditer("/", tool.guid)]
-            id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
-            add_doc_kwds["stub"] = clean(id_stub)
-        else:
-            add_doc_kwds["stub"] = unicodify(tool.id)
-        if tool.labels:
-            add_doc_kwds["labels"] = unicodify(" ".join(tool.labels))
-        if index_help:
-            raw_help = tool.raw_help
-            if raw_help:
-                try:
-                    add_doc_kwds["help"] = unicodify(raw_help)
-                except Exception:
-                    # Don't fail to build index when help fails to parse
-                    pass
-
-        add_doc_kwds["name_exact"] = add_doc_kwds["name"]
-
-        return add_doc_kwds
-
-    def search(
-        self,
-        q: str,
-        config: GalaxyAppConfiguration,
-    ) -> list[str]:
-        """Perform search on the in-memory index."""
-        # Change field boosts for searcher
-        self.searcher = self.index.searcher(
-            weighting=MultiWeighting(
-                Frequency(),
-                help=BM25F(K1=config.tool_help_bm25f_k1),
-            )
-        )
+    def _build_field_schemas(self) -> list[SchemaFieldSpec]:
         fields = [
-            "id",
-            "id_exact",
-            "name",
-            "name_exact",
+            SchemaFieldSpec(name="id", tokenizer="raw", stored=True, index_option="basic"),
+            SchemaFieldSpec(name="id_exact", tokenizer="raw", index_option="basic"),
+            SchemaFieldSpec(name="name_exact", tokenizer="raw"),
+            SchemaFieldSpec(name="name", tokenizer="galaxy_stemming"),
+        ]
+        if self.config.tool_enable_ngram_search:
+            fields.append(SchemaFieldSpec(name="name_ngram", tokenizer="galaxy_ngram"))
+        extra_text_fields = [
             "description",
             "section",
             "edam_operations",
@@ -358,17 +148,239 @@ class ToolPanelViewSearch:
             "labels",
             "stub",
         ]
-        self.parser = MultifieldParser(
-            fields,
-            schema=self.schema,
-            group=OrGroup,
-        )
-        parsed_query = self.parser.parse(q)
-        hits = self.searcher.search(
-            parsed_query,
-            limit=None,
-            sortedby="",
-            terms=True,
-        )
+        fields.extend(SchemaFieldSpec(name=name, tokenizer="galaxy_stemming") for name in extra_text_fields)
+        return fields
 
-        return [hit["id"] for hit in hits]
+    def _build_schema(self) -> tantivy.Schema:
+        builder = tantivy.SchemaBuilder()
+        for schema_field in self._schema_fields:
+            builder.add_text_field(
+                schema_field.name,
+                stored=schema_field.stored,
+                fast=schema_field.fast,
+                tokenizer_name=schema_field.tokenizer,
+                index_option=schema_field.index_option,
+            )
+        return builder.build()
+
+    def _build_field_boosts(self) -> dict[str, float]:
+        boosts = {
+            "id_exact": float(self.config.tool_id_boost * self.config.tool_name_exact_multiplier),
+            "name_exact": float(self.config.tool_name_boost * self.config.tool_name_exact_multiplier),
+            "name": float(self.config.tool_name_boost),
+            "description": float(self.config.tool_description_boost),
+            "section": float(self.config.tool_section_boost),
+            "edam_operations": float(self.config.tool_section_boost),
+            "edam_topics": float(self.config.tool_section_boost),
+            "repository": float(self.config.tool_section_boost),
+            "owner": float(self.config.tool_section_boost),
+            "help": float(self.config.tool_help_boost),
+            "labels": float(self.config.tool_label_boost),
+            "stub": float(self.config.tool_stub_boost),
+        }
+        if self.config.tool_enable_ngram_search:
+            boosts["name_ngram"] = float(self.config.tool_name_boost * self.config.tool_ngram_factor)
+        return boosts
+
+    def _build_search_fields(self) -> list[str]:
+        fields = [
+            "id",
+            "id_exact",
+            "name",
+            "name_exact",
+        ]
+        if self.config.tool_enable_ngram_search:
+            fields.append("name_ngram")
+        fields.extend(
+            [
+                "description",
+                "section",
+                "edam_operations",
+                "edam_topics",
+                "repository",
+                "owner",
+                "help",
+                "labels",
+                "stub",
+            ]
+        )
+        return fields
+
+    def _index_setup(self) -> tantivy.Index:
+        os.makedirs(self.index_dir, exist_ok=True)
+        existing_schema = self._read_existing_schema_metadata()
+        if existing_schema is not None and existing_schema != self.schema_metadata:
+            shutil.rmtree(self.index_dir)
+            os.makedirs(self.index_dir, exist_ok=True)
+        index = tantivy.Index(self.schema, self.index_dir)
+        self._register_analyzers(index)
+        return index
+
+    def _read_existing_schema_metadata(self) -> Optional[dict[str, dict]]:
+        meta_path = os.path.join(self.index_dir, "meta.json")
+        if not os.path.exists(meta_path):
+            return None
+        try:
+            with open(meta_path, "r", encoding="utf-8") as meta_file:
+                metadata = json.load(meta_file)
+        except Exception:
+            return None
+        schema = metadata.get("schema", [])
+        return {entry["name"]: entry for entry in schema}
+
+    def _register_analyzers(self, index: tantivy.Index) -> None:
+        if getattr(self, "_tokenizers_registered", False):
+            return
+        stemming_analyzer = (
+            tantivy.TextAnalyzerBuilder(tantivy.Tokenizer.simple())
+            .filter(tantivy.Filter.lowercase())
+            .filter(tantivy.Filter.ascii_fold())
+            .filter(tantivy.Filter.stemmer("English"))
+            .build()
+        )
+        index.register_tokenizer("galaxy_stemming", stemming_analyzer)
+        if self.config.tool_enable_ngram_search:
+            ngram_analyzer = (
+                tantivy.TextAnalyzerBuilder(
+                    tantivy.Tokenizer.ngram(
+                        self.config.tool_ngram_minsize,
+                        self.config.tool_ngram_maxsize,
+                    )
+                )
+                .filter(tantivy.Filter.lowercase())
+                .filter(tantivy.Filter.ascii_fold())
+                .build()
+            )
+            index.register_tokenizer("galaxy_ngram", ngram_analyzer)
+        self._tokenizers_registered = True
+
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
+        log.debug(f"Starting to build toolbox index of panel {self.panel_view_id}.")
+        execution_timer = ExecutionTimer()
+        writer = self.index.writer()
+        writer.delete_all_documents()
+        for tool in self._iter_tools_to_index(toolbox, tool_cache):
+            doc = self._create_document(tool, index_help=index_help)
+            if not doc:
+                continue
+            document = tantivy.Document()
+            for field_name, value in doc.items():
+                if isinstance(value, list):
+                    for item in value:
+                        if item is None:
+                            continue
+                        document.add_text(field_name, str(item))
+                else:
+                    if value is None:
+                        continue
+                    document.add_text(field_name, str(value))
+            writer.add_document(document)
+        writer.commit()
+        self.index.reload()
+        log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
+
+    def _iter_tools_to_index(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> Iterable["Tool"]:
+        seen: set[str] = set()
+        for tool_id, tool in toolbox.tools():
+            if not tool or not tool.is_latest_version:
+                continue
+            if not toolbox.panel_has_tool(tool, self.panel_view_id):
+                continue
+            tool_to_index = self._resolve_visible_tool(tool, tool_cache)
+            if not tool_to_index:
+                continue
+            if tool_to_index.id in seen:
+                continue
+            seen.add(tool_to_index.id)
+            yield tool_to_index
+
+    def _resolve_visible_tool(self, tool: "Tool", tool_cache: "ToolCache") -> Optional["Tool"]:
+        if not tool.hidden:
+            return tool
+        if not tool.lineage:
+            return None
+        tool_versions = reversed(tool.lineage.get_versions())
+        for tool_version in tool_versions:
+            candidate = tool_cache.get_tool_by_id(tool_version.id)
+            if candidate and not candidate.hidden:
+                return candidate
+        return None
+
+    def _create_document(self, tool: "Tool", index_help: bool = True) -> dict[str, Union[str, list[str]]]:
+        def clean(value: str) -> str:
+            if "-" in value:
+                return value.replace("-", " ")
+            return value
+
+        if tool.tool_type == "manage_data":
+            return {}
+        document: dict[str, Union[str, list[str]]] = {
+            "id": unicodify(tool.id),
+            "id_exact": unicodify(tool.id),
+            "name": clean(tool.name),
+            "description": unicodify(tool.description),
+            "section": tool.get_panel_section()[1] or "",
+            "edam_operations": [clean(item) for item in tool.edam_operations or []],
+            "edam_topics": [clean(item) for item in tool.edam_topics or []],
+            "repository": unicodify(tool.repository_name),
+            "owner": unicodify(tool.repository_owner),
+            "help": unicodify(""),
+        }
+        if tool.guid:
+            slash_indexes = [match.start() for match in re.finditer("/", tool.guid)]
+            if len(slash_indexes) >= 5:
+                stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
+            else:
+                stub = tool.guid
+            document["stub"] = clean(stub)
+        else:
+            document["stub"] = unicodify(tool.id)
+        if tool.labels:
+            document["labels"] = unicodify(" ".join(tool.labels))
+        if index_help:
+            raw_help = tool.raw_help
+            if raw_help:
+                try:
+                    document["help"] = unicodify(raw_help)
+                except Exception:
+                    pass
+        document["name_exact"] = document["name"]
+        return document
+
+    def _parse_query(self, query: str) -> Optional[tantivy.Query]:
+        if not query:
+            return None
+        try:
+            return self.index.parse_query(
+                query,
+                default_field_names=self.search_fields,
+                field_boosts=self.field_boosts,
+            )
+        except ValueError as error:
+            query_result, errors = self.index.parse_query_lenient(
+                query,
+                default_field_names=self.search_fields,
+                field_boosts=self.field_boosts,
+            )
+            if errors:
+                log.debug("Search query lenient parsing returned errors %s", errors)
+            return query_result
+        except Exception:
+            log.exception("Failed to parse search query %s", query)
+            return None
+
+    def search(self, q: str, config: GalaxyAppConfiguration) -> list[str]:
+        parsed_query = self._parse_query(q)
+        if parsed_query is None:
+            return []
+        self.index.reload()
+        searcher = self.index.searcher()
+        limit = self._search_limit or sys.maxsize
+        results = searcher.search(parsed_query, limit=limit)
+        tool_ids: list[str] = []
+        for _, doc_address in results.hits:
+            doc = searcher.doc(doc_address)
+            doc_id = doc.get_first("id")
+            if doc_id:
+                tool_ids.append(doc_id)
+        return tool_ids
