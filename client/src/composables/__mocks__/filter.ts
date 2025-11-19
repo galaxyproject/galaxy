@@ -3,7 +3,10 @@ import { computed, type Ref } from "vue";
 
 import type { useFilterObjectArray as UseFilterObjectArray } from "@/composables/filter";
 
-jest.mock("@/composables/filter", () => ({
+// Use vi.mock for Vitest, jest.mock for Jest
+// @ts-ignore - These are test globals
+const mockFn = typeof vi !== "undefined" ? vi.mock : jest.mock;
+mockFn("@/composables/filter", () => ({
     useFilterObjectArray,
 }));
 
