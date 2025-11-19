@@ -2,7 +2,7 @@ import { serverPath } from "@/utils/serverPath";
 
 /**
  * Finds <link rel="index"> in head element and pulls root url fragment from
- * there That should probably be a <base> tag instead since that's how
+ * there. That should probably be a <base> tag instead since that's how
  * they're using <link rel="index" />
  *
  * @param {string} [defaultRoot="/"]

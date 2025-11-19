@@ -1,10 +1,13 @@
 // loadConfig.ts
+import { getRootFromIndexLink } from "@/onload/getRootFromIndexLink";
+
 let cachedConfig = null;
 
 export async function loadConfig() {
     if (!cachedConfig) {
         try {
-            const response = await fetch("/context");
+            const root = getRootFromIndexLink();
+            const response = await fetch(`${root}context`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch /context (${response.status})`);
             }
@@ -18,7 +21,7 @@ export async function loadConfig() {
 }
 
 export function getAppRoot(defaultRoot = "/", stripTrailingSlash = false) {
-    let root = cachedConfig?.options?.root || defaultRoot;
+    let root = cachedConfig?.root || defaultRoot;
     if (stripTrailingSlash) {
         root = root.replace(/\/$/, "");
     }
