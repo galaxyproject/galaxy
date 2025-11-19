@@ -1,9 +1,10 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import ZoomControl from "./ZoomControl.vue";
 
-jest.mock("app");
+vi.mock("app");
 
 describe("ZoomControl", () => {
     it("test zoom control", async () => {

@@ -1,5 +1,6 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
+import { vi } from "vitest";
 import { nextTick } from "vue";
 
 import ScrollList from "./ScrollList.vue";
@@ -29,9 +30,9 @@ function createTestItems(count: number): TestItem[] {
 let loadItems: (() => void) | null = null;
 
 // Mock useInfiniteScroll to store the component's callback in the callback here
-jest.mock("@vueuse/core", () => ({
-    ...jest.requireActual("@vueuse/core"),
-    useInfiniteScroll: jest.fn((element, callback) => {
+vi.mock("@vueuse/core", async () => ({
+    ...(await vi.importActual("@vueuse/core")),
+    useInfiniteScroll: vi.fn((element, callback) => {
         // On component mount, `useInfiniteScroll` is called and here, we store the callback
         loadItems = callback;
         return {};
@@ -62,7 +63,7 @@ let expectedTotalItemCount = 0;
  * @param limit The number of items to load.
  * @param wrapper Optional component wrapper to update the `propItems` with new items.
  */
-const testLoader = jest.fn(
+const testLoader = vi.fn(
     (offset: number, limit: number, wrapper?: Wrapper<Vue>): Promise<{ items: TestItem[]; total: number }> => {
         const newItems = TEST_ITEMS.slice(offset, offset + limit);
 
@@ -91,6 +92,7 @@ describe("ScrollList with local loader and data", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(async () => {
+        testLoader.mockClear();
         wrapper = mount(ScrollList as object, {
             propsData: {
                 loader: (offset: number, limit: number) => testLoader(offset, limit),
@@ -165,6 +167,7 @@ describe("ScrollList with prop items and no local state", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(() => {
+        testLoader.mockClear();
         wrapper = mount(ScrollList as object, {
             propsData: {
                 propItems: TEST_ITEMS,
@@ -201,6 +204,7 @@ describe("ScrollList with prop items and a local state loader", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(() => {
+        testLoader.mockClear();
         expectedTotalItemCount = 0;
 
         wrapper = mount(ScrollList as object, {

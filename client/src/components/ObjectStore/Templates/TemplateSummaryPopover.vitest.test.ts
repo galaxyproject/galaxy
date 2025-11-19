@@ -1,5 +1,5 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import { STANDARD_OBJECT_STORE_TEMPLATE } from "@/components/ConfigTemplates/test_fixtures";
 

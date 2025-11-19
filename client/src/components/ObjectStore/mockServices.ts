@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 
+// prettier-ignore-start
 // Use vi.mock for Vitest, jest.mock for Jest
 // @ts-ignore - These are test globals
 if (typeof vi !== "undefined") {
@@ -12,7 +13,10 @@ if (typeof vi !== "undefined") {
     jest.mock("@/api/objectStores");
 }
 
+// IMPORTANT: This import MUST come after the mock calls above for proper module hoisting
+// eslint-disable-next-line import/order
 import { getSelectableObjectStores } from "@/api/objectStores";
+// prettier-ignore-end
 
 const OBJECT_STORES = [
     {
