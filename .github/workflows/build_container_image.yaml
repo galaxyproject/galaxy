@@ -169,6 +169,9 @@ jobs:
           --set persistence.accessMode="ReadWriteOnce" \
           --set resources.requests.memory=0Mi,resources.requests.cpu=0m \
           --set image.tag=${{ needs.build.outputs.tag }} \
+          --set webHandlers.startupProbe.initialDelaySeconds=120 \
+          --set webHandlers.startupProbe.periodSeconds=15 \
+          --set webHandlers.startupProbe.failureThreshold=72 \
           --wait \
           --timeout=1200s
       - name: Debug deployment on failure
