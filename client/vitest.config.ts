@@ -4,6 +4,7 @@ import vue from "@vitejs/plugin-vue2";
 import path from "path";
 import { fileURLToPath } from "url";
 import { i18nPlugin } from "./tests/vitest/test-plugin";
+import { yamlPlugin } from "./tests/vitest/yaml-plugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,7 +22,7 @@ const modulesToTransform = [
 ];
 
 export default defineConfig({
-    plugins: [vue(), i18nPlugin()],
+    plugins: [vue(), i18nPlugin(), yamlPlugin()],
     test: {
         globals: true,
         environment: "jsdom",
