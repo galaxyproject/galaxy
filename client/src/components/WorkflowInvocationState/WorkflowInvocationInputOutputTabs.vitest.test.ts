@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -20,20 +21,20 @@ const selectors = {
 };
 
 // Mock the workflow store to return a workflow for `getStoredWorkflowByInstanceId`
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule: any = await vi.importActual("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
             ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation(() => {
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation(() => {
                 return {
                     id: "workflow-id",
                     name: "Test Workflow",
                     version: 0,
                 };
             }),
-            getFullWorkflowCached: jest.fn().mockImplementation(() => {
+            getFullWorkflowCached: vi.fn().mockImplementation(() => {
                 /** The actual outputs of the workflow invocation */
                 const testDatasetOutputLabels = Object.keys(invocationData.outputs);
                 const testCollectionOutputsLabels = Object.keys(invocationData.output_collections);

@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useUserStore } from "@/stores/userStore";
@@ -33,8 +34,8 @@ const SELECTORS = {
 };
 
 // Mock the copyWorkflow function for importing a workflow
-jest.mock("components/Workflow/workflows.services", () => ({
-    copyWorkflow: jest.fn().mockImplementation((workflowId: string) => {
+vi.mock("./workflows.services", () => ({
+    copyWorkflow: vi.fn().mockImplementation(async (workflowId: string) => {
         if (workflowId === UNIMPORTABLE_WORKFLOW_ID) {
             throw new Error(IMPORT_ERROR_MESSAGE);
         }
@@ -43,13 +44,13 @@ jest.mock("components/Workflow/workflows.services", () => ({
 }));
 
 // Mock the workflow store to return the sample workflow
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule = await vi.importActual("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
             ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation((instanceId: string) => {
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation((instanceId: string) => {
                 if (instanceId === UNIMPORTABLE_WORKFLOW_INSTANCE_ID) {
                     return { ...SAMPLE_WORKFLOW, id: UNIMPORTABLE_WORKFLOW_ID };
                 }
