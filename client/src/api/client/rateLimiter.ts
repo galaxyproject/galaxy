@@ -11,7 +11,7 @@ interface RateLimitConfig {
     maxRetries?: number;
 }
 
-const DEFAULT_CONFIG: Required<RateLimitConfig> = {
+export const DEFAULT_CONFIG: Required<RateLimitConfig> = {
     maxRequests: 100,
     windowMs: 60000,
     retryDelay: 1000,
@@ -63,15 +63,27 @@ export function createRateLimiterMiddleware(config: RateLimitConfig = {}): Middl
         },
 
         async onResponse({ response: res, request }) {
-            // TODO: Implement max retries logic
-
             // Handle 429 Too Many Requests from server
             if (res.status === 429 && request.method === "GET") {
                 const retryAfter = res.headers.get("Retry-After");
                 const delay = retryAfter ? parseInt(retryAfter) * 1000 : cfg.retryDelay;
 
                 console.warn(`Received 429 from server, waiting ${delay}ms before retry`);
-                await new Promise((resolve) => setTimeout(resolve, delay));
+
+                let retries = 0;
+                while (retries < cfg.maxRetries) {
+                    retries++;
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+
+                    // A tricky thing here is that we will bypass the middleware chain on retry
+                    const retryResponse = await fetch(request);
+                    if (retryResponse.status !== 429) {
+                        return retryResponse;
+                    }
+                    console.warn(`Retry ${retries} also received 429, retrying...`);
+                }
+
+                console.error(`Max retries reached for request to ${request.url}`);
             }
 
             return res;
