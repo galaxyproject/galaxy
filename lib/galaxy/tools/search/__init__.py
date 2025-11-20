@@ -221,7 +221,7 @@ class ToolPanelViewSearch:
         if not os.path.exists(meta_path):
             return None
         try:
-            with open(meta_path, "r", encoding="utf-8") as meta_file:
+            with open(meta_path, encoding="utf-8") as meta_file:
                 metadata = json.load(meta_file)
         except Exception:
             return None
@@ -281,7 +281,7 @@ class ToolPanelViewSearch:
 
     def _iter_tools_to_index(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> Iterable["Tool"]:
         seen: set[str] = set()
-        for tool_id, tool in toolbox.tools():
+        for _tool_id, tool in toolbox.tools():
             if not tool or not tool.is_latest_version:
                 continue
             if not toolbox.panel_has_tool(tool, self.panel_view_id):
@@ -356,7 +356,7 @@ class ToolPanelViewSearch:
                 default_field_names=self.search_fields,
                 field_boosts=self.field_boosts,
             )
-        except ValueError as error:
+        except ValueError:
             query_result, errors = self.index.parse_query_lenient(
                 query,
                 default_field_names=self.search_fields,
