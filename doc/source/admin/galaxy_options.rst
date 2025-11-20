@@ -5847,9 +5847,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable user defined tools. In order to enable users to use this
-    feature create a role of type `Custom Tool Execution` in the admin
-    user interface and assign users or groups to this role.
+    Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
+    for user defined tools.
 :Default: ``false``
 :Type: bool
 
