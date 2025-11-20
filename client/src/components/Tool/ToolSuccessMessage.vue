@@ -9,6 +9,7 @@ import ExternalLink from "../ExternalLink.vue";
 const props = defineProps<{
     jobResponse: JobResponse;
     toolName: string;
+    usedToolRequest: boolean;
 }>();
 
 const outputs = computed(() => props.jobResponse.outputs.concat(props.jobResponse.output_collections));
@@ -22,15 +23,23 @@ const nOutputsText = computed(() => (outputs.value.length > 1 ? `${outputs.value
 
 <template>
     <div class="donemessagelarge">
-        <p>
-            Started tool <b>{{ props.toolName }}</b> and successfully added {{ nJobsText }} to the queue.
-        </p>
-        <p>It produces {{ nOutputsText }}:</p>
-        <ul data-description="list of outputs">
-            <li v-for="item of outputs" :key="item.hid">
-                <b>{{ item.hid }}: {{ item.name }}</b>
-            </li>
-        </ul>
+        <div v-if="usedToolRequest">
+            You used the fancy new API... something new will be here.
+            <img
+                src="https://www.animatedimages.org/data/media/695/animated-under-construction-image-0055.gif"
+                alt="90s style under construction" />
+        </div>
+        <div v-else>
+            <p>
+                Started tool <b>{{ props.toolName }}</b> and successfully added {{ nJobsText }} to the queue.
+            </p>
+            <p>It produces {{ nOutputsText }}:</p>
+            <ul data-description="list of outputs">
+                <li v-for="item of outputs" :key="item.hid">
+                    <b>{{ item.hid }}: {{ item.name }}</b>
+                </li>
+            </ul>
+        </div>
         <p>
             You can check the status of queued jobs and view the resulting data by refreshing the History panel. When
             the job has been run the status will change from 'running' to 'finished' if completed successfully or
