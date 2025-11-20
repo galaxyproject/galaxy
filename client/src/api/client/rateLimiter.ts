@@ -62,11 +62,11 @@ export function createRateLimiterMiddleware(config: RateLimitConfig = {}): Middl
             return request;
         },
 
-        async onResponse({ response: res }) {
+        async onResponse({ response: res, request }) {
             // TODO: Implement max retries logic
 
             // Handle 429 Too Many Requests from server
-            if (res.status === 429) {
+            if (res.status === 429 && request.method === "GET") {
                 const retryAfter = res.headers.get("Retry-After");
                 const delay = retryAfter ? parseInt(retryAfter) * 1000 : cfg.retryDelay;
 
