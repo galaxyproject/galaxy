@@ -1,9 +1,10 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -18,7 +19,10 @@ import HistoryView from "./HistoryView.vue";
 const localVue = getLocalVue();
 localVue.use(VueRouter);
 
-jest.mock("stores/services/history.services");
+vi.mock("@/stores/services/history.services", () => ({
+    getHistoryByIdFromServer: vi.fn(),
+    setCurrentHistoryOnServer: vi.fn(),
+}));
 
 setupSelectableMock();
 
@@ -87,7 +91,7 @@ async function createWrapper(localVue, currentUserId, history) {
         localVue,
         provide: {
             store: {
-                dispatch: jest.fn,
+                dispatch: vi.fn,
                 getters: {},
             },
         },
