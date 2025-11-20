@@ -7,10 +7,9 @@ import { PiniaVuePlugin } from "pinia";
 import { vi } from "vitest";
 
 import { localizationPlugin } from "@/components/plugins/localization";
+import _short from "@/components/plugins/short";
 import { vueRxShortcutPlugin } from "@/components/plugins/vueRxShortcuts";
 import _l from "@/utils/localization";
-
-import _short from "@/components/plugins/short";
 
 function testLocalize(text) {
     if (text) {
@@ -122,3 +121,9 @@ expect.extend({
         }
     },
 });
+
+export function dispatchEvent(wrapper, type, props = {}) {
+    const event = new Event(type, { bubbles: true });
+    Object.assign(event, props);
+    wrapper.element.dispatchEvent(event);
+}

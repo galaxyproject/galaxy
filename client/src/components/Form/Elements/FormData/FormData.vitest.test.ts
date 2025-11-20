@@ -1,10 +1,11 @@
-import "tests/jest/mockHelpPopovers";
+import "@tests/vitest/mockHelpPopovers";
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
+import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -12,7 +13,7 @@ import { useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
 
-jest.mock("@/composables/filter");
+vi.mock("@/composables/filter");
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -464,12 +465,12 @@ describe("FormData", () => {
         await wrapper.setProps({ value: value_1 });
         const checkLinked = wrapper.find("input[type='checkbox']");
         expect(wrapper.find(".custom-switch span").text()).toBe(
-            "Linked: Datasets will be run in matched order with other datasets.",
+            "Linked:Datasets will be run in matched order with other datasets.",
         );
         expect(checkLinked.element.checked).toBeTruthy();
         await checkLinked.setChecked(false);
         expect(wrapper.find(".custom-switch span").text()).toBe(
-            "Unlinked: Dataset will be run against *all* other datasets.",
+            "Unlinked:Dataset will be run against *all* other datasets.",
         );
         expect(wrapper.emitted().input[4][0]).toEqual({
             batch: true,
