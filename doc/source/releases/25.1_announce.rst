@@ -29,6 +29,10 @@ See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 Admin Notes
 ===========================================================
 
+**Database Migrations will require stopping the Galaxy instance**
+  This release includes database migrations that require the Galaxy instance to be stopped
+  before applying the update. Please plan accordingly to minimize downtime for users.
+
 **Removal of the Trackster Visualization in Galaxy release 25.1**
   The legacy Trackster genome browser visualization
   `has been completely removed from Galaxy <https://github.com/galaxyproject/galaxy/pull/20974>`__. This includes
