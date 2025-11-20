@@ -231,6 +231,9 @@ Visualizations Updates
 ===========================================================
 
 .. visualizations
+* Add Hyphy Vision Result Viewer
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21196`_
 * Enable drag-and-drop of collection elements in IGV
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 21173`_
@@ -293,6 +296,21 @@ Datatypes Updates
 ===========================================================
 
 .. datatypes
+* Backport fix anndata datatype update
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 21111`_
+* Fix MIME type for LAZ datatype
+  (thanks to `@kysrpex <https://github.com/kysrpex>`__).
+  `Pull Request 21202`_
+* Add SpatialData datatype
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 21000`_
+* support ZARR v3 for  Spatialdata dt
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 21265`_
+* Fix forward merge
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21307`_
 * Fix tool-provided metadata for CONVERTER_tar_to_directory
   (thanks to `@mr-c <https://github.com/mr-c>`__).
   `Pull Request 20260`_
