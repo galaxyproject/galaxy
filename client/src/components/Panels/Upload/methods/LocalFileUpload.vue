@@ -3,23 +3,45 @@ import { faCloudUploadAlt, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { bytesToString } from "@/utils/utils";
 
 import type { UploadMethodConfig } from "../types";
+import { useUploadService } from "../uploadService";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTip from "@/components/BaseComponents/GTip.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    targetHistoryId: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "upload-start"): void;
     (e: "cancel"): void;
 }>();
+
+const uploadService = useUploadService();
+
+// Configuration for defaults (extensions & dbkeys)
+const { defaultDbKey, defaultExtension } = ((): any => {
+    // lightweight wrapper using composable; we only need defaults
+    const cfg = useUploadConfigurations(undefined) as any;
+    return {
+        defaultDbKey: cfg.defaultDbKey?.value,
+        defaultExtension: cfg.defaultExtension?.value,
+    };
+})();
+
+// Metadata controls
+const selectedExtension = ref<string>(defaultExtension || "auto");
+const selectedDbKey = ref<string>(defaultDbKey || "?");
+const spaceToTab = ref(false);
+const toPosixLines = ref(false);
+const deferred = ref(false);
 
 const isDragging = ref(false);
 const selectedFiles = ref<File[]>([]);
@@ -78,10 +100,18 @@ function handleCancel() {
 }
 
 function handleStartUpload() {
-    console.log("Starting upload of files:", selectedFiles.value);
-    console.log("Total files:", selectedFiles.value.length);
-    console.log("Total size:", totalSize.value);
-
+    uploadService.enqueueLocalFiles(selectedFiles.value, {
+        uploadMethod: "local-file",
+        targetHistoryId: props.targetHistoryId,
+        elementDefaults: {
+            dbkey: selectedDbKey.value,
+            ext: selectedExtension.value,
+            space_to_tab: spaceToTab.value,
+            to_posix_lines: toPosixLines.value,
+            deferred: deferred.value,
+        },
+    });
+    selectedFiles.value = [];
     emit("upload-start");
 }
 </script>
