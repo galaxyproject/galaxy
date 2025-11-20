@@ -69,7 +69,7 @@ for line in stdo.split("\n"):
     if line:
         try:
             img = json.loads(line)
-            if img.get("Repository") == tag and img.get("Tag") == rev and img.get("ID") == rev_value:
+            if img.get("Repository") == repository and img.get("Tag") == tag and img.get("ID") == id:
                 found = True
                 break
         except (json.JSONDecodeError, ValueError):
