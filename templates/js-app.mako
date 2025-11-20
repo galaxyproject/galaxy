@@ -28,6 +28,12 @@
         <!-- Load stylesheets -->
         ${ h.dist_css('base')}
         ${ h.css('jquery-ui/smoothness/jquery-ui')}
+
+        <script type="text/javascript">
+            var options = {
+                session_csrf_token: "${ trans.session_csrf_token }",
+            };
+        </script>
     </head>
 
     <body scroll="no" class="full-content">
