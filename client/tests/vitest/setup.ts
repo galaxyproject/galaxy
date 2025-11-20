@@ -14,6 +14,15 @@ Vue.config.devtools = false;
 vi.mock("@/composables/hashedUserId");
 vi.mock("@/composables/userLocalStorage");
 
+// Mock handsontable to avoid core-js dependency issues
+vi.mock("handsontable", () => ({
+    default: class Handsontable {},
+}));
+vi.mock("@handsontable/vue", () => ({
+    default: {},
+    HotTable: {},
+}));
+
 // Provide a mocked version of Vue to ensure above settings are not
 // overridden by a Vue library that gets imported later
 vi.doMock("vue", () => ({
