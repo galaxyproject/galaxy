@@ -65,6 +65,7 @@ export default defineConfig({
             // Match Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
             "@tests": path.resolve(__dirname, "./tests"),
+            config: path.resolve(__dirname, "./tests/vitest/__mocks__/config.js"),
             config$: path.resolve(__dirname, "./tests/vitest/__mocks__/config.js"),
             "utils/localization$": path.resolve(__dirname, "./tests/vitest/__mocks__/localization.js"),
             "viz/trackster$": path.resolve(__dirname, "./tests/vitest/__mocks__/trackster.js"),
