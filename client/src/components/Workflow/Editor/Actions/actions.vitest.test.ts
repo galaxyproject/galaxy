@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
+import { vi } from "vitest";
 
 import { LazyUndoRedoAction, type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
@@ -42,7 +43,7 @@ import {
 const workflowId = "mock-workflow";
 
 describe("Workflow Undo Redo Actions", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -165,7 +166,7 @@ describe("Workflow Undo Redo Actions", () => {
                 workflow.tags = tags;
             };
 
-            const showCanvasCallback = jest.fn();
+            const showCanvasCallback = vi.fn();
 
             const action = new LazySetValueAction([], ["hello", "world"], setValueCallback, showCanvasCallback);
             testUndoRedo(action);
