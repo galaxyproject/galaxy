@@ -88,7 +88,7 @@
                 <ButtonSpinner
                     id="execute"
                     class="text-nowrap"
-                    :title="localize('Run Tool')"
+                    :title="runButtonTitle"
                     data-description="run tool button"
                     :disabled="runButtonDisabled"
                     size="small"
@@ -98,7 +98,7 @@
             </template>
             <template v-slot:footer>
                 <ButtonSpinner
-                    :title="localize('Run Tool')"
+                    :title="runButtonTitle"
                     class="mt-3 mb-3"
                     :disabled="runButtonDisabled"
                     :wait="showExecuting"
@@ -110,10 +110,13 @@
 </template>
 
 <script>
+import axios from "axios";
 import { mapActions, mapState, storeToRefs } from "pinia";
 
 import { canMutateHistory } from "@/api";
+import { getToolInputs } from "@/api/tools";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
+import { getAppRoot } from "@/onload/loadConfig";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -121,8 +124,10 @@ import { useJobStore } from "@/stores/jobStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
+import { localize } from "@/utils/localization";
 
-import { getToolFormData, submitJob, updateToolFormData } from "./services";
+import { getToolFormData, submitJob, submitToolRequest, updateToolFormData } from "./services";
+import { structuredInputs } from "./structured";
 
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolCard from "./ToolCard.vue";
@@ -216,6 +221,8 @@ export default {
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
             tags: [],
             formConfigInitialized: false,
+            toolInputs: null,
+            submissionStateMessage: null,
         };
     },
     computed: {
@@ -293,6 +300,17 @@ export default {
                 this.validationInternal?.length
             );
         },
+        runButtonTitle() {
+            if (this.showExecuting) {
+                if (this.submissionStateMessage) {
+                    return localize(this.submissionStateMessage);
+                } else {
+                    return localize("Run Tool");
+                }
+            } else {
+                return localize("Run Tool");
+            }
+        },
     },
     watch: {
         currentHistoryId() {
@@ -306,9 +324,9 @@ export default {
         this.requestTool();
     },
     methods: {
+        ...mapActions(useHistoryStore, ["startWatchingHistory"]),
         ...mapActions(useJobStore, ["saveLatestResponse"]),
         ...mapActions(useTourStore, ["setTour"]),
-        ...mapActions(useHistoryStore, ["startWatchingHistory"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
@@ -346,11 +364,37 @@ export default {
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
         },
+        waitOnRequest(response, requestContent, config, prevRoute) {
+            const toolRequestId = response.tool_request_id;
+            const handleRequestState = (toolRequestStateResponse) => {
+                const state = toolRequestStateResponse.data;
+                console.log(`state is ${state}`);
+                if (["new"].indexOf(state) !== -1) {
+                    setTimeout(doRequestCheck, 1000);
+                } else if (state == "failed") {
+                    this.handleError(null, requestContent);
+                } else {
+                    this.startWatchingHistory();
+                    this.showForm = false;
+                    this.showSuccess = true;
+                    this.handleSubmissionComplete(config, prevRoute);
+                }
+            };
+            const doRequestCheck = () => {
+                axios
+                    .get(`${getAppRoot()}api/tool_requests/${toolRequestId}/state`)
+                    .then(handleRequestState)
+                    .catch((e) => this.handleError(e, requestContent));
+            };
+            setTimeout(doRequestCheck, 1000);
+        },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
             this.loading = true;
-
+            getToolInputs(this.id, this.currentVersion).then((data) => {
+                this.toolInputs = data;
+            });
             return getToolFormData(this.id || this.toolUuid, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
                     this.currentVersion = data.version;
@@ -377,6 +421,36 @@ export default {
         onUpdatePreferredObjectStoreId(preferredObjectStoreId) {
             this.preferredObjectStoreId = preferredObjectStoreId;
         },
+        handleSubmissionComplete(config, prevRoute) {
+            const changeRoute = prevRoute === this.$route.fullPath;
+            if (changeRoute) {
+                this.$router.push(`/jobs/submission/success`);
+            } else {
+                if ([true, "true"].includes(config.enable_tool_recommendations)) {
+                    this.showRecommendation = true;
+                }
+                document.querySelector(".center-panel").scrollTop = 0;
+            }
+        },
+        handleError(e, errorContent) {
+            this.errorMessage = e?.response?.data?.err_msg;
+            this.showExecuting = false;
+            this.submissionStateMessage = null;
+            let genericError = true;
+            const errorData = e && e.response && e.response.data && e.response.data.err_data;
+            if (errorData) {
+                const errorEntries = Object.entries(errorData);
+                if (errorEntries.length > 0) {
+                    this.validationScrollTo = errorEntries[0];
+                    genericError = false;
+                }
+            }
+            if (genericError) {
+                this.showError = true;
+                this.errorTitle = "Job submission failed.";
+                this.errorContent = errorContent;
+            }
+        },
         onExecute(config, historyId) {
             // If a tour is active that was generated for this tool, end it.
             if (this.currentTour?.id.startsWith(`tool-generated-${this.formConfig.id}`)) {
@@ -388,107 +462,146 @@ export default {
                 return;
             }
             this.showExecuting = true;
-            const jobDef = {
-                history_id: historyId,
-                tool_id: this.formConfig.id,
-                tool_version: this.formConfig.version,
-                tool_uuid: this.toolUuid,
+            this.submissionStateMessage = "Preparing Request";
+            const inputs = {
+                ...this.formData,
                 __tags: this.tags,
-                inputs: {
-                    ...this.formData,
-                },
             };
-            if (this.useEmail) {
-                jobDef.inputs["send_email_notification"] = true;
+            const toolId = this.formConfig.id;
+            const toolVersion = this.formConfig.version;
+            let validatedInputs = null;
+            try {
+                validatedInputs = structuredInputs(inputs, this.toolInputs);
+            } catch {
+                // failed validation, just use legacy API
             }
-            if (this.useJobRemapping) {
-                jobDef.inputs["rerun_remap_job_id"] = this.job_id;
-            }
-            if (this.useCachedJobs) {
-                jobDef.inputs["use_cached_job"] = true;
-            }
-            if (this.preferredObjectStoreId) {
-                jobDef.preferred_object_store_id = this.preferredObjectStoreId;
-            }
-            if (this.dataManagerMode === "bundle") {
-                jobDef.data_manager_mode = this.dataManagerMode;
-            }
-            if (this.formConfig.credentials?.length) {
-                jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
-                    this.formConfig.id,
-                    this.formConfig.version,
-                );
-            }
-            console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;
-            submitJob(jobDef).then(
-                (jobResponse) => {
-                    this.submissionRequestFailed = false;
-                    this.showExecuting = false;
-                    let changeRoute = false;
-                    this.startWatchingHistory();
-                    if (jobResponse.produces_entry_points) {
-                        this.showEntryPoints = true;
-                        this.entryPoints = jobResponse.jobs;
-                    }
-                    const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
-                    if (nJobs > 0 && !jobResponse.errors?.length) {
-                        this.showForm = false;
-                        const toolName = this.toolName;
-                        this.saveLatestResponse({
-                            jobDef,
-                            jobResponse,
-                            toolName,
-                        });
-                        changeRoute = prevRoute === this.$route.fullPath;
-                    } else {
-                        const defaultErrorTitle = "Job submission rejected.";
-                        this.showError = true;
-                        this.showForm = true;
-                        if (jobResponse?.errors) {
-                            const nErrors = jobResponse.errors.length;
-                            if (nJobs > 0) {
-                                this.errorTitle = `Job submission for ${nErrors} out of ${
-                                    nJobs + nErrors
-                                } jobs failed.`;
+            if (validatedInputs) {
+                const toolRequest = {
+                    history_id: historyId,
+                    tool_id: toolId,
+                    tool_version: toolVersion,
+                    inputs: validatedInputs,
+                };
+                if (this.useCachedJobs) {
+                    toolRequest.use_cached_jobs = true;
+                }
+                if (this.preferredObjectStoreId) {
+                    toolRequest.preferred_object_store_id = this.preferredObjectStoreId;
+                }
+                if (this.dataManagerMode === "bundle") {
+                    toolRequest.data_manager_mode = this.dataManagerMode;
+                }
+                this.submissionStateMessage = "Sending Request";
+                submitToolRequest(toolRequest).then(
+                    (jobResponse) => {
+                        this.submissionStateMessage = "Processing Request";
+                        console.log(jobResponse);
+                        this.waitOnRequest(jobResponse, toolRequest, config, prevRoute);
+                    },
+                    (e) => {
+                        this.handleError(e, toolRequest);
+                    },
+                );
+            } else {
+                const jobDef = {
+                    history_id: historyId,
+                    tool_id: toolId,
+                    tool_version: toolVersion,
+                    tool_uuid: this.toolUuid,
+                    inputs: inputs,
+                };
+                if (this.useEmail) {
+                    jobDef.inputs["send_email_notification"] = true;
+                }
+                if (this.useJobRemapping) {
+                    jobDef.inputs["rerun_remap_job_id"] = this.job_id;
+                }
+                if (this.useCachedJobs) {
+                    jobDef.inputs["use_cached_job"] = true;
+                }
+                if (this.preferredObjectStoreId) {
+                    jobDef.preferred_object_store_id = this.preferredObjectStoreId;
+                }
+                if (this.dataManagerMode === "bundle") {
+                    jobDef.data_manager_mode = this.dataManagerMode;
+                }
+                if (this.formConfig.credentials?.length) {
+                    jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
+                        this.formConfig.id,
+                        this.formConfig.version,
+                    );
+                }
+                console.debug("toolForm::onExecute()", jobDef);
+                submitJob(jobDef).then(
+                    (jobResponse) => {
+                        this.submissionRequestFailed = false;
+                        this.showExecuting = false;
+                        let changeRoute = false;
+                        this.startWatchingHistory();
+                        if (jobResponse.produces_entry_points) {
+                            this.showEntryPoints = true;
+                            this.entryPoints = jobResponse.jobs;
+                        }
+                        const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
+                        if (nJobs > 0 && !jobResponse.errors?.length) {
+                            this.showForm = false;
+                            const toolName = this.toolName;
+                            this.saveLatestResponse({
+                                jobDef,
+                                jobResponse,
+                                toolName,
+                            });
+                            changeRoute = prevRoute === this.$route.fullPath;
+                        } else {
+                            const defaultErrorTitle = "Job submission rejected.";
+                            this.showError = true;
+                            this.showForm = true;
+                            if (jobResponse?.errors) {
+                                const nErrors = jobResponse.errors.length;
+                                if (nJobs > 0) {
+                                    this.errorTitle = `Job submission for ${nErrors} out of ${
+                                        nJobs + nErrors
+                                    } jobs failed.`;
+                                } else {
+                                    this.errorTitle = defaultErrorTitle;
+                                }
+                                this.errorContent = jobResponse.errors;
                             } else {
                                 this.errorTitle = defaultErrorTitle;
+                                this.errorContent = jobResponse;
                             }
-                            this.errorContent = jobResponse.errors;
+                        }
+                        if (changeRoute) {
+                            this.$router.push(`/jobs/submission/success`);
                         } else {
-                            this.errorTitle = defaultErrorTitle;
-                            this.errorContent = jobResponse;
+                            if ([true, "true"].includes(config.enable_tool_recommendations)) {
+                                this.showRecommendation = true;
+                            }
+                            document.querySelector("#center").scrollTop = 0;
                         }
-                    }
-                    if (changeRoute) {
-                        this.$router.push(`/jobs/submission/success`);
-                    } else {
-                        if ([true, "true"].includes(config.enable_tool_recommendations)) {
-                            this.showRecommendation = true;
+                    },
+                    (e) => {
+                        this.errorMessage = e?.response?.data?.err_msg;
+                        this.submissionRequestFailed = true;
+                        this.showExecuting = false;
+                        let genericError = true;
+                        const errorData = e && e.response && e.response.data && e.response.data.err_data;
+                        if (errorData) {
+                            const errorEntries = Object.entries(errorData);
+                            if (errorEntries.length > 0) {
+                                this.validationScrollTo = errorEntries[0];
+                                genericError = false;
+                            }
                         }
-                        document.querySelector("#center").scrollTop = 0;
-                    }
-                },
-                (e) => {
-                    this.errorMessage = e?.response?.data?.err_msg;
-                    this.submissionRequestFailed = true;
-                    this.showExecuting = false;
-                    let genericError = true;
-                    const errorData = e && e.response && e.response.data && e.response.data.err_data;
-                    if (errorData) {
-                        const errorEntries = Object.entries(errorData);
-                        if (errorEntries.length > 0) {
-                            this.validationScrollTo = errorEntries[0];
-                            genericError = false;
+                        if (genericError) {
+                            this.showError = true;
+                            this.errorTitle = "Job submission failed.";
+                            this.errorContent = jobDef;
                         }
-                    }
-                    if (genericError) {
-                        this.showError = true;
-                        this.errorTitle = "Job submission failed.";
-                        this.errorContent = jobDef;
-                    }
-                },
-            );
+                    },
+                );
+            }
         },
     },
 };

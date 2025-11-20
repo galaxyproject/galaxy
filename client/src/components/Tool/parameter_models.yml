@@ -1,0 +1,1662 @@
+# auto generated file for JavaScript testing, do not modify manually
+# -----
+# PYTHONPATH="lib" uv run python test/unit/tool_util/test_parameter_specification.py
+# -----
+cwl_boolean:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_boolean
+cwl_boolean_optional:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_union
+    parameters:
+    - name: parameter
+      parameter_type: cwl_null
+    - name: parameter
+      parameter_type: cwl_boolean
+cwl_directory:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: cwl_directory
+cwl_file:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: cwl_file
+cwl_float:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_float
+cwl_float_optional:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_union
+    parameters:
+    - name: parameter
+      parameter_type: cwl_null
+    - name: parameter
+      parameter_type: cwl_float
+cwl_int:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_integer
+cwl_int_optional:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_union
+    parameters:
+    - name: parameter
+      parameter_type: cwl_null
+    - name: parameter
+      parameter_type: cwl_integer
+cwl_string:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_string
+cwl_string_optional:
+  parameters:
+  - name: parameter
+    parameter_type: cwl_union
+    parameters:
+    - name: parameter
+      parameter_type: cwl_null
+    - name: parameter
+      parameter_type: cwl_string
+gx_boolean:
+  parameters:
+  - argument: null
+    falsevalue: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_boolean
+    truevalue: null
+    type: boolean
+    value: false
+gx_boolean_user:
+  parameters:
+  - argument: null
+    falsevalue: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_boolean
+    truevalue: null
+    type: boolean
+    value: false
+gx_color:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_color
+    type: color
+    value: '#aabbcc'
+gx_conditional_boolean:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: conditional_parameter
+    optional: false
+    parameter_type: gx_conditional
+    test_parameter:
+      argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: test_parameter
+      optional: false
+      parameter_type: gx_boolean
+      truevalue: null
+      type: boolean
+      value: false
+    type: conditional
+    whens:
+    - discriminator: true
+      is_default_when: false
+      parameters:
+      - argument: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        max: null
+        min: null
+        name: integer_parameter
+        optional: false
+        parameter_type: gx_integer
+        type: integer
+        validators: []
+        value: 1
+    - discriminator: false
+      is_default_when: true
+      parameters:
+      - argument: null
+        falsevalue: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        name: boolean_parameter
+        optional: false
+        parameter_type: gx_boolean
+        truevalue: null
+        type: boolean
+        value: false
+gx_conditional_boolean_checked:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: conditional_parameter
+    optional: false
+    parameter_type: gx_conditional
+    test_parameter:
+      argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: test_parameter
+      optional: false
+      parameter_type: gx_boolean
+      truevalue: null
+      type: boolean
+      value: true
+    type: conditional
+    whens:
+    - discriminator: true
+      is_default_when: true
+      parameters:
+      - argument: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        max: null
+        min: null
+        name: integer_parameter
+        optional: false
+        parameter_type: gx_integer
+        type: integer
+        validators: []
+        value: 1
+    - discriminator: false
+      is_default_when: false
+      parameters:
+      - argument: null
+        falsevalue: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        name: boolean_parameter
+        optional: false
+        parameter_type: gx_boolean
+        truevalue: null
+        type: boolean
+        value: false
+gx_conditional_conditional_boolean:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: outer_conditional_parameter
+    optional: false
+    parameter_type: gx_conditional
+    test_parameter:
+      argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: outer_test_parameter
+      optional: false
+      parameter_type: gx_boolean
+      truevalue: null
+      type: boolean
+      value: false
+    type: conditional
+    whens:
+    - discriminator: true
+      is_default_when: false
+      parameters:
+      - argument: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        name: inner_conditional_parameter
+        optional: false
+        parameter_type: gx_conditional
+        test_parameter:
+          argument: null
+          falsevalue: null
+          help: null
+          hidden: false
+          is_dynamic: false
+          label: null
+          name: inner_test_parameter
+          optional: false
+          parameter_type: gx_boolean
+          truevalue: null
+          type: boolean
+          value: false
+        type: conditional
+        whens:
+        - discriminator: true
+          is_default_when: false
+          parameters:
+          - argument: null
+            help: null
+            hidden: false
+            is_dynamic: false
+            label: null
+            max: null
+            min: null
+            name: integer_parameter
+            optional: false
+            parameter_type: gx_integer
+            type: integer
+            validators: []
+            value: 1
+        - discriminator: false
+          is_default_when: true
+          parameters:
+          - argument: null
+            falsevalue: null
+            help: null
+            hidden: false
+            is_dynamic: false
+            label: null
+            name: boolean_parameter
+            optional: false
+            parameter_type: gx_boolean
+            truevalue: null
+            type: boolean
+            value: false
+    - discriminator: false
+      is_default_when: true
+      parameters:
+      - argument: null
+        falsevalue: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        name: boolean_parameter
+        optional: false
+        parameter_type: gx_boolean
+        truevalue: null
+        type: boolean
+        value: false
+gx_conditional_select:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: conditional_parameter
+    optional: false
+    parameter_type: gx_conditional
+    test_parameter:
+      argument: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      multiple: false
+      name: test_parameter
+      optional: false
+      options:
+      - label: A
+        selected: false
+        value: a
+      - label: B
+        selected: false
+        value: b
+      - label: C
+        selected: false
+        value: c
+      parameter_type: gx_select
+      type: select
+      validators: []
+    type: conditional
+    whens:
+    - discriminator: a
+      is_default_when: true
+      parameters:
+      - argument: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        max: null
+        min: null
+        name: integer_parameter
+        optional: false
+        parameter_type: gx_integer
+        type: integer
+        validators: []
+        value: 1
+    - discriminator: b
+      is_default_when: false
+      parameters:
+      - argument: null
+        falsevalue: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        name: boolean_parameter
+        optional: false
+        parameter_type: gx_boolean
+        truevalue: null
+        type: boolean
+        value: false
+    - discriminator: c
+      is_default_when: false
+      parameters:
+      - argument: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        name: color_parameter
+        optional: false
+        parameter_type: gx_color
+        type: color
+        value: '#aabbcc'
+gx_data:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: false
+    name: parameter
+    optional: false
+    parameter_type: gx_data
+    type: data
+gx_data_collection:
+  parameters:
+  - argument: null
+    collection_type: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_data_collection
+    type: data_collection
+    value: null
+gx_data_collection_optional:
+  parameters:
+  - argument: null
+    collection_type: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: true
+    parameter_type: gx_data_collection
+    type: data_collection
+    value: null
+gx_data_column:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: false
+    name: ref_parameter
+    optional: false
+    parameter_type: gx_data
+    type: data
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    parameter_type: gx_data_column
+    type: data_column
+    value: null
+gx_data_column_multiple:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: false
+    name: ref_parameter
+    optional: false
+    parameter_type: gx_data
+    type: data
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: true
+    name: parameter
+    optional: false
+    parameter_type: gx_data_column
+    type: data_column
+    value: null
+gx_data_column_multiple_accept_default:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: false
+    name: ref_parameter
+    optional: false
+    parameter_type: gx_data
+    type: data
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: true
+    name: parameter
+    optional: true
+    parameter_type: gx_data_column
+    type: data_column
+    value:
+    - 0
+gx_data_column_optional:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: false
+    name: ref_parameter
+    optional: false
+    parameter_type: gx_data
+    type: data
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: true
+    parameter_type: gx_data_column
+    type: data_column
+    value: null
+gx_data_multiple:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: true
+    name: parameter
+    optional: false
+    parameter_type: gx_data
+    type: data
+gx_data_multiple_optional:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: true
+    name: parameter
+    optional: true
+    parameter_type: gx_data
+    type: data
+gx_data_optional:
+  parameters:
+  - argument: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    multiple: false
+    name: parameter
+    optional: true
+    parameter_type: gx_data
+    type: data
+gx_directory_uri:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_directory_uri
+    type: directory
+    validators: []
+gx_directory_uri_validation:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_directory_uri
+    type: directory
+    validators:
+    - implicit: false
+      max: 45
+      message: Must have length of at least 10 and at most 45
+      min: 10
+      negate: false
+      type: length
+    - expression: '''api'' in value'
+      implicit: false
+      message: Value '%s' does not evaluate to True for ''api' in value'
+      negate: false
+      type: expression
+    - expression: ^.*json$
+      implicit: false
+      message: Value '%s' does not match regular expression '^.*json$'
+      negate: false
+      type: regex
+gx_drill_down_exact:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    hierarchy: exact
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    options:
+    - name: a
+      options:
+      - name: aa
+        options: []
+        selected: false
+        value: aa
+      - name: ab
+        options:
+        - name: aba
+          options: []
+          selected: false
+          value: aba
+        - name: abb
+          options: []
+          selected: false
+          value: abb
+        selected: false
+        value: ab
+      selected: false
+      value: a
+    - name: b
+      options:
+      - name: ba
+        options: []
+        selected: false
+        value: ba
+      - name: bb
+        options:
+        - name: bba
+          options: []
+          selected: false
+          value: bba
+        - name: bbb
+          options: []
+          selected: false
+          value: bbb
+        selected: false
+        value: bb
+      selected: false
+      value: b
+    parameter_type: gx_drill_down
+    type: drill_down
+gx_drill_down_exact_with_selection:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    hierarchy: exact
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    options:
+    - name: a
+      options:
+      - name: aa
+        options: []
+        selected: false
+        value: aa
+      - name: ab
+        options:
+        - name: aba
+          options: []
+          selected: true
+          value: aba
+        - name: abb
+          options: []
+          selected: false
+          value: abb
+        selected: false
+        value: ab
+      selected: false
+      value: a
+    - name: b
+      options:
+      - name: ba
+        options: []
+        selected: false
+        value: ba
+      - name: bb
+        options:
+        - name: bba
+          options: []
+          selected: false
+          value: bba
+        - name: bbb
+          options: []
+          selected: false
+          value: bbb
+        selected: false
+        value: bb
+      selected: false
+      value: b
+    parameter_type: gx_drill_down
+    type: drill_down
+gx_drill_down_recurse:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    hierarchy: recurse
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    options:
+    - name: a
+      options:
+      - name: aa
+        options: []
+        selected: false
+        value: aa
+      - name: ab
+        options:
+        - name: aba
+          options: []
+          selected: false
+          value: aba
+        - name: abb
+          options: []
+          selected: false
+          value: abb
+        selected: false
+        value: ab
+      selected: false
+      value: a
+    - name: b
+      options:
+      - name: ba
+        options: []
+        selected: false
+        value: ba
+      - name: bb
+        options:
+        - name: bba
+          options: []
+          selected: false
+          value: bba
+        - name: bbb
+          options: []
+          selected: false
+          value: bbb
+        selected: false
+        value: bb
+      selected: false
+      value: b
+    parameter_type: gx_drill_down
+    type: drill_down
+gx_drill_down_recurse_multiple:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    hierarchy: recurse
+    is_dynamic: false
+    label: null
+    multiple: true
+    name: parameter
+    optional: false
+    options:
+    - name: a
+      options:
+      - name: aa
+        options: []
+        selected: false
+        value: aa
+      - name: ab
+        options:
+        - name: aba
+          options: []
+          selected: false
+          value: aba
+        - name: abb
+          options: []
+          selected: false
+          value: abb
+        selected: false
+        value: ab
+      selected: false
+      value: a
+    - name: b
+      options:
+      - name: ba
+        options: []
+        selected: false
+        value: ba
+      - name: bb
+        options:
+        - name: bba
+          options: []
+          selected: false
+          value: bba
+        - name: bbb
+          options: []
+          selected: false
+          value: bbb
+        selected: false
+        value: bb
+      selected: false
+      value: b
+    parameter_type: gx_drill_down
+    type: drill_down
+gx_float:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_float
+    type: float
+    validators: []
+    value: 1.0
+gx_float_min_max:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: 9.8
+    min: 0.1
+    name: parameter
+    optional: false
+    parameter_type: gx_float
+    type: float
+    validators: []
+    value: 1.0
+gx_float_optional:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: true
+    parameter_type: gx_float
+    type: float
+    validators: []
+    value: null
+gx_float_validation_range:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_float
+    type: float
+    validators:
+    - exclude_max: true
+      exclude_min: false
+      implicit: false
+      max: 9.8
+      message: Value ('%s') must fulfill (0.1 <= value < 9.8)
+      min: 0.1
+      negate: false
+      type: in_range
+    value: 1.0
+gx_genomebuild:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    parameter_type: gx_genomebuild
+    type: genomebuild
+gx_genomebuild_multiple:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: true
+    name: parameter
+    optional: false
+    parameter_type: gx_genomebuild
+    type: genomebuild
+gx_genomebuild_optional:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: true
+    parameter_type: gx_genomebuild
+    type: genomebuild
+gx_group_tag:
+  parameters:
+  - argument: null
+    collection_type: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: ref_parameter
+    optional: false
+    parameter_type: gx_data_collection
+    type: data_collection
+    value: null
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    parameter_type: gx_group_tag
+    type: group_tag
+gx_group_tag_multiple:
+  parameters:
+  - argument: null
+    collection_type: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: ref_parameter
+    optional: false
+    parameter_type: gx_data_collection
+    type: data_collection
+    value: null
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: true
+    name: parameter
+    optional: false
+    parameter_type: gx_group_tag
+    type: group_tag
+gx_group_tag_optional:
+  parameters:
+  - argument: null
+    collection_type: null
+    extensions:
+    - data
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: ref_parameter
+    optional: false
+    parameter_type: gx_data_collection
+    type: data_collection
+    value: null
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: true
+    parameter_type: gx_group_tag
+    type: group_tag
+gx_hidden:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_hidden
+    type: hidden
+    validators: []
+    value: moo
+gx_hidden_optional:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: true
+    parameter_type: gx_hidden
+    type: hidden
+    validators: []
+    value: null
+gx_hidden_validation:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_hidden
+    type: hidden
+    validators:
+    - implicit: false
+      max: 45
+      message: Must have length of at least 10 and at most 45
+      min: 10
+      negate: false
+      type: length
+    - expression: '''api'' in value'
+      implicit: false
+      message: Value '%s' does not evaluate to True for ''api' in value'
+      negate: false
+      type: expression
+    - expression: ^.*json$
+      implicit: false
+      message: Value '%s' does not match regular expression '^.*json$'
+      negate: false
+      type: regex
+    value: http://mycoolsource/api/index.json
+gx_int:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_integer
+    type: integer
+    validators: []
+    value: 1
+gx_int_min_max:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: 10
+    min: 0
+    name: parameter
+    optional: false
+    parameter_type: gx_integer
+    type: integer
+    validators: []
+    value: 1
+gx_int_optional:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: true
+    parameter_type: gx_integer
+    type: integer
+    validators: []
+    value: 1
+gx_int_required:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_integer
+    type: integer
+    validators: []
+    value: null
+gx_int_required_via_empty_string:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_integer
+    type: integer
+    validators: []
+    value: null
+gx_int_validation_range:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_integer
+    type: integer
+    validators:
+    - exclude_max: true
+      exclude_min: false
+      implicit: false
+      max: 10
+      message: Value ('%s') must fulfill (0 <= value < 10)
+      min: 0
+      negate: false
+      type: in_range
+    value: 1
+gx_repeat_boolean:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_repeat
+    parameters:
+    - argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: boolean_parameter
+      optional: false
+      parameter_type: gx_boolean
+      truevalue: null
+      type: boolean
+      value: false
+    type: repeat
+gx_repeat_boolean_min:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: 2
+    name: parameter
+    optional: false
+    parameter_type: gx_repeat
+    parameters:
+    - argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: boolean_parameter
+      optional: false
+      parameter_type: gx_boolean
+      truevalue: null
+      type: boolean
+      value: false
+    type: repeat
+gx_repeat_data:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: null
+    name: parameter
+    optional: false
+    parameter_type: gx_repeat
+    parameters:
+    - argument: null
+      extensions:
+      - data
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      max: null
+      min: null
+      multiple: false
+      name: data_parameter
+      optional: false
+      parameter_type: gx_data
+      type: data
+    type: repeat
+gx_repeat_data_min:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    max: null
+    min: 2
+    name: parameter
+    optional: false
+    parameter_type: gx_repeat
+    parameters:
+    - argument: null
+      extensions:
+      - data
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      max: null
+      min: null
+      multiple: false
+      name: data_parameter
+      optional: false
+      parameter_type: gx_data
+      type: data
+    type: repeat
+gx_section_boolean:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_section
+    parameters:
+    - argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: boolean_parameter
+      optional: false
+      parameter_type: gx_boolean
+      truevalue: null
+      type: boolean
+      value: false
+    type: section
+gx_section_data:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_section
+    parameters:
+    - argument: null
+      extensions:
+      - data
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      max: null
+      min: null
+      multiple: false
+      name: data_parameter
+      optional: false
+      parameter_type: gx_data
+      type: data
+    type: section
+gx_select:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    options:
+    - label: Ex1
+      selected: false
+      value: --ex1
+    - label: Ex2
+      selected: false
+      value: ex2
+    - label: Ex3
+      selected: false
+      value: --ex3
+    - label: Ex4
+      selected: false
+      value: --ex4
+    - label: Ex5
+      selected: false
+      value: ex5
+    parameter_type: gx_select
+    type: select
+    validators: []
+gx_select_multiple:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: true
+    name: parameter
+    optional: false
+    options:
+    - label: Ex1
+      selected: false
+      value: --ex1
+    - label: Ex2
+      selected: false
+      value: ex2
+    - label: Ex3
+      selected: false
+      value: --ex3
+    - label: Ex4
+      selected: false
+      value: --ex4
+    - label: Ex5
+      selected: false
+      value: ex5
+    parameter_type: gx_select
+    type: select
+    validators: []
+gx_select_multiple_optional:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: true
+    name: parameter
+    optional: true
+    options:
+    - label: Ex1
+      selected: false
+      value: --ex1
+    - label: Ex2
+      selected: false
+      value: ex2
+    - label: Ex3
+      selected: false
+      value: --ex3
+    - label: Ex4
+      selected: false
+      value: --ex4
+    - label: Ex5
+      selected: false
+      value: ex5
+    parameter_type: gx_select
+    type: select
+    validators: []
+gx_select_no_options_validation:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: false
+    options:
+    - label: Ex1
+      selected: false
+      value: --ex1
+    - label: Ex2
+      selected: false
+      value: ex2
+    - label: Ex3
+      selected: false
+      value: --ex3
+    - label: Ex4
+      selected: false
+      value: --ex4
+    - label: Ex5
+      selected: false
+      value: ex5
+    parameter_type: gx_select
+    type: select
+    validators:
+    - implicit: false
+      message: No options available for selection
+      negate: false
+      type: no_options
+gx_select_optional:
+  parameters:
+  - argument: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    multiple: false
+    name: parameter
+    optional: true
+    options:
+    - label: Ex1
+      selected: false
+      value: --ex1
+    - label: Ex2
+      selected: false
+      value: ex2
+    - label: Ex3
+      selected: false
+      value: --ex3
+    - label: Ex4
+      selected: false
+      value: --ex4
+    - label: Ex5
+      selected: false
+      value: ex5
+    parameter_type: gx_select
+    type: select
+    validators: []
+gx_text:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: true
+    parameter_type: gx_text
+    type: text
+    validators: []
+gx_text_default:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: foo
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: true
+    parameter_type: gx_text
+    type: text
+    validators: []
+gx_text_empty_validation:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: ''
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_text
+    type: text
+    validators:
+    - implicit: false
+      message: Field requires a value
+      negate: false
+      type: empty_field
+gx_text_expression_validation:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: ''
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_text
+    type: text
+    validators:
+    - expression: '''foobar'' in value'
+      implicit: false
+      message: Value '%s' does not evaluate to True for ''foobar' in value'
+      negate: false
+      type: expression
+gx_text_length_validation:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: ''
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_text
+    type: text
+    validators:
+    - implicit: false
+      max: 10
+      message: Must have length of at least 2 and at most 10
+      min: 2
+      negate: false
+      type: length
+gx_text_length_validation_negate:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: true
+    parameter_type: gx_text
+    type: text
+    validators:
+    - implicit: false
+      max: 10
+      message: Must not have length of at least 2 and at most 10
+      min: 2
+      negate: true
+      type: length
+gx_text_optional:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: true
+    parameter_type: gx_text
+    type: text
+    validators: []
+gx_text_optional_false:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: ''
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: false
+    parameter_type: gx_text
+    type: text
+    validators: []
+gx_text_regex_validation:
+  parameters:
+  - area: false
+    argument: null
+    default_options: []
+    default_value: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: parameter
+    optional: true
+    parameter_type: gx_text
+    type: text
+    validators:
+    - expression: ^[actg]*$
+      implicit: false
+      message: Value '%s' does not match regular expression '^[actg]*$'
+      negate: false
+      type: regex
