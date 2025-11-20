@@ -29,8 +29,10 @@ const showHistorySelector = ref(false);
 const historyStore = useHistoryStore();
 const { currentHistoryId, histories } = storeToRefs(historyStore);
 
-const currentHistoryName = computed(() => {
-    return currentHistoryId.value ? historyStore.getHistoryNameById(currentHistoryId.value) : undefined;
+const targetHistoryId = ref<string>(currentHistoryId.value || "");
+
+const targetHistoryName = computed(() => {
+    return targetHistoryId.value ? historyStore.getHistoryNameById(targetHistoryId.value) : undefined;
 });
 
 const modalShow = computed({
@@ -52,7 +54,6 @@ const method = computed(() => {
 });
 
 function handleUploadStart() {
-    // TODO: Store and handle upload state in a composable to show progress, errors, etc.
     modalShow.value = false;
 }
 
@@ -65,8 +66,7 @@ function openHistorySelector() {
 }
 
 function handleHistorySelected(history: { id: string }) {
-    // TODO: Change upload target history instead of current history?
-    historyStore.setCurrentHistory(history.id);
+    targetHistoryId.value = history.id;
     showHistorySelector.value = false;
 }
 </script>
@@ -78,13 +78,13 @@ function handleHistorySelected(history: { id: string }) {
                 <FontAwesomeIcon :icon="method.icon" class="mr-2" />
                 {{ method.headerAction }}
                 <span v-if="method.isUploadToHistory">
-                    to <strong>{{ currentHistoryName || "current history" }}</strong>
+                    to <strong>{{ targetHistoryName || "selected history" }}</strong>
                     <a
-                        title="Selecting a different history will set that history as your current one"
+                        title="Choose a different target history for this upload"
                         href="#"
                         class="select-history-link"
                         @click.prevent="openHistorySelector">
-                        or select another
+                        change
                     </a>
                 </span>
             </Heading>
@@ -92,19 +92,16 @@ function handleHistorySelected(history: { id: string }) {
         </template>
         <div v-if="method" class="upload-method-content">
             <p class="text-muted mb-2">{{ method.description }}</p>
-
-            <!-- Dynamic component rendering -->
             <component
                 :is="method.component"
                 :method="method"
+                :target-history-id="targetHistoryId"
                 @upload-start="handleUploadStart"
                 @cancel="handleUploadCancel" />
         </div>
         <div v-else class="text-center text-muted py-5">
             <p>Loading...</p>
         </div>
-
-        <!-- History Selector Modal -->
         <SelectorModal
             v-if="method && method.isUploadToHistory"
             :histories="histories"
@@ -126,6 +123,7 @@ function handleHistorySelected(history: { id: string }) {
     font-size: 0.6em;
     font-weight: normal;
     text-decoration: none;
+    margin-left: 0.25em;
 
     &:hover {
         text-decoration: underline;
