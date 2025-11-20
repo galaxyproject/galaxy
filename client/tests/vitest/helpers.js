@@ -10,6 +10,8 @@ import { localizationPlugin } from "@/components/plugins/localization";
 import { vueRxShortcutPlugin } from "@/components/plugins/vueRxShortcuts";
 import _l from "@/utils/localization";
 
+import _short from "@/components/plugins/short";
+
 function testLocalize(text) {
     if (text) {
         return `test_localized<${text}>`;
