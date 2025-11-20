@@ -63,6 +63,31 @@ if (typeof HTMLDialogElement !== "undefined") {
     HTMLDialogElement.prototype.close = HTMLDialogElement.prototype.close || vi.fn();
 }
 
+// Mock BroadcastChannel to fix Pinia state synchronization errors
+// Node.js's BroadcastChannel has a type mismatch with the browser API
+class MockBroadcastChannel extends EventTarget {
+    name: string;
+
+    constructor(name: string) {
+        super();
+        this.name = name;
+    }
+
+    postMessage() {
+        // No-op for tests
+    }
+
+    close() {
+        // No-op for tests
+    }
+}
+
+Object.defineProperty(global, "BroadcastChannel", {
+    writable: true,
+    configurable: true,
+    value: MockBroadcastChannel,
+});
+
 // Import and setup MSW if needed
 // This will be uncommented when tests using MSW are migrated
 // import { setupServer } from "msw/node";
