@@ -1,7 +1,7 @@
 import "@tests/vitest/mockHelpPopovers";
 
-import { getLocalVue } from "@tests/vitest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 

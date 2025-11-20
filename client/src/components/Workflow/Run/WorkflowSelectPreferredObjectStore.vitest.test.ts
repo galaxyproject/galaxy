@@ -1,9 +1,9 @@
 import "@tests/vitest/mockHelpPopovers";
 
 import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { setupMockConfig } from "@tests/vitest/mockConfig";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";

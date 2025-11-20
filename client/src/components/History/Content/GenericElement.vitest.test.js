@@ -1,12 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount } from "@vue/test-utils";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import { vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
 import GenericElement from "./GenericElement.vue";
-import { vi } from "vitest";
 
 vi.mock("components/History/model/queries");
 

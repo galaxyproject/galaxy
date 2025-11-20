@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -9,7 +10,6 @@ import { updateContentFields } from "@/components/History/model/queries";
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
 import ContentItem from "./ContentItem.vue";
-import { vi } from "vitest";
 
 vi.mock("@/components/History/model/queries");
 
