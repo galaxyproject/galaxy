@@ -1,7 +1,6 @@
 import {
     faClipboard,
     faCloud,
-    faColumns,
     faDatabase,
     faDesktop,
     faFileArchive,
@@ -40,15 +39,6 @@ export const uploadMethodRegistry: Record<UploadMode, UploadMethodConfig> = {
         headerAction: "Paste Links and Upload",
         isUploadToHistory: true,
         component: defineAsyncComponent(() => import("./methods/PasteLinksUpload.vue")),
-    },
-    "collection-upload": {
-        id: "collection-upload",
-        name: "Upload File Collection",
-        description: "Upload multiple files as a collection",
-        icon: faColumns,
-        headerAction: "Upload Collection",
-        isUploadToHistory: true,
-        component: defineAsyncComponent(() => import("./methods/CollectionUpload.vue")),
     },
     "remote-files": {
         id: "remote-files",
