@@ -1,27 +1,43 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { withPrefix } from "@/utils/redirect";
 
 import MountTarget from "./MarkdownGalaxy.vue";
 
 const { server, http } = useServerMock();
 
 // mock routes
-jest.mock("utils/redirect");
-withPrefix.mockImplementation((url) => url);
+vi.mock("@/utils/redirect", () => ({
+    withPrefix: vi.fn((url) => url),
+}));
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: {
             version_major: "test_version",
         },
         isConfigLoaded: true,
+    })),
+}));
+
+vi.mock("@/stores/invocationStore", () => ({
+    useInvocationStore: vi.fn(() => ({
+        getInvocationById: () => null,
+        getInvocationLoadError: () => null,
+        isLoadingInvocation: () => false,
+    })),
+}));
+
+vi.mock("@/stores/workflowStore", () => ({
+    useWorkflowStore: vi.fn(() => ({
+        fetchWorkflowForInstanceIdCached: vi.fn(() => Promise.resolve()),
+        getStoredWorkflowIdByInstanceId: () => null,
     })),
 }));
 
@@ -80,13 +96,15 @@ describe("MarkdownContainer", () => {
 
     it("Renders time stamp", async () => {
         const time = new Date();
-        jest.useFakeTimers().setSystemTime(time);
+        vi.useFakeTimers();
+        vi.setSystemTime(time);
         const wrapper = mountComponent({
             content: "generate_time()",
         });
         const version = wrapper.find(".galaxy-time");
         expect(version.exists()).toBe(true);
         expect(version.text()).toBe(time.toUTCString());
+        vi.useRealTimers();
     });
 
     it("Renders history link", async () => {
@@ -171,16 +189,16 @@ describe("MarkdownContainer", () => {
         });
         await flushPromises();
         const alert = wrapper.find(".alert-danger");
-        expect(alert.text()).toContain("Invalid or missing label for history_dataset_display");
+        expect(alert.text()).toMatch(/Invalid or missing label for\s*history_dataset_display/);
     });
 
     it("Renders loading span while invocation is loading", async () => {
-        const mockInvocationStore = require("@/stores/invocationStore");
-        mockInvocationStore.useInvocationStore = jest.fn(() => ({
+        const { useInvocationStore } = await import("@/stores/invocationStore");
+        vi.mocked(useInvocationStore).mockReturnValueOnce({
             getInvocationById: () => null,
             getInvocationLoadError: () => null,
-            isLoadingInvocation: jest.fn(() => true),
-        }));
+            isLoadingInvocation: vi.fn(() => true),
+        });
         const wrapper = mountComponent({
             content: "history_dataset_display(invocation_id=123, input=foo)",
             labels: [
@@ -194,18 +212,18 @@ describe("MarkdownContainer", () => {
 
     it("Handles invocation fetching and workflow ID resolution", async () => {
         const invocation = { workflow_id: "wf123", inputs: {}, outputs: {} };
-        const mockInvocationStore = require("@/stores/invocationStore");
-        const mockWorkflowStore = require("@/stores/workflowStore");
-        mockInvocationStore.useInvocationStore = jest.fn(() => ({
+        const { useInvocationStore } = await import("@/stores/invocationStore");
+        const { useWorkflowStore } = await import("@/stores/workflowStore");
+        const fetchWorkflowMock = vi.fn(() => Promise.resolve());
+        vi.mocked(useInvocationStore).mockReturnValueOnce({
             getInvocationById: () => invocation,
             getInvocationLoadError: () => null,
             isLoadingInvocation: () => false,
-        }));
-        const fetchWorkflowMock = jest.fn(() => Promise.resolve());
-        mockWorkflowStore.useWorkflowStore = jest.fn(() => ({
+        });
+        vi.mocked(useWorkflowStore).mockReturnValueOnce({
             fetchWorkflowForInstanceIdCached: fetchWorkflowMock,
             getStoredWorkflowIdByInstanceId: () => "wf123",
-        }));
+        });
         mountComponent({
             content: "tool_a(invocation_id=123, input=foo, output=bar)",
             labels: [
