@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -10,6 +10,7 @@ import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import HistoryExportWizard from "./HistoryExportWizard.vue";
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
 
 const FAKE_HISTORY_ID = "fake-history-id";
 const FAKE_HISTORY_NAME = "Test History";
@@ -99,6 +100,7 @@ async function mountHistoryExportWizard(options: MountOptions = {}) {
         },
         localVue,
         pinia,
+        router,
     });
 
     await flushPromises();

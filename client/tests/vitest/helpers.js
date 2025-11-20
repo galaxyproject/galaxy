@@ -5,6 +5,7 @@ import { createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 import { PiniaVuePlugin } from "pinia";
 import { vi } from "vitest";
+import VueRouter from "vue-router";
 
 import { localizationPlugin } from "@/components/plugins/localization";
 import _short from "@/components/plugins/short";
@@ -126,4 +127,13 @@ export function dispatchEvent(wrapper, type, props = {}) {
     const event = new Event(type, { bubbles: true });
     Object.assign(event, props);
     wrapper.element.dispatchEvent(event);
+}
+
+/**
+ * Return a new mocked out router attached to the specified localVue instance.
+ */
+export function injectTestRouter(localVue) {
+    localVue.use(VueRouter);
+    const router = new VueRouter();
+    return router;
 }
