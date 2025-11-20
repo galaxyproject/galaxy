@@ -1,5 +1,5 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import type Vue from "vue";
 
 import type { HDCASummary } from "@/api";

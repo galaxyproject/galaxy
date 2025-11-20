@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -13,9 +14,9 @@ import DatasetView from "./DatasetView.vue";
 const { server, http } = useServerMock();
 
 // Mock the datatypeVisualizationsStore
-jest.mock("@/stores/datatypeVisualizationsStore", () => ({
-    useDatatypeVisualizationsStore: jest.fn(() => ({
-        getPreferredVisualizationForDatatype: jest.fn().mockImplementation((datatype) => {
+vi.mock("@/stores/datatypeVisualizationsStore", () => ({
+    useDatatypeVisualizationsStore: vi.fn(() => ({
+        getPreferredVisualizationForDatatype: vi.fn().mockImplementation((datatype) => {
             // Only return a preferred visualization for a specific test datatype
             if (datatype === "h5") {
                 return Promise.resolve({
@@ -71,7 +72,7 @@ function setupPinia(datasetStore) {
             },
         },
         stubActions: false,
-        createSpy: jest.fn,
+        createSpy: vi.fn,
     });
     setActivePinia(pinia);
     return pinia;
@@ -89,8 +90,8 @@ async function mountDatasetView(tab = "preview", options = {}) {
     const pinia = setupPinia(datasetStore);
 
     const router = new VueRouter();
-    router.push = jest.fn();
-    router.replace = jest.fn();
+    router.push = vi.fn();
+    router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
         propsData: {
@@ -153,8 +154,8 @@ async function mountLoadingDatasetView() {
     const pinia = setupPinia(datasetStore);
 
     const router = new VueRouter();
-    router.push = jest.fn();
-    router.replace = jest.fn();
+    router.push = vi.fn();
+    router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
         propsData: {

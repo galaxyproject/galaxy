@@ -1,13 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
+import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import VueRouter from "vue-router";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
 import GenericElement from "./GenericElement.vue";
+import { vi } from "vitest";
 
-jest.mock("components/History/model/queries");
+vi.mock("components/History/model/queries");
 
 setupSelectableMock();
 
