@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__/index";
 import { useUserStore } from "@/stores/userStore";
@@ -46,22 +47,22 @@ const SELECTORS = {
 // Mock the toast composable to track the messages
 const MSG = 0;
 const TYPE = 1;
-const toastMock = jest.fn((message, type: "success" | "info") => {
+const toastMock = vi.fn((message, type: "success" | "info") => {
     return { message, type };
 });
-jest.mock("@/composables/toast", () => ({
+vi.mock("@/composables/toast", () => ({
     Toast: {
-        success: jest.fn().mockImplementation((message) => {
+        success: vi.fn().mockImplementation((message) => {
             toastMock(message, "success");
         }),
-        info: jest.fn().mockImplementation((message) => {
+        info: vi.fn().mockImplementation((message) => {
             toastMock(message, "info");
         }),
     },
 }));
 
 // Mock "@/utils/clipboard"
-const writeText = jest.fn();
+const writeText = vi.fn();
 Object.assign(navigator, {
     clipboard: {
         writeText,
@@ -69,13 +70,13 @@ Object.assign(navigator, {
 });
 
 // Mock the workflow store to return the sample workflow
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule = await vi.importActual("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
-            ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation((workflowId: string) => {
+            ...(originalModule as any).useWorkflowStore(),
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation((workflowId: string) => {
                 return {
                     ...TEST_WORKFLOW,
                     id: workflowId === SHARED_WORKFLOW_ID ? SHARED_WORKFLOW_ID : TEST_WORKFLOW.id,
@@ -87,20 +88,20 @@ jest.mock("@/stores/workflowStore", () => {
 });
 
 // Mock the history store to return the sample history
-jest.mock("@/stores/historyStore", () => {
-    const originalModule = jest.requireActual("@/stores/historyStore");
+vi.mock("@/stores/historyStore", async () => {
+    const originalModule = await vi.importActual("@/stores/historyStore");
     return {
         ...originalModule,
         useHistoryStore: () => ({
-            ...originalModule.useHistoryStore(),
-            getHistoryById: jest.fn().mockImplementation((historyId: string) => {
+            ...(originalModule as any).useHistoryStore(),
+            getHistoryById: vi.fn().mockImplementation((historyId: string) => {
                 return {
                     ...TEST_HISTORY,
                     id: historyId,
                     importable: historyId === `${TEST_HISTORY.id}-importable`,
                 };
             }),
-            getHistoryNameById: jest.fn().mockImplementation(() => {
+            getHistoryNameById: vi.fn().mockImplementation(() => {
                 return TEST_HISTORY.name;
             }),
         }),
@@ -161,7 +162,8 @@ async function openShareModal(wrapper: Wrapper<Vue>) {
 
 describe("WorkflowInvocationShare", () => {
     beforeEach(() => {
-        (navigator.clipboard.writeText as jest.Mock).mockResolvedValue(undefined);
+        toastMock.mockClear();
+        (navigator.clipboard.writeText as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     });
 
     it("opens the modal with the expected history and workflow information", async () => {
