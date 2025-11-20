@@ -13,7 +13,7 @@ Highlights
 Discover some of the exciting new features, enhancements, and improvements in Galaxy 25.1.
 
 A Fresh, Modern History List Interface
---------
+--------------------------------------
 
 Galaxy 25.1 introduces a redesigned history list that makes managing your histories more intuitive and
 visually appealing.
@@ -37,7 +37,7 @@ way to navigate your analysis history collection while adding powerful selection
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/1kPTyiEr3ks?si=OYLxFeyA82bZ13Xd" title="Galaxy 25.1 - A Fresh, Modern History List Interface" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Smart Sample Sheets for Complex Workflow Inputs
---------
+-----------------------------------------------
 
 Galaxy now supports **Sample Sheets** to simplify complex workflow inputs and data organization. This
 feature allows you to import data from external spreadsheets (CSV, TSV, or Excel) and use them to
@@ -63,7 +63,7 @@ need to process batches of samples with associated metadata in a structured form
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/5sAjEABPh8M?si=sxIX6RV1LtUkH4xW" title="Galaxy 25.1 - Smart Sample Sheets for Complex Workflow Inputs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 An Enhanced Tool Discovery View
---------
+-------------------------------
 
 Galaxy 25.1 introduces a redesigned **Tool Discovery View** that replaces the previous advanced tool
 search with a more powerful and intuitive tool exploration interface.
@@ -86,7 +86,7 @@ for their specific analysis needs.
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/7L_QjcwyBiw?si=gD8tGTr0BTzgv7rw" title="Galaxy 25.1 - Tool Discovery View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 New Galaxy Charts Visualization Framework
---------
+-----------------------------------------
 
 This release also introduces the **Galaxy Charts** framework, bringing enhanced visualizations and a
 more powerful visualization experience to Galaxy users.
@@ -127,7 +127,7 @@ integration with Galaxy's data management and analysis ecosystem. Here's a look 
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/VC05IvZGPiU?si=tMVdiHS1d5yTOX06" title="Galaxy 25.1 - New Galaxy Charts Visualization Framework" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 A Place to Find your Recent Downloads in Galaxy
---------
+-----------------------------------------------
 
 Galaxy 25.1 introduces a dedicated "Recent Exports & Downloads" page that lists your recent
 exports/downloads.
@@ -146,7 +146,7 @@ manually.
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/NMeH_HWuMwA?si=ly9gCTQksghLwRf0" title="Galaxy 25.1 - A Place to Find your Recent Downloads in Galaxy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Visual Indicators for Short-Term Storage Expiration
---------
+---------------------------------------------------
 
 Galaxy 25.1 introduces visual expiration indicators that help users identify when datasets and
 collections are stored in temporary or short-term storage that will be automatically cleaned up.
@@ -171,7 +171,7 @@ prevent unexpected data loss due to automatic cleanup processes.
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/CytCTixQTY8?si=taaSIrbl_gM2QhUC" title="Galaxy 25.1 - Visual Indicators for Short-Term Storage Expiration" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Galaxy Tools Now Handle Secrets and Authentication
---------
+--------------------------------------------------
 
 Galaxy 25.1 implements a comprehensive tool credentials system, allowing tools to securely access
 external services by defining authentication credentials (variables and secrets) in tool requirements
@@ -203,7 +203,7 @@ workflows.
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/2xEFtTS3DSk?si=TvG5EUBy96Otrt9T" title="Galaxy 25.1 - Tools Now Handle Secrets and Authentication" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Search for Steps, Tools and Subworkflows within the Workflow Editor
---------
+-------------------------------------------------------------------
 
 As with many improvements to the Workflow Editor in recent releases, Galaxy 25.1 adds the ability to
 search for several properties of all elements in the workflow graph, displays the search results in a
@@ -215,17 +215,15 @@ list, and highlights them when clicked.
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/Guma5nPqZ_8?si=BuQ2xkiCCULhV_Q5" title="Galaxy 25.1 - A Search in the Workflow Editor" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 A Redesign of your User Preferences
---------
+-----------------------------------
 
 The User Preferences interface has been redesigned to enhance user experience through improved
 navigation and a modernised interface.
 [`#19658 <https://github.com/galaxyproject/galaxy/pull/19658>`__]
 
-
 .. raw:: html
 
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/vTjJtStlf9w?si=98P65gcBJP0xNDZA" title="Galaxy 25.1 - A Redesign of your User Preferences" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
 
 ----
 
