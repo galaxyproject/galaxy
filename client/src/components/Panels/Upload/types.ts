@@ -4,7 +4,6 @@ export type UploadMode =
     | "local-file"
     | "paste-content"
     | "paste-links"
-    | "collection-upload"
     | "remote-files"
     | "data-library"
     | "explore-zip"
