@@ -16,9 +16,9 @@ import shutil
 import sys
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Iterable,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
