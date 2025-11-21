@@ -1,10 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { vi } from "vitest";
 
 import { WindowManager } from "@/entry/analysis/window-manager";
 import { useUserStore } from "@/stores/userStore";
@@ -13,11 +14,11 @@ import { loadMastheadWebhooks } from "./_webhooks";
 
 import Masthead from "./Masthead.vue";
 
-jest.mock("app");
-jest.mock("./_webhooks");
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({ name: "Home" })),
-    useRouter: jest.fn(),
+vi.mock("app");
+vi.mock("./_webhooks");
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({ name: "Home" })),
+    useRouter: vi.fn(),
 }));
 
 const currentUser = getFakeRegisteredUser();

@@ -1,23 +1,24 @@
 import { createTestingPinia } from "@pinia/testing";
+import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { useConfig } from "@/composables/config";
 import { useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 
 import mountTarget from "./ActivityBar.vue";
 
-jest.mock("composables/config");
-useConfig.mockReturnValue({
-    config: {},
-    isConfigLoaded: true,
-});
+vi.mock("composables/config", () => ({
+    useConfig: vi.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
 
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({})),
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
 }));
 
 const { server, http } = useServerMock();
@@ -50,7 +51,11 @@ describe("ActivityBar", () => {
         const pinia = createTestingPinia({ stubActions: false });
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
-        mockUnprivilegedToolsRequest(server, http);
+        server.use(
+            http.get("/api/unprivileged_tools", ({ response }) => {
+                return response(200).json([]);
+            }),
+        );
         wrapper = shallowMount(mountTarget, {
             localVue,
             pinia,

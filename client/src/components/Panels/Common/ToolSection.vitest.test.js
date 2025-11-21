@@ -1,18 +1,18 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-
-import { useConfig } from "@/composables/config";
+import { vi } from "vitest";
 
 import ToolSection from "./ToolSection.vue";
 
-jest.mock("composables/config");
-useConfig.mockReturnValue({
-    config: {
-        toolbox_auto_sort: true,
-    },
-    isConfigLoaded: true,
-});
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
+        config: {
+            toolbox_auto_sort: true,
+        },
+        isConfigLoaded: true,
+    })),
+}));
 
 const localVue = getLocalVue();
 const pinia = createPinia();
