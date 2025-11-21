@@ -511,9 +511,7 @@ class ToolEvaluator:
                     input, value, other_values=param_dict, compute_environment=self.compute_environment
                 )
             else:
-                input_values[input.name] = InputValueWrapper(
-                    input, value, param_dict, profile=self.tool and self.tool.profile or None
-                )
+                input_values[input.name] = InputValueWrapper(input, value, param_dict)
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These

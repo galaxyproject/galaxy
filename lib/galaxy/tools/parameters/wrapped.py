@@ -149,7 +149,7 @@ class WrappedParameters:
                 )
             else:
                 assert isinstance(input, ToolParameter)
-                input_values[input.name] = InputValueWrapper(input, value, incoming, tool.profile)
+                input_values[input.name] = InputValueWrapper(input, value, incoming)
 
 
 def make_dict_copy(from_dict: dict):

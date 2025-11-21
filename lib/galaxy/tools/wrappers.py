@@ -131,7 +131,6 @@ class InputValueWrapper(ToolParameterValueWrapper):
         input: "ToolParameter",
         value: Optional[str],
         other_values: Optional[dict[str, str]] = None,
-        profile: Optional[float] = None,
     ) -> None:
         self.input = input
         if value is None and input.type == "text":
