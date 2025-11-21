@@ -1,46 +1,43 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-
-import { getAppRoot } from "@/onload/loadConfig";
-
-import { Services } from "../services";
+import { vi } from "vitest";
 
 import Index from "./Index.vue";
 
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
-
-const localVue = getLocalVue();
-
-Services.mockImplementation(() => {
-    return {
-        async getInstalledRepositories() {
-            return [
-                {
-                    name: "name_0",
-                    description: "description_0",
-                    tool_shed: "toolshed_1",
-                    tool_shed_status: {
-                        latest_installable_revision: false,
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
+vi.mock("../services", () => ({
+    Services: vi.fn(() => {
+        return {
+            async getInstalledRepositories() {
+                return [
+                    {
+                        name: "name_0",
+                        description: "description_0",
+                        tool_shed: "toolshed_1",
+                        tool_shed_status: {
+                            latest_installable_revision: false,
+                        },
                     },
-                },
-                {
-                    name: "name_1",
-                    description: "description_1",
-                    tool_shed: "toolshed_2",
-                    tool_shed_status: {
-                        latest_installable_revision: true,
+                    {
+                        name: "name_1",
+                        description: "description_1",
+                        tool_shed: "toolshed_2",
+                        tool_shed_status: {
+                            latest_installable_revision: true,
+                        },
                     },
-                },
-            ];
-        },
-    };
-});
+                ];
+            },
+        };
+    }),
+}));
 
 describe("InstalledList", () => {
     it("test installed list", async () => {
+        const localVue = getLocalVue();
         const wrapper = mount(Index, {
             propsData: {
                 filter: "",

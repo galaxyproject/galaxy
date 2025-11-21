@@ -1,26 +1,24 @@
 import { createLocalVue, shallowMount } from "@vue/test-utils";
-
-import { getAppRoot } from "@/onload/loadConfig";
-
-import { Services } from "../services";
+import { vi } from "vitest";
 
 import Details from "./Details.vue";
 
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
-
-Services.mockImplementation(() => {
-    return {
-        async getRepositoryByName(url, name, owner) {
-            expect(url).toBe("tool_shed_url");
-            expect(name).toBe("name");
-            expect(owner).toBe("owner");
-            return {};
-        },
-    };
-});
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
+vi.mock("../services", () => ({
+    Services: vi.fn(() => {
+        return {
+            async getRepositoryByName(url, name, owner) {
+                expect(url).toBe("tool_shed_url");
+                expect(name).toBe("name");
+                expect(owner).toBe("owner");
+                return {};
+            },
+        };
+    }),
+}));
 
 describe("Details", () => {
     const localVue = createLocalVue();

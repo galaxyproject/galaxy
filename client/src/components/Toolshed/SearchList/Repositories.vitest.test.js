@@ -1,13 +1,14 @@
 import { createLocalVue, mount } from "@vue/test-utils";
+import { vi } from "vitest";
 
 import { Services } from "../services";
 
 import Repositories from "./Repositories.vue";
 
-jest.mock("app");
-jest.mock("../services");
+vi.mock("app");
+vi.mock("../services");
 
-Services.mockImplementation(() => {
+vi.mocked(Services).mockImplementation(() => {
     return {
         async getRepositories() {
             return [
