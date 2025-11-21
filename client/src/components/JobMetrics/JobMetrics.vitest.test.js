@@ -1,15 +1,16 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import JobMetrics from "./JobMetrics.vue";
 
 const NO_METRICS_MESSAGE = "No metrics available for this job.";
 
 // Ignore all axios calls, data is mocked locally -- just say "OKAY!"
-jest.mock("axios", () => ({
+vi.mock("axios", () => ({
     get: async () => {
         return { response: { status: 200 } };
     },

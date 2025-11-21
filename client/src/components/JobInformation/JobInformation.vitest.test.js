@@ -1,8 +1,9 @@
-import "tests/jest/mockHelpPopovers";
+import "@tests/vitest/mockHelpPopovers";
 
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -10,7 +11,7 @@ import jobResponse from "./testData/jobInformationResponse.json";
 
 import JobInformation from "./JobInformation.vue";
 
-jest.mock("app");
+vi.mock("app");
 
 const JOB_ID = "test_id";
 
