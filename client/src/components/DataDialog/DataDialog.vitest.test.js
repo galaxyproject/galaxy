@@ -1,4 +1,4 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 
 import { Model } from "./model";
 import { Services } from "./services";
@@ -7,7 +7,7 @@ import { UrlTracker } from "./utilities";
 import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-jest.mock("app");
+vi.mock("app");
 
 const mockOptions = {
     callback: () => {},
@@ -130,10 +130,8 @@ describe("DataDialog.vue", () => {
     */
 
     it("loads correctly, embeds a SelectionDialog", () => {
-        const localVue = createLocalVue();
         wrapper = shallowMount(DataDialog, {
             propsData: mockOptions,
-            localVue,
             stubs: {
                 Icon: true,
             },

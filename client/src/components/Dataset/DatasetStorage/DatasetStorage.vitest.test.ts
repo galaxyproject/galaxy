@@ -1,6 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
 
 import type { DatasetStorageDetails } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -59,7 +59,6 @@ describe("DatasetStorage.vue", () => {
     });
 
     it("test error rendering...", async () => {
-        suppressDebugConsole();
         mount({ simulateError: true });
         await flushPromises();
         expect(wrapper.findAll(".error").length).toBe(1);
