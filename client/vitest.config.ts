@@ -58,11 +58,11 @@ export default defineConfig({
         // Test file patterns
         include: ["src/**/*.vitest.{test,spec}.{js,ts}", "tests/vitest/**/*.{test,spec}.{js,ts}"],
         // Exclude patterns
-        exclude: ["node_modules", "dist", "tests/jest/**"],
+        exclude: ["node_modules", "dist"],
     },
     resolve: {
         alias: {
-            // Match Jest's module name mapping
+            // Match former Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
             "@tests": path.resolve(__dirname, "./tests"),
             config: path.resolve(__dirname, "./tests/vitest/__mocks__/config.js"),
