@@ -33,16 +33,6 @@ Admin Notes
   This release includes database migrations that require the Galaxy instance to be stopped
   before applying the update. Please plan accordingly to minimize downtime for users.
 
-**Removal of the Trackster Visualization in Galaxy release 25.1**
-  The legacy Trackster genome browser visualization
-  `has been completely removed from Galaxy <https://github.com/galaxyproject/galaxy/pull/20974>`__. This includes
-  the removal of special handling for Trackster across tool execution, tool box filtering, visualization
-  framework features, controller endpoints, client code, and other conditional logic. With the removal of
-  Trackster, the era of Mako-based visualizations served from controller endpoints ends.
-
-  Galaxy now provides the modern IGV (Integrative Genomics Viewer) as the primary genome browser
-  visualization, offering superior functionality and performance for genomic data exploration.
-
 Configuration Changes
 ===========================================================
 
@@ -72,8 +62,17 @@ config/galaxy.yml.sample:galaxy
 Deprecation Notices
 ===========================================================
 
+**Deprecation of the Trackster Visualization in Galaxy release 26.0**
+  The legacy Trackster genome browser visualization has been deprecated and
+  `will be completely removed in Galaxy 26.0 <https://github.com/galaxyproject/galaxy/pull/20974>`__. This includes
+  the removal of special handling for Trackster across tool execution, toolbox filtering, visualization
+  framework features, controller endpoints, client code, and other conditional logic. With the removal of
+  Trackster, the era of Mako-based visualizations served from controller endpoints ends.
+  Galaxy now provides the modern IGV (Integrative Genomics Viewer) as the primary genome browser
+  visualization, offering superior functionality and performance for genomic data exploration.
+
 **Deprecation of Mako-based visualizations in Galaxy release 26.0**
-  With the removal of Trackster in 25.1, the remaining legacy Mako-based visualization framework
+  With the removal of Trackster in 26.0, the remaining legacy Mako-based visualization framework
   and controller endpoints are deprecated and
   `will be completely removed in Galaxy 26.0 <https://github.com/galaxyproject/galaxy/pull/21133>`__.
   Any remaining Mako-based visualizations should be migrated to the modern script-based visualization
