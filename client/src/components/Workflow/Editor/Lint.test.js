@@ -12,7 +12,6 @@ import { getUntypedWorkflowParameters } from "./modules/parameters";
 import Lint from "./Lint.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const steps = {
     0: {
