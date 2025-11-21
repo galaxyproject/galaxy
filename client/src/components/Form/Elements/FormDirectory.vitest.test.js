@@ -22,7 +22,7 @@ async function init(wrapper, data) {
     const filesDialogComponent = wrapper.findComponent(FilesDialog);
     expect(filesDialogComponent.exists()).toBe(true);
     filesDialogComponent.vm.callback({ url: data.url });
-    // HACK to avoid https://github.com/facebook/jest/issues/2549 (URL implementation is not the same as global node)
+    // HACK: URL implementation in test environment is not the same as global node
     wrapper.vm.pathChunks = data.pathChunks;
     await flushPromises();
     await validateLatestEmittedPath(wrapper, data.url);

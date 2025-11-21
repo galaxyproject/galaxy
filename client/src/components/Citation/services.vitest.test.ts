@@ -1,4 +1,4 @@
-// Jest test for Citation component
+// Vitest test for Citation component
 
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";

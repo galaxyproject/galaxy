@@ -135,7 +135,7 @@ export function findViaNavigation(wrapper, component) {
 
 /**
  * Expect and mock out an API request to /api/configuration. In general, useConfig
- * and using tests/jest/mockConfig is better since components since be talking to the API
+ * and using tests/vitest/mockConfig is better since components since be talking to the API
  * directly in this way but some older components are not using the latest composables.
  */
 export function expectConfigurationRequest(http, config) {
