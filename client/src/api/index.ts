@@ -101,6 +101,11 @@ export type HistoryContentItemBase = components["schemas"]["EncodedHistoryConten
 export type HDASummary = components["schemas"]["HDASummary"];
 
 /**
+ * Contains custom keys for a HistoryDatasetAssociation.
+ */
+export type HDACustom = components["schemas"]["HDACustom"];
+
+/**
  * Contains additional details about a HistoryDatasetAssociation.
  */
 export type HDADetailed = components["schemas"]["HDADetailed"];
