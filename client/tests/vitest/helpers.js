@@ -129,6 +129,10 @@ export function dispatchEvent(wrapper, type, props = {}) {
     wrapper.element.dispatchEvent(event);
 }
 
+export function findViaNavigation(wrapper, component) {
+    return wrapper.find(component.selector);
+}
+
 /**
  * Expect and mock out an API request to /api/configuration. In general, useConfig
  * and using tests/jest/mockConfig is better since components since be talking to the API

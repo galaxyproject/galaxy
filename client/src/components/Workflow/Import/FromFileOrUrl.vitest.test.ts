@@ -1,15 +1,18 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { vi } from "vitest";
 
 import FromFileOrUrl from "./FromFileOrUrl.vue";
 
 let lastPostRequest: Map<string, string>;
 
-jest.mock("axios", () => ({
-    post: jest.fn((_url, request) => {
-        lastPostRequest = request;
-    }),
-    isAxiosError: jest.fn(() => true),
+vi.mock("axios", () => ({
+    default: {
+        post: vi.fn((_url, request) => {
+            lastPostRequest = request;
+        }),
+        isAxiosError: vi.fn(() => true),
+    },
 }));
 
 const localVue = getLocalVue(true);

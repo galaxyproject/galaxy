@@ -1,9 +1,8 @@
-import "tests/jest/mockHelpPopovers";
-
 import { createTestingPinia } from "@pinia/testing";
+import { findViaNavigation, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { findViaNavigation, getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { ROOT_COMPONENT } from "@/utils/navigation";
@@ -14,9 +13,11 @@ const localVue = getLocalVue(true);
 
 const { server, http } = useServerMock();
 
-jest.mock("@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue", () => ({
-    name: "HelpPopover",
-    render: (h) => h("div", "Mocked Popover"),
+vi.mock("@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue", () => ({
+    default: {
+        name: "HelpPopover",
+        render: (h) => h("div", "Mocked Popover"),
+    },
 }));
 
 describe("WorkflowStorageConfiguration.vue", () => {

@@ -1,8 +1,9 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { nextTick } from "vue";
 
 import WorkflowExport from "./WorkflowExport.vue";
 
@@ -26,15 +27,14 @@ function getHref(item) {
 describe("Workflow Export", () => {
     let wrapper;
     beforeEach(async () => {
-        wrapper = shallowMount(
-            WorkflowExport,
-            {
-                propsData: {
-                    id: "0",
-                },
+        wrapper = shallowMount(WorkflowExport, {
+            propsData: {
+                id: "0",
             },
             localVue,
-        );
+        });
+        await flushPromises();
+        await nextTick();
     });
 
     it("verify display", async () => {

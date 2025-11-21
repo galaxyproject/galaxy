@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/jest/helpers";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
