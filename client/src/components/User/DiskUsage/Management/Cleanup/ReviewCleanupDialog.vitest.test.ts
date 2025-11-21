@@ -1,6 +1,7 @@
-import { mount, type Wrapper, type WrapperArray } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 
@@ -50,7 +51,7 @@ async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalIt
     return wrapper;
 }
 
-async function setAllItemsChecked(wrapper: Wrapper<Vue>) {
+async function setAllItemsChecked(wrapper: VueWrapper<any>) {
     await wrapper.find(SELECT_ALL_CHECKBOX).setChecked();
     await flushPromises();
 }
@@ -60,7 +61,7 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
 
         expect(wrapper.find(REVIEW_TABLE).exists()).toBe(true);
-        expect(wrapper.findAll("tbody > tr").wrappers.length).toBe(EXPECTED_TOTAL_ITEMS);
+        expect(wrapper.findAll("tbody > tr").length).toBe(EXPECTED_TOTAL_ITEMS);
     });
 
     it("should disable the delete button if no items are selected", async () => {
@@ -113,12 +114,12 @@ describe("ReviewCleanupDialog.vue", () => {
     });
 
     // From: https://github.com/vuejs/vue-test-utils/issues/960#issuecomment-626327505
-    function withNameFilter(wrapperArray: WrapperArray<Vue>) {
+    function withNameFilter(wrapperArray: VueWrapper<any>[]) {
         return {
-            childSelectorHasText: (selector: string, str: string): WrapperArray<Vue> =>
+            childSelectorHasText: (selector: string, str: string): VueWrapper<any>[] =>
                 wrapperArray.filter((i) => i.find(selector).text().match(str)),
 
-            hasText: (str: string): WrapperArray<Vue> => wrapperArray.filter((i) => i.text().match(str)),
+            hasText: (str: string): VueWrapper<any>[] => wrapperArray.filter((i) => i.text().match(str)),
         };
     }
 });
