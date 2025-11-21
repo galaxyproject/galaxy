@@ -14,7 +14,6 @@ import MountTarget from "./FormData.vue";
 jest.mock("@/composables/filter");
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 let eventStore;
 

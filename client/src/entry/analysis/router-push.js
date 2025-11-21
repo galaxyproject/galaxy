@@ -1,6 +1,6 @@
 import { getGalaxyInstance } from "@/app";
-import { addSearchParams } from "@/utils/url";
 import { eventBus } from "@/utils/eventBus";
+import { addSearchParams } from "@/utils/url";
 
 /**
  * Is called before the regular router.push() and allows us to provide logs,
