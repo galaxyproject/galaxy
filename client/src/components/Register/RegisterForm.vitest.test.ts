@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -7,6 +7,7 @@ import MockAdapter from "axios-mock-adapter";
 import MountTarget from "./RegisterForm.vue";
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
 
 // const SELECTORS = {
 //     LOGIN_TOGGLE: "[id=login-toggle]",
@@ -27,6 +28,7 @@ describe("RegisterForm", () => {
             },
             localVue,
             pinia,
+            router,
         });
     });
 

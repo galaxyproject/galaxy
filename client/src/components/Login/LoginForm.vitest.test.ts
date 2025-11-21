@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HttpResponse } from "@/api/client/__mocks__/index";
@@ -11,6 +12,7 @@ import { HttpResponse } from "@/api/client/__mocks__/index";
 import MountTarget from "./LoginForm.vue";
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
 const testingPinia = createTestingPinia({ stubActions: false });
 
 const { server, http } = useServerMock();
@@ -26,6 +28,7 @@ async function mountLoginForm() {
             sessionCsrfToken: "sessionCsrfToken",
         },
         localVue,
+        router,
         stubs: {
             ExternalLogin: true,
         },
@@ -110,7 +113,7 @@ describe("LoginForm", () => {
         const provider_label = "Provider";
 
         const originalLocation = window.location;
-        const locationSpy = jest.spyOn(window, "location", "get").mockImplementation(() => ({
+        const locationSpy = vi.spyOn(window, "location", "get").mockImplementation(() => ({
             ...originalLocation,
             search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
         }));
