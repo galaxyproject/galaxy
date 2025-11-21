@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { BAlert } from "bootstrap-vue";
+import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -11,12 +12,14 @@ import Popper from "@/components/Popper/Popper.vue";
 
 const { server, http } = useServerMock();
 
-jest.mock("./templates", () => ({
-    "Category 1": [
-        { title: "Option A", description: "Desc A", cell: { id: 1 } },
-        { title: "Option B", description: "Desc B", cell: { id: 2 } },
-    ],
-    "Category 2": [{ title: "Option C", description: "Desc C", cell: { id: 3 } }],
+vi.mock("./templates", () => ({
+    default: {
+        "Category 1": [
+            { title: "Option A", description: "Desc A", cell: { id: 1 } },
+            { title: "Option B", description: "Desc B", cell: { id: 2 } },
+        ],
+        "Category 2": [{ title: "Option C", description: "Desc C", cell: { id: 3 } }],
+    },
 }));
 
 const createContainer = (tag = "div") => {

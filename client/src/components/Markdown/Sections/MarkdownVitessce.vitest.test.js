@@ -1,13 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { vi } from "vitest";
 import Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import MarkdownVitessce from "./MarkdownVitessce.vue";
 
-jest.mock("@/onload", () => ({
+vi.mock("@/onload", () => ({
     getAppRoot: () => "/",
 }));
 
