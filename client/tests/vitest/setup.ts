@@ -1,4 +1,5 @@
 // Vitest setup file - mirrors Jest setup with Vitest-compatible APIs
+/// <reference path="./matchers.d.ts" />
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
