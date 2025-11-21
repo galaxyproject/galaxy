@@ -1,5 +1,5 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import { STANDARD_FILE_SOURCE_TEMPLATE, STANDARD_OBJECT_STORE_TEMPLATE } from "./test_fixtures";
 
