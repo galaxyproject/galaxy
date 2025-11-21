@@ -59,10 +59,10 @@ describe("UploadQueue", () => {
     test("calling start is a noop if queue is running", () => {
         const q = instrumentedUploadQueue();
         const mockedProcess = vi.fn();
-        q._process = mockedProcess();
+        q._process = mockedProcess;
         q.isRunning = true;
         q.start();
-        expect(mockedProcess.mock.calls.length === 0); // function was not called
+        expect(mockedProcess.mock.calls.length).toBe(0); // function was not called
         expect(q.encountedErrors).toBeFalsy();
     });
 
