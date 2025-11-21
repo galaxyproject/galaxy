@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -70,7 +70,7 @@ describe("Notifications categories", () => {
 
         const notificationsStore = useNotificationsStore();
 
-        const spyOnUpdateNotification = jest.spyOn(notificationsStore, "updateNotification");
+        const spyOnUpdateNotification = vi.spyOn(notificationsStore, "updateNotification");
         spyOnUpdateNotification.mockImplementation(async (notification, changes) => {
             if (changes.deleted) {
                 wrapper.setProps({
@@ -117,7 +117,7 @@ describe("Notifications categories", () => {
 
         const notificationsStore = useNotificationsStore();
 
-        const spyOnUpdateNotification = jest.spyOn(notificationsStore, "updateNotification");
+        const spyOnUpdateNotification = vi.spyOn(notificationsStore, "updateNotification");
         spyOnUpdateNotification.mockImplementation(async (_notification, changes) => {
             if (changes.deleted) {
                 wrapper.setProps({

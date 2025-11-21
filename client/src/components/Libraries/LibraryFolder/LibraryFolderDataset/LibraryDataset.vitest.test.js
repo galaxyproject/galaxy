@@ -4,7 +4,6 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { vi } from "vitest";
 
-import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "../services";

@@ -1,27 +1,29 @@
-import { getGalaxyInstance } from "@/app/singleton";
+import { vi } from "vitest";
 
 import { patchRouterPush } from "./router-push";
 
 // mock Galaxy object
-jest.mock("app/singleton");
 const mockGalaxy = {
     frame: {
         active: false,
-        add: jest.fn(),
+        add: vi.fn(),
     },
 };
-getGalaxyInstance.mockImplementation(() => mockGalaxy);
+
+vi.mock("app/singleton", () => ({
+    getGalaxyInstance: vi.fn(() => mockGalaxy),
+}));
 
 // router push handling tests
 describe("router push changes", () => {
     it("pushing routes", async () => {
-        window.confirm = jest.fn();
+        window.confirm = vi.fn();
         let currentLocation = null;
-        const mockComplete = jest.fn();
+        const mockComplete = vi.fn();
         const mockContext = {
             confirmation: true,
             app: {
-                $emit: jest.fn(),
+                $emit: vi.fn(),
             },
         };
         const mockRouter = {
