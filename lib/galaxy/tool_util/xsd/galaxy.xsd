@@ -76,6 +76,10 @@ List of behavior changes associated with profile versions:
 
 - Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
 
+### 26.0
+
+- The ``len`` function applied on optional data parameters without a selected dataset gives ``0``. For smaller profiles ``1``
+
 ### Examples
 
 A normal tool:
