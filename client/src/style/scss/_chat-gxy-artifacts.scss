@@ -1,0 +1,35 @@
+/**
+* Styles for ChatGXY message artifacts display.
+*/
+
+.artifact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.5rem;
+}
+
+.artifact-grid-item {
+    border: 1px solid #edf0f3;
+    border-radius: 6px;
+    padding: 0.5rem;
+    background: #fbfbfd;
+    min-height: 120px;
+}
+
+.artifact-grid-item .artifact-name {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.artifact-grid-item .artifact-name > .btn-link,
+.artifact-grid-item .artifact-name > span:not(.text-muted) {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artifact-grid-item .artifact-name > span.text-muted {
+    display: block;
+}

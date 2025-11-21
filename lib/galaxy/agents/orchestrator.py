@@ -276,7 +276,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return """
         You coordinate multiple Galaxy agents. Determine which agents to call and in what order.
 
-        Available agents: error_analysis, custom_tool
+        Available agents: error_analysis, custom_tool, data_analysis
 
         Respond in this format:
         AGENTS: [agent1, agent2]
@@ -284,7 +284,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         REASONING: explanation
 
         Example:
-        AGENTS: [error_analysis, custom_tool]
+        AGENTS: [error_analysis, custom_tool, data_analysis]
         SEQUENTIAL: true
         REASONING: Analyze error first, then suggest creating a tool
         """
