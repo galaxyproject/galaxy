@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
 
-import { vi } from "vitest";
+import { vi, beforeEach, afterEach } from "vitest";
 // Vue configuration
 import Vue from "vue";
 
@@ -87,6 +87,14 @@ Object.defineProperty(global, "BroadcastChannel", {
     writable: true,
     configurable: true,
     value: MockBroadcastChannel,
+});
+
+// Fail tests that log console errors or warnings
+// Replaces jest-fail-on-console functionality
+const failOnConsole = (await import("vitest-fail-on-console")).default;
+failOnConsole({
+    shouldFailOnError: true,
+    shouldFailOnWarn: true,
 });
 
 // Import and setup MSW if needed
