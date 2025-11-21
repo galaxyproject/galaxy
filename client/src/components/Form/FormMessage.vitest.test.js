@@ -1,9 +1,9 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import FormMessage from "./FormMessage.vue";
 
-jest.mock("app");
+vi.mock("app");
 
 const localVue = getLocalVue();
 
@@ -11,7 +11,7 @@ describe("FormMessage", () => {
     let wrapper;
 
     beforeEach(() => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         wrapper = mount(FormMessage, {
             propsData: {
                 message: "test message",
@@ -40,7 +40,7 @@ describe("FormMessage", () => {
         expect(variants.length).toBe(1);
         const message = wrapper.find(".alert");
         expect(message.text()).toBe("new message");
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
         await wrapper.vm.$nextTick();
         const new_variants = wrapper.findAll(".alert-info");
         expect(new_variants.length).toBe(0);

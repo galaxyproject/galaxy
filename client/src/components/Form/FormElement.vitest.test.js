@@ -1,5 +1,5 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import FormHidden from "./Elements/FormHidden.vue";
 import FormText from "./Elements/FormText.vue";
