@@ -4,8 +4,6 @@ from typing import (
     Optional,
 )
 
-from fastapi import Request
-
 from galaxy import web
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
@@ -36,28 +34,12 @@ class FastAPIContext:
     user_serializer: CurrentUserSerializer = depends(CurrentUserSerializer)
 
     @router.get("/context", summary="Return bootstrapped client context")
-    def index(self, request: Request, trans: ProvidesUserContext = DependsOnTrans) -> ContextResponse:
+    def index(self, trans: ProvidesUserContext = DependsOnTrans) -> ContextResponse:
         config = self.configuration_manager.get_configuration(trans, SerializationParams(view="all"))
+        session_id = trans.galaxy_session.id if trans.galaxy_session else None
         return ContextResponse(
             config=config,
             root=web.url_for("/"),
-            session_csrf_token=self._get_csrf_token(trans, request),
+            session_csrf_token=trans.app.security.encode_id(session_id, kind="csrf") if session_id else None,
             user=self.user_serializer.serialize_to_view(trans.user, "detailed"),
         )
-
-    def _get_csrf_token(self, trans: ProvidesUserContext, request: Request):
-        cookie = request.cookies.get("galaxysession")
-        if not cookie:
-            return None
-        try:
-            session_key = trans.app.security.decode_guid(cookie)
-            session = (
-                trans.sa_session.query(trans.app.model.GalaxySession)
-                .filter_by(session_key=session_key, is_valid=True)
-                .first()
-            )
-            if session:
-                return trans.app.security.encode_id(session.id, kind="csrf")
-        except Exception:
-            log.debug("Failed to derive CSRF token", exc_info=True)
-        return None
