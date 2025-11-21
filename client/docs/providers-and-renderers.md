@@ -125,7 +125,7 @@ mandatory markup, just one big empty slot.
 // Testing a renderless component
 
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue, waitForLifecyleEvent } from "tests/jest/helpers";
+import { getLocalVue, waitForLifecyleEvent } from "@tests/vitest/helpers";
 import DoodadProvider from "./DoodadProvider";
 
 describe("A renderless component", () => {

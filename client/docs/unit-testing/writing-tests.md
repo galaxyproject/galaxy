@@ -23,7 +23,7 @@ The other side of the same coin is to test _only_ the unit in question. If your
 component has a model that uses a service that touches Vuex, which then uses
 Axios to fetch some data -- don't test all that at once. Break things apart and
 mock functionality to isolate testing to units. End to end testing is a
-separate thing that shouldn't be attempted using spec tests in Jest.
+separate thing that shouldn't be attempted using spec tests in Vitest.
 
 Assume nobody cares _how_ your code works, we just need to know that the public
 API you designed _does_ work. If performance problems or new tech necessitate a
@@ -31,12 +31,12 @@ re-write, these tests become a guide for the next implementation.
 
 ### Writing a test file
 
-Jest will try to test any file ending in "\*.test.js". Please place your test
+Vitest will try to test any file ending in "\*.test.js" or "\*.vitest.test.js". Please place your test
 files inside client/src folders right next to whatever files that they are
 testing.
 
-Jest has extensive documentation on the expect API, mocking, and more on the
-[official docs page](https://jestjs.io/docs/en/getting-started.html), which will
+Vitest has extensive documentation on the expect API, mocking, and more on the
+[official docs page](https://vitest.dev/guide/), which will
 be your best resource here.
 
 ```js static
@@ -63,10 +63,10 @@ describe("some module you wrote", () => {
 });
 ```
 
-### Check out the Jest helper functions
+### Check out the Vitest helper functions
 
 We have created some [common helpers for common testing
-scenarios](https://github.com/galaxyproject/galaxy/blob/dev/client/tests/jest/helpers.js).
+scenarios](https://github.com/galaxyproject/galaxy/blob/dev/client/tests/vitest/helpers.js).
 
 ### Mocking API calls
 
