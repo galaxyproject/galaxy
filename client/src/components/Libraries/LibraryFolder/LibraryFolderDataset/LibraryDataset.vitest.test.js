@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
@@ -14,10 +15,11 @@ import unrestrictedDatasetResponse from "./testData/unrestrictedDataset.json";
 
 import LibraryDataset from "./LibraryDataset.vue";
 
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
+vi.mock("../services");
 
 const FOLDER_ID = "test_folder_id";
 const UNRESTRICTED_DATASET_ID = "unrestricted_dataset_id";
