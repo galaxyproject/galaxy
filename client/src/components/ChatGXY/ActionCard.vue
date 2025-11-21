@@ -3,8 +3,8 @@
         <div class="action-header">Suggested Actions</div>
         <div class="action-list">
             <button
-                v-for="action in sortedSuggestions"
-                :key="`${action.action_type}-${action.description}`"
+                v-for="(action, index) in sortedSuggestions"
+                :key="`${action.action_type}-${index}-${action.description}`"
                 class="btn action-button"
                 :class="getButtonClass(action.priority)"
                 :disabled="processingAction"
@@ -47,7 +47,9 @@ defineEmits<{
 
 // Sort suggestions by priority (1 = highest)
 const sortedSuggestions = computed(() => {
-    return [...props.suggestions].sort((a, b) => a.priority - b.priority);
+    return [...props.suggestions]
+        .filter((suggestion) => suggestion.action_type !== ActionType.PYODIDE_EXECUTE)
+        .sort((a, b) => a.priority - b.priority);
 });
 
 const iconMap: Record<ActionType, IconDefinition> = {

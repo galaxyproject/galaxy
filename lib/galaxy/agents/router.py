@@ -63,6 +63,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
         tool_handoff = self._create_custom_tool_handoff()
         tool_rec_handoff = self._create_tool_recommendation_handoff()
 
+        # TODO: Do we need a handoff here for `data_analysis` agent?
+
         return Agent(
             self._get_model(),
             deps_type=GalaxyAgentDependencies,
@@ -222,6 +224,10 @@ class QueryRouterAgent(BaseGalaxyAgent):
         try:
             # Build the full query with conversation history if available
             full_query = self._build_query_with_context(query, context)
+
+            if context and context.get("dataset_ids"):
+                datasets = ', '.join(context["dataset_ids"])
+                full_query = f"Selected datasets: {datasets}\n\n{full_query}"
 
             # Run the agent - it will either answer directly or use a handoff function
             result = await self._run_with_retry(full_query)

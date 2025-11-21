@@ -31,6 +31,7 @@ class ActionType(str, Enum):
     CONTACT_SUPPORT = "contact_support"
     VIEW_EXTERNAL = "view_external"
     DOCUMENTATION = "documentation"
+    PYODIDE_EXECUTE = "pyodide_execute"
 
 
 class ActionSuggestion(BaseModel):
@@ -66,6 +67,37 @@ class AgentResponse(BaseModel):
     suggestions: list[ActionSuggestion] = Field(default_factory=list, description="Actionable suggestions")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     reasoning: Optional[str] = Field(default=None, description="Explanation of the agent's reasoning")
+
+
+class Artifact(BaseModel):
+    """Artifact generated during execution of agent-produced code."""
+
+    name: str = Field(description="Human readable artifact name")
+    mime_type: str = Field(description="Artifact MIME type")
+    size: int = Field(description="Artifact size in bytes")
+    content_base64: Optional[str] = Field(default=None, description="Base64 content when small enough to inline")
+    temp_path: Optional[str] = Field(default=None, description="Temporary server-side path for larger artifacts")
+
+
+class ExecutionTask(BaseModel):
+    """Code execution request emitted by an agent."""
+
+    code: str = Field(description="Python code to execute")
+    requirements: List[str] = Field(default_factory=list, description="List of packages required")
+    inputs: Dict[str, Any] = Field(default_factory=dict, description="Additional inputs for the execution environment")
+    timeout_seconds: int = Field(default=120, description="Max execution time in seconds")
+    task_id: Optional[str] = Field(default=None, description="Optional task identifier provided by agent")
+
+
+class ExecutionResult(BaseModel):
+    """Result returned after executing a task."""
+
+    task_id: Optional[str] = Field(default=None, description="Identifier correlating to ExecutionTask")
+    stdout: str = Field(default="", description="Captured standard output")
+    stderr: str = Field(default="", description="Captured standard error")
+    artifacts: List[Artifact] = Field(default_factory=list, description="Artifacts generated during execution")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional execution metadata")
+    success: bool = Field(default=True, description="Whether execution completed successfully")
 
 
 class AgentQueryRequest(BaseModel):

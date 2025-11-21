@@ -20,6 +20,7 @@ export enum ActionType {
     VIEW_EXTERNAL = "view_external",
     SAVE_TOOL = "save_tool",
     REFINE_QUERY = "refine_query",
+    PYODIDE_EXECUTE = "pyodide_execute",
 }
 /* eslint-enable no-unused-vars */
 
@@ -77,6 +78,10 @@ export function useAgentActions() {
 
                 case ActionType.DOCUMENTATION:
                     handleDocumentation(action);
+                    break;
+
+                case ActionType.PYODIDE_EXECUTE:
+                    toast.info("Generated code is running automatically in the browser.");
                     break;
 
                 default:
@@ -212,6 +217,7 @@ export function useAgentActions() {
             [ActionType.CONTACT_SUPPORT]: "🆘",
             [ActionType.REFINE_QUERY]: "✏️",
             [ActionType.VIEW_EXTERNAL]: "🔗",
+            [ActionType.PYODIDE_EXECUTE]: "🧪",
         };
         return icons[actionType] || "❓";
     }
