@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressDebugConsole } from "@tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { vi } from "vitest";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -17,8 +18,8 @@ import HistoryExport from "./HistoryExport.vue";
 
 const localVue = getLocalVue(true);
 
-jest.mock("@/api/histories.export");
-const mockFetchExportRecords = fetchHistoryExportRecords as jest.MockedFunction<typeof fetchHistoryExportRecords>;
+vi.mock("@/api/histories.export");
+const mockFetchExportRecords = fetchHistoryExportRecords as ReturnType<typeof vi.fn>;
 mockFetchExportRecords.mockResolvedValue([]);
 
 const FAKE_HISTORY_ID = "fake-history-id";
