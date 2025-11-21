@@ -1,5 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { useConfig } from "@/composables/config";
 
@@ -7,15 +8,15 @@ import MountTarget from "./AdminPanel.vue";
 
 const localVue = getLocalVue(true);
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: { value: { enable_quotas: true, tool_shed_urls: ["tool_shed_url"], version_major: "1.0.1" } },
         isConfigLoaded: true,
     })),
 }));
 
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({})),
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
 }));
 
 function createTarget(propsData = {}) {
