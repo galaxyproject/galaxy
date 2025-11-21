@@ -42,7 +42,6 @@ export default defineConfig({
                 "dist/",
                 "**/*.d.ts",
                 "**/*.test.{js,ts}",
-                "**/*.spec.{js,ts}",
                 "**/mock*.{js,ts}",
                 "**/__mocks__/",
             ],
@@ -56,9 +55,9 @@ export default defineConfig({
         // Use thread pool for faster test execution
         pool: "threads",
         // Test file patterns
-        include: ["src/**/*.vitest.{test,spec}.{js,ts}", "tests/vitest/**/*.{test,spec}.{js,ts}"],
+        include: ["src/**/*.test.{js,ts}", "tests/vitest/**/*.test.{js,ts}"],
         // Exclude patterns
-        exclude: ["node_modules", "dist"],
+        exclude: ["node_modules", "dist", "**/dist/**"],
     },
     resolve: {
         alias: {
