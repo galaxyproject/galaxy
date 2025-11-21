@@ -7,7 +7,7 @@ import Vue from "vue";
  *
  * @param {object} config Galaxy configuration object
  */
-export const initSentry = (Galaxy, router) => {
+export async function initSentry(Galaxy, router) {
     console.log("initSentry");
     const config = Galaxy.config;
     if (config.sentry_dsn_public) {
@@ -40,4 +40,4 @@ export const initSentry = (Galaxy, router) => {
         }
         Galaxy.Sentry = Sentry;
     }
-};
+}
