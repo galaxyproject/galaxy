@@ -1,8 +1,12 @@
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 
 import ToolSuccessMessage from "./ToolSuccessMessage.vue";
+
+const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 
 // Prop constants
 const TEST_JOB_RESPONSE = {
@@ -35,6 +39,8 @@ describe("ToolSuccessMessage", () => {
 
     beforeEach(async () => {
         wrapper = mount(ToolSuccessMessage as object, {
+            localVue,
+            router,
             propsData: {
                 jobResponse: TEST_JOB_RESPONSE,
                 toolName: TEST_TOOL_NAME,

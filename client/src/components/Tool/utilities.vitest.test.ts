@@ -1,6 +1,8 @@
+import { vi } from "vitest";
+
 import { copyLink } from "./utilities";
 
-const writeText = jest.fn();
+const writeText = vi.fn();
 
 Object.assign(navigator, {
     clipboard: {
@@ -10,7 +12,8 @@ Object.assign(navigator, {
 
 describe("copyLink", () => {
     beforeEach(() => {
-        (navigator.clipboard.writeText as jest.Mock).mockResolvedValue(undefined);
+        writeText.mockClear();
+        (navigator.clipboard.writeText as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     });
 
     it("should copy the link to the clipboard", () => {
