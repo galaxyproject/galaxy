@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
-import { onBeforeRouteLeave } from "vue-router/composables";
+import { onBeforeRouteLeave } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 
