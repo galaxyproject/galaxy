@@ -120,6 +120,7 @@ class WrappedParameters:
             elif isinstance(input, DataToolParameter) and input.multiple:
                 dataset_instances = DatasetListWrapper.to_dataset_instances(value)
                 input_values[input.name] = DatasetListWrapper(
+                    input,
                     None,
                     dataset_instances,
                     datatypes_registry=trans.app.datatypes_registry,

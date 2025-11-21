@@ -468,6 +468,7 @@ class ToolEvaluator:
             if isinstance(input, DataToolParameter) and input.multiple:
                 dataset_instances = DatasetListWrapper.to_dataset_instances(value)
                 input_values[input.name] = DatasetListWrapper(
+                    input,
                     job_working_directory,
                     dataset_instances,
                     compute_environment=self.compute_environment,

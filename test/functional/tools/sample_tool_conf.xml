@@ -27,6 +27,8 @@
   <tool file="help_features_rst.xml" />
   <tool file="help_features_markdown.xml" />
   <tool file="select_from_url.xml" />
+  <tool file="multi_len.xml" />
+  <tool file="multi_len_legacy.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />

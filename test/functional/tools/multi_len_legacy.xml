@@ -1,0 +1,64 @@
+<tool id="multi_len_legacy" name="multi_len_legacy" version="1.0.0" profile="25.1">
+    <description>test len() parameters allowing multiple for 25.1</description>
+    <command><![CDATA[
+echo 'select_ex #echo len($select_ex) #' > '$output' &&
+echo 'select_ex_optional #echo len($select_ex_optional) #' >> '$output' &&
+
+echo 'data_ex #echo len($data_ex) #' >> '$output' &&
+echo 'data_ex_optional #echo len($data_ex_optional) #' >> '$output'
+
+    ]]></command>
+    <inputs>
+        <param name="select_ex" type="select" multiple="true">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </param>
+        <param name="select_ex_optional" type="select" multiple="true" optional="true">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </param>
+        <param name="data_ex" type="data" format="data" multiple="true"/>
+        <param name="data_ex_optional" type="data" format="data" multiple="true" optional="true"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="select_ex" value="1,2,3" />
+            <param name="select_ex_optional" value="1,2,3" />
+            <param name="data_ex" value="1.tabular,2.tabular"/>
+            <param name="data_ex_optional" value="1.tabular,2.tabular"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="select_ex 3" />
+                    <has_line line="select_ex_optional 3" />
+                    <has_line line="data_ex 2" />
+                    <has_line line="data_ex_optional 2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="select_ex" value="1,2,3" />
+            <param name="select_ex_optional" value_json="null" />
+            <param name="data_ex" value="1.tabular,2.tabular"/>
+            <param name="data_ex_optional" value_json="null"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="select_ex 3" />
+                    <has_line line="select_ex_optional 0" />
+                    <has_line line="data_ex 2" />
+                    <has_line line="data_ex_optional 1" /> <!-- profile behavior giving the length of [None] -->
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

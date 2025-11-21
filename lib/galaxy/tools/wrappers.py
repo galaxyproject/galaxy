@@ -18,6 +18,7 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
 from typing_extensions import (
     Self,
     TypeAlias,
@@ -55,6 +56,7 @@ if TYPE_CHECKING:
     from galaxy.tools import Tool
     from galaxy.tools.evaluation import ToolEvaluator
     from galaxy.tools.parameters.basic import (
+        DataToolParameter,
         SelectToolParameter,
         ToolParameter,
     )
@@ -283,6 +285,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         if not self.input.multiple:
             raise Exception("Tried to iterate over a non-multiple parameter.")
         return self.value.__iter__()
+
+    def __len__(self) -> int:
+        if not self.input.multiple:
+            raise Exception("Non-multiple parameter has no len().")
+        return self.value.__len__()
 
 
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
@@ -554,6 +561,7 @@ class DatasetListWrapper(list[DatasetFilenameWrapper], ToolParameterValueWrapper
 
     def __init__(
         self,
+        input: "DataToolParameter",
         job_working_directory: Optional[str],
         datasets: Union[
             Sequence[
@@ -568,6 +576,7 @@ class DatasetListWrapper(list[DatasetFilenameWrapper], ToolParameterValueWrapper
         ],
         **kwargs: Any,
     ) -> None:
+        self.input = input
         self._dataset_elements_cache: dict[str, list[DatasetFilenameWrapper]] = {}
         if not isinstance(datasets, Sequence):
             datasets = [datasets]
@@ -629,6 +638,15 @@ class DatasetListWrapper(list[DatasetFilenameWrapper], ToolParameterValueWrapper
     def __bool__(self) -> bool:
         # Fail `#if $param` checks in cheetah if optional input is not provided
         return any(self)
+
+    def __len__(self) -> int:
+        # optional data parameters are [None] if no input is given
+        # note: not self relies on the __bool__ method
+        profile = self.input.tool.profile if self.input.tool else None
+        if not self and profile is not None and Version(str(profile)) >= Version("26.0"):
+            return 0
+        else:
+            return super().__len__()
 
     __nonzero__ = __bool__
 
@@ -831,6 +849,11 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         if not self.__input_supplied:
             return [].__iter__()
         return self.__element_instance_list.__iter__()
+
+    # def __len__(self) -> int:
+    #     if not self.__input_supplied:
+    #         return 0
+    #     return self.__element_instance_list.__len__()
 
     def __bool__(self) -> bool:
         # Fail `#if $param` checks in cheetah is optional input
