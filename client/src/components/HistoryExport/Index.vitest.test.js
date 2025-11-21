@@ -1,13 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { useFileSources } from "@/composables/fileSources";
 
 import Index from "./Index.vue";
 
-jest.mock("@/composables/fileSources");
+vi.mock("@/composables/fileSources");
 
 const localVue = getLocalVue();
 

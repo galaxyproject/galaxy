@@ -1,8 +1,9 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { waitOnJob } from "@/components/JobStates/wait";
 
@@ -13,7 +14,9 @@ const TEST_HISTORY_ID = "hist1235";
 const TEST_JOB_ID = "job123789";
 const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
 
-jest.mock("components/JobStates/wait");
+vi.mock("@/components/JobStates/wait", () => ({
+    waitOnJob: vi.fn(),
+}));
 
 describe("ToRemoteFile.vue", () => {
     let axiosMock;

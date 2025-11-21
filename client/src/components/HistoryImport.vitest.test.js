@@ -1,6 +1,7 @@
+import { getLocalVue, wait } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, wait } from "tests/jest/helpers";
+import { vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -15,7 +16,9 @@ const router = new VueRouter();
 const TEST_JOB_ID = "job123789";
 const TEST_SOURCE_URL = "http://galaxy.example/import";
 
-jest.mock("components/JobStates/wait");
+vi.mock("@/components/JobStates/wait", () => ({
+    waitOnJob: vi.fn(),
+}));
 
 const { server, http } = useServerMock();
 
@@ -87,7 +90,7 @@ describe("HistoryImport.vue", () => {
         );
 
         let then;
-        waitOnJob.mockReturnValue(
+        vi.mocked(waitOnJob).mockReturnValue(
             new Promise((then_) => {
                 then = then_;
             }),

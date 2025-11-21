@@ -1,8 +1,9 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { waitOnJob } from "@/components/JobStates/wait";
 
@@ -13,7 +14,9 @@ const TEST_HISTORY_ID = "hist1235";
 const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
 const TEST_JOB_ID = "test1234job";
 
-jest.mock("components/JobStates/wait");
+vi.mock("@/components/JobStates/wait", () => ({
+    waitOnJob: vi.fn(),
+}));
 
 describe("ToLink.vue", () => {
     let axiosMock;
@@ -44,7 +47,7 @@ describe("ToLink.vue", () => {
 
     it("should start polling if latest export is preparing", async () => {
         let then = null;
-        waitOnJob.mockReturnValue(
+        vi.mocked(waitOnJob).mockReturnValue(
             new Promise((then_) => {
                 then = then_;
             }),

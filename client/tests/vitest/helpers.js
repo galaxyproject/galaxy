@@ -148,3 +148,15 @@ export function injectTestRouter(localVue) {
     const router = new VueRouter();
     return router;
 }
+
+/**
+ * Waits n milliseconds and then promise resolves
+ * Usage: await wait(500);
+ */
+export const wait = (n) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, n);
+    });
+};
