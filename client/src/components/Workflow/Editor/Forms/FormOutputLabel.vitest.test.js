@@ -1,6 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia, PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
 
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 

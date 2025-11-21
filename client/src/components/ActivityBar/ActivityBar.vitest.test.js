@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
+import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { vi } from "vitest";
@@ -51,11 +51,7 @@ describe("ActivityBar", () => {
         const pinia = createTestingPinia({ stubActions: false });
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
-        server.use(
-            http.get("/api/unprivileged_tools", ({ response }) => {
-                return response(200).json([]);
-            }),
-        );
+        mockUnprivilegedToolsRequest(server, http);
         wrapper = shallowMount(mountTarget, {
             localVue,
             pinia,

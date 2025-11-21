@@ -1,8 +1,8 @@
-import { expect, jest } from "@jest/globals";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
+import { expect, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -18,20 +18,20 @@ import Index from "./Index.vue";
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
-jest.mock("components/Datatypes/factory");
-jest.mock("./modules/services");
-jest.mock("onload/loadConfig");
-jest.mock("./modules/utilities");
-jest.mock("@/components/Workflow/workflows.services");
+vi.mock("components/Datatypes/factory", () => ({}));
+vi.mock("./modules/services");
+vi.mock("@/onload/loadConfig");
+vi.mock("./modules/utilities");
+vi.mock("@/components/Workflow/workflows.services");
 
-jest.mock("app");
+vi.mock("app", () => ({}));
 
 const { server, http } = useServerMock();
 
-const mockGetAppRoot = getAppRoot as jest.Mocked<typeof getAppRoot>;
-const mockGetStateUpgradeMessages = getStateUpgradeMessages as jest.Mock<typeof getStateUpgradeMessages>;
-const mockLoadWorkflow = getWorkflowFull as jest.Mocked<typeof getWorkflowFull>;
-const MockGetVersions = getVersions as jest.Mocked<typeof getVersions>;
+const mockGetAppRoot = vi.mocked(getAppRoot);
+const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
+const mockLoadWorkflow = vi.mocked(getWorkflowFull);
+const MockGetVersions = vi.mocked(getVersions);
 
 describe("Index", () => {
     let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255

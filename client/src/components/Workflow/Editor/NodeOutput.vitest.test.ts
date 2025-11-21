@@ -1,6 +1,7 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 import { nextTick, ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -16,9 +17,9 @@ import NodeOutput from "./NodeOutput.vue";
 const localVue = getLocalVue();
 
 class ResizeObserver {
-    observe = jest.fn();
-    unobserve = jest.fn();
-    disconnect = jest.fn();
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
 }
 
 // eslint-disable-next-line compat/compat

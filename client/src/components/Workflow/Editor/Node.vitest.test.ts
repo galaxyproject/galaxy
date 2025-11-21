@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 
@@ -10,7 +11,11 @@ import { mockOffset } from "./test_fixtures";
 
 import Node from "./Node.vue";
 
-jest.mock("app");
+vi.mock("@/app", () => ({
+    getGalaxyInstance: vi.fn(() => ({
+        config: { enable_tool_recommendations: false },
+    })),
+}));
 
 const localVue = getLocalVue();
 

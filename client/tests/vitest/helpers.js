@@ -160,3 +160,11 @@ export const wait = (n) => {
         }, n);
     });
 };
+
+export function mockUnprivilegedToolsRequest(server, http) {
+    server.use(
+        http.get("/api/unprivileged_tools", ({ response }) => {
+            return response(200).json([]);
+        }),
+    );
+}
