@@ -4,19 +4,8 @@ import { createTestingPinia } from "@pinia/testing";
 // eslint-disable-next-line import/order
 import { getSelectableObjectStores } from "@/api/objectStores";
 
-// prettier-ignore-start
-// Use vi.mock for Vitest, jest.mock for Jest
-// @ts-ignore - These are test globals
-if (typeof vi !== "undefined") {
-    // Vitest
-    // @ts-ignore - vi is a Vitest global
-    vi.mock("@/api/objectStores");
-} else {
-    // Jest
-    // @ts-ignore - jest is a Jest global
-    jest.mock("@/api/objectStores");
-}
-// prettier-ignore-end
+// @ts-ignore - vi is a Vitest global
+vi.mock("@/api/objectStores");
 
 const OBJECT_STORES = [
     {
@@ -39,7 +28,6 @@ const OBJECT_STORES = [
 
 export function setupSelectableMock() {
     createTestingPinia();
-    // Support both Jest and Vitest MockedFunction types
     const mockGetObjectStores = getSelectableObjectStores as any;
     mockGetObjectStores.mockResolvedValue(OBJECT_STORES);
 }
