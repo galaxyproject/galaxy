@@ -62,8 +62,10 @@ vi.mock("@/composables/toast", () => ({
 
 // Mock "@/utils/clipboard"
 const writeText = vi.fn();
-Object.assign(navigator, {
-    clipboard: {
+Object.defineProperty(navigator, "clipboard", {
+    writable: true,
+    configurable: true,
+    value: {
         writeText,
     },
 });

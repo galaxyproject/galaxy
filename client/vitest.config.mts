@@ -30,7 +30,6 @@ export default defineConfig({
         environmentOptions: {
             jsdom: {
                 url: "http://localhost/",
-                customExportConditions: ["msw"],
             },
         },
         coverage: {

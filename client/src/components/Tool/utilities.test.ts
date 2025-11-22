@@ -3,8 +3,10 @@ import { copyLink } from "./utilities";
 
 const writeText = vi.fn();
 
-Object.assign(navigator, {
-    clipboard: {
+Object.defineProperty(navigator, "clipboard", {
+    writable: true,
+    configurable: true,
+    value: {
         writeText,
     },
 });

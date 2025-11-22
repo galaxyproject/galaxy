@@ -232,8 +232,10 @@ describe("DownloadItemCard.vue", () => {
     it("copies the download link to the clipboard when Copy Download Link is clicked", async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
 
-        Object.assign(navigator, {
-            clipboard: {
+        Object.defineProperty(navigator, "clipboard", {
+            writable: true,
+            configurable: true,
+            value: {
                 writeText,
             },
         });
