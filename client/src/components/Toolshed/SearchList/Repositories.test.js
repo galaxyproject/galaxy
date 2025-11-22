@@ -1,8 +1,6 @@
 import { createLocalVue, mount } from "@vue/test-utils";
 import { vi } from "vitest";
 
-import { Services } from "../services";
-
 import Repositories from "./Repositories.vue";
 
 vi.mock("app");

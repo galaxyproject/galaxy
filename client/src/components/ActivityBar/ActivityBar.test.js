@@ -55,7 +55,7 @@ describe("ActivityBar", () => {
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response(200).json({});
-            })
+            }),
         );
         wrapper = shallowMount(mountTarget, {
             localVue,
