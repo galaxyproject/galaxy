@@ -3,7 +3,6 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { vi } from "vitest";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 

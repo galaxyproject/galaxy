@@ -1,7 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
 
 import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 

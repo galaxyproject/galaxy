@@ -3,7 +3,6 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
 import VueRouter from "vue-router";
 
 import CitationItem from "./CitationItem.vue";

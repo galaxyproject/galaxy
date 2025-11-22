@@ -2,7 +2,6 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
-import { vi } from "vitest";
 import { ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";

@@ -1,6 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { vi } from "vitest";
 
 import FromFileOrUrl from "./FromFileOrUrl.vue";
 

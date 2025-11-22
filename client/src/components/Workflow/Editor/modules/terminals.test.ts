@@ -1,5 +1,4 @@
 import { createPinia, setActivePinia } from "pinia";
-import { vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useUndoRedoStore } from "@/stores/undoRedoStore";

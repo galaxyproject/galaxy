@@ -2,7 +2,6 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
 
 import DefaultBox from "./DefaultBox.vue";
 

@@ -3,7 +3,6 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__/index";
 import { useUserStore } from "@/stores/userStore";

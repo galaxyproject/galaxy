@@ -2,7 +2,6 @@ import { createTestingPinia } from "@pinia/testing";
 import { suppressErrorForCustomIcons } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { vi } from "vitest";
 import { nextTick, reactive, ref } from "vue";
 
 import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";

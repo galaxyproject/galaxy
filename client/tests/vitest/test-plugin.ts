@@ -1,4 +1,4 @@
-import { Plugin } from "vite";
+import type { Plugin } from "vite";
 
 // Plugin to handle i18n! imports
 export function i18nPlugin(): Plugin {

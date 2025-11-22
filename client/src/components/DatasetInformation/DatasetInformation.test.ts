@@ -5,7 +5,6 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import DatasetInformation from "./DatasetInformation.vue";
 

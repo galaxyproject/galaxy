@@ -3,7 +3,6 @@ import "./worker/__mocks__/selectMany";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { vi } from "vitest";
 import type { PropType } from "vue";
 
 import type { SelectOption } from "./worker/selectMany";

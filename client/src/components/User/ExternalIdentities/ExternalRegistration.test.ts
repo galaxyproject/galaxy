@@ -1,6 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
 
 import { getOIDCIdpsWithRegistration, type OIDCConfig } from "./ExternalIDHelper";
 

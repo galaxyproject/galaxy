@@ -4,7 +4,6 @@ import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
 
-import { vi, beforeEach, afterEach } from "vitest";
 // Vue configuration
 import Vue from "vue";
 
@@ -32,6 +31,7 @@ vi.doMock("vue", () => ({
 }));
 
 // Mock window.scrollIntoView (not available in jsdom)
+// @ts-ignore
 global.scrollIntoView = vi.fn();
 
 // Replace setImmediate with setTimeout to fix certain tests

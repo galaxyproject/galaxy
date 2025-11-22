@@ -2,7 +2,6 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { vi } from "vitest";
 
 import Login from "./Login.vue";
 

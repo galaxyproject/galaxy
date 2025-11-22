@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import type { MockedFunction } from "@vitest/spy";
 
 import { useResourceWatcher, type WatchOptions, type WatchResourceHandler } from "./resourceWatcher";
 
@@ -7,8 +8,8 @@ const mockAddEventListener = vi.fn();
 const mockRemoveEventListener = vi.fn();
 
 interface MockDocument {
-    addEventListener: vi.MockedFunction<typeof document.addEventListener>;
-    removeEventListener: vi.MockedFunction<typeof document.removeEventListener>;
+    addEventListener: MockedFunction<typeof document.addEventListener>;
+    removeEventListener: MockedFunction<typeof document.removeEventListener>;
     visibilityState: "visible" | "hidden";
 }
 
@@ -33,7 +34,7 @@ function getVisibilityChangeHandler(): () => void {
 }
 
 describe("useResourceWatcher", () => {
-    let mockWatchHandler: vi.MockedFunction<WatchResourceHandler>;
+    let mockWatchHandler: MockedFunction<WatchResourceHandler>;
 
     beforeEach(() => {
         vi.clearAllTimers();

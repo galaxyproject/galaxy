@@ -2,7 +2,6 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { vi } from "vitest";
 
 import { useToolStore } from "@/stores/toolStore";
 

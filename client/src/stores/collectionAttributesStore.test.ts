@@ -1,6 +1,5 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { vi } from "vitest";
 
 import type { DatasetCollectionAttributes } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";

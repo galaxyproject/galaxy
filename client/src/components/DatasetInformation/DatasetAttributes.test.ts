@@ -5,7 +5,6 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { describe, expect, it } from "vitest";
 
 import DatasetAttributes from "./DatasetAttributes.vue";
 

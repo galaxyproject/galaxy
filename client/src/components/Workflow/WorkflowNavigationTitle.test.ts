@@ -3,7 +3,6 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
 
 import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useUserStore } from "@/stores/userStore";
