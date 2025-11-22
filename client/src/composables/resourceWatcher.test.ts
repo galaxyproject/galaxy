@@ -1,5 +1,5 @@
-import flushPromises from "flush-promises";
 import type { MockedFunction } from "@vitest/spy";
+import flushPromises from "flush-promises";
 
 import { useResourceWatcher, type WatchOptions, type WatchResourceHandler } from "./resourceWatcher";
 

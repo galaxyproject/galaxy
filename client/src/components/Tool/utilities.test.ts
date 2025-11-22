@@ -1,4 +1,3 @@
-
 import { copyLink } from "./utilities";
 
 const writeText = vi.fn();

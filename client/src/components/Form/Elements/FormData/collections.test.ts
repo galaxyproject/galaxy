@@ -1,4 +1,3 @@
-
 import type { CollectionType } from "@/api/datasetCollections";
 
 import { buildersForCollectionType, buildersForCollectionTypes } from "./collections";
