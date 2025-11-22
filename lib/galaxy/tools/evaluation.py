@@ -466,9 +466,8 @@ class ToolEvaluator:
         def wrap_input(input_values, input):
             value = input_values[input.name]
             if isinstance(input, DataToolParameter) and input.multiple:
-                dataset_instances = DatasetListWrapper.to_dataset_instances(value)
+                dataset_instances = DatasetListWrapper.to_dataset_instances(value, self.tool.profile)
                 input_values[input.name] = DatasetListWrapper(
-                    input,
                     job_working_directory,
                     dataset_instances,
                     compute_environment=self.compute_environment,

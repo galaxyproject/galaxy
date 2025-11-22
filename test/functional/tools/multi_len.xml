@@ -1,12 +1,18 @@
 <tool id="multi_len" name="multi_len" version="1.0.0" profile="26.0">
     <description>test len() parameters allowing multiple</description>
     <command><![CDATA[
-echo 'select_ex #echo len($select_ex) #' > '$output' &&
-echo 'select_ex_optional #echo len($select_ex_optional) #' >> '$output' &&
+echo '|select_ex| = #echo len($select_ex) #' > '$output' &&
+echo '|select_ex_optional| = #echo len($select_ex_optional) #' >> '$output' &&
+#for i, e in enumerate($select_ex_optional)
+    && echo "select_ex_optional: element $i is $e"
+#end for
 
-echo 'data_ex #echo len($data_ex) #' >> '$output' &&
-echo 'data_ex_optional #echo len($data_ex_optional) #' >> '$output'
+echo '|data_ex| = #echo len($data_ex) #' >> '$output' &&
+echo '|data_ex_optional| = #echo len($data_ex_optional) #' >> '$output'
 
+#for i, e in enumerate($data_ex_optional)
+    && echo "data_ex_optional: element $i is $e"
+#end for
     ]]></command>
     <inputs>
         <param name="select_ex" type="select" multiple="true">
@@ -37,10 +43,10 @@ echo 'data_ex_optional #echo len($data_ex_optional) #' >> '$output'
             <param name="data_ex_optional" value="1.tabular,2.tabular"/>
             <output name="output">
                 <assert_contents>
-                    <has_line line="select_ex 3" />
-                    <has_line line="select_ex_optional 3" />
-                    <has_line line="data_ex 2" />
-                    <has_line line="data_ex_optional 2" />
+                    <has_line line="|select_ex| = 3" />
+                    <has_line line="|select_ex_optional| = 3" />
+                    <has_line line="|data_ex| = 2" />
+                    <has_line line="|data_ex_optional| = 2" />
                 </assert_contents>
             </output>
         </test>
@@ -51,10 +57,13 @@ echo 'data_ex_optional #echo len($data_ex_optional) #' >> '$output'
             <param name="data_ex_optional" value_json="null"/>
             <output name="output">
                 <assert_contents>
-                    <has_line line="select_ex 3" />
-                    <has_line line="select_ex_optional 0" />
-                    <has_line line="data_ex 2" />
-                    <has_line line="data_ex_optional 0" />
+                    <has_line line="|select_ex| = 3" />
+                    <has_line line="|select_ex_optional| = 0" />
+                    <has_line_matching expression="^select_ex_optional: element" negate="true" />
+                    <has_line line="|data_ex| = 2" />
+                    <has_line line="|data_ex_optional| = 0" />
+                    <has_line_matching expression="^data_ex_optional: element" negate="true" />
+                    <has_n_lines n="4"/>
                 </assert_contents>
             </output>
         </test>

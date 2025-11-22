@@ -78,7 +78,7 @@ List of behavior changes associated with profile versions:
 
 ### 26.0
 
-- The ``len`` function applied on optional data parameters without a selected dataset gives ``0``. For smaller profiles ``1``
+- Optional data parameters without a selected dataset are now empty lists, i.e. ``[]``. For smaller profiles it was ``[None]``
 
 ### Examples
 

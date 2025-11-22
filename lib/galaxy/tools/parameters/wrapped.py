@@ -118,9 +118,8 @@ class WrappedParameters:
                 values = value
                 self.wrap_values(input.inputs, values, skip_missing_values=skip_missing_values)
             elif isinstance(input, DataToolParameter) and input.multiple:
-                dataset_instances = DatasetListWrapper.to_dataset_instances(value)
+                dataset_instances = DatasetListWrapper.to_dataset_instances(value, self.tool.profile)
                 input_values[input.name] = DatasetListWrapper(
-                    input,
                     None,
                     dataset_instances,
                     datatypes_registry=trans.app.datatypes_registry,
