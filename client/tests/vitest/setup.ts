@@ -31,12 +31,20 @@ vi.doMock("vue", () => ({
 }));
 
 // Mock window.scrollIntoView (not available in jsdom)
-// @ts-ignore
-global.scrollIntoView = vi.fn();
+Object.defineProperty(global, "scrollIntoView", {
+    writable: true,
+    configurable: true,
+    value: vi.fn(),
+});
 
 // Replace setImmediate with setTimeout to fix certain tests
-// @ts-ignore
-global.setImmediate = global.setImmediate || ((fn, ...args) => global.setTimeout(fn, 0, ...args));
+if (!global.setImmediate) {
+    Object.defineProperty(global, "setImmediate", {
+        writable: true,
+        configurable: true,
+        value: (fn: (...args: any[]) => void, ...args: any[]) => global.setTimeout(fn, 0, ...args),
+    });
+}
 
 // Add structuredClone polyfill if not available
 if (typeof structuredClone === "undefined") {
