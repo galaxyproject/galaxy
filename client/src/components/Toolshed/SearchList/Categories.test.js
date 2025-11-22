@@ -5,10 +5,8 @@ import { Services } from "../services";
 
 import Categories from "./Categories.vue";
 
-vi.mock("../services");
-
-vi.mocked(Services).mockImplementation(() => {
-    return {
+vi.mock("../services", () => ({
+    Services: class Services {
         async getCategories() {
             return [
                 {
@@ -22,9 +20,9 @@ vi.mocked(Services).mockImplementation(() => {
                     repositories: "repositories_1",
                 },
             ];
-        },
-    };
-});
+        }
+    },
+}));
 
 describe("Categories", () => {
     let localVue;

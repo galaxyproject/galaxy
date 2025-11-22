@@ -18,7 +18,6 @@ vi.mock("app");
 vi.mock("onload/loadConfig", () => ({
     getAppRoot: vi.fn(() => "/"),
 }));
-vi.mock("../services");
 
 const FOLDER_ID = "test_folder_id";
 const UNRESTRICTED_DATASET_ID = "unrestricted_dataset_id";
@@ -44,22 +43,23 @@ const mockDbKeyProvider = {
     },
 };
 
-Services.mockImplementation(() => {
-    const responseMap = new Map([
-        [UNRESTRICTED_DATASET_ID, unrestrictedDatasetResponse],
-        [RESTRICTED_DATASET_ID, restrictedDatasetResponse],
-        [CANNOT_MODIFY_DATASET_ID, cannotModifyDatasetResponse],
-        [CANNOT_MANAGE_DATASET_ID, cannotManageDatasetResponse],
-    ]);
-    return {
+const responseMap = new Map([
+    [UNRESTRICTED_DATASET_ID, unrestrictedDatasetResponse],
+    [RESTRICTED_DATASET_ID, restrictedDatasetResponse],
+    [CANNOT_MODIFY_DATASET_ID, cannotModifyDatasetResponse],
+    [CANNOT_MANAGE_DATASET_ID, cannotManageDatasetResponse],
+]);
+
+vi.mock("../services", () => ({
+    Services: class Services {
         async getDataset(datasetID, onError) {
             return responseMap.get(datasetID);
-        },
+        }
         async updateDataset(datasetID, data, onSucess, onError) {
             return data;
-        },
-    };
-});
+        }
+    },
+}));
 
 const MODIFY_BUTTON = '[data-test-id="modify-btn"]';
 const AUTO_DETECT_BUTTON = '[data-test-id="auto-detect-btn"]';

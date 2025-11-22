@@ -9,26 +9,24 @@ vi.mock("onload/loadConfig", () => ({
     getAppRoot: vi.fn(() => "/"),
 }));
 vi.mock("../services", () => ({
-    Services: vi.fn(() => {
-        return {
-            async getInstalledRepositories() {
-                return [
-                    {
-                        name: "name_0",
-                        owner: "owner_0",
-                        status: "status_0_0",
-                        description: "description_0_0",
-                    },
-                    {
-                        name: "name_1",
-                        owner: "owner_1",
-                        status: "status_1",
-                        description: "description_1",
-                    },
-                ];
-            },
-        };
-    }),
+    Services: class Services {
+        async getInstalledRepositories() {
+            return [
+                {
+                    name: "name_0",
+                    owner: "owner_0",
+                    status: "status_0_0",
+                    description: "description_0_0",
+                },
+                {
+                    name: "name_1",
+                    owner: "owner_1",
+                    status: "status_1",
+                    description: "description_1",
+                },
+            ];
+        }
+    },
 }));
 
 describe("Monitor", () => {

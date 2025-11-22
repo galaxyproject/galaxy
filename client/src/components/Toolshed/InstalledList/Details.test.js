@@ -8,16 +8,14 @@ vi.mock("onload/loadConfig", () => ({
     getAppRoot: vi.fn(() => "/"),
 }));
 vi.mock("../services", () => ({
-    Services: vi.fn(() => {
-        return {
-            async getRepositoryByName(url, name, owner) {
-                expect(url).toBe("tool_shed_url");
-                expect(name).toBe("name");
-                expect(owner).toBe("owner");
-                return {};
-            },
-        };
-    }),
+    Services: class Services {
+        async getRepositoryByName(url, name, owner) {
+            expect(url).toBe("tool_shed_url");
+            expect(name).toBe("name");
+            expect(owner).toBe("owner");
+            return {};
+        }
+    },
 }));
 
 describe("Details", () => {

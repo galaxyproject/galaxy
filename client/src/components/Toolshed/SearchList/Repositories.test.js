@@ -6,10 +6,8 @@ import { Services } from "../services";
 import Repositories from "./Repositories.vue";
 
 vi.mock("app");
-vi.mock("../services");
-
-vi.mocked(Services).mockImplementation(() => {
-    return {
+vi.mock("../services", () => ({
+    Services: class Services {
         async getRepositories() {
             return [
                 {
@@ -25,9 +23,9 @@ vi.mocked(Services).mockImplementation(() => {
                     times_downloaded: "times_downloaded_1",
                 },
             ];
-        },
-    };
-});
+        }
+    },
+}));
 
 describe("Repositories", () => {
     const localVue = createLocalVue();

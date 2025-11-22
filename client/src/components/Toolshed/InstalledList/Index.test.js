@@ -9,30 +9,28 @@ vi.mock("onload/loadConfig", () => ({
     getAppRoot: vi.fn(() => "/"),
 }));
 vi.mock("../services", () => ({
-    Services: vi.fn(() => {
-        return {
-            async getInstalledRepositories() {
-                return [
-                    {
-                        name: "name_0",
-                        description: "description_0",
-                        tool_shed: "toolshed_1",
-                        tool_shed_status: {
-                            latest_installable_revision: false,
-                        },
+    Services: class Services {
+        async getInstalledRepositories() {
+            return [
+                {
+                    name: "name_0",
+                    description: "description_0",
+                    tool_shed: "toolshed_1",
+                    tool_shed_status: {
+                        latest_installable_revision: false,
                     },
-                    {
-                        name: "name_1",
-                        description: "description_1",
-                        tool_shed: "toolshed_2",
-                        tool_shed_status: {
-                            latest_installable_revision: true,
-                        },
+                },
+                {
+                    name: "name_1",
+                    description: "description_1",
+                    tool_shed: "toolshed_2",
+                    tool_shed_status: {
+                        latest_installable_revision: true,
                     },
-                ];
-            },
-        };
-    }),
+                },
+            ];
+        }
+    },
 }));
 
 describe("InstalledList", () => {
