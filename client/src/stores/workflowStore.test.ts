@@ -5,8 +5,8 @@ import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
 // Mock `getWorkflowFull` function
-jest.mock("@/components/Workflow/workflows.services", () => ({
-    getWorkflowFull: jest.fn(),
+vi.mock("@/components/Workflow/workflows.services", () => ({
+    getWorkflowFull: vi.fn(),
 }));
 
 const mockWorkflow = {
@@ -22,12 +22,12 @@ describe("useWorkflowStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         workflowStore = useWorkflowStore();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe("getFullWorkflowCached", () => {
         it("should fetch workflow when not cached", async () => {
-            (getWorkflowFull as jest.Mock).mockResolvedValue(mockWorkflow);
+            vi.mocked(getWorkflowFull).mockResolvedValue(mockWorkflow);
 
             const result = await workflowStore.getFullWorkflowCached("workflow-123", 1);
             await flushPromises();
@@ -38,7 +38,7 @@ describe("useWorkflowStore", () => {
         });
 
         it("should return cached workflow on subsequent calls", async () => {
-            (getWorkflowFull as jest.Mock).mockResolvedValue(mockWorkflow);
+            vi.mocked(getWorkflowFull).mockResolvedValue(mockWorkflow);
 
             // First call - should fetch
             const result1 = await workflowStore.getFullWorkflowCached("workflow-123", 1);
@@ -61,7 +61,7 @@ describe("useWorkflowStore", () => {
             const workflowPromise = new Promise((resolve) => {
                 resolveWorkflow = resolve;
             });
-            (getWorkflowFull as jest.Mock).mockReturnValue(workflowPromise);
+            vi.mocked(getWorkflowFull).mockReturnValue(workflowPromise);
 
             // Start two concurrent requests for the same workflow
             const promise1 = workflowStore.getFullWorkflowCached("workflow-123", 1);
@@ -87,8 +87,8 @@ describe("useWorkflowStore", () => {
             const mockWorkflow1 = { ...mockWorkflow, id: "workflow-1" };
             const mockWorkflow2 = { ...mockWorkflow, id: "workflow-2" };
 
-            (getWorkflowFull as jest.Mock).mockResolvedValueOnce(mockWorkflow1);
-            (getWorkflowFull as jest.Mock).mockResolvedValueOnce(mockWorkflow2);
+            vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflow1);
+            vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflow2);
 
             // Start concurrent requests for different workflows
             const [result1, result2] = await Promise.all([
@@ -107,8 +107,8 @@ describe("useWorkflowStore", () => {
             const mockWorkflowV1 = { ...mockWorkflow, version: 1 };
             const mockWorkflowV2 = { ...mockWorkflow, version: 2 };
 
-            (getWorkflowFull as jest.Mock).mockResolvedValueOnce(mockWorkflowV1);
-            (getWorkflowFull as jest.Mock).mockResolvedValueOnce(mockWorkflowV2);
+            vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflowV1);
+            vi.mocked(getWorkflowFull).mockResolvedValueOnce(mockWorkflowV2);
 
             // Start concurrent requests for different versions
             const [result1, result2] = await Promise.all([
@@ -129,7 +129,7 @@ describe("useWorkflowStore", () => {
             const workflowPromise = new Promise((resolve) => {
                 resolveWorkflow = resolve;
             });
-            (getWorkflowFull as jest.Mock).mockReturnValue(workflowPromise);
+            vi.mocked(getWorkflowFull).mockReturnValue(workflowPromise);
 
             // Start 5 concurrent requests
             const promises = [
