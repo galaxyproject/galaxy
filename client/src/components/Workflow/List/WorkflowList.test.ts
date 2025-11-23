@@ -13,11 +13,11 @@ import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
 
-jest.mock("@/api/workflows", () => ({
-    loadWorkflows: jest.fn(),
+vi.mock("@/api/workflows", () => ({
+    loadWorkflows: vi.fn(),
 }));
 
-const mockedLoadWorkflows = loadWorkflows as jest.Mock;
+const mockedLoadWorkflows = loadWorkflows as ReturnType<typeof vi.fn>;
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);
@@ -53,7 +53,7 @@ async function mountWorkflowList() {
 describe("WorkflowList", () => {
     beforeEach(() => {
         suppressBootstrapVueWarnings();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it("render empty workflow list", async () => {
