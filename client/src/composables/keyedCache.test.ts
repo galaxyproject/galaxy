@@ -35,7 +35,7 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
     it("should not fetch the item if it is already stored", async () => {
@@ -96,7 +96,7 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
     });
 
@@ -119,7 +119,7 @@ describe("useKeyedCache", () => {
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledTimes(1);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
     it("should not fetch the item if it is already being fetched, even if shouldFetch returns true", async () => {
@@ -142,7 +142,7 @@ describe("useKeyedCache", () => {
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledTimes(1);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
     });
 
@@ -165,7 +165,7 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
     it("should accept a computed for shouldFetch", async () => {
@@ -188,7 +188,26 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
+    });
+
+    it("should handle fake timers without hanging when advanced manually", async () => {
+        jest.useFakeTimers();
+        const id = "1";
+        const item = { id, name: "Item 1" };
+        fetchItem.mockImplementation(() => {
+            return new Promise((resolve) => {
+                setTimeout(() => resolve(item), 10);
+            });
+        });
+        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
+        getItemById.value(id);
+        getItemById.value(id);
+        getItemById.value(id);
+        await flushPromises();
+        jest.runOnlyPendingTimers();
+        await flushPromises();
+        expect(true).toBe(true);
     });
 });
