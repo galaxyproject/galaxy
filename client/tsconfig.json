@@ -24,10 +24,7 @@
 
         // Necessary for now, was previously the default setting
         // See more at https://github.com/vuejs/tsconfig#migrating-from-typescript--50
-        "resolvePackageJsonExports": false,
-
-        // Vitest globals
-        "types": ["vitest/globals"]
+        "resolvePackageJsonExports": false
     },
     "vueCompilerOptions": {
         "target": 2.7

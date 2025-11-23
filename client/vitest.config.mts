@@ -24,7 +24,7 @@ const modulesToTransform = [
 export default defineConfig({
     plugins: [vue(), i18nPlugin(), yamlPlugin()],
     test: {
-        globals: true,
+        globals: false,
         environment: "jsdom",
         setupFiles: ["./tests/vitest/setup.ts"],
         environmentOptions: {
