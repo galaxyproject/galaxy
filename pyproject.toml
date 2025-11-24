@@ -37,6 +37,7 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
+    "fastapi>=0.111.0",
     "fastapi-slim>=0.111.0",
     "fissix",
     "fs",
