@@ -1,3 +1,5 @@
+import { describe, expect, test, vi } from "vitest";
+
 import { sendPayload } from "@/utils/upload-submit.js";
 
 import { UploadQueue } from "./upload-queue.js";

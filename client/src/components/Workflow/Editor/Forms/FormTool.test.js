@@ -4,7 +4,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -62,7 +62,7 @@ describe("FormTool", () => {
             stubs: {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             provide: { workflowId: "mock-workflow" },
         });
     }

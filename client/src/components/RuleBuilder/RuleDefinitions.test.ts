@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 
 import SPEC_TEST_CASES from "./rules_dsl_spec.yml";

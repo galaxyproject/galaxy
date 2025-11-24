@@ -1,3 +1,5 @@
+import { describe, expect, it, vi } from "vitest";
+
 import { ActionSkippedError, LastQueue } from "./lastQueue";
 
 async function testPromise(arg, _signal) {

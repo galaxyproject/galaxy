@@ -1,5 +1,6 @@
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import MountTarget from "./LoginIndex.vue";
 

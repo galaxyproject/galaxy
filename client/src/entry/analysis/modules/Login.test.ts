@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import Login from "./Login.vue";
 
@@ -38,7 +39,7 @@ const mockRouter = (query: object) => ({
 });
 
 function shallowMountLogin(routerQuery: object = {}) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     return shallowMount(Login as object, {

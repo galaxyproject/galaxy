@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
@@ -88,7 +89,7 @@ describe("Lint", () => {
     let stepStore;
 
     beforeEach(() => {
-        const pinia = createTestingPinia({ stubActions: false });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         setActivePinia(pinia);
 
         wrapper = mount(Lint, {

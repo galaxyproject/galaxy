@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";

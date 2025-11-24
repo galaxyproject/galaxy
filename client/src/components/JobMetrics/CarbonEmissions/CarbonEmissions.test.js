@@ -1,5 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, it } from "vitest";
 import VueRouter from "vue-router";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";

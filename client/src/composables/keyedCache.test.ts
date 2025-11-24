@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, ref } from "vue";
 
 import { useKeyedCache } from "./keyedCache";

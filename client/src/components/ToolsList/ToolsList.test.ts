@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useToolStore } from "@/stores/toolStore";
 
@@ -43,7 +44,7 @@ describe("ToolsList", () => {
     let pinia: ReturnType<typeof createTestingPinia>;
 
     beforeEach(() => {
-        pinia = createTestingPinia({ stubActions: false });
+        pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         setActivePinia(pinia);
 
         const toolStore = useToolStore(pinia);

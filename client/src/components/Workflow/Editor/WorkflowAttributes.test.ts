@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { useUserTagsStore } from "@/stores/userTagsStore";
 

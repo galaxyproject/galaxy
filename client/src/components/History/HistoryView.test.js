@@ -4,7 +4,7 @@ import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";

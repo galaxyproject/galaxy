@@ -5,6 +5,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -21,7 +22,7 @@ const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 const localVue = getLocalVue(true);
 
 async function mountBroadcastForm(props?: object) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const mockRouter = {

@@ -5,6 +5,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import DatasetAttributes from "./DatasetAttributes.vue";
 
@@ -13,7 +14,7 @@ const DATASET_ID = "dataset_id";
 const localVue = getLocalVue();
 
 async function mountDatasetAttributes(conversion_disable = false) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const axiosMock = new MockAdapter(axios);

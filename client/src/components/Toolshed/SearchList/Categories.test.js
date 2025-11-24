@@ -1,5 +1,5 @@
 import { createLocalVue, mount } from "@vue/test-utils";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Categories from "./Categories.vue";
 

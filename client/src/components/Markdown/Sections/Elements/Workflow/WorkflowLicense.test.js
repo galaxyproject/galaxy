@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -13,7 +14,7 @@ const { server, http } = useServerMock();
 
 describe("Workflow License", () => {
     function mountTarget() {
-        const pinia = createTestingPinia({ stubActions: false });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         server.use(
             http.get("/api/workflows/{workflow_id}", ({ response }) =>
                 response(200).json({

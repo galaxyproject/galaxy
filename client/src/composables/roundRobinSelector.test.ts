@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import type { MaybeRefOrGetter } from "@vueuse/core";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, nextTick, ref } from "vue";
 
 import { useRoundRobinSelector } from "@/composables/roundRobinSelector";

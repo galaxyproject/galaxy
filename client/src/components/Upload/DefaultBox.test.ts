@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import DefaultBox from "./DefaultBox.vue";
 
@@ -29,7 +30,7 @@ function getWrapper() {
         stubs: {
             FontAwesomeIcon: true,
         },
-        pinia: createTestingPinia(),
+        pinia: createTestingPinia({ createSpy: vi.fn }),
     });
 }
 

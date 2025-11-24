@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useActivityStore } from "@/stores/activityStore";
@@ -48,7 +48,7 @@ describe("ActivityBar", () => {
     let wrapper;
 
     beforeEach(async () => {
-        const pinia = createTestingPinia({ stubActions: false });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
         mockUnprivilegedToolsRequest(server, http);

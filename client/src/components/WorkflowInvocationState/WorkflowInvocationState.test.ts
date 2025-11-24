@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -148,7 +149,7 @@ vi.mock("@/stores/workflowStore", async () => {
  * @returns The mounted wrapper
  */
 async function mountWorkflowInvocationState(invocationId: string, isFullPage = false) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = shallowMount(WorkflowInvocationState as object, {

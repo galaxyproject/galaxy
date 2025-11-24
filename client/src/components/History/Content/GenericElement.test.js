@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
@@ -68,7 +68,7 @@ describe("GenericElement", () => {
             },
             localVue,
             router,
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     });
 

@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -36,7 +37,7 @@ const ARCHIVED_TEST_HISTORY = {
 };
 
 async function mountComponentWithHistory(history?: HistorySummary) {
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
     const historyStore = useHistoryStore(pinia);
 

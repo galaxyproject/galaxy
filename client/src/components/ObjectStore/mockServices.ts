@@ -1,10 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
+import { vi } from "vitest";
 
 // IMPORTANT: This import MUST come after the mock calls above for proper module hoisting
 // eslint-disable-next-line import/order
 import { getSelectableObjectStores } from "@/api/objectStores";
 
-// @ts-ignore - vi is a Vitest global
 vi.mock("@/api/objectStores");
 
 const OBJECT_STORES = [
@@ -27,7 +27,7 @@ const OBJECT_STORES = [
 ];
 
 export function setupSelectableMock() {
-    createTestingPinia();
+    createTestingPinia({ createSpy: vi.fn });
     const mockGetObjectStores = getSelectableObjectStores as any;
     mockGetObjectStores.mockResolvedValue(OBJECT_STORES);
 }

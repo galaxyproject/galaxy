@@ -4,6 +4,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
 import type { RegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
@@ -16,7 +17,7 @@ const localVue = getLocalVue();
 
 async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
     setupMockConfig(config);
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     const userStore = useUserStore();
     userStore.currentUser = user;
     const wrapper = mount(QuotaMeter as object, {

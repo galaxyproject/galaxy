@@ -1,3 +1,4 @@
+import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";

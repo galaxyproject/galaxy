@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, test, vi } from "vitest";
 
 import Tool from "./Tool.vue";
 
@@ -8,7 +9,7 @@ const localVue = getLocalVue();
 
 describe("Tool", () => {
     test("test tool", () => {
-        const pinia = createTestingPinia();
+        const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {
@@ -30,7 +31,7 @@ describe("Tool", () => {
         expect(wrapper.emitted().onOperation).toBeDefined();
     });
     test("test tool operation", () => {
-        const pinia = createTestingPinia();
+        const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {
@@ -51,7 +52,7 @@ describe("Tool", () => {
         expect(title).toBe("operationTitle");
     });
     test("test tool hide name, test description", () => {
-        const pinia = createTestingPinia();
+        const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = mount(Tool, {
             propsData: {
                 tool: {

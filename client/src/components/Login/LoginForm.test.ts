@@ -4,6 +4,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HttpResponse } from "@/api/client/__mocks__/index";
@@ -12,7 +13,7 @@ import MountTarget from "./LoginForm.vue";
 
 const localVue = getLocalVue(true);
 const router = injectTestRouter(localVue);
-const testingPinia = createTestingPinia({ stubActions: false });
+const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
 const { server, http } = useServerMock();
 

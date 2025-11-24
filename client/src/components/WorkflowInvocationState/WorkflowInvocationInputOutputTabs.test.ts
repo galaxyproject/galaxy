@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -105,7 +106,7 @@ async function mountWorkflowInvocationInputOutputTabs(
             ContentItem: true,
             ParameterStep: true,
         },
-        pinia: createTestingPinia(),
+        pinia: createTestingPinia({ createSpy: vi.fn }),
     });
     await flushPromises();
     return wrapper;

@@ -3,6 +3,7 @@ import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { createPinia, mapState } from "pinia";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";

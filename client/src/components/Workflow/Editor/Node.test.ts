@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 
@@ -26,7 +27,7 @@ const MOCK_SCROLL = {
 
 describe("Node", () => {
     it("test attributes", async () => {
-        const testingPinia = createTestingPinia();
+        const testingPinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(testingPinia);
         const wrapper = shallowMount(Node as any, {
             propsData: {

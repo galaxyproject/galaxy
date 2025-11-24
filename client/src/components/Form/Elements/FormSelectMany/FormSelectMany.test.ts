@@ -3,13 +3,14 @@ import "./worker/__mocks__/selectMany";
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 import type { PropType } from "vue";
 
 import type { SelectOption } from "./worker/selectMany";
 
 import FormSelectMany from "./FormSelectMany.vue";
 
-const pinia = createTestingPinia();
+const pinia = createTestingPinia({ createSpy: vi.fn });
 const localVue = getLocalVue();
 
 vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");

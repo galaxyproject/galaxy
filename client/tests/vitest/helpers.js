@@ -4,7 +4,7 @@
 import { createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 import { PiniaVuePlugin } from "pinia";
-import { vi } from "vitest";
+import { expect, test, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { localizationPlugin } from "@/components/plugins/localization";

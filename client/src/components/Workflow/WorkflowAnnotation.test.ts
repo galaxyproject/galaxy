@@ -3,6 +3,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -96,7 +97,7 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
             showDetails: version === "run_form",
         },
         localVue,
-        pinia: createTestingPinia(),
+        pinia: createTestingPinia({ createSpy: vi.fn }),
         stubs: {
             FontAwesomeIcon: true,
         },

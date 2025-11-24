@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -58,7 +58,7 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
         const wrapper = shallowMount(WorkflowInvocationOverview, {
             propsData,
             localVue,
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();
         return wrapper;

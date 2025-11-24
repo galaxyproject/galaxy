@@ -1,3 +1,5 @@
+import { expect, test, vi } from "vitest";
+
 import { getAppRoot } from "@/onload/loadConfig";
 
 import { withPrefix } from "./redirect";

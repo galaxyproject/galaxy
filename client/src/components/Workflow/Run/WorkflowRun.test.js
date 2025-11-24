@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import sampleRunData1 from "./testdata/run1.json";
 
@@ -38,7 +38,7 @@ describe("WorkflowRun.vue", () => {
                 workflowId: run1WorkflowId,
             },
             global: {
-                plugins: [createTestingPinia()],
+                plugins: [createTestingPinia({ createSpy: vi.fn })],
             },
         });
     });

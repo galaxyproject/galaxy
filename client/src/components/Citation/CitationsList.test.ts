@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { setupMockHistoryBreadcrumbs } from "@tests/vitest/mockHistoryBreadcrumbs";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import CitationItem from "./CitationItem.vue";
@@ -44,7 +45,7 @@ describe("CitationsList", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(async () => {
-        const pinia = createTestingPinia();
+        const pinia = createTestingPinia({ createSpy: vi.fn });
 
         const router = new VueRouter();
         router.push("/histories/citations?id=test-id");

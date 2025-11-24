@@ -1,5 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, test } from "vitest";
 
 import BaseList from "./BaseList.vue";
 

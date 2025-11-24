@@ -5,6 +5,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import DatasetInformation from "./DatasetInformation.vue";
 
@@ -55,7 +56,7 @@ describe("DatasetInformation/DatasetInformation", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
-        const pinia = createTestingPinia();
+        const pinia = createTestingPinia({ createSpy: vi.fn });
 
         wrapper = mount(DatasetInformation as object, {
             propsData: {

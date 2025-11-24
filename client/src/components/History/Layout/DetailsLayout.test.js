@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
+import { describe, expect, it } from "vitest";
 
 import { useUserStore } from "@/stores/userStore";
 

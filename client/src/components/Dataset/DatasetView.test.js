@@ -3,7 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -56,6 +56,7 @@ const h5Dataset = { ...mockDataset, file_ext: "h5" };
 
 function setupPinia(datasetStore) {
     const pinia = createTestingPinia({
+        createSpy: vi.fn,
         initialState: {
             datasetStore: datasetStore,
             datatypeStore: {
@@ -72,7 +73,6 @@ function setupPinia(datasetStore) {
             },
         },
         stubActions: false,
-        createSpy: vi.fn,
     });
     setActivePinia(pinia);
     return pinia;

@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 
 import { GalaxyApi } from "@/api";
 

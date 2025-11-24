@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { columnTitleToTargetType, forBuilder } from "./fetchWorkbooks";
 import SPECIFICATIONS from "./rule_target_column_specification.yml";
 import type { ColumnMappingType, ParsedFetchWorkbook } from "./types";

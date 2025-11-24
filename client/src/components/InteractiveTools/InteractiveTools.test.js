@@ -5,6 +5,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
@@ -34,6 +35,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         axiosMock.onGet(/\/api\/entry_points/).reply(200, testData);
 
         testPinia = createTestingPinia({
+            createSpy: vi.fn,
             initialState: {
                 entryPointStore: {
                     entryPoints: testData,

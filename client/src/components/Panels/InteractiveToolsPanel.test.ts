@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
@@ -37,7 +38,7 @@ describe("InteractiveToolsPanel component", () => {
 
     const mountComponent = async (toolsList: Partial<Tool>[] = mockTools) => {
         const pinia = createTestingPinia({
-            createSpy: () => vi.fn(),
+            createSpy: vi.fn,
             stubActions: false,
         });
         setActivePinia(pinia);
@@ -153,7 +154,7 @@ describe("InteractiveToolsPanel component", () => {
         ];
 
         const pinia = createTestingPinia({
-            createSpy: () => vi.fn(),
+            createSpy: vi.fn,
             stubActions: false,
         });
         setActivePinia(pinia);

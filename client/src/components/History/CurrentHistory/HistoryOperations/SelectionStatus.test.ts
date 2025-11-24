@@ -1,6 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it } from "vitest";
 
 import HistorySelectionStatus from "./SelectionStatus.vue";
 

@@ -2,7 +2,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
-import { vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";

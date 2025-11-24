@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { BroadcastNotification } from "@/stores/broadcastsStore";
@@ -24,7 +25,7 @@ const selectors = {
 const { server, http } = useServerMock();
 
 async function mountBroadcastsList(broadcasts?: BroadcastNotification[]) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     server.use(

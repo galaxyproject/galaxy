@@ -5,7 +5,7 @@ import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import Filtering from "@/utils/filtering";
 
@@ -91,7 +91,7 @@ function createTestGrid() {
 }
 
 function createTarget(propsData) {
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     return mount(MountTarget, {
         localVue,
         propsData,

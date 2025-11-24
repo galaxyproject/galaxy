@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
 import { getOIDCIdpsWithRegistration, type OIDCConfig } from "./ExternalIDHelper";
 
@@ -7,7 +8,7 @@ import ExternalRegistration from "./ExternalRegistration.vue";
 
 /* Helper to mount component with a specific OIDC config --------- */
 function mountExtReg(cfg: object) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
 
     const idpsWithRegistration = getOIDCIdpsWithRegistration(cfg as OIDCConfig);
     return shallowMount(ExternalRegistration as object, {

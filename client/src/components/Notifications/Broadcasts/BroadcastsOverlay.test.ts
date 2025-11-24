@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
@@ -47,7 +48,7 @@ const FAKE_BROADCASTS: BroadcastNotification[] = [
 ];
 
 async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = []) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const broadcastsStore = useBroadcastsStore();

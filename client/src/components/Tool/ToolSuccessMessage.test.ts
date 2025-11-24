@@ -1,5 +1,6 @@
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
 

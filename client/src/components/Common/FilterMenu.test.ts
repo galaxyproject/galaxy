@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -107,7 +108,7 @@ describe("FilterMenu", () => {
             stubs: {
                 icon: { template: "<div></div>" },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     }
 

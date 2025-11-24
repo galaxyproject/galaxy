@@ -5,7 +5,7 @@ import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { WindowManager } from "@/entry/analysis/window-manager";
 import { useUserStore } from "@/stores/userStore";
@@ -44,7 +44,7 @@ describe("Masthead.vue", () => {
     beforeEach(async () => {
         localVue = getLocalVue();
         localVue.use(PiniaVuePlugin);
-        testPinia = createTestingPinia();
+        testPinia = createTestingPinia({ createSpy: vi.fn });
 
         windowManager = new WindowManager({});
         const windowTab = windowManager.getTab();

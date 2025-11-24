@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
 import Register from "./Register.vue";
 import RegisterForm from "@/components/Register/RegisterForm.vue";
@@ -37,7 +38,7 @@ const mockRouter = (query: object) => ({
 });
 
 function shallowMountRegister(routerQuery: object = {}) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
 
     return shallowMount(Register as object, {
         localVue,

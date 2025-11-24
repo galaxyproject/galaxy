@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -36,7 +37,7 @@ describe("Index", () => {
     let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255
 
     beforeEach(() => {
-        const testingPinia = createTestingPinia();
+        const testingPinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(testingPinia);
         const datatypesStore = useDatatypesMapperStore();
         datatypesStore.datatypesMapper = testDatatypesMapper;

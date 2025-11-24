@@ -1,6 +1,7 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, it } from "vitest";
 
 import Target from "./CellOption.vue";
 

@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -75,7 +75,7 @@ describe("ContentItem", () => {
                     getters: {},
                 },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             router,
         });
     });

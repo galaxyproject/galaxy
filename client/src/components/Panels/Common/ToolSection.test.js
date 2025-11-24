@@ -1,7 +1,7 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import ToolSection from "./ToolSection.vue";
 

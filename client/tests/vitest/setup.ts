@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
+import { afterAll, afterEach, beforeAll, vi } from "vitest";
 
 // Vue configuration
 import Vue from "vue";

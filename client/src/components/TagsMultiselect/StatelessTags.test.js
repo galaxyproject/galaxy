@@ -1,6 +1,6 @@
 import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import StatelessTags from "./StatelessTags.vue";
 

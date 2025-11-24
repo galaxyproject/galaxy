@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import type { TemplateVariable } from "@/api/configTemplates";
 
 import { createTemplateForm, templateVariableFormEntry, upgradeForm } from "./formUtil";

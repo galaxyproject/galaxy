@@ -2,6 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
 import type { HistorySummaryExtended } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -77,7 +78,7 @@ function initializeMocks() {
 function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, hasFilters = false) {
     initializeMocks();
 
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
 
     server.use(
         http.get("/api/histories/{history_id}", ({ response }) => {

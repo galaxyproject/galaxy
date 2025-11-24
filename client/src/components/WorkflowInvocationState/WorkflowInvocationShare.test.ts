@@ -3,6 +3,7 @@ import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__/index";
 import { useUserStore } from "@/stores/userStore";
@@ -144,7 +145,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
             BModal: true,
         },
         localVue,
-        pinia: createTestingPinia(),
+        pinia: createTestingPinia({ createSpy: vi.fn }),
     });
 
     const userStore = useUserStore();

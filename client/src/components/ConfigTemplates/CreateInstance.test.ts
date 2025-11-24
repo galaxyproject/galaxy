@@ -1,5 +1,6 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import { describe, expect, it } from "vitest";
 
 import CreateInstance from "./CreateInstance.vue";
 

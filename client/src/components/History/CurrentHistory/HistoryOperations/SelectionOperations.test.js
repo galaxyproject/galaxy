@@ -3,6 +3,7 @@ import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 

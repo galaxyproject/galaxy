@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { uploadPayload } from "./upload-payload.js";
 
 describe("uploadPayload", () => {

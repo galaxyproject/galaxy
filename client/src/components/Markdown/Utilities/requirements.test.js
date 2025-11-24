@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { getRequiredLabels, getRequiredObject, hasValidLabel, hasValidName } from "./requirements";
 

@@ -5,6 +5,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -20,7 +21,7 @@ localVue.use(PiniaVuePlugin);
 let eventStore;
 
 function createTarget(propsData) {
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     eventStore = useEventStore();
     const datatypesStore = useDatatypesMapperStore();
     datatypesStore.datatypesMapper = testDatatypesMapper;

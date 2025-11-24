@@ -4,7 +4,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -43,7 +43,7 @@ vi.mock("@/stores/workflowStore", () => ({
 
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);
-const pinia = createTestingPinia({ stubActions: false });
+const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
 function mapAxios(apiMap = {}) {
     axiosMock.reset();

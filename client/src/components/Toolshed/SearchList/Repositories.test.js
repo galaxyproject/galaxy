@@ -1,5 +1,5 @@
 import { createLocalVue, mount } from "@vue/test-utils";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import Repositories from "./Repositories.vue";
 

@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";

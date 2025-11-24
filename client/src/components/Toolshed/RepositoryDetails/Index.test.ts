@@ -2,6 +2,7 @@ import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
+import { describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 

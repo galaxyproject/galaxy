@@ -3,6 +3,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";
@@ -13,7 +14,7 @@ import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 const localVue = getLocalVue(true);
 
 async function mountComponent(component: object, propsData: object = {}): Promise<Wrapper<Vue>> {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = mount(component, {

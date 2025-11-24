@@ -3,6 +3,7 @@ import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
@@ -89,7 +90,7 @@ interface MountOptions {
 async function mountHistoryExportWizard(options: MountOptions = {}) {
     const { historyId = FAKE_HISTORY_ID, historyName = FAKE_HISTORY_NAME, isBusy = false } = options;
 
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(HistoryExportWizard as object, {

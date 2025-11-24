@@ -1,5 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import JobOutputs from "./JobOutputs.vue";
 

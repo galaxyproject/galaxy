@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { BAlert } from "bootstrap-vue";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 

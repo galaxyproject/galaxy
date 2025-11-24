@@ -4,6 +4,7 @@ import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { loadWorkflows } from "@/api/workflows";
@@ -33,7 +34,7 @@ const FAKE_USER = getFakeRegisteredUser({
 });
 
 async function mountWorkflowList() {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {

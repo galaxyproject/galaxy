@@ -1,5 +1,6 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useActivityStore } from "@/stores/activityStore";
 

@@ -2,6 +2,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import MountTarget from "./ChangePassword.vue";
 
