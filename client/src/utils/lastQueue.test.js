@@ -9,6 +9,7 @@ const wait = (ms = 5) => new Promise((r) => setTimeout(r, ms));
 
 describe("test last-queue", () => {
     it("should respect throttle period", async () => {
+        vi.useFakeTimers();
         const throttle = 50;
         const queue = new LastQueue(throttle);
         const timestamps = [];
@@ -16,13 +17,15 @@ describe("test last-queue", () => {
             timestamps.push(Date.now());
             return arg;
         }
-        await queue.enqueue(timedAction, 1);
-        await queue.enqueue(timedAction, 2);
-        await queue.enqueue(timedAction, 3);
-        await wait(throttle * 3);
+        queue.enqueue(timedAction, 1);
+        queue.enqueue(timedAction, 2);
+        queue.enqueue(timedAction, 3);
+        vi.advanceTimersByTime(throttle * 3);
+        await Promise.resolve();
         expect(timestamps.length).toBeGreaterThanOrEqual(1);
         const deltas = timestamps.slice(1).map((t, i) => t - timestamps[i]);
         expect(deltas.every((d) => d === 0 || d >= throttle)).toBe(true);
+        vi.useRealTimers();
     });
 
     it("should reject skipped promises when rejectSkipped is true", async () => {
