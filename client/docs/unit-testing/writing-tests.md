@@ -31,7 +31,7 @@ re-write, these tests become a guide for the next implementation.
 
 ### Writing a test file
 
-Vitest will try to test any file ending in "\*.test.js" or "\*.vitest.test.js". Please place your test
+Vitest will try to test any file ending in "\*.test.js" or "\*.test.ts". Please place your test
 files inside client/src folders right next to whatever files that they are
 testing.
 

@@ -9,7 +9,7 @@ code updates its test extensions again.
 
 #### To debug a single Vitest test:
 
-1. Open a vitest test (a file that ends with \*.test.js or \*.vitest.test.js)
+1. Open a vitest test (a file that ends with \*.test.js or \*.test.ts)
 
 1. Make sure the test file is selected, especially if you have multiple files open. This process
    will fail confusingly and without obvious error if you have not launched the debugger with the
