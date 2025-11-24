@@ -67,7 +67,7 @@ const buttonDisabled = computed(() => !isConfigLoaded.value || !profileUrl.value
                             <em>
                                 {{
                                     localize(
-                                        "Your username is an identifier that will be used to generate addresses for information you share publicly."
+                                        "Your username is an identifier that will be used to generate addresses for information you share publicly.",
                                     )
                                 }}
                             </em>
