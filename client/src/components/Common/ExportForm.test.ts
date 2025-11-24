@@ -44,7 +44,8 @@ describe("ExportForm.vue", () => {
 
     it("should localize button text", async () => {
         const newLocal = wrapper.find(".export-button").text();
-        expect(newLocal).toBeLocalizationOf("Export");
+        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
+        (expect(newLocal) as any).toBeLocalizationOf("Export");
     });
 
     it("should emit 'export' event with correct inputs on export button click", async () => {

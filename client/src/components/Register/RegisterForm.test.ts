@@ -39,7 +39,8 @@ describe("RegisterForm", () => {
 
     it("basics", async () => {
         const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
+        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
+        (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
 
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(4);
