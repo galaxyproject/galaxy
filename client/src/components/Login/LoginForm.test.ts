@@ -158,16 +158,17 @@ describe("LoginForm", () => {
     });
 
     it("renders message from query params", async () => {
-        const originalUrl = window.location.href;
-        window.history.replaceState(null, "", "/login/start?message=auth-error&status=info");
+        const originalHref = window.location.href;
+        window.location.href = `${window.location.origin}/login/start?message=auth-error&status=info`;
 
         const wrapper = await mountLoginForm();
+        await flushPromises();
 
         const alert = wrapper.find(".alert");
         expect(alert.exists()).toBe(true);
         expect(alert.text()).toContain("auth-error");
         expect(alert.classes()).toContain("alert-info");
 
-        window.history.replaceState(null, "", originalUrl);
+        window.location.href = originalHref;
     });
 });
