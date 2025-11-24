@@ -58,6 +58,10 @@ function selectUploadMethod(method: UploadMethodConfig) {
     router.push(`/upload/${method.id}`);
 }
 
+function showProgressDetails() {
+    router.push("/upload/progress");
+}
+
 function openAdvancedMode() {
     showAdvancedModal.value = true;
 }
@@ -91,7 +95,7 @@ function openGuidedMode() {
                 </BButton>
             </template>
             <template v-slot:header>
-                <UploadProgressIndicator v-if="hasUploads" @show-details="router.push('/upload/progress')" />
+                <UploadProgressIndicator v-if="hasUploads" @show-details="showProgressDetails" />
                 <DelayedInput :delay="100" class="my-2" placeholder="Search upload methods" @change="query = $event" />
             </template>
             <ScrollList

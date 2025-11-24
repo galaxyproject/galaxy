@@ -58,7 +58,7 @@ function handleCancel() {
 
 function handleStart() {
     uploadMethodRef.value?.startUpload();
-    // TODO Navigate to progress display
+    router.push("/upload/progress");
 }
 
 function handleReadyStateChange(ready: boolean) {
