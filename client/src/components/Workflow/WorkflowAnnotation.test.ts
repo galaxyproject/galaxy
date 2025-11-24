@@ -42,7 +42,7 @@ const SELECTORS = {
 
 // Mock the workflow store to return the sample workflow
 vi.mock("@/stores/workflowStore", async () => {
-    const originalModule = await vi.importActual("@/stores/workflowStore");
+    const originalModule = (await vi.importActual("@/stores/workflowStore")) as any;
     return {
         ...originalModule,
         useWorkflowStore: () => ({
@@ -58,7 +58,7 @@ vi.mock("@/stores/workflowStore", async () => {
 });
 
 vi.mock("@/stores/historyStore", async () => {
-    const originalModule = await vi.importActual("@/stores/historyStore");
+    const originalModule = (await vi.importActual("@/stores/historyStore")) as any;
     return {
         ...originalModule,
         useHistoryStore: () => ({

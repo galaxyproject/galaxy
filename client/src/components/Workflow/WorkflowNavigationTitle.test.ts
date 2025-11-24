@@ -45,7 +45,7 @@ vi.mock("./workflows.services", () => ({
 
 // Mock the workflow store to return the sample workflow
 vi.mock("@/stores/workflowStore", async () => {
-    const originalModule = await vi.importActual("@/stores/workflowStore");
+    const originalModule = (await vi.importActual("@/stores/workflowStore")) as any;
     return {
         ...originalModule,
         useWorkflowStore: () => ({
