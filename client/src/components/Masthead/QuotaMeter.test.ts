@@ -1,22 +1,23 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { describe, expect, it, vi } from "vitest";
 
 import type { RegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
 
 import QuotaMeter from "./QuotaMeter.vue";
 
-jest.mock("@/api/schema");
+vi.mock("@/api/schema");
 
 const localVue = getLocalVue();
 
 async function createQuotaMeterWrapper(config: any, user: RegisteredUser) {
     setupMockConfig(config);
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     const userStore = useUserStore();
     userStore.currentUser = user;
     const wrapper = mount(QuotaMeter as object, {

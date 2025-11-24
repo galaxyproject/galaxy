@@ -1,8 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -59,7 +60,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
 }
 
 describe("DiskUsageSummary.vue", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     it("should display basic disk usage summary if quotas are NOT enabled", async () => {
         const enableQuotasInConfig = false;
         const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
@@ -117,7 +118,7 @@ describe("DiskUsageSummary.vue", () => {
                 return response(200).json("SUCCESS");
             }),
         );
-        jest.runAllTimers();
+        vi.runAllTimers();
         await flushPromises();
 
         // The refreshing alert should disappear and the quota usage should be updated

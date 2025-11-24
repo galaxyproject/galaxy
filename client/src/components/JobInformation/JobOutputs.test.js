@@ -1,8 +1,9 @@
 import { shallowMount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
 import JobOutputs from "./JobOutputs.vue";
 
-jest.mock("components/providers/DatasetCollectionProvider");
+vi.mock("components/providers/DatasetCollectionProvider");
 
 describe("JobInformation/JobOutputs.vue", () => {
     let wrapper;

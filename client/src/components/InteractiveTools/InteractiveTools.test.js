@@ -1,10 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
@@ -14,9 +15,9 @@ import testInteractiveToolsResponse from "./testData/testInteractiveToolsRespons
 import InteractiveTools from "./InteractiveTools.vue";
 
 // Mock the rethrowSimple function to prevent test failures
-jest.mock("@/utils/simple-error", () => ({
-    rethrowSimple: jest.fn(),
-    errorMessageAsString: jest.fn((error) => error.message),
+vi.mock("@/utils/simple-error", () => ({
+    rethrowSimple: vi.fn(),
+    errorMessageAsString: vi.fn((error) => error.message),
 }));
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
@@ -34,6 +35,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         axiosMock.onGet(/\/api\/entry_points/).reply(200, testData);
 
         testPinia = createTestingPinia({
+            createSpy: vi.fn,
             initialState: {
                 entryPointStore: {
                     entryPoints: testData,
@@ -58,7 +60,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
 
     afterEach(() => {
         axiosMock.restore();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it("renders table with interactive tools", async () => {

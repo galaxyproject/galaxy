@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import ToolEntryPoints from "./ToolEntryPoints.vue";
 
@@ -48,6 +49,7 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
 
     it("should render list when result are ready but views are not active yet", async () => {
         testPinia = createTestingPinia({
+            createSpy: vi.fn,
             initialState: {
                 entryPointStore: {
                     entryPoints: INACTIVE_ITS,
@@ -69,6 +71,7 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
 
     it("should render links when tools are active", async () => {
         testPinia = createTestingPinia({
+            createSpy: vi.fn,
             initialState: {
                 entryPointStore: {
                     entryPoints: ACTIVE_ITS,

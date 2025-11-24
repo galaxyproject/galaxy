@@ -40,7 +40,7 @@ find the right documentation for a given test one wishes to write.
       - **Client/ES6**
 
         These tests should be placed in ``client/src`` directly and executed
-        via Jest. Checkout [Frontend/ES6 Unit Tests](#es6_unit) below for more
+        via Vitest. Checkout [Frontend/ES6 Unit Tests](#es6_unit) below for more
         information.
 
       - **Backend/Python**
@@ -172,12 +172,12 @@ Detailed information on writing Galaxy client tests can be found in
 
 The client tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
-red. This test suite is moderately prone to having tests fail that are 
+red. This test suite is moderately prone to having tests fail that are
 unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
-``.github/workflows/jest.yaml`` below Galaxy's root.
+``.github/workflows/client-unit.yaml`` below Galaxy's root.
 
 {#framework}
 ## Tool Framework Tests

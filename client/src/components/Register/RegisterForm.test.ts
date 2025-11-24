@@ -1,12 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import MountTarget from "./RegisterForm.vue";
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
 
 // const SELECTORS = {
 //     LOGIN_TOGGLE: "[id=login-toggle]",
@@ -19,7 +21,7 @@ describe("RegisterForm", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
 
-        const pinia = createTestingPinia();
+        const pinia = createTestingPinia({ createSpy: vi.fn });
 
         wrapper = mount(MountTarget as object, {
             propsData: {
@@ -27,6 +29,7 @@ describe("RegisterForm", () => {
             },
             localVue,
             pinia,
+            router,
         });
     });
 
@@ -36,6 +39,7 @@ describe("RegisterForm", () => {
 
     it("basics", async () => {
         const cardHeader = wrapper.find(".card-header");
+        // Type assertion needed: custom matcher types not recognized with explicit vitest imports
         (expect(cardHeader.text()) as any).toBeLocalizationOf("Create a Galaxy account");
 
         const inputs = wrapper.findAll("input");

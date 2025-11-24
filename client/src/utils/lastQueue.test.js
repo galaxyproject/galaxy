@@ -1,3 +1,5 @@
+import { describe, expect, it, vi } from "vitest";
+
 import { ActionSkippedError, LastQueue } from "./lastQueue";
 
 async function testPromise(arg, _signal) {
@@ -7,6 +9,7 @@ const wait = (ms = 5) => new Promise((r) => setTimeout(r, ms));
 
 describe("test last-queue", () => {
     it("should respect throttle period", async () => {
+        vi.useFakeTimers();
         const throttle = 50;
         const queue = new LastQueue(throttle);
         const timestamps = [];
@@ -14,19 +17,21 @@ describe("test last-queue", () => {
             timestamps.push(Date.now());
             return arg;
         }
-        await queue.enqueue(timedAction, 1);
-        await queue.enqueue(timedAction, 2);
-        await queue.enqueue(timedAction, 3);
-        await wait(throttle * 3);
+        queue.enqueue(timedAction, 1);
+        queue.enqueue(timedAction, 2);
+        queue.enqueue(timedAction, 3);
+        vi.advanceTimersByTime(throttle * 3);
+        await Promise.resolve();
         expect(timestamps.length).toBeGreaterThanOrEqual(1);
         const deltas = timestamps.slice(1).map((t, i) => t - timestamps[i]);
         expect(deltas.every((d) => d === 0 || d >= throttle)).toBe(true);
+        vi.useRealTimers();
     });
 
     it("should reject skipped promises when rejectSkipped is true", async () => {
         const queue = new LastQueue(0, true);
         let rejected = 0;
-        const rejectAction = jest.fn((arg) => Promise.resolve(arg));
+        const rejectAction = vi.fn((arg) => Promise.resolve(arg));
         queue.enqueue(rejectAction, 1).catch((e) => {
             if (e instanceof ActionSkippedError) {
                 rejected++;
@@ -145,7 +150,7 @@ describe("test last-queue", () => {
     });
 
     it("detects blocked throttle under fake timers", async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         const q = new LastQueue(300);
         const calls = [];
         async function fn(n) {
@@ -155,7 +160,7 @@ describe("test last-queue", () => {
         q.enqueue(fn, 1);
         q.enqueue(fn, 2);
         q.enqueue(fn, 3);
-        jest.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(1000);
         expect(calls.length).toBeGreaterThan(0);
     });
 
@@ -170,11 +175,11 @@ describe("test last-queue", () => {
     });
 
     it("should throttle per key independently", async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         const throttle = 50;
         const queue = new LastQueue(throttle);
         const stamps = { A: [], B: [] };
-        const action = jest.fn(async (key) => {
+        const action = vi.fn(async (key) => {
             stamps[key].push(Date.now());
             return key;
         });
@@ -182,7 +187,7 @@ describe("test last-queue", () => {
         queue.enqueue(action, "A", "A");
         queue.enqueue(action, "B", "B");
         queue.enqueue(action, "B", "B");
-        jest.advanceTimersByTime(throttle * 3);
+        vi.advanceTimersByTime(throttle * 3);
         await Promise.resolve();
         expect(stamps.A.length >= 2).toBe(true);
         expect(stamps.B.length >= 2).toBe(true);
@@ -190,15 +195,15 @@ describe("test last-queue", () => {
         const deltaB = stamps.B[1] - stamps.B[0];
         expect(deltaA >= throttle || deltaA === 0).toBe(true);
         expect(deltaB >= throttle || deltaB === 0).toBe(true);
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     it("should propagate AbortSignal and reject on abort", async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         const queue = new LastQueue(0);
         const controller = new AbortController();
         let aborted = false;
-        const action = jest.fn(async (_arg, signal) => {
+        const action = vi.fn(async (_arg, signal) => {
             signal?.addEventListener("abort", () => {
                 aborted = true;
             });
@@ -209,12 +214,12 @@ describe("test last-queue", () => {
         });
         const first = queue.enqueue(action, null, "key", { signal: controller.signal });
         controller.abort();
-        jest.runAllTimers();
+        vi.runAllTimers();
         const result = await first;
         expect(result).toBeUndefined();
         expect(aborted).toBe(true);
         expect(action).toHaveBeenCalledTimes(1);
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     it("should skip all but first and last in rapid zero-throttle burst", async () => {
@@ -229,15 +234,15 @@ describe("test last-queue", () => {
     });
 
     it("should clear timeout on skip", async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         const queue = new LastQueue(100);
         queue.enqueue(testPromise, 1); // starts, will wait 100ms before next
-        await jest.runAllTimersAsync(); // finish first task
+        await vi.runAllTimersAsync(); // finish first task
         queue.enqueue(testPromise, 2); // queues second, sets timeout
         queue.enqueue(testPromise, 3); // skips second → should clear timeout
-        jest.runAllTimers(); // any leftover timeout would error
+        vi.runAllTimers(); // any leftover timeout would error
         expect(queue["timeoutIds"].size).toBe(0);
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     it("should handle mixed string/number keys without collision", async () => {

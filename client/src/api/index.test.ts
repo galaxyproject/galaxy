@@ -1,4 +1,5 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { describe, expect, it } from "vitest";
 
 import {
     type AnonymousUser,

@@ -1,18 +1,19 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import FormTool from "./FormTool.vue";
 
-jest.mock("@/api/schema");
+vi.mock("@/api/schema", () => ({}));
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: { enable_tool_source_display: false },
         isConfigLoaded: true,
     })),
@@ -61,7 +62,7 @@ describe("FormTool", () => {
             stubs: {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             provide: { workflowId: "mock-workflow" },
         });
     }

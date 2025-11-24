@@ -1,6 +1,7 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { createPinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -47,7 +48,7 @@ async function createWrapper(propsData: object, userData?: any) {
     userStore.currentUser = { ...userStore.currentUser, ...userData };
 
     const historyStore = useHistoryStore();
-    jest.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");
+    vi.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");
 
     return wrapper;
 }

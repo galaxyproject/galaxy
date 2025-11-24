@@ -1,15 +1,16 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, expect, it, vi } from "vitest";
 
 import { GalaxyApi } from "@/api";
 
 import DisplayApplicationCreateLink from "./DisplayApplication.vue";
 
-jest.mock("@/api", () => {
-    const post = jest.fn();
+vi.mock("@/api", () => {
+    const post = vi.fn();
     return {
-        GalaxyApi: jest.fn(() => ({
+        GalaxyApi: vi.fn(() => ({
             POST: post,
         })),
     };
@@ -18,9 +19,9 @@ jest.mock("@/api", () => {
 const localVue = getLocalVue();
 
 beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     delete window.open;
-    window.open = jest.fn();
+    window.open = vi.fn();
 });
 
 it("renders success with resource and opens window", async () => {
@@ -47,7 +48,7 @@ it("renders success with resource and opens window", async () => {
 });
 
 it("handles refresh loop once", async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     GalaxyApi()
         .POST.mockResolvedValueOnce({
             data: {
@@ -74,7 +75,7 @@ it("handles refresh loop once", async () => {
         },
     });
     await flushPromises();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await flushPromises();
     expect(window.open).toHaveBeenCalledWith("http://example.com/final", "_blank");
 });

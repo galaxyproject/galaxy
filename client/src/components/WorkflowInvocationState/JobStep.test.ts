@@ -1,5 +1,6 @@
 import { mount, shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it } from "vitest";
 
 import type { JobBaseModel } from "@/api/jobs";
 import { statePlaceholders } from "@/composables/useInvocationGraph";

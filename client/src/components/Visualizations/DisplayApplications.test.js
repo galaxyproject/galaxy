@@ -1,5 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import DisplayApplications from "./DisplayApplications.vue";
 
@@ -62,12 +63,14 @@ const raw = {
     ],
 };
 
-jest.mock("../providers/DatasetProvider", () => ({
-    render() {
-        return this.$scopedSlots.default({
-            loading: false,
-            result: raw,
-        });
+vi.mock("../providers/DatasetProvider", () => ({
+    default: {
+        render() {
+            return this.$scopedSlots.default({
+                loading: false,
+                result: raw,
+            });
+        },
     },
 }));
 

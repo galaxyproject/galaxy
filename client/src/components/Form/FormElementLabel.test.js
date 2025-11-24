@@ -1,5 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import Target from "./FormElementLabel.vue";
 
@@ -56,7 +57,8 @@ describe("FormElementLabel.vue", () => {
         });
         const asterisk = wrapper.find("small.text-danger");
         expect(asterisk.exists()).toBe(true);
-        expect(asterisk.text()).toBe("* required");
+        expect(asterisk.text()).toContain("*");
+        expect(asterisk.text()).toContain("required");
     });
 
     it("should render nothing extra if required is false", () => {

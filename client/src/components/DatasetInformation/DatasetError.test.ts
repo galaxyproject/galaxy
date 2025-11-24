@@ -1,8 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { expectConfigurationRequest, getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { components } from "@/api/schema";
@@ -14,8 +15,8 @@ const localVue = getLocalVue();
 
 const DATASET_ID = "dataset_id";
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: {},
         isConfigLoaded: true,
     })),

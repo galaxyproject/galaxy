@@ -114,13 +114,13 @@ developer-facing API of your new code.
 
 ### Testing Technologies
 
-[Galaxy uses Jest](https://jestjs.io/) for its client-side unit testing
+[Galaxy uses Vitest](https://vitest.dev/) for its client-side unit testing
 framework.
 
 For testing Vue components, we use the [Vue testing
 utils](https://vue-test-utils.vuejs.org/) to mount individual components in a
-test bed and check them for rendered features. Please use jest-based mocking
-for isolating test functionality.
+test bed and check them for rendered features. Please use Vitest's mocking
+capabilities for isolating test functionality.
 
 ### Linting
 
@@ -152,17 +152,17 @@ executing all the client tests:
 
      yarn test
 
-##### Watch and rerun jest unit tests every time a source file changes
+##### Watch and rerun unit tests every time a source file changes
 
 This is incredibly handy, and there are a host of options in the interactive
-terminal this starts for executing Jest tests.
+terminal this starts for executing Vitest tests.
 
-     yarn run jest-watch
+     yarn test:watch
 
 ##### Run only specified test files when a source file changes
 
-    yarn run jest-watch MyModule
+    yarn test:watch MyModule
 
-    yarn run jest-watch Dialog
+    yarn test:watch Dialog
 
-    yarn run jest-watch workflow/run
+    yarn test:watch workflow/run

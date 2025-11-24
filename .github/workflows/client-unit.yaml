@@ -3,11 +3,11 @@ on:
   push:
     paths:
       - 'client/**'
-      - '.github/workflows/jest.yaml'
+      - '.github/workflows/client-unit.yaml'
   pull_request:
     paths:
       - 'client/**'
-      - '.github/workflows/jest.yaml'
+      - '.github/workflows/client-unit.yaml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -32,6 +32,6 @@ jobs:
       - name: Stage client libs (Gulp)
         run: yarn run gulp client
         working-directory: client
-      - name: Run Unit Tests
-        run: yarn jest
+      - name: Run Vitest Unit Tests
+        run: yarn test
         working-directory: client

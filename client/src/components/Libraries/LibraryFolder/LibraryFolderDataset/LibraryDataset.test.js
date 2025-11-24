@@ -1,12 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
-import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
 
-import { Services } from "../services";
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
 import cannotModifyDatasetResponse from "./testData/cannotModifyDataset.json";
 import restrictedDatasetResponse from "./testData/restrictedDataset.json";
@@ -14,10 +13,10 @@ import unrestrictedDatasetResponse from "./testData/unrestrictedDataset.json";
 
 import LibraryDataset from "./LibraryDataset.vue";
 
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
 
 const FOLDER_ID = "test_folder_id";
 const UNRESTRICTED_DATASET_ID = "unrestricted_dataset_id";
@@ -43,22 +42,23 @@ const mockDbKeyProvider = {
     },
 };
 
-Services.mockImplementation(() => {
-    const responseMap = new Map([
-        [UNRESTRICTED_DATASET_ID, unrestrictedDatasetResponse],
-        [RESTRICTED_DATASET_ID, restrictedDatasetResponse],
-        [CANNOT_MODIFY_DATASET_ID, cannotModifyDatasetResponse],
-        [CANNOT_MANAGE_DATASET_ID, cannotManageDatasetResponse],
-    ]);
-    return {
+const responseMap = new Map([
+    [UNRESTRICTED_DATASET_ID, unrestrictedDatasetResponse],
+    [RESTRICTED_DATASET_ID, restrictedDatasetResponse],
+    [CANNOT_MODIFY_DATASET_ID, cannotModifyDatasetResponse],
+    [CANNOT_MANAGE_DATASET_ID, cannotManageDatasetResponse],
+]);
+
+vi.mock("../services", () => ({
+    Services: class Services {
         async getDataset(datasetID, onError) {
             return responseMap.get(datasetID);
-        },
+        }
         async updateDataset(datasetID, data, onSucess, onError) {
             return data;
-        },
-    };
-});
+        }
+    },
+}));
 
 const MODIFY_BUTTON = '[data-test-id="modify-btn"]';
 const AUTO_DETECT_BUTTON = '[data-test-id="auto-detect-btn"]';

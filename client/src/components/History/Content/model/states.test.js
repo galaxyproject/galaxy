@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./states";
 
 describe("States", () => {
