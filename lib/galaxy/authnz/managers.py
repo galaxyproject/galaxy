@@ -142,6 +142,8 @@ class AuthnzManager:
                     self.app.config.oidc[idp]["end_user_registration_endpoint"] = self.oidc_backends_config[idp][
                         "end_user_registration_endpoint"
                     ]
+                if "profile_url" in self.oidc_backends_config[idp]:
+                    self.app.config.oidc[idp]["profile_url"] = self.oidc_backends_config[idp]["profile_url"]
 
             if len(self.oidc_backends_config) == 0:
                 raise etree.ParseError("No valid provider configuration parsed.")
@@ -185,6 +187,8 @@ class AuthnzManager:
             rtv["username_key"] = config_xml.find("username_key").text
         if config_xml.find("end_user_registration_endpoint") is not None:
             rtv["end_user_registration_endpoint"] = config_xml.find("end_user_registration_endpoint").text
+        if config_xml.find("profile_url") is not None:
+            rtv["profile_url"] = config_xml.find("profile_url").text
 
         # this is a EGI Check-in specific config
         if config_xml.find("checkin_env") is not None:

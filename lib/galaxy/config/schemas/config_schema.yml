@@ -3084,15 +3084,6 @@ mapping:
         desc: |
           Enables and disables OpenID Connect (OIDC) support.
 
-      oidc_profile_url:
-        type: str
-        required: false
-        desc: |
-          If specified, user profile information (email, username, password) will be managed
-          by the OIDC provider. A widget will show the current email and username in the user menu,
-          with a link to the OIDC provider's user profile page to edit them.
-          Use with enable_account_interface=false.
-
       oidc_config_file:
         type: str
         default: oidc_config.xml

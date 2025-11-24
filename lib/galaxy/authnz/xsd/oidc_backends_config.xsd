@@ -170,6 +170,13 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="profile_url" minOccurs="0" type="xs:string">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        URL for profile management in the OIDC provider.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="name" type="xs:string" use="required">
                             <xs:annotation>
