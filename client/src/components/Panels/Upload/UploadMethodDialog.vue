@@ -77,7 +77,7 @@ function handleHistorySelected(history: { id: string }) {
             <Heading v-if="method" h2 class="m-0 g-modal-title">
                 <FontAwesomeIcon :icon="method.icon" class="mr-2" />
                 {{ method.headerAction }}
-                <span v-if="method.isUploadToHistory">
+                <span v-if="method.requiresTargetHistory">
                     to <strong>{{ targetHistoryName || "selected history" }}</strong>
                     <a
                         title="Choose a different target history for this upload"
@@ -103,7 +103,7 @@ function handleHistorySelected(history: { id: string }) {
             <p>Loading...</p>
         </div>
         <SelectorModal
-            v-if="method && method.isUploadToHistory"
+            v-if="method && method.requiresTargetHistory"
             :histories="histories"
             :show-modal.sync="showHistorySelector"
             title="Select a history for upload"
