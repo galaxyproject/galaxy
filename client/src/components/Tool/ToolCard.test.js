@@ -1,10 +1,11 @@
+import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { expectConfigurationRequest, getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -13,7 +14,7 @@ import ToolCard from "./ToolCard.vue";
 
 const { server, http } = useServerMock();
 
-jest.mock("@/api/schema");
+vi.mock("@/api/schema");
 
 const config = { enable_tool_source_display: false };
 setupMockConfig(config);

@@ -1,5 +1,6 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DatasetCollectionAttributes } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -17,13 +18,14 @@ const FAKE_ATTRIBUTES: DatasetCollectionAttributes = {
     tags: ["tag1", "tag2"],
 };
 
-const fetchCollectionAttributesMock = jest.fn().mockReturnValue(FAKE_ATTRIBUTES);
+const fetchCollectionAttributesMock = vi.fn().mockReturnValue(FAKE_ATTRIBUTES);
 
 const { server, http } = useServerMock();
 
 describe("collectionAttributesStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
+        fetchCollectionAttributesMock.mockClear();
 
         server.use(
             http.get("/api/dataset_collections/{hdca_id}/attributes", ({ response }) => {

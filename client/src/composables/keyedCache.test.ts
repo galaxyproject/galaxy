@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, ref } from "vue";
 
 import { useKeyedCache } from "./keyedCache";
@@ -8,8 +9,8 @@ interface ItemData {
     name: string;
 }
 
-const fetchItem = jest.fn();
-const shouldFetch = jest.fn();
+const fetchItem = vi.fn();
+const shouldFetch = vi.fn();
 
 describe("useKeyedCache", () => {
     beforeEach(() => {
@@ -193,7 +194,7 @@ describe("useKeyedCache", () => {
     });
 
     it("should handle fake timers without hanging when advanced manually", async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         const id = "1";
         const item = { id, name: "Item 1" };
         fetchItem.mockImplementation(() => {
@@ -206,7 +207,7 @@ describe("useKeyedCache", () => {
         getItemById.value(id);
         getItemById.value(id);
         await flushPromises();
-        jest.runOnlyPendingTimers();
+        vi.runOnlyPendingTimers();
         await flushPromises();
         expect(true).toBe(true);
     });

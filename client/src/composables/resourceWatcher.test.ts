@@ -1,15 +1,16 @@
-import { jest } from "@jest/globals";
+import type { MockedFunction } from "@vitest/spy";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useResourceWatcher, type WatchOptions, type WatchResourceHandler } from "./resourceWatcher";
 
 // Mock the global document object
-const mockAddEventListener = jest.fn();
-const mockRemoveEventListener = jest.fn();
+const mockAddEventListener = vi.fn();
+const mockRemoveEventListener = vi.fn();
 
 interface MockDocument {
-    addEventListener: jest.MockedFunction<typeof document.addEventListener>;
-    removeEventListener: jest.MockedFunction<typeof document.removeEventListener>;
+    addEventListener: MockedFunction<typeof document.addEventListener>;
+    removeEventListener: MockedFunction<typeof document.removeEventListener>;
     visibilityState: "visible" | "hidden";
 }
 
@@ -25,7 +26,7 @@ Object.defineProperty(global, "document", {
 });
 
 // Mock setTimeout and clearTimeout
-jest.useFakeTimers();
+vi.useFakeTimers();
 
 // Helper function to get visibility change handler with proper typing
 function getVisibilityChangeHandler(): () => void {
@@ -34,12 +35,12 @@ function getVisibilityChangeHandler(): () => void {
 }
 
 describe("useResourceWatcher", () => {
-    let mockWatchHandler: jest.MockedFunction<WatchResourceHandler>;
+    let mockWatchHandler: MockedFunction<WatchResourceHandler>;
 
     beforeEach(() => {
-        jest.clearAllTimers();
-        jest.clearAllMocks();
-        mockWatchHandler = jest.fn<WatchResourceHandler>().mockResolvedValue();
+        vi.clearAllTimers();
+        vi.clearAllMocks();
+        mockWatchHandler = vi.fn<WatchResourceHandler>().mockResolvedValue();
         mockAddEventListener.mockClear();
         mockRemoveEventListener.mockClear();
         // Reset document visibility state
@@ -47,9 +48,9 @@ describe("useResourceWatcher", () => {
     });
 
     afterEach(() => {
-        jest.runOnlyPendingTimers();
-        jest.useRealTimers();
-        jest.useFakeTimers();
+        vi.runOnlyPendingTimers();
+        vi.useRealTimers();
+        vi.useFakeTimers();
     });
 
     describe("basic functionality", () => {
@@ -80,7 +81,7 @@ describe("useResourceWatcher", () => {
             stopWatchingResource();
 
             // Fast-forward time to ensure no more calls are made
-            jest.advanceTimersByTime(60000);
+            vi.advanceTimersByTime(60000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
@@ -109,13 +110,13 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
             // Advance time by the default short polling interval
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
             // Advance time again
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
@@ -132,7 +133,7 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
             // Advance time by the custom short polling interval
-            jest.advanceTimersByTime(1500);
+            vi.advanceTimersByTime(1500);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
@@ -154,12 +155,12 @@ describe("useResourceWatcher", () => {
             visibilityChangeHandler();
 
             // The current timer (with short interval) should still complete first
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
             // Now the next timer should use the long polling interval
-            jest.advanceTimersByTime(10000); // Default long interval
+            vi.advanceTimersByTime(10000); // Default long interval
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
         });
@@ -182,12 +183,12 @@ describe("useResourceWatcher", () => {
             visibilityChangeHandler();
 
             // Current timer (short interval) completes first
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
             // Fast-forward by custom long interval
-            jest.advanceTimersByTime(5000);
+            vi.advanceTimersByTime(5000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
@@ -210,7 +211,7 @@ describe("useResourceWatcher", () => {
             visibilityChangeHandler();
 
             // Fast-forward by any amount of time
-            jest.advanceTimersByTime(30000);
+            vi.advanceTimersByTime(30000);
             await flushPromises();
 
             // Should not have been called again
@@ -254,7 +255,7 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledTimes(0);
 
             // But should continue with short polling interval on next scheduled poll
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
@@ -263,7 +264,7 @@ describe("useResourceWatcher", () => {
 
     describe("error handling", () => {
         it("should handle errors in watch handler gracefully and continue polling", async () => {
-            const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+            const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
             const error = new Error("Network error");
             mockWatchHandler.mockRejectedValueOnce(error).mockResolvedValue(undefined);
 
@@ -276,7 +277,7 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
             // Should continue polling despite the error
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
@@ -285,7 +286,7 @@ describe("useResourceWatcher", () => {
         });
 
         it("should handle multiple consecutive errors", async () => {
-            const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+            const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
             const error1 = new Error("First error");
             const error2 = new Error("Second error");
 
@@ -298,12 +299,12 @@ describe("useResourceWatcher", () => {
 
             expect(consoleWarnSpy).toHaveBeenCalledWith(error1);
 
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(consoleWarnSpy).toHaveBeenCalledWith(error2);
 
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
@@ -327,7 +328,7 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
             // Fast-forward time - should only fire once more (from the second start)
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
@@ -335,7 +336,7 @@ describe("useResourceWatcher", () => {
 
         it("should stop polling even when watch handler takes longer than interval", async () => {
             // Create a handler that takes 5 seconds to complete (longer than 3s interval)
-            const slowHandler = jest.fn<WatchResourceHandler>().mockImplementation(async () => {
+            const slowHandler = vi.fn<WatchResourceHandler>().mockImplementation(async () => {
                 // Simulate a slow network request that takes longer than the polling interval
                 await new Promise((resolve) => setTimeout(resolve, 5000));
             });
@@ -347,25 +348,25 @@ describe("useResourceWatcher", () => {
             expect(slowHandler).toHaveBeenCalledTimes(1);
 
             // Advance time by 2 seconds (handler still running)
-            jest.advanceTimersByTime(2000);
+            vi.advanceTimersByTime(2000);
             await flushPromises();
 
             // Stop watching while the handler is still executing
             stopWatchingResource();
 
             // Complete the slow handler execution
-            jest.advanceTimersByTime(3000); // Total 5 seconds for handler to complete
+            vi.advanceTimersByTime(3000); // Total 5 seconds for handler to complete
             await flushPromises();
 
             // Advance time well beyond the polling interval
-            jest.advanceTimersByTime(10000);
+            vi.advanceTimersByTime(10000);
             await flushPromises();
 
             expect(slowHandler).toHaveBeenCalledTimes(1);
         });
 
         it("should handle multiple overlapping slow handlers correctly", async () => {
-            const slowHandler = jest.fn<WatchResourceHandler>().mockImplementation(async () => {
+            const slowHandler = vi.fn<WatchResourceHandler>().mockImplementation(async () => {
                 await new Promise((resolve) => setTimeout(resolve, 8000)); // 8 seconds (longer than 2 intervals)
             });
 
@@ -375,7 +376,7 @@ describe("useResourceWatcher", () => {
             expect(slowHandler).toHaveBeenCalledTimes(1);
 
             // Let the first handler run for 3 seconds (still running)
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             // The 3-second interval timer should NOT fire a new handler yet because the first is still running
@@ -385,18 +386,18 @@ describe("useResourceWatcher", () => {
             stopWatchingResource();
 
             // Complete the first handler (8 seconds total)
-            jest.advanceTimersByTime(5000);
+            vi.advanceTimersByTime(5000);
             await flushPromises();
 
             // Advance time, which should not trigger another call
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
 
             expect(slowHandler).toHaveBeenCalledTimes(1);
         });
 
         it("should update isWatchingResource flag correctly with slow handlers", async () => {
-            const slowHandler = jest.fn<WatchResourceHandler>().mockImplementation(async () => {
+            const slowHandler = vi.fn<WatchResourceHandler>().mockImplementation(async () => {
                 await new Promise((resolve) => setTimeout(resolve, 5000));
             });
 
@@ -407,7 +408,7 @@ describe("useResourceWatcher", () => {
             expect(isWatchingResource.value).toBe(true);
 
             // Still watching while handler is running
-            jest.advanceTimersByTime(2000);
+            vi.advanceTimersByTime(2000);
             await flushPromises();
             expect(isWatchingResource.value).toBe(true);
 
@@ -416,7 +417,7 @@ describe("useResourceWatcher", () => {
             expect(isWatchingResource.value).toBe(false);
 
             // Should remain stopped even after handler completes
-            jest.advanceTimersByTime(10000);
+            vi.advanceTimersByTime(10000);
             await flushPromises();
             expect(isWatchingResource.value).toBe(false);
         });
@@ -440,7 +441,7 @@ describe("useResourceWatcher", () => {
             mockWatchHandler.mockClear();
 
             // Fast-forward time significantly
-            jest.advanceTimersByTime(60000);
+            vi.advanceTimersByTime(60000);
             await flushPromises();
 
             // Should not have been called
@@ -462,7 +463,7 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledTimes(1);
 
             // Test short interval
-            jest.advanceTimersByTime(1000);
+            vi.advanceTimersByTime(1000);
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(2);
 
@@ -472,11 +473,11 @@ describe("useResourceWatcher", () => {
             visibilityChangeHandler();
 
             // Test long interval (after current short interval timer completes)
-            jest.advanceTimersByTime(1000); // Complete current timer
+            vi.advanceTimersByTime(1000); // Complete current timer
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(3);
 
-            jest.advanceTimersByTime(4000); // Long interval
+            vi.advanceTimersByTime(4000); // Long interval
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(4);
         });
@@ -501,7 +502,7 @@ describe("useResourceWatcher", () => {
             expect(mockWatchHandler).toHaveBeenCalledTimes(1); // No additional call from becoming visible
 
             // The timer continues with the short interval
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(2); // + 1 from short interval timer
 
@@ -510,7 +511,7 @@ describe("useResourceWatcher", () => {
             visibilityChangeHandler();
 
             // The next timer should use the long interval
-            jest.advanceTimersByTime(10000);
+            vi.advanceTimersByTime(10000);
             await flushPromises();
             expect(mockWatchHandler).toHaveBeenCalledTimes(3); // + 1 from long interval timer
         });

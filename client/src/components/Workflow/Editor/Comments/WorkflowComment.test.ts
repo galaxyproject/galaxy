@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { suppressErrorForCustomIcons } from "@tests/vitest/helpers";
 import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { suppressErrorForCustomIcons } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick, reactive, ref } from "vue";
 
 import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
@@ -11,16 +12,16 @@ import MarkdownComment from "./MarkdownComment.vue";
 import TextComment from "./TextComment.vue";
 import WorkflowComment from "./WorkflowComment.vue";
 
-const changeData = jest.fn();
-const changeSize = jest.fn();
-const changePosition = jest.fn();
-const changeColor = jest.fn();
-const deleteComment = jest.fn();
+const changeData = vi.fn();
+const changeSize = vi.fn();
+const changePosition = vi.fn();
+const changeColor = vi.fn();
+const deleteComment = vi.fn();
 
-const pinia = createTestingPinia();
+const pinia = createTestingPinia({ createSpy: vi.fn });
 setActivePinia(pinia);
 
-jest.mock("@/composables/workflowStores", () => ({
+vi.mock("@/composables/workflowStores", () => ({
     useWorkflowStores: () => ({
         commentStore: {
             changeData,

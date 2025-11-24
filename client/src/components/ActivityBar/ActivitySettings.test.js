@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -42,7 +43,7 @@ describe("ActivitySettings", () => {
     let wrapper;
 
     beforeEach(async () => {
-        const pinia = createTestingPinia({ stubActions: false });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         // Mock the response of the API call
         server.use(
             http.get("/api/unprivileged_tools", ({ params, query, response }) => {

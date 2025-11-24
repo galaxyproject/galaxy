@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { Services } from "./services";
 
 describe("Toolshed service helpers", () => {
@@ -46,7 +48,7 @@ describe("Toolshed service helpers", () => {
         expect(grouped[0].name).toBe("name_0");
         expect(grouped[0].tool_shed_url).toBe("http://url_1.com");
         expect(grouped[0].ctx_rev).toBe("3");
-        expect(grouped[1].name === "name_1");
+        expect(grouped[1].name).toBe("name_1");
         expect(grouped[1].tool_shed_url).toBe("http://url_2.com");
     });
 });

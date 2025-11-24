@@ -1,6 +1,7 @@
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import FormDisplay from "./FormDisplay.vue";
 

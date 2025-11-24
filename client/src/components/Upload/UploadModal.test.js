@@ -1,8 +1,9 @@
-import "tests/jest/mockHelpPopovers";
+import "@tests/vitest/mockHelpPopovers";
 
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -11,8 +12,8 @@ import { useUserStore } from "@/stores/userStore";
 import UploadContainer from "./UploadContainer.vue";
 import UploadModal from "./UploadModal.vue";
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: {},
         isConfigLoaded: true,
     })),

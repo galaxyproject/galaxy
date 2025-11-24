@@ -1,15 +1,16 @@
 import { createPopper } from "@popperjs/core";
 import { mount } from "@vue/test-utils";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import PopperComponent from "./Popper.vue";
 
 // value from usePopper.ts
 const DELAY_CLOSE = 50;
 
-jest.mock("@popperjs/core", () => ({
-    createPopper: jest.fn(() => ({
-        destroy: jest.fn(),
-        update: jest.fn(),
+vi.mock("@popperjs/core", () => ({
+    createPopper: vi.fn(() => ({
+        destroy: vi.fn(),
+        update: vi.fn(),
     })),
 }));
 
@@ -30,7 +31,7 @@ function mountTarget(trigger = "click", interactive = false) {
 
 describe("PopperComponent.vue", () => {
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     test("renders component with default props", async () => {

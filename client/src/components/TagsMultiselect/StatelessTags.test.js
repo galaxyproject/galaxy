@@ -1,8 +1,6 @@
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
-
-import { useToast } from "@/composables/toast";
-import { normalizeTag, useUserTagsStore } from "@/stores/userTagsStore";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import StatelessTags from "./StatelessTags.vue";
 
@@ -18,28 +16,30 @@ const mountWithProps = (props) => {
     });
 };
 
-jest.mock("@/stores/userTagsStore");
-const onNewTagSeenMock = jest.fn((tag) => tag);
-useUserTagsStore.mockReturnValue({
-    userTags: autocompleteTags,
-    onNewTagSeen: onNewTagSeenMock,
-    onTagUsed: jest.fn(),
-    onMultipleNewTagsSeen: jest.fn(),
+const onNewTagSeenMock = vi.fn((tag) => tag);
+const warningMock = vi.fn((message, title) => {
+    return { message, title };
 });
 
 function normalize(tag) {
     return tag.replace(/^#/, "name:");
 }
 
-normalizeTag.mockImplementation(normalize);
+vi.mock("@/stores/userTagsStore", () => ({
+    useUserTagsStore: vi.fn(() => ({
+        userTags: autocompleteTags,
+        onNewTagSeen: onNewTagSeenMock,
+        onTagUsed: vi.fn(),
+        onMultipleNewTagsSeen: vi.fn(),
+    })),
+    normalizeTag: vi.fn((tag) => normalize(tag)),
+}));
 
-jest.mock("composables/toast");
-const warningMock = jest.fn((message, title) => {
-    return { message, title };
-});
-useToast.mockReturnValue({
-    warning: warningMock,
-});
+vi.mock("@/composables/toast", () => ({
+    useToast: vi.fn(() => ({
+        warning: warningMock,
+    })),
+}));
 
 const selectors = {
     multiselect: ".headless-multiselect",
@@ -50,6 +50,8 @@ const selectors = {
 describe("StatelessTags", () => {
     beforeEach(() => {
         suppressBootstrapVueWarnings();
+        onNewTagSeenMock.mockClear();
+        warningMock.mockClear();
     });
 
     it("shows tags", () => {

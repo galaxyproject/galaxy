@@ -1,13 +1,10 @@
 import { createLocalVue, mount } from "@vue/test-utils";
-
-import { Services } from "../services";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Categories from "./Categories.vue";
 
-jest.mock("../services");
-
-Services.mockImplementation(() => {
-    return {
+vi.mock("../services", () => ({
+    Services: class Services {
         async getCategories() {
             return [
                 {
@@ -21,9 +18,9 @@ Services.mockImplementation(() => {
                     repositories: "repositories_1",
                 },
             ];
-        },
-    };
-});
+        }
+    },
+}));
 
 describe("Categories", () => {
     let localVue;

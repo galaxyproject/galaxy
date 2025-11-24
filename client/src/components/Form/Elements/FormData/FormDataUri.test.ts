@@ -1,5 +1,6 @@
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it } from "vitest";
 
 import { SINGULAR_DATA_URI, SINGULAR_FILE_URI, SINGULAR_LIST_URI } from "./testData/uriData";
 import { type DataUri, type DataUriCollectionElement, isDataUriCollectionElementCollection } from "./types";
