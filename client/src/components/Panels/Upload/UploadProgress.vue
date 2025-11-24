@@ -39,7 +39,14 @@ function getFileStatusClass(file: UploadItem) {
 
 <template>
     <div class="upload-progress-view d-flex flex-column h-100">
-        <BreadcrumbHeading :items="breadcrumbItems" />
+        <BreadcrumbHeading :items="breadcrumbItems">
+            <div v-if="activeItems.length > 0" class="d-flex flex-gapx-1">
+                <GButton v-if="hasCompleted" size="small" outline color="grey" @click="uploadService.clearCompleted()">
+                    Clear Completed
+                </GButton>
+                <GButton size="small" outline color="grey" @click="uploadService.clearAll()"> Clear All </GButton>
+            </div>
+        </BreadcrumbHeading>
 
         <div class="upload-progress-content flex-grow-1 overflow-auto p-3">
             <div v-if="activeItems.length > 0" class="h-100 d-flex flex-column">
@@ -54,13 +61,6 @@ function getFileStatusClass(file: UploadItem) {
                             <span v-if="errorCount > 0">{{ errorCount }} error(s)</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="clear-actions mb-3">
-                    <GButton v-if="hasCompleted" outline color="grey" @click="uploadService.clearCompleted()">
-                        Clear Completed
-                    </GButton>
-                    <GButton outline color="grey" @click="uploadService.clearAll()"> Clear All </GButton>
                 </div>
 
                 <div class="file-details-list flex-grow-1 overflow-auto">
@@ -118,13 +118,6 @@ function getFileStatusClass(file: UploadItem) {
 }
 
 .progress-summary {
-    flex-shrink: 0;
-}
-
-.clear-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
     flex-shrink: 0;
 }
 
