@@ -11,6 +11,7 @@ export type OIDCConfig = Record<
         label?: string;
         custom_button_text?: string;
         end_user_registration_endpoint?: string;
+        profile_url?: string;
     }
 >;
 
@@ -21,6 +22,7 @@ export type OIDCConfigWithRegistration = Record<
         label?: string;
         custom_button_text?: string;
         end_user_registration_endpoint: string;
+        profile_url?: string;
     }
 >;
 
@@ -94,6 +96,10 @@ export async function submitCILogon(idp: string, useIDPHint = false, idpHint?: s
 
 export function isOnlyOneOIDCProviderConfigured(config: OIDCConfig): boolean {
     return Object.keys(config).length === 1;
+}
+
+export function hasSingleOidcProfile(config: OIDCConfig): boolean {
+    return isOnlyOneOIDCProviderConfigured(config) && !!config.profile_url;
 }
 
 export async function redirectToSingleProvider(config: OIDCConfig): Promise<string | null> {
