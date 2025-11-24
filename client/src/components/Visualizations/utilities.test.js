@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { getFilename, getRequiresDataset, getTestUrls } from "./utilities";
 
 describe("Utility Functions", () => {

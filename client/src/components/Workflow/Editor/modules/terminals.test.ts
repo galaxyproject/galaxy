@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useUndoRedoStore } from "@/stores/undoRedoStore";
@@ -15,7 +16,8 @@ import {
     useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 
-import { advancedSteps, simpleSteps } from "../test_fixtures";
+import advancedStepsJson from "../test-data/parameter_steps.json";
+import simpleStepsJson from "../test-data/simple_steps.json";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
@@ -33,6 +35,9 @@ import {
     producesAcceptableDatatype,
     terminalFactory,
 } from "./terminals";
+
+const advancedSteps = advancedStepsJson as Steps;
+const simpleSteps = simpleStepsJson as Steps;
 
 function useStores(id = "mock-workflow") {
     const connectionStore = useConnectionStore(id);
@@ -58,8 +63,8 @@ function useStores(id = "mock-workflow") {
 // Suppress debug messages about node configurations, we're testing esoteric things here -
 // we might want these messages at runtime to help debug complex things but we don't need it
 // during unit testing.
-jest.spyOn(console, "debug").mockImplementation(
-    jest.fn((msg) => {
+vi.spyOn(console, "debug").mockImplementation(
+    vi.fn((msg) => {
         if (msg != NO_COLLECTION_TYPE_INFORMATION_MESSAGE) {
             console.debug(msg);
         }

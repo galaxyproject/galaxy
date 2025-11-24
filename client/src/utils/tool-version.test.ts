@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import type { Tool } from "@/stores/toolStore";
 
 import { extractBaseToolId, filterLatestToolVersions } from "./tool-version";

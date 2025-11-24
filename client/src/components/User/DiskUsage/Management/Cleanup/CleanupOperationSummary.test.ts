@@ -1,6 +1,7 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 
@@ -77,11 +78,16 @@ async function mountCleanupOperationSummaryWith(
         localVue,
     });
     await flushPromises();
+    vi.runAllTimers();
     await flushPromises();
     return wrapper;
 }
 
 describe("CleanupOperationSummary.vue", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
     it("should display the operation information", async () => {
         const wrapper = await mountCleanupOperationSummaryWith(CLEANUP_OPERATION);
 

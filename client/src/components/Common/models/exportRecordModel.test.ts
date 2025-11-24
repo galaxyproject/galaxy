@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { ExportRecordModel } from "./exportRecordModel";
 import {
     EXPECTED_EXPIRATION_DATE,

@@ -1,9 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-
-import { getGalaxyInstance } from "@/app/singleton";
+import { describe, expect, it, vi } from "vitest";
 
 import Login from "./Login.vue";
 
@@ -21,9 +20,12 @@ const configMock = {
     welcome_url: "welcome_url",
 };
 
-jest.mock("app/singleton");
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/app", () => ({
+    getGalaxyInstance: vi.fn(() => ({ session_csrf_token: "session_csrf_token" })),
+}));
+
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: configMock,
 
         isConfigLoaded: true,
@@ -36,10 +38,8 @@ const mockRouter = (query: object) => ({
     },
 });
 
-(getGalaxyInstance as jest.Mock).mockReturnValue({ session_csrf_token: "session_csrf_token" });
-
 function shallowMountLogin(routerQuery: object = {}) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     return shallowMount(Login as object, {

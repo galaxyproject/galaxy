@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { computed, ref } from "vue";
 
 import { usePagination } from "./pagination";

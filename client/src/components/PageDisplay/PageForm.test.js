@@ -1,6 +1,7 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
@@ -10,9 +11,9 @@ import PageForm from "./PageForm.vue";
 const { server, http } = useServerMock();
 const localVue = getLocalVue();
 
-const mockPush = jest.fn();
+const mockPush = vi.fn();
 
-jest.mock("vue-router/composables", () => ({
+vi.mock("vue-router/composables", () => ({
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),

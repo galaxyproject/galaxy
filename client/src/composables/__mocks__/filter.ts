@@ -3,7 +3,8 @@ import { computed, type Ref } from "vue";
 
 import type { useFilterObjectArray as UseFilterObjectArray } from "@/composables/filter";
 
-jest.mock("@/composables/filter", () => ({
+// @ts-ignore - vi is a Vitest global
+vi.mock("@/composables/filter", () => ({
     useFilterObjectArray,
 }));
 

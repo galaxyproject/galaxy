@@ -138,9 +138,8 @@ function markNotificationAsSeen() {
         @select="emit('select', [props.notification])">
         <template v-slot:description>
             <template v-if="props.notification.category === 'new_shared_item'">
-                <span>The user</span>
-                <b>{{ props.notification.content.owner_name }}</b>
-                <span>shared </span>
+                <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
+                >{{ " " }}<span>shared </span>
                 <BLink
                     v-b-tooltip.bottom
                     :title="`View ${props.notification.content.item_type} in new tab`"
@@ -151,8 +150,8 @@ function markNotificationAsSeen() {
                     {{ props.notification.content.item_name }}
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
                 </BLink>
-                <em>{{ props.notification.content.item_type }}</em>
-                <span> with you.</span>
+                <em>{{ props.notification.content.item_type }}</em
+                >{{ " " }}<span> with you.</span>
             </template>
             <template v-else>
                 <span class="notification-message" v-html="renderMarkdown(props.notification.content.message)" />

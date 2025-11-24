@@ -1,6 +1,7 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
@@ -29,8 +30,6 @@ const FAKE_OBJECT_STORE: UserConcreteObjectStore = {
     },
     secrets: ["mysecret"],
 };
-
-const localVue = getLocalVue(true);
 
 const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
     type: "aws_s3",
@@ -80,6 +79,7 @@ const SIMPLE_TEMPLATE: ObjectStoreTemplateSummary = {
     hidden: false,
 };
 
+const localVue = getLocalVue(true);
 const { server, http } = useServerMock();
 
 describe("CreateForm", () => {

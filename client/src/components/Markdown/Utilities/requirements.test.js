@@ -1,12 +1,16 @@
+import { describe, expect, it, vi } from "vitest";
+
 import { getRequiredLabels, getRequiredObject, hasValidLabel, hasValidName } from "./requirements";
 
-jest.mock(
+vi.mock(
     "./requirements.yml",
     () => ({
-        history_dataset_id: ["tool_a", "tool_b"],
-        history_dataset_collection_id: ["tool_c"],
-        job_id: ["tool_d"],
-        none: ["tool_x", "tool_y"],
+        default: {
+            history_dataset_id: ["tool_a", "tool_b"],
+            history_dataset_collection_id: ["tool_c"],
+            job_id: ["tool_d"],
+            none: ["tool_x", "tool_y"],
+        },
     }),
     { virtual: true },
 );

@@ -1,5 +1,6 @@
 import galaxyOptions from "@tests/test-data/bootstrapped";
-import { suppressDebugConsole } from "tests/jest/helpers";
+import { suppressDebugConsole } from "@tests/vitest/helpers";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { getGalaxyInstance, setGalaxyInstance } from "@/app";
 

@@ -54,12 +54,11 @@ const variant = computed(() => {
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
             </BProgress>
             <span>
-                <span v-localize>Using</span>
-                <span v-if="hasQuota">
-                    <span>{{ usage.toFixed(0) }}%</span>
-                    <span v-if="quotaLimit !== null">of {{ quotaLimit }}</span>
-                </span>
-                <span v-else>{{ totalUsageString }}</span>
+                <span v-localize>Using</span>{{ " "
+                }}<span v-if="hasQuota"
+                    ><span>{{ usage.toFixed(0) }}%</span>{{ " "
+                    }}<span v-if="quotaLimit !== null">of {{ quotaLimit }}</span></span
+                ><span v-else>{{ totalUsageString }}</span>
             </span>
         </BLink>
     </div>

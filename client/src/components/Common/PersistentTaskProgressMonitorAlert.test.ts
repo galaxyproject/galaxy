@@ -1,4 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type PropType, ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
@@ -27,8 +28,8 @@ const FAKE_MONITOR_REQUEST: MonitoringRequest = {
 const FAKE_EXPIRATION_TIME = 1000;
 
 const FAKE_MONITOR: TaskMonitor = {
-    waitForTask: jest.fn(),
-    stopWaitingForTask: jest.fn(),
+    waitForTask: vi.fn(),
+    stopWaitingForTask: vi.fn(),
     isRunning: ref(false),
     isCompleted: ref(false),
     hasFailed: ref(false),
@@ -36,9 +37,9 @@ const FAKE_MONITOR: TaskMonitor = {
     requestHasFailed: ref(false),
     taskStatus: ref(""),
     expirationTime: FAKE_EXPIRATION_TIME,
-    isFinalState: jest.fn(),
-    loadStatus: jest.fn(),
-    fetchTaskStatus: jest.fn(),
+    isFinalState: vi.fn(),
+    loadStatus: vi.fn(),
+    fetchTaskStatus: vi.fn(),
 };
 
 const mountComponent = (

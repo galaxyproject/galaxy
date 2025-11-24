@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
     type FrameWorkflowComment,
@@ -65,8 +66,8 @@ const frameCommentTwo: FrameWorkflowComment = {
     size: [180, 180],
 };
 
-jest.mock("@/stores/workflowStepStore", () => ({
-    useWorkflowStepStore: jest.fn(() => ({
+vi.mock("@/stores/workflowStepStore", () => ({
+    useWorkflowStepStore: vi.fn(() => ({
         steps: {
             0: {
                 id: 0,
@@ -80,8 +81,8 @@ jest.mock("@/stores/workflowStepStore", () => ({
     })),
 }));
 
-jest.mock("@/stores/workflowEditorStateStore", () => ({
-    useWorkflowStateStore: jest.fn(() => ({
+vi.mock("@/stores/workflowEditorStateStore", () => ({
+    useWorkflowStateStore: vi.fn(() => ({
         stepPosition: {
             0: {
                 width: 200,

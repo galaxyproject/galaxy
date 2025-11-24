@@ -1,9 +1,11 @@
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import MountTarget from "./LoginIndex.vue";
 
 const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 
 const SELECTORS = {
     REGISTER_TOGGLE: "[id=register-toggle]",
@@ -20,6 +22,7 @@ describe("LoginIndex", () => {
                 sessionCsrfToken: "sessionCsrfToken",
             },
             localVue,
+            router,
         });
     });
 

@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import toolModel from "./test-data/tool";
 import { matchCase, matchInputs, validateInputs, visitInputs } from "./utilities";
 

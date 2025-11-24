@@ -3,11 +3,12 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { BAlert, BTable } from "bootstrap-vue";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";
 
-jest.mock("app");
+vi.mock("app");
 
 const mockOptions = {
     callback: () => {},

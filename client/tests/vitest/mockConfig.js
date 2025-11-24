@@ -1,6 +1,8 @@
+import { vi } from "vitest";
+
 import { useConfig } from "@/composables/config";
 
-jest.mock("composables/config");
+vi.mock("@/composables/config");
 
 export function setupMockConfig(configValues, isConfigLoaded = true) {
     return useConfig.mockReturnValue({
