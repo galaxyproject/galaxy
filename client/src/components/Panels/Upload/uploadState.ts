@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import type { FetchDatasetHash, UploadElement } from "@/api/upload";
 
@@ -71,6 +71,34 @@ function persistItems(items: UploadItem[]) {
 }
 
 const activeItems = ref<UploadItem[]>(loadPersistedItems());
+
+const hasUploads = computed(() => activeItems.value.length > 0);
+
+// Computed statistics
+const completedCount = computed(() => activeItems.value.filter((i) => i.status === "completed").length);
+const errorCount = computed(() => activeItems.value.filter((i) => i.status === "error").length);
+const uploadingCount = computed(
+    () => activeItems.value.filter((i) => i.status === "uploading" || i.status === "processing").length,
+);
+const isUploading = computed(() =>
+    activeItems.value.some((i) => i.status === "uploading" || i.status === "processing"),
+);
+
+const totalProgress = computed(() => {
+    if (activeItems.value.length === 0) {
+        return 0;
+    }
+    const sum = activeItems.value.reduce((acc, file) => acc + file.progress, 0);
+    return Math.round(sum / activeItems.value.length);
+});
+
+const totalSizeBytes = computed(() => activeItems.value.reduce((sum, file) => sum + file.size, 0));
+
+const uploadedSizeBytes = computed(() =>
+    activeItems.value.reduce((sum, file) => sum + (file.size * file.progress) / 100, 0),
+);
+
+const hasCompleted = computed(() => activeItems.value.some((u) => u.status === "completed"));
 
 export function useUploadState() {
     // Public method to add items (used by service)
@@ -201,6 +229,15 @@ export function useUploadState() {
     return {
         // state
         activeItems,
+        hasUploads,
+        completedCount,
+        errorCount,
+        uploadingCount,
+        isUploading,
+        totalProgress,
+        totalSizeBytes,
+        uploadedSizeBytes,
+        hasCompleted,
         // direct item management
         addUploadItem,
         enqueueLocalFiles,

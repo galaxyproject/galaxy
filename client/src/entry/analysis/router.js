@@ -69,6 +69,7 @@ import PageForm from "@/components/PageDisplay/PageForm.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
 import UploadIndex from "@/components/Panels/Upload/UploadIndex.vue";
 import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
+import UploadProgress from "@/components/Panels/Upload/UploadProgress.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import ToolReport from "@/components/Tool/ToolReport.vue";
 import ToolSuccess from "@/components/Tool/ToolSuccess.vue";
@@ -242,6 +243,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "upload",
                         component: UploadIndex,
+                    },
+                    {
+                        path: "upload/progress",
+                        component: UploadProgress,
                     },
                     {
                         path: "upload/:methodId",
