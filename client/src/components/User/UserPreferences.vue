@@ -63,7 +63,7 @@ const activePreferences = computed(() => {
 });
 // Show the OIDC profile management widget if local accounts disabled and OIDC profile is configured
 // through a single provider
-const showOidcProfile = computed(() => {
+const showOidcProfile = computed<boolean>(() => {
     if (isConfigLoaded.value) {
         const oidcConfig: OIDCConfig = config.value.oidc;
         return config.value.enable_oidc && config.value.disable_local_accounts && hasSingleOidcProfile(oidcConfig);
@@ -183,7 +183,7 @@ onMounted(async () => {
             <div class="d-flex flex-wrap mb-4 user-preferences-cards">
                 <UserPreferencesElement
                     id="oidc-profile"
-                    :v-if="showOidcProfile"
+                    v-if="showOidcProfile"
                     title="Manage my profile"
                     :icon="faPerson"
                     description="Manage my profile information (username, email, password)."
