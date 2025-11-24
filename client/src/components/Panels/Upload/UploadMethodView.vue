@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
-import type { UploadMode } from "./types";
+import type { UploadMethodComponent, UploadMode } from "./types";
 import { getUploadMethod } from "./uploadMethodRegistry";
 
-import Heading from "@/components/Common/Heading.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
 interface Props {
@@ -20,6 +20,8 @@ const props = defineProps<Props>();
 
 const router = useRouter();
 const showHistorySelector = ref(false);
+const uploadMethodRef = ref<UploadMethodComponent | null>(null);
+const canUpload = ref(false);
 
 const historyStore = useHistoryStore();
 const { currentHistoryId, histories } = storeToRefs(historyStore);
@@ -34,13 +36,12 @@ const method = computed(() => {
     return props.methodId ? getUploadMethod(props.methodId) : null;
 });
 
-function handleUploadStart() {
-    // TODO: Display upload progress?
-}
-
-function handleUploadCancel() {
-    router.back();
-}
+const breadcrumbItems = computed(() => {
+    if (!method.value) {
+        return [{ title: "Import Data" }];
+    }
+    return [{ title: "Import Data", to: "/upload" }, { title: method.value.name }];
+});
 
 function openHistorySelector() {
     showHistorySelector.value = true;
@@ -50,40 +51,73 @@ function handleHistorySelected(history: { id: string }) {
     targetHistoryId.value = history.id;
     showHistorySelector.value = false;
 }
+
+function handleCancel() {
+    router.push("/upload");
+}
+
+function handleStart() {
+    uploadMethodRef.value?.startUpload();
+    // TODO Navigate to progress display
+}
+
+function handleReadyStateChange(ready: boolean) {
+    canUpload.value = ready;
+}
 </script>
 
 <template>
-    <div class="upload-method-view h-100 d-flex flex-column overflow-hidden">
-        <div class="header p-3 border-bottom">
-            <Heading v-if="method" h2 class="m-0">
-                <FontAwesomeIcon :icon="method.icon" class="mr-2" />
-                {{ method.headerAction }}
-                <span v-if="method.requiresTargetHistory">
-                    to <strong>{{ targetHistoryName || "selected history" }}</strong>
+    <div class="upload-method-view d-flex flex-column h-100">
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <div v-if="method" class="upload-method-content flex-grow-1 d-flex flex-column overflow-hidden">
+            <p class="text-muted mb-3">{{ method.description }}</p>
+
+            <!-- Target History Display -->
+            <div v-if="method.requiresTargetHistory" class="target-history-banner px-3 py-2">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted mr-2">Destination history:</span>
+                    <strong class="target-history-name">{{ targetHistoryName || "selected history" }}</strong>
                     <a
-                        title="Choose a different target history for this upload"
                         href="#"
-                        class="select-history-link"
+                        class="change-history-link ml-2"
+                        title="Change target history for this upload"
                         @click.prevent="openHistorySelector">
                         change
                     </a>
-                </span>
-            </Heading>
-            <Heading v-else h2 class="m-0"> Import Data </Heading>
-        </div>
+                </div>
+            </div>
 
-        <div v-if="method" class="upload-method-content p-3 flex-grow-1 overflow-auto">
-            <p class="text-muted mb-2">{{ method.description }}</p>
-            <component
-                :is="method.component"
-                :method="method"
-                :target-history-id="targetHistoryId"
-                @upload-start="handleUploadStart"
-                @cancel="handleUploadCancel" />
+            <!-- Upload Method Content (scrollable) -->
+            <div class="flex-grow-1 overflow-auto p-3">
+                <component
+                    :is="method.component"
+                    ref="uploadMethodRef"
+                    :method="method"
+                    :target-history-id="targetHistoryId"
+                    @ready="handleReadyStateChange" />
+            </div>
         </div>
-        <div v-else class="text-center text-muted py-5">
+        <div v-else class="flex-grow-1 text-center text-muted py-5">
             <p>Loading...</p>
         </div>
+
+        <!-- Fixed Footer -->
+        <div v-if="method" class="upload-footer">
+            <div class="d-flex justify-content-end gap-2">
+                <GButton outline color="grey" title="Cancel and return to import methods" @click="handleCancel">
+                    <span v-localize>Cancel</span>
+                </GButton>
+                <GButton
+                    color="blue"
+                    :disabled="!canUpload"
+                    :title="canUpload ? 'Start uploading to Galaxy' : 'Configure upload options first'"
+                    @click="handleStart">
+                    <span v-localize>Start</span>
+                </GButton>
+            </div>
+        </div>
+
         <SelectorModal
             v-if="method && method.requiresTargetHistory"
             :histories="histories"
@@ -94,14 +128,41 @@ function handleHistorySelected(history: { id: string }) {
 </template>
 
 <style scoped lang="scss">
-.select-history-link {
-    font-size: 0.6em;
-    font-weight: normal;
-    text-decoration: none;
-    margin-left: 0.25em;
+@import "@/style/scss/theme/blue.scss";
+
+.upload-method-view {
+    background-color: $white;
+}
+
+.target-history-banner {
+    background-color: $gray-100;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+}
+
+.target-history-name {
+    color: $brand-primary;
+    font-size: 1rem;
+}
+
+.change-history-link {
+    font-size: 0.75rem;
 
     &:hover {
         text-decoration: underline;
+        color: $brand-primary;
     }
+}
+
+.upload-footer {
+    flex-shrink: 0;
+    padding: 1rem;
+    background-color: $white;
+    border-top: 1px solid $border-color;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.gap-2 {
+    gap: 0.5rem;
 }
 </style>

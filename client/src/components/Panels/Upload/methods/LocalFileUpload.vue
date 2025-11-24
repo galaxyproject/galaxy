@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { faCloudUploadAlt, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadMethodConfig } from "../types";
+import type { UploadMethodComponent, UploadMethodConfig } from "../types";
 import { useUploadService } from "../uploadService";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -20,8 +20,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "upload-start"): void;
-    (e: "cancel"): void;
+    (e: "ready", ready: boolean): void;
 }>();
 
 const uploadService = useUploadService();
@@ -52,6 +51,14 @@ const totalSize = computed(() => {
     const bytes = selectedFiles.value.reduce((sum, file) => sum + file.size, 0);
     return bytesToString(bytes);
 });
+
+watch(
+    hasFiles,
+    (ready) => {
+        emit("ready", ready);
+    },
+    { immediate: true },
+);
 
 function onDrop(evt: DragEvent) {
     isDragging.value = false;
@@ -95,11 +102,7 @@ function handleBrowse() {
     uploadFile.value?.click();
 }
 
-function handleCancel() {
-    emit("cancel");
-}
-
-function handleStartUpload() {
+function startUpload() {
     uploadService.enqueueLocalFiles(selectedFiles.value, {
         uploadMethod: "local-file",
         targetHistoryId: props.targetHistoryId,
@@ -112,8 +115,11 @@ function handleStartUpload() {
         },
     });
     selectedFiles.value = [];
-    emit("upload-start");
 }
+
+defineExpose<UploadMethodComponent>({
+    startUpload,
+});
 </script>
 
 <template>
@@ -183,20 +189,6 @@ function handleStartUpload() {
                 multiple
                 class="d-none"
                 @change="addFileFromInput($event.target)" />
-        </div>
-
-        <!-- Upload Actions -->
-        <div v-if="hasFiles" class="upload-actions mt-3">
-            <GButton outline color="grey" :disabled="!hasFiles" title="Cancel and close" @click="handleCancel">
-                <span v-localize>Cancel</span>
-            </GButton>
-            <GButton
-                color="blue"
-                :disabled="!hasFiles"
-                title="Start uploading files to Galaxy"
-                @click="handleStartUpload">
-                <span v-localize>Start Upload</span>
-            </GButton>
         </div>
     </div>
 </template>
@@ -354,12 +346,5 @@ function handleStartUpload() {
     justify-content: flex-start;
     padding-top: 1rem;
     border-top: 1px solid $border-color;
-}
-
-.upload-actions {
-    flex-shrink: 0;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
 }
 </style>

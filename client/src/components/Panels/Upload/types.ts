@@ -23,3 +23,7 @@ export interface UploadMethodConfig {
     requiresAuth?: boolean;
     requiresConfig?: string[];
 }
+
+export interface UploadMethodComponent {
+    startUpload: () => void;
+}
