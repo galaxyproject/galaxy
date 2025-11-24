@@ -44,7 +44,7 @@ describe("Default", () => {
         // [Vue warn]: Error in directive b-visible unbind hook: "TypeError: this.observer.disconnect is not a function"
         // I don't think there is a problem with the usage so I think this a bug in bootstrap vue, it can be worked around
         // with the following code - but just suppressing the warning is probably better?
-        const observerMock = vi.fn(function IntersectionObserver(callback: IntersectionObserverCallback) {
+        const observerMock = vi.fn(function IntersectionObserver(this: any, callback: IntersectionObserverCallback) {
             this.observe = vi.fn();
             this.disconnect = vi.fn();
             this.trigger = (mockedMutationsList: IntersectionObserverEntry[]) => {
