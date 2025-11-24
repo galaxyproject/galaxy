@@ -66,7 +66,7 @@ class EmailAction(DefaultJobAction):
                 f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%I:%M %p')}. "
                 f"Click the link below to access your data: \n{link}\n\n"
                 "Please remember to cite Galaxy using our primary publication "
-                '(<a href="https://doi.org/10.1093/nar/gkae410">https://doi.org/10.1093/nar/gkae410</a>) '
+                '(<a href="https://gxy.io/p/latest-nar">https://gxy.io/p/latest-nar</a>) '
                 "in any publication based on your analysis."
             )
             if link_invocation:
