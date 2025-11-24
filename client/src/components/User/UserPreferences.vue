@@ -19,6 +19,7 @@ import {
 import { computed, onMounted, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { hasSingleOidcProfile, type OIDCConfig } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
 import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -60,9 +61,12 @@ const activePreferences = computed(() => {
     const enabledPreferences = Object.entries(userPreferencesEntries).filter(([, value]) => !value.disabled);
     return Object.fromEntries(enabledPreferences);
 });
+// Show the OIDC profile management widget if local accounts disabled and OIDC profile is configured
+// through a single provider
 const showOidcProfile = computed(() => {
     if (isConfigLoaded.value) {
-        return config.value.enable_oidc && config.value.oidc_profile_url;
+        const oidcConfig: OIDCConfig = config.value.oidc;
+        return config.value.enable_oidc && config.value.disable_local_accounts && hasSingleOidcProfile(oidcConfig);
     } else {
         return false;
     }
