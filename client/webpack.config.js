@@ -313,6 +313,7 @@ module.exports = (env = {}, argv = {}) => {
             new ForkTsCheckerWebpackPlugin({
                 async: false,
                 typescript: {
+                    configFile: "tsconfig.webpack.json",
                     diagnosticOptions: {
                         semantic: true,
                         syntactic: true,
