@@ -182,8 +182,8 @@ onMounted(async () => {
         <div class="d-flex flex-gapy-1 flex-column">
             <div class="d-flex flex-wrap mb-4 user-preferences-cards">
                 <UserPreferencesElement
-                    id="oidc-profile"
                     v-if="showOidcProfile"
+                    id="oidc-profile"
                     title="Manage my profile"
                     :icon="faPerson"
                     description="Manage my profile information (username, email, password)."
