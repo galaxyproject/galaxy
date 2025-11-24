@@ -1,29 +1,24 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { UploadMode } from "./types";
 import { getUploadMethod } from "./uploadMethodRegistry";
 
-import GModal from "@/components/BaseComponents/GModal.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
 interface Props {
-    methodId: UploadMode | null;
-    show: boolean;
+    methodId: UploadMode;
 }
 
 const props = defineProps<Props>();
 
-const emit = defineEmits<{
-    (e: "update:show", value: boolean): void;
-    (e: "close"): void;
-}>();
-
+const router = useRouter();
 const showHistorySelector = ref(false);
 
 const historyStore = useHistoryStore();
@@ -35,30 +30,16 @@ const targetHistoryName = computed(() => {
     return targetHistoryId.value ? historyStore.getHistoryNameById(targetHistoryId.value) : undefined;
 });
 
-const modalShow = computed({
-    get: () => props.show,
-    set: (value: boolean) => emit("update:show", value),
-});
-
-watch(
-    () => props.show,
-    (newValue) => {
-        if (!newValue) {
-            emit("close");
-        }
-    },
-);
-
 const method = computed(() => {
     return props.methodId ? getUploadMethod(props.methodId) : null;
 });
 
 function handleUploadStart() {
-    modalShow.value = false;
+    // TODO: Display upload progress?
 }
 
 function handleUploadCancel() {
-    modalShow.value = false;
+    router.back();
 }
 
 function openHistorySelector() {
@@ -72,9 +53,9 @@ function handleHistorySelected(history: { id: string }) {
 </script>
 
 <template>
-    <GModal :show.sync="modalShow" fullscreen>
-        <template v-slot:header>
-            <Heading v-if="method" h2 class="m-0 g-modal-title">
+    <div class="upload-method-view h-100 d-flex flex-column overflow-hidden">
+        <div class="header p-3 border-bottom">
+            <Heading v-if="method" h2 class="m-0">
                 <FontAwesomeIcon :icon="method.icon" class="mr-2" />
                 {{ method.headerAction }}
                 <span v-if="method.requiresTargetHistory">
@@ -88,9 +69,10 @@ function handleHistorySelected(history: { id: string }) {
                     </a>
                 </span>
             </Heading>
-            <Heading v-else h2 class="m-0 g-modal-title"> Import Data </Heading>
-        </template>
-        <div v-if="method" class="upload-method-content">
+            <Heading v-else h2 class="m-0"> Import Data </Heading>
+        </div>
+
+        <div v-if="method" class="upload-method-content p-3 flex-grow-1 overflow-auto">
             <p class="text-muted mb-2">{{ method.description }}</p>
             <component
                 :is="method.component"
@@ -108,17 +90,10 @@ function handleHistorySelected(history: { id: string }) {
             :show-modal.sync="showHistorySelector"
             title="Select a history for upload"
             @selectHistory="handleHistorySelected" />
-    </GModal>
+    </div>
 </template>
 
 <style scoped lang="scss">
-.upload-method-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-}
-
 .select-history-link {
     font-size: 0.6em;
     font-weight: normal;

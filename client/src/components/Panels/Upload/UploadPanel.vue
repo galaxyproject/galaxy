@@ -3,14 +3,14 @@ import { faCompass, faSlidersH } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
 
-import type { UploadMethodConfig, UploadMode } from "./types";
+import type { UploadMethodConfig } from "./types";
 import { getAllUploadMethods } from "./uploadMethodRegistry";
 import { useUploadState } from "./uploadState";
 
-import UploadMethodDialog from "./UploadMethodDialog.vue";
 import UploadProgressDisplay from "./UploadProgressDisplay.vue";
 import UploadProgressIndicator from "./UploadProgressIndicator.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -22,12 +22,11 @@ import ScrollList from "@/components/ScrollList/ScrollList.vue";
 const { config, isConfigLoaded } = useConfig();
 const { activeItems } = useUploadState();
 
+const router = useRouter();
 const query = ref("");
-const showModal = ref(false);
 const showUploadDetailsModal = ref(false);
 const showGuidedModal = ref(false);
 const showAdvancedModal = ref(false);
-const selectedMethod = ref<UploadMode | null>(null);
 
 const allUploadMethods = getAllUploadMethods();
 
@@ -58,13 +57,7 @@ const filteredMethods = computed(() => {
 });
 
 function selectUploadMethod(method: UploadMethodConfig) {
-    selectedMethod.value = method.id;
-    showModal.value = true;
-}
-
-function closeModal() {
-    showModal.value = false;
-    selectedMethod.value = null;
+    router.push(`/upload/${method.id}`);
 }
 
 function openAdvancedMode() {
@@ -134,8 +127,6 @@ function openGuidedMode() {
                 </template>
             </ScrollList>
         </ActivityPanel>
-
-        <UploadMethodDialog :method-id="selectedMethod" :show.sync="showModal" @close="closeModal" />
 
         <GModal :show.sync="showUploadDetailsModal" title="Upload Status" size="medium" fixed-height>
             <div class="upload-details-modal">
