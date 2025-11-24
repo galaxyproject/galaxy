@@ -74,6 +74,7 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
         self.wait_for_loading_indicator_to_finish()
         self.expect_preview_title_to_be("Simple Workflow")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_search_filters_files(self):
         self.login()
@@ -90,6 +91,7 @@ class TestArchiveExplorer(SeleniumTestCase, UsesHistoryItemAssertions):
         visible_cards = self.get_visible_item_cards()
         assert len(visible_cards) == 1
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_select_all_functionality(self):
         self.login()

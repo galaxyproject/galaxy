@@ -8,6 +8,7 @@ import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
+import STATES from "@/utils/datasetStates";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
@@ -41,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 const iframeLoading = ref(true);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
+const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
 // Track datatype loading state
@@ -51,15 +53,9 @@ const isLoading = computed(() => {
     return datasetStore.isLoadingDataset(props.datasetId) || isDatatypeLoading.value || datatypesMapperStore.loading;
 });
 
-const showError = computed(
-    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
-);
+// Match datatype variant
 const isAutoDownloadType = computed(
     () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
-);
-const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
-const preferredVisualization = computed(
-    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
 const isBinaryDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
@@ -67,7 +63,6 @@ const isBinaryDataset = computed(() => {
     }
     return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, ["galaxy.datatypes.binary"]);
 });
-
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
@@ -76,10 +71,18 @@ const isImageDataset = computed(() => {
         "galaxy.datatypes.images.Image",
     ]);
 });
-
 const isPdfDataset = computed(() => {
     return dataset.value?.file_ext === "pdf";
 });
+
+// Has a preferred visualization?
+const preferredVisualization = computed(
+    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
+);
+
+// Match dataset state
+const showError = computed(() => dataset.value && STATES.ERROR === dataset.value.state);
+const showOk = computed(() => dataset.value && STATES.OK_STATES.includes(dataset.value.state));
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
@@ -149,20 +152,21 @@ watch(
         </header>
         <BNav v-if="!displayOnly" pills class="my-2 p-2 bg-light border-bottom">
             <BNavItem
+                v-if="showOk"
                 title="View a preview of the dataset contents"
                 :active="tab === 'preview'"
                 :to="`/datasets/${datasetId}/preview`">
                 <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
             </BNavItem>
             <BNavItem
-                v-if="preferredVisualization"
+                v-if="showOk && preferredVisualization"
                 title="View raw dataset contents"
                 :active="tab === 'raw'"
                 :to="`/datasets/${datasetId}/raw`">
                 <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Raw
             </BNavItem>
             <BNavItem
-                v-if="!showError"
+                v-if="showOk"
                 title="Explore available visualizations for this dataset"
                 :active="tab === 'visualize'"
                 :to="`/datasets/${datasetId}/visualize`">

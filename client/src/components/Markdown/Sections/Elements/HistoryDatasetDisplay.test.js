@@ -30,6 +30,7 @@ describe("History Tabular Dataset Display", () => {
         extension: "tabular",
         name: "someName",
         state: "ok",
+        peek: "needs a peek",
     };
     const tabularTableDataCounts = tabularMetaData.metadata_columns * tabularMetaData.metadata_data_lines;
 
@@ -58,7 +59,7 @@ describe("History Text Dataset Display", () => {
     let wrapper;
     const datasetId = "otherId";
     const text = { item_data: "some text" };
-    const textMetaData = { extension: "txt", name: "someName", state: "ok" };
+    const textMetaData = { extension: "txt", name: "someName", state: "ok", peek: "needs a peek" };
 
     async function mountTarget() {
         server.resetHandlers();

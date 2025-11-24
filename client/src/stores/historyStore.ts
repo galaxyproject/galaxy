@@ -12,7 +12,9 @@ import {
 } from "@/api";
 import type { UpdateHistoryPayload } from "@/api/histories";
 import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
+import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
     createAndSelectNewHistory,
@@ -25,6 +27,11 @@ import {
 } from "@/stores/services/history.services";
 import { rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
+import {
+    ACTIVE_POLLING_INTERVAL,
+    INACTIVE_POLLING_INTERVAL,
+    watchHistory as watchHistorySuppliedApp,
+} from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set();
@@ -166,6 +173,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     function unpinHistories(historyIds: string[]) {
         pinnedHistories.value = pinnedHistories.value.filter((h) => !historyIds.includes(h.id));
+    }
+
+    function clearPinnedHistories() {
+        pinnedHistories.value = [];
     }
 
     function selectHistory(history: HistorySummary) {
@@ -363,6 +374,19 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
+    function watchHistory() {
+        const app = getGalaxyInstance();
+        return watchHistorySuppliedApp(app);
+    }
+
+    const { startWatchingResource: startWatchingHistory, isWatchingResource: isWatchingHistory } = useResourceWatcher(
+        watchHistory,
+        {
+            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+            longPollingInterval: INACTIVE_POLLING_INTERVAL,
+        },
+    );
+
     async function loadHistoryById(historyId: string): Promise<HistorySummaryExtended | undefined> {
         if (!isLoadingHistory.has(historyId)) {
             isLoadingHistory.add(historyId);
@@ -473,6 +497,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setHistories,
         pinHistory,
         unpinHistories,
+        clearPinnedHistories,
         selectHistory,
         applyFilters,
         copyHistory,
@@ -482,6 +507,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
         restoreHistory,
         restoreHistories,
         handleTotalCountChange,
+        startWatchingHistory,
+        isWatchingHistory,
         loadCurrentHistory,
         loadCurrentHistoryId,
         loadHistories,

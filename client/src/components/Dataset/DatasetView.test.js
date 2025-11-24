@@ -41,6 +41,7 @@ const mockDataset = {
     genome_build: "hg38",
     misc_blurb: "100 lines",
     misc_info: "Additional info",
+    peek: "Needs a peek",
 };
 
 const errorDataset = { ...mockDataset, state: "error" };
@@ -102,7 +103,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
         attachTo: document.createElement("div"),
         stubs: {
             // Only shallow stub certain components
-            "font-awesome-icon": true,
+            FontAwesomeIcon: true,
             Heading: {
                 template: "<div><slot></slot></div>",
                 props: ["h1", "separator"],
@@ -183,10 +184,20 @@ async function mountLoadingDatasetView() {
 
 describe("DatasetView", () => {
     beforeEach(() => {
+        class IO {
+            constructor() {}
+            observe() {}
+            unobserve() {}
+            disconnect() {}
+        }
+        global.IntersectionObserver = IO;
+        global.MutationObserver = IO;
         server.use(
             http.get("/api/datasets/:dataset_id", ({ response }) => {
                 return response(200).json(mockDataset);
             }),
+            http.get("/api/configuration", ({ response }) => response(200).json({})),
+            http.get("/api/plugins", ({ response }) => response(200).json([])),
         );
     });
 
@@ -201,8 +212,8 @@ describe("DatasetView", () => {
         it("shows loading message when dataset is loading", async () => {
             const wrapper = await mountLoadingDatasetView();
             expect(wrapper.find(".loading-message").exists()).toBe(true);
-            expect(wrapper.find(".loading-message").text()).toBe("Loading dataset details...");
-            expect(wrapper.find(".dataset-view").exists()).toBe(false);
+            expect(wrapper.find(".loading-message").text()).toBe("Loading...");
+            expect(wrapper.find(".dataset-view").exists()).toBe(true);
         });
 
         it("renders dataset information", async () => {
