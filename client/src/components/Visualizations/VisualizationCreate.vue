@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
@@ -85,9 +85,9 @@ defineExpose({ doQuery });
                 @change="onSelect" />
             <FormDataExtensions
                 v-if="extensions && extensions.length > 0"
+                v-model:formats-visible="formatsVisible"
                 :extensions="extensions"
-                formats-button-id="vis-create-ext"
-                :formats-visible.sync="formatsVisible" />
+                formats-button-id="vis-create-ext" />
         </div>
         <div v-if="plugin.help" class="my-2">
             <Heading h2 separator bold size="sm">Help</Heading>

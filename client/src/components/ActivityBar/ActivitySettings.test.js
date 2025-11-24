@@ -1,6 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import { nextTick } from "vue";
 
@@ -11,7 +10,6 @@ import { useActivityStore } from "@/stores/activityStore";
 import mountTarget from "./ActivitySettings.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";

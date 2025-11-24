@@ -2,7 +2,7 @@
  * Read-only class for dataset states in a collection.
  * Similar to JobStateSummary but for dataset states.
  */
-import { ERROR_DATASET_STATES, NON_TERMINAL_DATASET_STATES } from "@/api/datasets";
+import { NON_TERMINAL_DATASET_STATES } from "@/api/datasets";
 
 interface HDCAWithDatasetStates {
     elements_states?: Record<string, number>;

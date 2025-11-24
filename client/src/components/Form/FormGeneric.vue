@@ -14,10 +14,10 @@
             </FormCard>
             <div class="mt-3">
                 <GButton id="submit" color="blue" class="mr-1" :disabled="submitLoading" @click="onSubmit()">
-                    <span :class="submitLoading ? 'fa fa-spinner fa-spin' : submitIconClass" />{{ submitTitle | l }}
+                    <span :class="submitLoading ? 'fa fa-spinner fa-spin' : submitIconClass" />{{ l(submitTitle) }}
                 </GButton>
                 <GButton v-if="cancelRedirect" @click="onCancel()">
-                    <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
+                    <span class="mr-1 fa fa-times" />{{ l("Cancel") }}
                 </GButton>
             </div>
         </div>

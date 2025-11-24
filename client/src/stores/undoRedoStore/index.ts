@@ -270,18 +270,28 @@ class FactoryAction extends UndoRedoAction {
     }
 
     run() {
-        this.runCallback ? this.runCallback() : null;
+        if (this.runCallback) {
+            this.runCallback();
+        }
     }
 
     undo() {
-        this.undoCallback ? this.undoCallback() : null;
+        if (this.undoCallback) {
+            this.undoCallback();
+        }
     }
 
     redo() {
-        this.redoCallback ? this.redoCallback() : this.run();
+        if (this.redoCallback) {
+            this.redoCallback();
+        } else {
+            this.run();
+        }
     }
 
     destroy() {
-        this.destroyCallback ? this.destroyCallback() : null;
+        if (this.destroyCallback) {
+            this.destroyCallback();
+        }
     }
 }

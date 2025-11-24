@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -11,7 +11,6 @@ import { getUntypedWorkflowParameters } from "./modules/parameters";
 import Lint from "./Lint.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const steps = {
     0: {

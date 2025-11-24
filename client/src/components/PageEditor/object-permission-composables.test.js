@@ -1,5 +1,3 @@
-import { set } from "vue";
-
 import {
     initializeObjectReferences,
     initializeObjectToHistoryRefs,
@@ -28,7 +26,7 @@ describe("object-permission-composables", () => {
                 const { refs, historyMaps } = init();
                 refs.referencedJobIds.value = ["THISFAKEID"];
                 expect(historyMaps.historyIds.value.length).toBe(0);
-                set(historyMaps.jobsToHistories.value, "THISFAKEID", "THATFAKEID");
+                historyMaps.jobsToHistories.value["THISFAKEID"] = "THATFAKEID";
                 expect(historyMaps.historyIds.value.length).toBe(1);
                 expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
             });
@@ -37,7 +35,7 @@ describe("object-permission-composables", () => {
                 const { refs, historyMaps } = init();
                 refs.referencedInvocationIds.value = ["THISFAKEID"];
                 expect(historyMaps.historyIds.value.length).toBe(0);
-                set(historyMaps.invocationsToHistories.value, "THISFAKEID", "THATFAKEID");
+                historyMaps.invocationsToHistories.value["THISFAKEID"] = "THATFAKEID";
                 expect(historyMaps.historyIds.value.length).toBe(1);
                 expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
             });
@@ -46,7 +44,7 @@ describe("object-permission-composables", () => {
                 const { refs, historyMaps } = init();
                 refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKEID"];
                 expect(historyMaps.historyIds.value.length).toBe(0);
-                set(historyMaps.historyDatasetCollectionsToHistories.value, "THISFAKEID", "THATFAKEID");
+                historyMaps.historyDatasetCollectionsToHistories.value["THISFAKEID"] = "THATFAKEID";
                 expect(historyMaps.historyIds.value.length).toBe(1);
                 expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
             });
@@ -56,9 +54,9 @@ describe("object-permission-composables", () => {
                 refs.referencedJobIds.value = ["THISFAKEJOBID"];
                 refs.referencedInvocationIds.value = ["THISFAKEINVOCATIONID"];
                 refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKECOLLECTIONID"];
-                set(historyMaps.jobsToHistories.value, "THISFAKEJOBID", "HISTORYID1");
-                set(historyMaps.invocationsToHistories.value, "THISFAKEINVOCATIONID", "HISTORYID2");
-                set(historyMaps.historyDatasetCollectionsToHistories.value, "THISFAKECOLLECTIONID", "HISTORYID3");
+                historyMaps.jobsToHistories.value["THISFAKEJOBID"] = "HISTORYID1";
+                historyMaps.invocationsToHistories.value["THISFAKEINVOCATIONID"] = "HISTORYID2";
+                historyMaps.historyDatasetCollectionsToHistories.value["THISFAKECOLLECTIONID"] = "HISTORYID3";
                 expect(historyMaps.historyIds.value.length).toBe(3);
                 expect(historyMaps.historyIds.value).toContain("HISTORYID1");
                 expect(historyMaps.historyIds.value).toContain("HISTORYID2");
@@ -70,9 +68,9 @@ describe("object-permission-composables", () => {
                 refs.referencedJobIds.value = ["THISFAKEJOBID"];
                 refs.referencedInvocationIds.value = ["THISFAKEINVOCATIONID"];
                 refs.referencedHistoryDatasetCollectionIds.value = ["THISFAKECOLLECTIONID"];
-                set(historyMaps.jobsToHistories.value, "THISFAKEJOBID", "THATFAKEID");
-                set(historyMaps.invocationsToHistories.value, "THISFAKEINVOCATIONID", "THATFAKEID");
-                set(historyMaps.historyDatasetCollectionsToHistories.value, "THISFAKECOLLECTIONID", "THATFAKEID");
+                historyMaps.jobsToHistories.value["THISFAKEJOBID"] = "THATFAKEID";
+                historyMaps.invocationsToHistories.value["THISFAKEINVOCATIONID"] = "THATFAKEID";
+                historyMaps.historyDatasetCollectionsToHistories.value["THISFAKECOLLECTIONID"] = "THATFAKEID";
                 expect(historyMaps.historyIds.value.length).toBe(1);
                 expect(historyMaps.historyIds.value[0]).toBe("THATFAKEID");
             });

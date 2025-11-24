@@ -53,20 +53,21 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
         mounted() {
             this.doQuery();
         },
-        destroyed() {
+        unmounted() {
             if (this.timeoutId) {
                 clearTimeout(this.timeoutId);
             }
         },
         render() {
-            return (
-                this.$scopedSlots.default &&
-                this.$scopedSlots.default({
+            const slot = this.$slots.default;
+            if (slot) {
+                return slot({
                     loading: this.loading,
                     result: this.result,
                     error: this.error,
-                })
-            );
+                });
+            }
+            return null;
         },
         methods: {
             update(attributes) {
