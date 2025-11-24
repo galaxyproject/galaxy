@@ -13,6 +13,7 @@ const mockConfig = ref({
     terms_url: "",
     welcome_url: "",
     citation_bibtex: "",
+    toolbox_auto_sort: false,
 });
 
 export const useConfig = vi.fn(() => ({
@@ -38,5 +39,6 @@ export function resetMockConfig() {
         terms_url: "",
         welcome_url: "",
         citation_bibtex: "",
+        toolbox_auto_sort: false,
     };
 }

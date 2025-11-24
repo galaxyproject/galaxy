@@ -15,12 +15,7 @@ const localVue = getLocalVue();
 
 const DATASET_ID = "dataset_id";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: {},
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
 
 const { server, http } = useServerMock();
 

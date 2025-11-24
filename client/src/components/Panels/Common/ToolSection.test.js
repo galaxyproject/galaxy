@@ -3,16 +3,15 @@ import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { describe, expect, test, vi } from "vitest";
 
+import { setMockConfig } from "@/composables/__mocks__/config";
+
 import ToolSection from "./ToolSection.vue";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: {
-            toolbox_auto_sort: true,
-        },
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
+
+setMockConfig({
+    toolbox_auto_sort: true,
+});
 
 const localVue = getLocalVue();
 const pinia = createPinia();
