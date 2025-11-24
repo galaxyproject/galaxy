@@ -4,6 +4,7 @@ import { faUser } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import { isRegisteredUser } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -18,8 +19,18 @@ const { currentUser } = storeToRefs(userStore);
 
 const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user" }, { title: "Manage Profile" }]);
 
-const username = computed(() => currentUser.value?.username || localize("Not available"));
-const email = computed(() => currentUser.value?.email || localize("Not available"));
+const username = computed(() => {
+    if (isRegisteredUser(currentUser.value)) {
+        return currentUser.value.username;
+    }
+    return localize("Not available");
+});
+const email = computed(() => {
+    if (isRegisteredUser(currentUser.value)) {
+        return currentUser.value.email;
+    }
+    return localize("Not available");
+});
 const profileUrl = computed(() => {
     if (!isConfigLoaded.value) {
         // Need to return a value to ensure the GButton is
