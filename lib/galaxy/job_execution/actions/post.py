@@ -63,7 +63,7 @@ class EmailAction(DefaultJobAction):
             subject = f"Galaxy job completion notification from history '{job.history.name}'"
             outdata = ",\n".join(ds.dataset.display_name() for ds in job.output_datasets)
             body = (
-                f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%I:%M %p')}. "
+                f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%H:%M')}. "
                 f"Click the link below to access your data: \n{link}\n\n"
                 "Please remember to cite Galaxy using our primary publication "
                 '(<a href="https://gxy.io/p/latest-nar">https://gxy.io/p/latest-nar</a>) '
