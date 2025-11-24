@@ -1,35 +1,34 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { setMockConfig } from "@/composables/__mocks__/config";
 
 import Register from "./Register.vue";
 import RegisterForm from "@/components/Register/RegisterForm.vue";
 
 const localVue = getLocalVue(true);
 
-const configMock = {
-    allow_local_account_creation: true,
-    enable_oidc: true,
-    mailing_join_addr: "mailing_join_addr",
-    prefer_custos_login: true,
-    registration_warning_message: "registration_warning_message",
-    server_mail_configured: true,
-    show_welcome_with_login: true,
-    terms_url: "terms_url",
-    welcome_url: "welcome_url",
-};
-
 vi.mock("@/app/singleton", () => ({
     getGalaxyInstance: vi.fn(() => ({ session_csrf_token: "session_csrf_token" })),
 }));
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: configMock,
 
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
+
+beforeEach(() => {
+    setMockConfig({
+        allow_local_account_creation: true,
+        enable_oidc: true,
+        mailing_join_addr: "mailing_join_addr",
+        prefer_custos_login: true,
+        registration_warning_message: "registration_warning_message",
+        server_mail_configured: true,
+        show_welcome_with_login: true,
+        terms_url: "terms_url",
+        welcome_url: "welcome_url",
+    });
+});
 
 const mockRouter = (query: object) => ({
     currentRoute: {

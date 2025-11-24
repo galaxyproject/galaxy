@@ -6,22 +6,20 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
+import { setMockConfig } from "@/composables/__mocks__/config";
+
 import CitationItem from "./CitationItem.vue";
 import MountTarget from "./CitationsList.vue";
 
 const localVue = getLocalVue(true);
 localVue.use(VueRouter);
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: {
-            value: {
-                citation_bibtex:
-                    "@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}",
-            },
-        },
-    })),
-}));
+vi.mock("@/composables/config");
+
+setMockConfig({
+    citation_bibtex:
+        "@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}",
+});
 
 vi.mock("@/components/Citation/services", () => ({
     getCitations: vi.fn(() =>

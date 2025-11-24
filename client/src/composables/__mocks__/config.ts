@@ -12,6 +12,7 @@ const mockConfig = ref({
     show_welcome_with_login: false,
     terms_url: "",
     welcome_url: "",
+    citation_bibtex: "",
 });
 
 export const useConfig = vi.fn(() => ({
@@ -36,5 +37,6 @@ export function resetMockConfig() {
         show_welcome_with_login: false,
         terms_url: "",
         welcome_url: "",
+        citation_bibtex: "",
     };
 }
