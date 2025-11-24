@@ -64,7 +64,6 @@ edam-ontology==1.25.2
 email-validator==2.2.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 fastapi==0.115.12
-fastapi-slim==0.115.12
 filelock==3.18.0
 fissix==24.4.24
 frozenlist==1.6.0

@@ -38,7 +38,6 @@ dependencies = [
     "dparse",
     "edam-ontology",
     "fastapi>=0.111.0",
-    "fastapi-slim>=0.111.0",
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
