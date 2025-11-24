@@ -67,6 +67,7 @@ import PageForm from "@/components/PageDisplay/PageForm.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
 import UploadIndex from "@/components/Panels/Upload/UploadIndex.vue";
 import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
+import UploadProgress from "@/components/Panels/Upload/UploadProgress.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 // TODO: CustomToolEditor should be lazy-loaded to reduce bundle size (~7MB with Monaco).
 // Vue Router 3.x async component loading doesn't work correctly with Vite.
@@ -228,6 +229,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "upload",
                         component: UploadIndex,
+                    },
+                    {
+                        path: "upload/progress",
+                        component: UploadProgress,
                     },
                     {
                         path: "upload/:methodId",
