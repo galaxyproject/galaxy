@@ -75,10 +75,12 @@ function showDetails() {
                 <div class="d-flex align-items-center flex-grow-1">
                     <FontAwesomeIcon :icon="statusIcon" :class="statusClass" :spin="uploadingCount > 0" class="mr-2" />
                     <div class="progress-summary">
-                        <span class="font-weight-bold">{{ statusText }}</span>
-                        <span class="text-muted small ml-2">
+                        <span class="font-weight-bold status-text">{{ statusText }}</span>
+                        <span class="text-muted small ml-2 file-info">
                             {{ completedCount }}/{{ uploads.length }} files
-                            <template v-if="uploadingCount > 0"> • {{ uploadedSize }} / {{ totalSize }} </template>
+                        </span>
+                        <span class="text-muted small ml-2 size-info" :class="{ invisible: uploadingCount === 0 }">
+                            • {{ uploadedSize }} / {{ totalSize }}
                         </span>
                     </div>
                 </div>
@@ -132,7 +134,25 @@ function showDetails() {
 .progress-summary {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.status-text {
+    white-space: nowrap;
+}
+
+.file-info {
+    white-space: nowrap;
+}
+
+.size-info {
+    white-space: nowrap;
+    min-width: 120px;
+
+    &.invisible {
+        visibility: hidden;
+    }
 }
 
 .progress-bar-container {
