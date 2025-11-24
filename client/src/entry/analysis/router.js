@@ -65,6 +65,7 @@ import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUser
 import PageView from "@/components/Page/PageView.vue";
 import PageForm from "@/components/PageDisplay/PageForm.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
+import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 // TODO: CustomToolEditor should be lazy-loaded to reduce bundle size (~7MB with Monaco).
 // Vue Router 3.x async component loading doesn't work correctly with Vite.
@@ -222,6 +223,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "about",
                         component: AboutGalaxy,
+                    },
+                    {
+                        path: "upload/:methodId",
+                        component: UploadMethodView,
+                        props: true,
                     },
                     {
                         path: "help/terms/:term",
