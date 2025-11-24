@@ -425,6 +425,43 @@ configuration).
 
 ![](file_source_rspace_configuration.png)
 
+#### `ascp`
+
+The `ascp` file source plugin provides high-speed file downloads using the Aspera FASP protocol.
+It requires the `ascp` binary to be installed and accessible on the Galaxy server.
+
+Example configuration for EBI SRA downloads:
+
+```yaml
+- type: ascp
+  id: ebi_aspera
+  label: "EBI Aspera Downloads"
+  doc: "High-speed downloads from EBI SRA using Aspera FASP protocol"
+  ascp_path: "ascp"  # Path to ascp binary
+  user: "era-fasp"
+  host: "fasp.sra.ebi.ac.uk"
+  port: 33001
+  rate_limit: "300m"  # Transfer rate limit (e.g., "300m" for 300 Mbps)
+  disable_encryption: true  # Disable encryption for maximum speed
+  # Retry and resume configuration (optional)
+  max_retries: 3
+  retry_base_delay: 2.0
+  retry_max_delay: 60.0
+  enable_resume: true
+  # SSH key - use either ssh_key_file OR ssh_key_content
+  ssh_key_file: "/path/to/ssh_key_file"  # path to key file
+  # OR
+  # ssh_key_content: |  # embed key content
+  #   -----BEGIN RSA PRIVATE KEY-----
+  #   ...
+  #   -----END RSA PRIVATE KEY-----
+```
+
+The plugin is **download-only** and supports automatic retry with exponential backoff for transient 
+network errors and can resume interrupted transfers. Both `ascp://` and `fasp://` URL schemes are supported.
+
+**Note:** The plugin does not support browsing directories or uploading files (`writable: false`, `browsable: false`).
+
 ### YAML Syntax
 
 ![galaxy.files.templates.models](file_source_templates.png)
