@@ -28,6 +28,18 @@ const profileUrl = computed(() => {
     }
     return config.value.oidc_profile_url || "";
 });
+const profileButtonLabel = computed(() => {
+    const providers = Object.keys(config.value.oidc) || [];
+    if (providers.length === 0 || providers === null) {
+        return null;
+    }
+    const providerConfig = config.value.oidc[providers[0]!];
+    const providerLabel = providerConfig.custom_button_text || providerConfig.label;
+    if (providerLabel) {
+        return `Update profile details at ${providerLabel}`;
+    }
+    return "Update profile details";
+});
 
 const buttonDisabled = computed(() => !isConfigLoaded.value || !profileUrl.value);
 </script>
@@ -74,7 +86,7 @@ const buttonDisabled = computed(() => !isConfigLoaded.value || !profileUrl.value
                     :disabled="buttonDisabled"
                     :href="profileUrl"
                     target="_blank">
-                    <span>{{ localize("Update profile details") }}</span>
+                    <span>{{ localize(profileButtonLabel) }}</span>
                     <span class="mr-1 fa fa-external-link-alt" />
                 </GButton>
             </div>
