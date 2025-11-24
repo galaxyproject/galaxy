@@ -49,7 +49,7 @@ vi.mock("@/components/BaseComponents/GButton.vue", () => ({
                         href: this.href,
                     },
                 },
-                this.$slots.default
+                this.$slots.default,
             );
         },
     },
