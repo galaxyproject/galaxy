@@ -5,41 +5,24 @@ import { computed } from "vue";
 
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadItem } from "./uploadState";
+import { useUploadState } from "./uploadState";
 
-interface Props {
-    uploads: UploadItem[];
-}
-
-const props = defineProps<Props>();
+const {
+    activeItems: uploads,
+    completedCount,
+    errorCount,
+    uploadingCount,
+    totalProgress,
+    totalSizeBytes,
+    uploadedSizeBytes,
+} = useUploadState();
 
 const emit = defineEmits<{
     (e: "show-details"): void;
 }>();
 
-const totalProgress = computed(() => {
-    if (props.uploads.length === 0) {
-        return 0;
-    }
-    const sum = props.uploads.reduce((acc, file) => acc + file.progress, 0);
-    return Math.round(sum / props.uploads.length);
-});
-
-const uploadingCount = computed(
-    () => props.uploads.filter((f) => f.status === "uploading" || f.status === "processing").length,
-);
-const completedCount = computed(() => props.uploads.filter((f) => f.status === "completed").length);
-const errorCount = computed(() => props.uploads.filter((f) => f.status === "error").length);
-
-const totalSize = computed(() => {
-    const bytes = props.uploads.reduce((sum, file) => sum + file.size, 0);
-    return bytesToString(bytes);
-});
-
-const uploadedSize = computed(() => {
-    const bytes = props.uploads.reduce((sum, file) => sum + (file.size * file.progress) / 100, 0);
-    return bytesToString(bytes);
-});
+const totalSize = computed(() => bytesToString(totalSizeBytes.value));
+const uploadedSize = computed(() => bytesToString(uploadedSizeBytes.value));
 
 const statusIcon = computed(() => {
     if (errorCount.value > 0) {
@@ -62,16 +45,16 @@ const statusClass = computed(() => {
 });
 
 const statusText = computed(() => {
-    if (uploadingCount.value > 0 || props.uploads.some((f) => f.status === "queued")) {
+    if (uploadingCount.value > 0 || uploads.value.some((f) => f.status === "queued")) {
         return "Uploading";
     }
-    if (props.uploads.length > 0 && completedCount.value === props.uploads.length) {
+    if (uploads.value.length > 0 && completedCount.value === uploads.value.length) {
         return "Upload Complete";
     }
     if (errorCount.value > 0) {
         return "Upload Issues";
     }
-    return props.uploads.length === 0 ? "No Uploads" : "Idle";
+    return uploads.value.length === 0 ? "No Uploads" : "Idle";
 });
 
 function showDetails() {

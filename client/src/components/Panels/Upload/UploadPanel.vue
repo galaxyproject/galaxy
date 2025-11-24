@@ -11,7 +11,6 @@ import type { UploadMethodConfig } from "./types";
 import { getAllUploadMethods } from "./uploadMethodRegistry";
 import { useUploadState } from "./uploadState";
 
-import UploadProgressDisplay from "./UploadProgressDisplay.vue";
 import UploadProgressIndicator from "./UploadProgressIndicator.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
@@ -20,11 +19,10 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const { config, isConfigLoaded } = useConfig();
-const { activeItems } = useUploadState();
+const { hasUploads } = useUploadState();
 
 const router = useRouter();
 const query = ref("");
-const showUploadDetailsModal = ref(false);
 const showGuidedModal = ref(false);
 const showAdvancedModal = ref(false);
 
@@ -93,7 +91,7 @@ function openGuidedMode() {
                 </BButton>
             </template>
             <template v-slot:header>
-                <UploadProgressIndicator :uploads="activeItems" @show-details="showUploadDetailsModal = true" />
+                <UploadProgressIndicator v-if="hasUploads" @show-details="router.push('/upload/progress')" />
                 <DelayedInput :delay="100" class="my-2" placeholder="Search upload methods" @change="query = $event" />
             </template>
             <ScrollList
@@ -127,39 +125,6 @@ function openGuidedMode() {
                 </template>
             </ScrollList>
         </ActivityPanel>
-
-        <GModal :show.sync="showUploadDetailsModal" title="Upload Status" size="medium" fixed-height>
-            <div class="upload-details-modal">
-                <template v-if="activeItems.length > 0">
-                    <div class="modal-summary mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>Uploads</strong>
-                                <span class="text-muted ml-2">
-                                    {{ activeItems.filter((i) => i.status === "completed").length }}/{{
-                                        activeItems.length
-                                    }}
-                                    files completed
-                                </span>
-                            </div>
-                            <div class="text-muted small">
-                                <span
-                                    v-if="
-                                        activeItems.some((i) => i.status === 'uploading' || i.status === 'processing')
-                                    ">
-                                    {{ activeItems.filter((i) => i.status === "error").length }} error(s)
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <UploadProgressDisplay :uploads="activeItems" />
-                </template>
-                <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
-                    <p class="lead mb-2">No uploads in progress.</p>
-                    <p class="small mb-3">Start a new upload using the Upload Activity.</p>
-                </div>
-            </div>
-        </GModal>
 
         <GModal :show.sync="showGuidedModal" title="Guided Import Wizard" fullscreen>
             <div class="guided-wizard-content">
