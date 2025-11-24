@@ -16,7 +16,7 @@ export interface UploadMethodConfig {
     description: string;
     icon: IconDefinition;
     headerAction: string;
-    isUploadToHistory: boolean;
+    requiresTargetHistory: boolean;
     // The following warning is disabled until Vue 3 migration is complete and types can be properly defined
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: any;
