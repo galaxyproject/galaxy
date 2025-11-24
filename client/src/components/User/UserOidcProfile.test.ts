@@ -4,10 +4,12 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
+import VueRouter from "vue-router";
 
 import { useUserStore } from "@/stores/userStore";
 
 import UserOidcProfile from "./UserOidcProfile.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const PROFILE_URL = "https://profile.example.com";
 const MOCK_CONFIG = {
@@ -26,45 +28,19 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-vi.mock("@/components/Common/BreadcrumbHeading.vue", () => ({
-    default: {
-        name: "BreadcrumbHeading",
-        props: ["items"],
-        render() {
-            return null;
-        },
-    },
-}));
-
-vi.mock("@/components/BaseComponents/GButton.vue", () => ({
-    default: {
-        name: "GButton",
-        props: ["href"],
-        render(h) {
-            return h(
-                "a",
-                {
-                    attrs: {
-                        "data-test": "profile-link",
-                        href: this.href,
-                    },
-                },
-                this.$slots.default,
-            );
-        },
-    },
-}));
-
 const localVue = getLocalVue();
+localVue.use(VueRouter);
 
 function mountProfile(userOverrides = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     const userStore = useUserStore(pinia);
     userStore.currentUser = getFakeRegisteredUser(userOverrides);
+    const router = new VueRouter();
 
     return mount(UserOidcProfile, {
         localVue,
         pinia,
+        router,
         stubs: {
             FontAwesomeIcon: true,
         },
@@ -76,7 +52,7 @@ describe("UserOidcProfile", () => {
         const wrapper = mountProfile();
         await wrapper.vm.$nextTick();
 
-        const profileButton = wrapper.findComponent({ name: "GButton" });
+        const profileButton = wrapper.findComponent(GButton);
         expect(profileButton.exists()).toBe(true);
         expect(profileButton.props("href")).toBe(PROFILE_URL);
     });
