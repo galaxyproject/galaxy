@@ -1,8 +1,20 @@
-"""Galaxy file source plugin for Aspera ascp high-speed transfers.
+"""Galaxy file source plugin for Aspera ascp transfers.
 
 This plugin provides download-only functionality using the Aspera ascp command-line tool.
 It is designed as a configured plugin (not stock) requiring explicit configuration with
 embedded SSH keys.
+
+Architecture:
+- ascp.py (this file): Galaxy plugin configuration and lifecycle management
+- ascp_fsspec.py: Custom fsspec.AbstractFileSystem implementation
+
+The two-layer design separates concerns:
+- Galaxy integration (Pydantic models, template expansion, plugin registration)
+- Transfer implementation (ascp command wrapping, retry logic, error handling)
+
+Note: This is Galaxy's only custom fsspec implementation. Other file sources
+(s3fs, webdav, etc.) use existing fsspec packages from PyPI. This custom
+implementation was necessary because no fsspec implementation exists for ascp.
 
 The implementation is extensible to support future enhancements such as:
 - ENA-specific handling with fallback to FTP
@@ -23,11 +35,7 @@ from galaxy.files.sources._fsspec import (
     FsspecFilesSource,
 )
 from galaxy.util.config_templates import TemplateExpansion
-
-try:
-    from .ascp_fsspec import AscpFileSystem
-except ImportError:
-    AscpFileSystem = None  # type: ignore[assignment,misc]
+from galaxy.files.sources.ascp_fsspec import AscpFileSystem
 
 
 log = logging.getLogger(__name__)
@@ -42,7 +50,10 @@ class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigura
     This configuration supports template expansion for all fields, allowing
     dynamic configuration based on user context or other variables.
 
-    Note: ssh_key_content is required for SSH authentication.
+    Note: ssh_key_content is required for SSH authentication. Key content (not file paths)
+    is used because Galaxy jobs often run on clusters that don't mount Galaxy's root or
+    configuration directories. The configuration block is copied to the job's directory,
+    but referenced key paths wouldn't be accessible.
     """
 
     ascp_path: Union[str, TemplateExpansion] = "ascp"
@@ -63,7 +74,10 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
 
     This configuration contains the actual values after template expansion.
 
-    Note: ssh_key_content is required for SSH authentication.
+    Note: ssh_key_content is required for SSH authentication. Key content (not file paths)
+    is used because Galaxy jobs often run on clusters that don't mount Galaxy's root or
+    configuration directories. The configuration block is copied to the job's directory,
+    but referenced key paths wouldn't be accessible.
     """
 
     ascp_path: str = "ascp"
@@ -99,10 +113,19 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
     - The key content is automatically written to a temporary file during transfers
     - Temporary key files are securely cleaned up after each transfer
 
+    Note: SSH key content (not file paths) is required because Galaxy jobs often run on
+    clusters that don't mount Galaxy's root or configuration directories. The configuration
+    block is copied to the job's directory, but referenced key paths wouldn't be accessible.
+
     The plugin is designed to be extensible for future enhancements such as:
     - Subclassing for ENA-specific handling
     - Fallback mechanisms to alternative protocols
     - Upload and browsing capabilities
+
+    Implementation Details:
+    This plugin uses a custom fsspec filesystem implementation (AscpFileSystem)
+    defined in ascp_fsspec.py. The two-layer design separates Galaxy integration
+    from the actual transfer implementation.
     """
 
     plugin_type = PLUGIN_TYPE
@@ -130,13 +153,7 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
 
         Returns:
             Configured AscpFileSystem instance
-
-        Raises:
-            Exception: If AscpFileSystem module is not available
         """
-        if AscpFileSystem is None:
-            raise self.required_package_exception
-
         config = context.config
 
         return AscpFileSystem(
