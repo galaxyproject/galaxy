@@ -78,7 +78,7 @@ describe("ActivitySettings", () => {
         expect(items.length).toBe(1);
         const checkbox = items.at(0).find("[data-title='Hide in Activity Bar']");
         expect(checkbox.exists()).toBeTruthy();
-        const icon = wrapper.find("[icon='activity-test-icon'");
+        const icon = wrapper.find("[icon='activity-test-icon']");
         expect(icon.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeTruthy();
         checkbox.trigger("click");
