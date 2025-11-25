@@ -11,10 +11,7 @@ The implementation is extensible to support future enhancements such as:
 """
 
 import logging
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Union
 
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
@@ -45,12 +42,11 @@ class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigura
     This configuration supports template expansion for all fields, allowing
     dynamic configuration based on user context or other variables.
 
-    Note: Exactly one of ssh_key_file or ssh_key_content must be provided.
+    Note: ssh_key_content is required for SSH authentication.
     """
 
     ascp_path: Union[str, TemplateExpansion] = "ascp"
-    ssh_key_file: Union[str, TemplateExpansion, None] = None  # Path to SSH key file
-    ssh_key_content: Union[str, TemplateExpansion, None] = None  # SSH key content as string
+    ssh_key_content: Union[str, TemplateExpansion]  # SSH key content as string (required)
     user: Union[str, TemplateExpansion]  # Required field
     host: Union[str, TemplateExpansion]  # Required field
     rate_limit: Union[str, TemplateExpansion] = "300m"
@@ -67,12 +63,11 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
 
     This configuration contains the actual values after template expansion.
 
-    Note: Exactly one of ssh_key_file or ssh_key_content must be provided.
+    Note: ssh_key_content is required for SSH authentication.
     """
 
     ascp_path: str = "ascp"
-    ssh_key_file: Optional[str] = None  # Path to SSH key file
-    ssh_key_content: Optional[str] = None  # SSH key content as string
+    ssh_key_content: str  # SSH key content as string (required)
     user: str  # Required field
     host: str  # Required field
     rate_limit: str = "300m"
@@ -138,18 +133,9 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
 
         config = context.config
 
-        # Validate that exactly one of ssh_key_file or ssh_key_content is provided
-        if config.ssh_key_file and config.ssh_key_content:
-            raise ValueError("Cannot specify both ssh_key_file and ssh_key_content. Please provide only one.")
-        if not config.ssh_key_file and not config.ssh_key_content:
-            raise ValueError("Must specify either ssh_key_file or ssh_key_content for SSH authentication.")
-
-        # Determine which key parameter to use
-        ssh_key = config.ssh_key_file if config.ssh_key_file else config.ssh_key_content
-
         return AscpFileSystem(
             ascp_path=config.ascp_path,
-            ssh_key=ssh_key,
+            ssh_key=config.ssh_key_content,
             user=config.user,
             host=config.host,
             rate_limit=config.rate_limit,

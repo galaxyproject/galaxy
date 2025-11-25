@@ -448,13 +448,11 @@ Example configuration for EBI SRA downloads:
   retry_base_delay: 2.0
   retry_max_delay: 60.0
   enable_resume: true
-  # SSH key - use either ssh_key_file OR ssh_key_content
-  ssh_key_file: "/path/to/ssh_key_file"  # path to key file
-  # OR
-  # ssh_key_content: |  # embed key content
-  #   -----BEGIN RSA PRIVATE KEY-----
-  #   ...
-  #   -----END RSA PRIVATE KEY-----
+  # SSH key content (required) - embed the key directly in the configuration
+  ssh_key_content: |
+    -----BEGIN RSA PRIVATE KEY-----
+    <YOUR ACTUAL SSH PRIVATE KEY CONTENT>
+    -----END RSA PRIVATE KEY-----
 ```
 
 The plugin is **download-only** and supports automatic retry with exponential backoff for transient 
