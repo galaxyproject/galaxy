@@ -47,6 +47,16 @@ if (typeof window !== "undefined" && window.navigator) {
     });
 }
 
+// Ensure document has proper doctype to avoid quirks mode (needed for KaTeX)
+if (typeof document !== "undefined" && !document.doctype) {
+    const doctype = document.implementation.createDocumentType("html", "", "");
+    if (document.childNodes.length > 0) {
+        document.insertBefore(doctype, document.childNodes[0]);
+    } else {
+        document.appendChild(doctype);
+    }
+}
+
 // Replace setImmediate with setTimeout to fix certain tests
 if (!global.setImmediate) {
     Object.defineProperty(global, "setImmediate", {
@@ -126,6 +136,13 @@ const failOnConsole = (await import("vitest-fail-on-console")).default;
 failOnConsole({
     shouldFailOnError: true,
     shouldFailOnWarn: true,
+    silenceMessage: (message: string) => {
+        // KaTeX warns about quirks mode at module load time before we can set doctype
+        if (message.includes("KaTeX doesn't work in quirks mode")) {
+            return true;
+        }
+        return false;
+    },
 });
 
 // Import and setup MSW if needed
