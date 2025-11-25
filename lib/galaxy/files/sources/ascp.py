@@ -83,18 +83,24 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
     """Galaxy file source plugin for Aspera ascp transfers.
 
     This plugin provides high-speed file downloads using the Aspera ascp protocol.
-    It requires the ascp binary to be installed and accessible, along with appropriate
-    SSH credentials configured.
+    It requires the ascp binary to be installed and accessible, along with SSH
+    private key content embedded in the configuration.
 
     Features:
     - Download-only functionality (no upload or browsing in base implementation)
     - Configurable transfer rate limiting
     - Optional encryption disabling for maximum speed
     - Support for both ascp:// and fasp:// URL schemes
+    - Automatic retry with exponential backoff for transient failures
+    - Resume support for interrupted transfers
+
+    Configuration:
+    - ssh_key_content: Required field containing the SSH private key as a string
+    - The key content is automatically written to a temporary file during transfers
+    - Temporary key files are securely cleaned up after each transfer
 
     The plugin is designed to be extensible for future enhancements such as:
     - Subclassing for ENA-specific handling
-    - Retry logic with exponential backoff
     - Fallback mechanisms to alternative protocols
     - Upload and browsing capabilities
     """

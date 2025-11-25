@@ -39,7 +39,7 @@ class AscpFileSystem(AbstractFileSystem):
 
     Args:
         ascp_path: Path to the ascp binary (default: "ascp")
-        ssh_key: SSH private key as string content OR path to key file
+        ssh_key: SSH private key content as a string (required)
         user: Username for ascp connection (e.g., "era-fasp")
         host: Hostname (e.g., "fasp.sra.ebi.ac.uk")
         rate_limit: Transfer rate limit (default: "300m")
