@@ -2,7 +2,7 @@ from unittest import SkipTest
 
 from galaxy.tool_util.deps.mulled.get_tests import (
     deep_test_search,
-    find_anaconda_versions,
+    find_anaconda_download_url,
     get_alternative_versions,
     get_anaconda_url,
     get_commands_from_yaml,
@@ -11,7 +11,6 @@ from galaxy.tool_util.deps.mulled.get_tests import (
     hashed_test_search,
     main_test_search,
     open_recipe_file,
-    prepend_anaconda_url,
 )
 from galaxy.util import smart_str
 from ..util import external_dependency_management
@@ -49,11 +48,6 @@ def test_get_anaconda_url():
     assert url == "https://anaconda.org/bioconda/samtools/1.7/download/linux-64/samtools-1.7-1.tar.bz2"
 
 
-def test_prepend_anaconda_url():
-    url = prepend_anaconda_url("/bioconda/samtools/0.1.12/download/linux-64/samtools-0.1.12-2.tar.bz2")
-    assert url == "https://anaconda.org/bioconda/samtools/0.1.12/download/linux-64/samtools-0.1.12-2.tar.bz2"
-
-
 @external_dependency_management
 def test_get_test_from_anaconda():
     # test old fashion tar.bz2 package
@@ -81,9 +75,20 @@ def test_get_test_from_anaconda():
 
 
 @external_dependency_management
-def test_find_anaconda_versions():
-    versions = find_anaconda_versions("2pg_cartesian")
-    assert "/bioconda/2pg_cartesian/1.0.1/download/linux-64/2pg_cartesian-1.0.1-0.tar.bz2" in versions
+def test_find_anaconda_download_url():
+    download_url = find_anaconda_download_url("2pg_cartesian", "1.0.0")
+    assert download_url is None
+    download_url = find_anaconda_download_url("2pg_cartesian", "1.0.1")
+    assert download_url is not None
+    assert download_url.startswith(
+        "https://api.anaconda.org/download/bioconda/2pg_cartesian/1.0.1/linux-64/2pg_cartesian-1.0.1-"
+    )
+    download_url = find_anaconda_download_url("2pg_cartesian", "1.0.1", "0")
+    assert download_url is not None
+    assert (
+        download_url
+        == "https://api.anaconda.org/download/bioconda/2pg_cartesian/1.0.1/linux-64/2pg_cartesian-1.0.1-0.tar.bz2"
+    )
 
 
 @external_dependency_management
