@@ -83,13 +83,11 @@
   retry_max_delay: 60.0  # Maximum delay between retries
   enable_resume: true  # Enable resume for interrupted transfers
   # SSH private key for authentication (download ENA key from: https://www.ebi.ac.uk/ena/browser/about/ascp)
-  # Option 1: Provide path to key file (recommended)
-  ssh_key_file: "/path/to/your/ssh_key_file"
-  # Option 2: Embed key content directly (use ssh_key_content instead of ssh_key_file)
-  # ssh_key_content: |
-  #   -----BEGIN RSA PRIVATE KEY-----
-  #   <YOUR ACTUAL SSH PRIVATE KEY CONTENT>
-  #   -----END RSA PRIVATE KEY-----
+  # Embed the key content directly in the configuration
+  ssh_key_content: |
+    -----BEGIN RSA PRIVATE KEY-----
+    <YOUR ACTUAL SSH PRIVATE KEY CONTENT>
+    -----END RSA PRIVATE KEY-----
   # Note: This plugin is download-only (writable: false, browsable: false)
 
 # Example: Custom Aspera endpoint with encryption enabled
