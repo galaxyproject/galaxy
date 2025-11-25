@@ -199,8 +199,6 @@
     "happy-dom": "^20.0.10",
     "ignore-loader": "^0.1.2",
     "imports-loader": "^5.0.0",
-    "jsdom": "^27.2.0",
-    "jsdom-worker": "^0.3.0",
     "json-loader": "^0.5.7",
     "mini-css-extract-plugin": "^2.9.2",
     "msw": "^2.3.4",
