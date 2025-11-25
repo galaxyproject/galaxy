@@ -67,6 +67,19 @@ Object.defineProperty(window, "IntersectionObserver", {
     value: MockIntersectionObserver,
 });
 
+// Mock ResizeObserver (not fully implemented in happy-dom)
+class MockResizeObserver {
+    observe = vi.fn();
+    disconnect = vi.fn();
+    unobserve = vi.fn();
+}
+
+Object.defineProperty(window, "ResizeObserver", {
+    writable: true,
+    configurable: true,
+    value: MockResizeObserver,
+});
+
 // Mock HTMLDialogElement methods if not available
 if (typeof HTMLDialogElement !== "undefined") {
     HTMLDialogElement.prototype.showModal = HTMLDialogElement.prototype.showModal || vi.fn();
