@@ -383,10 +383,10 @@ class TestAscpFilesSource:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".key") as key_file:
             key_file.write(TEST_SSH_KEY)
             key_file_path = key_file.name
-        
+
         try:
             os.chmod(key_file_path, 0o600)
-            
+
             config = {
                 "type": "ascp",
                 "id": "test_ascp",
@@ -529,7 +529,7 @@ class TestAscpRetryLogic:
 
                                     # First attempt should NOT have -k flag
                                     assert "-k" not in captured_commands[0]
-                                    
+
                                     # Second attempt (retry) SHOULD have -k 1 flag
                                     assert "-k" in captured_commands[1]
                                     k_index = captured_commands[1].index("-k")
@@ -684,32 +684,32 @@ class TestAscpRetryLogic:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".key") as key_file:
                 key_file.write(TEST_SSH_KEY)
                 key_file_path = key_file.name
-            
+
             try:
                 # Set proper permissions
                 os.chmod(key_file_path, 0o600)
-                
+
                 fs = AscpFileSystem(
                     ssh_key=key_file_path,  # Pass file path instead of content
                     user="test-user",
                     host="test.example.com",
                 )
-                
+
                 # Mock subprocess to verify the key file path is used directly
                 with patch("subprocess.run") as mock_run:
                     mock_run.return_value = Mock(returncode=0, stderr="", stdout="")
-                    
+
                     with patch("os.unlink") as mock_unlink:
                         fs._get_file("/remote/file.txt", "/local/file.txt")
-                        
+
                         # Verify the original key file was NOT deleted
                         # (only temporary files should be deleted)
                         mock_unlink.assert_not_called()
-                        
+
                         # Verify ascp was called with the original key file path
                         call_args = mock_run.call_args[0][0]
                         assert key_file_path in call_args
-                        
+
             finally:
                 if os.path.exists(key_file_path):
                     os.unlink(key_file_path)
@@ -722,19 +722,19 @@ class TestAscpRetryLogic:
                 user="test-user",
                 host="test.example.com",
             )
-            
+
             # Mock subprocess and tempfile to verify temp file is created and cleaned up
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = Mock(returncode=0, stderr="", stdout="")
-                
+
                 with patch("tempfile.mkstemp", return_value=(123, "/tmp/test_key.key")) as mock_mkstemp:
                     with patch("os.fdopen"):
                         with patch("os.chmod"):
                             with patch("os.unlink") as mock_unlink:
                                 fs._get_file("/remote/file.txt", "/local/file.txt")
-                                
+
                                 # Verify temp file was created
                                 mock_mkstemp.assert_called_once()
-                                
+
                                 # Verify temp file was cleaned up
                                 mock_unlink.assert_called_once_with("/tmp/test_key.key")

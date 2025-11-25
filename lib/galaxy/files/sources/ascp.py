@@ -44,7 +44,7 @@ class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigura
 
     This configuration supports template expansion for all fields, allowing
     dynamic configuration based on user context or other variables.
-    
+
     Note: Exactly one of ssh_key_file or ssh_key_content must be provided.
     """
 
@@ -66,7 +66,7 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
     """Resolved runtime configuration for Aspera ascp file source.
 
     This configuration contains the actual values after template expansion.
-    
+
     Note: Exactly one of ssh_key_file or ssh_key_content must be provided.
     """
 
@@ -139,7 +139,7 @@ class AscpFilesSource(
             raise self.required_package_exception
 
         config = context.config
-        
+
         # Validate that exactly one of ssh_key_file or ssh_key_content is provided
         if config.ssh_key_file and config.ssh_key_content:
             raise ValueError(
@@ -150,10 +150,10 @@ class AscpFilesSource(
             raise ValueError(
                 "Must specify either ssh_key_file or ssh_key_content for SSH authentication."
             )
-        
+
         # Determine which key parameter to use
         ssh_key = config.ssh_key_file if config.ssh_key_file else config.ssh_key_content
-        
+
         return AscpFileSystem(
             ascp_path=config.ascp_path,
             ssh_key=ssh_key,
@@ -209,5 +209,6 @@ class AscpFilesSource(
             context: Runtime context with configuration
         """
         super()._realize_to(source_path, native_path, context)
+
 
 __all__ = ("AscpFilesSource",)
