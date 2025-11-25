@@ -217,7 +217,9 @@ class TestAscpFileSystem:
     @patch("os.fdopen")
     @patch("os.unlink")
     @patch("os.close")
-    def test_key_cleanup_on_error(self, mock_close, mock_unlink, mock_fdopen, mock_chmod, mock_mkstemp, mock_subprocess):
+    def test_key_cleanup_on_error(
+        self, mock_close, mock_unlink, mock_fdopen, mock_chmod, mock_mkstemp, mock_subprocess
+    ):
         """Test that temporary key file is cleaned up even on error."""
         mock_mkstemp.return_value = (123, "/tmp/test_key.key")
         mock_file = MagicMock()
@@ -408,7 +410,10 @@ class TestAscpFilesSource:
                 try:
                     file_sources = configured_file_sources(config_file)
                     # Should load successfully
-                    assert file_sources.get_file_source_path("ascp://test.example.com/path/to/file").file_source.id == "test_ascp"
+                    assert (
+                        file_sources.get_file_source_path("ascp://test.example.com/path/to/file").file_source.id
+                        == "test_ascp"
+                    )
                 finally:
                     os.unlink(config_file)
         finally:

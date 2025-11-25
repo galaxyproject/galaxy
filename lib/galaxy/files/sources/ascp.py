@@ -84,9 +84,7 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
     enable_resume: bool = True
 
 
-class AscpFilesSource(
-    FsspecFilesSource[AscpFilesSourceTemplateConfiguration, AscpFilesSourceConfiguration]
-):
+class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, AscpFilesSourceConfiguration]):
     """Galaxy file source plugin for Aspera ascp transfers.
 
     This plugin provides high-speed file downloads using the Aspera ascp protocol.
@@ -142,14 +140,9 @@ class AscpFilesSource(
 
         # Validate that exactly one of ssh_key_file or ssh_key_content is provided
         if config.ssh_key_file and config.ssh_key_content:
-            raise ValueError(
-                "Cannot specify both ssh_key_file and ssh_key_content. "
-                "Please provide only one."
-            )
+            raise ValueError("Cannot specify both ssh_key_file and ssh_key_content. " "Please provide only one.")
         if not config.ssh_key_file and not config.ssh_key_content:
-            raise ValueError(
-                "Must specify either ssh_key_file or ssh_key_content for SSH authentication."
-            )
+            raise ValueError("Must specify either ssh_key_file or ssh_key_content for SSH authentication.")
 
         # Determine which key parameter to use
         ssh_key = config.ssh_key_file if config.ssh_key_file else config.ssh_key_content

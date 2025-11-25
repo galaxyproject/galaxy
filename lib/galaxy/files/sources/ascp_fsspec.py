@@ -144,8 +144,7 @@ class AscpFileSystem(AbstractFileSystem):
 
         # Should not reach here, but just in case
         raise MessageException(
-            f"Failed to download {rpath} after {self.max_retries} attempts. "
-            f"Last error: {last_exception}"
+            f"Failed to download {rpath} after {self.max_retries} attempts. " f"Last error: {last_exception}"
         )
 
     def _execute_ascp_transfer(self, rpath: str, lpath: str, attempt: int) -> None:
@@ -196,10 +195,7 @@ class AscpFileSystem(AbstractFileSystem):
             stat_info = os.stat(key_path)
             mode = stat_info.st_mode & 0o777
             if mode not in (0o600, 0o400):
-                log.warning(
-                    f"SSH key file {key_path} has permissions {oct(mode)}, "
-                    "ascp may require 0600 or 0400"
-                )
+                log.warning(f"SSH key file {key_path} has permissions {oct(mode)}, " "ascp may require 0600 or 0400")
 
         try:
             # If not using an existing file, create temporary file for key content
@@ -371,8 +367,7 @@ class AscpFileSystem(AbstractFileSystem):
             raise MessageException(f"Remote file not found: {remote_path}")
         elif "connection" in stderr.lower() or "network" in stderr.lower():
             raise MessageException(
-                f"Network error while downloading {remote_path}. "
-                "Please check your network connection and try again."
+                f"Network error while downloading {remote_path}. " "Please check your network connection and try again."
             )
         elif "timed out" in stderr.lower() or "timeout" in stderr.lower():
             raise MessageException(f"Transfer timed out for {remote_path}. Please try again later.")
@@ -380,8 +375,7 @@ class AscpFileSystem(AbstractFileSystem):
             # Generic error message
             error_msg = stderr or stdout or "Unknown error"
             raise MessageException(
-                f"ascp transfer failed for {remote_path} with exit code {result.returncode}. "
-                f"Error: {error_msg}"
+                f"ascp transfer failed for {remote_path} with exit code {result.returncode}. " f"Error: {error_msg}"
             )
 
     def _sanitize_cmd_for_log(self, cmd: list[str]) -> str:
