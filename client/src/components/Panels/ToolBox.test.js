@@ -2,9 +2,9 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setMockConfig } from "@/composables/__mocks__/config";
 import toolsList from "@/components/ToolsView/testData/toolsList";
 import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel";
+import { setMockConfig } from "@/composables/__mocks__/config";
 
 import { createSortedResultPanel, filterTools } from "./utilities";
 

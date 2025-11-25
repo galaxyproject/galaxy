@@ -1,5 +1,5 @@
-import { ref } from "vue";
 import { vi } from "vitest";
+import { ref } from "vue";
 
 // Default mock config values that tests can override
 const mockConfig = ref({
