@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { faCloudUploadAlt, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { faCloudUploadAlt, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormCheckbox, BFormInput, BFormSelect, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { useFileDrop } from "@/composables/fileDrop";
@@ -11,7 +12,6 @@ import type { UploadMethodComponent, UploadMethodConfig } from "../types";
 import { useUploadService } from "../uploadService";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GTip from "@/components/BaseComponents/GTip.vue";
 
 interface Props {
     method: UploadMethodConfig;
@@ -26,40 +26,42 @@ const emit = defineEmits<{
 
 const uploadService = useUploadService();
 
-// Configuration for defaults (extensions & dbkeys)
-const { defaultDbKey, defaultExtension } = ((): any => {
-    // lightweight wrapper using composable; we only need defaults
-    const cfg = useUploadConfigurations(undefined) as any;
-    return {
-        defaultDbKey: cfg.defaultDbKey?.value,
-        defaultExtension: cfg.defaultExtension?.value,
-    };
-})();
+const {
+    configOptions,
+    effectiveExtensions,
+    listDbKeys,
+    ready: configurationsReady,
+} = useUploadConfigurations(undefined);
 
-// Metadata controls
-const selectedExtension = ref<string>(defaultExtension || "auto");
-const selectedDbKey = ref<string>(defaultDbKey || "?");
-const spaceToTab = ref(false);
-const toPosixLines = ref(false);
-const deferred = ref(false);
+interface FileWithMetadata {
+    file: File;
+    name: string;
+    extension: string;
+    dbKey: string;
+    spaceToTab: boolean;
+    toPosixLines: boolean;
+}
 
-const selectedFiles = ref<File[]>([]);
+const selectedFiles = ref<FileWithMetadata[]>([]);
 const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 
 const hasFiles = computed(() => selectedFiles.value.length > 0);
 const totalSize = computed(() => {
-    const bytes = selectedFiles.value.reduce((sum, file) => sum + file.size, 0);
+    const bytes = selectedFiles.value.reduce((sum, item) => sum + item.file.size, 0);
     return bytesToString(bytes);
 });
 
-watch(
-    hasFiles,
-    (ready) => {
-        emit("ready", ready);
-    },
-    { immediate: true },
-);
+const tableFields = [
+    { key: "name", label: "Name", sortable: false, tdClass: "file-name-cell" },
+    { key: "extension", label: "Type", sortable: false },
+    { key: "dbKey", label: "Database", sortable: false },
+    { key: "size", label: "Size", sortable: false },
+    { key: "options", label: "Options", sortable: false },
+    { key: "actions", label: "", sortable: false, tdClass: "text-right" },
+];
+
+watch(hasFiles, (ready) => emit("ready", ready), { immediate: true });
 
 function onDrop(evt: DragEvent) {
     if (evt.dataTransfer?.files) {
@@ -67,74 +69,72 @@ function onDrop(evt: DragEvent) {
     }
 }
 
-function onDropCancel(_evt: DragEvent) {
-    // No-op: if user drops outside the drop zone, we don't need to do anything
-}
+const { isFileOverDropZone } = useFileDrop(dropZoneElement, onDrop, () => {}, false);
 
-const { isFileOverDropZone } = useFileDrop(dropZoneElement, onDrop, onDropCancel, false);
-
-function addFiles(fileList: FileList) {
-    const newFiles = Array.from(fileList);
-
-    // Filter out duplicates by checking file name and size
-    const uniqueNewFiles = newFiles.filter((newFile) => {
-        return !selectedFiles.value.some(
-            (existingFile) => existingFile.name === newFile.name && existingFile.size === newFile.size,
-        );
-    });
-
-    selectedFiles.value = [...selectedFiles.value, ...uniqueNewFiles];
-}
-
-function addFileFromInput(eventTarget: EventTarget | null) {
-    if (!eventTarget) {
+function addFiles(files: FileList | File[] | null) {
+    if (!files) {
         return;
     }
-    const { files } = eventTarget as HTMLInputElement;
-    if (files) {
-        addFiles(files);
+
+    const fileArray = Array.from(files);
+
+    const defaultExtension = configOptions.value?.defaultExtension ?? "auto";
+    const defaultDbKey = configOptions.value?.defaultDbKey ?? "?";
+
+    for (const file of fileArray) {
+        selectedFiles.value.push({
+            file,
+            name: file.name,
+            extension: defaultExtension,
+            dbKey: defaultDbKey,
+            spaceToTab: false,
+            toPosixLines: false,
+        });
     }
 }
 
 function removeFile(index: number) {
-    selectedFiles.value = selectedFiles.value.filter((_, i) => i !== index);
+    selectedFiles.value.splice(index, 1);
 }
 
-function clearAll() {
-    selectedFiles.value = [];
+function addFileFromInput(eventTarget: EventTarget | null) {
+    const files = (eventTarget as HTMLInputElement)?.files;
+    if (files) {
+        addFiles(files);
+    }
 }
 
 function handleBrowse() {
     uploadFile.value?.click();
 }
 
-function startUpload() {
-    uploadService.enqueueLocalFiles(selectedFiles.value, {
-        uploadMethod: "local-file",
-        targetHistoryId: props.targetHistoryId,
-        elementDefaults: {
-            dbkey: selectedDbKey.value,
-            ext: selectedExtension.value,
-            space_to_tab: spaceToTab.value,
-            to_posix_lines: toPosixLines.value,
-            deferred: deferred.value,
-        },
-    });
+function clearAll() {
     selectedFiles.value = [];
 }
 
-defineExpose<UploadMethodComponent>({
-    startUpload,
-});
+function startUpload() {
+    const uploads = selectedFiles.value.map((item) => ({
+        uploadMode: "local-file" as const,
+        name: item.name,
+        size: item.file.size,
+        targetHistoryId: props.targetHistoryId,
+        dbkey: item.dbKey,
+        extension: item.extension,
+        spaceToTab: item.spaceToTab,
+        toPosixLines: item.toPosixLines,
+        deferred: false,
+        fileData: item.file,
+    }));
+
+    uploadService.enqueue(uploads);
+    selectedFiles.value = [];
+}
+
+defineExpose<UploadMethodComponent>({ startUpload });
 </script>
 
 <template>
-    <div class="local-file-upload data-galaxy-file-drop-target">
-        <!-- Help Text -->
-        <GTip
-            tips="You can select multiple files at once. **TODO**: support filename edit, datatype selection, and upload configuration..."
-            class="mb-3" />
-
+    <div class="local-file-upload">
         <!-- Drop Zone -->
         <div
             ref="dropZoneElement"
@@ -155,7 +155,7 @@ defineExpose<UploadMethodComponent>({
                 </GButton>
             </div>
 
-            <!-- File List -->
+            <!-- File Table with Metadata Editing -->
             <div v-else class="file-list">
                 <div class="file-list-header">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -163,20 +163,60 @@ defineExpose<UploadMethodComponent>({
                         <span class="text-muted">Total: {{ totalSize }}</span>
                     </div>
                 </div>
-                <div class="file-items-container">
-                    <div class="file-items">
-                        <div v-for="(file, index) in selectedFiles" :key="index" class="file-item">
-                            <div class="file-item-info">
-                                <span class="file-name" :title="file.name">{{ file.name }}</span>
-                                <span class="file-size text-muted">{{ bytesToString(file.size) }}</span>
+
+                <div class="file-table-container">
+                    <BTable
+                        :items="selectedFiles"
+                        :fields="tableFields"
+                        primary-key="name"
+                        hover
+                        striped
+                        small
+                        fixed
+                        show-empty
+                        thead-class="file-table-header">
+                        <template v-slot:cell(name)="{ item }">
+                            <BFormInput v-model="item.name" size="sm" :placeholder="item.file.name" />
+                        </template>
+
+                        <template v-slot:cell(extension)="{ item }">
+                            <BFormSelect v-model="item.extension" size="sm" :disabled="!configurationsReady">
+                                <option v-for="ext in effectiveExtensions" :key="item.name + ext.id" :value="ext.id">
+                                    {{ ext.text }}
+                                </option>
+                            </BFormSelect>
+                        </template>
+
+                        <template v-slot:cell(dbKey)="{ item }">
+                            <BFormSelect v-model="item.dbKey" size="sm" :disabled="!configurationsReady">
+                                <option v-for="dbKey in listDbKeys" :key="item.name + dbKey.id" :value="dbKey.id">
+                                    {{ dbKey.text }}
+                                </option>
+                            </BFormSelect>
+                        </template>
+
+                        <template v-slot:cell(size)="{ item }">
+                            {{ bytesToString(item.file.size) }}
+                        </template>
+
+                        <template v-slot:cell(options)="{ item }">
+                            <div class="d-flex flex-column">
+                                <BFormCheckbox v-model="item.spaceToTab" size="sm" class="mb-1">
+                                    Spaces→Tabs
+                                </BFormCheckbox>
+                                <BFormCheckbox v-model="item.toPosixLines" size="sm"> POSIX </BFormCheckbox>
                             </div>
-                            <button class="btn btn-sm btn-link text-danger p-0" @click="removeFile(index)">
-                                Remove
+                        </template>
+
+                        <template v-slot:cell(actions)="{ index }">
+                            <button class="btn btn-link text-danger p-0" @click="removeFile(index)">
+                                <FontAwesomeIcon :icon="faTimes" />
                             </button>
-                        </div>
-                    </div>
+                        </template>
+                    </BTable>
                 </div>
-                <div class="file-list-actions">
+
+                <div class="file-list-actions mt-2">
                     <GButton color="blue" @click="handleBrowse">
                         <FontAwesomeIcon :icon="faLaptop" class="mr-1" />
                         Add More Files
@@ -206,18 +246,6 @@ defineExpose<UploadMethodComponent>({
     display: flex;
     flex-direction: column;
     overflow: hidden;
-}
-
-.upload-instructions {
-    h5 {
-        font-weight: 600;
-        color: $text-color;
-    }
-
-    p {
-        margin-bottom: 0;
-        font-size: 0.9rem;
-    }
 }
 
 .drop-zone {
@@ -295,53 +323,22 @@ defineExpose<UploadMethodComponent>({
     margin-bottom: 1rem;
 }
 
-.file-items-container {
+.file-table-container {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-}
 
-.file-items {
-    padding-right: 0.5rem;
-    padding-bottom: 1rem;
-}
-
-.file-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    border-radius: $border-radius-base;
-    margin-bottom: 0.5rem;
-    background-color: $white;
-    border: 1px solid $border-color;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background-color: $gray-100;
-        border-color: $brand-primary;
+    :deep(.file-table-header) {
+        position: sticky;
+        top: 0;
+        background-color: $white;
+        z-index: 1;
     }
-}
 
-.file-item-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.file-name {
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: $text-color;
-}
-
-.file-size {
-    font-size: 0.85rem;
+    :deep(.file-name-cell) {
+        min-width: 200px;
+    }
 }
 
 .file-list-actions {

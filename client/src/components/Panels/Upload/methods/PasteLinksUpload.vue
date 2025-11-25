@@ -45,17 +45,21 @@ function handleStartUpload() {
     if (!hasUrls.value) {
         return;
     }
-    uploadService.enqueueUrls(urls.value, {
-        uploadMethod: "paste-links",
+
+    const uploads = urls.value.map((url) => ({
+        uploadMode: "paste-links" as const,
+        name: url, // TODO: make file name editable
+        size: 0,
         targetHistoryId: props.targetHistoryId,
-        elementDefaults: {
-            dbkey: selectedDbKey.value,
-            ext: selectedExtension.value,
-            space_to_tab: spaceToTab.value,
-            to_posix_lines: toPosixLines.value,
-            deferred: deferred.value,
-        },
-    });
+        dbkey: selectedDbKey.value,
+        extension: selectedExtension.value,
+        spaceToTab: spaceToTab.value,
+        toPosixLines: toPosixLines.value,
+        deferred: deferred.value,
+        url,
+    }));
+
+    uploadService.enqueue(uploads);
     urlText.value = "";
     emit("upload-start");
 }
