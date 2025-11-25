@@ -460,6 +460,10 @@ Example configuration for EBI SRA downloads:
 The plugin is **download-only** and supports automatic retry with exponential backoff for transient 
 network errors and can resume interrupted transfers. Both `ascp://` and `fasp://` URL schemes are supported.
 
+**SSH Key Configuration Note:** The plugin requires SSH key content (not file paths) because Galaxy jobs often 
+run on clusters that don't mount Galaxy's root or configuration directories. The configuration block is copied 
+to the job's directory, but referenced key paths wouldn't be accessible.
+
 **Note:** The plugin does not support browsing directories or uploading files (`writable: false`, `browsable: false`).
 
 ### YAML Syntax
