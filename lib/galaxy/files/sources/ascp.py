@@ -140,7 +140,7 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
 
         # Validate that exactly one of ssh_key_file or ssh_key_content is provided
         if config.ssh_key_file and config.ssh_key_content:
-            raise ValueError("Cannot specify both ssh_key_file and ssh_key_content. " "Please provide only one.")
+            raise ValueError("Cannot specify both ssh_key_file and ssh_key_content. Please provide only one.")
         if not config.ssh_key_file and not config.ssh_key_content:
             raise ValueError("Must specify either ssh_key_file or ssh_key_content for SSH authentication.")
 
