@@ -2421,6 +2421,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/copy_contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy datasets or dataset collections to other histories. */
+        post: operations["history_contents__copy_contents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/custom_builds_metadata": {
         parameters: {
             query?: never;
@@ -8205,6 +8222,27 @@ export interface components {
          */
         ConvertedDatasetsMap: {
             [key: string]: string;
+        };
+        /** CopyDatasetsPayload */
+        CopyDatasetsPayload: {
+            /** Source Content */
+            source_content: components["schemas"]["CopyDatasetsPayloadSourceEntry"][];
+            /** Target History Ids */
+            target_history_ids?: string[] | null;
+            /** Target History Name */
+            target_history_name?: string | null;
+        };
+        /** CopyDatasetsPayloadSourceEntry */
+        CopyDatasetsPayloadSourceEntry: {
+            /** Id */
+            id: string;
+            /** Type */
+            type: string;
+        };
+        /** CopyDatasetsResponse */
+        CopyDatasetsResponse: {
+            /** History Ids */
+            history_ids: string[];
         };
         /** CreateDataLandingPayload */
         CreateDataLandingPayload: {
@@ -32447,6 +32485,54 @@ export interface operations {
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents__copy_contents: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyDatasetsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyDatasetsResponse"];
                 };
             };
             /** @description Request Error */

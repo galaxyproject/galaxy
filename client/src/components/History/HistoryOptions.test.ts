@@ -14,8 +14,9 @@ const localVue = getLocalVue();
 const expectedOptions = [
     "Show Histories Side-by-Side",
     "Resume Paused Jobs",
-    "Copy this History",
-    "Delete this History",
+    "Copy History",
+    "Copy Datasets",
+    "Delete History",
     "Export Tool References",
     "Export History to File",
     "Archive History",
@@ -25,12 +26,7 @@ const expectedOptions = [
 ];
 
 // options enabled for logged-out users
-const anonymousOptions = [
-    "Resume Paused Jobs",
-    "Delete this History",
-    "Export Tool References",
-    "Export History to File",
-];
+const anonymousOptions = ["Resume Paused Jobs", "Delete History", "Export Tool References", "Export History to File"];
 
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
