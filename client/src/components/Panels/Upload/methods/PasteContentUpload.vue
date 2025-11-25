@@ -108,20 +108,20 @@ function handleStartUpload() {
         return;
     }
 
-    validItems.forEach((item) => {
-        uploadService.enqueuePastedContent(item.content, {
-            uploadMethod: "paste-content",
-            targetHistoryId: props.targetHistoryId,
-            elementDefaults: {
-                dbkey: item.dbkey,
-                ext: item.ext,
-                space_to_tab: item.spaceToTab,
-                to_posix_lines: item.toPosixLines,
-                deferred: false,
-                name: item.name,
-            },
-        });
-    });
+    const uploads = validItems.map((item) => ({
+        uploadMode: "paste-content" as const,
+        name: item.name,
+        size: item.content.length,
+        targetHistoryId: props.targetHistoryId,
+        dbkey: item.dbkey,
+        extension: item.ext,
+        spaceToTab: item.spaceToTab,
+        toPosixLines: item.toPosixLines,
+        deferred: false,
+        content: item.content,
+    }));
+
+    uploadService.enqueue(uploads);
 
     // Reset to single empty item
     pasteItems.value = [
