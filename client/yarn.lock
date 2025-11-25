@@ -9475,10 +9475,10 @@ rimraf@^3.0.2:
   dependencies:
     glob "^7.1.3"
 
-ro-crate-zip-explorer@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.4.0.tgz#28e6a5a0c7dd7a7e5eb8ec5a271e8d108402ca62"
-  integrity sha512-23WC9WuJ+FMjOjC2uyXdT8IpZ/DYqWNqtMkFNgBtyqHLVXVY7nIvCgV+nMYPHPHnnDlr2m0fjQagXxd0xXiDUQ==
+ro-crate-zip-explorer@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/ro-crate-zip-explorer/-/ro-crate-zip-explorer-0.4.1.tgz#bc2b94e32de5390df2b1622a58442b022eb50bf6"
+  integrity sha512-nnO5NLiW3w7LsuP+CA4zl/FS+NqhGvvtijMzFh+0m6+uySNORU/iYwirGuPelX0s9rBJ5jPv37Z3y51zLr10Rg==
   dependencies:
     jszip "^3.10.1"
     pako "^2.1.0"
