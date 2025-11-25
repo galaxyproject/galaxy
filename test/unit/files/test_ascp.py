@@ -728,8 +728,8 @@ class TestAscpRetryLogic:
                 mock_run.return_value = Mock(returncode=0, stderr="", stdout="")
                 
                 with patch("tempfile.mkstemp", return_value=(123, "/tmp/test_key.key")) as mock_mkstemp:
-                    with patch("os.fdopen") as mock_fdopen:
-                        with patch("os.chmod") as mock_chmod:
+                    with patch("os.fdopen"):
+                        with patch("os.chmod"):
                             with patch("os.unlink") as mock_unlink:
                                 fs._get_file("/remote/file.txt", "/local/file.txt")
                                 

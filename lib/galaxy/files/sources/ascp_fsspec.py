@@ -161,9 +161,9 @@ class AscpFileSystem(AbstractFileSystem):
         """
         # Parse URL if provided, otherwise use configured host/user
         parsed_url = self._parse_url(rpath)
-        user = parsed_url.get("user") or self.user
-        host = parsed_url.get("host") or self.host
-        port = parsed_url.get("port") or self.port
+        user: str = parsed_url.get("user") or self.user  # type: ignore[assignment]
+        host: str = parsed_url.get("host") or self.host  # type: ignore[assignment]
+        port: int = parsed_url.get("port") or self.port  # type: ignore[assignment]
         remote_path = parsed_url.get("path", rpath)
 
         if not user or not host:

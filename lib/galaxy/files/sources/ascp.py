@@ -11,7 +11,10 @@ The implementation is extensible to support future enhancements such as:
 """
 
 import logging
-from typing import Union
+from typing import (
+    Optional,
+    Union,
+)
 
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
@@ -27,7 +30,7 @@ from galaxy.util.config_templates import TemplateExpansion
 try:
     from .ascp_fsspec import AscpFileSystem
 except ImportError:
-    AscpFileSystem = None
+    AscpFileSystem = None  # type: ignore[assignment,misc]
 
 
 log = logging.getLogger(__name__)
@@ -68,8 +71,8 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
     """
 
     ascp_path: str = "ascp"
-    ssh_key_file: str | None = None  # Path to SSH key file
-    ssh_key_content: str | None = None  # SSH key content as string
+    ssh_key_file: Optional[str] = None  # Path to SSH key file
+    ssh_key_content: Optional[str] = None  # SSH key content as string
     user: str  # Required field
     host: str  # Required field
     rate_limit: str = "300m"
