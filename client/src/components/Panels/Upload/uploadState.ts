@@ -1,234 +1,183 @@
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
-import type { FetchDatasetHash, UploadElement } from "@/api/upload";
+import type { FetchDatasetHash } from "@/api/upload";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 import type { UploadMode } from "./types";
 
+const LOCAL_STORAGE_KEY = "uploadPanel.activeUploads";
+
+/** Upload lifecycle status */
 export type UploadStatus = "queued" | "uploading" | "processing" | "completed" | "error";
 
-// Internal upload item tracked in state
-export interface UploadItem {
+/** Internal state tracking for an upload */
+interface UploadState {
     id: string;
-    uploadMethod: UploadMode;
-    element: UploadElement; // discriminated by element.src
-    targetHistoryId: string;
-    fileData?: File; // only for src === "files"
-    name: string; // convenient UI label (filename, URL, or "Pasted content")
-    size: number; // bytes, 0 if unknown
-    progress: number; // 0..100
     status: UploadStatus;
+    progress: number;
     error?: string;
     createdAt: number;
 }
 
-const LOCAL_STORAGE_KEY = "uploadPanel.activeUploads";
-
-// Shared defaults/options used when enqueueing items
-export interface ElementDefaults {
-    dbkey: string;
-    ext: string;
-    space_to_tab: boolean;
-    to_posix_lines: boolean;
-    deferred: boolean;
-    name?: string | number | boolean | null;
-    hashes?: FetchDatasetHash[] | null;
-}
-
-export interface EnqueueOptions {
-    uploadMethod: UploadMode;
+/** Common properties shared by all upload item types */
+interface UploadItemCommon {
+    uploadMode: UploadMode;
+    name: string;
+    size: number;
     targetHistoryId: string;
-    elementDefaults: ElementDefaults;
+    dbkey: string;
+    extension: string;
+    spaceToTab: boolean;
+    toPosixLines: boolean;
+    deferred: boolean;
+    hashes?: FetchDatasetHash[];
 }
 
-export type NewUploadItem = Omit<UploadItem, "id" | "createdAt" | "progress" | "status" | "error">;
+/** Upload item from a local file */
+export interface LocalFileUploadItem extends UploadItemCommon {
+    uploadMode: "local-file";
+    /** File handle (not persisted in localStorage) */
+    fileData?: File;
+}
+
+/** Upload item from pasted text content */
+export interface PastedContentUploadItem extends UploadItemCommon {
+    uploadMode: "paste-content";
+    content: string;
+}
+
+/** Upload item from a URL */
+export interface UrlUploadItem extends UploadItemCommon {
+    uploadMode: "paste-links";
+    url: string;
+}
+
+export type NewUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem;
+
+type UploadItem = NewUploadItem & UploadState;
 
 function generateId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function loadPersistedItems(): UploadItem[] {
-    try {
-        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (!raw) {
-            return [];
-        }
-        const parsed = JSON.parse(raw) as UploadItem[];
-        // On reload, we cannot resume local File handles automatically; keep items but leave fileData undefined
-        return parsed.map((i) => ({ ...i, fileData: undefined }));
-    } catch {
-        return [];
+// Shared state - initialized lazily on first use
+let activeItems: ReturnType<typeof useUserLocalStorage<UploadItem[]>> | null = null;
+
+function getActiveItems() {
+    if (!activeItems) {
+        activeItems = useUserLocalStorage<UploadItem[]>(LOCAL_STORAGE_KEY, []);
     }
+    return activeItems;
 }
 
-function persistItems(items: UploadItem[]) {
-    try {
-        // Do not persist File handles
-        const serializable = items.map(({ fileData: _fd, ...rest }) => rest);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serializable));
-    } catch {
-        // ignore persistence failures
-    }
-}
-
-const activeItems = ref<UploadItem[]>(loadPersistedItems());
-
-const hasUploads = computed(() => activeItems.value.length > 0);
-
-// Computed statistics
-const completedCount = computed(() => activeItems.value.filter((i) => i.status === "completed").length);
-const errorCount = computed(() => activeItems.value.filter((i) => i.status === "error").length);
-const uploadingCount = computed(
-    () => activeItems.value.filter((i) => i.status === "uploading" || i.status === "processing").length,
-);
-const isUploading = computed(() =>
-    activeItems.value.some((i) => i.status === "uploading" || i.status === "processing"),
-);
-
-const totalProgress = computed(() => {
-    if (activeItems.value.length === 0) {
-        return 0;
-    }
-    const sum = activeItems.value.reduce((acc, file) => acc + file.progress, 0);
-    return Math.round(sum / activeItems.value.length);
-});
-
-const totalSizeBytes = computed(() => activeItems.value.reduce((sum, file) => sum + file.size, 0));
-
-const uploadedSizeBytes = computed(() =>
-    activeItems.value.reduce((sum, file) => sum + (file.size * file.progress) / 100, 0),
-);
-
-const hasCompleted = computed(() => activeItems.value.some((u) => u.status === "completed"));
-
+/**
+ * Composable for managing upload state and progress tracking.
+ * Persists upload items to user-specific localStorage and provides
+ * reactive state for upload monitoring.
+ */
 export function useUploadState() {
-    // Public method to add items (used by service)
+    const items = getActiveItems();
+
+    const hasUploads = computed(() => items.value.length > 0);
+
+    const completedCount = computed(() => items.value.filter((i) => i.status === "completed").length);
+    const errorCount = computed(() => items.value.filter((i) => i.status === "error").length);
+    const uploadingCount = computed(
+        () => items.value.filter((i) => i.status === "uploading" || i.status === "processing").length,
+    );
+    const isUploading = computed(() => items.value.some((i) => i.status === "uploading" || i.status === "processing"));
+
+    const totalProgress = computed(() => {
+        if (items.value.length === 0) {
+            return 0;
+        }
+        const sum = items.value.reduce((acc, file) => acc + file.progress, 0);
+        return Math.round(sum / items.value.length);
+    });
+
+    const totalSizeBytes = computed(() => items.value.reduce((sum, file) => sum + file.size, 0));
+
+    const uploadedSizeBytes = computed(() =>
+        items.value.reduce((sum, file) => sum + (file.size * file.progress) / 100, 0),
+    );
+
+    const hasCompleted = computed(() => items.value.some((u) => u.status === "completed"));
+    /**
+     * Adds a new upload item to the queue.
+     * @param item - Upload configuration (file, URL, or pasted content)
+     * @returns Unique identifier for the upload
+     */
     function addUploadItem(item: NewUploadItem) {
-        const id = generateId();
-        const entry: UploadItem = {
-            id,
+        const entry = {
+            ...item,
+            id: generateId(),
             createdAt: Date.now(),
             progress: 0,
             status: "queued",
             error: undefined,
-            ...item,
-        };
-        activeItems.value.push(entry);
-        persistItems(activeItems.value);
+        } satisfies UploadItem;
+
+        items.value.push(entry);
         return entry.id;
     }
 
-    // Public helpers to enqueue different sources
-    function enqueueLocalFiles(files: File[], opts: EnqueueOptions) {
-        files.forEach((file) => {
-            const element = {
-                src: "files" as const,
-                name: file.name,
-                dbkey: opts.elementDefaults.dbkey,
-                ext: opts.elementDefaults.ext,
-                space_to_tab: opts.elementDefaults.space_to_tab,
-                to_posix_lines: opts.elementDefaults.to_posix_lines,
-                deferred: opts.elementDefaults.deferred,
-                auto_decompress: true,
-            } satisfies UploadElement;
-            addUploadItem({
-                uploadMethod: opts.uploadMethod,
-                element,
-                targetHistoryId: opts.targetHistoryId,
-                fileData: file,
-                name: file.name,
-                size: file.size,
-            });
-        });
-    }
-
-    function enqueuePastedContent(content: string, opts: EnqueueOptions) {
-        const element = {
-            src: "pasted" as const,
-            paste_content: content,
-            name: opts.elementDefaults.name ?? "Pasted content",
-            dbkey: opts.elementDefaults.dbkey,
-            ext: opts.elementDefaults.ext,
-            space_to_tab: opts.elementDefaults.space_to_tab,
-            to_posix_lines: opts.elementDefaults.to_posix_lines,
-            deferred: opts.elementDefaults.deferred,
-            auto_decompress: true,
-        } satisfies UploadElement;
-        addUploadItem({
-            uploadMethod: opts.uploadMethod,
-            element,
-            targetHistoryId: opts.targetHistoryId,
-            name: String(element.name ?? "Pasted content"),
-            size: typeof content === "string" ? new Blob([content]).size : 0,
-        });
-    }
-
-    function enqueueUrls(urls: string[], opts: EnqueueOptions) {
-        urls.map((u) => u.trim())
-            .filter((u) => !!u)
-            .forEach((url) => {
-                const element = {
-                    src: "url" as const,
-                    url,
-                    name: opts.elementDefaults.name ?? url,
-                    dbkey: opts.elementDefaults.dbkey,
-                    ext: opts.elementDefaults.ext,
-                    space_to_tab: opts.elementDefaults.space_to_tab,
-                    to_posix_lines: opts.elementDefaults.to_posix_lines,
-                    deferred: opts.elementDefaults.deferred,
-                    hashes: opts.elementDefaults.hashes,
-                    auto_decompress: true,
-                } satisfies UploadElement;
-                addUploadItem({
-                    uploadMethod: opts.uploadMethod,
-                    element,
-                    targetHistoryId: opts.targetHistoryId,
-                    name: url,
-                    size: 0,
-                });
-            });
-    }
-
-    function updateProgress(idOrName: string, progress: number) {
-        const item = activeItems.value.find((u) => u.id === idOrName || u.name === idOrName);
+    /**
+     * Updates upload progress for a specific item.
+     * Automatically marks as completed when progress reaches 100%.
+     * @param id - Upload item identifier
+     * @param progress - Progress percentage (0-100)
+     */
+    function updateProgress(id: string, progress: number) {
+        const item = items.value.find((u) => u.id === id);
         if (item) {
             item.progress = Math.max(0, Math.min(100, Math.round(progress)));
             if (item.progress >= 100 && item.status !== "error") {
                 item.status = "completed";
             }
-            persistItems(activeItems.value);
         }
     }
 
+    /**
+     * Updates the status of an upload item.
+     * @param id - Upload item identifier
+     * @param status - New status to set
+     */
     function setStatus(id: string, status: UploadStatus) {
-        const item = activeItems.value.find((u) => u.id === id);
+        const item = items.value.find((u) => u.id === id);
         if (item) {
             item.status = status;
-            persistItems(activeItems.value);
         }
     }
 
-    function setError(idOrName: string, error: string) {
-        const item = activeItems.value.find((u) => u.id === idOrName || u.name === idOrName);
+    /**
+     * Marks an upload as failed with an error message.
+     * @param id - Upload item identifier
+     * @param error - Error message describing the failure
+     */
+    function setError(id: string, error: string) {
+        const item = items.value.find((u) => u.id === id);
         if (item) {
             item.status = "error";
             item.error = error;
-            persistItems(activeItems.value);
         }
     }
 
+    /**
+     * Removes all completed uploads from the list.
+     */
     function clearCompleted() {
-        activeItems.value = activeItems.value.filter((u) => u.status !== "completed");
-        persistItems(activeItems.value);
+        items.value = items.value.filter((u) => u.status !== "completed");
     }
 
+    /**
+     * Clears all upload items from the list.
+     */
     function clearAll() {
-        activeItems.value = [];
-        persistItems(activeItems.value);
+        items.value = [];
     }
 
     return {
-        // state
-        activeItems,
+        activeItems: items,
         hasUploads,
         completedCount,
         errorCount,
@@ -238,16 +187,10 @@ export function useUploadState() {
         totalSizeBytes,
         uploadedSizeBytes,
         hasCompleted,
-        // direct item management
         addUploadItem,
-        enqueueLocalFiles,
-        enqueuePastedContent,
-        enqueueUrls,
-        // updates
         updateProgress,
         setStatus,
         setError,
-        // cleanup
         clearCompleted,
         clearAll,
     };
