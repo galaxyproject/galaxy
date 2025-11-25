@@ -7,12 +7,15 @@ import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { loadWorkflows } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
+
+const { server, http } = useServerMock();
 
 vi.mock("@/api/workflows", () => ({
     loadWorkflows: vi.fn(),
@@ -55,6 +58,12 @@ describe("WorkflowList", () => {
     beforeEach(() => {
         suppressBootstrapVueWarnings();
         vi.clearAllMocks();
+        // Mock the workflow counts endpoint used by workflow card badges
+        server.use(
+            http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
+                return response(200).json({});
+            }),
+        );
     });
 
     it("render empty workflow list", async () => {
