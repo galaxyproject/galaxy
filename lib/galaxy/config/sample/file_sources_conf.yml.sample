@@ -101,7 +101,7 @@
 #  port: 33001
 #  rate_limit: "500m"
 #  disable_encryption: false  # Enable encryption for security
-#  ssh_key: |
+#  ssh_key_content: |
 #    -----BEGIN RSA PRIVATE KEY-----
 #    <REPLACE WITH YOUR ACTUAL SSH PRIVATE KEY CONTENT>
 #    -----END RSA PRIVATE KEY-----
