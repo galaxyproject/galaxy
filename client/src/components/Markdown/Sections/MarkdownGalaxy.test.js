@@ -91,7 +91,8 @@ describe("MarkdownContainer", () => {
         const container = wrapper.find(".collapse");
         expect(container.attributes("style")).toBe("display: none;");
         await link.trigger("click");
-        expect(container.attributes("style")).toBe("");
+        // After click, style attribute is removed (undefined in happy-dom, "" in jsdom)
+        expect(container.attributes("style")).toBeFalsy();
     });
 
     it("Renders time stamp", async () => {
