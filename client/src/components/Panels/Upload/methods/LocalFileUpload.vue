@@ -3,6 +3,7 @@ import { faCloudUploadAlt, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
+import { useFileDrop } from "@/composables/fileDrop";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { bytesToString } from "@/utils/utils";
 
@@ -42,9 +43,9 @@ const spaceToTab = ref(false);
 const toPosixLines = ref(false);
 const deferred = ref(false);
 
-const isDragging = ref(false);
 const selectedFiles = ref<File[]>([]);
 const uploadFile = ref<HTMLInputElement | null>(null);
+const dropZoneElement = ref<HTMLElement | null>(null);
 
 const hasFiles = computed(() => selectedFiles.value.length > 0);
 const totalSize = computed(() => {
@@ -61,11 +62,16 @@ watch(
 );
 
 function onDrop(evt: DragEvent) {
-    isDragging.value = false;
     if (evt.dataTransfer?.files) {
         addFiles(evt.dataTransfer.files);
     }
 }
+
+function onDropCancel(_evt: DragEvent) {
+    // No-op: if user drops outside the drop zone, we don't need to do anything
+}
+
+const { isFileOverDropZone } = useFileDrop(dropZoneElement, onDrop, onDropCancel, false);
 
 function addFiles(fileList: FileList) {
     const newFiles = Array.from(fileList);
@@ -131,13 +137,12 @@ defineExpose<UploadMethodComponent>({
 
         <!-- Drop Zone -->
         <div
+            ref="dropZoneElement"
             role="button"
             tabindex="0"
-            class="drop-zone data-galaxy-file-drop-target"
-            :class="{ 'drop-zone-active': isDragging, 'has-files': hasFiles }"
-            @dragover.prevent="isDragging = true"
-            @dragleave.prevent="isDragging = false"
-            @drop.prevent="onDrop"
+            class="drop-zone"
+            data-galaxy-file-drop-target
+            :class="{ 'drop-zone-active': isFileOverDropZone, 'has-files': hasFiles }"
             @keydown.enter="handleBrowse"
             @keydown.space.prevent="handleBrowse">
             <div v-if="!hasFiles" class="drop-zone-content">
