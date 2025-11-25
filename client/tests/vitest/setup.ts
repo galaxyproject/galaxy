@@ -31,7 +31,7 @@ vi.doMock("vue", () => ({
     ...Vue,
 }));
 
-// Mock window.scrollIntoView (not available in jsdom)
+// Mock window.scrollIntoView (not available in test environment)
 Object.defineProperty(global, "scrollIntoView", {
     writable: true,
     configurable: true,
