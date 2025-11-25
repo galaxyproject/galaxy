@@ -35,12 +35,7 @@ const TEST_PANELS_URI = "/api/tool_panels";
 const DEFAULT_VIEW_ID = "default";
 const PANEL_VIEW_ERR_MSG = "Error loading panel view";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: {},
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
 
 vi.mock("@/composables/userLocalStorage", () => ({
     useUserLocalStorage: vi.fn(() => ref(DEFAULT_VIEW_ID)),

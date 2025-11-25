@@ -4,17 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import toolsList from "@/components/ToolsView/testData/toolsList";
 import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel";
+import { setMockConfig } from "@/composables/__mocks__/config";
 
 import { createSortedResultPanel, filterTools } from "./utilities";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: {
-            toolbox_auto_sort: true,
-        },
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
+
+setMockConfig({
+    toolbox_auto_sort: true,
+});
 
 describe("ToolBox", () => {
     const toolsMock = toolsList.reduce((acc, item) => {

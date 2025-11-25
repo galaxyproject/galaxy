@@ -47,9 +47,10 @@ describe("FormText", () => {
     it("should be able to render border and text color from props", async () => {
         const wrapper = await mountFormText({});
         const el = wrapper.find("input");
-        expect(el.element.style).toMatchObject({});
+        expect(el.element.style.color).toBeFalsy();
         await wrapper.setProps({ color: "green" });
-        expect(el.element.style).toMatchObject({ color: "green", "border-color": "green" });
+        expect(el.element.style.color).toBe("green");
+        expect(el.element.style.borderColor).toBe("green");
         await wrapper.setProps({ cls: "my-custom-class" });
         expect(el.element.classList).toContain("my-custom-class");
     });

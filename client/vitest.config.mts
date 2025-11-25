@@ -25,10 +25,10 @@ export default defineConfig({
     plugins: [vue(), i18nPlugin(), yamlPlugin()],
     test: {
         globals: false,
-        environment: "jsdom",
+        environment: "happy-dom",
         setupFiles: ["./tests/vitest/setup.ts"],
         environmentOptions: {
-            jsdom: {
+            happyDOM: {
                 url: "http://localhost/",
             },
         },

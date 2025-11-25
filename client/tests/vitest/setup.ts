@@ -1,10 +1,9 @@
 // Vitest setup file - mirrors Jest setup with Vitest-compatible APIs
-/// <reference path="./matchers.d.ts" />
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
-import { afterAll, afterEach, beforeAll, vi } from "vitest";
 
+import { vi } from "vitest";
 // Vue configuration
 import Vue from "vue";
 
@@ -24,6 +23,13 @@ vi.mock("@handsontable/vue", () => ({
     HotTable: {},
 }));
 
+// Mock KaTeX to avoid quirks mode warning (it checks document.compatMode at module load)
+vi.mock("katex", () => ({
+    default: {
+        renderToString: (latex: string) => `<span class="katex">${latex}</span>`,
+    },
+}));
+
 // Provide a mocked version of Vue to ensure above settings are not
 // overridden by a Vue library that gets imported later
 vi.doMock("vue", () => ({
@@ -31,46 +37,20 @@ vi.doMock("vue", () => ({
     ...Vue,
 }));
 
-// Mock window.scrollIntoView (not available in jsdom)
+// Mock window.scrollIntoView (not available in test environment)
 Object.defineProperty(global, "scrollIntoView", {
     writable: true,
     configurable: true,
     value: vi.fn(),
 });
 
-// Replace setImmediate with setTimeout to fix certain tests
-if (!global.setImmediate) {
-    Object.defineProperty(global, "setImmediate", {
-        writable: true,
+// Spoof user agent to include "jsdom" so BootstrapVue skips its
+// "Multiple instances of Vue" warning check (it only checks in non-jsdom envs)
+if (typeof window !== "undefined" && window.navigator) {
+    Object.defineProperty(window.navigator, "userAgent", {
+        value: window.navigator.userAgent + " jsdom",
         configurable: true,
-        value: (fn: (...args: any[]) => void, ...args: any[]) => global.setTimeout(fn, 0, ...args),
     });
-}
-
-// Add structuredClone polyfill if not available
-if (typeof structuredClone === "undefined") {
-    global.structuredClone = (obj: any) => {
-        return JSON.parse(JSON.stringify(obj));
-    };
-}
-
-// Mock IntersectionObserver
-class MockIntersectionObserver {
-    observe = vi.fn();
-    disconnect = vi.fn();
-    unobserve = vi.fn();
-}
-
-Object.defineProperty(window, "IntersectionObserver", {
-    writable: true,
-    configurable: true,
-    value: MockIntersectionObserver,
-});
-
-// Mock HTMLDialogElement methods if not available
-if (typeof HTMLDialogElement !== "undefined") {
-    HTMLDialogElement.prototype.showModal = HTMLDialogElement.prototype.showModal || vi.fn();
-    HTMLDialogElement.prototype.close = HTMLDialogElement.prototype.close || vi.fn();
 }
 
 // Mock BroadcastChannel to fix Pinia state synchronization errors
