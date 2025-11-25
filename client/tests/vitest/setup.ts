@@ -1,10 +1,9 @@
 // Vitest setup file - mirrors Jest setup with Vitest-compatible APIs
-/// <reference path="./matchers.d.ts" />
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
-import { afterAll, afterEach, beforeAll, vi } from "vitest";
 
+import { vi } from "vitest";
 // Vue configuration
 import Vue from "vue";
 
@@ -22,6 +21,13 @@ vi.mock("handsontable", () => ({
 vi.mock("@handsontable/vue", () => ({
     default: {},
     HotTable: {},
+}));
+
+// Mock KaTeX to avoid quirks mode warning (it checks document.compatMode at module load)
+vi.mock("katex", () => ({
+    default: {
+        renderToString: (latex: string) => `<span class="katex">${latex}</span>`,
+    },
 }));
 
 // Provide a mocked version of Vue to ensure above settings are not
@@ -45,39 +51,6 @@ if (typeof window !== "undefined" && window.navigator) {
         value: window.navigator.userAgent + " jsdom",
         configurable: true,
     });
-}
-
-// Ensure document has proper doctype to avoid quirks mode (needed for KaTeX)
-if (typeof document !== "undefined" && !document.doctype) {
-    const doctype = document.implementation.createDocumentType("html", "", "");
-    if (document.childNodes.length > 0) {
-        document.insertBefore(doctype, document.childNodes[0]);
-    } else {
-        document.appendChild(doctype);
-    }
-}
-
-// Replace setImmediate with setTimeout to fix certain tests
-if (!global.setImmediate) {
-    Object.defineProperty(global, "setImmediate", {
-        writable: true,
-        configurable: true,
-        value: (fn: (...args: any[]) => void, ...args: any[]) => global.setTimeout(fn, 0, ...args),
-    });
-}
-
-// Add structuredClone polyfill if not available
-if (typeof structuredClone === "undefined") {
-    global.structuredClone = (obj: any) => {
-        return JSON.parse(JSON.stringify(obj));
-    };
-}
-
-
-// Mock HTMLDialogElement methods if not available
-if (typeof HTMLDialogElement !== "undefined") {
-    HTMLDialogElement.prototype.showModal = HTMLDialogElement.prototype.showModal || vi.fn();
-    HTMLDialogElement.prototype.close = HTMLDialogElement.prototype.close || vi.fn();
 }
 
 // Mock BroadcastChannel to fix Pinia state synchronization errors
@@ -111,13 +84,6 @@ const failOnConsole = (await import("vitest-fail-on-console")).default;
 failOnConsole({
     shouldFailOnError: true,
     shouldFailOnWarn: true,
-    silenceMessage: (message: string) => {
-        // KaTeX warns about quirks mode at module load time before we can set doctype
-        if (message.includes("KaTeX doesn't work in quirks mode")) {
-            return true;
-        }
-        return false;
-    },
 });
 
 // Import and setup MSW if needed
