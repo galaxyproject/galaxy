@@ -38,6 +38,15 @@ Object.defineProperty(global, "scrollIntoView", {
     value: vi.fn(),
 });
 
+// Spoof user agent to include "jsdom" so BootstrapVue skips its
+// "Multiple instances of Vue" warning check (it only checks in non-jsdom envs)
+if (typeof window !== "undefined" && window.navigator) {
+    Object.defineProperty(window.navigator, "userAgent", {
+        value: window.navigator.userAgent + " jsdom",
+        configurable: true,
+    });
+}
+
 // Replace setImmediate with setTimeout to fix certain tests
 if (!global.setImmediate) {
     Object.defineProperty(global, "setImmediate", {
