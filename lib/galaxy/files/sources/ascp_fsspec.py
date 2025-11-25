@@ -25,7 +25,23 @@ log = logging.getLogger(__name__)
 
 
 class AscpFileSystem(AbstractFileSystem):
-    """Fsspec filesystem implementation for Aspera ascp transfers.
+    """Custom fsspec filesystem implementation for Aspera ascp transfers.
+
+    This module implements fsspec.AbstractFileSystem for the ascp command-line tool.
+    It is used by the Galaxy file source plugin in ascp.py but is designed to be
+    independent and reusable.
+
+    Architecture:
+    - ascp.py: Galaxy plugin configuration and lifecycle management
+    - ascp_fsspec.py (this file): Custom fsspec.AbstractFileSystem implementation
+
+    The two-layer design separates concerns:
+    - Galaxy integration (Pydantic models, template expansion, plugin registration)
+    - Transfer implementation (ascp command wrapping, retry logic, error handling)
+
+    Note: This is Galaxy's only custom fsspec implementation. Other file sources
+    (s3fs, webdav, etc.) use existing fsspec packages from PyPI. This custom
+    implementation was necessary because no fsspec implementation exists for ascp.
 
     This class wraps the ascp command-line tool to provide download functionality
     through the fsspec interface. It handles SSH key management, command construction,
