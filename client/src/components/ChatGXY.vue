@@ -247,14 +247,17 @@ function attachPendingCollapsedMessages(target: Message) {
     });
     for (let i = pendingCollapsedMessages.length - 1; i >= 0; i -= 1) {
         const msg = pendingCollapsedMessages[i];
-        if (!target.generatedPlots?.length && msg.generatedPlots?.length) {
-            target.generatedPlots = [...msg.generatedPlots];
-        }
-        if (!target.generatedFiles?.length && msg.generatedFiles?.length) {
-            target.generatedFiles = [...msg.generatedFiles];
-        }
-        if ((!target.artifacts || !target.artifacts.length) && msg.artifacts?.length) {
-            target.artifacts = [...msg.artifacts];
+
+        if (msg) {
+            if (!target.generatedPlots?.length && msg.generatedPlots?.length) {
+                target.generatedPlots = [...msg.generatedPlots];
+            }
+            if (!target.generatedFiles?.length && msg.generatedFiles?.length) {
+                target.generatedFiles = [...msg.generatedFiles];
+            }
+            if ((!target.artifacts || !target.artifacts.length) && msg.artifacts?.length) {
+                target.artifacts = [...msg.artifacts];
+            }
         }
     }
     if (target.isCollapsed === undefined) {
@@ -802,6 +805,7 @@ async function submitPyodideExecutionResult(
         },
     };
 
+    // @ts-ignore TODO: We will add the pydantic model later
     const { data, error } = await GalaxyApi().POST(`/api/chat/exchange/${currentChatId.value}/pyodide_result`, {
         body: payload,
     });
@@ -939,45 +943,47 @@ function normaliseArtifactList(raw: unknown): UploadedArtifact[] {
     return artifacts;
 }
 
-function normaliseGeneratedEntry(entry: string): string {
-    return entry.replace(/^generated_file\//, "").replace(/^\/+/, "");
-}
+// Commented out unused functions for now
 
-function findArtifactForEntry(entry: string, artifacts?: UploadedArtifact[]): UploadedArtifact | undefined {
-    if (!artifacts || artifacts.length === 0) {
-        return undefined;
-    }
-    const normalized = normaliseGeneratedEntry(entry);
-    return artifacts.find((artifact) => {
-        const artifactName = normaliseGeneratedEntry(artifact.name || "");
-        return (
-            artifactName === normalized ||
-            artifactName === entry ||
-            artifact.dataset_id === normalized ||
-            artifact.dataset_id === entry
-        );
-    });
-}
+// function normaliseGeneratedEntry(entry: string): string {
+//     return entry.replace(/^generated_file\//, "").replace(/^\/+/, "");
+// }
 
-function artifactPreviewUrl(entry: string, artifacts?: UploadedArtifact[]): string | undefined {
-    const match = findArtifactForEntry(entry, artifacts);
-    return match?.download_url || undefined;
-}
+// function findArtifactForEntry(entry: string, artifacts?: UploadedArtifact[]): UploadedArtifact | undefined {
+//     if (!artifacts || artifacts.length === 0) {
+//         return undefined;
+//     }
+//     const normalized = normaliseGeneratedEntry(entry);
+//     return artifacts.find((artifact) => {
+//         const artifactName = normaliseGeneratedEntry(artifact.name || "");
+//         return (
+//             artifactName === normalized ||
+//             artifactName === entry ||
+//             artifact.dataset_id === normalized ||
+//             artifact.dataset_id === entry
+//         );
+//     });
+// }
 
-function artifactDownloadHandler(entry: string, artifacts?: UploadedArtifact[]) {
-    const match = findArtifactForEntry(entry, artifacts);
-    if (match) {
-        downloadArtifact(match);
-    }
-}
+// function artifactPreviewUrl(entry: string, artifacts?: UploadedArtifact[]): string | undefined {
+//     const match = findArtifactForEntry(entry, artifacts);
+//     return match?.download_url || undefined;
+// }
+
+// function artifactDownloadHandler(entry: string, artifacts?: UploadedArtifact[]) {
+//     const match = findArtifactForEntry(entry, artifacts);
+//     if (match) {
+//         downloadArtifact(match);
+//     }
+// }
 
 function formatGeneratedEntry(entry: string): string {
     return entry.replace(/^generated_file\//, "");
 }
 
-function artifactIsDownloadable(entry: string, artifacts?: UploadedArtifact[]): boolean {
-    return Boolean(findArtifactForEntry(entry, artifacts));
-}
+// function artifactIsDownloadable(entry: string, artifacts?: UploadedArtifact[]): boolean {
+//     return Boolean(findArtifactForEntry(entry, artifacts));
+// }
 
 function updateMessageOutputsFromArtifacts(message: Message, artifacts: UploadedArtifact[] | undefined) {
     if (!artifacts || artifacts.length === 0) {
@@ -1284,6 +1290,8 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
         if (currentChatId.value) {
             try {
                 const feedbackValue = value === "up" ? 1 : 0;
+
+                // @ts-ignore TODO: Add pydantic model later
                 const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
                     params: {
                         path: { exchange_id: currentChatId.value },
@@ -1385,13 +1393,17 @@ async function loadPreviousChat(item: ChatHistoryItem) {
     pendingCollapsedMessages.length = 0;
     // Try to load the full conversation from the backend
     try {
-        const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+        // @ts-ignore TODO: Add pydantic model later
+        const { data } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
             params: {
                 path: {
                     exchange_id: item.id,
                 },
             },
         });
+
+        // TODO: Define proper type for response, then we wouldn't need to define `fullConversation` here separately
+        const fullConversation = data as any[] | undefined;
 
         if (fullConversation && fullConversation.length > 0) {
             // Clear and rebuild messages from full conversation
@@ -1404,7 +1416,7 @@ async function loadPreviousChat(item: ChatHistoryItem) {
             const assistantMessagesToReplay: Message[] = [];
             for (let index = 0; index < fullConversation.length; index += 1) {
                 const msg = fullConversation[index];
-                if (msg.role === "execution_result") {
+                if (msg?.role === "execution_result") {
                     if (msg.task_id) {
                         deliveredTaskIds.add(String(msg.task_id));
                         const target = taskIdToMessage[String(msg.task_id)];
