@@ -73,31 +73,6 @@ if (typeof structuredClone === "undefined") {
     };
 }
 
-// Mock IntersectionObserver
-class MockIntersectionObserver {
-    observe = vi.fn();
-    disconnect = vi.fn();
-    unobserve = vi.fn();
-}
-
-Object.defineProperty(window, "IntersectionObserver", {
-    writable: true,
-    configurable: true,
-    value: MockIntersectionObserver,
-});
-
-// Mock ResizeObserver (not fully implemented in happy-dom)
-class MockResizeObserver {
-    observe = vi.fn();
-    disconnect = vi.fn();
-    unobserve = vi.fn();
-}
-
-Object.defineProperty(window, "ResizeObserver", {
-    writable: true,
-    configurable: true,
-    value: MockResizeObserver,
-});
 
 // Mock HTMLDialogElement methods if not available
 if (typeof HTMLDialogElement !== "undefined") {
