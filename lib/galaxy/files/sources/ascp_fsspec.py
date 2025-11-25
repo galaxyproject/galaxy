@@ -178,35 +178,19 @@ class AscpFileSystem(AbstractFileSystem):
         if not self.ssh_key:
             raise MessageException("SSH key is required for ascp authentication.")
 
-        # Determine if ssh_key is a file path or key content
-        # If it looks like a path and the file exists, use it directly
-        # Otherwise, treat it as key content and create a temporary file
-        key_is_file = False
+        # Create temporary file for key content
         key_fd = None
         key_path = None
 
-        # Check if ssh_key is a file path
-        if not self.ssh_key.startswith("-----BEGIN") and os.path.isfile(self.ssh_key):
-            # It's a file path - use it directly
-            key_path = self.ssh_key
-            key_is_file = True
-
-            # Verify permissions (should be 0600 or 0400)
-            stat_info = os.stat(key_path)
-            mode = stat_info.st_mode & 0o777
-            if mode not in (0o600, 0o400):
-                log.warning(f"SSH key file {key_path} has permissions {oct(mode)}, ascp may require 0600 or 0400")
-
         try:
-            # If not using an existing file, create temporary file for key content
-            if not key_is_file:
-                key_fd, key_path = tempfile.mkstemp(suffix=".key", text=True)
+            # Create temporary file for key content
+            key_fd, key_path = tempfile.mkstemp(suffix=".key", text=True)
 
-                # Write key with proper permissions (required by ascp)
-                os.chmod(key_path, 0o600)
-                with os.fdopen(key_fd, "w") as key_file:
-                    key_file.write(self.ssh_key)
-                key_fd = None  # Prevent double-close
+            # Write key with proper permissions (required by ascp)
+            os.chmod(key_path, 0o600)
+            with os.fdopen(key_fd, "w") as key_file:
+                key_file.write(self.ssh_key)
+            key_fd = None  # Prevent double-close
 
             # Type narrowing: key_path is guaranteed to be set by this point
             assert key_path is not None
@@ -255,18 +239,17 @@ class AscpFileSystem(AbstractFileSystem):
         except OSError as e:
             raise MessageException(f"File system error during ascp transfer: {e}") from e
         finally:
-            # Only cleanup temporary key file (not user-provided files)
-            if not key_is_file:
-                if key_fd is not None:
-                    try:
-                        os.close(key_fd)
-                    except Exception:
-                        pass  # Best effort
-                if key_path is not None:
-                    try:
-                        os.unlink(key_path)
-                    except Exception:
-                        pass  # Best effort
+            # Cleanup temporary key file
+            if key_fd is not None:
+                try:
+                    os.close(key_fd)
+                except Exception:
+                    pass  # Best effort
+            if key_path is not None:
+                try:
+                    os.unlink(key_path)
+                except Exception:
+                    pass  # Best effort
 
     def _is_retryable_error(self, exception: MessageException) -> bool:
         """Determine if an error is worth retrying.

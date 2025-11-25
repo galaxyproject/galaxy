@@ -380,46 +380,6 @@ class TestAscpFilesSource:
             finally:
                 os.unlink(config_file)
 
-    def test_ssh_key_file_usage(self):
-        """Test that ssh_key_file is properly used when provided."""
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".key") as key_file:
-            key_file.write(TEST_SSH_KEY)
-            key_file_path = key_file.name
-
-        try:
-            os.chmod(key_file_path, 0o600)
-
-            config = {
-                "type": "ascp",
-                "id": "test_ascp",
-                "label": "Test Aspera",
-                "ssh_key_file": key_file_path,
-                "user": "test-user",
-                "host": "test.example.com",
-            }
-
-            with patch("shutil.which", return_value="/usr/bin/ascp"):
-                from ._util import configured_file_sources
-
-                with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
-                    import yaml
-
-                    yaml.dump([config], f)
-                    config_file = f.name
-
-                try:
-                    file_sources = configured_file_sources(config_file)
-                    # Should load successfully
-                    assert (
-                        file_sources.get_file_source_path("ascp://test.example.com/path/to/file").file_source.id
-                        == "test_ascp"
-                    )
-                finally:
-                    os.unlink(config_file)
-        finally:
-            if os.path.exists(key_file_path):
-                os.unlink(key_file_path)
-
 
 class TestAscpRetryLogic:
     """Tests for retry and resume functionality."""
@@ -682,42 +642,6 @@ class TestAscpRetryLogic:
             assert fs.retry_base_delay == 2.0
             assert fs.retry_max_delay == 60.0
             assert fs.enable_resume is True
-
-    def test_ssh_key_as_file_path(self):
-        """Test that ssh_key can be provided as a file path."""
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".key") as key_file:
-                key_file.write(TEST_SSH_KEY)
-                key_file_path = key_file.name
-
-            try:
-                # Set proper permissions
-                os.chmod(key_file_path, 0o600)
-
-                fs = AscpFileSystem(
-                    ssh_key=key_file_path,  # Pass file path instead of content
-                    user="test-user",
-                    host="test.example.com",
-                )
-
-                # Mock subprocess to verify the key file path is used directly
-                with patch("subprocess.run") as mock_run:
-                    mock_run.return_value = Mock(returncode=0, stderr="", stdout="")
-
-                    with patch("os.unlink") as mock_unlink:
-                        fs._get_file("/remote/file.txt", "/local/file.txt")
-
-                        # Verify the original key file was NOT deleted
-                        # (only temporary files should be deleted)
-                        mock_unlink.assert_not_called()
-
-                        # Verify ascp was called with the original key file path
-                        call_args = mock_run.call_args[0][0]
-                        assert key_file_path in call_args
-
-            finally:
-                if os.path.exists(key_file_path):
-                    os.unlink(key_file_path)
 
     def test_ssh_key_as_content(self):
         """Test that ssh_key can be provided as key content (original behavior)."""
