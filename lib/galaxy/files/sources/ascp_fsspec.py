@@ -88,7 +88,7 @@ class AscpFileSystem(AbstractFileSystem):
         self.rate_limit = rate_limit
         self.port = port
         self.disable_encryption = disable_encryption
-        
+
         # Retry configuration
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
@@ -122,14 +122,14 @@ class AscpFileSystem(AbstractFileSystem):
             MessageException: If download fails after all retries
         """
         last_exception = None
-        
+
         for attempt in range(self.max_retries):
             try:
                 self._execute_ascp_transfer(rpath, lpath, attempt)
                 return  # Success!
             except MessageException as e:
                 last_exception = e
-                
+
                 # Check if error is retryable
                 if self._is_retryable_error(e) and attempt < self.max_retries - 1:
                     delay = min(self.retry_base_delay ** (attempt + 1), self.retry_max_delay)
@@ -141,13 +141,13 @@ class AscpFileSystem(AbstractFileSystem):
                 else:
                     # Non-retryable error or last attempt
                     raise
-        
+
         # Should not reach here, but just in case
         raise MessageException(
             f"Failed to download {rpath} after {self.max_retries} attempts. "
             f"Last error: {last_exception}"
         )
-    
+
     def _execute_ascp_transfer(self, rpath: str, lpath: str, attempt: int) -> None:
         """Execute a single ascp transfer attempt.
 
@@ -161,9 +161,9 @@ class AscpFileSystem(AbstractFileSystem):
         """
         # Parse URL if provided, otherwise use configured host/user
         parsed_url = self._parse_url(rpath)
-        user: str = parsed_url.get("user") or self.user  # type: ignore[assignment]
-        host: str = parsed_url.get("host") or self.host  # type: ignore[assignment]
-        port: int = parsed_url.get("port") or self.port  # type: ignore[assignment]
+        user = parsed_url.get("user") or self.user
+        host = parsed_url.get("host") or self.host
+        port = parsed_url.get("port") or self.port
         remote_path = parsed_url.get("path", rpath)
 
         if not user or not host:
@@ -171,6 +171,10 @@ class AscpFileSystem(AbstractFileSystem):
                 "User and host must be specified either in configuration or in the URL. "
                 f"Got user='{user}', host='{host}'"
             )
+
+        # Type narrowing: after validation, user and host are guaranteed to be str
+        assert isinstance(user, str)
+        assert isinstance(host, str)
 
         if not self.ssh_key:
             raise MessageException("SSH key is required for ascp authentication.")
@@ -181,13 +185,13 @@ class AscpFileSystem(AbstractFileSystem):
         key_is_file = False
         key_fd = None
         key_path = None
-        
+
         # Check if ssh_key is a file path
         if not self.ssh_key.startswith("-----BEGIN") and os.path.isfile(self.ssh_key):
             # It's a file path - use it directly
             key_path = self.ssh_key
             key_is_file = True
-            
+
             # Verify permissions (should be 0600 or 0400)
             stat_info = os.stat(key_path)
             mode = stat_info.st_mode & 0o777
@@ -196,7 +200,7 @@ class AscpFileSystem(AbstractFileSystem):
                     f"SSH key file {key_path} has permissions {oct(mode)}, "
                     "ascp may require 0600 or 0400"
                 )
-        
+
         try:
             # If not using an existing file, create temporary file for key content
             if not key_is_file:
@@ -207,6 +211,9 @@ class AscpFileSystem(AbstractFileSystem):
                 with os.fdopen(key_fd, "w") as key_file:
                     key_file.write(self.ssh_key)
                 key_fd = None  # Prevent double-close
+
+            # Type narrowing: key_path is guaranteed to be set by this point
+            assert key_path is not None
 
             # Build ascp command
             cmd = [
@@ -222,7 +229,7 @@ class AscpFileSystem(AbstractFileSystem):
             # Add encryption flag if disabled
             if self.disable_encryption:
                 cmd.append("-T")
-            
+
             # Add resume flag if enabled and this is a retry attempt
             if self.enable_resume and attempt > 0:
                 cmd.extend(["-k", "1"])  # Resume level 1: check file size
@@ -271,7 +278,7 @@ class AscpFileSystem(AbstractFileSystem):
         Retryable errors include:
         - Network errors (connection refused, timeouts, etc.)
         - Transient server errors
-        
+
         Non-retryable errors include:
         - Authentication failures
         - File not found
@@ -285,7 +292,7 @@ class AscpFileSystem(AbstractFileSystem):
             True if the error is retryable, False otherwise
         """
         error_msg = str(exception).lower()
-        
+
         # Non-retryable error patterns
         non_retryable_patterns = [
             "authentication failed",
@@ -296,10 +303,10 @@ class AscpFileSystem(AbstractFileSystem):
             "ssh key is required",
             "user and host must be specified",
         ]
-        
+
         if any(pattern in error_msg for pattern in non_retryable_patterns):
             return False
-        
+
         # Retryable error patterns
         retryable_patterns = [
             "network error",
@@ -309,9 +316,9 @@ class AscpFileSystem(AbstractFileSystem):
             "refused",
             "unreachable",
         ]
-        
+
         return any(pattern in error_msg for pattern in retryable_patterns)
-    
+
     def _parse_url(self, url: str) -> dict[str, Any]:
         """Parse ascp:// or fasp:// URL to extract components.
 
