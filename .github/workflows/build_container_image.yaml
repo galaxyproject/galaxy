@@ -139,7 +139,7 @@ jobs:
     needs: [ build ]
     steps:
       - name: Start k8s locally
-        uses: jupyterhub/action-k3s-helm@v3
+        uses: jupyterhub/action-k3s-helm@v4
         with:
           k3s-version: v1.32.0+k3s1  # releases:  https://github.com/k3s-io/k3s/tags
           metrics-enabled: false
