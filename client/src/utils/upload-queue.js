@@ -2,7 +2,7 @@
     galaxy upload utilities - requires FormData and XMLHttpRequest
 */
 import { uploadPayload } from "@/utils/upload-payload.js";
-import { sendPayload, uploadSubmit } from "@/utils/upload-submit.js";
+import { sendPayload, submitDatasetUpload } from "@/utils/uploadSubmit";
 
 export class UploadQueue {
     constructor(options) {
@@ -159,7 +159,7 @@ export class UploadQueue {
 
     // Submit request data
     _processSubmit(index, data) {
-        uploadSubmit({
+        submitDatasetUpload({
             data: data,
             success: (message) => {
                 this.opts.success(index, message);

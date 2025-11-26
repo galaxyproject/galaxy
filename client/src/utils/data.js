@@ -2,7 +2,7 @@ import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useHistoryStore } from "@/stores/historyStore";
 import { appendVueComponent } from "@/utils/mountVueComponent";
 import { uploadPayload } from "@/utils/upload-payload.js";
-import { uploadSubmit } from "@/utils/upload-submit.js";
+import { submitDatasetUpload } from "@/utils/uploadSubmit";
 
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
 
@@ -32,7 +32,7 @@ export async function dialog(galaxy, callback, options = {}) {
 export async function create(galaxy, options) {
     const { loadCurrentHistoryId } = useHistoryStore();
     const historyId = await loadCurrentHistoryId();
-    uploadSubmit({
+    submitDatasetUpload({
         success: (response) => {
             const historyStore = useHistoryStore();
             historyStore.startWatchingHistory();

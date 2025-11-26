@@ -17,7 +17,7 @@ import { getFullAppUrl } from "@/app/utils";
 import { defaultModel, type FileStream, type UploadItem } from "@/components/Upload/model";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 import { uploadPayload } from "@/utils/upload-payload";
-import { uploadSubmit } from "@/utils/upload-submit";
+import { submitDatasetUpload, type UploadDataPayload } from "@/utils/uploadSubmit";
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
@@ -186,8 +186,8 @@ export function useZipExplorer() {
             uploadItems.push(uploadItem);
         }
         try {
-            const data = uploadPayload(uploadItems, historyId);
-            uploadSubmit({ data });
+            const data = uploadPayload(uploadItems, historyId) as unknown as UploadDataPayload;
+            submitDatasetUpload({ data });
         } catch (e) {
             rethrowSimple(e);
         }
