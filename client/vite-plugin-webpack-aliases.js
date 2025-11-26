@@ -1,6 +1,7 @@
-import { getViteAliases, extensions } from "./build-config.shared.js";
 import path from "path";
 import { fileURLToPath } from "url";
+
+import { extensions, getViteAliases } from "./build-config.shared.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

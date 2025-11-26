@@ -44,16 +44,26 @@ export default defineConfig({
         emptyOutDir: true,
         // Generate manifest.json for production
         manifest: true,
+        // Disable CSS code splitting - combine all CSS into one file like webpack does
+        cssCodeSplit: false,
         rollupOptions: {
             input: {
                 // Entry points that will be referenced in templates
+                // libs must be loaded first - it exposes globals (jQuery, bundleEntries, config)
+                libs: resolve(__dirname, "src/entry/libs.js"),
                 analysis: resolve(__dirname, "src/entry/analysis/index.ts"),
                 generic: resolve(__dirname, "src/entry/generic.js"),
             },
             output: {
                 entryFileNames: "[name].bundled.js",
                 chunkFileNames: "[name]-[hash].js",
-                assetFileNames: "[name]-[hash].[ext]",
+                // CSS should be named 'base.css' to match what templates expect
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name && assetInfo.name.endsWith(".css")) {
+                        return "base.css";
+                    }
+                    return "[name]-[hash].[ext]";
+                },
             },
         },
     },
