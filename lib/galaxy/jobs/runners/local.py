@@ -136,8 +136,16 @@ class LocalJobRunner(BaseJobRunner):
                 self._fail_job_local(job_wrapper, "job terminated by Galaxy shutdown")
                 return
 
-            stdout_file.seek(0)
-            stderr_file.seek(0)
+            # Attempt to flush buffers before seeking - transient 'Illegal seek' errors observed with fast-completing jobs
+            # Root cause unclear; if errors persist, try adding os.fsync(f.fileno()) or different tempfile handling
+            for f in (stdout_file, stderr_file):
+                try:
+                    f.flush()
+                except (OSError, ValueError) as e:
+                    log.info(f"({job_id}) Failed to flush file before seek: {e}")
+
+            self._seek_with_retry(stdout_file, job_id, "stdout")
+            self._seek_with_retry(stderr_file, job_id, "stderr")
             stdout = self._job_io_for_db(stdout_file)
             stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
@@ -221,6 +229,20 @@ class LocalJobRunner(BaseJobRunner):
                 return
 
             sleep(0.5)
+
+    def _seek_with_retry(self, file, job_id, name, retries=1, delay=0.01):
+        """Seek to start of file with retry for transient errors."""
+        for attempt in range(retries + 1):
+            try:
+                file.seek(0)
+                return
+            except OSError as e:
+                if attempt < retries:
+                    log.info(f"({job_id}) Seek failed on {name} (attempt {attempt + 1}), retrying: {e}")
+                    sleep(delay)
+                else:
+                    log.error(f"({job_id}) All seek retries exhausted on {name}: {e}")
+                    raise
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
         # Only poll if needed (i.e. job limits are set)
