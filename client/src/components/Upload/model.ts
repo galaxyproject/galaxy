@@ -12,13 +12,8 @@ export function isLocalFile(file: unknown): file is File {
     return file !== null && typeof file === "object" && "name" in file && "size" in file;
 }
 
-export interface FileStream {
-    name: string;
-    size: number;
-    stream: ReadableStream<Uint8Array>;
-    lastModified: number;
-    isStream: true;
-}
+// Re-export FileStream from centralized location
+export type { FileStream } from "@/utils/tusUpload";
 
 export interface UploadItem {
     dbKey: string;

@@ -3,7 +3,7 @@ import { BButton } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
 
 import { uploadPayload } from "@/utils/upload-payload.js";
-import { uploadSubmit } from "@/utils/upload-submit.js";
+import { submitDatasetUpload } from "@/utils/uploadSubmit";
 
 import { defaultModel } from "./model";
 
@@ -106,7 +106,7 @@ function eventStart() {
         model.extension = extension.value;
     });
     try {
-        uploadSubmit({
+        submitDatasetUpload({
             data: uploadPayload(uploadValues.value, props.historyId, true),
             error: eventError,
             progress: eventProgress,
