@@ -1,11 +1,13 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue2";
-import tsconfigPaths from "vite-tsconfig-paths";
-import ViteYaml from "@modyfi/vite-plugin-yaml";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { galaxyLegacyPlugin } from "./vite-plugin-webpack-aliases.js";
+
+import ViteYaml from "@modyfi/vite-plugin-yaml";
+import vue from "@vitejs/plugin-vue2";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
+import { galaxyLegacyPlugin } from "./vite-plugin-webpack-aliases.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -57,17 +59,19 @@ export default defineConfig({
     },
     server: {
         port: process.env.VITE_PORT || 5173,
+        host: "0.0.0.0",
+        proxy: {
+            // Proxy everything except Vite's own routes to Galaxy backend
+            "^/(?!(@|src/|node_modules/|__vite))": {
+                target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
+                changeOrigin: !!process.env.CHANGE_ORIGIN,
+                secure: process.env.CHANGE_ORIGIN ? false : true,
+            },
+        },
         cors: true,
         hmr: {
-            // Ensure HMR works correctly
             protocol: "ws",
             host: "localhost",
-        },
-        // Allow Galaxy to access Vite dev server
-        headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
     },
     worker: {
