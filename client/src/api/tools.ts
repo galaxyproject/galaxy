@@ -57,14 +57,18 @@ export async function fetch(payload: FetchDataPayload) {
     const { data } = await GalaxyApi().POST("/api/tools/fetch", {
         body: payload,
     });
-    return fetchResponseToJobId(data as FetchResponseInterface);
+    return fetchResponseToJobId(data as FetchDataResponse);
 }
 
-interface FetchResponseInterface {
+// TODO: The response is not modeled yet in the FastAPI route for /api/tools/fetch
+// so we define a minimal interface here for our needs.
+// Once the route is properly modeled, we can replace this minimal placeholder interface.
+export interface FetchDataResponse {
     jobs: { id: string }[];
+    outputs?: Record<string, unknown>;
 }
 
-function fetchResponseToJobId(response: FetchResponseInterface) {
+function fetchResponseToJobId(response: FetchDataResponse) {
     return response.jobs[0]!.id;
 }
 
