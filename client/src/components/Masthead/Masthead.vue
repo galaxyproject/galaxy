@@ -1,5 +1,6 @@
 <script setup>
-import { faGear, faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faGear } from "font-awesome-6";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
