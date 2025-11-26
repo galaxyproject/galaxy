@@ -390,6 +390,7 @@ class RawToolSource(NamedTuple):
         raw_tool_source: String form of the tool source (typically XML or YAML).
         tool_source_class: The class name of the ToolSource implementation (e.g., 'XmlToolSource').
     """
+
     raw_tool_source: str
     tool_source_class: str
 

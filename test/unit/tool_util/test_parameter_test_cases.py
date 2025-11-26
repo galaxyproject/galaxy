@@ -25,7 +25,10 @@ from galaxy.tool_util.parser.interface import (
     ToolSource,
     ToolSourceTest,
 )
-from galaxy.tool_util.unittest_utils import functional_test_tool_directory, functional_test_tool_source
+from galaxy.tool_util.unittest_utils import (
+    functional_test_tool_directory,
+    functional_test_tool_source,
+)
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util_models.tool_source import (
     JsonTestCollectionDefDict,

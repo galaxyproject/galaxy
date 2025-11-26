@@ -2,7 +2,7 @@ import json
 
 from galaxy.app_unittest_utils.tools_support import mock_app_for_tool_support
 from galaxy.tool_util.unittest_utils import (
-    functional_test_tool_path, 
+    functional_test_tool_path,
     functional_test_tool_source,
 )
 from galaxy.tools import (
@@ -39,7 +39,7 @@ def test_repopulate_after_serialization_yaml():
 def simple_constructs_tool() -> Tool:
     tool_path = functional_test_tool_path("simple_constructs.yml")
     tool_source = functional_test_tool_source("simple_constructs_y")
-    
+
     app = mock_app_for_tool_support()
     guid = None
     tool = Tool(

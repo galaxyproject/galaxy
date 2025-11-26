@@ -19,14 +19,14 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionParameterModel,
     DataCollectionRequest,
     DataColumnParameterModel,
+    DataInternalJson,
     DataParameterModel,
     DataRequestCollectionUri,
     DataRequestHda,
+    DataRequestInternalDereferencedT,
     DataRequestInternalHda,
     DataRequestInternalHdca,
     DataRequestUri,
-    DataRequestInternalDereferencedT,
-    DataInternalJson,
     DiscriminatorType,
     DrillDownParameterModel,
     FloatParameterModel,
@@ -362,7 +362,7 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             if not parameter.multiple:
                 tool_state[parameter_name] = parameter.default_value
             else:
-                tool_state[parameter_name] = parameter.default_values
+                tool_state[parameter_name] = None
     elif isinstance(parameter, DrillDownParameterModel):
         if parameter_name not in tool_state:
             if parameter.multiple:
@@ -530,7 +530,7 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
     return decode_callback
 
 
-DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
+DatasetToRuntimeJson = Callable[[DataRequestInternalDereferenced], DataInternalJson]
 
 
 def runtimeify(
@@ -545,7 +545,11 @@ def runtimeify(
                 return list(map(adapt_dataset, value))
             else:
                 assert isinstance(value, dict), str(value)
-                return adapt_dataset(value)
+                data_request_internal_hda = DataRequestInternalHda(**value)
+                as_json = adapt_dataset(data_request_internal_hda).model_dump()
+                # well this is wrong
+                as_json["class"] = as_json.pop("class_")
+                return as_json
         elif isinstance(parameter, DataCollectionParameterModel):
             assert isinstance(value, dict), str(value)
             raise NotImplementedError("Moocow...")
