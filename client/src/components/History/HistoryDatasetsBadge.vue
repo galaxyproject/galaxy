@@ -131,7 +131,7 @@ onMounted(async () => {
 </template>
 
 <style lang="scss" scoped>
-@import "_breakpoints.scss";
+@import "@/style/scss/_breakpoints.scss";
 
 .history-datasets {
     font-size: smaller;

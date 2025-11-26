@@ -159,7 +159,7 @@ function openJobInNewTab(jobId: string) {
 </template>
 
 <style scoped lang="scss">
-@import "_breakpoints.scss";
+@import "@/style/scss/_breakpoints.scss";
 
 .invocation-error-grid {
     container: cards-list / inline-size;

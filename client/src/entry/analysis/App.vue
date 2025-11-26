@@ -228,5 +228,5 @@ export default {
 </script>
 
 <style lang="scss">
-@import "@/style/scss/custom_theme_variables.scss";
+@import "../../style/scss/custom_theme_variables.scss";
 </style>
