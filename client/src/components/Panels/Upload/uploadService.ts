@@ -1,10 +1,5 @@
-import type {
-    DataElementsTarget,
-    FileDataElement,
-    HdaDestination,
-    PastedDataElement,
-    UrlDataElement,
-} from "@/api/upload";
+import type { FileDataElement, HdasUploadTarget, PastedDataElement, UrlDataElement } from "@/api/tools";
+import { urlDataElement } from "@/api/tools";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { uploadSubmit } from "@/utils/upload-submit.js";
 
@@ -41,6 +36,9 @@ function buildCommonProperties(item: NewUploadItem) {
         space_to_tab: item.spaceToTab,
         to_posix_lines: item.toPosixLines,
         auto_decompress: true,
+        deferred: item.deferred,
+        hashes: item.hashes,
+        ...buildHashProperties(item),
     };
 }
 
@@ -55,25 +53,20 @@ function buildUploadElement(item: NewUploadItem): FileDataElement | PastedDataEl
             return {
                 ...common,
                 src: "files",
-                deferred: item.deferred,
-                ...buildHashProperties(item),
             };
         case "paste-content":
             return {
                 ...common,
                 src: "pasted",
                 paste_content: item.content,
-                deferred: item.deferred,
             };
-        case "paste-links":
+        case "paste-links": {
+            const baseElement = urlDataElement(item.name, item.url);
             return {
+                ...baseElement,
                 ...common,
-                src: "url",
-                url: item.url,
-                deferred: item.deferred,
-                hashes: item.hashes,
-                ...buildHashProperties(item),
             };
+        }
     }
 }
 
@@ -83,20 +76,27 @@ function buildUploadElement(item: NewUploadItem): FileDataElement | PastedDataEl
 function buildUploadPayload(item: NewUploadItem) {
     const element = buildUploadElement(item);
 
-    const target: DataElementsTarget = {
+    const target: HdasUploadTarget = {
         auto_decompress: true,
-        destination: { type: "hdas" } as HdaDestination,
-        elements: [element] as unknown as DataElementsTarget["elements"],
+        destination: { type: "hdas" },
+        elements: [element] as unknown as HdasUploadTarget["elements"],
     };
 
     const data = {
         history_id: item.targetHistoryId,
         targets: [target],
         auto_decompress: true,
-        ...(item.uploadMode === "local-file" && item.fileData ? { files: [item.fileData] } : {}),
+        ...setFiles(item),
     };
 
     return { data, isComposite: false };
+}
+
+function setFiles(item: NewUploadItem) {
+    if (item.uploadMode === "local-file" && item.fileData) {
+        return { files: [item.fileData] };
+    }
+    return { files: [] };
 }
 
 /**
@@ -166,7 +166,6 @@ export function useUploadService() {
     }
 
     return {
-        /** Enqueues local file, pasted content, or URL uploads */
         enqueue,
         /** Removes all completed uploads from the state */
         clearCompleted: () => uploadState.clearCompleted(),
