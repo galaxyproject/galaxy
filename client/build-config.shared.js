@@ -1,0 +1,81 @@
+/**
+ * Shared build configuration for both webpack and vite
+ * Single source of truth for legacy module resolution
+ */
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const scriptsBase = path.join(__dirname, "src");
+const libsBase = path.join(scriptsBase, "libs");
+const styleBase = path.join(scriptsBase, "style");
+
+// Legacy exact-match aliases (webpack uses $ suffix, we store without it)
+export const legacyAliases = {
+    // Core libraries
+    jquery: path.join(libsBase, "jquery.custom.js"),
+    jqueryVendor: path.join(libsBase, "jquery/jquery.js"),
+    storemodern: path.join(__dirname, "node_modules/store/dist/store.modern.js"),
+
+    // Vue
+    vue: path.join(__dirname, "node_modules/vue/dist/vue.esm.js"),
+
+    // Build config
+    config: path.join(scriptsBase, "config", process.env.NODE_ENV || "development") + ".js",
+    app: path.join(scriptsBase, "app.js"),
+};
+
+// Module resolution paths (webpack's resolve.modules)
+export const modulePaths = [scriptsBase, "node_modules", styleBase];
+
+// File extensions for resolution
+export const extensions = [".ts", ".js", ".json", ".vue", ".scss"];
+
+/**
+ * Convert to webpack format (adds $ suffix for exact matches)
+ */
+export function getWebpackAliases() {
+    const aliases = { ...legacyAliases };
+
+    // Add $ suffix for exact matches
+    const webpackAliases = {};
+    for (const [key, value] of Object.entries(aliases)) {
+        webpackAliases[key + "$"] = value;
+    }
+
+    // Add non-exact aliases
+    webpackAliases["@"] = scriptsBase;
+
+    return webpackAliases;
+}
+
+/**
+ * Convert to vite format (uses regex patterns)
+ */
+export function getViteAliases() {
+    const viteAliases = [
+        // @ alias
+        { find: "@", replacement: scriptsBase },
+    ];
+
+    // Add exact match patterns
+    for (const [key, value] of Object.entries(legacyAliases)) {
+        // Skip jquery in dev mode - handled by plugin
+        if (key === "jquery" && process.env.NODE_ENV === "development") {
+            continue;
+        }
+
+        viteAliases.push({
+            find: new RegExp(`^${key}$`),
+            replacement: path.isAbsolute(value) ? value : path.join(__dirname, value),
+        });
+    }
+
+    // Add prefix patterns for legacy paths
+    viteAliases.push(
+        { find: /^libs\//, replacement: libsBase + "/" },
+        { find: /^ui\//, replacement: path.join(scriptsBase, "ui") + "/" }
+    );
+
+    return viteAliases;
+}
