@@ -77,10 +77,6 @@ export default defineConfig({
         // Ensure .vue files are resolved
         extensions: [".js", ".ts", ".json", ".vue", ".yml", ".txt"],
     },
-    // Define global variables
-    define: {
-        __webpack_public_path__: '""',
-    },
     // CSS handling
     css: {
         modules: {

@@ -19,14 +19,12 @@ export default defineConfig({
         __GALAXY_BUILD_SYSTEM__: JSON.stringify("vite"),
         // Define build timestamp
         __buildTimestamp__: JSON.stringify(new Date().toISOString()),
-        // Define webpack public path as a no-op for Vite
-        __webpack_public_path__: "undefined",
     },
     plugins: [
         vue(), // Vue 2.7 support
         tsconfigPaths(), // TypeScript path resolution
         ViteYaml(), // YAML file support
-        galaxyLegacyPlugin(), // Handle legacy webpack-style imports
+        galaxyLegacyPlugin(), // Handle legacy module resolution
         buildMetadataPlugin(), // Generate build metadata (replaces DumpMetaPlugin)
     ],
     // resolve aliases are handled by galaxyLegacyPlugin
@@ -44,7 +42,7 @@ export default defineConfig({
         emptyOutDir: true,
         // Generate manifest.json for production
         manifest: true,
-        // Disable CSS code splitting - combine all CSS into one file like webpack does
+        // Disable CSS code splitting - combine all CSS into one file
         cssCodeSplit: false,
         rollupOptions: {
             input: {

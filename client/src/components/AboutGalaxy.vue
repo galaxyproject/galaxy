@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* global __buildTimestamp__, __license__  */
-/* (injected by webpack) */
+/* (injected at build time) */
 
 import { computed } from "vue";
 import { RouterLink } from "vue-router";

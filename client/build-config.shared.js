@@ -42,11 +42,6 @@ export function getViteAliases() {
 
     // Add exact match patterns
     for (const [key, value] of Object.entries(legacyAliases)) {
-        // Skip jquery in dev mode - handled by plugin
-        if (key === "jquery" && process.env.NODE_ENV === "development") {
-            continue;
-        }
-
         viteAliases.push({
             find: new RegExp(`^${key}$`),
             replacement: path.isAbsolute(value) ? value : path.join(__dirname, value),

@@ -4,7 +4,6 @@ import { createHash } from "crypto";
 
 /**
  * Vite plugin to generate build metadata JSON file
- * Replacement for webpack's DumpMetaPlugin
  */
 export function buildMetadataPlugin(options = {}) {
     const { filename = resolve(__dirname, "../lib/galaxy/web/framework/meta.json"), buildDate = new Date() } = options;

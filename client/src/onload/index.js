@@ -1,7 +1,7 @@
 // index.ts
 import "bootstrap";
 import "@/style/scss/base.scss";
-import "./publicPath";
+// Default Font
 import "@fontsource/atkinson-hyperlegible";
 import "@fontsource/atkinson-hyperlegible/700.css";
 
