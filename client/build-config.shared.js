@@ -74,7 +74,7 @@ export function getViteAliases() {
     // Add prefix patterns for legacy paths
     viteAliases.push(
         { find: /^libs\//, replacement: libsBase + "/" },
-        { find: /^ui\//, replacement: path.join(scriptsBase, "ui") + "/" }
+        { find: /^ui\//, replacement: path.join(scriptsBase, "ui") + "/" },
     );
 
     return viteAliases;
