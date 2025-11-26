@@ -1,6 +1,6 @@
 import { computed } from "vue";
 
-import type { FetchDatasetHash } from "@/api/upload";
+import type { FetchDatasetHash } from "@/api/tools";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 import type { UploadMode } from "./types";
