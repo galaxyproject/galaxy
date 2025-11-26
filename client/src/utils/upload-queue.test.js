@@ -1,10 +1,10 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { sendPayload } from "@/utils/upload-submit.js";
+import { sendPayload } from "@/utils/uploadSubmit";
 
 import { UploadQueue } from "./upload-queue.js";
 
-vi.mock("@/utils/upload-submit.js");
+vi.mock("@/utils/uploadSubmit");
 sendPayload.mockImplementation(() => vi.fn());
 
 function StubFile(name = null, size = 0, mode = "local") {

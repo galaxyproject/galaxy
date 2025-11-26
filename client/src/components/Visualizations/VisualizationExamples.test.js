@@ -7,7 +7,7 @@ import { ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { uploadPayload } from "@/utils/upload-payload.js";
-import { sendPayload } from "@/utils/upload-submit.js";
+import { sendPayload } from "@/utils/uploadSubmit";
 
 import UploadExamples from "./VisualizationExamples.vue";
 
@@ -15,7 +15,7 @@ vi.mock("@/utils/upload-payload.js", () => ({
     uploadPayload: vi.fn(() => "mockedPayload"),
 }));
 
-vi.mock("@/utils/upload-submit.js", () => ({
+vi.mock("@/utils/uploadSubmit", () => ({
     sendPayload: vi.fn(),
 }));
 
