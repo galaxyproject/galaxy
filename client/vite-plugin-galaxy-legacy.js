@@ -7,7 +7,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Vite plugin for Galaxy's legacy module resolution
- * Uses shared configuration with webpack
  */
 export function galaxyLegacyPlugin() {
     return {

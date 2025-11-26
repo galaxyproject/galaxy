@@ -7,7 +7,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
-import { galaxyLegacyPlugin } from "./vite-plugin-webpack-aliases.js";
+import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

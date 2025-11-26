@@ -1,5 +1,5 @@
 /**
- * Shared build configuration for both webpack and vite
+ * Build configuration for Vite
  * Single source of truth for legacy module resolution
  */
 import path from "path";
@@ -10,7 +10,7 @@ const scriptsBase = path.join(__dirname, "src");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(scriptsBase, "style");
 
-// Legacy exact-match aliases (webpack uses $ suffix, we store without it)
+// Legacy exact-match aliases
 export const legacyAliases = {
     // Core libraries
     jquery: path.join(libsBase, "jquery.custom.js"),
@@ -25,32 +25,14 @@ export const legacyAliases = {
     app: path.join(scriptsBase, "app.js"),
 };
 
-// Module resolution paths (webpack's resolve.modules)
+// Module resolution paths
 export const modulePaths = [scriptsBase, "node_modules", styleBase];
 
 // File extensions for resolution
 export const extensions = [".ts", ".js", ".json", ".vue", ".scss"];
 
 /**
- * Convert to webpack format (adds $ suffix for exact matches)
- */
-export function getWebpackAliases() {
-    const aliases = { ...legacyAliases };
-
-    // Add $ suffix for exact matches
-    const webpackAliases = {};
-    for (const [key, value] of Object.entries(aliases)) {
-        webpackAliases[key + "$"] = value;
-    }
-
-    // Add non-exact aliases
-    webpackAliases["@"] = scriptsBase;
-
-    return webpackAliases;
-}
-
-/**
- * Convert to vite format (uses regex patterns)
+ * Get Vite-format aliases (uses regex patterns for exact matches)
  */
 export function getViteAliases() {
     const viteAliases = [
