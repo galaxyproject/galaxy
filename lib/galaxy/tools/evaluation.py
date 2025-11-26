@@ -19,6 +19,7 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
+from galaxy.exceptions import InconsistentApplicationState
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
@@ -215,7 +216,9 @@ class ToolEvaluator:
             self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
         else:
-            tool_state = JobInternalToolState(job.tool_state)
+            tool_state: Optional[JobInternalToolState] = None
+            if job.tool_state:
+                tool_state = JobInternalToolState(job.tool_state)
             self.param_dict = self.build_param_dict(
                 incoming,
                 inp_data,
@@ -1074,6 +1077,9 @@ class UserToolEvaluator(ToolEvaluator):
         Build the dictionary of parameters for substituting into the command
         line. We're effectively building the CWL job object here.
         """
+        if not validated_tool_state:
+            raise InconsistentApplicationState("Internal error - no validated tool state found for job.")
+
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
         from galaxy.tool_util.parameters.convert import runtimeify

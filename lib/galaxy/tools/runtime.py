@@ -15,20 +15,23 @@ from galaxy.tool_util_models.parameters import (
 
 if TYPE_CHECKING:
     from galaxy.job_execution.compute_environment import ComputeEnvironment
-    from galaxy.structured_app import StructuredApp
+    from galaxy.structured_app import MinimalToolApp
 
 
 def setup_for_runtimeify(
-    app: "StructuredApp", compute_environment: Optional["ComputeEnvironment"], input_datasets: InpDataDictT
+    app: "MinimalToolApp", compute_environment: Optional["ComputeEnvironment"], input_datasets: InpDataDictT
 ):
     hda_references: list[HistoryDatasetAssociation] = []
 
     hdas_by_id = {d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None}
 
     def adapt_dataset(value: DataRequestInternalDereferencedT) -> DataInternalJson:
-        hda, index = hdas_by_id.get(value["id"])
+        hda_id = value.id
+        if hda_id not in hdas_by_id:
+            raise ValueError(f"Could not find HDA for dataset id {hda_id}")
+        hda, index = hdas_by_id[hda_id]
         if not hda:
-            raise ValueError(f"Could not find HDA for dataset id {value['id']}")
+            raise ValueError(f"Could not find HDA for dataset id {hda_id}")
         size = hda.dataset.get_size() if hda and hda.dataset else 0
         properties = {
             "class": "File",

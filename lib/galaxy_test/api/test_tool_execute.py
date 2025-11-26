@@ -686,15 +686,11 @@ def test_select_multiple_does_default_to_select_values_marked_as_selected(
     required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     empty = tool_input_format.when.any({})
-    required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
-        "--ex3"
-    )
+    required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped("--ex3")
 
 
 @requires_tool_id("gx_select_multiple_one_default_user")
-def test_select_multiple_does_default_to_select_values_marked_as_selected_user(
-    required_tool: list[RequiredTool]
-):
+def test_select_multiple_does_default_to_select_values_marked_as_selected_user(required_tool: RequiredTool):
     required_tool.execute.with_request({}).assert_has_single_job.with_output("output").with_contents_stripped(
         '["--ex3"]'
     )
