@@ -7,7 +7,7 @@ import { storeToRefs } from "pinia";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
-import { sendPayload } from "@/utils/upload-submit.js";
+import { sendPayload } from "@/utils/uploadSubmit";
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
