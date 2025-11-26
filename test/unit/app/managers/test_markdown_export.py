@@ -280,7 +280,7 @@ invocation_time(invocation_id=1)
         invocation = self._new_invocation()
         self.app.workflow_manager.get_invocation.side_effect = [invocation]
         result = self._to_basic(example)
-        expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S")
+        expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S UTC")
         assert f"\n    {expectedtime}" in result
 
     def test_job_parameters(self):
@@ -413,9 +413,7 @@ invocation_time(invocation_id=1)
         result, extra_data = self._ready_export(example)
         assert "invocations" in extra_data
         assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
-        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.strftime(
-            "%Y-%m-%d, %H:%M:%S"
-        )
+        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.isoformat()
 
     def _ready_export(self, example):
         return ready_galaxy_markdown_for_export(self.trans, example)
