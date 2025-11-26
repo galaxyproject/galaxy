@@ -34,9 +34,8 @@ from galaxy.files.sources._fsspec import (
     FsspecBaseFileSourceTemplateConfiguration,
     FsspecFilesSource,
 )
-from galaxy.util.config_templates import TemplateExpansion
 from galaxy.files.sources.ascp_fsspec import AscpFileSystem
-
+from galaxy.util.config_templates import TemplateExpansion
 
 log = logging.getLogger(__name__)
 
