@@ -1,3 +1,5 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { MessageException } from "@/api";
 import { GalaxyApi } from "@/api/client";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -7,11 +9,11 @@ import { DEFAULT_CONFIG } from "./rateLimiter";
 const { server, http } = useServerMock();
 
 /** Spy to count number of times a 429 response is returned */
-const mock429ResponseSpy = jest.fn();
+const mock429ResponseSpy = vi.fn();
 
 describe("Rate Limiter Middleware", () => {
-    let consoleWarnSpy: jest.SpyInstance;
-    let consoleErrorSpy: jest.SpyInstance;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
     /** Helper to verify that there is a 429 response without retries */
     function ensure429AndNoRetries(response: Response, error: MessageException | undefined) {
@@ -29,8 +31,8 @@ describe("Rate Limiter Middleware", () => {
     }
 
     beforeEach(() => {
-        consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
-        consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+        consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     });
     afterEach(() => {
         consoleWarnSpy.mockRestore();
