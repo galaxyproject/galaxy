@@ -1,7 +1,7 @@
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useHistoryStore } from "@/stores/historyStore";
 import { appendVueComponent } from "@/utils/mountVueComponent";
-import { uploadPayload } from "@/utils/upload-payload.js";
+import { buildLegacyPayload } from "@/utils/uploadPayload";
 import { submitDatasetUpload } from "@/utils/uploadSubmit";
 
 import DataDialog from "@/components/DataDialog/DataDialog.vue";
@@ -42,7 +42,7 @@ export async function create(galaxy, options) {
         },
         error: options.error,
         data: {
-            payload: uploadPayload([options], historyId),
+            payload: buildLegacyPayload([options], historyId),
         },
     });
 }

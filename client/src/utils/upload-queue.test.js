@@ -4,8 +4,17 @@ import { sendPayload } from "@/utils/uploadSubmit";
 
 import { UploadQueue } from "./upload-queue.js";
 
-vi.mock("@/utils/uploadSubmit");
-sendPayload.mockImplementation(() => vi.fn());
+vi.mock("@/utils/uploadSubmit", async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        sendPayload: vi.fn(),
+        submitDatasetUpload: vi.fn((config) => {
+            // Simulate calling success callback
+            config.success?.();
+        }),
+    };
+});
 
 function StubFile(name = null, size = 0, mode = "local") {
     return { name, size, mode };
@@ -78,6 +87,7 @@ describe("UploadQueue", () => {
                     fileName: file.name,
                     fileSize: file.size,
                     fileContent: "fileContent",
+                    fileData: new File(["test content"], file.name || "test.txt", { type: "text/plain" }),
                     targetHistoryId: "mockhistoryid",
                 };
             },
@@ -211,9 +221,11 @@ describe("UploadQueue", () => {
             history_id: "historyId",
             targets: [
                 {
+                    auto_decompress: false,
                     destination: { type: "hdas" },
                     elements: [
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -224,6 +236,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.0",
                         },
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -234,6 +247,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.1",
                         },
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
