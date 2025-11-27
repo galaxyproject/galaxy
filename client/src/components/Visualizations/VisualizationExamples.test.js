@@ -6,13 +6,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { useToast } from "@/composables/toast";
-import { uploadPayload } from "@/utils/upload-payload.js";
+import { buildUploadPayload, createUrlUploadItem } from "@/utils/uploadPayload";
 import { sendPayload } from "@/utils/uploadSubmit";
 
 import UploadExamples from "./VisualizationExamples.vue";
 
-vi.mock("@/utils/upload-payload.js", () => ({
-    uploadPayload: vi.fn(() => "mockedPayload"),
+vi.mock("@/utils/uploadPayload", () => ({
+    buildUploadPayload: vi.fn(() => "mockedPayload"),
+    createUrlUploadItem: vi.fn((url, historyId, options) => ({
+        src: "url",
+        url,
+        historyId,
+        name: options?.name ?? "default",
+        ext: options?.ext ?? "auto",
+    })),
 }));
 
 vi.mock("@/utils/uploadSubmit", () => ({
@@ -78,10 +85,19 @@ describe("UploadExamples.vue", () => {
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items.at(0).find("a").trigger("click");
-        expect(uploadPayload).toHaveBeenCalledWith(
-            [{ fileMode: "new", fileName: "Example 1", fileUri: urlData[0].url, extension: urlData[0].ftype }],
-            "fake-history-id",
-        );
+        expect(createUrlUploadItem).toHaveBeenCalledWith(urlData[0].url, "fake-history-id", {
+            name: "Example 1",
+            ext: urlData[0].ftype,
+        });
+        expect(buildUploadPayload).toHaveBeenCalledWith([
+            expect.objectContaining({
+                src: "url",
+                url: urlData[0].url,
+                historyId: "fake-history-id",
+                name: "Example 1",
+                ext: urlData[0].ftype,
+            }),
+        ]);
         expect(sendPayload).toHaveBeenCalledWith("mockedPayload", {
             success: expect.any(Function),
             error: expect.any(Function),

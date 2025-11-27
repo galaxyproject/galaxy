@@ -14,7 +14,7 @@ import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import type { ComponentSize } from "../BaseComponents/componentVariants";
-import type { UploadFile, UploadItem } from "./model";
+import type { UploadFile, UploadRowModel } from "./model";
 import { defaultModel, isLocalFile } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
@@ -70,7 +70,7 @@ const dbKey = ref(props.defaultDbKey);
 const queueStopping = ref(false);
 const uploadCompleted = ref(0);
 const uploadFile = ref<HTMLInputElement | null>(null);
-const uploadItems = ref<Record<string, UploadItem>>({});
+const uploadItems = ref<Record<string, UploadRowModel>>({});
 const uploadSize = ref(0);
 const queue = ref(createUploadQueue());
 const selectedItemsForModal = ref<HDASummary[]>([]);
@@ -97,7 +97,7 @@ const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
 const { uploadedHistoryItemsOk, uploadedHistoryItemsReady, historyItemsStateInfo } = monitorUploadedHistoryItems(
-    uploadValues as Ref<UploadItem[]>,
+    uploadValues as Ref<UploadRowModel[]>,
     historyId,
     enableStart,
     creatingPairedType,
@@ -209,7 +209,7 @@ function eventError(index: string, message: string) {
 }
 
 /** Update model */
-function eventInput(index: string, newData: Partial<UploadItem>) {
+function eventInput(index: string, newData: Partial<UploadRowModel>) {
     const it = uploadItems.value[index];
     if (it) {
         Object.entries(newData).forEach(([key, value]) => {
