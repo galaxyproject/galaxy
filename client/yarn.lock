@@ -1942,6 +1942,15 @@
     pluralize "^8.0.0"
     yaml-ast-parser "0.0.43"
 
+"@rollup/plugin-inject@^5.0.5":
+  version "5.0.5"
+  resolved "https://registry.yarnpkg.com/@rollup/plugin-inject/-/plugin-inject-5.0.5.tgz#616f3a73fe075765f91c5bec90176608bed277a3"
+  integrity sha512-2+DEJbNBoPROPkgTDNe8/1YXWcqxbN5DTjASVIOx8HS+pITXushyNiBV56RB08zuptzz8gT3YfkqriTBVycepg==
+  dependencies:
+    "@rollup/pluginutils" "^5.0.1"
+    estree-walker "^2.0.2"
+    magic-string "^0.30.3"
+
 "@rollup/pluginutils@5.1.0":
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/@rollup/pluginutils/-/pluginutils-5.1.0.tgz#7e53eddc8c7f483a4ad0b94afb1f7f5fd3c771e0"
@@ -1950,6 +1959,15 @@
     "@types/estree" "^1.0.0"
     estree-walker "^2.0.2"
     picomatch "^2.3.1"
+
+"@rollup/pluginutils@^5.0.1":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@rollup/pluginutils/-/pluginutils-5.3.0.tgz#57ba1b0cbda8e7a3c597a4853c807b156e21a7b4"
+  integrity sha512-5EdhGZtnu3V88ces7s53hhfK5KSASnJZv8Lulpc04cWO3REESroJXg73DFsOmgbU2BhwV0E20bu2IDZb3VKW4Q==
+  dependencies:
+    "@types/estree" "^1.0.0"
+    estree-walker "^2.0.2"
+    picomatch "^4.0.2"
 
 "@rollup/rollup-android-arm-eabi@4.53.3":
   version "4.53.3"
@@ -6228,7 +6246,7 @@ lucide-vue@^0.344.0:
   resolved "https://registry.yarnpkg.com/lucide-vue/-/lucide-vue-0.344.0.tgz#e1c281e352b814aac31db56d0bd99b0205e40e56"
   integrity sha512-pful6clOPphjOjuVaD/D1Lf7VW8dI58TxKvN+veOQZ2EK3jJr5Jv5a32wG1sDOvW/rw5w+nZ7qha6INvWtZDdQ==
 
-magic-string@^0.30.21:
+magic-string@^0.30.21, magic-string@^0.30.3:
   version "0.30.21"
   resolved "https://registry.yarnpkg.com/magic-string/-/magic-string-0.30.21.tgz#56763ec09a0fa8091df27879fd94d19078c00d91"
   integrity sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==
@@ -6880,7 +6898,7 @@ picomatch@^2.0.4, picomatch@^2.2.1, picomatch@^2.3.1:
   resolved "https://registry.npmjs.org/picomatch/-/picomatch-2.3.1.tgz"
   integrity sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==
 
-picomatch@^4.0.3:
+picomatch@^4.0.2, picomatch@^4.0.3:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-4.0.3.tgz#796c76136d1eead715db1e7bad785dedd695a042"
   integrity sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==

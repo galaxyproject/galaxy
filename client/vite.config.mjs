@@ -2,6 +2,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import ViteYaml from "@modyfi/vite-plugin-yaml";
+import inject from "@rollup/plugin-inject";
 import vue from "@vitejs/plugin-vue2";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -26,6 +27,14 @@ export default defineConfig({
         ViteYaml(), // YAML file support
         galaxyLegacyPlugin(), // Handle legacy module resolution
         buildMetadataPlugin(), // Generate build metadata (replaces DumpMetaPlugin)
+        // Inject imports for globals used without explicit imports (like webpack's ProvidePlugin)
+        inject({
+            include: ["**/*.js", "**/*.ts", "**/*.vue"],
+            exclude: ["**/jquery*.js", "**/node_modules/jquery/**"],
+            $: "jquery",
+            jQuery: "jquery",
+            _: "underscore",
+        }),
     ],
     // resolve aliases are handled by galaxyLegacyPlugin
     css: {
