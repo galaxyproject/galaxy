@@ -7,12 +7,15 @@ export type FetchDataPayload = components["schemas"]["FetchDataPayload"];
 export type FileDataElement = components["schemas"]["FileDataElement"];
 export type PastedDataElement = components["schemas"]["PastedDataElement"];
 export type UrlDataElement = components["schemas"]["UrlDataElement"];
+export type CompositeDataElement = components["schemas"]["CompositeDataElement"];
 export type FetchDatasetHash = components["schemas"]["FetchDatasetHash"];
 export type NestedElement = components["schemas"]["NestedElement"];
 export type NestedElementItems = NestedElement["elements"];
 export type NestedElementItem = NestedElementItems[number];
 export type FetchTargets = FetchDataPayload["targets"];
 export type AnyFetchTarget = FetchTargets[number];
+
+export type ApiDataElement = FileDataElement | PastedDataElement | UrlDataElement;
 
 export interface ToolIdentifier {
     toolId: string;

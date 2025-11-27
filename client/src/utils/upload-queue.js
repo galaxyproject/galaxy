@@ -1,8 +1,7 @@
 /*
     galaxy upload utilities - requires FormData and XMLHttpRequest
 */
-import { uploadPayload } from "@/utils/upload-payload.js";
-import { sendPayload, submitDatasetUpload } from "@/utils/uploadSubmit";
+import { buildLegacyPayload, sendPayload, submitDatasetUpload } from "@/utils/uploadSubmit";
 
 export class UploadQueue {
     constructor(options) {
@@ -100,7 +99,7 @@ export class UploadQueue {
             if (!item.targetHistoryId) {
                 throw new Error(`Missing target history for upload item [${index}] ${item.fileName}`);
             }
-            const data = uploadPayload([item], item.targetHistoryId);
+            const data = buildLegacyPayload([item], item.targetHistoryId);
             // Initiate upload request
             this._processSubmit(index, data);
         } catch (e) {
@@ -131,7 +130,7 @@ export class UploadQueue {
         for (const historyId in batchByHistory) {
             const list = batchByHistory[historyId];
             try {
-                const data = uploadPayload(list, historyId);
+                const data = buildLegacyPayload(list, historyId);
                 sendPayload(data, {
                     success: (message) => {
                         list.forEach((model) => {

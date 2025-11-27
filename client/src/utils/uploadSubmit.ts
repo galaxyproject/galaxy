@@ -1,9 +1,36 @@
+/**
+ * Upload submission utilities for Galaxy dataset uploads.
+ *
+ * This module handles the actual submission of upload payloads to the Galaxy API,
+ * including TUS chunked uploads for large files.
+ */
 import { GalaxyApi } from "@/api";
 import type { FetchDataPayload, FetchDataResponse } from "@/api/tools";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { createTusUpload, type NamedBlob, type UploadableFile } from "./tusUpload";
+import { createTusUpload, type NamedBlob } from "./tusUpload";
+import type { BuildPayloadOptions, UploadItem, UploadPayload } from "./uploadPayload";
+import { buildUploadPayload, DEFAULT_FILE_NAME } from "./uploadPayload";
+
+// Re-export types and utilities for consumers
+export type { LocalFileUploadItem, PastedContentUploadItem, UploadItem, UrlUploadItem } from "./uploadPayload";
+export {
+    buildUploadPayload,
+    createFileUploadItem,
+    createPastedUploadItem,
+    createUrlUploadItem,
+    DEFAULT_FILE_NAME,
+    isGalaxyFileName,
+    isUploadableFile,
+    parseContentToUploadItems,
+    stripGalaxyFilePrefix,
+    uploadItemDefaults,
+} from "./uploadPayload";
+
+// Legacy compatibility exports (deprecated, for backward compatibility)
+export type { LegacyUploadItem } from "./uploadPayload";
+export { buildLegacyPayload, fromLegacyUploadItem, fromLegacyUploadItems } from "./uploadPayload";
 
 /**
  * Callback functions for upload lifecycle events.
@@ -20,6 +47,14 @@ export interface UploadCallbacks {
 }
 
 /**
+ * Upload payload with optional error message for validation failures.
+ */
+export interface UploadDataPayload extends UploadPayload {
+    /** Optional error message that will cause immediate failure */
+    error_message?: string;
+}
+
+/**
  * Configuration for upload submission.
  */
 export interface UploadSubmitConfig extends UploadCallbacks {
@@ -29,16 +64,6 @@ export interface UploadSubmitConfig extends UploadCallbacks {
     isComposite?: boolean;
     /** Chunk size for TUS uploads in bytes (default: 10MB) */
     chunkSize?: number;
-}
-
-/**
- * Extended FetchDataPayload with upload-specific properties.
- */
-export interface UploadDataPayload extends FetchDataPayload {
-    /** Array of files to upload via TUS */
-    files?: UploadableFile[];
-    /** Optional error message that will cause immediate failure */
-    error_message?: string;
 }
 
 /**
@@ -107,14 +132,15 @@ export async function submitDatasetUpload(config: UploadSubmitConfig): Promise<v
             if (firstElement && "src" in firstElement) {
                 if (firstElement.src === "url") {
                     // Direct URL submission - no TUS upload needed
-                    await sendPayload(data, callbacks);
+                    const apiPayload = toApiPayload(data);
+                    await sendPayload(apiPayload, callbacks);
                 } else if (firstElement.src === "pasted" && "paste_content" in firstElement) {
                     // Convert pasted content to Blob and upload via TUS
                     const pasteContent = String(firstElement.paste_content);
                     const blob = new Blob([pasteContent]) as NamedBlob;
-                    blob.name = String(firstElement.name || "default");
+                    blob.name = String(firstElement.name || DEFAULT_FILE_NAME);
 
-                    const filesData = { ...data, files: [blob] };
+                    const filesData: UploadPayload = { ...data, files: [blob] };
                     await uploadFilesViaTus(filesData, tusEndpoint, chunkSize, callbacks);
                 }
             }
@@ -123,20 +149,33 @@ export async function submitDatasetUpload(config: UploadSubmitConfig): Promise<v
 }
 
 /**
+ * Converts UploadPayload to FetchDataPayload for API submission.
+ */
+function toApiPayload(data: UploadPayload): FetchDataPayload {
+    return {
+        history_id: data.history_id,
+        targets: data.targets,
+        auto_decompress: data.auto_decompress,
+    };
+}
+
+/**
  * Uploads files via TUS protocol, then submits the complete payload.
- *
- * @param data - The upload data containing files
- * @param tusEndpoint - The TUS upload endpoint URL
- * @param chunkSize - Size of upload chunks in bytes
- * @param callbacks - Upload lifecycle callbacks
  */
 async function uploadFilesViaTus(
-    data: UploadDataPayload,
+    data: UploadPayload,
     tusEndpoint: string,
     chunkSize: number,
     callbacks: UploadCallbacks,
 ): Promise<void> {
     const files = data.files || [];
+
+    // Build API payload with TUS session info
+    const apiPayload: Record<string, unknown> = {
+        history_id: data.history_id,
+        targets: data.targets,
+        auto_decompress: data.auto_decompress,
+    };
 
     try {
         // Upload each file sequentially via TUS
@@ -158,20 +197,75 @@ async function uploadFilesViaTus(
             });
 
             // Add TUS session information to payload
-            data[`files_${index}|file_data` as keyof typeof data] = {
+            apiPayload[`files_${index}|file_data`] = {
                 session_id: result.sessionId,
                 name: result.fileName,
             };
         }
 
-        // Remove files array and submit the payload
-        delete data.files;
-        await sendPayload(data, callbacks);
+        await sendPayload(apiPayload as FetchDataPayload, callbacks);
     } catch (err) {
-        // Error already handled by callbacks in createTusUpload
-        // But ensure error callback is invoked if not already done
+        // Ensure error callback is invoked
         if (err instanceof Error) {
             callbacks.error?.(err);
         }
+    }
+}
+
+/**
+ * Configuration for the uploadDatasets function.
+ */
+export interface UploadDatasetsConfig extends UploadCallbacks, BuildPayloadOptions {
+    /** Chunk size for TUS uploads in bytes (default: 10MB) */
+    chunkSize?: number;
+}
+
+/**
+ * Uploads datasets to Galaxy with a simplified API.
+ * Combines payload building, TUS file upload, and API submission in one call.
+ *
+ * @param items - The upload items to process
+ * @param config - Upload configuration and callbacks
+ *
+ * @example
+ * ```typescript
+ * await uploadDatasets([
+ *   createFileUploadItem(file, "history123", { ext: "bed" }),
+ *   createUrlUploadItem("https://example.com/data.txt", "history123"),
+ * ], {
+ *   success: (response) => console.log("Upload complete", response),
+ *   error: (err) => console.error("Upload failed", err),
+ *   progress: (pct) => console.log(`Progress: ${pct}%`),
+ * });
+ * ```
+ */
+export async function uploadDatasets(items: UploadItem[], config: UploadDatasetsConfig = {}): Promise<void> {
+    const { composite = false, chunkSize, success, error, warning, progress } = config;
+
+    try {
+        // Build the API-ready payload from upload items
+        const payload: UploadPayload = buildUploadPayload(items, { composite });
+
+        // Prepare the data for submission
+        const data: UploadDataPayload = {
+            history_id: payload.history_id,
+            targets: payload.targets,
+            auto_decompress: payload.auto_decompress,
+            files: payload.files,
+        };
+
+        // Submit using existing infrastructure
+        await submitDatasetUpload({
+            data,
+            isComposite: composite,
+            chunkSize,
+            success,
+            error,
+            warning,
+            progress,
+        });
+    } catch (err) {
+        const errorMessage = errorMessageAsString(err);
+        config.error?.(errorMessage);
     }
 }

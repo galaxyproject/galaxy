@@ -2,7 +2,7 @@
 import { BButton } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
 
-import { uploadPayload } from "@/utils/upload-payload.js";
+import { buildLegacyPayload } from "@/utils/uploadPayload";
 import { submitDatasetUpload } from "@/utils/uploadSubmit";
 
 import { defaultModel } from "./model";
@@ -107,7 +107,7 @@ function eventStart() {
     });
     try {
         submitDatasetUpload({
-            data: uploadPayload(uploadValues.value, props.historyId, true),
+            data: buildLegacyPayload(uploadValues.value, props.historyId, true),
             error: eventError,
             progress: eventProgress,
             success: eventSuccess,
