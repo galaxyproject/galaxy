@@ -195,7 +195,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # base analysis interface at which point the application takes over.
     webapp.add_client_route("/")
     webapp.add_client_route("/index")
-    webapp.add_client_route("/root")
     webapp.add_client_route("/about")
     webapp.add_client_route("/admin")
     webapp.add_client_route("/admin/data_tables")
