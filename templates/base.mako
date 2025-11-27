@@ -63,7 +63,7 @@
 
 <%def name="javascript_app()">
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
-        <script type="text/javascript">
+        <script type="module">
             // Auto Focus on first item on form
             window.addEventListener("load", function() {
                 console.log("base.mako", "auto focus on first item on form");

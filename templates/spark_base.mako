@@ -57,7 +57,7 @@
         else:
             tooltip = color + '{{prefix}}{{y}} ' + length + '{{suffix}}</span>'
     %>
-    <script>
+    <script type="module">
         $(document).ready(function(e) {
             $("#${id}").sparkline(${data}, {
                 type: '${sparktype}',

@@ -74,7 +74,7 @@
 </%def>
 
 <%def name="get_page_script()">
-    <script>
+    <script type="module">
         $(document).ready( function(e) {
             var drop_down = false;
             
