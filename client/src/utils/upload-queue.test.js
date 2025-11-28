@@ -1,15 +1,15 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { sendPayload } from "@/utils/uploadSubmit";
+import { fetchDatasets } from "@/utils/upload";
 
 import { UploadQueue } from "./upload-queue.js";
 
-vi.mock("@/utils/uploadSubmit", async (importOriginal) => {
+vi.mock("@/utils/upload", async (importOriginal) => {
     const actual = await importOriginal();
     return {
         ...actual,
-        sendPayload: vi.fn(),
-        submitDatasetUpload: vi.fn((config) => {
+        fetchDatasets: vi.fn(),
+        submitUpload: vi.fn((config) => {
             // Simulate calling success callback
             config.success?.();
         }),
@@ -215,7 +215,7 @@ describe("UploadQueue", () => {
         q.add([StubFile("a"), StubFile("b"), StubFile("c")]);
         expect(q.size).toEqual(3);
         q.start();
-        expect(sendPayload.mock.calls[0][0]).toEqual({
+        expect(fetchDatasets.mock.calls[0][0]).toEqual({
             auto_decompress: true,
             files: [],
             history_id: "historyId",
