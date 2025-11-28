@@ -13,7 +13,8 @@ const styleBase = path.join(scriptsBase, "style");
 // Legacy exact-match aliases
 export const legacyAliases = {
     // Core libraries
-    jquery: path.join(libsBase, "jquery.custom.js"),
+    // Note: jquery is NOT aliased - it resolves to node_modules/jquery directly
+    // The global setup (window.$, window.jQuery) is done in libs.js
     jqueryVendor: path.join(libsBase, "jquery/jquery.js"),
     storemodern: path.join(__dirname, "node_modules/store/dist/store.modern.js"),
 
