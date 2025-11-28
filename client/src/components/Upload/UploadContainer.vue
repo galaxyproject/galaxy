@@ -14,7 +14,7 @@ import {
 } from "@/components/Upload/utils";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
-import { buildLegacyPayload } from "@/utils/uploadPayload";
+import { buildLegacyPayload } from "@/utils/upload";
 
 import CompositeBox from "./CompositeBox.vue";
 import DefaultBox from "./DefaultBox.vue";

@@ -613,7 +613,7 @@ import _ from "underscore";
 import Vue from "vue";
 
 import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
-import { fetch, fetchJobErrorMessage } from "@/api/tools";
+import { fetchDatasetsToJobId, fetchJobErrorMessage } from "@/api/tools";
 import RuleDefs from "@/components/RuleBuilder/rule-definitions";
 import UploadUtils from "@/components/Upload/utils";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -1579,7 +1579,7 @@ export default {
                         targets: targets,
                         auto_decompress: true,
                     };
-                    fetch(fetchPayload).then(this.refreshAndWait).catch(this.renderFetchError);
+                    fetchDatasetsToJobId(fetchPayload).then(this.refreshAndWait).catch(this.renderFetchError);
                 }
             }
         },

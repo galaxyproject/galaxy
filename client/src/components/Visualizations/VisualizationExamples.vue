@@ -6,8 +6,7 @@ import { storeToRefs } from "pinia";
 
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
-import { buildUploadPayload, createUrlUploadItem } from "@/utils/uploadPayload";
-import { sendPayload } from "@/utils/uploadSubmit";
+import { createUrlUploadItem, uploadDatasets } from "@/utils/upload";
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -32,8 +31,7 @@ function onSubmit(name: string, url: string, ftype?: string) {
         name,
         ext: ftype ?? "auto",
     });
-    const payload = buildUploadPayload([item]);
-    sendPayload(payload, {
+    uploadDatasets([item], {
         success: () => toast.success(`The sample dataset '${name}' is being uploaded to your history.`),
         error: () => toast.error(`Uploading the sample dataset '${name}' has failed.`),
     });

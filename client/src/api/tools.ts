@@ -1,5 +1,6 @@
 import { type components, GalaxyApi } from "@/api";
 import { ERROR_STATES, type ShowFullJobResponse } from "@/api/jobs";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 export type HdcaUploadTarget = components["schemas"]["HdcaDataItemsTarget"];
 export type HdasUploadTarget = components["schemas"]["DataElementsTarget"];
@@ -56,11 +57,35 @@ export function nestedElement(identifier: string, elements: NestedElement["eleme
     return nestedElement;
 }
 
-export async function fetch(payload: FetchDataPayload) {
+export async function fetchDatasetsToJobId(payload: FetchDataPayload) {
     const { data } = await GalaxyApi().POST("/api/tools/fetch", {
         body: payload,
     });
     return fetchResponseToJobId(data as FetchDataResponse);
+}
+
+/**
+ * Fetches datasets into Galaxy via the /api/tools/fetch endpoint.
+ * Uses callback-based result handling for upload trackers.
+ *
+ * @param payload - The fetch data payload defining datasets to import
+ * @param callbacks - Optional callbacks for success/error/progress events
+ */
+export async function fetchDatasets(payload: FetchDataPayload, callbacks: FetchDatasetsCallbacks = {}): Promise<void> {
+    try {
+        const { data, error } = await GalaxyApi().POST("/api/tools/fetch", {
+            body: payload,
+        });
+
+        if (error) {
+            throw new Error(error.err_msg || "Upload request failed");
+        }
+
+        callbacks.success?.(data as FetchDataResponse);
+    } catch (error) {
+        const errorMessage = errorMessageAsString(error);
+        callbacks.error?.(errorMessage);
+    }
 }
 
 // TODO: The response is not modeled yet in the FastAPI route for /api/tools/fetch
@@ -69,6 +94,20 @@ export async function fetch(payload: FetchDataPayload) {
 export interface FetchDataResponse {
     jobs: { id: string }[];
     outputs?: Record<string, unknown>;
+}
+
+/**
+ * Callback functions for dataset fetch/upload lifecycle events.
+ */
+export interface FetchDatasetsCallbacks {
+    /** Called when the request completes successfully */
+    success?: (response: FetchDataResponse) => void;
+    /** Called when an error occurs */
+    error?: (error: string | Error) => void;
+    /** Called with warning messages */
+    warning?: (message: string) => void;
+    /** Called with progress percentage (0-100) for uploads */
+    progress?: (percentage: number) => void;
 }
 
 function fetchResponseToJobId(response: FetchDataResponse) {
