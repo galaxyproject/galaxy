@@ -6,9 +6,6 @@ from typing import (
     Union,
 )
 
-import omero.sys
-from omero.gateway import BlitzGateway
-
 from galaxy.exceptions import (
     AuthenticationFailed,
     ObjectNotFound,
@@ -26,6 +23,13 @@ from galaxy.files.sources import (
     PluginKind,
 )
 from galaxy.util.config_templates import TemplateExpansion
+
+try:
+    import omero.sys
+    from omero.gateway import BlitzGateway
+except ImportError:
+    omero = None
+    BlitzGateway = None
 
 
 class OmeroFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
@@ -47,12 +51,23 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     plugin_kind = PluginKind.rfs
     supports_pagination = True
     supports_search = True
+    required_module = BlitzGateway
+    required_package = "omero-py (requires manual Zeroc IcePy installation)"
 
     template_config_class = OmeroFileSourceTemplateConfiguration
     resolved_config_class = OmeroFileSourceConfiguration
 
     def __init__(self, template_config: OmeroFileSourceTemplateConfiguration):
+        if self.required_module is None:
+            raise self.required_package_exception
         super().__init__(template_config)
+
+    @property
+    def required_package_exception(self) -> Exception:
+        return Exception(
+            f"The Python package '{self.required_package}' is required to use this file source plugin. "
+            "Please see https://omero.readthedocs.io/en/stable/developers/Python.html for installation instructions."
+        )
 
     @contextmanager
     def _connection(self, context: FilesSourceRuntimeContext[OmeroFileSourceConfiguration]) -> Iterator[BlitzGateway]:
@@ -61,6 +76,9 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         Establishes a connection to the OMERO server, enables keepalive for long-running
         operations, and ensures proper cleanup on exit.
         """
+        if BlitzGateway is None:
+            raise self.required_package_exception
+
         conn = BlitzGateway(
             username=context.config.username,
             passwd=context.config.password,
