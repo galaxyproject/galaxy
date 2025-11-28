@@ -46,6 +46,7 @@ FileSourceTemplateType = Literal[
     "rspace",
     "dataverse",
     "huggingface",
+    "omero",
 ]
 
 
@@ -311,6 +312,26 @@ class HuggingFaceFileSourceConfiguration(StrictModel):
     endpoint: Optional[str] = None
 
 
+class OmeroFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["omero"]
+    username: Union[str, TemplateExpansion]
+    password: Union[str, TemplateExpansion]
+    host: Union[str, TemplateExpansion]
+    port: Union[int, TemplateExpansion] = 4064
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class OmeroFileSourceConfiguration(StrictModel):
+    type: Literal["omero"]
+    username: str
+    password: str
+    host: str
+    port: int = 4064
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Annotated[
     Union[
         PosixFileSourceTemplateConfiguration,
@@ -327,6 +348,7 @@ FileSourceTemplateConfiguration = Annotated[
         RSpaceFileSourceTemplateConfiguration,
         DataverseFileSourceTemplateConfiguration,
         HuggingFaceFileSourceTemplateConfiguration,
+        OmeroFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -347,6 +369,7 @@ FileSourceConfiguration = Annotated[
         RSpaceFileSourceConfiguration,
         DataverseFileSourceConfiguration,
         HuggingFaceFileSourceConfiguration,
+        OmeroFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -425,6 +448,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "rspace": RSpaceFileSourceConfiguration,
     "dataverse": DataverseFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
+    "omero": OmeroFileSourceConfiguration,
 }
 
 

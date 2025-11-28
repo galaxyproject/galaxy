@@ -1,0 +1,33 @@
+- id: omero-server
+  version: 0
+  name: OMERO Server
+  description: |
+      Connect to an OMERO server to browse and import images stored there. You can connect to IDR (https://idr.openmicroscopy.org/) or to your own OMERO server instance.
+      When connecting to IDR, you can use the public credentials (username: "public", password: "public").
+  configuration:
+      type: omero
+      username: "{{ variables.username }}"
+      password: "{{ secrets.password }}"
+      host: "{{ variables.host }}"
+      port: "{{ variables.port }}"
+      writable: false
+  variables:
+      host:
+          label: Server Host
+          type: string
+          help: Host of the OMERO Server to connect to. For example, to connect to IDR use idr.openmicroscopy.org.
+          default: idr.openmicroscopy.org
+      port:
+          label: Port
+          type: integer
+          help: Port used to connect to the OMERO server.
+          default: 4064
+      username:
+          label: Username
+          type: string
+          help: Username to connect with.
+  secrets:
+      password:
+          label: Password
+          help: |
+              Password to connect to OMERO server with.

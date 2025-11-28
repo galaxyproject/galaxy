@@ -11882,7 +11882,8 @@ export interface components {
                 | "zenodo"
                 | "rspace"
                 | "dataverse"
-                | "huggingface";
+                | "huggingface"
+                | "omero";
             /** Variables */
             variables?:
                 | (
@@ -23040,7 +23041,8 @@ export interface components {
                 | "zenodo"
                 | "rspace"
                 | "dataverse"
-                | "huggingface";
+                | "huggingface"
+                | "omero";
             /** Uri Root */
             uri_root: string;
             /**
