@@ -8,6 +8,10 @@ from typing import (
 
 from omero.gateway import BlitzGateway
 
+from galaxy.exceptions import (
+    AuthenticationFailed,
+    ObjectNotFound,
+)
 from galaxy.files.models import (
     AnyRemoteEntry,
     BaseFileSourceConfiguration,
@@ -62,7 +66,10 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             secure=True,
         )
         if not conn.connect():
-            raise Exception("Could not connect to OMERO server")
+            raise AuthenticationFailed(
+                f"Could not connect to OMERO server at {context.config.host}:{context.config.port}. "
+                "Please verify your credentials and server address."
+            )
 
         try:
             conn.c.enableKeepAlive(60)  # type: ignore[union-attr]
@@ -240,7 +247,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         image = omero.getObject("Image", image_id)
 
         if not image:
-            raise Exception(f"Image with ID {image_id} not found")
+            raise ObjectNotFound(f"Image with ID {image_id} not found in OMERO server")
 
         return image
 
