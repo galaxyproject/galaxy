@@ -1,5 +1,7 @@
+from contextlib import contextmanager
 from datetime import datetime
 from typing import (
+    Iterator,
     Optional,
     Union,
 )
@@ -45,14 +47,28 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     def __init__(self, template_config: OmeroFileSourceTemplateConfiguration):
         super().__init__(template_config)
 
-    def _open_connection(self, context: FilesSourceRuntimeContext[OmeroFileSourceConfiguration]) -> BlitzGateway:
-        return BlitzGateway(
+    @contextmanager
+    def _connection(self, context: FilesSourceRuntimeContext[OmeroFileSourceConfiguration]) -> Iterator[BlitzGateway]:
+        """Context manager for OMERO connections with automatic cleanup.
+
+        Establishes a connection to the OMERO server, enables keepalive for long-running
+        operations, and ensures proper cleanup on exit.
+        """
+        conn = BlitzGateway(
             username=context.config.username,
             passwd=context.config.password,
             host=context.config.host,
             port=context.config.port,
             secure=True,
         )
+        if not conn.connect():
+            raise Exception("Could not connect to OMERO server")
+
+        try:
+            conn.c.enableKeepAlive(60)  # type: ignore[union-attr]
+            yield conn
+        finally:
+            conn.close()
 
     def _list(
         self,
@@ -76,16 +92,10 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         - "/project_<id>" - lists datasets in a project
         - "/project_<id>/dataset_<id>" - lists images in a dataset
         """
-        omero = self._open_connection(context)
-        if not omero.connect():
-            raise Exception("Could not connect to OMERO server")
-
-        try:
+        with self._connection(context) as omero:
             path_parts = self._parse_path(path)
             results = self._list_entries_for_path(omero, path_parts)
             return results, len(results)
-        finally:
-            omero.close()
 
     def _parse_path(self, path: str) -> list[str]:
         """Parse and normalize the path into components."""
@@ -213,15 +223,9 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
 
         The source_path should be in format: project_<id>/dataset_<id>/image_<id>
         """
-        omero = self._open_connection(context)
-        if not omero.connect():
-            raise Exception("Could not connect to OMERO server")
-
-        try:
+        with self._connection(context) as omero:
             image = self._get_image_from_path(omero, source_path)
             self._download_image(image, native_path)
-        finally:
-            omero.close()
 
     def _get_image_from_path(self, omero: BlitzGateway, source_path: str):
         """Extract and retrieve an OMERO image from a path."""
