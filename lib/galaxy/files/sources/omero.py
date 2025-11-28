@@ -6,6 +6,7 @@ from typing import (
     Union,
 )
 
+import omero.sys
 from omero.gateway import BlitzGateway
 
 from galaxy.exceptions import (
@@ -44,6 +45,7 @@ class OmeroFileSourceConfiguration(BaseFileSourceConfiguration):
 class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, OmeroFileSourceConfiguration]):
     plugin_type = "omero"
     plugin_kind = PluginKind.rfs
+    supports_pagination = True
 
     template_config_class = OmeroFileSourceTemplateConfiguration
     resolved_config_class = OmeroFileSourceConfiguration
@@ -101,27 +103,90 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         """
         with self._connection(context) as omero:
             path_parts = self._parse_path(path)
-            results = self._list_entries_for_path(omero, path_parts)
-            return results, len(results)
+            results = self._list_entries_for_path(omero, path_parts, limit=limit, offset=offset)
+            total_count = self._count_entries_for_path(omero, path_parts)
+            return results, total_count
 
     def _parse_path(self, path: str) -> list[str]:
         """Parse and normalize the path into components."""
         return [p for p in path.strip("/").split("/") if p]
 
-    def _list_entries_for_path(self, omero: BlitzGateway, path_parts: list[str]) -> list[AnyRemoteEntry]:
+    def _list_entries_for_path(
+        self,
+        omero: BlitzGateway,
+        path_parts: list[str],
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> list[AnyRemoteEntry]:
         """List entries based on the path depth."""
         if len(path_parts) == 0:
-            return self._list_projects(omero)
+            return self._list_projects(omero, limit=limit, offset=offset)
         elif len(path_parts) == 1:
-            return self._list_datasets(omero, path_parts[0])
+            return self._list_datasets(omero, path_parts[0], limit=limit, offset=offset)
         elif len(path_parts) == 2:
-            return self._list_images(omero, path_parts[0], path_parts[1])
+            return self._list_images(omero, path_parts[0], path_parts[1], limit=limit, offset=offset)
         return []
 
-    def _list_projects(self, omero: BlitzGateway) -> list[AnyRemoteEntry]:
+    def _count_entries_for_path(self, omero: BlitzGateway, path_parts: list[str]) -> int:
+        """Count total entries for pagination without loading all objects."""
+        if len(path_parts) == 0:
+            return self._count_projects(omero)
+        elif len(path_parts) == 1:
+            return self._count_datasets(omero, path_parts[0])
+        elif len(path_parts) == 2:
+            return self._count_images(omero, path_parts[1])
+        return 0
+
+    def _count_projects(self, conn: BlitzGateway) -> int:
+        """Count all projects using efficient HQL query."""
+        query_service = conn.getQueryService()
+        result = query_service.projection(
+            "select count(p) from Project p",
+            omero.sys.ParametersI(),  # type: ignore[attr-defined]
+            conn.SERVICE_OPTS,
+        )
+        return result[0][0].val if result else 0
+
+    def _count_datasets(self, conn: BlitzGateway, project_id_str: str) -> int:
+        """Count datasets in a project using efficient HQL query."""
+        if not project_id_str.startswith("project_"):
+            return 0
+        project_id = self._extract_id(project_id_str, "project_")
+        query_service = conn.getQueryService()
+        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params.addId(project_id)
+        result = query_service.projection(
+            "select count(link) from ProjectDatasetLink link where link.parent.id = :id",
+            params,
+            conn.SERVICE_OPTS,
+        )
+        return result[0][0].val if result else 0
+
+    def _count_images(self, conn: BlitzGateway, dataset_id_str: str) -> int:
+        """Count images in a dataset using efficient HQL query."""
+        if not dataset_id_str.startswith("dataset_"):
+            return 0
+        dataset_id = self._extract_id(dataset_id_str, "dataset_")
+        query_service = conn.getQueryService()
+        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params.addId(dataset_id)
+        result = query_service.projection(
+            "select count(link) from DatasetImageLink link where link.parent.id = :id",
+            params,
+            conn.SERVICE_OPTS,
+        )
+        return result[0][0].val if result else 0
+
+    def _list_projects(
+        self,
+        omero: BlitzGateway,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> list[AnyRemoteEntry]:
         """List all projects as directories at root level."""
+        opts = self._build_pagination_opts(limit, offset)
         results: list[AnyRemoteEntry] = []
-        for project in omero.getObjects("Project"):
+        for project in omero.getObjects("Project", opts=opts):
             project_path = f"project_{project.getId()}"
             results.append(
                 RemoteDirectory(
@@ -132,7 +197,13 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             )
         return results
 
-    def _list_datasets(self, omero: BlitzGateway, project_id_str: str) -> list[AnyRemoteEntry]:
+    def _list_datasets(
+        self,
+        omero: BlitzGateway,
+        project_id_str: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> list[AnyRemoteEntry]:
         """List datasets within a project."""
         if not project_id_str.startswith("project_"):
             return []
@@ -143,7 +214,10 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             return []
 
         results: list[AnyRemoteEntry] = []
-        for dataset in project.listChildren():
+        children = list(project.listChildren())
+        start = offset or 0
+        end = start + limit if limit else None
+        for dataset in children[start:end]:
             dataset_path = f"{project_id_str}/dataset_{dataset.getId()}"
             results.append(
                 RemoteDirectory(
@@ -154,7 +228,14 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             )
         return results
 
-    def _list_images(self, omero: BlitzGateway, project_id_str: str, dataset_id_str: str) -> list[AnyRemoteEntry]:
+    def _list_images(
+        self,
+        omero: BlitzGateway,
+        project_id_str: str,
+        dataset_id_str: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> list[AnyRemoteEntry]:
         """List images within a dataset."""
         if not dataset_id_str.startswith("dataset_"):
             return []
@@ -165,10 +246,24 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             return []
 
         results: list[AnyRemoteEntry] = []
-        for image in dataset.listChildren():
+        children = list(dataset.listChildren())
+        start = offset or 0
+        end = start + limit if limit else None
+        for image in children[start:end]:
             image_path = f"{project_id_str}/{dataset_id_str}/image_{image.getId()}"
             results.append(self._create_remote_file_for_image(image, image_path))
         return results
+
+    def _build_pagination_opts(
+        self, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> dict[str, int]:
+        """Build OMERO pagination options dictionary."""
+        opts: dict[str, int] = {}
+        if limit is not None:
+            opts["limit"] = limit
+        if offset is not None:
+            opts["offset"] = offset
+        return opts
 
     def _create_remote_file_for_image(self, image, image_path: str) -> RemoteFile:
         """Create a RemoteFile entry for an OMERO image."""
