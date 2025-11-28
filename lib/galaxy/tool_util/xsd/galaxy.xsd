@@ -76,6 +76,10 @@ List of behavior changes associated with profile versions:
 
 - Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
 
+### 26.0
+
+- Optional data parameters without a selected dataset are now empty lists, i.e. ``[]``. For smaller profiles it was ``[None]``
+
 ### Examples
 
 A normal tool:
