@@ -1,7 +1,7 @@
 /*
     galaxy upload utilities - requires FormData and XMLHttpRequest
 */
-import { buildLegacyPayload, sendPayload, submitDatasetUpload } from "@/utils/uploadSubmit";
+import { buildLegacyPayload, fetchDatasets, submitUpload } from "@/utils/upload";
 
 export class UploadQueue {
     constructor(options) {
@@ -131,7 +131,7 @@ export class UploadQueue {
             const list = batchByHistory[historyId];
             try {
                 const data = buildLegacyPayload(list, historyId);
-                sendPayload(data, {
+                fetchDatasets(data, {
                     success: (message) => {
                         list.forEach((model) => {
                             this.opts.success(model.index, message);
@@ -158,7 +158,7 @@ export class UploadQueue {
 
     // Submit request data
     _processSubmit(index, data) {
-        submitDatasetUpload({
+        submitUpload({
             data: data,
             success: (message) => {
                 this.opts.success(index, message);

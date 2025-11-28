@@ -16,8 +16,7 @@ import { computed, ref } from "vue";
 import { getFullAppUrl } from "@/app/utils";
 import { defaultModel, type FileStream } from "@/components/Upload/model";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
-import { buildUploadPayload, type LocalFileUploadItem } from "@/utils/uploadPayload";
-import { submitDatasetUpload } from "@/utils/uploadSubmit";
+import { buildUploadPayload, type LocalFileUploadItem, submitUpload } from "@/utils/upload";
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
@@ -192,7 +191,7 @@ export function useZipExplorer() {
         }
         try {
             const payload = buildUploadPayload(uploadItems);
-            submitDatasetUpload({ data: payload });
+            submitUpload({ data: payload });
         } catch (e) {
             rethrowSimple(e);
         }
