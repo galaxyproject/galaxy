@@ -66,6 +66,7 @@
     "dompurify": "^3.0.6",
     "echarts": "^5.5.1",
     "elkjs": "^0.8.2",
+    "events": "^3.3.0",
     "file-saver": "^2.0.5",
     "flush-promises": "^1.0.2",
     "font-awesome-6": "npm:@fortawesome/free-solid-svg-icons@6",
