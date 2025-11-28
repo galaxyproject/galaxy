@@ -75,7 +75,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             )
 
         try:
-            conn.c.enableKeepAlive(60)  # type: ignore[union-attr]
+            conn.c.enableKeepAlive(60)
             yield conn
         finally:
             conn.close()
@@ -142,7 +142,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     def _count_projects(self, conn: BlitzGateway, query: Optional[str] = None) -> int:
         """Count all projects using efficient HQL query."""
         query_service = conn.getQueryService()
-        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params = omero.sys.ParametersI()
         hql = "select count(p) from Project p"
         if query:
             hql += " where lower(p.name) like :query"
@@ -156,7 +156,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             return 0
         project_id = self._extract_id(project_id_str, "project_")
         query_service = conn.getQueryService()
-        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params = omero.sys.ParametersI()
         params.addId(project_id)
         hql = (
             "select count(d) from Dataset d "
@@ -174,7 +174,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             return 0
         dataset_id = self._extract_id(dataset_id_str, "dataset_")
         query_service = conn.getQueryService()
-        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params = omero.sys.ParametersI()
         params.addId(dataset_id)
         hql = (
             "select count(i) from Image i "
@@ -221,7 +221,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     ) -> list[AnyRemoteEntry]:
         """List projects matching query using HQL for server-side filtering."""
         query_service = conn.getQueryService()
-        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params = omero.sys.ParametersI()
         params.addString("query", f"%{query.lower()}%")
         if limit is not None:
             params.page(offset or 0, limit)
@@ -290,7 +290,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     ) -> list[AnyRemoteEntry]:
         """List datasets matching query using HQL for server-side filtering."""
         query_service = conn.getQueryService()
-        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params = omero.sys.ParametersI()
         params.addId(project_id)
         params.addString("query", f"%{query.lower()}%")
         if limit is not None:
@@ -360,7 +360,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     ) -> list[AnyRemoteEntry]:
         """List images matching query using HQL for server-side filtering."""
         query_service = conn.getQueryService()
-        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params = omero.sys.ParametersI()
         params.addId(dataset_id)
         params.addString("query", f"%{query.lower()}%")
         if limit is not None:
@@ -379,9 +379,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             results.append(self._create_remote_file_for_image(image, image_path))
         return results
 
-    def _build_pagination_opts(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> dict[str, int]:
+    def _build_pagination_opts(self, limit: Optional[int] = None, offset: Optional[int] = None) -> dict[str, int]:
         """Build OMERO pagination options dictionary."""
         opts: dict[str, int] = {}
         if limit is not None:
@@ -494,7 +492,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
                 return True  # Only download the first file
 
             return False
-        except omero.SecurityViolation:  # type: ignore[attr-defined]
+        except omero.SecurityViolation:
             # Download restricted (common on public repositories like IDR)
             return False
 
