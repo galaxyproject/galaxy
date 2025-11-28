@@ -46,6 +46,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
     plugin_type = "omero"
     plugin_kind = PluginKind.rfs
     supports_pagination = True
+    supports_search = True
 
     template_config_class = OmeroFileSourceTemplateConfiguration
     resolved_config_class = OmeroFileSourceConfiguration
@@ -103,8 +104,8 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         """
         with self._connection(context) as omero:
             path_parts = self._parse_path(path)
-            results = self._list_entries_for_path(omero, path_parts, limit=limit, offset=offset)
-            total_count = self._count_entries_for_path(omero, path_parts)
+            results = self._list_entries_for_path(omero, path_parts, limit=limit, offset=offset, query=query)
+            total_count = self._count_entries_for_path(omero, path_parts, query=query)
             return results, total_count
 
     def _parse_path(self, path: str) -> list[str]:
@@ -117,37 +118,39 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         path_parts: list[str],
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> list[AnyRemoteEntry]:
         """List entries based on the path depth."""
         if len(path_parts) == 0:
-            return self._list_projects(omero, limit=limit, offset=offset)
+            return self._list_projects(omero, limit=limit, offset=offset, query=query)
         elif len(path_parts) == 1:
-            return self._list_datasets(omero, path_parts[0], limit=limit, offset=offset)
+            return self._list_datasets(omero, path_parts[0], limit=limit, offset=offset, query=query)
         elif len(path_parts) == 2:
-            return self._list_images(omero, path_parts[0], path_parts[1], limit=limit, offset=offset)
+            return self._list_images(omero, path_parts[0], path_parts[1], limit=limit, offset=offset, query=query)
         return []
 
-    def _count_entries_for_path(self, omero: BlitzGateway, path_parts: list[str]) -> int:
+    def _count_entries_for_path(self, omero: BlitzGateway, path_parts: list[str], query: Optional[str] = None) -> int:
         """Count total entries for pagination without loading all objects."""
         if len(path_parts) == 0:
-            return self._count_projects(omero)
+            return self._count_projects(omero, query=query)
         elif len(path_parts) == 1:
-            return self._count_datasets(omero, path_parts[0])
+            return self._count_datasets(omero, path_parts[0], query=query)
         elif len(path_parts) == 2:
-            return self._count_images(omero, path_parts[1])
+            return self._count_images(omero, path_parts[1], query=query)
         return 0
 
-    def _count_projects(self, conn: BlitzGateway) -> int:
+    def _count_projects(self, conn: BlitzGateway, query: Optional[str] = None) -> int:
         """Count all projects using efficient HQL query."""
         query_service = conn.getQueryService()
-        result = query_service.projection(
-            "select count(p) from Project p",
-            omero.sys.ParametersI(),  # type: ignore[attr-defined]
-            conn.SERVICE_OPTS,
-        )
+        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        hql = "select count(p) from Project p"
+        if query:
+            hql += " where lower(p.name) like :query"
+            params.addString("query", f"%{query.lower()}%")
+        result = query_service.projection(hql, params, conn.SERVICE_OPTS)
         return result[0][0].val if result else 0
 
-    def _count_datasets(self, conn: BlitzGateway, project_id_str: str) -> int:
+    def _count_datasets(self, conn: BlitzGateway, project_id_str: str, query: Optional[str] = None) -> int:
         """Count datasets in a project using efficient HQL query."""
         if not project_id_str.startswith("project_"):
             return 0
@@ -155,14 +158,17 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         query_service = conn.getQueryService()
         params = omero.sys.ParametersI()  # type: ignore[attr-defined]
         params.addId(project_id)
-        result = query_service.projection(
-            "select count(link) from ProjectDatasetLink link where link.parent.id = :id",
-            params,
-            conn.SERVICE_OPTS,
+        hql = (
+            "select count(d) from Dataset d "
+            "where d.id in (select link.child.id from ProjectDatasetLink link where link.parent.id = :id)"
         )
+        if query:
+            hql += " and lower(d.name) like :query"
+            params.addString("query", f"%{query.lower()}%")
+        result = query_service.projection(hql, params, conn.SERVICE_OPTS)
         return result[0][0].val if result else 0
 
-    def _count_images(self, conn: BlitzGateway, dataset_id_str: str) -> int:
+    def _count_images(self, conn: BlitzGateway, dataset_id_str: str, query: Optional[str] = None) -> int:
         """Count images in a dataset using efficient HQL query."""
         if not dataset_id_str.startswith("dataset_"):
             return 0
@@ -170,27 +176,66 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         query_service = conn.getQueryService()
         params = omero.sys.ParametersI()  # type: ignore[attr-defined]
         params.addId(dataset_id)
-        result = query_service.projection(
-            "select count(link) from DatasetImageLink link where link.parent.id = :id",
-            params,
-            conn.SERVICE_OPTS,
+        hql = (
+            "select count(i) from Image i "
+            "where i.id in (select link.child.id from DatasetImageLink link where link.parent.id = :id)"
         )
+        if query:
+            hql += " and lower(i.name) like :query"
+            params.addString("query", f"%{query.lower()}%")
+        result = query_service.projection(hql, params, conn.SERVICE_OPTS)
         return result[0][0].val if result else 0
 
     def _list_projects(
         self,
-        omero: BlitzGateway,
+        conn: BlitzGateway,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> list[AnyRemoteEntry]:
         """List all projects as directories at root level."""
+        if query:
+            # Use HQL for server-side filtering with pagination
+            return self._list_projects_with_query(conn, query, limit, offset)
+
         opts = self._build_pagination_opts(limit, offset)
         results: list[AnyRemoteEntry] = []
-        for project in omero.getObjects("Project", opts=opts):
+        for project in conn.getObjects("Project", opts=opts):
+            name = project.getName() or f"Project {project.getId()}"
             project_path = f"project_{project.getId()}"
             results.append(
                 RemoteDirectory(
-                    name=project.getName() or f"Project {project.getId()}",
+                    name=name,
+                    uri=self.uri_from_path(project_path),
+                    path=project_path,
+                )
+            )
+        return results
+
+    def _list_projects_with_query(
+        self,
+        conn: BlitzGateway,
+        query: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> list[AnyRemoteEntry]:
+        """List projects matching query using HQL for server-side filtering."""
+        query_service = conn.getQueryService()
+        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params.addString("query", f"%{query.lower()}%")
+        if limit is not None:
+            params.page(offset or 0, limit)
+        hql = "select p from Project p where lower(p.name) like :query order by p.name"
+        projects = query_service.findAllByQuery(hql, params, conn.SERVICE_OPTS)
+
+        results: list[AnyRemoteEntry] = []
+        for project in projects:
+            project_id = project.getId().getValue()
+            name = project.getName().getValue() if project.getName() else f"Project {project_id}"
+            project_path = f"project_{project_id}"
+            results.append(
+                RemoteDirectory(
+                    name=name,
                     uri=self.uri_from_path(project_path),
                     path=project_path,
                 )
@@ -199,17 +244,23 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
 
     def _list_datasets(
         self,
-        omero: BlitzGateway,
+        conn: BlitzGateway,
         project_id_str: str,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> list[AnyRemoteEntry]:
         """List datasets within a project."""
         if not project_id_str.startswith("project_"):
             return []
 
         project_id = self._extract_id(project_id_str, "project_")
-        project = omero.getObject("Project", project_id)
+
+        if query:
+            # Use HQL for server-side filtering with pagination
+            return self._list_datasets_with_query(conn, project_id_str, project_id, query, limit, offset)
+
+        project = conn.getObject("Project", project_id)
         if not project:
             return []
 
@@ -228,20 +279,63 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             )
         return results
 
+    def _list_datasets_with_query(
+        self,
+        conn: BlitzGateway,
+        project_id_str: str,
+        project_id: int,
+        query: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> list[AnyRemoteEntry]:
+        """List datasets matching query using HQL for server-side filtering."""
+        query_service = conn.getQueryService()
+        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params.addId(project_id)
+        params.addString("query", f"%{query.lower()}%")
+        if limit is not None:
+            params.page(offset or 0, limit)
+        hql = (
+            "select d from Dataset d "
+            "where d.id in (select link.child.id from ProjectDatasetLink link where link.parent.id = :id) "
+            "and lower(d.name) like :query order by d.name"
+        )
+        datasets = query_service.findAllByQuery(hql, params, conn.SERVICE_OPTS)
+
+        results: list[AnyRemoteEntry] = []
+        for dataset in datasets:
+            dataset_id = dataset.getId().getValue()
+            name = dataset.getName().getValue() if dataset.getName() else f"Dataset {dataset_id}"
+            dataset_path = f"{project_id_str}/dataset_{dataset_id}"
+            results.append(
+                RemoteDirectory(
+                    name=name,
+                    uri=self.uri_from_path(dataset_path),
+                    path=dataset_path,
+                )
+            )
+        return results
+
     def _list_images(
         self,
-        omero: BlitzGateway,
+        conn: BlitzGateway,
         project_id_str: str,
         dataset_id_str: str,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> list[AnyRemoteEntry]:
         """List images within a dataset."""
         if not dataset_id_str.startswith("dataset_"):
             return []
 
         dataset_id = self._extract_id(dataset_id_str, "dataset_")
-        dataset = omero.getObject("Dataset", dataset_id)
+
+        if query:
+            # Use HQL for server-side filtering with pagination
+            return self._list_images_with_query(conn, project_id_str, dataset_id_str, dataset_id, query, limit, offset)
+
+        dataset = conn.getObject("Dataset", dataset_id)
         if not dataset:
             return []
 
@@ -250,6 +344,37 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         start = offset or 0
         end = start + limit if limit else None
         for image in children[start:end]:
+            image_path = f"{project_id_str}/{dataset_id_str}/image_{image.getId()}"
+            results.append(self._create_remote_file_for_image(image, image_path))
+        return results
+
+    def _list_images_with_query(
+        self,
+        conn: BlitzGateway,
+        project_id_str: str,
+        dataset_id_str: str,
+        dataset_id: int,
+        query: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> list[AnyRemoteEntry]:
+        """List images matching query using HQL for server-side filtering."""
+        query_service = conn.getQueryService()
+        params = omero.sys.ParametersI()  # type: ignore[attr-defined]
+        params.addId(dataset_id)
+        params.addString("query", f"%{query.lower()}%")
+        if limit is not None:
+            params.page(offset or 0, limit)
+        hql = (
+            "select i from Image i "
+            "where i.id in (select link.child.id from DatasetImageLink link where link.parent.id = :id) "
+            "and lower(i.name) like :query order by i.name"
+        )
+        image_ids = [img.getId().getValue() for img in query_service.findAllByQuery(hql, params, conn.SERVICE_OPTS)]
+
+        # Use getObjects to get full ImageWrapper objects for metadata
+        results: list[AnyRemoteEntry] = []
+        for image in conn.getObjects("Image", image_ids):
             image_path = f"{project_id_str}/{dataset_id_str}/image_{image.getId()}"
             results.append(self._create_remote_file_for_image(image, image_path))
         return results
