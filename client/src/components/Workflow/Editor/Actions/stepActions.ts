@@ -494,9 +494,7 @@ export class AutoLayoutAction extends UndoRedoAction {
             h: comment.size[1],
         }));
 
-        const { autoLayout } = await import(
-            /* webpackChunkName: "workflowLayout" */ "@/components/Workflow/Editor/modules/layout"
-        );
+        const { autoLayout } = await import("@/components/Workflow/Editor/modules/layout");
 
         this.commentStore.resolveCommentsInFrames();
         this.commentStore.resolveStepsInFrames();

@@ -59,8 +59,8 @@ Or, with the package scripts from this `client` directory:
 
     yarn run develop
 
-This will start up an extra client development server running on port 8081. Open
-your browser to `http://localhost:8081` (instead of the default 8080 that Galaxy
+This will start up an extra client development server running on port 5173. Open
+your browser to `http://localhost:5173` (instead of the default 8080 that Galaxy
 would run on), and you should see Galaxy like normal. Except now, when you
 change client code it'll automatically rebuild _and_ reload the relevant portion
 of the application for you. Lastly, if you are running Galaxy at a location

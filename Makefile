@@ -235,7 +235,7 @@ client-lint-autofix: client-node-deps ## Automatically fix linting errors in cli
 client-format: client-node-deps client-lint-autofix ## Reformat client code, ensures autofixes are applied first
 	$(IN_VENV) cd client && yarn run format
 
-client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
+client-dev-server: client-node-deps ## Starts a Vite dev server for client development (HMR enabled)
 	$(IN_VENV) cd client && $(NODE_ENV) yarn run develop
 
 client-test: client-node-deps  ## Run JS unit tests
