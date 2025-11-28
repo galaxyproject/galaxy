@@ -479,15 +479,24 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         self._export_pixel_data(image, native_path)
 
     def _try_download_original_file(self, image, native_path: str) -> bool:
-        """Attempt to download the original imported file. Returns True if successful."""
-        if image.countFilesetFiles() == 0:
+        """Attempt to download the original imported file. Returns True if successful.
+
+        Some OMERO servers (like IDR) restrict downloads of original files.
+        In such cases, this method catches the SecurityViolation and returns False
+        to allow fallback to pixel data export.
+        """
+        try:
+            if image.countFilesetFiles() == 0:
+                return False
+
+            for orig_file in image.getImportedImageFiles():
+                self._write_file_in_chunks(orig_file, native_path)
+                return True  # Only download the first file
+
             return False
-
-        for orig_file in image.getImportedImageFiles():
-            self._write_file_in_chunks(orig_file, native_path)
-            return True  # Only download the first file
-
-        return False
+        except omero.SecurityViolation:  # type: ignore[attr-defined]
+            # Download restricted (common on public repositories like IDR)
+            return False
 
     def _write_file_in_chunks(self, orig_file, native_path: str):
         """Write an OMERO file to disk in chunks."""
