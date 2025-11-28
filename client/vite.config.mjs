@@ -90,6 +90,8 @@ export default defineConfig({
         manifest: true,
         // Disable CSS code splitting - combine all CSS into one file
         cssCodeSplit: false,
+        // Generate sourcemaps when GXY_BUILD_SOURCEMAPS is set
+        sourcemap: !!process.env.GXY_BUILD_SOURCEMAPS,
         rollupOptions: {
             input: {
                 // Entry points that will be referenced in templates
