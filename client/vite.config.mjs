@@ -12,7 +12,42 @@ import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Plugin to fix D3 v3 ES module compatibility
+ * D3 v3 is an IIFE that expects `this` to be `window` at the module level.
+ * In ES modules, `this` is `undefined`. This plugin wraps the code to
+ * execute with the correct global context.
+ */
+function d3v3CompatPlugin() {
+    return {
+        name: "d3v3-compat",
+        transform(code, id) {
+            // Only transform the d3v3 main file
+            if (
+                (id.includes("node_modules/d3v3/d3.js") || id.includes("node_modules\\d3v3\\d3.js")) &&
+                code.startsWith("!function()")
+            ) {
+                // The D3 v3 code is: !function() { ... }();
+                // We need to change it to: !function() { ... }.call(window);
+                // This ensures `this` inside the IIFE refers to `window`
+                const transformed = code.replace(
+                    /\}(\s*)\(\s*\)\s*;?\s*$/,
+                    "}.call(typeof window !== 'undefined' ? window : globalThis);",
+                );
+                return {
+                    code: transformed,
+                    map: null,
+                };
+            }
+            return null;
+        },
+    };
+}
+
 export default defineConfig({
+    // Use relative base so CSS asset references work with any proxy prefix.
+    // The HTML script tags use url_for() which handles the prefix correctly.
+    base: "./",
     define: {
         // Make jQuery available globally for plugins and legacy code
         global: "globalThis",
@@ -27,13 +62,15 @@ export default defineConfig({
         ViteYaml(), // YAML file support
         galaxyLegacyPlugin(), // Handle legacy module resolution
         buildMetadataPlugin(), // Generate build metadata (replaces DumpMetaPlugin)
-        // Inject imports for globals used without explicit imports (like webpack's ProvidePlugin)
+        d3v3CompatPlugin(), // Fix D3 v3 ES module compatibility
+        // Inject imports for underscore and Buffer
+        // jQuery is set up as window.$ and window.jQuery by libs.bundled.js
+        // Note: We don't inject jQuery here to avoid circular dependencies with code splitting
         inject({
             include: ["**/*.js", "**/*.ts", "**/*.vue"],
-            exclude: ["**/jquery*.js", "**/node_modules/jquery/**"],
-            $: "jquery",
-            jQuery: "jquery",
+            exclude: ["**/node_modules/**"],
             _: "underscore",
+            Buffer: ["buffer", "Buffer"],
         }),
     ],
     // resolve aliases are handled by galaxyLegacyPlugin
@@ -70,6 +107,12 @@ export default defineConfig({
                         return "base.css";
                     }
                     return "[name]-[hash].[ext]";
+                },
+                // Put jQuery in its own chunk - jquery-migrate is imported dynamically
+                manualChunks: (id) => {
+                    if (id.includes("node_modules/jquery/") && !id.includes("jquery-migrate")) {
+                        return "jquery-core";
+                    }
                 },
             },
         },
