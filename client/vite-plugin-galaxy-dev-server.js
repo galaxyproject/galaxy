@@ -1,3 +1,5 @@
+import { gunzipSync } from "node:zlib";
+
 /**
  * Vite plugin to enable HMR when developing against a Galaxy server.
  *
@@ -57,20 +59,21 @@ function transformGalaxyHtml(html) {
     );
 
     // Rewrite libs.bundled.js to dev entry point
+    // Match script tags with or without type="module"
     html = html.replace(
-        /<script\s+type="module"\s+src="[^"]*\/static\/dist\/libs\.bundled\.js[^"]*"><\/script>/gi,
+        /<script[^>]*src="[^"]*\/static\/dist\/libs\.bundled\.js[^"]*"[^>]*><\/script>/gi,
         '<script type="module" src="/src/entry/libs.js"></script>',
     );
 
     // Rewrite analysis.bundled.js to dev entry point
     html = html.replace(
-        /<script\s+type="module"\s+src="[^"]*\/static\/dist\/analysis\.bundled\.js[^"]*"><\/script>/gi,
+        /<script[^>]*src="[^"]*\/static\/dist\/analysis\.bundled\.js[^"]*"[^>]*><\/script>/gi,
         '<script type="module" src="/src/entry/analysis/index.ts"></script>',
     );
 
     // Rewrite generic.bundled.js to dev entry point
     html = html.replace(
-        /<script\s+type="module"\s+src="[^"]*\/static\/dist\/generic\.bundled\.js[^"]*"><\/script>/gi,
+        /<script[^>]*src="[^"]*\/static\/dist\/generic\.bundled\.js[^"]*"[^>]*><\/script>/gi,
         '<script type="module" src="/src/entry/generic.js"></script>',
     );
 
@@ -129,6 +132,17 @@ export function galaxyDevServerPlugin() {
 
                     // Transform HTML responses that contain Galaxy bundles
                     if (isHtml) {
+                        // Decompress gzip responses (common from remote Galaxy servers)
+                        const contentEncoding = res.getHeader("content-encoding");
+                        if (contentEncoding === "gzip") {
+                            try {
+                                body = gunzipSync(body);
+                            } catch (e) {
+                                // If decompression fails, continue with original body
+                                console.warn("[galaxy-dev-server] Failed to decompress gzip response:", e.message);
+                            }
+                        }
+
                         let htmlString = body.toString("utf-8");
                         if (htmlString.includes("bundled.js") || htmlString.includes("/static/dist/")) {
                             htmlString = transformGalaxyHtml(htmlString);
@@ -137,7 +151,7 @@ export function galaxyDevServerPlugin() {
                             // Update content-length header
                             res.setHeader("content-length", body.length);
 
-                            // Remove content-encoding if present (we've decoded it)
+                            // Remove content-encoding since we've decompressed it
                             res.removeHeader("content-encoding");
                         }
                     }
