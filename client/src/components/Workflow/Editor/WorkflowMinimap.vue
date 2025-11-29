@@ -331,7 +331,7 @@ useDraggable(canvas, {
     bottom: 0px;
     border-top: solid $border-color var(--workflow-overview-border);
     border-left: solid $border-color var(--workflow-overview-border);
-    background: $workflow-overview-bg no-repeat url("assets/images/resizable.png");
+    background: $workflow-overview-bg no-repeat url("@/assets/images/resizable.png");
     z-index: 20000;
     overflow: hidden;
     padding: var(--workflow-overview-padding) 0 0 var(--workflow-overview-padding);
