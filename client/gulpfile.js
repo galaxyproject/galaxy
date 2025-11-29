@@ -14,7 +14,6 @@ const PATHS = {
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        requirejs: ["require.js", "require.js"],
         underscore: ["underscore.js", "underscore.js"],
     },
 };
