@@ -110,10 +110,15 @@ export default defineConfig({
                     }
                     return "[name]-[hash].[ext]";
                 },
-                // Put jQuery in its own chunk - jquery-migrate is imported dynamically
                 manualChunks: (id) => {
+                    // Put jQuery in its own chunk - jquery-migrate is imported dynamically
                     if (id.includes("node_modules/jquery/") && !id.includes("jquery-migrate")) {
                         return "jquery-core";
+                    }
+                    // Keep app/* files together to avoid circular dependency issues
+                    // (getGalaxyInstance is re-exported through app/index.js)
+                    if (id.includes("/src/app/")) {
+                        return "galaxy-app";
                     }
                 },
             },
