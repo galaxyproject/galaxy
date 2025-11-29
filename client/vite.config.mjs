@@ -8,6 +8,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
+import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
 import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -51,6 +52,8 @@ export default defineConfig({
     define: {
         // Make jQuery available globally for plugins and legacy code
         global: "globalThis",
+        // Polyfill process.env for Node.js modules (like util) that reference it
+        "process.env": JSON.stringify({}),
         // Define build system for runtime checks
         __GALAXY_BUILD_SYSTEM__: JSON.stringify("vite"),
         // Define build timestamp
@@ -72,6 +75,7 @@ export default defineConfig({
             _: "underscore",
             Buffer: ["buffer", "Buffer"],
         }),
+        galaxyDevServerPlugin(), // Transform proxied Galaxy HTML for HMR support
     ],
     // resolve aliases are handled by galaxyLegacyPlugin
     css: {
@@ -143,5 +147,28 @@ export default defineConfig({
     },
     worker: {
         format: "es",
+    },
+    optimizeDeps: {
+        // Use esbuild plugin to fix D3 v3's IIFE `this` binding during pre-bundling
+        esbuildOptions: {
+            plugins: [
+                {
+                    name: "d3v3-compat-esbuild",
+                    setup(build) {
+                        build.onLoad({ filter: /node_modules\/d3v3\/d3\.js$/ }, async (args) => {
+                            const fs = await import("node:fs");
+                            let contents = fs.readFileSync(args.path, "utf8");
+                            // D3 v3 is: !function() { ... }();
+                            // Change to: !function() { ... }.call(window);
+                            contents = contents.replace(
+                                /\}(\s*)\(\s*\)\s*;?\s*$/,
+                                "}.call(typeof window !== 'undefined' ? window : globalThis);",
+                            );
+                            return { contents, loader: "js" };
+                        });
+                    },
+                },
+            ],
+        },
     },
 });
