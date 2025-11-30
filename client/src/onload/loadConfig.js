@@ -21,7 +21,7 @@ export async function loadConfig() {
 }
 
 export function getAppRoot(defaultRoot = "/", stripTrailingSlash = false) {
-    let root = cachedConfig?.root || defaultRoot;
+    let root = getRootFromIndexLink() || defaultRoot;
     if (stripTrailingSlash) {
         root = root.replace(/\/$/, "");
     }
