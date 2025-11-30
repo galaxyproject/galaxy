@@ -5,7 +5,7 @@
  * dynamic bundle imports load, otherwise they will fail.
  */
 
-import { getRootFromIndexLink } from "./getRootFromIndexLink";
+import { getAppRoot } from "./loadConfig";
 
 // eslint-disable-next-line no-unused-vars, no-undef
-__webpack_public_path__ = `${getRootFromIndexLink().replace(/\/+$/, "")}/static/dist/`;
+__webpack_public_path__ = `${getAppRoot().replace(/\/+$/, "")}/static/dist/`;
