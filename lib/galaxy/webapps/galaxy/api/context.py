@@ -22,7 +22,6 @@ router = Router(tags=["context"])
 
 
 class ContextResponse(Model):
-    root: str
     config: dict[str, Any]
     session_csrf_token: Optional[str] = None
     user: dict[str, Any]
@@ -39,7 +38,6 @@ class FastAPIContext:
         session_id = trans.galaxy_session.id if trans.galaxy_session else None
         return ContextResponse(
             config=config,
-            root=web.url_for("/"),
             session_csrf_token=trans.app.security.encode_id(session_id, kind="csrf") if session_id else None,
             user=self.user_serializer.serialize_to_view(trans.user, "detailed"),
         )

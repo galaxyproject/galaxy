@@ -8236,8 +8236,6 @@ export interface components {
             config: {
                 [key: string]: unknown;
             };
-            /** Root */
-            root: string;
             /** Session Csrf Token */
             session_csrf_token?: string | null;
             /** User */
