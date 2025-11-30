@@ -8,4 +8,4 @@
 import { getAppRoot } from "./loadConfig";
 
 // eslint-disable-next-line no-unused-vars, no-undef
-__webpack_public_path__ = `${getAppRoot().replace(/\/+$/, "")}/static/dist/`;
+__webpack_public_path__ = `${getAppRoot()}static/dist/`;
