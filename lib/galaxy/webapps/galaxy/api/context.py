@@ -4,7 +4,6 @@ from typing import (
     Optional,
 )
 
-from galaxy import web
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.users import CurrentUserSerializer
