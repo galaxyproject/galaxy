@@ -10,10 +10,6 @@
  * to avoid circular dependency issues with Vite code splitting.
  */
 
-// Polyfills (for older browser support)
-import "core-js/stable";
-import "regenerator-runtime/runtime";
-
 // Backbone - expose globally for legacy code
 import Backbone from "backbone";
 // Buffer polyfill - some dependencies expect Buffer to be globally available
