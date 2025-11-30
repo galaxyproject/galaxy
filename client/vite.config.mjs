@@ -124,13 +124,6 @@ export default defineConfig({
                     if (id.includes("/src/app/")) {
                         return "galaxy-app";
                     }
-                    // Split out large vendor libraries for better caching
-                    if (id.includes("node_modules/bootstrap-vue/")) {
-                        return "vendor-bootstrap-vue";
-                    }
-                    if (id.includes("node_modules/@fortawesome/")) {
-                        return "vendor-fontawesome";
-                    }
                 },
             },
         },
