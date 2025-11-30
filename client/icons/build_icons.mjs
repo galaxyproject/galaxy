@@ -1,8 +1,12 @@
-const { xml2js } = require("xml-js");
-const { promises: fs } = require("fs");
-const path = require("path");
+import { xml2js } from "xml-js";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-async function buildIcons(outputPath) {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export async function buildIcons(outputPath) {
     const iconPacksJson = await fs.readFile(path.resolve(__dirname, "./icon-packs.json"));
     const iconPacks = JSON.parse(iconPacksJson);
 
@@ -117,5 +121,3 @@ function makeMarkdown(iconDefinitions) {
 
     return content;
 }
-
-module.exports = buildIcons;
