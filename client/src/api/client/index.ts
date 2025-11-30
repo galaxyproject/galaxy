@@ -6,7 +6,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 function getBaseUrl() {
     const isTest = process.env.NODE_ENV === "test";
-    return isTest ? window.location.origin : getAppRoot(undefined, true);
+    return isTest ? window.location.origin : getAppRoot().replace(/\/$/, "");
 }
 
 function apiClientFactory() {
