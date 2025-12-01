@@ -494,6 +494,7 @@ function appendAssistantMessage(payload: any, fallbackAgentType: string): Messag
     }
 
     maybeRunPyodideForMessage(assistantMessage);
+    ensurePendingPyodideTasks();
 
     return assistantMessage;
 }
@@ -576,6 +577,39 @@ function maybeRunPyodideForMessage(message: Message) {
 
     runPyodideTaskForMessage(message, task, taskKey, metadata);
 }
+
+function ensurePendingPyodideTasks() {
+    messages.value.forEach((message) => {
+        const metadata = message.agentResponse?.metadata as Record<string, any> | undefined;
+        if (!metadata) {
+            return;
+        }
+        const task = metadata.pyodide_task as PyodideTask | undefined;
+        if (!task) {
+            return;
+        }
+        const status = (metadata.pyodide_status as string | undefined) || "pending";
+        if (status === "error" || status === "completed" || status === "timeout") {
+            return;
+        }
+        const taskKey = task.task_id || message.id;
+        if (pyodideExecutions[taskKey]) {
+            return;
+        }
+        if (task.task_id && deliveredTaskIds.has(task.task_id)) {
+            return;
+        }
+        maybeRunPyodideForMessage(message);
+    });
+}
+
+watch(
+    messages,
+    () => {
+        ensurePendingPyodideTasks();
+    },
+    { deep: true },
+);
 
 function runPyodideTaskForMessage(message: Message, task: PyodideTask, taskKey: string, metadata: Record<string, any>) {
     const state = reactive<ExecutionState>({
