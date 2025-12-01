@@ -30,6 +30,7 @@ export const URI_PREFIXES = [
     "dataverse://",
     "elabftw://",
     "zip://",
+    "ascp://",
 ];
 
 export function isUrl(content: string): boolean {
