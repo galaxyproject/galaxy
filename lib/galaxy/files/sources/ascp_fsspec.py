@@ -56,7 +56,7 @@ class AscpFileSystem(AbstractFileSystem):
     Args:
         ascp_path: Path to the ascp binary (default: "ascp")
         ssh_key: SSH private key content as a string (required)
-        ssh_key_passphrase: SSH private key passphrase as a string (required)
+        ssh_key_passphrase: SSH private key passphrase as a string
         user: Username for ascp connection (e.g., "era-fasp")
         host: Hostname (e.g., "fasp.sra.ebi.ac.uk")
         rate_limit: Transfer rate limit (default: "300m")
@@ -74,7 +74,7 @@ class AscpFileSystem(AbstractFileSystem):
     def __init__(
         self,
         ssh_key: str,
-        ssh_key_passphrase: str,
+        ssh_key_passphrase: Optional[str] = None,
         ascp_path: str = "ascp",
         user: Optional[str] = None,
         host: Optional[str] = None,
@@ -248,8 +248,11 @@ class AscpFileSystem(AbstractFileSystem):
 
             log.debug(f"Executing ascp command (key path hidden): {self._sanitize_cmd_for_log(cmd)}")
 
-            env = os.environ.copy()
-            env["ASPERA_SCP_PASS"] = self.ssh_key_passphrase
+            if self.ssh_key_passphrase:
+                env = os.environ.copy()
+                env["ASPERA_SCP_PASS"] = self.ssh_key_passphrase
+            else:
+                env = None
             # Execute ascp
             result = subprocess.run(
                 cmd,
