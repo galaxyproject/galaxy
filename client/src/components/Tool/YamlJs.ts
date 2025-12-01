@@ -1,4 +1,4 @@
-import type { IPosition, MonacoEditor } from "monaco-types";
+import type { IDisposable, IPosition, MonacoEditor } from "monaco-types";
 import { configureMonacoYaml } from "monaco-yaml";
 
 import { extractEmbeddedJs } from "./extractEmbeddedJs";
@@ -35,7 +35,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
     monaco.languages.register({ id: "typescript" });
     monaco.languages.register({ id: "javascript" });
     monaco.languages.register({ id: "yaml" });
-    const disposables: monaco.IDisposable[] = [];
+    const disposables: IDisposable[] = [];
 
     disposables.push(monaco.languages.setMonarchTokensProvider(LANG, monarchConfig));
     disposables.push(
