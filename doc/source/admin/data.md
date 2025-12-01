@@ -453,6 +453,8 @@ Example configuration for EBI SRA downloads:
     -----BEGIN RSA PRIVATE KEY-----
     <YOUR ACTUAL SSH PRIVATE KEY CONTENT>
     -----END RSA PRIVATE KEY-----
+  # SSH key passphrase. https://embl.service-now.com/kb?id=kb_article_view&sys_kb_id=4cc60cf8c398a610bf313dfc0501314c#mcetoc_1idpn4k0to
+  ssh_key_passphrase: sample_passphrase
 ```
 
 The plugin is **download-only** and supports automatic retry with exponential backoff for transient 
