@@ -472,6 +472,12 @@ class GalaxyDSPyPlanner:
         augmented[f'tool_name_{next_index}'] = 'python_code_executor'
         augmented[f'tool_args_{next_index}'] = {'code': plan.python_code or ''}
         augmented[f'observation_{next_index}'] = json.dumps(observation_payload)
+        if execution_result.get('success'):
+            next_index += 1
+            augmented[f'thought_{next_index}'] = (
+                "Execution succeeded. Unless you can clearly justify a missing part of the user's request, "
+                "do not generate more code. Call finish with the final summary using the observed results."
+            )
 
         try:
             result = module(question=question, context=context_text, trajectory=augmented)

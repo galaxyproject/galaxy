@@ -376,17 +376,20 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                 candidate = metadata.get(key)
                 if not isinstance(candidate, dict):
                     continue
-                code = candidate.get("code")
+                code_value = candidate.get("original_code") or candidate.get("code")
+                sanitized_value = candidate.get("code")
                 packages = candidate.get("requirements") or candidate.get("packages") or []
                 if not packages and isinstance(context_payload.get("requirements"), list):
                     packages = context_payload.get("requirements")
-                if not code:
+                if not code_value:
                     continue
                 normalized = {
                     "task_id": candidate.get("task_id"),
-                    "code": self._normalize_code(str(code)),
+                    "code": self._normalize_code(str(code_value)),
                     "requirements": self._normalize_requirements(packages),
                 }
+                if sanitized_value:
+                    normalized["sanitized_code"] = self._normalize_code(str(sanitized_value))
                 if isinstance(candidate.get("alias_map"), dict):
                     normalized["alias_map"] = dict(candidate["alias_map"])
                 elif isinstance(context_payload.get("alias_map"), dict):
@@ -513,6 +516,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
             "task_id": task_id,
             "action": "ExecutePythonInBrowser",
             "code": sanitized_code,
+            "original_code": self._normalize_code(code),
             "packages": packages,
             "files": files,
             "alias_map": alias_map,
@@ -892,13 +896,25 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         requirements: List[str],
         last_task: Dict[str, Any],
     ) -> bool:
-        normalized_code = self._normalize_code(code)
-        last_code = last_task.get("code")
-        if normalized_code != last_code:
-            return False
         normalized_requirements = self._normalize_requirements(requirements)
         last_requirements = last_task.get("requirements", [])
-        return normalized_requirements == last_requirements
+        normalized_code = self._normalize_code(code)
+        last_code = last_task.get("code")
+        if normalized_code == last_code:
+            return normalized_requirements == last_requirements
+
+        sanitized_current = self._normalize_code(self._sanitize_pyodide_code(code))
+        sanitized_candidates = []
+        if "sanitized_code" in last_task:
+            sanitized_candidates.append(str(last_task.get("sanitized_code")))
+        if last_code:
+            sanitized_candidates.append(str(last_code))
+
+        for candidate in sanitized_candidates:
+            if sanitized_current == self._normalize_code(candidate):
+                return normalized_requirements == last_requirements
+
+        return False
 
     def _normalize_code(self, code: str) -> str:
         return "\n".join(line.rstrip() for line in (code or "").strip().splitlines())
