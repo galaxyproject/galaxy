@@ -203,9 +203,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         if (job_ids is None and dataset_ids is None) or workflow_name is None:
             jobs, warnings = summarize(trans, history)
             # Render
-            return trans.fill_template(
-                "build_from_current_history.mako", jobs=jobs, warnings=warnings, history=history
-            )
+            return trans.fill_template("build_from_current_history.mako", jobs=jobs, warnings=warnings, history=history)
         else:
             # If there is just one dataset name selected or one dataset collection, these
             # come through as string types instead of lists. xref #3247.
