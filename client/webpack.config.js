@@ -56,8 +56,8 @@ module.exports = (env = {}, argv = {}) => {
     const buildconfig = {
         mode: targetEnv,
         entry: {
-            analysis: ["polyfills", "bundleEntries", "entry/analysis"],
-            generic: ["polyfills", "bundleEntries", "entry/generic"],
+            analysis: ["polyfills", "entry/analysis"],
+            generic: ["polyfills", "entry/generic"],
         },
         output: {
             path: path.join(__dirname, "dist"),
@@ -161,21 +161,6 @@ module.exports = (env = {}, argv = {}) => {
                                 exposes: {
                                     globalName: ["underscore", "_"],
                                 },
-                            },
-                        },
-                    ],
-                },
-                // Alternative to setting window.bundleEntries
-                // Just import "bundleEntries" in any endpoint that needs
-                // access to these globals, or even-better, make
-                // more endpoints and skip the global altogether
-                {
-                    test: `${scriptsBase}/bundleEntries`,
-                    use: [
-                        {
-                            loader: "expose-loader",
-                            options: {
-                                exposes: "bundleEntries",
                             },
                         },
                     ],
