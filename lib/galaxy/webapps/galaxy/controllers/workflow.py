@@ -204,7 +204,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             jobs, warnings = summarize(trans, history)
             # Render
             return trans.fill_template(
-                "workflow/build_from_current_history.mako", jobs=jobs, warnings=warnings, history=history
+                "build_from_current_history.mako", jobs=jobs, warnings=warnings, history=history
             )
         else:
             # If there is just one dataset name selected or one dataset collection, these
