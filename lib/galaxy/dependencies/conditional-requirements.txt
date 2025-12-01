@@ -15,6 +15,9 @@ galaxycloudrunner
 pkce
 total-perspective-vortex>=3.1.2,<4
 openai
+# Optional DSPy-based agent support
+dspy-ai==2.5.43
+itsdangerous==2.2.0
 # upper version constraint because of https://github.com/galaxyproject/galaxy/issues/20600
 redis>=5.3.0,<6
 
