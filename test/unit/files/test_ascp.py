@@ -25,6 +25,8 @@ rlojfBFH/3NO/Nvjg0d7vMkzU5Pq9LHlvK+9CmhJXzLzlFdWxXVVqwxLLvJGEZvD
 class TestAscpFileSystem:
     """Tests for the AscpFileSystem fsspec implementation."""
 
+    # These are all AI generated, feel free to remove and add tests that don't mock out everything.
+
     def test_initialization(self):
         """Test that AscpFileSystem can be instantiated with valid parameters."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
