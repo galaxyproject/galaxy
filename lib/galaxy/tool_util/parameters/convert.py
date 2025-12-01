@@ -531,7 +531,7 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
     return decode_callback
 
 
-DatasetToRuntimeJson = Callable[[DataRequestInternalDereferenced], DataInternalJson]
+DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
 
 
 def runtimeify(
