@@ -251,6 +251,7 @@ class DSPyPlanResult:
 class GalaxyDSPyPlanner:
     """Wrapper that executes the DSPy data analysis plan for Galaxy."""
 
+    _EXAMPLES_CACHE: ClassVar[Optional[List[Any]]] = None
     _GLOBAL_LM_CONFIGURED: bool = False
     _PACKAGE_HINTS: ClassVar[List[tuple[str, str]]] = [
         ("matplotlib", r"\bmatplotlib\b|\bplt\."),
@@ -272,6 +273,7 @@ class GalaxyDSPyPlanner:
         self._config = deps.config
         self._examples_path = Path(__file__).parent / "examples.json"
         self._lm_configured = False
+        self._examples = self._load_examples_once()
 
     def plan(
         self,
@@ -283,10 +285,8 @@ class GalaxyDSPyPlanner:
         dataset_tool = DatasetLookupTool(self._deps)
         module = GalaxyDataAnalysisModule([code_tool, dataset_tool])
 
-        # Temporarily disable loading/compiling few-shot examples while we
-        # stabilise the Galaxy integration. Re-enable with BootstrapFewShot once
-        # the execution loop is validated end-to-end.
-        examples: List[Any] = []
+        # Use cached examples to avoid recompiling on every request (not currently fed into the module, but kept ready)
+        examples: List[Any] = self._examples
 
         try:
             result = module(question=question, context=context_text)
@@ -337,6 +337,20 @@ class GalaxyDSPyPlanner:
             raw_answer=answer_data,
             trajectory=trajectory,
         )
+
+    def _load_examples_once(self) -> List[Any]:
+        """Load and cache examples JSON once per process."""
+        if GalaxyDSPyPlanner._EXAMPLES_CACHE is not None:
+            return GalaxyDSPyPlanner._EXAMPLES_CACHE
+
+        try:
+            examples = load_examples_from_json(self._examples_path)
+        except Exception as exc:  # pragma: no cover - defensive path
+            log.warning("Failed to load DSPy examples: %s", exc)
+            examples = []
+
+        GalaxyDSPyPlanner._EXAMPLES_CACHE = examples
+        return examples
 
     def _build_analysis_steps(
         self,
