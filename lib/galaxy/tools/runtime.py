@@ -36,12 +36,12 @@ def setup_for_runtimeify(
         properties = {
             "class": "File",
             "location": f"step_input://{index}",
-            "format": value.extension,
+            "format": hda.extension,
             "path": compute_environment.input_path_rewrite(hda) if compute_environment else hda.get_file_name(),
             "size": int(size),
             "listing": [],
         }
-        set_basename_and_derived_properties(properties, value.dataset.created_from_basename or value.name)
+        set_basename_and_derived_properties(properties, hda.dataset.created_from_basename or hda.name)
         return DataInternalJson(**properties)
 
     def adapt_collection(value):

@@ -19,7 +19,6 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
-from galaxy.exceptions import InconsistentApplicationState
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
@@ -1077,19 +1076,24 @@ class UserToolEvaluator(ToolEvaluator):
         Build the dictionary of parameters for substituting into the command
         line. We're effectively building the CWL job object here.
         """
-        if not validated_tool_state:
-            raise InconsistentApplicationState("Internal error - no validated tool state found for job.")
-
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
-        from galaxy.tool_util.parameters.convert import runtimeify
-        from galaxy.tools.runtime import setup_for_runtimeify
+        hda_references: list[model.HistoryDatasetAssociation]
+        if validated_tool_state is not None:
+            from galaxy.tool_util.parameters.convert import runtimeify
+            from galaxy.tools.runtime import setup_for_runtimeify
 
-        hda_references, adapt_datasets = setup_for_runtimeify(self.app, compute_environment, input_datasets)
-        job_runtime_state = runtimeify(validated_tool_state, self.tool, adapt_datasets)
-        print(job_runtime_state.input_state)
-        print(json.dumps(job_runtime_state.input_state, indent=4))
-        cwl_style_inputs = job_runtime_state.input_state
+            hda_references, adapt_datasets = setup_for_runtimeify(self.app, compute_environment, input_datasets)
+            job_runtime_state = runtimeify(validated_tool_state, self.tool, adapt_datasets)
+            cwl_style_inputs = job_runtime_state.input_state
+        else:
+            from galaxy.workflow.modules import to_cwl
+
+            log.info(
+                "Building CWL style inputs using deprecated to_cwl function - tool may work differently in the future."
+            )
+            hda_references = []
+            cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 
     def _build_command_line(self):
