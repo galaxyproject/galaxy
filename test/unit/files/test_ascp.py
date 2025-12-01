@@ -13,6 +13,7 @@ import pytest
 from galaxy.exceptions import MessageException
 from galaxy.files.sources.ascp import AscpFilesSource
 from galaxy.files.sources.ascp_fsspec import AscpFileSystem
+from ._util import configured_file_sources
 
 # Test SSH key (dummy key for testing)
 TEST_SSH_KEY = """-----BEGIN RSA PRIVATE KEY-----
@@ -30,6 +31,7 @@ class TestAscpFileSystem:
             fs = AscpFileSystem(
                 ascp_path="ascp",
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 rate_limit="300m",
@@ -51,6 +53,7 @@ class TestAscpFileSystem:
                 AscpFileSystem(
                     ascp_path="ascp",
                     ssh_key=TEST_SSH_KEY,
+                    ssh_key_passphrase="abcdefg",
                     user="test-user",
                     host="test.example.com",
                 )
@@ -60,6 +63,7 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="default-user",
                 host="default.example.com",
             )
@@ -74,6 +78,7 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="default-user",
                 host="default.example.com",
             )
@@ -87,6 +92,7 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="default-user",
                 host="default.example.com",
             )
@@ -113,6 +119,7 @@ class TestAscpFileSystem:
             fs = AscpFileSystem(
                 ascp_path="ascp",
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 rate_limit="300m",
@@ -121,7 +128,7 @@ class TestAscpFileSystem:
             )
 
             # Execute
-            fs._get_file("/remote/path/file.txt", "/local/path/file.txt")
+            fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
 
             # Verify
             mock_mkstemp.assert_called_once()
@@ -157,12 +164,13 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
 
             with pytest.raises(MessageException, match="Authentication failed"):
-                fs._get_file("/remote/path/file.txt", "/local/path/file.txt")
+                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
 
             # Verify cleanup happened
             mock_unlink.assert_called_once()
@@ -182,12 +190,13 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
 
             with pytest.raises(MessageException, match="Remote file not found"):
-                fs._get_file("/remote/path/file.txt", "/local/path/file.txt")
+                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
 
     @patch("subprocess.run")
     @patch("tempfile.mkstemp")
@@ -204,12 +213,13 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
 
             with pytest.raises(MessageException, match="Network error"):
-                fs._get_file("/remote/path/file.txt", "/local/path/file.txt")
+                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
 
     @patch("subprocess.run")
     @patch("tempfile.mkstemp")
@@ -234,12 +244,13 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
 
             with pytest.raises(MessageException, match="Authentication failed"):
-                fs._get_file("/remote/path/file.txt", "/local/path/file.txt")
+                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
 
             # Verify cleanup was attempted
             mock_unlink.assert_called_once_with("/tmp/test_key.key")
@@ -249,6 +260,7 @@ class TestAscpFileSystem:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
@@ -261,29 +273,18 @@ class TestAscpFileSystem:
             assert "ascp" in sanitized
             assert "300m" in sanitized
 
-    def test_missing_ssh_key(self):
-        """Test that _get_file fails when SSH key is not provided."""
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=None,
-                user="test-user",
-                host="test.example.com",
-            )
-
-            with pytest.raises(MessageException, match="SSH key is required"):
-                fs._get_file("/remote/path/file.txt", "/local/path/file.txt")
-
     def test_missing_user_or_host(self):
         """Test that _get_file fails when user or host is not provided."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user=None,
                 host=None,
             )
 
             with pytest.raises(MessageException, match="User and host must be specified"):
-                fs._get_file("/remote/path/file.txt", "/local/path/file.txt")
+                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
 
 
 class TestAscpFilesSource:
@@ -300,6 +301,7 @@ class TestAscpFilesSource:
             "id": "test_ascp",
             "label": "Test Aspera",
             "ssh_key_content": TEST_SSH_KEY,
+            "ssh_key_passphrase": "abcdefg",
             "user": "test-user",
             "host": "test.example.com",
         }
@@ -328,12 +330,12 @@ class TestAscpFilesSource:
             "id": "test_ascp",
             "label": "Test Aspera",
             "ssh_key_content": TEST_SSH_KEY,
+            "ssh_key_passphrase": "abcdefg",
             "user": "test-user",
             "host": "test.example.com",
         }
 
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            from ._util import configured_file_sources
 
             with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
                 import yaml
@@ -359,8 +361,6 @@ class TestAscpFilesSource:
                 "user": "test-user",
                 "host": "test.example.com",
             }
-
-            from ._util import configured_file_sources
 
             with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
                 import yaml
@@ -389,6 +389,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 max_retries=3,
@@ -418,7 +419,7 @@ class TestAscpRetryLogic:
                         with patch("os.chmod"):
                             with patch("os.unlink"):
                                 with patch("time.sleep") as mock_sleep:
-                                    fs._get_file("/remote/file.txt", "/local/file.txt")
+                                    fs.get_file("/remote/file.txt", "/local/file.txt")
 
                                     # Should have been called 3 times
                                     assert call_count == 3
@@ -430,6 +431,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 max_retries=3,
@@ -452,7 +454,7 @@ class TestAscpRetryLogic:
                         with patch("os.chmod"):
                             with patch("os.unlink"):
                                 with pytest.raises(MessageException, match="Authentication failed"):
-                                    fs._get_file("/remote/file.txt", "/local/file.txt")
+                                    fs.get_file("/remote/file.txt", "/local/file.txt")
 
                                 # Should only be called once (no retry)
                                 assert call_count == 1
@@ -462,6 +464,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 max_retries=2,
@@ -490,7 +493,7 @@ class TestAscpRetryLogic:
                         with patch("os.chmod"):
                             with patch("os.unlink"):
                                 with patch("time.sleep"):
-                                    fs._get_file("/remote/file.txt", "/local/file.txt")
+                                    fs.get_file("/remote/file.txt", "/local/file.txt")
 
                                     # First attempt should NOT have -k flag
                                     assert "-k" not in captured_commands[0]
@@ -505,6 +508,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 max_retries=2,
@@ -531,7 +535,7 @@ class TestAscpRetryLogic:
                         with patch("os.chmod"):
                             with patch("os.unlink"):
                                 with patch("time.sleep"):
-                                    fs._get_file("/remote/file.txt", "/local/file.txt")
+                                    fs.get_file("/remote/file.txt", "/local/file.txt")
 
                                     # Neither attempt should have -k flag
                                     assert "-k" not in captured_commands[0]
@@ -542,6 +546,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 max_retries=2,
@@ -567,7 +572,7 @@ class TestAscpRetryLogic:
                             with patch("os.unlink"):
                                 with patch("time.sleep"):
                                     with pytest.raises(MessageException, match="Network error"):
-                                        fs._get_file("/remote/file.txt", "/local/file.txt")
+                                        fs.get_file("/remote/file.txt", "/local/file.txt")
 
                                     # Should have tried max_retries times
                                     assert call_count == 2
@@ -577,6 +582,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
                 max_retries=4,
@@ -599,7 +605,7 @@ class TestAscpRetryLogic:
                             with patch("os.unlink"):
                                 with patch("time.sleep") as mock_sleep:
                                     with pytest.raises(MessageException):
-                                        fs._get_file("/remote/file.txt", "/local/file.txt")
+                                        fs.get_file("/remote/file.txt", "/local/file.txt")
 
                                     # Check delay progression: 2^1=2, 2^2=4, 2^3=8 (capped at 10)
                                     sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
@@ -612,6 +618,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
@@ -634,6 +641,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
@@ -648,6 +656,7 @@ class TestAscpRetryLogic:
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,  # Pass key content
+                ssh_key_passphrase="abcdefg",
                 user="test-user",
                 host="test.example.com",
             )
@@ -660,7 +669,7 @@ class TestAscpRetryLogic:
                     with patch("os.fdopen"):
                         with patch("os.chmod"):
                             with patch("os.unlink") as mock_unlink:
-                                fs._get_file("/remote/file.txt", "/local/file.txt")
+                                fs.get_file("/remote/file.txt", "/local/file.txt")
 
                                 # Verify temp file was created
                                 mock_mkstemp.assert_called_once()

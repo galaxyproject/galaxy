@@ -40,7 +40,6 @@ from galaxy.util.config_templates import TemplateExpansion
 log = logging.getLogger(__name__)
 
 PLUGIN_TYPE = "ascp"
-REQUIRED_PACKAGE = "ascp"  # Note: This is the binary, not a Python package
 
 
 class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
@@ -57,6 +56,7 @@ class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigura
 
     ascp_path: Union[str, TemplateExpansion] = "ascp"
     ssh_key_content: Union[str, TemplateExpansion]  # SSH key content as string (required)
+    ssh_key_passphrase: Union[str, TemplateExpansion]  # Passphrase for the SSH key (required)
     user: Union[str, TemplateExpansion]  # Required field
     host: Union[str, TemplateExpansion]  # Required field
     rate_limit: Union[str, TemplateExpansion] = "300m"
@@ -81,6 +81,7 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
 
     ascp_path: str = "ascp"
     ssh_key_content: str  # SSH key content as string (required)
+    ssh_key_passphrase: str  # Passphrase for the SSH key (required)
     user: str  # Required field
     host: str  # Required field
     rate_limit: str = "300m"
@@ -129,7 +130,7 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
 
     plugin_type = PLUGIN_TYPE
     required_module = AscpFileSystem
-    required_package = REQUIRED_PACKAGE
+    required_package = "fsspec"  # Dummy requirement, need no external package
 
     template_config_class = AscpFilesSourceTemplateConfiguration
     resolved_config_class = AscpFilesSourceConfiguration
@@ -158,6 +159,7 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
         return AscpFileSystem(
             ascp_path=config.ascp_path,
             ssh_key=config.ssh_key_content,
+            ssh_key_passphrase=config.ssh_key_passphrase,
             user=config.user,
             host=config.host,
             rate_limit=config.rate_limit,
