@@ -12,7 +12,7 @@ const { mockGalaxy } = vi.hoisted(() => ({
     },
 }));
 
-vi.mock("@/app", () => ({
+vi.mock("@/app/index", () => ({
     getGalaxyInstance: vi.fn(() => mockGalaxy),
 }));
 

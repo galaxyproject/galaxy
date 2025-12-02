@@ -3,7 +3,7 @@ import _l from "@/utils/localization";
 
 const CURRENT_ID_STR = "current";
 
-class User {
+export class User {
     constructor(data = {}) {
         this.defaults = {
             id: null,
@@ -47,7 +47,7 @@ class User {
         try {
             const response = await fetch(url, { credentials: "same-origin" });
             const data = await response.json();
-            this.attributes = { ...this.defaults, ...data };
+            this.attributes = { ...this.attributes, ...data };
             if (!this.attributes.preferences) {
                 this.attributes.preferences = {};
             }
@@ -74,5 +74,3 @@ class User {
         return `User(${userInfo.join(":")})`;
     }
 }
-
-export default { User };

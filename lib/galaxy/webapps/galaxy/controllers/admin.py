@@ -360,7 +360,7 @@ class DatatypesEntryT(TypedDict):
     message: str
 
 
-class AdminGalaxy(controller.JSAppLauncher):
+class AdminGalaxy(controller.BaseUIController):
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()

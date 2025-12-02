@@ -1,7 +1,7 @@
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
-        config.addInitialization(function() {
+        window.addEventListener("load", function() {
             console.log("common.mako, common_javascripts");
 
             // --- Initialize sample trees
@@ -74,7 +74,7 @@
 
 <%def name="container_javascripts()">
     <script type="text/javascript">
-        config.addInitialization(function() {
+        window.addEventListener("load", function() {
             console.log("common.mako, container_javascripts");
 
             var store = window.bundleToolshed.store;

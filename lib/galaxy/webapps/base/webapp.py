@@ -710,6 +710,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 url_for(controller="user", action="index"),
                 url_for(controller="user", action="manage_user_info"),
                 url_for(controller="user", action="set_default_permissions"),
+                url_for(controller="api", action="webhooks"),
             ]
             # append the welcome url to allowed paths if we'll show it at the login screen
             if self.app.config.show_welcome_with_login:

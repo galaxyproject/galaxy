@@ -138,7 +138,7 @@ function redirectAnon(redirect = "") {
 // redirect logged in users
 function redirectLoggedIn() {
     const Galaxy = getGalaxyInstance();
-    if (Galaxy.user.id) {
+    if (Galaxy.user && Galaxy.user.id) {
         return "/";
     }
 }
@@ -226,7 +226,7 @@ export function getRouter(Galaxy) {
                     ...StorageRoutes,
                     {
                         path: "",
-                        alias: "root",
+                        alias: ["index", "root"],
                         component: Home,
                         props: (route) => ({ config: Galaxy.config, query: route.query }),
                     },

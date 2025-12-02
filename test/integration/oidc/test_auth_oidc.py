@@ -225,7 +225,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     Test Galaxy's keycloak-based OIDC login integration.
     """
 
-    REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token\": \"(.*)\"")
+    REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token = \"(.*)\"")
     provider_name = "keycloak"
 
     @classmethod

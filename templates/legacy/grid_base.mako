@@ -46,7 +46,7 @@
     <div id="grid-container"></div>
 
     <script type="text/javascript">
-        config.addInitialization(function() {
+        window.addEventListener("load", function() {
             var legacyGridViewConfig = ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) };
             console.log("grid_base.mako, javascript_app", legacyGridViewConfig);
             new window.bundleEntries.LegacyGridView(legacyGridViewConfig);

@@ -150,6 +150,7 @@ import Multiselect from "vue-multiselect";
 
 import { getGalaxyInstance } from "@/app";
 import { useHistoryStore } from "@/stores/historyStore";
+import { withPrefix } from "@/utils/redirect";
 
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
@@ -164,7 +165,7 @@ export default {
         const Galaxy = getGalaxyInstance();
         return {
             breadcrumbItems: [{ title: "User Preferences", to: "/user" }, { title: "Current Custom Builds" }],
-            customBuildsUrl: `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`,
+            customBuildsUrl: withPrefix(`/api/users/${Galaxy.user.id}/custom_builds`),
             selectedInstalledBuilds: [],
             installedBuilds: [],
             maxFileSize: 100,
@@ -236,9 +237,8 @@ export default {
                 });
         },
         loadCustomBuildsMetadata(historyId) {
-            const Galaxy = getGalaxyInstance();
             axios
-                .get(`${Galaxy.root}api/histories/${historyId}/custom_builds_metadata`)
+                .get(withPrefix(`/api/histories/${historyId}/custom_builds_metadata`))
                 .then((response) => {
                     const fastaHdas = response.data.fasta_hdas;
                     for (let i = 0; i < fastaHdas.length; i++) {

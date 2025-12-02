@@ -21,7 +21,7 @@
                     <span v-html="config.message_box_content"></span>
                 </Alert>
                 <Alert
-                    v-if="config.show_inactivity_warning && config.inactivity_box_content"
+                    v-if="showInactivityWarning && config.inactivity_box_content"
                     id="inactivebox"
                     class="rounded-0 m-0 p-2"
                     variant="warning">
@@ -158,6 +158,9 @@ export default {
         };
     },
     computed: {
+        showInactivityWarning() {
+            return this.config.user_activation_on && this.Galaxy?.user?.id && !this.Galaxy.user.get("active");
+        },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {

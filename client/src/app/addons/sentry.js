@@ -7,14 +7,15 @@ import Vue from "vue";
  *
  * @param {object} config Galaxy configuration object
  */
-export const initSentry = (galaxy, config) => {
+export async function initSentry(Galaxy, router) {
     console.log("initSentry");
-    if (config.sentry) {
-        const router = galaxy.router;
-        const { sentry_dsn_public, email } = config.sentry;
-        let release = galaxy.config.version_major;
-        if (galaxy.config.version_minor) {
-            release += `.${galaxy.config.version_minor}`;
+    const config = Galaxy.config;
+    if (config.sentry_dsn_public) {
+        const sentry_dsn_public = config.sentry_dsn_public;
+        const email = Galaxy.user.get("email");
+        let release = Galaxy.config.version_major;
+        if (Galaxy.config.version_minor) {
+            release += `.${Galaxy.config.version_minor}`;
         }
         Sentry.init({
             Vue,
@@ -37,6 +38,6 @@ export const initSentry = (galaxy, config) => {
                 });
             });
         }
-        galaxy.Sentry = Sentry;
+        Galaxy.Sentry = Sentry;
     }
-};
+}

@@ -10,7 +10,7 @@ import RegisterForm from "@/components/Register/RegisterForm.vue";
 
 const localVue = getLocalVue(true);
 
-vi.mock("@/app/singleton", () => ({
+vi.mock("@/app/index", () => ({
     getGalaxyInstance: vi.fn(() => ({ session_csrf_token: "session_csrf_token" })),
 }));
 

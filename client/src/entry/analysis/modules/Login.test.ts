@@ -10,7 +10,7 @@ import Login from "./Login.vue";
 
 const localVue = getLocalVue(true);
 
-vi.mock("@/app", () => ({
+vi.mock("@/app/index", () => ({
     getGalaxyInstance: vi.fn(() => ({ session_csrf_token: "session_csrf_token" })),
 }));
 
