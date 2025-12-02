@@ -571,7 +571,7 @@ class Dicom(Image):
         neither is determining the `axes` of the image). This can be implemented in the future.
         """
         try:
-            dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True) as dcm:
+            dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True)
         except pydicom.errors.InvalidDicomError:
             return  # Ignore errors if metadata cannot be read
 
