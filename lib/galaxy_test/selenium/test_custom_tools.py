@@ -98,12 +98,13 @@ from_work_dir: output.txt
 """
             ""
         )
-        # Try finding Monaco editor textarea and replace skeleton content
-        self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to focus
-        editor = self.wait_for_selector_visible(".monaco-editor div.view-line")
+        # Try finding Monaco editor and replace skeleton content
+        self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to initialize
+        # Use the stable .monaco-editor container, not .view-line which gets re-rendered
+        editor_container = self.wait_for_selector_visible(".monaco-editor")
 
-        # Focus the editor first
-        editor.click()
+        # Focus the editor by clicking on the stable container
+        editor_container.click()
         self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to focus
 
         is_mac = platform.system() == "Darwin"
