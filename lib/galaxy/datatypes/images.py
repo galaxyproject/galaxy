@@ -546,6 +546,66 @@ class Dicom(Image):
         """Returns the mime type of the datatype"""
         return "application/dicom"
 
+    def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
+        """
+        Populate the metadata of the DICOM file using the pydicom library.
+
+        The following metadata fields are populated, if possible:
+        - `width`
+        - `height`
+        - `channels`
+        - `frames`
+        - `dtype`
+        """
+        try:
+            dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True) as dcm:
+        except pydicom.errors.InvalidDicomError:
+            return  # Ignore errors if metadata cannot be read
+
+        metadata["channels"] = dcm.get("SamplesPerPixel", 0)
+        metadata["frames"] = dcm.get("NumberOfFrames", 0)
+
+        # Determine whether this is a WSI DICOM
+        is_wsi = False
+
+        # If the DICOM file contains tiled data...
+        try:
+            if hasattr(dcm, "SharedFunctionalGroupsSequence"):
+                seq = ds.SharedFunctionalGroupsSequence[0]
+                if hasattr(seq, "TotalPixelMatrix"):
+                    tpm = shared_seq.TotalPixelMatrix[0]
+                    metadata["width"] = tpm.tpm.TotalPixelMatrixColumns
+                    metadata["height"] = tpm.TotalPixelMatrixRows
+                    is_wsi = True  # tiled data is typical for WSI DICOM
+        except (
+            IndexError,
+            KeyError,
+            pydicom.errors.InvalidDicomError,
+        ):
+            pass  # Ignore errors if metadata cannot be read
+
+        # If the DICOM file is not WSI, the width and height directly.
+        # For WSI DICOM, these values correspond to the size of the tiles.
+        if not is_wsi:
+            metadata["width"] = dcm.get("Columns")
+            metadata["height"] = dcm.get("Rows")
+
+
+        # Try to infer the `dtype` from metadata
+        dtype_lut = [
+            ['uint8', 'int8'],
+            ['uint16', 'int16'],
+            ['uint32', 'int32'],
+        ]
+        dtype_lut_pos = (
+            round(math.log2(dcm.BitsAllocated) - 3),  # 8bit -> 0, 16bit -> 1, 32bit -> 2
+            dcm.PixelRepresentation,
+        )
+        if 0 <= dtype_lut_pos[0] < len(dtype_lut):
+            metadata['dtype'] = dtype_lut[*dtype_lut_pos]
+
 
 @build_sniff_from_prefix
 class Tck(Binary):
