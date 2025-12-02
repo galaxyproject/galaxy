@@ -690,7 +690,7 @@ class Grid:
             if column.key:
                 # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
                 # (b) look in kwargs; and (c) look in base filter.
-                column_filter = None
+                column_filter: str | list[str] | None = None
                 if use_default_filter:
                     if self.default_filter:
                         column_filter = self.default_filter.get(column.key)
