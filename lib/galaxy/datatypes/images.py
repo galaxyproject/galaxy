@@ -537,13 +537,17 @@ class Dicom(Image):
     file_ext = "dcm"
 
     def sniff(self, filename: str) -> bool:
-        """Determine if the file is in dicom format."""
+        """
+        Determine if the file is in DICOM format.
+        """
         with open(filename, "rb") as fh:
             fh.seek(128)
             return fh.read(4) == b"DICM"
 
     def get_mime(self) -> str:
-        """Returns the mime type of the datatype"""
+        """
+        Returns the mime type of the datatype.
+        """
         return "application/dicom"
 
     def set_meta(
