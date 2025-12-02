@@ -560,16 +560,21 @@ class Dicom(Image):
         - `width`
         - `height`
         - `channels`
-        - `frames`
         - `dtype`
+        - `num_unique_values` in some cases
+
+        Currently, `frames` and `depth` are not populated. This is because "frames" in DICOM are a generic entity,
+        that can be used for different purposes, including slices in 3-D images, frames in temporal sequences, and
+        tiles of a pyramid (WSI DICOM). Distinguishing these cases is not straight-forward (and, as a consequence,
+        neither is determining the `axes` of the image). This can be implemented in the future.
         """
         try:
             dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True) as dcm:
         except pydicom.errors.InvalidDicomError:
             return  # Ignore errors if metadata cannot be read
 
+        # Determine the number of channels (0 if no channel info is present)
         metadata["channels"] = dcm.get("SamplesPerPixel", 0)
-        metadata["frames"] = dcm.get("NumberOfFrames", 0)
 
         # Determine whether this is a WSI DICOM
         is_wsi = False
@@ -609,6 +614,18 @@ class Dicom(Image):
         )
         if 0 <= dtype_lut_pos[0] < len(dtype_lut):
             metadata['dtype'] = dtype_lut[*dtype_lut_pos]
+
+        # Try to infer `num_unique_values` from metadata
+        try:
+            if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.4":  # https://www.dicomlibrary.com/dicom/sop
+
+                # The DICOM file contains segmentation, count +1 for the image background
+                metadata['num_unique_values'] = 1 + len(dcm.SegmentSequence)
+
+        except (
+            AttributeError,
+        ):
+            pass  # Ignore errors if metadata cannot be read
 
 
 @build_sniff_from_prefix
