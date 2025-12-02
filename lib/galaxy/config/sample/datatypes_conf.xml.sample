@@ -316,6 +316,7 @@
     <datatype extension="ome.tiff" type="galaxy.datatypes.images:OMETiff" display_in_upload="true">
       <display file="image/avivator.xml"/>
     </datatype>
+    <datatype extension="dcm" type="galaxy.datatypes.images:Dicom" subclass="true" display_in_upload="false"/>
     <datatype extension="vms" type="galaxy.datatypes.images:Hamamatsu" mimetype="image/hamamatsu"/>
     <datatype extension="vmu" type="galaxy.datatypes.images:Hamamatsu" subclass="true" display_in_upload="false"/>
     <datatype extension="ndpi" type="galaxy.datatypes.images:Hamamatsu" subclass="true" display_in_upload="false"/>
@@ -1451,6 +1452,7 @@
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:OMETiff"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>
+    <sniffer type="galaxy.datatypes.images:Dicom"/>
     <sniffer type="galaxy.datatypes.images:Bmp"/>
     <sniffer type="galaxy.datatypes.images:Gif"/>
     <sniffer type="galaxy.datatypes.images:Im"/>
