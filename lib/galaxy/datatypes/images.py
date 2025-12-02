@@ -540,9 +540,11 @@ class Dicom(Image):
         """
         Determine if the file is in DICOM format.
         """
-        with open(filename, "rb") as fh:
-            fh.seek(128)
-            return fh.read(4) == b"DICM"
+        try:
+            pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True)
+            return True
+        except pydicom.errors.InvalidDicomError:
+            return False
 
     def get_mime(self) -> str:
         """
