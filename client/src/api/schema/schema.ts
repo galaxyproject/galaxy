@@ -7659,7 +7659,7 @@ export interface components {
             /** Ext */
             ext: string;
             /** Hashes */
-            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            hashes?: components["schemas"]["FileHash"][] | null;
             /**
              * Identifier
              * @description A unique identifier for this element within the collection.
@@ -10101,17 +10101,7 @@ export interface components {
          */
         DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
         /** DatasetHash */
-        "DatasetHash-Input": {
-            /**
-             * Hash Function
-             * @enum {string}
-             */
-            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
-            /** Hash Value */
-            hash_value: string;
-        };
-        /** DatasetHash */
-        "DatasetHash-Output": {
+        DatasetHash: {
             /**
              * Extra Files Path
              * @description The path to the extra files used to generate the hash.
@@ -10175,24 +10165,6 @@ export interface components {
          * @enum {string}
          */
         DatasetPermissionAction: "set_permissions" | "make_private" | "remove_restrictions";
-        /**
-         * DatasetPermissions
-         * @description Role-based permissions for accessing and managing a dataset.
-         */
-        DatasetPermissions: {
-            /**
-             * Access
-             * @description The set of roles (encoded IDs) that can access this dataset.
-             * @default []
-             */
-            access: string[];
-            /**
-             * Management
-             * @description The set of roles (encoded IDs) that can manage this dataset.
-             * @default []
-             */
-            manage: string[];
-        };
         /** DatasetSource */
         DatasetSource: {
             /**
@@ -11730,6 +11702,16 @@ export interface components {
              */
             action_type: "fill_defaults";
         };
+        /** FileHash */
+        FileHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
         /** FileLibraryFolderItem */
         FileLibraryFolderItem: {
             /** Can Manage */
@@ -11855,7 +11837,7 @@ export interface components {
             /** Ext */
             ext: string;
             /** Hashes */
-            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            hashes?: components["schemas"]["FileHash"][] | null;
             /** Info */
             info?: string | null;
             /** Location */
@@ -12725,7 +12707,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes?: components["schemas"]["DatasetHash-Output"][] | null;
+            hashes?: components["schemas"]["DatasetHash"][] | null;
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
@@ -12797,7 +12779,7 @@ export interface components {
              * Permissions
              * @description Role-based access and manage control permissions for the dataset.
              */
-            permissions?: components["schemas"]["DatasetPermissions"] | null;
+            permissions?: components["schemas"]["galaxy__schema__schema__DatasetPermissions"] | null;
             /**
              * Purged
              * @description Whether this dataset has been removed from disk.
@@ -12999,7 +12981,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes: components["schemas"]["DatasetHash-Output"][];
+            hashes: components["schemas"]["DatasetHash"][];
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
@@ -13072,7 +13054,7 @@ export interface components {
              * Permissions
              * @description Role-based access and manage control permissions for the dataset.
              */
-            permissions: components["schemas"]["DatasetPermissions"];
+            permissions: components["schemas"]["galaxy__schema__schema__DatasetPermissions"];
             /**
              * Purged
              * @description Whether this dataset has been removed from disk.
@@ -24479,6 +24461,24 @@ export interface components {
              * @example https://example.com
              */
             url: string;
+        };
+        /**
+         * DatasetPermissions
+         * @description Role-based permissions for accessing and managing a dataset.
+         */
+        galaxy__schema__schema__DatasetPermissions: {
+            /**
+             * Access
+             * @description The set of roles (encoded IDs) that can access this dataset.
+             * @default []
+             */
+            access: string[];
+            /**
+             * Management
+             * @description The set of roles (encoded IDs) that can manage this dataset.
+             * @default []
+             */
+            manage: string[];
         };
         /** Organization */
         galaxy__schema__schema__Organization: {
