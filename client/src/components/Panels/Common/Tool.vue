@@ -2,7 +2,7 @@
     <div class="toolTitle">
         <a v-if="tool.disabled" :data-tool-id="tool.id" class="title-link name text-muted">
             <span v-if="!hideName">{{ tool.name }}</span>
-            <span class="description">{{ tool.description }}</span>
+            {{ " " }}<span class="description">{{ tool.description }}</span>
         </a>
         <a
             v-else
@@ -21,7 +21,7 @@
                 </span>
             </span>
             <span v-if="!hideName" class="name font-weight-bold">{{ tool.name }}</span>
-            <span class="description">{{ tool.description }}</span>
+            {{ " " }}<span class="description">{{ tool.description }}</span>
             <span
                 v-b-tooltip.hover
                 :class="['operation', 'float-right', operationIcon]"
