@@ -17,15 +17,8 @@ import App from "./App.vue";
 declare global {
     interface Window {
         bundleEntries: typeof bundleEntries;
-        config: typeof config & { _queue?: unknown[][]; _processQueue?: (fn: typeof config.set) => void };
+        config: typeof config;
     }
-}
-
-// Process any queued config.set() calls from the stub (used in Vite dev mode)
-// The stub is injected by vite-plugin-galaxy-dev-server.js to handle the race
-// condition where inline scripts call config.set() before this module loads
-if (window.config?._processQueue) {
-    window.config._processQueue(config.set);
 }
 
 window.bundleEntries = bundleEntries;
