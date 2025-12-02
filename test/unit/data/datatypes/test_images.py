@@ -7,6 +7,7 @@ from galaxy.datatypes.images import (
     Pdf,
     Png,
     Tiff,
+    Dicom,
 )
 from .util import (
     get_dataset,
@@ -145,7 +146,18 @@ test_png_depth_0 = __create_test(Png, "im1_uint8.png", "depth", 0)
 test_png_frames_1 = __create_test(Png, "im1_uint8.png", "frames", 1)
 
 
-# Test with files that neither Pillow nor tifffile can open
+# Tests for `Dicom` class
+
+
+@__test(Tiff, "Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm")
+def test_dicom(metadata):
+    assert metadata.width == 512, f'actual: {metadata.width}'
+    assert metadata.height == 512, f'actual: {metadata.height}'
+    assert metadata.channels == 1, f'actual: {metadata.channels}'
+    assert metadata.dtype == 2376, f'actual: {metadata.dtype}'
+
+
+# Test with files that neither Pillow, tifffile, nor pydicom can open
 
 
 @__test(Pdf, "454Score.pdf")
