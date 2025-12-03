@@ -3,11 +3,11 @@ from typing import (
 )
 
 from galaxy.datatypes.images import (
+    Dicom,
     Image,
     Pdf,
     Png,
     Tiff,
-    Dicom,
 )
 from galaxy.datatypes.sniff import get_test_fname
 from .util import (
