@@ -17,7 +17,6 @@ from typing import (
 import mrcfile
 import numpy as np
 import png
-import pydicom
 import tifffile
 from typing_extensions import Literal
 
@@ -26,6 +25,11 @@ try:
     import PIL.Image
 except ImportError:
     PIL = None  # type: ignore[assignment, unused-ignore]
+
+try:
+    import pydicom
+except ImportError:
+    pydicom = None  # type: ignore[assignment, unused-ignore]
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -541,11 +545,16 @@ class Dicom(Image):
         """
         Determine if the file is in DICOM format.
         """
-        try:
-            pydicom.dcmread(filename, stop_before_pixels=True)
-            return True
-        except pydicom.errors.InvalidDicomError:
-            return False
+        if pydicom:
+            try:
+                pydicom.dcmread(filename, stop_before_pixels=True)
+                return True
+            except pydicom.errors.InvalidDicomError:
+                return False
+        else:
+            with open(filename, "rb") as fh:
+                fh.seek(128)
+                return fh.read(4) == b"DICM"
 
     def get_mime(self) -> str:
         """
@@ -554,6 +563,15 @@ class Dicom(Image):
         return "application/dicom"
 
     def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
+        """
+        Populate the metadata of the DICOM file using the pydicom library, if available.
+        """
+        if pydicom:
+            self._set_meta_with_pydicom(dataset)
+
+    def _set_meta_with_pydicom(
         self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         """
