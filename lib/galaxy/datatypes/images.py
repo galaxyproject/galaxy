@@ -593,7 +593,7 @@ class Dicom(Image):
             if hasattr(dcm, "SharedFunctionalGroupsSequence"):
                 seq = dcm.SharedFunctionalGroupsSequence[0]
                 if hasattr(seq, "TotalPixelMatrix"):
-                    tpm = shared_seq.TotalPixelMatrix[0]
+                    tpm = seq.TotalPixelMatrix[0]
                     dataset.metadata["width"] = tpm.tpm.TotalPixelMatrixColumns
                     dataset.metadata["height"] = tpm.TotalPixelMatrixRows
                     is_wsi = True  # tiled data is typical for WSI DICOM
