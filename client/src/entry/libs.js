@@ -5,9 +5,6 @@
  * It exposes required globals to window for:
  * - jQuery plugins that expect window.$ and window.jQuery
  * - Backbone code that expects global underscore
- *
- * NOTE: bundleEntries and config are now set up by the app bundles (analysis/generic)
- * to avoid circular dependency issues with Vite code splitting.
  */
 
 // Backbone - expose globally for legacy code
