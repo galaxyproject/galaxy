@@ -59,6 +59,10 @@ vi.mock("@/composables/toast", () => ({
             toastMock(message, "info");
         }),
     },
+    useToast: () => ({
+        success: (...args: Parameters<(typeof Toast)["success"]>) => (Toast as any).success(...args),
+        info: (...args: Parameters<(typeof Toast)["info"]>) => (Toast as any).info(...args),
+    }),
 }));
 
 // Mock "@/utils/clipboard"
