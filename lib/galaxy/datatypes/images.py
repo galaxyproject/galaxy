@@ -524,6 +524,7 @@ class Pdf(Image):
             return fh.read(4) == b"%PDF"
 
 
+@build_sniff_from_prefix
 class Dicom(Image):
     """
     DICOM medical imaging format (.dcm)
@@ -537,20 +538,11 @@ class Dicom(Image):
     edam_format = "format_3548"
     file_ext = "dcm"
 
-    def sniff(self, filename: str) -> bool:
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determine if the file is in DICOM format.
         """
-        if pydicom:
-            try:
-                pydicom.dcmread(filename, stop_before_pixels=True)
-                return True
-            except pydicom.errors.InvalidDicomError:
-                return False
-        else:
-            with open(filename, "rb") as fh:
-                fh.seek(128)
-                return fh.read(4) == b"DICM"
+        return file_prefix.contents_header_bytes[128:132] == b"DICM"
 
     def get_mime(self) -> str:
         """

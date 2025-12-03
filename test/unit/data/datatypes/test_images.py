@@ -9,6 +9,7 @@ from galaxy.datatypes.images import (
     Tiff,
     Dicom,
 )
+from galaxy.datatypes.sniff import get_test_fname
 from .util import (
     get_dataset,
     MockDatasetDataset,
@@ -155,6 +156,11 @@ def test_dicom(metadata):
     assert metadata.height == 512, f'actual: {metadata.height}'
     assert metadata.channels == 1, f'actual: {metadata.channels}'
     assert metadata.dtype == 'uint16', f'actual: {metadata.dtype}'
+
+
+def test_dicom_sniff():
+    fname = get_test_fname('Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm')
+    assert Dicom().sniff(fname)
 
 
 # Test with files that neither Pillow, tifffile, nor pydicom can open
