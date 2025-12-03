@@ -152,14 +152,14 @@ test_png_frames_1 = __create_test(Png, "im1_uint8.png", "frames", 1)
 
 @__test(Dicom, "Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm")
 def test_dicom(metadata):
-    assert metadata.width == 512, f'actual: {metadata.width}'
-    assert metadata.height == 512, f'actual: {metadata.height}'
-    assert metadata.channels == 1, f'actual: {metadata.channels}'
-    assert metadata.dtype == 'uint16', f'actual: {metadata.dtype}'
+    assert metadata.width == 512, f"actual: {metadata.width}"
+    assert metadata.height == 512, f"actual: {metadata.height}"
+    assert metadata.channels == 1, f"actual: {metadata.channels}"
+    assert metadata.dtype == 'uint16', f"actual: {metadata.dtype}"
 
 
 def test_dicom_sniff():
-    fname = get_test_fname('Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm')
+    fname = get_test_fname("Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm")
     assert Dicom().sniff(fname)
 
 

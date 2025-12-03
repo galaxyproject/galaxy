@@ -612,27 +612,23 @@ class Dicom(Image):
 
         # Try to infer the `dtype` from metadata
         dtype_lut = [
-            ['uint8', 'int8'],
-            ['uint16', 'int16'],
-            ['uint32', 'int32'],
+            ["uint8", "int8"],
+            ["uint16", "int16"],
+            ["uint32", "int32"],
         ]
         dtype_lut_pos = (
             round(math.log2(dcm.BitsAllocated) - 3),  # 8bit -> 0, 16bit -> 1, 32bit -> 2
             dcm.PixelRepresentation,
         )
         if 0 <= dtype_lut_pos[0] < len(dtype_lut):
-            dataset.metadata['dtype'] = dtype_lut[
-                dtype_lut_pos[0]
-            ][
-                dtype_lut_pos[1]
-            ]
+            dataset.metadata['dtype'] = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
 
         # Try to infer `num_unique_values` from metadata
         try:
             if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.4":  # https://www.dicomlibrary.com/dicom/sop
 
                 # The DICOM file contains segmentation, count +1 for the image background
-                dataset.metadata['num_unique_values'] = 1 + len(dcm.SegmentSequence)
+                dataset.metadata["num_unique_values"] = 1 + len(dcm.SegmentSequence)
 
         except AttributeError:
             pass  # Ignore errors if metadata cannot be read
