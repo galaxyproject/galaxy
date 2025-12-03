@@ -621,7 +621,7 @@ class Dicom(Image):
             dcm.PixelRepresentation,
         )
         if 0 <= dtype_lut_pos[0] < len(dtype_lut):
-            dataset.metadata['dtype'] = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
+            dataset.metadata["dtype"] = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
 
         # Try to infer `num_unique_values` from metadata
         try:

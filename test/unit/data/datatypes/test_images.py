@@ -155,7 +155,7 @@ def test_dicom(metadata):
     assert metadata.width == 512, f"actual: {metadata.width}"
     assert metadata.height == 512, f"actual: {metadata.height}"
     assert metadata.channels == 1, f"actual: {metadata.channels}"
-    assert metadata.dtype == 'uint16', f"actual: {metadata.dtype}"
+    assert metadata.dtype == "uint16", f"actual: {metadata.dtype}"
 
 
 def test_dicom_sniff():
