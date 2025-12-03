@@ -635,9 +635,7 @@ class Dicom(Image):
                 # The DICOM file contains segmentation, count +1 for the image background
                 dataset.metadata['num_unique_values'] = 1 + len(dcm.SegmentSequence)
 
-        except (
-            AttributeError,
-        ):
+        except AttributeError:
             pass  # Ignore errors if metadata cannot be read
 
 
