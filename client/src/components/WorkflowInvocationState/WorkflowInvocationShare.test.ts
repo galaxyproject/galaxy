@@ -50,20 +50,20 @@ const TYPE = 1;
 const toastMock = vi.fn((message, type: "success" | "info") => {
     return { message, type };
 });
-vi.mock("@/composables/toast", () => ({
-    Toast: {
-        success: vi.fn().mockImplementation((message) => {
+vi.mock("@/composables/toast", () => {
+    const toast = {
+        success: vi.fn().mockImplementation((message: string) => {
             toastMock(message, "success");
         }),
-        info: vi.fn().mockImplementation((message) => {
+        info: vi.fn().mockImplementation((message: string) => {
             toastMock(message, "info");
         }),
-    },
-    useToast: () => ({
-        success: (...args: Parameters<(typeof Toast)["success"]>) => (Toast as any).success(...args),
-        info: (...args: Parameters<(typeof Toast)["info"]>) => (Toast as any).info(...args),
-    }),
-}));
+    };
+    return {
+        Toast: toast,
+        useToast: () => toast,
+    };
+});
 
 // Mock "@/utils/clipboard"
 const writeText = vi.fn();
