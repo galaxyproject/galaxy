@@ -21,7 +21,9 @@ from social_core.utils import (
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
+from galaxy import exceptions as galaxy_exceptions
 from galaxy.exceptions import MalformedContents
+from galaxy.managers import users as user_managers
 from galaxy.model import (
     PSAAssociation,
     PSACode,
@@ -128,6 +130,7 @@ AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.load_extra_data",
     # Update the user record with any changed info from the auth service.
     "social_core.pipeline.user.user_details",
+    "galaxy.authnz.psa_authnz.sync_user_profile",
     "galaxy.authnz.psa_authnz.decode_access_token",
 )
 
@@ -318,7 +321,8 @@ class PSAAuthnz(IdentityProvider):
         # Always set LOGIN_REDIRECT_URL to the base URL for pipeline steps
         # We'll adjust the final redirect based on fixed_delegated_auth after do_complete
         self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
-
+        # Make Galaxy app/trans available to downstream pipeline steps that need to apply Galaxy-specific invariants.
+        self.config["GALAXY_TRANS"] = trans
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
@@ -737,6 +741,48 @@ def verify(strategy=None, response=None, details=None, **kwargs):
             raise Exception(res["error"]["message"])
     else:
         raise Exception(f"`{provider}` is an unsupported secondary authorization provider, contact admin.")
+
+
+def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
+    """
+    Apply Galaxy-specific invariants (email + private role, validated public name) after PSA updates the user model.
+    """
+    if not strategy or not user:
+        return
+    trans = strategy.config.get("GALAXY_TRANS")
+    if not trans:
+        log.debug("OIDC sync_user_profile skipped: no Galaxy transaction available.")
+        return
+    manager = getattr(trans.app, "user_manager", None) or user_managers.UserManager(trans.app)
+    updates: list[str] = []
+    # Update email and keep private role in sync
+    if details and details.get("email"):
+        try:
+            manager.update_email(trans, user, details["email"], commit=False, send_activation_email=False)
+            updates.append("email")
+        except galaxy_exceptions.MessageException as exc:
+            log.warning("OIDC email sync skipped for user %s: %s", user.id, exc)
+    # Update public name with Galaxy validation
+    if details and details.get("username"):
+        try:
+            manager.update_username(trans, user, details["username"], commit=False)
+            updates.append("username")
+        except galaxy_exceptions.MessageException as exc:
+            log.warning("OIDC username sync skipped for user %s: %s", user.id, exc)
+    if updates:
+        trans.sa_session.add(user)
+        trans.sa_session.commit()
+        existing = []
+        try:
+            existing_raw = user.preferences.get("profile_updates")
+            if existing_raw:
+                existing = json.loads(existing_raw)
+        except Exception:
+            existing = []
+        merged = sorted(set(existing + updates))
+        user.preferences["profile_updates"] = json.dumps(merged)
+        trans.sa_session.add(user)
+        trans.sa_session.commit()
 
 
 def allowed_to_disconnect(

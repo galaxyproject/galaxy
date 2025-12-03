@@ -1,4 +1,7 @@
+import axios from "axios";
+
 import { GalaxyApi } from "@/api";
+import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export async function getCurrentUser() {
@@ -10,6 +13,18 @@ export async function getCurrentUser() {
         rethrowSimple(error);
     }
     return data;
+}
+
+export type ProfileUpdatesResponse = { updates: string[] };
+
+export async function getProfileUpdates(): Promise<ProfileUpdatesResponse> {
+    try {
+        const { data } = await axios.get(`${getAppRoot()}api/users/current/profile_updates`);
+        return data as ProfileUpdatesResponse;
+    } catch (e) {
+        // If the endpoint is unavailable (e.g. in tests without a mock), fall back silently.
+        return { updates: [] };
+    }
 }
 
 export async function addFavoriteToolQuery(userId: string, toolId: string) {
