@@ -610,7 +610,6 @@ class Dicom(Image):
             dataset.metadata["width"] = dcm.get("Columns")
             dataset.metadata["height"] = dcm.get("Rows")
 
-
         # Try to infer the `dtype` from metadata
         dtype_lut = [
             ['uint8', 'int8'],
