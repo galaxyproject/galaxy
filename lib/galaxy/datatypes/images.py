@@ -542,7 +542,7 @@ class Dicom(Image):
         Determine if the file is in DICOM format.
         """
         try:
-            pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True)
+            pydicom.dcmread(filename, stop_before_pixels=True)
             return True
         except pydicom.errors.InvalidDicomError:
             return False
@@ -616,7 +616,11 @@ class Dicom(Image):
             dcm.PixelRepresentation,
         )
         if 0 <= dtype_lut_pos[0] < len(dtype_lut):
-            metadata['dtype'] = dtype_lut[*dtype_lut_pos]
+            metadata['dtype'] = dtype_lut[
+                dtype_lut_pos[0]
+            ][
+                dtype_lut_pos[1]
+            ]
 
         # Try to infer `num_unique_values` from metadata
         try:
