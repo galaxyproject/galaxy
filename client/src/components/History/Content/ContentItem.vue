@@ -377,7 +377,7 @@ function unexpandedClick(event: Event) {
                             :spin="contentState.spin"
                             :title="item.populated_state_message || contentState.text" />
                     </span>
-                    <span class="id hid">{{ id }}:</span>
+                    <span class="id hid">{{ id }}: </span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="ml-auto align-self-start btn-group p-1">

@@ -3,6 +3,11 @@ import { faArrowAltCircleUp, faSave } from "@fortawesome/free-regular-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
+// Import workers using Vite's ?worker syntax for proper bundling
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
+import yamlWorker from "monaco-yaml/yaml.worker?worker";
 import { nextTick, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 import { parse, stringify } from "yaml";
@@ -18,6 +23,22 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { setupMonaco } from "./YamlJs";
 
 import Heading from "@/components/Common/Heading.vue";
+
+// Configure Monaco environment with worker factory before loading
+self.MonacoEnvironment = {
+    getWorker(_workerId: string, label: string) {
+        if (label === "yaml") {
+            return new yamlWorker();
+        }
+        if (label === "json") {
+            return new jsonWorker();
+        }
+        if (label === "typescript" || label === "javascript") {
+            return new tsWorker();
+        }
+        return new editorWorker();
+    },
+};
 
 // loaded monaco-editor from `node_modules`
 loader.config({ monaco });

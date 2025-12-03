@@ -38,5 +38,6 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         env:
           GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR: 1
+          NODE_OPTIONS: --max-old-space-size=4096
         run: make client
         working-directory: 'galaxy root'

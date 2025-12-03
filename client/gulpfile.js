@@ -7,17 +7,7 @@ const buildIcons = require("./icons/build_icons");
 const os = require("os");
 const yaml = require("yaml");
 
-const PATHS = {
-    nodeModules: "./node_modules",
-    stagedLibraries: {
-        backbone: ["backbone.js", "backbone.js"],
-        jquery: ["dist/jquery.js", "jquery/jquery.js"],
-        "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
-        "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        requirejs: ["require.js", "require.js"],
-        underscore: ["underscore.js", "underscore.js"],
-    },
-};
+const PATHS = {};
 
 // Check if visualization steps should be skipped
 const SKIP_VIZ = process.env.SKIP_VIZ === "true" || process.env.SKIP_VIZ === "1";
@@ -42,26 +32,6 @@ try {
 } catch (err) {
     console.error(`Error loading visualization config: ${err.message}`);
     VISUALIZATION_PLUGINS = {};
-}
-
-function stageLibs(callback) {
-    try {
-        Object.keys(PATHS.stagedLibraries).forEach((lib) => {
-            const p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
-            const p2 = path.resolve(path.join("src", "libs", PATHS.stagedLibraries[lib][1]));
-            if (fs.existsSync(p1)) {
-                fs.removeSync(p2);
-                fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
-            } else {
-                throw new Error(
-                    `${p1} does not exist, yet it is a required library. Check that the package in question exists in node_modules.`,
-                );
-            }
-        });
-        callback();
-    } catch (err) {
-        callback(err);
-    }
 }
 
 async function icons() {
@@ -208,7 +178,7 @@ function forceInstallVisualizations(callback) {
     return installVisualizations(callback, true);
 }
 
-const client = parallel(stageLibs, icons);
+const client = icons;
 const plugins = series(installVisualizations, cleanPlugins, stagePlugins);
 const pluginsRebuild = series(forceInstallVisualizations, cleanPlugins, stagePlugins);
 

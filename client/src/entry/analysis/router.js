@@ -66,6 +66,10 @@ import PageView from "@/components/Page/PageView.vue";
 import PageForm from "@/components/PageDisplay/PageForm.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
+// TODO: CustomToolEditor should be lazy-loaded to reduce bundle size (~7MB with Monaco).
+// Vue Router 3.x async component loading doesn't work correctly with Vite.
+// Revisit when migrating to Vue Router 4 / Vue 3.
+import CustomToolEditor from "@/components/Tool/CustomToolEditor.vue";
 import ToolReport from "@/components/Tool/ToolReport.vue";
 import ToolSuccess from "@/components/Tool/ToolSuccess.vue";
 import ToolOntologies from "@/components/ToolsList/ToolOntologies.vue";
@@ -104,21 +108,6 @@ import Register from "@/entry/analysis/modules/Register.vue";
 import WorkflowEditorModule from "@/entry/analysis/modules/WorkflowEditor.vue";
 
 Vue.use(VueRouter);
-
-// Async component for CustomToolEditor to reduce bundle size
-// NOTE: We use the full async component factory pattern instead of simple dynamic imports
-// (i.e., `() => import("@/components/Tool/CustomToolEditor.vue")`) due to what I think are router limitations.  Revisit with vr-4
-const CustomToolEditor = () => ({
-    component: import("@/components/Tool/CustomToolEditor.vue"),
-    loading: {
-        template: '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading Tool Editor...</div>',
-    },
-    error: {
-        template: '<div class="alert alert-danger">Failed to load Tool Editor</div>',
-    },
-    delay: 200,
-    timeout: 10000,
-});
 
 // patches $router.push() to trigger an event and hide duplication warnings
 patchRouterPush(VueRouter);

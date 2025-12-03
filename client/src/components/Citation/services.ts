@@ -10,7 +10,7 @@ export async function getCitations(source: string, id: string): Promise<Citation
         const request = await axios.get(`${getAppRoot()}api/${source}/${id}/citations`);
         const rawCitations = request.data;
         const citations = [];
-        const { Cite } = await import(/* webpackChunkName: "cite" */ "./cite");
+        const { Cite } = await import("./cite");
         for (const rawCitation of rawCitations) {
             try {
                 const cite = new Cite(rawCitation.content);
