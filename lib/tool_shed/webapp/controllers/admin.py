@@ -6,8 +6,8 @@ from galaxy import (
     web,
 )
 from galaxy.util import inflector
-from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
+from tool_shed.grids import framework as grids
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.util import (
     metadata_util,

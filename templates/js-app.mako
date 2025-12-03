@@ -26,8 +26,8 @@
         <link rel="index" href="${ h.url_for( '/' ) }"/>
 
         <!-- Load stylesheets -->
-        ${ h.dist_css('base')}
-        ${ h.css('jquery-ui/smoothness/jquery-ui')}
+        ${ h.dist_css('base') }
+        ${ h.css('jquery-ui/smoothness/jquery-ui') }
 
         <script type="text/javascript">
             const session_csrf_token = "${ trans.session_csrf_token }";

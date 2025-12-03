@@ -1,9 +1,5 @@
 import logging
 import math
-from json import (
-    dumps,
-    loads,
-)
 from typing import (
     Optional,
 )
@@ -23,10 +19,7 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
 )
-from galaxy.util import (
-    sanitize_text,
-    unicodify,
-)
+from galaxy.util import unicodify
 from galaxy.web.framework import (
     decorators,
     url_for,
@@ -667,99 +660,13 @@ class Grid:
         # FIXME: pretty sure this is only here to pass along, can likely be eliminated
         status = kwargs.get("status", None)
         message = kwargs.get("message", None)
-        # Build a base filter and sort key that is the combination of the saved state and defaults.
-        # Saved state takes preference over defaults.
-        base_filter = {}
-        if self.default_filter:
-            # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
-            base_filter = self.default_filter.copy()
         base_sort_key = self.default_sort_key
         # Build initial query
         query = self.build_initial_query(trans, **kwargs)
         query = self.apply_query_filter(trans, query, **kwargs)
         # Maintain sort state in generated urls
         extra_url_args = {}
-        # Determine whether use_default_filter flag is set.
-        use_default_filter = False
-        if use_default_filter_str := kwargs.get("use_default_filter"):
-            use_default_filter = use_default_filter_str.lower() == "true"
-        # Process filtering arguments to (a) build a query that represents the filter and (b) build a
-        # dictionary that denotes the current filter.
-        cur_filter_dict = {}
-        for column in self.columns:
-            if column.key:
-                # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
-                # (b) look in kwargs; and (c) look in base filter.
-                column_filter = None
-                if use_default_filter:
-                    if self.default_filter:
-                        column_filter = self.default_filter.get(column.key)
-                elif f"f-{column.model_class.__name__}.{column.key}" in kwargs:
-                    # Queries that include table joins cannot guarantee unique column names.  This problem is
-                    # handled by setting the column_filter value to <TableName>.<ColumnName>.
-                    column_filter = kwargs.get(f"f-{column.model_class.__name__}.{column.key}")
-                elif f"f-{column.key}" in kwargs:
-                    column_filter = kwargs.get(f"f-{column.key}")
-                elif column.key in base_filter:
-                    column_filter = base_filter.get(column.key)
 
-                # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
-                def loads_recurse(item):
-                    decoded_list = []
-                    if isinstance(item, str):
-                        try:
-                            # Not clear what we're decoding, so recurse to ensure that we catch everything.
-                            decoded_item = loads(item)
-                            if isinstance(decoded_item, list):
-                                decoded_list = loads_recurse(decoded_item)
-                            else:
-                                decoded_list = [str(decoded_item)]
-                        except ValueError:
-                            decoded_list = [str(item)]
-                    elif isinstance(item, list):
-                        for element in item:
-                            a_list = loads_recurse(element)
-                            decoded_list = decoded_list + a_list
-                    return decoded_list
-
-                # If column filter found, apply it.
-                if column_filter is not None:
-                    # TextColumns may have a mix of json and strings.
-                    if isinstance(column, TextColumn):
-                        column_filter = loads_recurse(column_filter)
-                        if len(column_filter) == 1:
-                            column_filter = column_filter[0]
-                    # Interpret ',' as a separator for multiple terms.
-                    if isinstance(column_filter, str) and column_filter.find(",") != -1:
-                        column_filter = column_filter.split(",")
-
-                    # Check if filter is empty
-                    if isinstance(column_filter, list):
-                        # Remove empty strings from filter list
-                        column_filter = [x for x in column_filter if x != ""]
-                        if len(column_filter) == 0:
-                            continue
-                    elif isinstance(column_filter, str):
-                        # If filter criterion is empty, do nothing.
-                        if column_filter == "":
-                            continue
-
-                    # Update query.
-                    query = column.filter(trans, trans.user, query, column_filter)
-                    # Upate current filter dict.
-                    # Column filters are rendered in various places, sanitize them all here.
-                    cur_filter_dict[column.key] = sanitize_text(column_filter)
-                    # Carry filter along to newly generated urls; make sure filter is a string so
-                    # that we can encode to UTF-8 and thus handle user input to filters.
-                    if isinstance(column_filter, list):
-                        # Filter is a list; process each item.
-                        column_filter = [str(_).encode("utf-8") if not isinstance(_, str) else _ for _ in column_filter]
-                        extra_url_args[f"f-{column.key}"] = dumps(column_filter)
-                    else:
-                        # Process singleton filter.
-                        if not isinstance(column_filter, str):
-                            column_filter = str(column_filter)
-                        extra_url_args[f"f-{column.key}"] = column_filter.encode("utf-8")
         # Process sort arguments.
         sort_key = None
         if "sort" in kwargs:
@@ -823,15 +730,6 @@ class Grid:
             # Defaults.
             page_num = 1
             num_pages = 1
-        # There are some places in grid templates where it's useful for a grid
-        # to have its current filter.
-        self.cur_filter_dict = cur_filter_dict
-
-        # Log grid view.
-        context = str(self.__class__.__name__)
-        params = cur_filter_dict.copy()
-        params["sort"] = sort_key
-        params["async"] = "async" in kwargs
 
         # TODO:??
         # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
@@ -886,7 +784,7 @@ class Grid:
             num_page_links=self.num_page_links,
             allow_fetching_all_results=self.allow_fetching_all_results,
             default_filter_dict=self.default_filter,
-            cur_filter_dict=cur_filter_dict,
+            cur_filter_dict={},
             sort_key=sort_key,
             current_item=current_item,
             ids=kwargs.get("id", []),
@@ -904,7 +802,6 @@ class Grid:
             # grid explicitly having to pass them.
             kwargs=kwargs,
         )
-        trans.log_action(trans.get_user(), "grid.view", context, params)
         return page
 
     def get_ids(self, **kwargs):

@@ -1,6 +1,6 @@
 <%!
     from galaxy.util import unicodify
-    from galaxy.web.legacy_framework.grids import TextColumn
+    from tool_shed.grids.framework import TextColumn
 
     def inherit(context):
         kwargs = context.get( 'kwargs', {} )

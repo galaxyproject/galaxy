@@ -1,50 +1,4 @@
-<%inherit file="/base.mako"/>
-<%namespace file="/message.mako" import="render_msg" />
-
 <% _=n_ %>
-
-<%def name="title()">Extract workflow from history</%def>
-
-<%def name="stylesheets()">
-    ${h.dist_css( 'base' )}
-    ${h.css( 'history' )}
-    <style type="text/css">
-    div.toolForm{
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-    .list-item.dataset.history-content {
-        padding: 8px 10px;
-    }
-    .list-item.dataset.history-content .title-bar {
-        cursor: auto;
-    }
-    input[type="checkbox"].as-input {
-        margin-left: 8px;
-    }
-    th {
-        border-bottom: solid black 1px;
-    }
-    </style>
-</%def>
-
-<%def name="javascripts()">
-    ${parent.javascripts()}
-    <script type="text/javascript">
-    $(function() {
-        $("#checkall").click( function() {
-            $("input[type=checkbox]").attr( 'checked', true );
-            $(".as-named-input").prop( 'disabled', false );
-            return false;
-        }).show();
-        $("#uncheckall").click( function() {
-            $("input[type=checkbox]").attr( 'checked', false );
-            $(".as-named-input").prop( 'disabled', true );
-            return false;
-        }).show();
-    });
-    </script>
-</%def>
 
 <%def name="history_item( data, creator_disabled=False )">
     %if data.state in [ "no state", "", None ]:
@@ -76,6 +30,68 @@
         </tr>
     </table>
 </%def>
+
+<%def name="render_msg( msg, status='done' )">
+    <%
+        from galaxy.util.sanitize_html import sanitize_html
+        if status == "done":
+            status = "success"
+        elif status == "error":
+            status = "danger"
+        if status not in ("danger", "info", "success", "warning"):
+            status = "info"
+    %>
+    <div class="message mt-2 alert alert-${status}">${sanitize_html(msg)}</div>
+</%def>
+
+<!DOCTYPE HTML>
+<html lang="en">
+    <!--js-app.mako-->
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Galaxy - Extract workflow from history</title>
+
+        <!-- Load stylesheets -->
+        ${ h.dist_css('base') }
+        ${ h.css('history') }
+
+        <style type="text/css">
+            div.toolForm{
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+            .list-item.dataset.history-content {
+                padding: 8px 10px;
+            }
+            .list-item.dataset.history-content .title-bar {
+                cursor: auto;
+            }
+            input[type="checkbox"].as-input {
+                margin-left: 8px;
+            }
+            th {
+                border-bottom: solid black 1px;
+            }
+        </style>
+
+        <script type="text/javascript">
+            $(function() {
+                $("#checkall").click( function() {
+                    $("input[type=checkbox]").attr( 'checked', true );
+                    $(".as-named-input").prop( 'disabled', false );
+                    return false;
+                }).show();
+                $("#uncheckall").click( function() {
+                    $("input[type=checkbox]").attr( 'checked', false );
+                    $(".as-named-input").prop( 'disabled', true );
+                    return false;
+                }).show();
+            });
+        </script>
+    </head>
+
+<body scroll="no" class="full-content">
 
 <p>The following list contains each tool that was run to create the
 datasets in your current history. Please select those that you wish
@@ -169,3 +185,7 @@ into a workflow will be shown in gray.</p>
 </table>
 
 </form>
+
+</body>
+
+</html>
