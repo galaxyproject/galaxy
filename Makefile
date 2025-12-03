@@ -17,7 +17,7 @@ YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
 GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR?=0
 # Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
 # compatibility with smaller machines.
-NODE_OPTIONS ?= --max-old-space-size=3072
+NODE_OPTIONS ?= --max-old-space-size=4096
 NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR)
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
