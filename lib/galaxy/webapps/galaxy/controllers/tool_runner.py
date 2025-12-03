@@ -53,7 +53,7 @@ class ToolRunner(BaseUIController):
 
         # tool id not available, redirect to main page
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # tool id is not matching, display an error
         if not tool:
@@ -171,7 +171,7 @@ class ToolRunner(BaseUIController):
         Subverting did not work on Chrome 31
         """
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
