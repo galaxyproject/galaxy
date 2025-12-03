@@ -60,7 +60,14 @@ export default defineConfig({
         __buildTimestamp__: JSON.stringify(new Date().toISOString()),
     },
     plugins: [
-        vue(), // Vue 2.7 support
+        vue({
+            template: {
+                compilerOptions: {
+                    // Preserve whitespace to match Webpack's vue-loader default behavior
+                    whitespace: "preserve",
+                },
+            },
+        }),
         tsconfigPaths(), // TypeScript path resolution
         ViteYaml(), // YAML file support
         galaxyLegacyPlugin(), // Handle legacy module resolution
