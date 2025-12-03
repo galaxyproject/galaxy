@@ -528,13 +528,9 @@ class Dicom(Image):
     """
     DICOM medical imaging format (.dcm)
 
-    https://formats.kaitai.io/dicom/index.html can be a good (MIT) reference if
-    we need to expand the metadata detection in the future, but for current use
-    cases it was sufficient to collect the file type alone.
-
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm')
-    >>> Dicom().sniff( fname )
+    >>> Dicom().sniff(fname)
     True
     """
 
