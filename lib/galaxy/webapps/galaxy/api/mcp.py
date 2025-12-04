@@ -211,10 +211,142 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to get job status for {job_id}: {str(e)}")
             raise ValueError(f"Failed to get status for job '{job_id}': {str(e)}") from e
 
+    @mcp.tool()
+    def create_history(name: str, api_key: str) -> dict[str, Any]:
+        """
+        Create a new Galaxy history.
+
+        Histories are containers for datasets and analysis results. Create a new
+        history before uploading files or running analyses.
+
+        Args:
+            name: Human-readable name for the new history (e.g., 'RNA-seq Analysis')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Created history details including ID, name, and state
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.create_history(name)
+        except Exception as e:
+            logger.error(f"Failed to create history: {str(e)}")
+            raise ValueError(f"Failed to create history '{name}': {str(e)}") from e
+
+    @mcp.tool()
+    def get_history_details(history_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific history.
+
+        Returns history metadata and summary statistics without loading all datasets.
+        Use get_history_contents() to get the actual datasets in a history.
+
+        Args:
+            history_id: Galaxy history ID (e.g., '1cd8e2f6b131e5aa')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            History details including name, state, size, and dataset counts
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_history_details(history_id)
+        except Exception as e:
+            logger.error(f"Failed to get history details for {history_id}: {str(e)}")
+            raise ValueError(f"Failed to get details for history '{history_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def get_history_contents(
+        history_id: str,
+        api_key: str,
+        limit: int = 100,
+        offset: int = 0,
+        order: str = "hid-asc",
+    ) -> dict[str, Any]:
+        """
+        Get paginated contents (datasets and collections) from a specific history.
+
+        Args:
+            history_id: Galaxy history ID (e.g., '1cd8e2f6b131e5aa')
+            api_key: Galaxy API key for authentication
+            limit: Maximum number of items to return per page (default: 100)
+            offset: Number of items to skip for pagination (default: 0)
+            order: Sort order - options include:
+                   'hid-asc' (history ID ascending, oldest first, default)
+                   'hid-dsc' (history ID descending, newest first)
+                   'create_time-dsc' (creation time descending)
+                   'update_time-dsc' (last updated descending)
+                   'name-asc' (alphabetical by name)
+
+        Returns:
+            List of datasets/collections with pagination metadata
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_history_contents(history_id, limit, offset, order)
+        except Exception as e:
+            logger.error(f"Failed to get history contents for {history_id}: {str(e)}")
+            raise ValueError(f"Failed to get contents for history '{history_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def get_dataset_details(dataset_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific dataset.
+
+        Args:
+            dataset_id: Galaxy dataset ID (e.g., 'f2db41e1fa331b3e')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Dataset details including name, state, file size, extension, and metadata
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_dataset_details(dataset_id)
+        except Exception as e:
+            logger.error(f"Failed to get dataset details for {dataset_id}: {str(e)}")
+            raise ValueError(f"Failed to get details for dataset '{dataset_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def upload_file_from_url(
+        history_id: str,
+        url: str,
+        api_key: str,
+        file_type: str = "auto",
+        dbkey: str = "?",
+        file_name: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Upload a file from a URL to Galaxy.
+
+        Downloads the file from the given URL and uploads it to the specified history.
+        The upload runs as an asynchronous job; use get_job_status() to monitor progress.
+
+        Args:
+            history_id: Galaxy history ID to upload the file to
+            url: URL of the file to upload (e.g., 'https://example.com/data.fasta')
+            api_key: Galaxy API key for authentication
+            file_type: Galaxy file format name (default: 'auto' for auto-detection)
+                      Common types: 'fasta', 'fastq', 'bam', 'vcf', 'bed', 'tabular', 'txt'
+            dbkey: Database key/genome build (default: '?')
+                   Examples: 'hg38', 'mm10', 'dm6', '?'
+            file_name: Optional custom name for the uploaded dataset in Galaxy
+                      (inferred from URL if not provided)
+
+        Returns:
+            Job information including job ID and output dataset IDs
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.upload_file_from_url(history_id, url, file_type, dbkey, file_name)
+        except Exception as e:
+            logger.error(f"Failed to upload file from URL {url}: {str(e)}")
+            raise ValueError(f"Failed to upload file from URL '{url}': {str(e)}") from e
+
     # Create the HTTP app for mounting
     # The path="/mcp" parameter here is just for SSE endpoint naming
     # The actual mount point is determined by fast_app.py
     mcp_app = mcp.sse_app()
 
-    logger.info("MCP server initialized with 6 tools")
+    logger.info("MCP server initialized with 11 tools")
     return mcp_app
