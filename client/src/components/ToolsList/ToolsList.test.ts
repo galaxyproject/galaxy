@@ -30,7 +30,7 @@ const WHOOSH_QUERY = createWhooshQuery(FILTER_SETTINGS);
 
 const routerPushMock = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: routerPushMock,
     }),
