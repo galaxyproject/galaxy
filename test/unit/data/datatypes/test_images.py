@@ -17,6 +17,7 @@ from .util import (
 
 # Define test decorator
 
+
 def __test(image_cls: type[Image], input_filename: str):
 
     def decorator(test_impl):
@@ -35,6 +36,7 @@ def __test(image_cls: type[Image], input_filename: str):
 
 # Define test factory
 
+
 def __create_test(image_cls: type[Image], input_filename: str, **expected_metadata: Any):
 
     @__test(image_cls, input_filename)
@@ -42,18 +44,17 @@ def __create_test(image_cls: type[Image], input_filename: str, **expected_metada
         for metadata_key, expected_value in expected_metadata.items():
             metadata_value = getattr(metadata, metadata_key)
             cond = (
-                metadata_value is expected_value
-            ) if expected_value is None or type(expected_value) is bool else (
-                metadata_value == expected_value
+                (metadata_value is expected_value)
+                if expected_value is None or type(expected_value) is bool
+                else (metadata_value == expected_value)
             )
-            assert cond, (
-                f"expected: {repr(expected_value)}, actual: {repr(metadata_value)}"
-            )
+            assert cond, f"expected: {repr(expected_value)}, actual: {repr(metadata_value)}"
 
     return test
 
 
 # Define test utilities
+
 
 def __assert_empty_metadata(metadata):
     for key in (
@@ -200,6 +201,7 @@ def test_dicom_sniff():
 
 
 # Test with files that neither Pillow, tifffile, nor pydicom can open
+
 
 @__test(Pdf, "454Score.pdf")
 def test_unsupported_metadata(metadata):
