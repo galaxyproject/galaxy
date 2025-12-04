@@ -496,10 +496,101 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to cancel invocation {invocation_id}: {str(e)}")
             raise ValueError(f"Failed to cancel invocation '{invocation_id}': {str(e)}") from e
 
+    # ==================== Tool Enhancement Tools ====================
+
+    @mcp.tool()
+    def get_tool_panel(api_key: str, view: str | None = None) -> dict[str, Any]:
+        """
+        Get the tool panel (toolbox) structure.
+
+        Returns the hierarchical structure of tool sections and tools
+        available in this Galaxy instance.
+
+        Args:
+            api_key: Galaxy API key for authentication
+            view: Optional panel view name (uses server default if not specified)
+
+        Returns:
+            Tool panel hierarchy with sections and tools
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_tool_panel(view)
+        except Exception as e:
+            logger.error(f"Failed to get tool panel: {str(e)}")
+            raise ValueError(f"Failed to get tool panel: {str(e)}") from e
+
+    @mcp.tool()
+    def get_tool_run_examples(tool_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get test cases/examples showing how to run a tool.
+
+        Returns the tool's test definitions which show real, working input
+        configurations. Useful for learning how to properly format tool inputs.
+
+        Args:
+            tool_id: Galaxy tool ID (e.g., 'Cut1')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Test cases with example inputs and expected outputs
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_tool_run_examples(tool_id)
+        except Exception as e:
+            logger.error(f"Failed to get tool run examples for {tool_id}: {str(e)}")
+            raise ValueError(f"Failed to get run examples for tool '{tool_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def get_tool_citations(tool_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get citation information for a tool.
+
+        Returns DOIs, BibTeX entries, and URLs for citing the tool
+        in publications.
+
+        Args:
+            tool_id: Galaxy tool ID (e.g., 'bwa')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Tool citations including DOIs and BibTeX
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_tool_citations(tool_id)
+        except Exception as e:
+            logger.error(f"Failed to get tool citations for {tool_id}: {str(e)}")
+            raise ValueError(f"Failed to get citations for tool '{tool_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def search_tools_by_keywords(keywords: list[str], api_key: str) -> dict[str, Any]:
+        """
+        Search for tools matching multiple keywords.
+
+        More flexible than search_tools - provide multiple keywords
+        and get tools that match any of them, ranked by relevance.
+
+        Args:
+            keywords: List of keywords to search for
+                     (e.g., ['fastq', 'quality', 'trimming'])
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Matching tools sorted by number of keyword matches
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.search_tools_by_keywords(keywords)
+        except Exception as e:
+            logger.error(f"Failed to search tools by keywords: {str(e)}")
+            raise ValueError(f"Failed to search tools by keywords: {str(e)}") from e
+
     # Create the HTTP app for mounting
     # The path="/mcp" parameter here is just for SSE endpoint naming
     # The actual mount point is determined by fast_app.py
     mcp_app = mcp.sse_app()
 
-    logger.info("MCP server initialized with 17 tools")
+    logger.info("MCP server initialized with 21 tools")
     return mcp_app
