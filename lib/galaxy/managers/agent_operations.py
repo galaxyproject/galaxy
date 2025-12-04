@@ -56,149 +56,56 @@ class AgentOperationsManager:
 
     @property
     def tools_service(self):
-        """Lazy-load ToolsService."""
+        """Get ToolsService from app's DI container."""
         if self._tools_service is None:
-            from galaxy.managers.histories import HistoryManager
-            from galaxy.tools.search import ToolBoxSearch
             from galaxy.webapps.galaxy.services.tools import ToolsService
 
-            self._tools_service = ToolsService(
-                config=self.app.config,
-                toolbox_search=ToolBoxSearch(self.app.toolbox),
-                security=self.trans.security,
-                history_manager=HistoryManager(self.app),
-            )
+            self._tools_service = self.app[ToolsService]
         return self._tools_service
 
     @property
     def histories_service(self):
-        """Lazy-load HistoriesService."""
+        """Get HistoriesService from app's DI container."""
         if self._histories_service is None:
-            from galaxy.managers.citations import CitationsManager
-            from galaxy.managers.histories import (
-                HistoryDeserializer,
-                HistoryExportManager,
-                HistoryFilters,
-                HistoryManager,
-                HistorySerializer,
-            )
-            from galaxy.managers.users import UserManager
-            from galaxy.short_term_storage import ShortTermStorageAllocator
             from galaxy.webapps.galaxy.services.histories import HistoriesService
-            from galaxy.webapps.galaxy.services.notifications import NotificationService
 
-            history_manager = HistoryManager(self.app)
-            self._histories_service = HistoriesService(
-                security=self.trans.security,
-                manager=history_manager,
-                user_manager=UserManager(self.app),
-                serializer=HistorySerializer(self.app),
-                deserializer=HistoryDeserializer(self.app),
-                citations_manager=CitationsManager(self.app),
-                history_export_manager=HistoryExportManager(self.app),
-                filters=HistoryFilters(self.app),
-                short_term_storage_allocator=ShortTermStorageAllocator(self.app.config),
-                notification_service=NotificationService(self.trans.sa_session, self.trans.security),
-            )
+            self._histories_service = self.app[HistoriesService]
         return self._histories_service
 
     @property
     def jobs_service(self):
-        """Lazy-load JobsService."""
+        """Get JobsService from app's DI container."""
         if self._jobs_service is None:
-            from galaxy.managers.hdas import HDAManager
-            from galaxy.managers.histories import HistoryManager
-            from galaxy.managers.jobs import (
-                JobManager,
-                JobSearch,
-            )
             from galaxy.webapps.galaxy.services.jobs import JobsService
 
-            self._jobs_service = JobsService(
-                security=self.trans.security,
-                job_manager=JobManager(self.app),
-                job_search=JobSearch(self.app),
-                hda_manager=HDAManager(self.app),
-                history_manager=HistoryManager(self.app),
-            )
+            self._jobs_service = self.app[JobsService]
         return self._jobs_service
 
     @property
     def datasets_service(self):
-        """Lazy-load DatasetsService."""
+        """Get DatasetsService from app's DI container."""
         if self._datasets_service is None:
-            from galaxy.managers.datasets import DatasetManager
-            from galaxy.managers.hdas import (
-                HDAManager,
-                HDASerializer,
-            )
-            from galaxy.managers.hdcas import HDCASerializer
-            from galaxy.managers.histories import HistoryManager
-            from galaxy.managers.history_contents import (
-                HistoryContentsFilters,
-                HistoryContentsManager,
-            )
-            from galaxy.managers.lddas import LDDAManager
-            from galaxy.visualization.data_providers.registry import DataProviderRegistry
             from galaxy.webapps.galaxy.services.datasets import DatasetsService
 
-            self._datasets_service = DatasetsService(
-                security=self.trans.security,
-                history_manager=HistoryManager(self.app),
-                hda_manager=HDAManager(self.app),
-                hda_serializer=HDASerializer(self.app),
-                hdca_serializer=HDCASerializer(self.app),
-                ldda_manager=LDDAManager(self.app),
-                history_contents_manager=HistoryContentsManager(self.app),
-                history_contents_filters=HistoryContentsFilters(self.app),
-                data_provider_registry=DataProviderRegistry(),
-                dataset_manager=DatasetManager(self.app),
-            )
+            self._datasets_service = self.app[DatasetsService]
         return self._datasets_service
 
     @property
     def workflows_service(self):
-        """Lazy-load WorkflowsService."""
+        """Get WorkflowsService from app's DI container."""
         if self._workflows_service is None:
-            from galaxy.managers.workflows import (
-                WorkflowContentsManager,
-                WorkflowsManager,
-            )
-            from galaxy.model.store import SessionlessContext
-            from galaxy.webapps.galaxy.services.notifications import NotificationService
             from galaxy.webapps.galaxy.services.workflows import WorkflowsService
-            from galaxy.workflow.modules import WorkflowModuleFactory
 
-            workflow_contents_manager = WorkflowContentsManager(
-                self.app,
-                WorkflowModuleFactory(self.app.toolbox),
-                SessionlessContext(),
-            )
-            workflows_manager = WorkflowsManager(self.app)
-            self._workflows_service = WorkflowsService(
-                workflows_manager=workflows_manager,
-                workflow_contents_manager=workflow_contents_manager,
-                serializer=workflows_manager.get_serializer(),
-                tool_shed_registry=self.app.tool_shed_registry,
-                notification_service=NotificationService(self.trans.sa_session, self.trans.security),
-            )
+            self._workflows_service = self.app[WorkflowsService]
         return self._workflows_service
 
     @property
     def invocations_service(self):
-        """Lazy-load InvocationsService."""
+        """Get InvocationsService from app's DI container."""
         if self._invocations_service is None:
-            from galaxy.managers.histories import HistoryManager
-            from galaxy.managers.workflows import WorkflowsManager
-            from galaxy.short_term_storage import ShortTermStorageAllocator
             from galaxy.webapps.galaxy.services.invocations import InvocationsService
 
-            self._invocations_service = InvocationsService(
-                security=self.trans.security,
-                histories_manager=HistoryManager(self.app),
-                workflows_manager=WorkflowsManager(self.app),
-                short_term_storage_allocator=ShortTermStorageAllocator(self.app.config),
-            )
+            self._invocations_service = self.app[InvocationsService]
         return self._invocations_service
 
     def connect(self) -> dict[str, Any]:
