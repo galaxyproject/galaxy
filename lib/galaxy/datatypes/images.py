@@ -3,6 +3,7 @@ Image classes
 """
 
 import base64
+import io
 import json
 import logging
 import math
@@ -413,12 +414,9 @@ class Tiff(Image):
 class OMETiff(Tiff):
     file_ext = "ome.tiff"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.sniff_prefix = None
-
-    def sniff(self, filename: str) -> bool:
-        with tifffile.TiffFile(filename) as tif:
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        buf = io.BytesIO(file_prefix.contents_header_bytes)
+        with tifffile.TiffFile(buf) as tif:
             return tif.is_ome
 
 

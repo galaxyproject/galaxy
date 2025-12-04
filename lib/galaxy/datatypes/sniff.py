@@ -727,7 +727,7 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order: Iterable["Data"]):
                 # ... and mismatch is not due to compressed text data for a compressed text datatype
                 continue
         try:
-            if hasattr(datatype, "sniff_prefix") and callable(datatype.sniff_prefix):
+            if hasattr(datatype, "sniff_prefix"):
                 datatype_compressed_format = getattr(datatype, "compressed_format", None)
                 if file_prefix.compressed_format and datatype_compressed_format:
                     # Compare the compressed format detected
