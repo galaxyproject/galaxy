@@ -1059,3 +1059,162 @@ class AgentOperationsManager:
             },
             "trs_id": trs_id,
         }
+
+    def list_history_ids(self, limit: int = 100) -> dict[str, Any]:
+        """
+        Get a simplified list of history IDs and names.
+
+        Args:
+            limit: Maximum number of histories to return (default: 100)
+
+        Returns:
+            Simplified list of history IDs and names
+        """
+        serialization_params = SerializationParams(view="summary")
+        filter_params = FilterQueryParams(limit=limit, offset=0)
+
+        histories = self.histories_service.index(
+            trans=self.trans,
+            serialization_params=serialization_params,
+            filter_query_params=filter_params,
+            deleted_only=False,
+            all_histories=False,
+        )
+
+        # Return simplified list with just id and name
+        simplified = [{"id": h.id, "name": h.name} for h in histories]
+
+        return {"histories": simplified, "count": len(simplified)}
+
+    def get_job_details(self, dataset_id: str, history_id: str | None = None) -> dict[str, Any]:
+        """
+        Get details about the job that created a specific dataset.
+
+        Args:
+            dataset_id: Galaxy dataset ID (encoded)
+            history_id: Optional history ID (for performance, not required)
+
+        Returns:
+            Job details including tool info, state, and parameters
+        """
+        decoded_dataset_id = self.trans.security.decode_id(dataset_id)
+
+        # Get the HDA to find its creating job
+        from galaxy.managers.hdas import HDAManager
+
+        hda_manager = HDAManager(self.app)
+        hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
+
+        if not hda:
+            raise ValueError(f"Dataset '{dataset_id}' not found or not accessible")
+
+        job = hda.creating_job
+        if not job:
+            return {
+                "dataset_id": dataset_id,
+                "job": None,
+                "message": "No creating job found for this dataset",
+            }
+
+        return {
+            "dataset_id": dataset_id,
+            "job_id": self.trans.security.encode_id(job.id),
+            "job": {
+                "tool_id": job.tool_id,
+                "tool_version": job.tool_version,
+                "state": job.state,
+                "create_time": job.create_time.isoformat() if job.create_time else None,
+                "update_time": job.update_time.isoformat() if job.update_time else None,
+            },
+        }
+
+    def download_dataset(self, dataset_id: str) -> dict[str, Any]:
+        """
+        Get download information for a dataset.
+
+        Since MCP clients are remote, this returns the download URL
+        rather than file contents.
+
+        Args:
+            dataset_id: Galaxy dataset ID (encoded)
+
+        Returns:
+            Download URL and dataset information
+        """
+        decoded_dataset_id = self.trans.security.decode_id(dataset_id)
+
+        # Get the HDA
+        from galaxy.managers.hdas import HDAManager
+
+        hda_manager = HDAManager(self.app)
+        hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
+
+        if not hda:
+            raise ValueError(f"Dataset '{dataset_id}' not found or not accessible")
+
+        if hda.state != "ok":
+            return {
+                "dataset_id": dataset_id,
+                "state": hda.state,
+                "error": f"Dataset is not ready for download (state: {hda.state})",
+            }
+
+        # Build download URL
+        base_url = getattr(self.app.config, "galaxy_infrastructure_url", "http://localhost:8080")
+        download_url = f"{base_url}/api/datasets/{dataset_id}/display"
+
+        return {
+            "dataset_id": dataset_id,
+            "name": hda.name,
+            "extension": hda.extension,
+            "file_size": hda.get_size(),
+            "state": hda.state,
+            "download_url": download_url,
+        }
+
+    def get_server_info(self) -> dict[str, Any]:
+        """
+        Get detailed Galaxy server information.
+
+        Returns:
+            Server configuration, version, and capabilities
+        """
+        config = self.app.config
+
+        return {
+            "server": {
+                "version": config.version_major,
+                "version_minor": getattr(config, "version_minor", ""),
+                "brand": getattr(config, "brand", "Galaxy"),
+                "url": getattr(config, "galaxy_infrastructure_url", "http://localhost:8080"),
+            },
+            "capabilities": {
+                "allow_user_creation": getattr(config, "allow_user_creation", True),
+                "allow_user_dataset_purge": getattr(config, "allow_user_dataset_purge", True),
+                "enable_quotas": getattr(config, "enable_quotas", False),
+                "support_url": getattr(config, "support_url", ""),
+                "terms_url": getattr(config, "terms_url", ""),
+            },
+        }
+
+    def get_user(self) -> dict[str, Any]:
+        """
+        Get current user information.
+
+        Returns:
+            User details including email, username, and preferences
+        """
+        user = self.trans.user
+
+        if not user:
+            raise ValueError("User must be authenticated")
+
+        return {
+            "id": self.trans.security.encode_id(user.id),
+            "email": user.email,
+            "username": user.username,
+            "is_admin": self.trans.user_is_admin,
+            "active": user.active,
+            "deleted": user.deleted,
+            "create_time": user.create_time.isoformat() if user.create_time else None,
+        }
