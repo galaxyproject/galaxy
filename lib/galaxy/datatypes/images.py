@@ -250,7 +250,7 @@ class Tiff(Image):
 
         Manual checking of the file header, as opposed to trying to read the file with tifffile, is required due to an
         ambiguity with DICOM files. This is because the DICOM standard allows *any content* for the first 128 bytes of
-        the file, followed by the `DICM` prefix (see §7.1 in [2] for details).
+        the file, followed by the DICOM prefix (see §7.1 in [2] for details).
 
         [1] https://gist.github.com/leommoore/f9e57ba2aa4bf197ebc5
         [2] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
@@ -259,8 +259,8 @@ class Tiff(Image):
             b"\x4d\x4d\x00\x2a",  # TIFF format (Motorola - big endian)
             b"\x49\x49\x2a\x00",  # TIFF format (Intel - little endian)
         ) and (
-            len(file_prefix.contents_header_bytes) < 132 or  # file is too short to be a DICOM
-            file_prefix.contents_header_bytes[128:132] != b"DICM"  # file does not contain the DICOM prefix
+            len(file_prefix.contents_header_bytes) < 132  # file is too short to be a DICOM
+            or file_prefix.contents_header_bytes[128:132] != b"DICM"  # file does not contain the DICOM prefix
         )
 
     def set_meta(
