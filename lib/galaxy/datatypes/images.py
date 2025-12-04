@@ -218,10 +218,12 @@ class Png(Image):
             dataset.metadata.num_unique_values = len(unique_values)
 
 
+@build_sniff_from_prefix
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
     display_behavior = "download"  # TIFF files trigger browser downloads
+
     MetadataElement(
         name="offsets",
         desc="Offsets File",
@@ -231,6 +233,27 @@ class Tiff(Image):
         visible=False,
         optional=True,
     )
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determine if the file is in TIFF format by checking the file header.
+
+        For a successful check, the first 4 bytes must be the TIFF magic number. See [1] for a list of magic numbers.
+
+        Manual checking of the file header, as opposed to trying to read the file with tifffile, is required due to an
+        ambiguity with DICOM files. This is because the DICOM standard allows *any content* for the first 128 bytes of
+        the file, followed by the `DICM` prefix (see §7.1 in [2] for details).
+
+        [1] https://gist.github.com/leommoore/f9e57ba2aa4bf197ebc5
+        [2] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
+        """
+        return file_prefix.contents_header_bytes[:4] in (
+            b"\x4d\x4d\x00\x2a",  # TIFF format (Motorola - big endian)
+            b"\x49\x49\x2a\x00",  # TIFF format (Intel - little endian)
+        ) and (
+            len(file_prefix.contents_header_bytes) < 132 or  # file is too short to be a DICOM
+            file_prefix.contents_header_bytes[128:132] != b"DICM"  # file does not contain the DICOM prefix
+        )
 
     def set_meta(
         self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
@@ -377,10 +400,6 @@ class Tiff(Image):
                 continue  # No idea how this might occur, but mypy demands that we check it, just to be sure
 
             yield segment
-
-    def sniff(self, filename: str) -> bool:
-        with tifffile.TiffFile(filename):
-            return True
 
 
 class OMETiff(Tiff):
@@ -536,9 +555,11 @@ class Dicom(Image):
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
-        Determine if the file is in DICOM format.
+        Determine if the file is in DICOM format according to §7.1 in [1].
+
+        [1] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
         """
-        return file_prefix.contents_header_bytes[128:132] == b"DICM"
+        return len(file_prefix.contents_header_bytes) >= 132 and file_prefix.contents_header_bytes[128:132] == b"DICM"
 
     def get_mime(self) -> str:
         """

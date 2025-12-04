@@ -125,6 +125,25 @@ test_tiff_unsupported_multiseries = __create_test(
 )
 
 
+def test_tiff_sniff():
+    for filename in (
+        "im4_float.tif",
+        "im1_uint8.tif",
+        "im_empty.tif",
+        "im7_uint8.tif",
+        "im5_uint8.tif",
+        "1.tiff",
+        "im9_multiseries.tif",
+        "im8_uint16.tif",
+        "im6_uint8.tif",
+        "im3_b.tif",
+    ):
+        fname = get_test_fname(filename)
+        assert not Dicom().sniff(fname), f"filename: {filename}"
+        assert not Png().sniff(fname), f"filename: {filename}"
+        assert Tiff().sniff(fname), f"filename: {filename}"
+
+
 # Tests for `Image` class
 
 test_png_axes_yx = __create_test(Image, "im1_uint8.png", axes="YX")
@@ -197,6 +216,7 @@ def test_dicom_sniff():
     fname = get_test_fname("ct_image.dcm")
     assert Dicom().sniff(fname)
     assert not Tiff().sniff(fname)
+    assert not Png().sniff(fname)
 
 
 # Test with files that neither Pillow, tifffile, nor pydicom can open
