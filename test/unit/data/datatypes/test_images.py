@@ -8,12 +8,10 @@ from galaxy.datatypes.images import (
     Tiff,
 )
 from galaxy.datatypes.sniff import get_test_fname
-
 from .util import (
-    MockDatasetDataset,
     get_dataset,
+    MockDatasetDataset,
 )
-
 
 # Define test decorator
 
