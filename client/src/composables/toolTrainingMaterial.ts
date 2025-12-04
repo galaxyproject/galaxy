@@ -59,8 +59,8 @@ export function useToolTrainingMaterial(id: string, name: string, version: strin
     const apiEnabled = computed(() => {
         return Boolean(
             isConfigLoaded.value &&
-                config.value.tool_training_recommendations &&
-                config.value.tool_training_recommendations_api_url,
+            config.value.tool_training_recommendations &&
+            config.value.tool_training_recommendations_api_url,
         );
     });
 
