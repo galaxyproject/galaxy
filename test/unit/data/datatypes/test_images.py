@@ -148,6 +148,7 @@ def test_tiff_sniff():
 
 # Tests for `OMETiff` class
 
+
 def test_ome_tiff_sniff():
     fname = get_test_fname("1.ome.tiff")
     assert not Dicom().sniff(fname)
