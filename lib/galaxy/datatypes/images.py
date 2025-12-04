@@ -415,9 +415,7 @@ class OMETiff(Tiff):
 
     def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename) as tif:
-            if tif.is_ome:
-                return True
-        return False
+            return tif.is_ome
 
 
 class OMEZarr(data.ZarrDirectory):
