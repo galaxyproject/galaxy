@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import ViteYaml from "@modyfi/vite-plugin-yaml";
 import inject from "@rollup/plugin-inject";
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -51,6 +51,14 @@ export default defineConfig({
     // Use relative base so CSS asset references work with any proxy prefix.
     // The HTML script tags use url_for() which handles the prefix correctly.
     base: "./",
+    resolve: {
+        alias: {
+            // Use @vue/compat for Vue 2 compatibility mode
+            vue: "@vue/compat",
+            // Also alias the direct Vue 2 dist path that some libraries use
+            "vue/dist/vue.esm.js": "@vue/compat",
+        },
+    },
     define: {
         // Make jQuery available globally for plugins and legacy code
         global: "globalThis",
@@ -69,6 +77,10 @@ export default defineConfig({
                 compilerOptions: {
                     // Preserve whitespace to match Webpack's vue-loader default behavior
                     whitespace: "preserve",
+                    // Enable Vue 3 compat mode
+                    compatConfig: {
+                        MODE: 2,
+                    },
                 },
             },
         }),
