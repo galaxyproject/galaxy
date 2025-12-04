@@ -75,9 +75,7 @@ export interface TitleIcon {
 
 /** Card badge for displaying status or metadata */
 export interface CardBadge
-    extends BaseCardElement,
-        NavigationProps,
-        Pick<StylingProps, "variant" | "icon" | "class" | "spin"> {
+    extends BaseCardElement, NavigationProps, Pick<StylingProps, "variant" | "icon" | "class" | "spin"> {
     /** Badge display type */
     type?: CardBadgeType;
 }
