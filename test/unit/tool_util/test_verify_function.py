@@ -109,7 +109,7 @@ def test_csv_ftype_auto_sep():
             }
         ],
     }
-    
+
     # This should pass because ftype="csv" triggers sep="," auto-detection
     verify(
         item_label,
@@ -134,7 +134,7 @@ def test_tabular_ftype_auto_sep():
             }
         ],
     }
-    
+
     # This should pass because ftype="tabular" triggers sep="\t" (default)
     verify(
         item_label,
@@ -160,7 +160,7 @@ def test_csv_ftype_explicit_sep_override():
             }
         ],
     }
-    
+
     # This should pass because explicit sep="\t" overrides the ftype="csv" auto-detection
     verify(
         item_label,
