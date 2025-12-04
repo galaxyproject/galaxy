@@ -157,6 +157,7 @@ def test_2d_singlechannel(metadata):
     assert metadata.channels == 1, f"actual: {metadata.channels}"
     assert metadata.dtype == "int16", f"actual: {metadata.dtype}"
     assert metadata.num_unique_values is None, f"actual: {metadata.num_unique_values}"
+    assert metadata.is_tiled == False, f"actual: {metadata.is_tiled}"
 
 
 @__test(Dicom, "sm_image.dcm")
@@ -166,6 +167,7 @@ def test_tiled_multichannel(metadata):
     assert metadata.channels == 3, f"actual: {metadata.channels}"
     assert metadata.dtype == "uint8", f"actual: {metadata.dtype}"
     assert metadata.num_unique_values is None, f"actual: {metadata.num_unique_values}"
+    assert metadata.is_tiled == True, f"actual: {metadata.is_tiled}"
 
 
 @__test(Dicom, "seg_image_ct_binary.dcm")
@@ -175,6 +177,7 @@ def test_3d_binary(metadata):
     assert metadata.channels == 1, f"actual: {metadata.channels}"
     assert metadata.dtype == "bool", f"actual: {metadata.dtype}"
     assert metadata.num_unique_values == 2, f"actual: {metadata.num_unique_values}"
+    assert metadata.is_tiled == False, f"actual: {metadata.is_tiled}"
 
 
 def test_dicom_sniff():

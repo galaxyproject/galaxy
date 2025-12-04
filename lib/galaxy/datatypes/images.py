@@ -108,14 +108,6 @@ class Image(data.Data):
     )
 
     MetadataElement(
-        name="channels",
-        desc="Number of channels of the image",
-        readonly=True,
-        visible=True,
-        optional=True,
-    )
-
-    MetadataElement(
         name="depth",
         desc="Depth of the image (number of slices)",
         readonly=True,
@@ -531,6 +523,14 @@ class Dicom(Image):
     True
     """
 
+    MetadataElement(
+        name="is_tiled",
+        desc="Is this a WSI DICOM?",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
     edam_format = "format_3548"
     file_ext = "dcm"
 
@@ -558,6 +558,7 @@ class Dicom(Image):
         - `channels`
         - `dtype`
         - `num_unique_values` in some cases
+        - `is_tiled`
 
         Currently, `frames` and `depth` are not populated. This is because "frames" in DICOM are a generic entity,
         that can be used for different purposes, including slices in 3-D images, frames in temporal sequences, and
@@ -572,12 +573,12 @@ class Dicom(Image):
         # Determine the number of channels (0 if no channel info is present)
         dataset.metadata.channels = dcm.get("SamplesPerPixel", 0)
 
-        # Determine if the DICOM file is tiled (e.g., WSI DICOM)
-        is_tiled = hasattr(dcm, "TotalPixelMatrixColumns") and hasattr(dcm, "TotalPixelMatrixRows")
+        # Determine if the DICOM file is tiled (likely WSI DICOM)
+        dataset.metadata.is_tiled = hasattr(dcm, "TotalPixelMatrixColumns") and hasattr(dcm, "TotalPixelMatrixRows")
 
         # Determine the width and height of the dataset. If the DICOM file is not tiled, the width and height
         # directly. For tiled DICOM, these values correspond to the size of the tiles.
-        if is_tiled:
+        if dataset.metadata.is_tiled:
             dataset.metadata.width = dcm.TotalPixelMatrixColumns
             dataset.metadata.height = dcm.TotalPixelMatrixRows
         else:
