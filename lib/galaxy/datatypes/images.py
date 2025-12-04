@@ -413,6 +413,10 @@ class Tiff(Image):
 class OMETiff(Tiff):
     file_ext = "ome.tiff"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.sniff_prefix = None
+
     def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename) as tif:
             return tif.is_ome
