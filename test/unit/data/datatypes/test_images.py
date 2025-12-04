@@ -196,6 +196,7 @@ test_3d_binary = __create_test(
 def test_dicom_sniff():
     fname = get_test_fname("ct_image.dcm")
     assert Dicom().sniff(fname)
+    assert not Tiff().sniff(fname)
 
 
 # Test with files that neither Pillow, tifffile, nor pydicom can open
