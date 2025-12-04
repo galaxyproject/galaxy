@@ -41,7 +41,7 @@ for assertion_module_name in assertion_module_names:
 assertion_functions: Dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
 
 
-def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False):
+def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False, sep: str = None):
     """This function takes a list of assertions and a string to check
     these assertions against."""
     if decompress:
@@ -51,10 +51,10 @@ def verify_assertions(data: bytes, assertion_description_list: list, decompress:
             with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
                 data = fh.read()
     for assertion_description in assertion_description_list:
-        verify_assertion(data, assertion_description)
+        verify_assertion(data, assertion_description, sep=sep)
 
 
-def verify_assertion(data: bytes, assertion_description):
+def verify_assertion(data: bytes, assertion_description, sep: str = None):
     tag = assertion_description["tag"]
     assert_function_name = "assert_" + tag
     assert_function = assertion_functions.get(assert_function_name)
@@ -102,6 +102,10 @@ def verify_assertion(data: bytes, assertion_description):
 
     if "children" in assert_function_args:
         args["children"] = assertion_description["children"]
+
+    # Only set sep if the assertion accepts it and it's not already specified in XML
+    if "sep" in assert_function_args and sep is not None and "sep" not in assertion_description["attributes"]:
+        args["sep"] = sep
 
     # TODO: Verify all needed function arguments are specified.
     assert_function(**args)

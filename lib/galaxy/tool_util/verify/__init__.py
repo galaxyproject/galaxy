@@ -99,7 +99,9 @@ def verify(
     assertions = attributes.get("assert_list", None)
     if assertions is not None:
         try:
-            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False))
+            # Auto-detect separator based on file type
+            sep = "," if attributes.get("ftype") == "csv" else "\t"
+            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False), sep=sep)
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
