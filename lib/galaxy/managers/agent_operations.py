@@ -48,6 +48,7 @@ class AgentOperationsManager:
         self._tools_service = None
         self._histories_service = None
         self._jobs_service = None
+        self._datasets_service = None
 
         log.debug("AgentOperationsManager initialized")
 
@@ -119,6 +120,39 @@ class AgentOperationsManager:
                 history_manager=HistoryManager(self.app),
             )
         return self._jobs_service
+
+    @property
+    def datasets_service(self):
+        """Lazy-load DatasetsService."""
+        if self._datasets_service is None:
+            from galaxy.managers.datasets import DatasetManager
+            from galaxy.managers.hdas import (
+                HDAManager,
+                HDASerializer,
+            )
+            from galaxy.managers.hdcas import HDCASerializer
+            from galaxy.managers.histories import HistoryManager
+            from galaxy.managers.history_contents import (
+                HistoryContentsFilters,
+                HistoryContentsManager,
+            )
+            from galaxy.managers.lddas import LDDAManager
+            from galaxy.visualization.data_providers.registry import DataProviderRegistry
+            from galaxy.webapps.galaxy.services.datasets import DatasetsService
+
+            self._datasets_service = DatasetsService(
+                security=self.trans.security,
+                history_manager=HistoryManager(self.app),
+                hda_manager=HDAManager(self.app),
+                hda_serializer=HDASerializer(self.app),
+                hdca_serializer=HDCASerializer(self.app),
+                ldda_manager=LDDAManager(self.app),
+                history_contents_manager=HistoryContentsManager(self.app),
+                history_contents_filters=HistoryContentsFilters(self.app),
+                data_provider_registry=DataProviderRegistry(),
+                dataset_manager=DatasetManager(self.app),
+            )
+        return self._datasets_service
 
     def connect(self) -> dict[str, Any]:
         """
@@ -311,3 +345,170 @@ class AgentOperationsManager:
         )
 
         return {"job": job_details, "job_id": job_id}
+
+    def create_history(self, name: str) -> dict[str, Any]:
+        """
+        Create a new Galaxy history.
+
+        Args:
+            name: Name for the new history
+
+        Returns:
+            Created history details including ID, name, and state
+        """
+        from galaxy.schema.schema import CreateHistoryPayload
+
+        payload = CreateHistoryPayload(name=name)
+        serialization_params = SerializationParams(view="summary")
+
+        history = self.histories_service.create(
+            trans=self.trans,
+            payload=payload,
+            serialization_params=serialization_params,
+        )
+
+        return history
+
+    def get_history_details(self, history_id: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific history.
+
+        This returns history metadata without loading all datasets.
+        Use get_history_contents() to get the actual datasets.
+
+        Args:
+            history_id: Galaxy history ID (encoded)
+
+        Returns:
+            History details including metadata and summary statistics
+        """
+        decoded_history_id = self.trans.security.decode_id(history_id)
+        serialization_params = SerializationParams(view="detailed")
+
+        history = self.histories_service.show(
+            trans=self.trans,
+            serialization_params=serialization_params,
+            history_id=decoded_history_id,
+        )
+
+        return {"history": history, "history_id": history_id}
+
+    def get_history_contents(
+        self,
+        history_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        order: str = "hid-asc",
+    ) -> dict[str, Any]:
+        """
+        Get paginated contents (datasets) from a specific history.
+
+        Args:
+            history_id: Galaxy history ID (encoded)
+            limit: Maximum number of items to return (default: 100)
+            offset: Number of items to skip for pagination (default: 0)
+            order: Sort order (e.g., 'hid-asc', 'hid-dsc', 'create_time-dsc')
+
+        Returns:
+            List of datasets/collections in the history with pagination info
+        """
+        decoded_history_id = self.trans.security.decode_id(history_id)
+        serialization_params = SerializationParams(view="summary")
+        filter_params = FilterQueryParams(limit=limit, offset=offset, order=order)
+
+        contents, total_count = self.datasets_service.index(
+            trans=self.trans,
+            history_id=decoded_history_id,
+            serialization_params=serialization_params,
+            filter_query_params=filter_params,
+        )
+
+        # Calculate pagination metadata
+        has_next = (offset + limit) < total_count
+        has_previous = offset > 0
+        current_page = (offset // limit) + 1 if limit > 0 else 1
+        total_pages = ((total_count - 1) // limit) + 1 if limit > 0 and total_count > 0 else 1
+
+        return {
+            "history_id": history_id,
+            "contents": contents,
+            "pagination": {
+                "total_items": total_count,
+                "returned_items": len(contents),
+                "limit": limit,
+                "offset": offset,
+                "current_page": current_page,
+                "total_pages": total_pages,
+                "has_next": has_next,
+                "has_previous": has_previous,
+            },
+        }
+
+    def get_dataset_details(self, dataset_id: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific dataset.
+
+        Args:
+            dataset_id: Galaxy dataset ID (encoded)
+
+        Returns:
+            Dataset details including metadata, state, and file information
+        """
+        from galaxy.schema.schema import DatasetSourceType
+
+        decoded_dataset_id = self.trans.security.decode_id(dataset_id)
+        serialization_params = SerializationParams(view="detailed")
+
+        dataset = self.datasets_service.show(
+            trans=self.trans,
+            dataset_id=decoded_dataset_id,
+            hda_ldda=DatasetSourceType.hda,
+            serialization_params=serialization_params,
+        )
+
+        return {"dataset": dataset, "dataset_id": dataset_id}
+
+    def upload_file_from_url(
+        self,
+        history_id: str,
+        url: str,
+        file_type: str = "auto",
+        dbkey: str = "?",
+        file_name: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Upload a file from a URL to Galaxy.
+
+        Args:
+            history_id: ID of the history to upload to
+            url: URL of the file to upload
+            file_type: Galaxy file format (default: 'auto' for auto-detection)
+            dbkey: Database key/genome build (default: '?')
+            file_name: Optional name for the uploaded file
+
+        Returns:
+            Job execution information including job ID and output dataset IDs
+        """
+        # Build the upload tool payload
+        # The upload tool (upload1) uses files_0|url_paste for URL uploads
+        inputs = {
+            "files_0|url_paste": url,
+            "files_0|type": "upload_dataset",
+            "files_0|auto_decompress": True,
+            "file_type": file_type,
+            "dbkey": dbkey,
+        }
+
+        if file_name:
+            inputs["files_0|name"] = file_name
+
+        # Run the upload tool
+        payload = {
+            "history_id": history_id,
+            "tool_id": "upload1",
+            "inputs": inputs,
+        }
+
+        result = self.tools_service._create(self.trans, payload)
+
+        return result
