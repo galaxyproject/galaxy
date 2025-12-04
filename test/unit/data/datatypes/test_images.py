@@ -3,6 +3,7 @@ from typing import Any
 from galaxy.datatypes.images import (
     Dicom,
     Image,
+    OMETiff,
     Pdf,
     Png,
     Tiff,
@@ -141,7 +142,18 @@ def test_tiff_sniff():
         fname = get_test_fname(filename)
         assert not Dicom().sniff(fname), f"filename: {filename}"
         assert not Png().sniff(fname), f"filename: {filename}"
+        assert not OMETiff().sniff(fname), f"filename: {filename}"
         assert Tiff().sniff(fname), f"filename: {filename}"
+
+
+# Tests for `OMETiff` class
+
+def test_ome_tiff_sniff():
+    fname = get_test_fname("1.ome.tiff")
+    assert not Dicom().sniff(fname)
+    assert not Png().sniff(fname)
+    assert Tiff().sniff(fname)
+    assert OMETiff().sniff(fname)
 
 
 # Tests for `Image` class
@@ -215,6 +227,7 @@ test_3d_binary = __create_test(
 def test_dicom_sniff():
     fname = get_test_fname("ct_image.dcm")
     assert Dicom().sniff(fname)
+    assert not OMETiff().sniff(fname)
     assert not Tiff().sniff(fname)
     assert not Png().sniff(fname)
 
