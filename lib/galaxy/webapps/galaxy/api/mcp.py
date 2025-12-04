@@ -343,10 +343,163 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to upload file from URL {url}: {str(e)}")
             raise ValueError(f"Failed to upload file from URL '{url}': {str(e)}") from e
 
+    # ==================== Workflow Tools ====================
+
+    @mcp.tool()
+    def list_workflows(
+        api_key: str,
+        limit: int = 50,
+        offset: int = 0,
+        show_published: bool = False,
+        show_shared: bool = True,
+        search: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        List user's workflows.
+
+        Args:
+            api_key: Galaxy API key for authentication
+            limit: Maximum number of workflows to return (default: 50)
+            offset: Number of workflows to skip for pagination (default: 0)
+            show_published: Include publicly published workflows (default: False)
+            show_shared: Include workflows shared with the user (default: True)
+            search: Optional search term to filter workflows by name
+
+        Returns:
+            List of workflows with their IDs, names, and basic metadata
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.list_workflows(limit, offset, show_published, show_shared, search)
+        except Exception as e:
+            logger.error(f"Failed to list workflows: {str(e)}")
+            raise ValueError(f"Failed to list workflows: {str(e)}") from e
+
+    @mcp.tool()
+    def get_workflow_details(workflow_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific workflow.
+
+        Returns workflow metadata, steps, inputs, and outputs.
+
+        Args:
+            workflow_id: Galaxy workflow ID (e.g., 'f2db41e1fa331b3e')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Workflow details including name, steps, inputs, outputs, and annotations
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_workflow_details(workflow_id)
+        except Exception as e:
+            logger.error(f"Failed to get workflow details for {workflow_id}: {str(e)}")
+            raise ValueError(f"Failed to get details for workflow '{workflow_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def invoke_workflow(
+        workflow_id: str,
+        history_id: str,
+        api_key: str,
+        inputs: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Invoke (run) a workflow.
+
+        Use get_workflow_details() first to understand required inputs.
+
+        Args:
+            workflow_id: Galaxy workflow ID to run
+            history_id: History ID where workflow outputs will be stored
+            api_key: Galaxy API key for authentication
+            inputs: Dictionary mapping workflow input labels/indices to dataset IDs
+                   Example: {'0': {'id': 'dataset_id', 'src': 'hda'}}
+            parameters: Dictionary mapping step IDs to parameter values
+                       Example: {'step_1': {'param_name': 'value'}}
+
+        Returns:
+            Workflow invocation details including invocation ID for monitoring
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.invoke_workflow(workflow_id, history_id, inputs, parameters)
+        except Exception as e:
+            logger.error(f"Failed to invoke workflow {workflow_id}: {str(e)}")
+            raise ValueError(f"Failed to invoke workflow '{workflow_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def get_invocations(
+        api_key: str,
+        workflow_id: str | None = None,
+        history_id: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """
+        List workflow invocations.
+
+        Filter by workflow ID or history ID to find specific invocations.
+
+        Args:
+            api_key: Galaxy API key for authentication
+            workflow_id: Optional workflow ID to filter invocations
+            history_id: Optional history ID to filter invocations
+            limit: Maximum number of invocations to return (default: 50)
+            offset: Number of invocations to skip for pagination (default: 0)
+
+        Returns:
+            List of workflow invocations with their states and metadata
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_invocations(workflow_id, history_id, limit, offset)
+        except Exception as e:
+            logger.error(f"Failed to get invocations: {str(e)}")
+            raise ValueError(f"Failed to get invocations: {str(e)}") from e
+
+    @mcp.tool()
+    def get_invocation_details(invocation_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific workflow invocation.
+
+        Args:
+            invocation_id: Workflow invocation ID
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Invocation details including state, steps, inputs, and outputs
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_invocation_details(invocation_id)
+        except Exception as e:
+            logger.error(f"Failed to get invocation details for {invocation_id}: {str(e)}")
+            raise ValueError(f"Failed to get details for invocation '{invocation_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def cancel_workflow_invocation(invocation_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Cancel a running workflow invocation.
+
+        Args:
+            invocation_id: Workflow invocation ID to cancel
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Updated invocation details with cancelled state
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.cancel_workflow_invocation(invocation_id)
+        except Exception as e:
+            logger.error(f"Failed to cancel invocation {invocation_id}: {str(e)}")
+            raise ValueError(f"Failed to cancel invocation '{invocation_id}': {str(e)}") from e
+
     # Create the HTTP app for mounting
     # The path="/mcp" parameter here is just for SSE endpoint naming
     # The actual mount point is determined by fast_app.py
     mcp_app = mcp.sse_app()
 
-    logger.info("MCP server initialized with 11 tools")
+    logger.info("MCP server initialized with 17 tools")
     return mcp_app

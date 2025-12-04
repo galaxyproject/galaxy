@@ -49,6 +49,8 @@ class AgentOperationsManager:
         self._histories_service = None
         self._jobs_service = None
         self._datasets_service = None
+        self._workflows_service = None
+        self._invocations_service = None
 
         log.debug("AgentOperationsManager initialized")
 
@@ -153,6 +155,51 @@ class AgentOperationsManager:
                 dataset_manager=DatasetManager(self.app),
             )
         return self._datasets_service
+
+    @property
+    def workflows_service(self):
+        """Lazy-load WorkflowsService."""
+        if self._workflows_service is None:
+            from galaxy.managers.workflows import (
+                WorkflowContentsManager,
+                WorkflowsManager,
+            )
+            from galaxy.model.store import SessionlessContext
+            from galaxy.webapps.galaxy.services.notifications import NotificationService
+            from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+            from galaxy.workflow.modules import WorkflowModuleFactory
+
+            workflow_contents_manager = WorkflowContentsManager(
+                self.app,
+                WorkflowModuleFactory(self.app.toolbox),
+                SessionlessContext(),
+            )
+            workflows_manager = WorkflowsManager(self.app)
+            self._workflows_service = WorkflowsService(
+                workflows_manager=workflows_manager,
+                workflow_contents_manager=workflow_contents_manager,
+                serializer=workflows_manager.get_serializer(),
+                tool_shed_registry=self.app.tool_shed_registry,
+                notification_service=NotificationService(self.trans.sa_session, self.trans.security),
+            )
+        return self._workflows_service
+
+    @property
+    def invocations_service(self):
+        """Lazy-load InvocationsService."""
+        if self._invocations_service is None:
+            from galaxy.managers.histories import HistoryManager
+            from galaxy.managers.workflows import WorkflowsManager
+            from galaxy.short_term_storage import ShortTermStorageAllocator
+            from galaxy.webapps.galaxy.services.invocations import InvocationsService
+
+            self._invocations_service = InvocationsService(
+                security=self.trans.security,
+                histories_manager=HistoryManager(self.app),
+                workflows_manager=WorkflowsManager(self.app),
+                short_term_storage_allocator=ShortTermStorageAllocator(self.app.config),
+            )
+        return self._invocations_service
 
     def connect(self) -> dict[str, Any]:
         """
@@ -512,3 +559,211 @@ class AgentOperationsManager:
         result = self.tools_service._create(self.trans, payload)
 
         return result
+
+    def list_workflows(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        show_published: bool = False,
+        show_shared: bool = True,
+        search: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        List user's workflows.
+
+        Args:
+            limit: Maximum number of workflows to return (default: 50)
+            offset: Number of workflows to skip for pagination (default: 0)
+            show_published: Include published workflows (default: False)
+            show_shared: Include workflows shared with user (default: True)
+            search: Optional search term to filter workflows
+
+        Returns:
+            List of workflows with their IDs, names, and basic metadata
+        """
+        from galaxy.webapps.galaxy.services.workflows import WorkflowIndexPayload
+
+        payload = WorkflowIndexPayload(
+            limit=limit,
+            offset=offset,
+            show_published=show_published,
+            show_shared=show_shared,
+            search=search,
+        )
+
+        workflows, total_count = self.workflows_service.index(
+            trans=self.trans,
+            payload=payload,
+            include_total_count=True,
+        )
+
+        return {
+            "workflows": workflows,
+            "count": len(workflows),
+            "total_count": total_count,
+            "pagination": {
+                "limit": limit,
+                "offset": offset,
+            },
+        }
+
+    def get_workflow_details(self, workflow_id: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific workflow.
+
+        Args:
+            workflow_id: Galaxy workflow ID (encoded)
+
+        Returns:
+            Workflow details including steps, inputs, and outputs
+        """
+        decoded_workflow_id = self.trans.security.decode_id(workflow_id)
+
+        workflow = self.workflows_service.show_workflow(
+            trans=self.trans,
+            workflow_id=decoded_workflow_id,
+            instance=False,
+            legacy=False,
+            version=None,
+        )
+
+        return {"workflow": workflow, "workflow_id": workflow_id}
+
+    def invoke_workflow(
+        self,
+        workflow_id: str,
+        history_id: str,
+        inputs: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Invoke (run) a workflow.
+
+        Args:
+            workflow_id: Galaxy workflow ID (encoded)
+            history_id: History ID to run the workflow in
+            inputs: Dictionary mapping workflow input labels/indices to dataset IDs
+            parameters: Dictionary mapping step IDs to parameter values
+
+        Returns:
+            Workflow invocation details including invocation ID
+        """
+        from galaxy.schema.workflows import InvokeWorkflowPayload
+
+        decoded_workflow_id = self.trans.security.decode_id(workflow_id)
+
+        payload = InvokeWorkflowPayload(
+            history_id=history_id,
+            inputs=inputs or {},
+            parameters=parameters or {},
+        )
+
+        result = self.workflows_service.invoke_workflow(
+            trans=self.trans,
+            workflow_id=decoded_workflow_id,
+            payload=payload,
+        )
+
+        return result
+
+    def get_invocations(
+        self,
+        workflow_id: str | None = None,
+        history_id: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """
+        List workflow invocations.
+
+        Args:
+            workflow_id: Optional workflow ID to filter by
+            history_id: Optional history ID to filter by
+            limit: Maximum number of invocations to return (default: 50)
+            offset: Number of invocations to skip (default: 0)
+
+        Returns:
+            List of workflow invocations with their status
+        """
+        from galaxy.schema.invocation import (
+            InvocationIndexPayload,
+            InvocationSerializationParams,
+        )
+
+        decoded_workflow_id = None
+        if workflow_id:
+            decoded_workflow_id = self.trans.security.decode_id(workflow_id)
+
+        decoded_history_id = None
+        if history_id:
+            decoded_history_id = self.trans.security.decode_id(history_id)
+
+        payload = InvocationIndexPayload(
+            workflow_id=decoded_workflow_id,
+            history_id=decoded_history_id,
+            limit=limit,
+            offset=offset,
+        )
+        serialization_params = InvocationSerializationParams(view="collection")
+
+        invocations, total_count = self.invocations_service.index(
+            trans=self.trans,
+            invocation_payload=payload,
+            serialization_params=serialization_params,
+        )
+
+        return {
+            "invocations": invocations,
+            "count": len(invocations),
+            "total_count": total_count,
+            "pagination": {
+                "limit": limit,
+                "offset": offset,
+            },
+        }
+
+    def get_invocation_details(self, invocation_id: str) -> dict[str, Any]:
+        """
+        Get detailed information about a specific workflow invocation.
+
+        Args:
+            invocation_id: Workflow invocation ID (encoded)
+
+        Returns:
+            Invocation details including state, steps, and outputs
+        """
+        from galaxy.schema.invocation import InvocationSerializationParams
+
+        decoded_invocation_id = self.trans.security.decode_id(invocation_id)
+        serialization_params = InvocationSerializationParams(view="element")
+
+        invocation = self.invocations_service.show(
+            trans=self.trans,
+            invocation_id=decoded_invocation_id,
+            serialization_params=serialization_params,
+        )
+
+        return {"invocation": invocation, "invocation_id": invocation_id}
+
+    def cancel_workflow_invocation(self, invocation_id: str) -> dict[str, Any]:
+        """
+        Cancel a running workflow invocation.
+
+        Args:
+            invocation_id: Workflow invocation ID (encoded)
+
+        Returns:
+            Updated invocation details with cancelled state
+        """
+        from galaxy.schema.invocation import InvocationSerializationParams
+
+        decoded_invocation_id = self.trans.security.decode_id(invocation_id)
+        serialization_params = InvocationSerializationParams(view="element")
+
+        invocation = self.invocations_service.cancel(
+            trans=self.trans,
+            invocation_id=decoded_invocation_id,
+            serialization_params=serialization_params,
+        )
+
+        return {"invocation": invocation, "invocation_id": invocation_id, "cancelled": True}
