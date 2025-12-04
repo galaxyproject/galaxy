@@ -1,7 +1,4 @@
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any
 
 from galaxy.datatypes.images import (
     Dicom,
