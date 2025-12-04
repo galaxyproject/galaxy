@@ -155,9 +155,9 @@ const wizard = useWizard({
         isValid: () =>
             Boolean(
                 exportData.bcoDatabase.serverBaseUrl &&
-                    exportData.bcoDatabase.authorization &&
-                    exportData.bcoDatabase.table &&
-                    exportData.bcoDatabase.ownerGroup,
+                exportData.bcoDatabase.authorization &&
+                exportData.bcoDatabase.table &&
+                exportData.bcoDatabase.ownerGroup,
             ),
         isSkippable: () => exportData.destination !== "bco-database" || exportData.exportPluginFormat !== "bco",
     },
