@@ -3,30 +3,13 @@
 // the same plugins and events.
 
 import BootstrapVue from "bootstrap-vue";
-import { createPinia, getActivePinia, PiniaVuePlugin } from "pinia";
-import Vue from "vue";
+import { createPinia, getActivePinia } from "pinia";
+import { createApp, h } from "vue";
 
 import { localizationPlugin } from "@/components/plugins";
 import { vGTooltip } from "@/directives/vGTooltip";
 import { vNoSanitizeHtml } from "@/directives/vNoSanitizeHtml";
 import { vSanitizeHtml } from "@/directives/vSanitizeHtml";
-
-// Load Pinia
-Vue.use(PiniaVuePlugin);
-
-// Bootstrap components
-Vue.use(BootstrapVue);
-
-// Custom tooltip directive
-Vue.directive("g-tooltip", vGTooltip);
-
-// Renders markup through DOMPurify; the replacement for raw v-html
-Vue.directive("sanitize-html", vSanitizeHtml);
-// Unsanitized markup from the server or shipped code; each use documents why
-Vue.directive("no-sanitize-html", vNoSanitizeHtml);
-
-// localization filters and directives
-Vue.use(localizationPlugin);
 
 function getOrCreatePinia() {
     // We sometimes use this utility mounting function in a context where there
@@ -37,19 +20,34 @@ function getOrCreatePinia() {
     return getActivePinia() || createPinia();
 }
 
+function createConfiguredApp(ComponentDefinition, propsData = {}) {
+    const app = createApp({
+        render() {
+            return h(ComponentDefinition, propsData);
+        },
+    });
+    app.use(getOrCreatePinia());
+    app.use(BootstrapVue);
+    app.use(localizationPlugin);
+    app.directive("g-tooltip", vGTooltip);
+    // Renders markup through DOMPurify; the replacement for raw v-html
+    app.directive("sanitize-html", vSanitizeHtml);
+    // Unsanitized markup from the server or shipped code; each use documents why
+    app.directive("no-sanitize-html", vNoSanitizeHtml);
+    return app;
+}
+
 export function appendVueComponent(ComponentDefinition, options) {
-    const instance = Vue.extend(ComponentDefinition);
-    const vm = document.createElement("div");
-    document.body.appendChild(vm);
-    new instance({
-        propsData: options,
-    }).$mount(vm);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const app = createConfiguredApp(ComponentDefinition, options);
+    return app.mount(container);
 }
 
 export function mountVueComponent(ComponentDefinition) {
-    const component = Vue.extend(ComponentDefinition);
     return function (propsData, el) {
-        return new component({ propsData, el, pinia: getOrCreatePinia() });
+        const app = createConfiguredApp(ComponentDefinition, propsData);
+        return app.mount(el);
     };
 }
 
