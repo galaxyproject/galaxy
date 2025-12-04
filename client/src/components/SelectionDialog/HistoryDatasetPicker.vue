@@ -142,9 +142,9 @@ function formatRows() {
 function checkIfAllSelected(): boolean {
     return Boolean(
         items.value.length &&
-            items.value.every((item) => {
-                return selected.value.findIndex((i) => i.id === item.id) !== -1;
-            }),
+        items.value.every((item) => {
+            return selected.value.findIndex((i) => i.id === item.id) !== -1;
+        }),
     );
 }
 
