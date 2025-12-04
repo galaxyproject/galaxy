@@ -767,3 +767,165 @@ class AgentOperationsManager:
         )
 
         return {"invocation": invocation, "invocation_id": invocation_id, "cancelled": True}
+
+    def get_tool_panel(self, view: str | None = None) -> dict[str, Any]:
+        """
+        Get the tool panel (toolbox) structure.
+
+        Args:
+            view: Optional panel view name (default: use server default)
+
+        Returns:
+            Tool panel hierarchy with sections and tools
+        """
+        if view is None:
+            view = self.app.toolbox._default_panel_view(self.trans)
+
+        tool_panel = self.app.toolbox.to_panel_view(self.trans, view=view)
+
+        return {"tool_panel": tool_panel, "view": view}
+
+    def get_tool_run_examples(self, tool_id: str) -> dict[str, Any]:
+        """
+        Get test cases/examples for a tool.
+
+        These show how the tool should be run with real inputs.
+
+        Args:
+            tool_id: Galaxy tool ID
+
+        Returns:
+            Test cases with inputs, outputs, and assertions
+        """
+        tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+
+        if tool is None:
+            raise ValueError(f"Tool '{tool_id}' not found")
+
+        # Get tool tests
+        test_cases = []
+        if hasattr(tool, "tests") and tool.tests:
+            for i, test in enumerate(tool.tests):
+                test_case = {
+                    "index": i,
+                    "inputs": {},
+                    "outputs": {},
+                }
+                # Extract inputs
+                if hasattr(test, "inputs"):
+                    for name, value in test.inputs.items():
+                        test_case["inputs"][name] = str(value) if value is not None else None
+
+                # Extract expected outputs
+                if hasattr(test, "outputs"):
+                    for output in test.outputs:
+                        test_case["outputs"][output.name] = {
+                            "file": getattr(output, "file", None),
+                            "value": getattr(output, "value", None),
+                        }
+
+                test_cases.append(test_case)
+
+        return {
+            "tool_id": tool_id,
+            "tool_name": tool.name,
+            "tool_version": tool.version,
+            "test_cases": test_cases,
+            "count": len(test_cases),
+        }
+
+    def get_tool_citations(self, tool_id: str) -> dict[str, Any]:
+        """
+        Get citation information for a tool.
+
+        Args:
+            tool_id: Galaxy tool ID
+
+        Returns:
+            Tool citations including DOIs, BibTeX, etc.
+        """
+        tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+
+        if tool is None:
+            raise ValueError(f"Tool '{tool_id}' not found")
+
+        citations = []
+        if hasattr(tool, "citations") and tool.citations:
+            for citation in tool.citations:
+                citation_info = {
+                    "type": getattr(citation, "type", "unknown"),
+                }
+                if hasattr(citation, "doi"):
+                    citation_info["doi"] = citation.doi
+                if hasattr(citation, "bibtex"):
+                    citation_info["bibtex"] = citation.bibtex
+                if hasattr(citation, "url"):
+                    citation_info["url"] = citation.url
+                citations.append(citation_info)
+
+        return {
+            "tool_id": tool_id,
+            "tool_name": tool.name,
+            "tool_version": tool.version,
+            "citations": citations,
+            "count": len(citations),
+        }
+
+    def search_tools_by_keywords(self, keywords: list[str]) -> dict[str, Any]:
+        """
+        Search for tools matching multiple keywords.
+
+        Searches tool names, descriptions, and input formats.
+
+        Args:
+            keywords: List of keywords to search for
+
+        Returns:
+            Matching tools with relevance information
+        """
+        keywords_lower = [k.lower() for k in keywords]
+        matching_tools = []
+        seen_tool_ids = set()
+
+        # Search each keyword and aggregate results
+        for keyword in keywords:
+            tool_ids = self.tools_service._search(keyword, view=None)
+
+            for tool_id in tool_ids:
+                if tool_id in seen_tool_ids:
+                    continue
+
+                try:
+                    tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+                    if tool:
+                        # Check if any keyword matches name or description
+                        name_lower = (tool.name or "").lower()
+                        desc_lower = (tool.description or "").lower()
+
+                        matches = []
+                        for kw in keywords_lower:
+                            if kw in name_lower or kw in desc_lower:
+                                matches.append(kw)
+
+                        matching_tools.append(
+                            {
+                                "id": tool.id,
+                                "name": tool.name,
+                                "description": tool.description or "",
+                                "version": tool.version,
+                                "matched_keywords": matches,
+                            }
+                        )
+                        seen_tool_ids.add(tool_id)
+                except Exception as e:
+                    log.debug(f"Skipping tool {tool_id}: {str(e)}")
+                    continue
+
+        # Sort by number of matched keywords (most relevant first)
+        matching_tools.sort(key=lambda x: len(x["matched_keywords"]), reverse=True)
+
+        return {
+            "keywords": keywords,
+            "tools": matching_tools,
+            "count": len(matching_tools),
+        }
