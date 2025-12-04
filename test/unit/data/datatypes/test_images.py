@@ -160,11 +160,11 @@ def test_2d_singlechannel(metadata):
 
 
 @__test(Dicom, "sm_image.dcm")
-def test_pyramid_multichannel(metadata):
+def test_tiled_multichannel(metadata):
     assert metadata.width == 50, f"actual: {metadata.width}"
     assert metadata.height == 50, f"actual: {metadata.height}"
     assert metadata.channels == 3, f"actual: {metadata.channels}"
-    assert metadata.dtype == "uint16", f"actual: {metadata.dtype}"
+    assert metadata.dtype == "uint8", f"actual: {metadata.dtype}"
     assert metadata.num_unique_values is None, f"actual: {metadata.num_unique_values}"
 
 

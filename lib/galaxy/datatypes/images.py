@@ -561,8 +561,8 @@ class Dicom(Image):
 
         Currently, `frames` and `depth` are not populated. This is because "frames" in DICOM are a generic entity,
         that can be used for different purposes, including slices in 3-D images, frames in temporal sequences, and
-        tiles of a pyramid (WSI DICOM). Distinguishing these cases is not straight-forward (and, as a consequence,
-        neither is determining the `axes` of the image). This can be implemented in the future.
+        tiles of a mosaic or pyramid (WSI DICOM). Distinguishing these cases is not straight-forward (and, as a
+        consequence, neither is determining the `axes` of the image). This can be implemented in the future.
         """
         try:
             dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True)
@@ -572,28 +572,15 @@ class Dicom(Image):
         # Determine the number of channels (0 if no channel info is present)
         dataset.metadata.channels = dcm.get("SamplesPerPixel", 0)
 
-        # Determine whether this is a WSI DICOM
-        is_wsi = False
+        # Determine if the DICOM file is tiled (e.g., WSI DICOM)
+        is_tiled = hasattr(dcm, "TotalPixelMatrixColumns") and hasattr(dcm, "TotalPixelMatrixRows")
 
-        # If the DICOM file contains tiled data...
-        try:
-            if hasattr(dcm, "SharedFunctionalGroupsSequence"):
-                seq = dcm.SharedFunctionalGroupsSequence[0]
-                if hasattr(seq, "TotalPixelMatrix"):
-                    tpm = seq.TotalPixelMatrix[0]
-                    dataset.metadata.width = tpm.tpm.TotalPixelMatrixColumns
-                    dataset.metadata.height = tpm.TotalPixelMatrixRows
-                    is_wsi = True  # tiled data is typical for WSI DICOM
-        except (
-            IndexError,
-            KeyError,
-            pydicom.errors.InvalidDicomError,
-        ):
-            pass  # Ignore errors if metadata cannot be read
-
-        # If the DICOM file is not WSI, the width and height directly.
-        # For WSI DICOM, these values correspond to the size of the tiles.
-        if not is_wsi:
+        # Determine the width and height of the dataset. If the DICOM file is not tiled, the width and height
+        # directly. For tiled DICOM, these values correspond to the size of the tiles.
+        if is_tiled:
+            dataset.metadata.width = dcm.TotalPixelMatrixColumns
+            dataset.metadata.height = dcm.TotalPixelMatrixRows
+        else:
             dataset.metadata.width = dcm.get("Columns")
             dataset.metadata.height = dcm.get("Rows")
 
