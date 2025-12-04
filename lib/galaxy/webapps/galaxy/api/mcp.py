@@ -654,10 +654,121 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to import workflow from IWC: {str(e)}")
             raise ValueError(f"Failed to import workflow from IWC (TRS ID: '{trs_id}'): {str(e)}") from e
 
+    # ==================== Supplementary Tools ====================
+
+    @mcp.tool()
+    def list_history_ids(api_key: str, limit: int = 100) -> dict[str, Any]:
+        """
+        Get a simplified list of history IDs and names.
+
+        A lightweight alternative to list_histories that returns only
+        IDs and names without full metadata.
+
+        Args:
+            api_key: Galaxy API key for authentication
+            limit: Maximum number of histories to return (default: 100)
+
+        Returns:
+            Simple list of history IDs and names
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.list_history_ids(limit)
+        except Exception as e:
+            logger.error(f"Failed to list history IDs: {str(e)}")
+            raise ValueError(f"Failed to list history IDs: {str(e)}") from e
+
+    @mcp.tool()
+    def get_job_details(dataset_id: str, api_key: str, history_id: str | None = None) -> dict[str, Any]:
+        """
+        Get details about the job that created a specific dataset.
+
+        Useful for understanding how a dataset was generated, what tool
+        was used, and the job's execution status.
+
+        Args:
+            dataset_id: Galaxy dataset ID (e.g., 'f2db41e1fa331b3e')
+            api_key: Galaxy API key for authentication
+            history_id: Optional history ID for faster lookup
+
+        Returns:
+            Job details including tool ID, version, state, and timestamps
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_job_details(dataset_id, history_id)
+        except Exception as e:
+            logger.error(f"Failed to get job details for dataset {dataset_id}: {str(e)}")
+            raise ValueError(f"Failed to get job details for dataset '{dataset_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def download_dataset(dataset_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Get download information for a dataset.
+
+        Returns a URL where the dataset can be downloaded. The dataset
+        must be in 'ok' state to be downloadable.
+
+        Args:
+            dataset_id: Galaxy dataset ID (e.g., 'f2db41e1fa331b3e')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Download URL and dataset metadata (name, size, extension)
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.download_dataset(dataset_id)
+        except Exception as e:
+            logger.error(f"Failed to get download info for dataset {dataset_id}: {str(e)}")
+            raise ValueError(f"Failed to get download info for dataset '{dataset_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def get_server_info(api_key: str) -> dict[str, Any]:
+        """
+        Get detailed Galaxy server information.
+
+        Returns server version, configuration options, and capabilities.
+        Useful for understanding what features are available.
+
+        Args:
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Server version, URL, and capability flags
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_server_info()
+        except Exception as e:
+            logger.error(f"Failed to get server info: {str(e)}")
+            raise ValueError(f"Failed to get server info: {str(e)}") from e
+
+    @mcp.tool()
+    def get_user(api_key: str) -> dict[str, Any]:
+        """
+        Get current user information.
+
+        Returns details about the authenticated user including
+        username, email, and account status.
+
+        Args:
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            User details including ID, email, username, and status
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_user()
+        except Exception as e:
+            logger.error(f"Failed to get user info: {str(e)}")
+            raise ValueError(f"Failed to get user info: {str(e)}") from e
+
     # Create the HTTP app for mounting
     # The path="/mcp" parameter here is just for SSE endpoint naming
     # The actual mount point is determined by fast_app.py
     mcp_app = mcp.sse_app()
 
-    logger.info("MCP server initialized with 24 tools")
+    logger.info("MCP server initialized with 29 tools")
     return mcp_app
