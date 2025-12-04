@@ -929,3 +929,133 @@ class AgentOperationsManager:
             "tools": matching_tools,
             "count": len(matching_tools),
         }
+
+    def _get_iwc_manifest(self) -> list[dict[str, Any]]:
+        """
+        Fetch the IWC workflow manifest.
+
+        Returns:
+            Raw manifest data from IWC
+        """
+        import httpx
+
+        response = httpx.get("https://iwc.galaxyproject.org/workflow_manifest.json", timeout=30.0)
+        response.raise_for_status()
+        return response.json()
+
+    def get_iwc_workflows(self) -> dict[str, Any]:
+        """
+        Get all workflows from the IWC (Intergalactic Workflow Commission).
+
+        IWC hosts community-maintained, production-quality Galaxy workflows.
+
+        Returns:
+            List of all IWC workflows with their metadata
+        """
+        manifest = self._get_iwc_manifest()
+
+        # Collect workflows from all manifest entries
+        all_workflows = []
+        for entry in manifest:
+            if "workflows" in entry:
+                for wf in entry["workflows"]:
+                    definition = wf.get("definition", {})
+                    all_workflows.append(
+                        {
+                            "trsID": wf.get("trsID"),
+                            "name": definition.get("name", ""),
+                            "description": definition.get("annotation", ""),
+                            "tags": definition.get("tags", []),
+                        }
+                    )
+
+        return {"workflows": all_workflows, "count": len(all_workflows)}
+
+    def search_iwc_workflows(self, query: str) -> dict[str, Any]:
+        """
+        Search IWC workflows by name, description, or tags.
+
+        Args:
+            query: Search term to match against workflow metadata
+
+        Returns:
+            Matching workflows from IWC
+        """
+        manifest = self._get_iwc_manifest()
+        query_lower = query.lower()
+
+        results = []
+        for entry in manifest:
+            if "workflows" not in entry:
+                continue
+
+            for wf in entry["workflows"]:
+                definition = wf.get("definition", {})
+                name = definition.get("name", "")
+                description = definition.get("annotation", "")
+                tags = definition.get("tags", [])
+
+                # Check if query matches name, description, or tags
+                name_lower = name.lower()
+                desc_lower = description.lower()
+                tags_lower = [t.lower() for t in tags]
+
+                if (
+                    query_lower in name_lower
+                    or query_lower in desc_lower
+                    or any(query_lower in tag for tag in tags_lower)
+                ):
+                    results.append(
+                        {
+                            "trsID": wf.get("trsID"),
+                            "name": name,
+                            "description": description,
+                            "tags": tags,
+                        }
+                    )
+
+        return {"query": query, "workflows": results, "count": len(results)}
+
+    def import_workflow_from_iwc(self, trs_id: str) -> dict[str, Any]:
+        """
+        Import a workflow from IWC into Galaxy.
+
+        Args:
+            trs_id: TRS ID of the workflow in the IWC manifest
+
+        Returns:
+            Imported workflow information
+        """
+        manifest = self._get_iwc_manifest()
+
+        # Find the workflow by trs_id
+        workflow_def = None
+        for entry in manifest:
+            if "workflows" not in entry:
+                continue
+            for wf in entry["workflows"]:
+                if wf.get("trsID") == trs_id:
+                    workflow_def = wf.get("definition")
+                    break
+            if workflow_def:
+                break
+
+        if not workflow_def:
+            raise ValueError(
+                f"Workflow with trsID '{trs_id}' not found in IWC manifest. "
+                "Use search_iwc_workflows() to find valid trsIDs."
+            )
+
+        # Import the workflow using the workflows manager
+        from galaxy.managers.workflows import WorkflowsManager
+
+        workflows_manager = WorkflowsManager(self.app)
+        imported = workflows_manager.import_workflow_dict(self.trans, workflow_def, publish=False)
+
+        return {
+            "imported_workflow": {
+                "id": self.trans.security.encode_id(imported.id),
+                "name": imported.name,
+            },
+            "trs_id": trs_id,
+        }
