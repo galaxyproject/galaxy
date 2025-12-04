@@ -9,10 +9,14 @@ AgentOperationsManager which provides the actual functionality.
 import logging
 from typing import Any
 
-from fastmcp import FastMCP
+from fastmcp import (
+    Context as MCPContext,
+    FastMCP,
+)
 
 from galaxy.managers.agent_operations import AgentOperationsManager
 from galaxy.managers.users import UserManager
+from galaxy.webapps.galaxy.api import UrlBuilder
 from galaxy.work.context import WorkRequestContext
 
 logger = logging.getLogger(__name__)
@@ -32,7 +36,7 @@ def get_mcp_app(gx_app):
     mcp = FastMCP("Galaxy", dependencies=["httpx>=0.27.0"])
 
     # Helper function to create AgentOperationsManager from API key
-    def get_operations_manager(api_key: str) -> AgentOperationsManager:
+    def get_operations_manager(api_key: str, ctx: MCPContext) -> AgentOperationsManager:
         """
         Create AgentOperationsManager by converting API key to user context.
 
@@ -43,6 +47,7 @@ def get_mcp_app(gx_app):
 
         Args:
             api_key: Galaxy API key for authentication
+            ctx: MCP context providing access to the HTTP request
 
         Returns:
             AgentOperationsManager configured for internal mode
@@ -66,8 +71,12 @@ def get_mcp_app(gx_app):
                 "You can create or view your API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        # Create a work context for this user
-        trans = WorkRequestContext(app=gx_app, user=user)
+        # Get the HTTP request from MCP context and create URL builder
+        request = ctx.get_http_request()
+        url_builder = UrlBuilder(request)
+
+        # Create a work context for this user with proper URL builder
+        trans = WorkRequestContext(app=gx_app, user=user, url_builder=url_builder)
 
         # Return AgentOperationsManager in internal mode
         return AgentOperationsManager(app=gx_app, trans=trans)
@@ -76,7 +85,7 @@ def get_mcp_app(gx_app):
     # All tools are thin wrappers around AgentOperationsManager
 
     @mcp.tool()
-    def connect(api_key: str) -> dict[str, Any]:
+    def connect(api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Verify connection to Galaxy and get server information.
 
@@ -90,14 +99,14 @@ def get_mcp_app(gx_app):
             Server configuration, version info, and current user details
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.connect()
         except Exception as e:
             logger.error(f"Failed to connect to Galaxy: {str(e)}")
             raise ValueError(f"Failed to connect to Galaxy: {str(e)}") from e
 
     @mcp.tool()
-    def search_tools(query: str, api_key: str) -> dict[str, Any]:
+    def search_tools(query: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Search for Galaxy tools by name or keyword.
 
@@ -112,14 +121,14 @@ def get_mcp_app(gx_app):
             List of matching tools with their IDs, names, and descriptions
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.search_tools(query)
         except Exception as e:
             logger.error(f"Failed to search tools: {str(e)}")
             raise ValueError(f"Failed to search tools: {str(e)}") from e
 
     @mcp.tool()
-    def get_tool_details(tool_id: str, api_key: str, io_details: bool = False) -> dict[str, Any]:
+    def get_tool_details(tool_id: str, api_key: str, ctx: MCPContext, io_details: bool = False) -> dict[str, Any]:
         """
         Get detailed information about a specific Galaxy tool.
 
@@ -136,14 +145,14 @@ def get_mcp_app(gx_app):
             Tool details including parameters, inputs, outputs, and documentation
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_details(tool_id, io_details)
         except Exception as e:
             logger.error(f"Failed to get tool details for {tool_id}: {str(e)}")
             raise ValueError(f"Failed to get tool details for '{tool_id}': {str(e)}") from e
 
     @mcp.tool()
-    def list_histories(api_key: str, limit: int = 50, offset: int = 0) -> dict[str, Any]:
+    def list_histories(api_key: str, ctx: MCPContext, limit: int = 50, offset: int = 0) -> dict[str, Any]:
         """
         List the current user's Galaxy histories.
 
@@ -159,14 +168,16 @@ def get_mcp_app(gx_app):
             List of histories with their IDs, names, and states
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_histories(limit, offset)
         except Exception as e:
             logger.error(f"Failed to list histories: {str(e)}")
             raise ValueError(f"Failed to list histories: {str(e)}") from e
 
     @mcp.tool()
-    def run_tool(history_id: str, tool_id: str, inputs: dict[str, Any], api_key: str) -> dict[str, Any]:
+    def run_tool(
+        history_id: str, tool_id: str, inputs: dict[str, Any], api_key: str, ctx: MCPContext
+    ) -> dict[str, Any]:
         """
         Execute a Galaxy tool.
 
@@ -183,14 +194,14 @@ def get_mcp_app(gx_app):
             Job execution information including job IDs and output dataset IDs
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.run_tool(history_id, tool_id, inputs)
         except Exception as e:
             logger.error(f"Failed to run tool {tool_id}: {str(e)}")
             raise ValueError(f"Failed to run tool '{tool_id}' in history '{history_id}': {str(e)}") from e
 
     @mcp.tool()
-    def get_job_status(job_id: str, api_key: str) -> dict[str, Any]:
+    def get_job_status(job_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get the status and details of a Galaxy job.
 
@@ -205,14 +216,14 @@ def get_mcp_app(gx_app):
             Job details including state (queued/running/ok/error), tool info, and timestamps
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_job_status(job_id)
         except Exception as e:
             logger.error(f"Failed to get job status for {job_id}: {str(e)}")
             raise ValueError(f"Failed to get status for job '{job_id}': {str(e)}") from e
 
     @mcp.tool()
-    def create_history(name: str, api_key: str) -> dict[str, Any]:
+    def create_history(name: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Create a new Galaxy history.
 
@@ -227,14 +238,14 @@ def get_mcp_app(gx_app):
             Created history details including ID, name, and state
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.create_history(name)
         except Exception as e:
             logger.error(f"Failed to create history: {str(e)}")
             raise ValueError(f"Failed to create history '{name}': {str(e)}") from e
 
     @mcp.tool()
-    def get_history_details(history_id: str, api_key: str) -> dict[str, Any]:
+    def get_history_details(history_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get detailed information about a specific history.
 
@@ -249,7 +260,7 @@ def get_mcp_app(gx_app):
             History details including name, state, size, and dataset counts
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_history_details(history_id)
         except Exception as e:
             logger.error(f"Failed to get history details for {history_id}: {str(e)}")
@@ -259,6 +270,7 @@ def get_mcp_app(gx_app):
     def get_history_contents(
         history_id: str,
         api_key: str,
+        ctx: MCPContext,
         limit: int = 100,
         offset: int = 0,
         order: str = "hid-asc",
@@ -282,14 +294,14 @@ def get_mcp_app(gx_app):
             List of datasets/collections with pagination metadata
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_history_contents(history_id, limit, offset, order)
         except Exception as e:
             logger.error(f"Failed to get history contents for {history_id}: {str(e)}")
             raise ValueError(f"Failed to get contents for history '{history_id}': {str(e)}") from e
 
     @mcp.tool()
-    def get_dataset_details(dataset_id: str, api_key: str) -> dict[str, Any]:
+    def get_dataset_details(dataset_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get detailed information about a specific dataset.
 
@@ -301,7 +313,7 @@ def get_mcp_app(gx_app):
             Dataset details including name, state, file size, extension, and metadata
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_dataset_details(dataset_id)
         except Exception as e:
             logger.error(f"Failed to get dataset details for {dataset_id}: {str(e)}")
@@ -312,6 +324,7 @@ def get_mcp_app(gx_app):
         history_id: str,
         url: str,
         api_key: str,
+        ctx: MCPContext,
         file_type: str = "auto",
         dbkey: str = "?",
         file_name: str | None = None,
@@ -337,7 +350,7 @@ def get_mcp_app(gx_app):
             Job information including job ID and output dataset IDs
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.upload_file_from_url(history_id, url, file_type, dbkey, file_name)
         except Exception as e:
             logger.error(f"Failed to upload file from URL {url}: {str(e)}")
@@ -348,6 +361,7 @@ def get_mcp_app(gx_app):
     @mcp.tool()
     def list_workflows(
         api_key: str,
+        ctx: MCPContext,
         limit: int = 50,
         offset: int = 0,
         show_published: bool = False,
@@ -369,14 +383,14 @@ def get_mcp_app(gx_app):
             List of workflows with their IDs, names, and basic metadata
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_workflows(limit, offset, show_published, show_shared, search)
         except Exception as e:
             logger.error(f"Failed to list workflows: {str(e)}")
             raise ValueError(f"Failed to list workflows: {str(e)}") from e
 
     @mcp.tool()
-    def get_workflow_details(workflow_id: str, api_key: str) -> dict[str, Any]:
+    def get_workflow_details(workflow_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get detailed information about a specific workflow.
 
@@ -390,7 +404,7 @@ def get_mcp_app(gx_app):
             Workflow details including name, steps, inputs, outputs, and annotations
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_workflow_details(workflow_id)
         except Exception as e:
             logger.error(f"Failed to get workflow details for {workflow_id}: {str(e)}")
@@ -401,6 +415,7 @@ def get_mcp_app(gx_app):
         workflow_id: str,
         history_id: str,
         api_key: str,
+        ctx: MCPContext,
         inputs: dict[str, Any] | None = None,
         parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
@@ -422,7 +437,7 @@ def get_mcp_app(gx_app):
             Workflow invocation details including invocation ID for monitoring
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.invoke_workflow(workflow_id, history_id, inputs, parameters)
         except Exception as e:
             logger.error(f"Failed to invoke workflow {workflow_id}: {str(e)}")
@@ -431,6 +446,7 @@ def get_mcp_app(gx_app):
     @mcp.tool()
     def get_invocations(
         api_key: str,
+        ctx: MCPContext,
         workflow_id: str | None = None,
         history_id: str | None = None,
         limit: int = 50,
@@ -452,14 +468,14 @@ def get_mcp_app(gx_app):
             List of workflow invocations with their states and metadata
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_invocations(workflow_id, history_id, limit, offset)
         except Exception as e:
             logger.error(f"Failed to get invocations: {str(e)}")
             raise ValueError(f"Failed to get invocations: {str(e)}") from e
 
     @mcp.tool()
-    def get_invocation_details(invocation_id: str, api_key: str) -> dict[str, Any]:
+    def get_invocation_details(invocation_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get detailed information about a specific workflow invocation.
 
@@ -471,14 +487,14 @@ def get_mcp_app(gx_app):
             Invocation details including state, steps, inputs, and outputs
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_invocation_details(invocation_id)
         except Exception as e:
             logger.error(f"Failed to get invocation details for {invocation_id}: {str(e)}")
             raise ValueError(f"Failed to get details for invocation '{invocation_id}': {str(e)}") from e
 
     @mcp.tool()
-    def cancel_workflow_invocation(invocation_id: str, api_key: str) -> dict[str, Any]:
+    def cancel_workflow_invocation(invocation_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Cancel a running workflow invocation.
 
@@ -490,7 +506,7 @@ def get_mcp_app(gx_app):
             Updated invocation details with cancelled state
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.cancel_workflow_invocation(invocation_id)
         except Exception as e:
             logger.error(f"Failed to cancel invocation {invocation_id}: {str(e)}")
@@ -499,7 +515,7 @@ def get_mcp_app(gx_app):
     # ==================== Tool Enhancement Tools ====================
 
     @mcp.tool()
-    def get_tool_panel(api_key: str, view: str | None = None) -> dict[str, Any]:
+    def get_tool_panel(api_key: str, ctx: MCPContext, view: str | None = None) -> dict[str, Any]:
         """
         Get the tool panel (toolbox) structure.
 
@@ -514,14 +530,14 @@ def get_mcp_app(gx_app):
             Tool panel hierarchy with sections and tools
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_panel(view)
         except Exception as e:
             logger.error(f"Failed to get tool panel: {str(e)}")
             raise ValueError(f"Failed to get tool panel: {str(e)}") from e
 
     @mcp.tool()
-    def get_tool_run_examples(tool_id: str, api_key: str) -> dict[str, Any]:
+    def get_tool_run_examples(tool_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get test cases/examples showing how to run a tool.
 
@@ -536,14 +552,14 @@ def get_mcp_app(gx_app):
             Test cases with example inputs and expected outputs
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_run_examples(tool_id)
         except Exception as e:
             logger.error(f"Failed to get tool run examples for {tool_id}: {str(e)}")
             raise ValueError(f"Failed to get run examples for tool '{tool_id}': {str(e)}") from e
 
     @mcp.tool()
-    def get_tool_citations(tool_id: str, api_key: str) -> dict[str, Any]:
+    def get_tool_citations(tool_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get citation information for a tool.
 
@@ -558,14 +574,14 @@ def get_mcp_app(gx_app):
             Tool citations including DOIs and BibTeX
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_citations(tool_id)
         except Exception as e:
             logger.error(f"Failed to get tool citations for {tool_id}: {str(e)}")
             raise ValueError(f"Failed to get citations for tool '{tool_id}': {str(e)}") from e
 
     @mcp.tool()
-    def search_tools_by_keywords(keywords: list[str], api_key: str) -> dict[str, Any]:
+    def search_tools_by_keywords(keywords: list[str], api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Search for tools matching multiple keywords.
 
@@ -581,7 +597,7 @@ def get_mcp_app(gx_app):
             Matching tools sorted by number of keyword matches
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.search_tools_by_keywords(keywords)
         except Exception as e:
             logger.error(f"Failed to search tools by keywords: {str(e)}")
@@ -590,7 +606,7 @@ def get_mcp_app(gx_app):
     # ==================== IWC (Intergalactic Workflow Commission) Tools ====================
 
     @mcp.tool()
-    def get_iwc_workflows(api_key: str) -> dict[str, Any]:
+    def get_iwc_workflows(api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get all workflows from the IWC (Intergalactic Workflow Commission) catalog.
 
@@ -604,14 +620,14 @@ def get_mcp_app(gx_app):
             List of IWC workflows with TRS IDs, names, descriptions, and tags
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_iwc_workflows()
         except Exception as e:
             logger.error(f"Failed to get IWC workflows: {str(e)}")
             raise ValueError(f"Failed to get IWC workflows: {str(e)}") from e
 
     @mcp.tool()
-    def search_iwc_workflows(query: str, api_key: str) -> dict[str, Any]:
+    def search_iwc_workflows(query: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Search for workflows in the IWC catalog.
 
@@ -625,14 +641,14 @@ def get_mcp_app(gx_app):
             Matching IWC workflows with TRS IDs, names, descriptions, and tags
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.search_iwc_workflows(query)
         except Exception as e:
             logger.error(f"Failed to search IWC workflows: {str(e)}")
             raise ValueError(f"Failed to search IWC workflows: {str(e)}") from e
 
     @mcp.tool()
-    def import_workflow_from_iwc(trs_id: str, api_key: str) -> dict[str, Any]:
+    def import_workflow_from_iwc(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Import a workflow from the IWC catalog into your Galaxy account.
 
@@ -648,7 +664,7 @@ def get_mcp_app(gx_app):
             Imported workflow details including the new Galaxy workflow ID
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.import_workflow_from_iwc(trs_id)
         except Exception as e:
             logger.error(f"Failed to import workflow from IWC: {str(e)}")
@@ -657,7 +673,7 @@ def get_mcp_app(gx_app):
     # ==================== Supplementary Tools ====================
 
     @mcp.tool()
-    def list_history_ids(api_key: str, limit: int = 100) -> dict[str, Any]:
+    def list_history_ids(api_key: str, ctx: MCPContext, limit: int = 100) -> dict[str, Any]:
         """
         Get a simplified list of history IDs and names.
 
@@ -672,14 +688,16 @@ def get_mcp_app(gx_app):
             Simple list of history IDs and names
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_history_ids(limit)
         except Exception as e:
             logger.error(f"Failed to list history IDs: {str(e)}")
             raise ValueError(f"Failed to list history IDs: {str(e)}") from e
 
     @mcp.tool()
-    def get_job_details(dataset_id: str, api_key: str, history_id: str | None = None) -> dict[str, Any]:
+    def get_job_details(
+        dataset_id: str, api_key: str, ctx: MCPContext, history_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Get details about the job that created a specific dataset.
 
@@ -695,14 +713,14 @@ def get_mcp_app(gx_app):
             Job details including tool ID, version, state, and timestamps
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_job_details(dataset_id, history_id)
         except Exception as e:
             logger.error(f"Failed to get job details for dataset {dataset_id}: {str(e)}")
             raise ValueError(f"Failed to get job details for dataset '{dataset_id}': {str(e)}") from e
 
     @mcp.tool()
-    def download_dataset(dataset_id: str, api_key: str) -> dict[str, Any]:
+    def download_dataset(dataset_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get download information for a dataset.
 
@@ -717,14 +735,14 @@ def get_mcp_app(gx_app):
             Download URL and dataset metadata (name, size, extension)
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.download_dataset(dataset_id)
         except Exception as e:
             logger.error(f"Failed to get download info for dataset {dataset_id}: {str(e)}")
             raise ValueError(f"Failed to get download info for dataset '{dataset_id}': {str(e)}") from e
 
     @mcp.tool()
-    def get_server_info(api_key: str) -> dict[str, Any]:
+    def get_server_info(api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get detailed Galaxy server information.
 
@@ -738,14 +756,14 @@ def get_mcp_app(gx_app):
             Server version, URL, and capability flags
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_server_info()
         except Exception as e:
             logger.error(f"Failed to get server info: {str(e)}")
             raise ValueError(f"Failed to get server info: {str(e)}") from e
 
     @mcp.tool()
-    def get_user(api_key: str) -> dict[str, Any]:
+    def get_user(api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """
         Get current user information.
 
@@ -759,7 +777,7 @@ def get_mcp_app(gx_app):
             User details including ID, email, username, and status
         """
         try:
-            ops_manager = get_operations_manager(api_key)
+            ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_user()
         except Exception as e:
             logger.error(f"Failed to get user info: {str(e)}")
