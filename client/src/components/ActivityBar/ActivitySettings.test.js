@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/vitest/helpers";
+import { createTestRouter, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
@@ -9,8 +9,6 @@ import { defaultActivities } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 
 import mountTarget from "./ActivitySettings.vue";
-
-const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
 const activityItemSelector = ".activity-settings-item";
@@ -42,6 +40,7 @@ describe("ActivitySettings", () => {
 
     beforeEach(async () => {
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+        const router = createTestRouter();
         // Mock the response of the API call
         server.use(
             http.get("/api/unprivileged_tools", ({ params, query, response }) => {
@@ -50,14 +49,16 @@ describe("ActivitySettings", () => {
         );
         activityStore = useActivityStore(undefined);
         wrapper = mount(mountTarget, {
-            localVue,
-            pinia,
+            global: {
+                ...getLocalVue(),
+                plugins: [...(getLocalVue().plugins || []), pinia, router],
+                stubs: {
+                    FontAwesomeIcon: { template: "<div></div>" },
+                },
+            },
             props: {
                 query: "",
-                activityBarId: undefined,
-            },
-            stubs: {
-                FontAwesomeIcon: { template: "<div></div>" },
+                activityBarId: "test-activity-bar",
             },
         });
         await activityStore.sync();
