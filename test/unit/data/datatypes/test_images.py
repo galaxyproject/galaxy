@@ -11,13 +11,14 @@ from galaxy.datatypes.images import (
     Tiff,
 )
 from galaxy.datatypes.sniff import get_test_fname
+
 from .util import (
-    get_dataset,
     MockDatasetDataset,
+    get_dataset,
 )
 
-# Define test decorator
 
+# Define test decorator
 
 def __test(image_cls: type[Image], input_filename: str):
 
@@ -37,7 +38,6 @@ def __test(image_cls: type[Image], input_filename: str):
 
 # Define test factory
 
-
 def __create_test(image_cls: type[Image], input_filename: str, **expected_metadata: Dict[str, Any]):
 
     @__test(image_cls, input_filename)
@@ -46,7 +46,7 @@ def __create_test(image_cls: type[Image], input_filename: str, **expected_metada
             metadata_value = getattr(metadata, metadata_key)
             cond = (
                 metadata_value is expected_value
-            ) if expected_value is None else (
+            ) if expected_value is None or type(expected_value) is bool else (
                 metadata_value == expected_value
             )
             assert cond, (
@@ -57,7 +57,6 @@ def __create_test(image_cls: type[Image], input_filename: str, **expected_metada
 
 
 # Define test utilities
-
 
 def __assert_empty_metadata(metadata):
     for key in (
@@ -100,31 +99,34 @@ def test_tiff_empty(metadata):
     __assert_empty_metadata(metadata)
 
 
-@__test(Tiff, "1.tiff")
-def test_tiff_unsupported_compression(metadata):
+test_tiff_unsupported_compression = __create_test(
+    Tiff,
+    "1.tiff",
     # If the compression of a TIFF is unsupported, some fields should still be there
-    assert metadata.axes == "YX"
-    assert metadata.dtype == "bool"
-    assert metadata.width == 1728
-    assert metadata.height == 2376
-    assert metadata.channels == 0
-    assert metadata.depth == 0
-    assert metadata.frames == 0
-
+    axes="YX",
+    dtype="bool",
+    width=1728,
+    height=2376,
+    channels=0,
+    depth=0,
+    frames=0,
     # The other fields should be missing
-    assert getattr(metadata, "num_unique_values", None) is None
+    num_unique_values=None,
+)
 
 
-@__test(Tiff, "im9_multiseries.tif")
-def test_tiff_multiseries(metadata):
-    assert metadata.axes == ["YXS", "YX"]
-    assert metadata.dtype == ["uint8", "uint16"]
-    assert metadata.num_unique_values == [2, 255]
-    assert metadata.width == [32, 256]
-    assert metadata.height == [32, 256]
-    assert metadata.channels == [3, 0]
-    assert metadata.depth == [0, 0]
-    assert metadata.frames == [0, 0]
+test_tiff_unsupported_multiseries = __create_test(
+    Tiff,
+    "im9_multiseries.tif",  # TODO: rename to .tiff
+    axes=["YXS", "YX"],
+    dtype=["uint8", "uint16"],
+    num_unique_values=[2, 255],
+    width=[32, 256],
+    height=[32, 256],
+    channels=[3, 0],
+    depth=[0, 0],
+    frames=[0, 0],
+)
 
 
 # Tests for `Image` class
@@ -159,35 +161,40 @@ test_png_frames_1 = __create_test(Png, "im1_uint8.png", frames=1)
 
 # Tests for `Dicom` class
 
-
-@__test(Dicom, "ct_image.dcm")
-def test_2d_singlechannel(metadata):
-    assert metadata.width == 128, f"actual: {metadata.width}"
-    assert metadata.height == 128, f"actual: {metadata.height}"
-    assert metadata.channels == 1, f"actual: {metadata.channels}"
-    assert metadata.dtype == "int16", f"actual: {metadata.dtype}"
-    assert metadata.num_unique_values is None, f"actual: {metadata.num_unique_values}"
-    assert metadata.is_tiled == False, f"actual: {metadata.is_tiled}"
-
-
-@__test(Dicom, "sm_image.dcm")
-def test_tiled_multichannel(metadata):
-    assert metadata.width == 50, f"actual: {metadata.width}"
-    assert metadata.height == 50, f"actual: {metadata.height}"
-    assert metadata.channels == 3, f"actual: {metadata.channels}"
-    assert metadata.dtype == "uint8", f"actual: {metadata.dtype}"
-    assert metadata.num_unique_values is None, f"actual: {metadata.num_unique_values}"
-    assert metadata.is_tiled == True, f"actual: {metadata.is_tiled}"
+test_2d_singlechannel = __create_test(
+    Dicom,
+    "ct_image.dcm",
+    width=128,
+    height=128,
+    channels=1,
+    dtype="int16",
+    num_unique_values=None,
+    is_tiled=False,
+)
 
 
-@__test(Dicom, "seg_image_ct_binary.dcm")
-def test_3d_binary(metadata):
-    assert metadata.width == 16, f"actual: {metadata.width}"
-    assert metadata.height == 16, f"actual: {metadata.height}"
-    assert metadata.channels == 1, f"actual: {metadata.channels}"
-    assert metadata.dtype == "bool", f"actual: {metadata.dtype}"
-    assert metadata.num_unique_values == 2, f"actual: {metadata.num_unique_values}"
-    assert metadata.is_tiled == False, f"actual: {metadata.is_tiled}"
+test_tiled_multichannel = __create_test(
+    Dicom,
+    "sm_image.dcm",
+    width=50,
+    height=50,
+    channels=3,
+    dtype="uint8",
+    num_unique_values=None,
+    is_tiled=True,
+)
+
+
+test_3d_binary = __create_test(
+    Dicom,
+    "seg_image_ct_binary.dcm",
+    width=16,
+    height=16,
+    channels=1,
+    dtype="bool",
+    num_unique_values=2,
+    is_tiled=False,
+)
 
 
 def test_dicom_sniff():
@@ -196,7 +203,6 @@ def test_dicom_sniff():
 
 
 # Test with files that neither Pillow, tifffile, nor pydicom can open
-
 
 @__test(Pdf, "454Score.pdf")
 def test_unsupported_metadata(metadata):
