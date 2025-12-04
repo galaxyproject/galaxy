@@ -598,17 +598,22 @@ class Dicom(Image):
             dataset.metadata.height = dcm.get("Rows")
 
         # Try to infer the `dtype` from metadata
-        dtype_lut = [
-            ["uint8", "int8"],
-            ["uint16", "int16"],
-            ["uint32", "int32"],
-        ]
-        dtype_lut_pos = (
-            round(math.log2(dcm.BitsAllocated) - 3),  # 8bit -> 0, 16bit -> 1, 32bit -> 2
-            dcm.PixelRepresentation,
-        )
-        if 0 <= dtype_lut_pos[0] < len(dtype_lut):
-            dataset.metadata.dtype = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
+        if dcm.BitsAllocated == 1:
+            dataset.metadata.dtype = "bool"  # 1bit
+        else:
+            dtype_lut = [
+                ["uint8", "int8"],
+                ["uint16", "int16"],
+                ["uint32", "int32"],
+            ]
+            dtype_lut_pos = (
+                round(math.log2(dcm.BitsAllocated) - 3),  # 8bit -> 0, 16bit -> 1, 32bit -> 2
+                dcm.PixelRepresentation,
+            )
+            if 0 <= dtype_lut_pos[0] < len(dtype_lut):
+                dataset.metadata.dtype = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
+            else:
+                dataset.metadata.dtype = None  # unknown `dtype`
 
         # Try to infer `num_unique_values` from metadata
         try:
@@ -617,8 +622,15 @@ class Dicom(Image):
                 # The DICOM file contains segmentation, count +1 for the image background
                 dataset.metadata.num_unique_values = 1 + len(dcm.SegmentSequence)
 
+            else:
+
+                # Otherwise, `num_unique_values` is not available from metadata
+                dataset.metadata.num_unique_values = None
+
         except AttributeError:
-            pass  # Ignore errors if metadata cannot be read
+
+            # Ignore errors if metadata cannot be read
+            dataset.metadata.num_unique_values = None
 
 
 @build_sniff_from_prefix

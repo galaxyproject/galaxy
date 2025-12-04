@@ -150,16 +150,35 @@ test_png_frames_1 = __create_test(Png, "im1_uint8.png", "frames", 1)
 # Tests for `Dicom` class
 
 
-@__test(Dicom, "Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm")
-def test_dicom(metadata):
-    assert metadata.width == 512, f"actual: {metadata.width}"
-    assert metadata.height == 512, f"actual: {metadata.height}"
+@__test(Dicom, "ct_image.dcm")
+def test_2d_singlechannel(metadata):
+    assert metadata.width == 128, f"actual: {metadata.width}"
+    assert metadata.height == 128, f"actual: {metadata.height}"
     assert metadata.channels == 1, f"actual: {metadata.channels}"
+    assert metadata.dtype == "int16", f"actual: {metadata.dtype}"
+    assert metadata.num_unique_values is None, f"actual: {metadata.num_unique_values}"
+
+
+@__test(Dicom, "sm_image.dcm")
+def test_pyramid_multichannel(metadata):
+    assert metadata.width == 50, f"actual: {metadata.width}"
+    assert metadata.height == 50, f"actual: {metadata.height}"
+    assert metadata.channels == 3, f"actual: {metadata.channels}"
     assert metadata.dtype == "uint16", f"actual: {metadata.dtype}"
+    assert metadata.num_unique_values is None, f"actual: {metadata.num_unique_values}"
+
+
+@__test(Dicom, "seg_image_ct_binary.dcm")
+def test_3d_binary(metadata):
+    assert metadata.width == 16, f"actual: {metadata.width}"
+    assert metadata.height == 16, f"actual: {metadata.height}"
+    assert metadata.channels == 1, f"actual: {metadata.channels}"
+    assert metadata.dtype == "bool", f"actual: {metadata.dtype}"
+    assert metadata.num_unique_values == 2, f"actual: {metadata.num_unique_values}"
 
 
 def test_dicom_sniff():
-    fname = get_test_fname("Vida_Head.MR.Comp_DR-Gain_DR.1005.1.2021.04.27.14.20.13.818.14380335.dcm")
+    fname = get_test_fname("ct_image.dcm")
     assert Dicom().sniff(fname)
 
 
