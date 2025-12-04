@@ -108,6 +108,14 @@ class Image(data.Data):
     )
 
     MetadataElement(
+        name="channels",
+        desc="Number of channels of the image",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    MetadataElement(
         name="depth",
         desc="Depth of the image (number of slices)",
         readonly=True,
