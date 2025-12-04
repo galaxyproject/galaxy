@@ -8,6 +8,7 @@ from tempfile import NamedTemporaryFile
 from typing import (
     Callable,
     Dict,
+    Optional,
     Tuple,
 )
 
@@ -41,7 +42,7 @@ for assertion_module_name in assertion_module_names:
 assertion_functions: Dict[str, Callable] = {k: v[1] for (k, v) in assertion_module_and_functions.items()}
 
 
-def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False, sep: str = None):
+def verify_assertions(data: bytes, assertion_description_list: list, decompress: bool = False, sep: Optional[str] = None):
     """This function takes a list of assertions and a string to check
     these assertions against."""
     if decompress:
@@ -54,7 +55,7 @@ def verify_assertions(data: bytes, assertion_description_list: list, decompress:
         verify_assertion(data, assertion_description, sep=sep)
 
 
-def verify_assertion(data: bytes, assertion_description, sep: str = None):
+def verify_assertion(data: bytes, assertion_description, sep: Optional[str] = None):
     tag = assertion_description["tag"]
     assert_function_name = "assert_" + tag
     assert_function = assertion_functions.get(assert_function_name)
