@@ -570,7 +570,7 @@ class Dicom(Image):
             return  # Ignore errors if metadata cannot be read
 
         # Determine the number of channels (0 if no channel info is present)
-        dataset.metadata["channels"] = dcm.get("SamplesPerPixel", 0)
+        dataset.metadata.channels = dcm.get("SamplesPerPixel", 0)
 
         # Determine whether this is a WSI DICOM
         is_wsi = False
@@ -581,8 +581,8 @@ class Dicom(Image):
                 seq = dcm.SharedFunctionalGroupsSequence[0]
                 if hasattr(seq, "TotalPixelMatrix"):
                     tpm = seq.TotalPixelMatrix[0]
-                    dataset.metadata["width"] = tpm.tpm.TotalPixelMatrixColumns
-                    dataset.metadata["height"] = tpm.TotalPixelMatrixRows
+                    dataset.metadata.width = tpm.tpm.TotalPixelMatrixColumns
+                    dataset.metadata.height = tpm.TotalPixelMatrixRows
                     is_wsi = True  # tiled data is typical for WSI DICOM
         except (
             IndexError,
@@ -594,8 +594,8 @@ class Dicom(Image):
         # If the DICOM file is not WSI, the width and height directly.
         # For WSI DICOM, these values correspond to the size of the tiles.
         if not is_wsi:
-            dataset.metadata["width"] = dcm.get("Columns")
-            dataset.metadata["height"] = dcm.get("Rows")
+            dataset.metadata.width = dcm.get("Columns")
+            dataset.metadata.height = dcm.get("Rows")
 
         # Try to infer the `dtype` from metadata
         dtype_lut = [
@@ -608,14 +608,14 @@ class Dicom(Image):
             dcm.PixelRepresentation,
         )
         if 0 <= dtype_lut_pos[0] < len(dtype_lut):
-            dataset.metadata["dtype"] = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
+            dataset.metadata.dtype = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
 
         # Try to infer `num_unique_values` from metadata
         try:
             if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.4":  # https://www.dicomlibrary.com/dicom/sop
 
                 # The DICOM file contains segmentation, count +1 for the image background
-                dataset.metadata["num_unique_values"] = 1 + len(dcm.SegmentSequence)
+                dataset.metadata.num_unique_values = 1 + len(dcm.SegmentSequence)
 
         except AttributeError:
             pass  # Ignore errors if metadata cannot be read
