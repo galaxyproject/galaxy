@@ -38,7 +38,7 @@ def __test(image_cls: type[Image], input_filename: str):
 
 # Define test factory
 
-def __create_test(image_cls: type[Image], input_filename: str, **expected_metadata: Dict[str, Any]):
+def __create_test(image_cls: type[Image], input_filename: str, **expected_metadata: Any):
 
     @__test(image_cls, input_filename)
     def test(metadata):
