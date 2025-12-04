@@ -3,12 +3,24 @@ import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import "vitest-location-mock";
 
+import { configureCompat } from "@vue/compat";
 import { vi } from "vitest";
-// Vue configuration
-import Vue from "vue";
 
-Vue.config.productionTip = false;
-Vue.config.devtools = false;
+// Configure Vue 3 compat mode - suppress warnings for Vue 2 features used in tests
+configureCompat({
+    MODE: 2,
+    // Suppress specific deprecation warnings that are expected during migration
+    GLOBAL_EXTEND: "suppress-warning",
+    GLOBAL_MOUNT: "suppress-warning",
+    GLOBAL_PROTOTYPE: "suppress-warning",
+    INSTANCE_EVENT_EMITTER: "suppress-warning",
+    INSTANCE_EVENT_HOOKS: "suppress-warning",
+    OPTIONS_DESTROYED: "suppress-warning",
+    OPTIONS_BEFORE_DESTROY: "suppress-warning",
+    WATCH_ARRAY: "suppress-warning",
+    COMPONENT_V_MODEL: "suppress-warning",
+    RENDER_FUNCTION: "suppress-warning",
+});
 
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
@@ -28,13 +40,6 @@ vi.mock("katex", () => ({
     default: {
         renderToString: (latex: string) => `<span class="katex">${latex}</span>`,
     },
-}));
-
-// Provide a mocked version of Vue to ensure above settings are not
-// overridden by a Vue library that gets imported later
-vi.doMock("vue", () => ({
-    default: Vue,
-    ...Vue,
 }));
 
 // Mock window.scrollIntoView (not available in test environment)
