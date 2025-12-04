@@ -587,10 +587,77 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to search tools by keywords: {str(e)}")
             raise ValueError(f"Failed to search tools by keywords: {str(e)}") from e
 
+    # ==================== IWC (Intergalactic Workflow Commission) Tools ====================
+
+    @mcp.tool()
+    def get_iwc_workflows(api_key: str) -> dict[str, Any]:
+        """
+        Get all workflows from the IWC (Intergalactic Workflow Commission) catalog.
+
+        The IWC maintains a curated collection of best-practice Galaxy workflows
+        at iwc.galaxyproject.org. Use this to browse available community workflows.
+
+        Args:
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            List of IWC workflows with TRS IDs, names, descriptions, and tags
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.get_iwc_workflows()
+        except Exception as e:
+            logger.error(f"Failed to get IWC workflows: {str(e)}")
+            raise ValueError(f"Failed to get IWC workflows: {str(e)}") from e
+
+    @mcp.tool()
+    def search_iwc_workflows(query: str, api_key: str) -> dict[str, Any]:
+        """
+        Search for workflows in the IWC catalog.
+
+        Searches workflow names, descriptions, and tags for matching terms.
+
+        Args:
+            query: Search term to find in workflow names, descriptions, or tags
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Matching IWC workflows with TRS IDs, names, descriptions, and tags
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.search_iwc_workflows(query)
+        except Exception as e:
+            logger.error(f"Failed to search IWC workflows: {str(e)}")
+            raise ValueError(f"Failed to search IWC workflows: {str(e)}") from e
+
+    @mcp.tool()
+    def import_workflow_from_iwc(trs_id: str, api_key: str) -> dict[str, Any]:
+        """
+        Import a workflow from the IWC catalog into your Galaxy account.
+
+        Use get_iwc_workflows() or search_iwc_workflows() first to find
+        the TRS ID of the workflow you want to import.
+
+        Args:
+            trs_id: TRS (Tool Registry Service) ID of the IWC workflow
+                   (e.g., '#workflow/github.com/iwc-workflows/sars-cov-2-variation-reporting/main')
+            api_key: Galaxy API key for authentication
+
+        Returns:
+            Imported workflow details including the new Galaxy workflow ID
+        """
+        try:
+            ops_manager = get_operations_manager(api_key)
+            return ops_manager.import_workflow_from_iwc(trs_id)
+        except Exception as e:
+            logger.error(f"Failed to import workflow from IWC: {str(e)}")
+            raise ValueError(f"Failed to import workflow from IWC (TRS ID: '{trs_id}'): {str(e)}") from e
+
     # Create the HTTP app for mounting
     # The path="/mcp" parameter here is just for SSE endpoint naming
     # The actual mount point is determined by fast_app.py
     mcp_app = mcp.sse_app()
 
-    logger.info("MCP server initialized with 21 tools")
+    logger.info("MCP server initialized with 24 tools")
     return mcp_app
