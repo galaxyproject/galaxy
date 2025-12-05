@@ -17,10 +17,6 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    <!--- base/base_panels.mako stylesheets() -->
-    ${h.dist_css(
-        'base'
-    )}
 </%def>
 
 ## Default javascripts

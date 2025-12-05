@@ -39,7 +39,6 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.dist_css('base')}
 </%def>
 
 ## Default javascripts
