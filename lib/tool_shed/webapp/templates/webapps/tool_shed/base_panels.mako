@@ -16,29 +16,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    <script type="text/javascript">
-        config.addInitialization(function() {
-            console.log("toolshed/base_panels.mako", "hardcoded dropdown init");
-
-            // Masthead dropdown menus
-            var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
-            $("body").on( "click.nav_popups", function( e ) {
-                $dropdowns.hide();
-                $("#dd-helper").hide();
-                // If the target is in the menu, treat normally
-                if ( $(e.target).closest( "#masthead ul.nav > li.dropdown > .dropdown-menu" ).length ) {
-                    return;
-                }
-                // Otherwise, was the click in a tab
-                var $clicked = $(e.target).closest( "#masthead ul.nav > li.dropdown" );
-                if ( $clicked.length ) {
-                    $("#dd-helper").show();
-                    $clicked.children( ".dropdown-menu" ).show();
-                    e.preventDefault();
-                }
-            });
-        });
-    </script>
 </%def>
 
 ## Masthead

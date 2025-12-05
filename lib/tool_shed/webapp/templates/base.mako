@@ -53,18 +53,6 @@
 
     ${ galaxy_client.load( app=self.js_app ) }
 
-    %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
-        <script type="text/javascript">
-            // Auto Focus on first item on form
-            config.addInitialization(function() {
-                console.log("base.mako", "auto focus on first item on form");
-                if ( $("*:focus").html() == null ) {
-                    $(":input:not([type=hidden]):visible:enabled:first").focus();
-                }
-            });
-        </script>
-    %endif
-
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

@@ -34,9 +34,4 @@ def inherit(context):
 
 <%def name="javascript_app()">
     ${ parent.javascript_app() }
-    <script type="text/javascript">
-        config.addInitialization(function(galaxy) {
-            window.location.href = galaxy.root;
-        });
-    </script>
 </%def>
