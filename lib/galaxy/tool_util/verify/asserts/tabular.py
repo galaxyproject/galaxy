@@ -13,7 +13,7 @@ from ._types import (
 )
 from ._util import _assert_number
 
-Sep = Annotated[str, AssertionParameter("Separator defining columns, default: tab")]
+Sep = Annotated[str, AssertionParameter("Separator defining columns, default: tab (or comma for csv)")]
 Comment = Annotated[
     str,
     AssertionParameter(
@@ -53,9 +53,10 @@ def assert_has_n_columns(
     Number of columns can optionally also be specified with ``delta``. Alternatively the
     range of expected occurences can be specified by ``min`` and/or ``max``.
 
-    Optionally a column separator (``sep``, default is ``\t``) `and comment character(s)
+    Optionally a column separator (``sep``) and comment character(s)
     can be specified (``comment``, default is empty string). The first non-comment
-    line is used for determining the number of columns.
+    line is used for determining the number of columns. The default separator is
+    tab for most tabular data types, but comma for csv files.
     """
     first_line = get_first_line(output, comment)
     n_columns = len(first_line.split(sep))
