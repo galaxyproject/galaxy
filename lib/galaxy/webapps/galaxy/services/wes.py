@@ -1,8 +1,8 @@
 """GA4GH WES (Workflow Execution Service) implementation for Galaxy."""
 
-import base64
 import json
 import logging
+from dataclasses import dataclass
 from typing import (
     Any,
     List,
@@ -17,6 +17,7 @@ from fastapi import UploadFile
 from sqlalchemy import (
     literal,
     select,
+    tuple_,
     union_all,
 )
 from sqlalchemy.orm import joinedload
@@ -37,6 +38,10 @@ from galaxy.model import (
     Job,
     WorkflowInvocation,
     WorkflowInvocationStep,
+)
+from galaxy.model.keyset_token_pagination import (
+    KeysetPagination,
+    SingleKeysetToken,
 )
 from galaxy.schema.wes import (
     DefaultWorkflowEngineParameter,
@@ -73,41 +78,28 @@ GALAXY_TO_WES_STATE = {
 }
 
 WES_TO_GALAXY_STATE = {v: k for k, v in GALAXY_TO_WES_STATE.items()}
-PAGINATION_KEYSET_TOKEN_ENCODE_KEY = "pag_tok"
 
 
-def _encode_page_token(offset: int) -> str:
-    """Encode an offset as a base64 page token.
+@dataclass
+class TaskKeysetToken:
+    """Composite keyset token for task pagination (step_order, job_index).
 
-    Args:
-        offset: The offset (row number) for pagination
-
-    Returns:
-        Base64-encoded page token
+    Used to identify position in task list for cursor-based pagination.
     """
-    return base64.b64encode(str(offset).encode()).decode()
 
+    step_order: int
+    job_index: int
 
-def _encode_keyset_token(security: IdEncodingHelper, last_id: int) -> str:
-    """Encode last seen ID as keyset page token."""
-    return security.encode_id(last_id, kind=PAGINATION_KEYSET_TOKEN_ENCODE_KEY)
+    def to_values(self) -> list:
+        """Convert token to normalized list of values for encoding."""
+        return [self.step_order, self.job_index]
 
-
-def _decode_keyset_token(security: IdEncodingHelper, page_token: Optional[str]) -> Optional[int]:
-    """Decode keyset page token to last seen ID.
-
-    Returns None if no token, raises on invalid token.
-    """
-    if not page_token:
-        return None
-
-    try:
-        last_id = security.decode_id(page_token, kind=PAGINATION_KEYSET_TOKEN_ENCODE_KEY)
-        if last_id < 0:
-            raise ValueError("ID cannot be negative")
-        return last_id
-    except (ValueError, TypeError) as e:
-        raise exceptions.MessageException(f"Invalid page_token: {str(e)}")
+    @classmethod
+    def from_values(cls, values: list) -> "TaskKeysetToken":
+        """Reconstruct token from decoded values."""
+        if len(values) < 2:
+            raise ValueError("TaskKeysetToken requires at least 2 values")
+        return cls(step_order=values[0], job_index=values[1])
 
 
 def _parse_gxworkflow_uri(workflow_url: str) -> tuple[str, bool]:
@@ -157,31 +149,6 @@ def _parse_gxworkflow_uri(workflow_url: str) -> tuple[str, bool]:
         raise exceptions.MessageException(f"Invalid gxworkflow:// URI: {str(e)}")
     except Exception as e:
         raise exceptions.MessageException(f"Error parsing gxworkflow:// URI: {str(e)}")
-
-
-def _decode_page_token(page_token: Optional[str]) -> int:
-    """Decode a base64 page token to an offset.
-
-    Args:
-        page_token: The base64-encoded page token
-
-    Returns:
-        The offset (row number) for pagination
-
-    Raises:
-        exceptions.MessageException: If token is invalid
-    """
-    if not page_token:
-        return 0
-
-    try:
-        offset_str = base64.b64decode(page_token.encode()).decode()
-        offset = int(offset_str)
-        if offset < 0:
-            raise ValueError("Offset cannot be negative")
-        return offset
-    except (ValueError, TypeError) as e:
-        raise exceptions.MessageException(f"Invalid page_token: {str(e)}")
 
 
 def _load_workflow_content(
@@ -384,6 +351,7 @@ class WesService(ServiceBase):
         self._workflows_service = workflows_service
         self._config = config
         self._security = security
+        self._keyset_pagination = KeysetPagination()
 
     def service_info(self, trans: ProvidesUserContext, request_url: str) -> ServiceInfo:
         """Return WES service information.
@@ -628,7 +596,8 @@ class WesService(ServiceBase):
             RunListResponse with paginated list of runs and next_page_token if more results exist
         """
         # Decode keyset token to get last seen ID
-        last_id = _decode_keyset_token(self._security, page_token)
+        token = self._keyset_pagination.decode_token(page_token, token_class=SingleKeysetToken)
+        last_id = token.last_id if token else None
 
         # Build query with keyset filtering
         query = trans.sa_session.query(WorkflowInvocation).join(History).where(History.user_id == trans.user.id)
@@ -650,7 +619,8 @@ class WesService(ServiceBase):
         next_page_token = None
         if has_more and invocations:
             last_invocation = invocations[page_size - 1]
-            next_page_token = _encode_keyset_token(self._security, last_invocation.id)
+            token = SingleKeysetToken(last_id=last_invocation.id)
+            next_page_token = self._keyset_pagination.encode_token(token)
 
         return RunListResponse(runs=runs, next_page_token=next_page_token)
 
@@ -777,10 +747,12 @@ class WesService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         invocation_id: int,
-        offset: int,
+        last_token: Optional[TaskKeysetToken],
         limit: int,
     ) -> List[dict]:
-        """Fetch paginated task rows from database.
+        """Fetch paginated task rows using composite keyset pagination.
+
+        Uses (step_order, job_index) as composite keyset for cursor-based pagination.
 
         Returns list of dicts with keys: step_id, step_order, task_type, job_id, job_index
         """
@@ -788,21 +760,28 @@ class WesService(ServiceBase):
         task_rows_subquery = self._build_task_rows_query(invocation_id).subquery()
 
         # Apply ordering and pagination
-        stmt = (
-            select(
-                task_rows_subquery.c.step_id,
-                task_rows_subquery.c.step_order,
-                task_rows_subquery.c.task_type,
-                task_rows_subquery.c.job_id,
-                task_rows_subquery.c.job_index,
-            )
-            .order_by(
-                task_rows_subquery.c.step_order,
-                task_rows_subquery.c.job_index,
-            )
-            .offset(offset)
-            .limit(limit + 1)  # Fetch one extra to detect more results
+        stmt = select(
+            task_rows_subquery.c.step_id,
+            task_rows_subquery.c.step_order,
+            task_rows_subquery.c.task_type,
+            task_rows_subquery.c.job_id,
+            task_rows_subquery.c.job_index,
+        ).order_by(
+            task_rows_subquery.c.step_order,
+            task_rows_subquery.c.job_index,
         )
+
+        # Apply composite keyset filter if we have a cursor
+        if last_token is not None:
+            stmt = stmt.where(
+                tuple_(
+                    task_rows_subquery.c.step_order,
+                    task_rows_subquery.c.job_index,
+                )
+                > tuple_(literal(last_token.step_order), literal(last_token.job_index))
+            )
+
+        stmt = stmt.limit(limit + 1)  # Fetch one extra to detect more results
 
         result = trans.sa_session.execute(stmt)
         return [dict(row._mapping) for row in result]
@@ -900,28 +879,28 @@ class WesService(ServiceBase):
     ) -> TaskListResponse:
         """Get paginated list of tasks for a workflow run.
 
-        Uses database-level pagination via UNION query to avoid loading
-        all steps/jobs into memory.
+        Uses composite keyset pagination via UNION query to avoid loading
+        all steps/jobs into memory and for cursor-based stability.
 
         Args:
             trans: Galaxy transaction/context
             run_id: The WES run ID (Galaxy invocation ID)
             page_size: Number of tasks per page (default 10, max 100)
-            page_token: Token for pagination (base64-encoded offset)
+            page_token: Token for pagination (composite keyset: step_order, job_index)
 
         Returns:
             TaskListResponse with paginated tasks
         """
         invocation = self._get_invocation(trans, run_id)
 
-        # Decode page token to offset
-        offset = _decode_page_token(page_token)
+        # Decode composite keyset token
+        token = self._keyset_pagination.decode_token(page_token, token_class=TaskKeysetToken)
 
         # Fetch paginated task rows (+1 to detect more results)
         task_rows = self._get_paginated_task_rows(
             trans,
             invocation.id,
-            offset,
+            token,
             page_size,
         )
 
@@ -938,8 +917,10 @@ class WesService(ServiceBase):
 
         # Generate next page token
         next_page_token = None
-        if has_more:
-            next_page_token = _encode_page_token(offset + page_size)
+        if has_more and task_rows:
+            last_row = task_rows[-1]
+            token = TaskKeysetToken(step_order=last_row["step_order"], job_index=last_row["job_index"])
+            next_page_token = self._keyset_pagination.encode_token(token)
 
         return TaskListResponse(
             task_logs=task_logs if task_logs else None,
