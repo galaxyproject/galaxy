@@ -53,16 +53,6 @@
 <%def name="javascript_app()">
 
     ${ galaxy_client.load( app=self.js_app ) }
-    ${ galaxy_client.config_sentry( app=self.js_app ) }
-    %if self.js_app and self.js_app.config and self.js_app.config.ga_code:
-        ${ galaxy_client.config_google_analytics(self.js_app.config.ga_code) }
-    %endif
-    %if self.js_app and self.js_app.config and self.js_app.config.plausible_server and self.js_app.config.plausible_domain:
-        ${ galaxy_client.config_plausible_analytics(self.js_app.config.plausible_server, self.js_app.config.plausible_domain) }
-    %endif
-    %if self.js_app and self.js_app.config and self.js_app.config.matomo_server and self.js_app.config.matomo_site_id:
-        ${ galaxy_client.config_matomo_analytics(self.js_app.config.matomo_server, self.js_app.config.matomo_site_id) }
-    %endif
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
         <script type="text/javascript">
