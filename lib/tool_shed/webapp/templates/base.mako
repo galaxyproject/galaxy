@@ -43,10 +43,6 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-    ## TODO: remove when all libs are required directly in modules
-    ${h.dist_js(
-        'libs.bundled',
-    )}
     ${self.javascript_entry()}
 </%def>
 
