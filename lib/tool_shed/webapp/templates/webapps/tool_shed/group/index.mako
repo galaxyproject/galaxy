@@ -25,9 +25,6 @@
 <%def name="center_panel()">
     <script type="text/javascript">
         window.globalTS = new Object();
-        $( function(){
-            new window.bundleToolshed.ToolshedGroups.ToolshedGroups();
-        });
     </script>
     <div id="groups_element" style="width: 95%; margin:auto; margin-top:2em; "></div>
 </%def>
