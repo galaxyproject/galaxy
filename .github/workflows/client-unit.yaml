@@ -29,8 +29,8 @@ jobs:
           cache-dependency-path: 'client/yarn.lock'
       - run: yarn install --frozen-lockfile
         working-directory: client
-      - name: Stage client libs (Gulp)
-        run: yarn run gulp client
+      - name: Pre-build (icons and plugins)
+        run: node scripts/build.mjs
         working-directory: client
       - name: Run Vitest Unit Tests
         run: yarn test
