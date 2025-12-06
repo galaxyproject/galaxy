@@ -34,25 +34,6 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
     </script>
 </%def>
 
-<%def name="config_sentry(app)">
-    %if app and app.config:
-        <script type="text/javascript">
-
-            var sentry = {};
-            %if app.config.sentry_dsn:
-                sentry.sentry_dsn_public = "${app.config.sentry_dsn_public}"
-                %if trans.user:
-                    sentry.email = "${trans.user.email|h}";
-                %endif
-            %endif
-
-            config.set({
-                sentry: sentry
-            });
-
-        </script>
-    %endif
-</%def>
 
 ## ----------------------------------------------------------------------------
 <%def name="get_user_dict()">
@@ -91,9 +72,4 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 
         return user_dict
     %>
-</%def>
-
-<%def name="get_user_json()">
-    ## Conv. fn to write as JSON
-${ h.dumps( get_user_dict() )}
 </%def>
