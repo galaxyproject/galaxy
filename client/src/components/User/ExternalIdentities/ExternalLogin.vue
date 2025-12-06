@@ -17,7 +17,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import VerticalSeparator from "@/components/Common/VerticalSeparator.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -50,32 +49,21 @@ const messageVariant = ref<string | null>(null);
 const cILogonIdps = ref<Idp[]>([]);
 const selected = ref<Idp | null>(null);
 const rememberIdp = ref(false);
-const cilogon = ref<"cilogon" | null>(null);
-const toggleCilogon = ref(false);
 
 const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
 
 const filteredOIDCIdps = computed(() => getFilteredOIDCIdps(oIDCIdps.value, props.excludeIdps));
 
-const cilogonListShow = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
-
-const cILogonEnabled = computed(() => oIDCIdps.value.cilogon);
+const cILogonConfigured = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
 
 onMounted(async () => {
     rememberIdp.value = getIdpPreference() !== null;
 
     // Only fetch CILogonIDPs if cilogon configured
-    if (cilogonListShow.value) {
+    if (cILogonConfigured.value) {
         await getCILogonIdps();
     }
 });
-
-function toggleCILogon(idp: "cilogon") {
-    if (cilogon.value === idp || cilogon.value === null) {
-        toggleCilogon.value = !toggleCilogon.value;
-    }
-    cilogon.value = toggleCilogon.value ? idp : null;
-}
 
 async function clickOIDCLogin(idp: string) {
     if (loading.value) {
@@ -98,7 +86,7 @@ async function clickOIDCLogin(idp: string) {
     }
 }
 
-async function clickCILogin(idp: string | null) {
+async function clickCILogonLogin() {
     if (loading.value) {
         return;
     }
@@ -106,7 +94,7 @@ async function clickCILogin(idp: string | null) {
         setIdpPreference();
     }
 
-    if (!selected.value || !idp) {
+    if (!selected.value) {
         messageVariant.value = "danger";
         messageText.value = "Please select an institution.";
         return;
@@ -115,9 +103,9 @@ async function clickCILogin(idp: string | null) {
     loading.value = true;
 
     try {
-        const redirectUri = await submitCILogon(idp, true, selected.value.EntityID);
+        const redirectUri = await submitCILogon(true, selected.value.EntityID);
 
-        localStorage.setItem("galaxy-provider", idp);
+        localStorage.setItem("galaxy-provider", "cilogon");
 
         if (redirectUri) {
             window.location.href = redirectUri;
@@ -182,11 +170,9 @@ function getIdpPreference() {
         </BAlert>
 
         <div :class="{ 'd-flex h-100': !props.columnDisplay }">
-            <!-- OIDC login-->
-            <BForm v-if="cilogonListShow" id="externalLogin" class="cilogon">
-                <div v-if="props.loginPage">
-                    <!--Only Display if CILogon is configured-->
-                    <BFormGroup label="Use existing institutional login">
+            <BForm v-if="cILogonConfigured" id="externalLogin" class="cilogon">
+                <div>
+                    <BFormGroup :label="`Use ${props.loginPage ? `existing` : ``} institutional login`">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -204,44 +190,10 @@ function getIdpPreference() {
                         </BFormCheckbox>
                     </BFormGroup>
 
-                    <GButton
-                        v-if="cILogonEnabled"
-                        :disabled="loading || selected === null"
-                        @click="clickCILogin('cilogon')">
+                    <GButton :disabled="loading || selected === null" @click="clickCILogonLogin">
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Institutional Credentials*</span>
                     </GButton>
-                </div>
-
-                <div v-else>
-                    <GButtonGroup class="w-100">
-                        <GButton
-                            v-if="cILogonEnabled"
-                            :pressed="cilogon === 'cilogon'"
-                            @click="toggleCILogon('cilogon')">
-                            Sign in with Institutional Credentials*
-                        </GButton>
-                    </GButtonGroup>
-
-                    <BFormGroup v-if="toggleCilogon" class="mt-1">
-                        <Multiselect
-                            v-model="selected"
-                            placeholder="Select your institution"
-                            :options="cILogonIdps"
-                            label="DisplayName"
-                            select-label=""
-                            deselect-label=""
-                            :allow-empty="false"
-                            track-by="EntityID" />
-
-                        <GButton
-                            v-if="toggleCilogon"
-                            class="mt-1"
-                            :disabled="loading || selected === null"
-                            @click="clickCILogin(cilogon)">
-                            Login via CILogon *
-                        </GButton>
-                    </BFormGroup>
                 </div>
 
                 <p class="mt-3">
@@ -254,7 +206,7 @@ function getIdpPreference() {
                 </p>
             </BForm>
 
-            <template v-if="cilogonListShow && Object.keys(filteredOIDCIdps).length > 0">
+            <template v-if="cILogonConfigured && Object.keys(filteredOIDCIdps).length > 0">
                 <VerticalSeparator v-if="!props.columnDisplay">
                     <span v-localize>or</span>
                 </VerticalSeparator>

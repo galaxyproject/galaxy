@@ -74,12 +74,11 @@ export async function submitOIDCLogon(idp: string, redirectParam: string | null 
 
 /**
  * CILogon login.
- * @param idp        "cilogon"
  * @param useIDPHint If true, append ?idphint=
  * @param idpHint    The entityID to hint with (ignored when useIDPHint = false)
  */
-export async function submitCILogon(idp: string, useIDPHint = false, idpHint?: string): Promise<string | null> {
-    let url = withPrefix(`/authnz/${idp}/login/`);
+export async function submitCILogon(useIDPHint = false, idpHint?: string): Promise<string | null> {
+    let url = withPrefix("/authnz/cilogon/login/");
     if (useIDPHint && idpHint) {
         url += `?idphint=${encodeURIComponent(idpHint)}`;
     }
@@ -109,7 +108,7 @@ export async function redirectToSingleProvider(config: OIDCConfig): Promise<stri
     }
 
     if (idp === "cilogon") {
-        const redirectUri = await submitCILogon(idp, false);
+        const redirectUri = await submitCILogon(false);
         return redirectUri;
     } else {
         const redirectUri = await submitOIDCLogon(idp, "");
