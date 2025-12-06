@@ -28,13 +28,6 @@
 <%def name="javascript_app()">
     <!-- message.mako javascript_app() -->
     ${parent.javascript_app()}
-    <script type="text/javascript">
-        config.addInitialization(function() {
-            if (parent.handle_minwidth_hint) {
-                parent.handle_minwidth_hint(-1);
-            }
-        });
-    </script>
 </%def>
 
 ##
