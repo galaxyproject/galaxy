@@ -540,20 +540,23 @@ def runtimeify(
     adapt_dataset: DatasetToRuntimeJson,
 ) -> JobRuntimeToolState:
 
+    def adapt_dict(value: dict):
+        assert isinstance(value, dict), str(value)
+        data_request_internal_hda = DataRequestInternalHda(**value)
+        as_json = adapt_dataset(data_request_internal_hda).model_dump()
+        # well this is wrong
+        as_json["class"] = as_json.pop("class_")
+        return as_json
+
     def to_runtime_callback(parameter: ToolParameterT, value: Any):
         if isinstance(parameter, DataParameterModel):
             if parameter.multiple and isinstance(value, list):
-                return list(map(adapt_dataset, value))
+                return list(map(adapt_dict, value))
             else:
-                assert isinstance(value, dict), str(value)
-                data_request_internal_hda = DataRequestInternalHda(**value)
-                as_json = adapt_dataset(data_request_internal_hda).model_dump()
-                # well this is wrong
-                as_json["class"] = as_json.pop("class_")
-                return as_json
+                return adapt_dict(value)
         elif isinstance(parameter, DataCollectionParameterModel):
             assert isinstance(value, dict), str(value)
-            raise NotImplementedError("Moocow...")
+            raise NotImplementedError("DataCollectionParameterModel runtime adaptation not implemented yet.")
         else:
             return VISITOR_NO_REPLACEMENT
 
