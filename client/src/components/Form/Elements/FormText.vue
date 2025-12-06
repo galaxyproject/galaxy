@@ -148,9 +148,7 @@ export default {
                 if (val.length === 0) {
                     return "";
                 }
-                return this.multiple
-                    ? val.reduce((str_value, item) => str_value + String(item) + "\n", "")
-                    : String(val[0]);
+                return this.multiple ? val.join("\n") : String(val[0]);
             }
             return String(val);
         },
