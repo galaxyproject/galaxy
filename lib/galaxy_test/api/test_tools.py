@@ -3013,9 +3013,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("metadata_bam")
     def test_run_deferred_dataset_with_metadata_options_filter(self, history_id):
-        details = self.dataset_populator.create_deferred_hda(
-            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
-        )
+        url_1 = self.dataset_populator.base64_url_for_test_file("1.bam")
+        details = self.dataset_populator.create_deferred_hda(history_id, url_1, ext="bam")
         inputs = {"input_bam": dataset_to_param(details), "ref_names": "chrM"}
         run_response = self.dataset_populator.run_tool(tool_id="metadata_bam", inputs=inputs, history_id=history_id)
         output = run_response["outputs"][0]
@@ -3028,9 +3027,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("pileup")
     def test_metadata_validator_on_deferred_input(self, history_id):
-        deferred_bam_details = self.dataset_populator.create_deferred_hda(
-            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
-        )
+        url_1 = self.dataset_populator.base64_url_for_test_file("1.bam")
+        deferred_bam_details = self.dataset_populator.create_deferred_hda(history_id, url_1, ext="bam")
         fasta1_contents = open(self.get_filename("1.fasta")).read()
         fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
         inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
@@ -3123,10 +3121,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat1")
     def test_run_deferred_mapping(self, history_id: str):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
         elements = [
             {
                 "src": "url",
-                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "url": url_1,
                 "info": "my cool bed",
                 "deferred": True,
                 "ext": "bed",
@@ -3163,10 +3162,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat_list")
     def test_run_deferred_list_multi_data_reduction(self, history_id: str):
+        url_1 = self.dataset_populator.base64_url_for_test_file("4.bed")
         elements = [
             {
                 "src": "url",
-                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "url": url_1,
                 "info": "my cool bed",
                 "deferred": True,
                 "ext": "bed",
