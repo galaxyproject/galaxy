@@ -4,6 +4,7 @@
 import {
     faChartBar,
     faColumns,
+    faComments,
     faDatabase,
     faDownload,
     faFile,
@@ -47,6 +48,19 @@ export const defaultActivities = [
         title: "Tools",
         to: null,
         tooltip: "Search and run tools",
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "AI-powered assistant to help with Galaxy tasks and troubleshooting.",
+        icon: faComments,
+        id: "chatgxy",
+        mutable: false,
+        optional: true,
+        panel: false,
+        title: "ChatGXY",
+        to: "/chatgxy",
+        tooltip: "Chat with Galaxy AI Assistant",
         visible: true,
     },
     {
