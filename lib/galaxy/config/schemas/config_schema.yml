@@ -4078,7 +4078,15 @@ mapping:
         required: false
         deprecated_alias: openai_model
         desc: |
-          AI model to enable the wizard.
+          AI model to enable the wizard. Global fallback for all AI agents.
+
+      inference_services:
+        type: any
+        required: false
+        desc: |
+          Configuration for AI inference services used by agents. Supports per-agent model, temperature, and token settings.
+          Agents inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
+          Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 } }
 
       enable_tool_recommendations:
         type: bool
