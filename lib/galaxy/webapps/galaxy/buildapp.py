@@ -234,6 +234,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
+    webapp.add_client_route("/chatgxy")
     webapp.add_client_route("/user")
     webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
