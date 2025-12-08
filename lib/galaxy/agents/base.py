@@ -229,8 +229,12 @@ class BaseGalaxyAgent(ABC):
             log.exception(f"Unexpected model behavior in {self.agent_type} agent")
             return self._get_fallback_response(query, f"Unexpected model behavior: {str(e)}")
 
-        except Exception as e:
-            log.exception(f"Error in {self.agent_type} agent")
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.warning(f"Network error in {self.agent_type} agent: {e}")
+            return self._get_fallback_response(query, str(e))
+
+        except ValueError as e:
+            log.exception(f"Value error in {self.agent_type} agent")
             return self._get_fallback_response(query, str(e))
 
     async def _run_with_retry(self, prompt: str, max_retries: int = 3, base_delay: float = 1.0):
@@ -577,16 +581,16 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
             },
         )
 
-    def _extract_confidence(self, content: str) -> Union[str, ConfidenceLevel]:
+    def _extract_confidence(self, content: str) -> ConfidenceLevel:
         """Extract confidence level from response content."""
         content_lower = content.lower()
 
         if any(word in content_lower for word in ["uncertain", "might", "possibly", "unclear"]):
-            return "low"
+            return ConfidenceLevel.LOW
         elif any(word in content_lower for word in ["likely", "probably", "confident"]):
-            return "high"
+            return ConfidenceLevel.HIGH
         else:
-            return "medium"
+            return ConfidenceLevel.MEDIUM
 
     def _extract_suggestions(self, content: str) -> List[ActionSuggestion]:
         """Extract action suggestions from response content."""
@@ -598,7 +602,7 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.TOOL_RUN,
                     description="Follow the suggested approach",
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                 )
             )
 
@@ -607,7 +611,7 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.DOCUMENTATION,
                     description="Check the relevant documentation",
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                 )
             )
 

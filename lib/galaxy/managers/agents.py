@@ -99,8 +99,11 @@ class AgentService:
                 "reasoning": response.reasoning,
                 "fallback": True,
             }
-        except Exception as e:
-            log.error(f"Error executing agent {agent_type}: {e}", exc_info=True)
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.error(f"Network error executing agent {agent_type}: {e}")
+            raise
+        except RuntimeError as e:
+            log.exception(f"Runtime error executing agent {agent_type}: {e}")
             raise
 
     async def route_and_execute(
