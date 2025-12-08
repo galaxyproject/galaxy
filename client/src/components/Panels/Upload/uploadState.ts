@@ -54,7 +54,8 @@ export interface UrlUploadItem extends UploadItemCommon {
 
 export type NewUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem;
 
-type UploadItem = NewUploadItem & UploadState;
+/** Upload item with state tracking */
+export type UploadItem = NewUploadItem & UploadState;
 
 function generateId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
