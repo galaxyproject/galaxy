@@ -2,16 +2,16 @@
 import { faCheck, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import { useUploadQueue } from "@/composables/uploadQueue";
 import { bytesToString } from "@/utils/utils";
 
-import { useUploadService } from "./uploadService";
 import type { UploadItem } from "./uploadState";
 import { useUploadState } from "./uploadState";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
-const uploadService = useUploadService();
+const uploadQueue = useUploadQueue();
 const { activeItems, completedCount, errorCount, isUploading, hasCompleted } = useUploadState();
 
 const breadcrumbItems = [{ title: "Import Data", to: "/upload" }, { title: "Upload Progress" }];
@@ -41,10 +41,10 @@ function getFileStatusClass(file: UploadItem) {
     <div class="upload-progress-view d-flex flex-column h-100">
         <BreadcrumbHeading :items="breadcrumbItems">
             <div v-if="activeItems.length > 0" class="d-flex flex-gapx-1">
-                <GButton v-if="hasCompleted" size="small" outline color="grey" @click="uploadService.clearCompleted()">
+                <GButton v-if="hasCompleted" size="small" outline color="grey" @click="uploadQueue.clearCompleted()">
                     Clear Completed
                 </GButton>
-                <GButton size="small" outline color="grey" @click="uploadService.clearAll()"> Clear All </GButton>
+                <GButton size="small" outline color="grey" @click="uploadQueue.clearAll()"> Clear All </GButton>
             </div>
         </BreadcrumbHeading>
 

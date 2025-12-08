@@ -3,12 +3,12 @@ import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
 
+import { useUploadQueue } from "@/composables/uploadQueue";
 import { useDatatypeStore } from "@/stores/datatypeStore";
 import { useDbKeyStore } from "@/stores/dbKeyStore";
 import { bytesToString } from "@/utils/utils";
 
 import type { UploadMethodConfig } from "../types";
-import { useUploadService } from "../uploadService";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTip from "@/components/BaseComponents/GTip.vue";
@@ -24,7 +24,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{ (e: "upload-start"): void; (e: "cancel"): void }>();
 
-const uploadService = useUploadService();
+const uploadQueue = useUploadQueue();
 const dbKeyStore = useDbKeyStore();
 const datatypeStore = useDatatypeStore();
 
@@ -121,7 +121,7 @@ function handleStartUpload() {
         content: item.content,
     }));
 
-    uploadService.enqueue(uploads);
+    uploadQueue.enqueue(uploads);
 
     // Reset to single empty item
     pasteItems.value = [

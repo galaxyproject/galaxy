@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import { useUploadQueue } from "@/composables/uploadQueue";
+
 import type { UploadMethodConfig } from "../types";
-import { useUploadService } from "../uploadService";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTip from "@/components/BaseComponents/GTip.vue";
@@ -15,7 +16,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{ (e: "upload-start"): void; (e: "cancel"): void }>();
 
-const uploadService = useUploadService();
+const uploadQueue = useUploadQueue();
 
 const defaultDbKey = "?";
 const defaultExtension = "auto";
@@ -59,7 +60,7 @@ function handleStartUpload() {
         url,
     }));
 
-    uploadService.enqueue(uploads);
+    uploadQueue.enqueue(uploads);
     urlText.value = "";
     emit("upload-start");
 }
