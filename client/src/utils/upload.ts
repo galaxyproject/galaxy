@@ -254,9 +254,35 @@ export function stripGalaxyFilePrefix(filename: string): string {
 }
 
 /**
+ * Cleans a filename that may have URL encoding or query parameters.
+ * - Extracts the base filename (after last /)
+ * - Removes query parameters (everything after ?)
+ * - Decodes URL-encoded characters (%20 → space, etc.)
+ *
+ * @example
+ * cleanUrlFilename("https://example.com/path/to%20file.txt?version=1") → "to file.txt"
+ * cleanUrlFilename("normal.txt") → "normal.txt"
+ */
+export function cleanUrlFilename(filename: string): string | null {
+    // Remove query parameters
+    const defaultName = filename.split("/").pop()?.split("?")[0];
+    if (!defaultName) {
+        return null;
+    }
+    // Decode URL-encoded characters
+    try {
+        return decodeURIComponent(defaultName);
+    } catch {
+        // If decoding fails (malformed encoding), return as-is without query params
+        return defaultName;
+    }
+}
+
+/**
  * Normalizes a filename for upload.
  * - Returns null for default file names (server will set the name)
  * - Strips Galaxy prefixes from re-uploaded files
+ * - Cleans URL-encoded characters and query parameters
  */
 function normalizeFileName(filename: string): string | null {
     if (filename === DEFAULT_FILE_NAME) {
@@ -265,7 +291,7 @@ function normalizeFileName(filename: string): string | null {
     if (isGalaxyFileName(filename)) {
         return stripGalaxyFilePrefix(filename);
     }
-    return filename;
+    return cleanUrlFilename(filename);
 }
 
 // ============================================================================

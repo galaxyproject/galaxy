@@ -8,6 +8,7 @@ import { createTusUpload } from "./tusUpload";
 import {
     buildLegacyPayload,
     buildUploadPayload,
+    cleanUrlFilename,
     createFileUploadItem,
     createPastedUploadItem,
     createUrlUploadItem,
@@ -294,6 +295,49 @@ describe("stripGalaxyFilePrefix", () => {
 
     test("returns original if no match", () => {
         expect(stripGalaxyFilePrefix("myfile.txt")).toBe("myfile.txt");
+    });
+});
+
+describe("cleanUrlFilename", () => {
+    test("removes URL path and query parameters", () => {
+        expect(cleanUrlFilename("http://example.com/path/to/file.pdf?download=1")).toBe("file.pdf");
+    });
+
+    test("decodes URL-encoded characters", () => {
+        expect(cleanUrlFilename("file%20name.pdf")).toBe("file name.pdf");
+        expect(cleanUrlFilename("Readme%20Statistical%20Downscaling.pdf")).toBe("Readme Statistical Downscaling.pdf");
+        expect(cleanUrlFilename("special%26chars%3D.txt")).toBe("special&chars=.txt");
+    });
+
+    test("handles both encoding and query parameters", () => {
+        expect(cleanUrlFilename("Readme%20Statistical%20Downscaling.pdf?download=1")).toBe(
+            "Readme Statistical Downscaling.pdf",
+        );
+        expect(cleanUrlFilename("my%20file.txt?token=abc123")).toBe("my file.txt");
+    });
+
+    test("returns original for normal filenames", () => {
+        expect(cleanUrlFilename("normal.txt")).toBe("normal.txt");
+        expect(cleanUrlFilename("file-with-dashes.bed")).toBe("file-with-dashes.bed");
+    });
+
+    test("handles malformed URL encoding gracefully", () => {
+        // Malformed percent encoding (invalid hex)
+        expect(cleanUrlFilename("file%ZZname.txt")).toBe("file%ZZname.txt");
+        // Incomplete percent encoding
+        expect(cleanUrlFilename("file%2.txt")).toBe("file%2.txt");
+    });
+
+    test("handles empty query string", () => {
+        expect(cleanUrlFilename("file.txt?")).toBe("file.txt");
+    });
+
+    test("returns null for empty filename", () => {
+        expect(cleanUrlFilename("")).toBeNull();
+    });
+
+    test("returns null for URL with no filename", () => {
+        expect(cleanUrlFilename("http://example.com/")).toBeNull();
     });
 });
 
