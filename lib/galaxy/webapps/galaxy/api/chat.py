@@ -312,7 +312,7 @@ class ChatAPI:
             return {"message": f"Cleared {count} chat exchanges with {message_count} messages"}
         except Exception as e:
             trans.sa_session.rollback()
-            log.error(f"Error clearing chat history: {e}", exc_info=True)
+            log.exception(f"Error clearing chat history: {e}")
             return {"message": f"Error clearing history: {str(e)}"}
 
     @router.put("/api/chat/{job_id}/feedback")
