@@ -59,4 +59,4 @@ def get_definitions(
             separate_input_output_schemas=separate_input_output_schemas,
             schema_generator=schema_generator,
         )
-        return v2_field_maps, v2_definitions
+        return v2_field_maps, v2_definitions  # type: ignore[return-value]
