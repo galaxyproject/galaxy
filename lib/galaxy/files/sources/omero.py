@@ -6,6 +6,8 @@ from typing import (
     Union,
 )
 
+from PIL import Image as PILImage
+
 from galaxy.exceptions import (
     AuthenticationFailed,
     ObjectNotFound,
@@ -533,7 +535,6 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         Exports the first channel (C=0) and first timepoint (T=0) across all Z-planes.
         This preserves the full Z-stack for 3D analysis while keeping the export manageable.
         """
-        from PIL import Image as PILImage
 
         pixels = image.getPrimaryPixels()
         size_z = image.getSizeZ()
