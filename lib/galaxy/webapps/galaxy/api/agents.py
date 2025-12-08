@@ -7,10 +7,7 @@ from typing import (
     Optional,
 )
 
-from fastapi import (
-    Body,
-    Query,
-)
+from fastapi import Body
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.managers.agents import AgentService
@@ -63,7 +60,7 @@ class DirectAgentAPI:
             return response
 
         except Exception as e:
-            log.error(f"Error in custom tool creation: {e}", exc_info=True)
+            log.exception(f"Error in custom tool creation: {e}")
             raise ConfigurationError(f"Custom tool creation failed: {str(e)}")
 
     @router.post("/api/agents/tool-recommendation")
@@ -95,7 +92,7 @@ class DirectAgentAPI:
             return response
 
         except Exception as e:
-            log.error(f"Error in tool recommendation: {e}", exc_info=True)
+            log.exception(f"Error in tool recommendation: {e}")
             raise ConfigurationError(f"Tool recommendation failed: {str(e)}")
 
     @router.post("/api/agents/error-analysis")
@@ -136,7 +133,7 @@ class DirectAgentAPI:
             return response
 
         except Exception as e:
-            log.error(f"Error in error analysis: {e}", exc_info=True)
+            log.exception(f"Error in error analysis: {e}")
             raise ConfigurationError(f"Error analysis failed: {str(e)}")
 
     @router.post("/api/agents/{agent_type}")
@@ -178,5 +175,5 @@ class DirectAgentAPI:
             return AgentQueryResponse(response=agent_response, processing_time=processing_time)
 
         except Exception as e:
-            log.error(f"Error querying agent {agent_type}: {e}", exc_info=True)
+            log.exception(f"Error querying agent {agent_type}: {e}")
             raise ConfigurationError(f"Agent query failed: {str(e)}")
