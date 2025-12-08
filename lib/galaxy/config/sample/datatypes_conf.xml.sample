@@ -148,6 +148,7 @@
     </datatype>
     <datatype extension="pnts" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" description="3D Tiles Point Cloud (PNTS) binary format for Cesium visualization" description_url="https://github.com/CesiumGS/3d-tiles/tree/main/specification/TileFormats/PointCloud">
         <infer_from suffix="pnts" />
+    </datatype>
     <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="cytoscapejson" type="galaxy.datatypes.text:CytoscapeJson" mimetype="application/json" display_in_upload="true" description="Cytoscape JSON format for network visualization, typically containing 'nodes' and 'edges' in a JSON object." description_url="https://js.cytoscape.org/#notation/elements-json" />
     <datatype extension="freq.json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="True" description="A JSON-formatted array of objects containing longitude, latitude, and frequency attributes."/>
