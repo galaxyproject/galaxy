@@ -6,10 +6,10 @@ import { computed, ref, watch } from "vue";
 
 import { useFileDrop } from "@/composables/fileDrop";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
+import { useUploadQueue } from "@/composables/uploadQueue";
 import { bytesToString } from "@/utils/utils";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
-import { useUploadService } from "../uploadService";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
@@ -24,7 +24,7 @@ const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
 }>();
 
-const uploadService = useUploadService();
+const uploadQueue = useUploadQueue();
 
 const {
     configOptions,
@@ -126,7 +126,7 @@ function startUpload() {
         fileData: item.file,
     }));
 
-    uploadService.enqueue(uploads);
+    uploadQueue.enqueue(uploads);
     selectedFiles.value = [];
 }
 
