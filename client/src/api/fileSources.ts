@@ -70,6 +70,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faHubspot,
         message: "This is a file repository plugin that connects with the Hugging Face Hub.",
     },
+    omero: {
+        icon: faNetworkWired,
+        message: "This is a file repository plugin that connects with an OMERO server.",
+    },
 };
 
 export const FileSourcesValidFilters = {

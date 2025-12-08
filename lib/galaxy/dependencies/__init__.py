@@ -336,6 +336,9 @@ class ConditionalDependencies:
     def check_huggingface_hub(self):
         return "huggingface" in self.file_sources
 
+    def check_omero_py(self):
+        return "omero" in self.file_sources
+
 
 def optional(config_file=None):
     if not config_file:
