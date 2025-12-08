@@ -15,6 +15,7 @@ from typing import (
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     AgentResponse,
     BaseGalaxyAgent,
@@ -22,6 +23,17 @@ from .base import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def _create_error_response(agent_name: str, error_msg: str, is_timeout: bool = False) -> AgentResponse:
+    """Create a standardized error response for agent failures."""
+    return AgentResponse(
+        content=error_msg,
+        confidence=ConfidenceLevel.LOW,
+        agent_type=agent_name,
+        suggestions=[],
+        metadata={"error": True, "timeout": is_timeout},
+    )
 
 
 class AgentPlan(BaseModel):
@@ -182,22 +194,12 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
 
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
-                responses[agent_name] = AgentResponse(
-                    content=f"Agent {agent_name} timed out after {timeout} seconds",
-                    confidence="low",
-                    agent_type=agent_name,
-                    suggestions=[],
-                    metadata={"error": True, "timeout": True},
+                responses[agent_name] = _create_error_response(
+                    agent_name, f"Agent {agent_name} timed out after {timeout} seconds", is_timeout=True
                 )
-            except Exception as e:
+            except (ValueError, ConnectionError, TimeoutError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
-                responses[agent_name] = AgentResponse(
-                    content=f"Error from {agent_name}: {str(e)}",
-                    confidence="low",
-                    agent_type=agent_name,
-                    suggestions=[],
-                    metadata={"error": True},
-                )
+                responses[agent_name] = _create_error_response(agent_name, f"Error from {agent_name}: {e}")
 
         return responses
 
@@ -220,22 +222,12 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 return agent_name, response
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
-                return agent_name, AgentResponse(
-                    content=f"Agent {agent_name} timed out after {timeout} seconds",
-                    confidence="low",
-                    agent_type=agent_name,
-                    suggestions=[],
-                    metadata={"error": True, "timeout": True},
+                return agent_name, _create_error_response(
+                    agent_name, f"Agent {agent_name} timed out after {timeout} seconds", is_timeout=True
                 )
-            except Exception as e:
+            except (ValueError, ConnectionError, TimeoutError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
-                return agent_name, AgentResponse(
-                    content=f"Error from {agent_name}: {str(e)}",
-                    confidence="low",
-                    agent_type=agent_name,
-                    suggestions=[],
-                    metadata={"error": True},
-                )
+                return agent_name, _create_error_response(agent_name, f"Error from {agent_name}: {e}")
 
         # Run all agents in parallel
         tasks = [call_agent(agent_name) for agent_name in agents]

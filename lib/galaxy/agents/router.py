@@ -3,24 +3,24 @@ Query router agent for intelligent request routing.
 """
 
 import logging
+import re
 from pathlib import Path
 from typing import (
     Any,
     Dict,
     List,
-    Union,
 )
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
-    ConfidenceLevel,
     GalaxyAgentDependencies,
 )
 
@@ -33,7 +33,7 @@ class RoutingDecision(BaseModel):
     primary_agent: str
     secondary_agents: List[str] = []
     complexity: str  # "simple" or "complex"
-    confidence: Union[str, ConfidenceLevel]  # "low", "medium", or "high"
+    confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
     reasoning: str
     direct_response: str = ""  # If router can answer directly
 
@@ -158,7 +158,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         }
 
         # Score each intent
-        scores = {intent: 0.0 for intent in intent_keywords}
+        scores = dict.fromkeys(intent_keywords, 0.0)
         for intent, (keywords, base_score) in intent_keywords.items():
             if any(keyword in query_lower for keyword in keywords):
                 scores[intent] += base_score
@@ -168,23 +168,23 @@ class QueryRouterAgent(BaseGalaxyAgent):
             # If no keywords matched, default to tool_recommendation
             best_agent = AgentType.TOOL_RECOMMENDATION
             reasoning = "No clear intent keywords found, defaulting to tool recommendation."
-            confidence = "low"
+            confidence = ConfidenceLevel.LOW
         else:
             best_agent = max(scores, key=scores.get)
             reasoning = f"Query contains keywords related to {best_agent.replace('_', ' ')}."
             # Determine confidence based on score
             if scores[best_agent] > 1.5:
-                confidence = "high"
+                confidence = ConfidenceLevel.HIGH
             elif scores[best_agent] > 0.5:
-                confidence = "medium"
+                confidence = ConfidenceLevel.MEDIUM
             else:
-                confidence = "low"
+                confidence = ConfidenceLevel.LOW
 
         # Simple direct responses for greetings or citations
         if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
             return RoutingDecision(
                 primary_agent="router",
-                confidence="high",
+                confidence=ConfidenceLevel.HIGH,
                 reasoning="User is asking for citation information.",
                 direct_response="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
 
@@ -239,7 +239,7 @@ For specific tools, please also cite the individual tool publications.""",
                     action_type=ActionType.TOOL_RUN,
                     description=f"Also consult {secondary_agent} agent",
                     parameters={"agent": secondary_agent},
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=2,
                 )
             )
@@ -290,8 +290,6 @@ For specific tools, please also cite the individual tool publications.""",
 
     def _parse_simple_response(self, response_text: str, query: str) -> RoutingDecision:
         """Parse simple text response from DeepSeek into RoutingDecision."""
-        import re
-
         # Extract ROUTE_TO and REASONING from response
         route_match = re.search(r"ROUTE_TO:\s*(\w+)", response_text, re.IGNORECASE)
         reasoning_match = re.search(r"REASONING:\s*(.+?)(?:\n|$)", response_text, re.IGNORECASE | re.DOTALL)
@@ -314,7 +312,7 @@ For specific tools, please also cite the individual tool publications.""",
                 primary_agent=agent,
                 secondary_agents=[],
                 complexity="simple",
-                confidence="medium",
+                confidence=ConfidenceLevel.MEDIUM,
                 reasoning=reasoning,
             )
         else:

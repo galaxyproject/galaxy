@@ -15,17 +15,16 @@ from typing import (
 
 from pydantic import (
     BaseModel,
-    Field,
 )
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
     BaseGalaxyAgent,
-    ConfidenceLevel,
     GalaxyAgentDependencies,
 )
 
@@ -244,7 +243,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 recommendation = SimplifiedToolRecommendationResult(
                     primary_tools=[exact_match],
                     confidence="high",
-                    reasoning=f"This is the tool with the exact name you requested.",
+                    reasoning="This is the tool with the exact name you requested.",
                     search_keywords=[trimmed_query],
                 )
 
@@ -263,9 +262,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.warning(f"Fast path tool search failed: {e}. Proceeding with LLM.")
 
         try:
-            # Extract keywords from query
-            keywords = self._extract_keywords(query)
-
             # Add context information to query
             enhanced_query = query
             if context:
@@ -491,8 +487,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
     def _parse_simple_response(self, response_text: str) -> Dict[str, Any]:
         """Parse simple text response into structured format."""
-        import re
-
         # Extract structured information from text
         tool = re.search(r"TOOL:\s*([^\n]+)", response_text, re.IGNORECASE)
         tool_id = re.search(r"TOOL_ID:\s*([^\n]+)", response_text, re.IGNORECASE)
