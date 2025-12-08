@@ -10165,6 +10165,24 @@ export interface components {
          * @enum {string}
          */
         DatasetPermissionAction: "set_permissions" | "make_private" | "remove_restrictions";
+        /**
+         * DatasetPermissions
+         * @description Role-based permissions for accessing and managing a dataset.
+         */
+        DatasetPermissions: {
+            /**
+             * Access
+             * @description The set of roles (encoded IDs) that can access this dataset.
+             * @default []
+             */
+            access: string[];
+            /**
+             * Management
+             * @description The set of roles (encoded IDs) that can manage this dataset.
+             * @default []
+             */
+            manage: string[];
+        };
         /** DatasetSource */
         DatasetSource: {
             /**
@@ -12779,7 +12797,7 @@ export interface components {
              * Permissions
              * @description Role-based access and manage control permissions for the dataset.
              */
-            permissions?: components["schemas"]["galaxy__schema__schema__DatasetPermissions"] | null;
+            permissions?: components["schemas"]["DatasetPermissions"] | null;
             /**
              * Purged
              * @description Whether this dataset has been removed from disk.
@@ -13054,7 +13072,7 @@ export interface components {
              * Permissions
              * @description Role-based access and manage control permissions for the dataset.
              */
-            permissions: components["schemas"]["galaxy__schema__schema__DatasetPermissions"];
+            permissions: components["schemas"]["DatasetPermissions"];
             /**
              * Purged
              * @description Whether this dataset has been removed from disk.
@@ -24461,24 +24479,6 @@ export interface components {
              * @example https://example.com
              */
             url: string;
-        };
-        /**
-         * DatasetPermissions
-         * @description Role-based permissions for accessing and managing a dataset.
-         */
-        galaxy__schema__schema__DatasetPermissions: {
-            /**
-             * Access
-             * @description The set of roles (encoded IDs) that can access this dataset.
-             * @default []
-             */
-            access: string[];
-            /**
-             * Management
-             * @description The set of roles (encoded IDs) that can manage this dataset.
-             * @default []
-             */
-            manage: string[];
         };
         /** Organization */
         galaxy__schema__schema__Organization: {
