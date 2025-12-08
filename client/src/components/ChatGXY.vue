@@ -214,7 +214,7 @@ function scrollToBottom() {
         // Use smooth scrolling and avoid focus disruption
         chatContainer.value.scrollTo({
             top: chatContainer.value.scrollHeight,
-            behavior: 'auto' // Use 'smooth' if you want animated scrolling
+            behavior: "auto", // Use 'smooth' if you want animated scrolling
         });
     }
 }
@@ -278,13 +278,13 @@ function getAgentLabel(agentType?: string) {
 
 function getAgentDescription(agentType?: string) {
     const descriptions = {
-        "router": "Intelligent query routing and task classification",
-        "error_analysis": "Debugging tool errors and job failures",
-        "tool_recommendation": "Finding the right Galaxy tools for your analysis",
-        "dspy_tool_recommendation": "Advanced reasoning for tool selection using DSPy",
-        "custom_tool": "Creating custom Galaxy tools and wrappers", 
-        "dataset_analyzer": "Analyzing datasets and data quality assessment",
-        "gtn_training": "Finding tutorials and training materials"
+        router: "Intelligent query routing and task classification",
+        error_analysis: "Debugging tool errors and job failures",
+        tool_recommendation: "Finding the right Galaxy tools for your analysis",
+        dspy_tool_recommendation: "Advanced reasoning for tool selection using DSPy",
+        custom_tool: "Creating custom Galaxy tools and wrappers",
+        dataset_analyzer: "Analyzing datasets and data quality assessment",
+        gtn_training: "Finding tutorials and training materials",
     };
     return descriptions[agentType as keyof typeof descriptions] || "General AI assistance";
 }
@@ -562,7 +562,7 @@ function formatTime(timestamp: string) {
                             <span class="message-role">
                                 {{ message.role === "user" ? "You" : getAgentLabel(message.agentType) }}
                             </span>
-                            <span 
+                            <span
                                 v-if="message.role === 'assistant' && message.agentType"
                                 class="agent-description"
                                 :title="getAgentDescription(message.agentType)">
@@ -577,7 +577,10 @@ function formatTime(timestamp: string) {
                                 :title="`Confidence: ${message.confidence}`">
                                 {{ message.confidence }}
                             </span>
-                            <span v-if="message.routingInfo" class="routing-info" :title="message.routingInfo.reasoning">
+                            <span
+                                v-if="message.routingInfo"
+                                class="routing-info"
+                                :title="message.routingInfo.reasoning">
                                 → {{ getAgentLabel(message.routingInfo.selected_agent) }}
                             </span>
                         </div>
@@ -953,5 +956,4 @@ function formatTime(timestamp: string) {
         }
     }
 }
-
 </style>
