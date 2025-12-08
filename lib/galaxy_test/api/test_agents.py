@@ -30,15 +30,11 @@ This module contains two test suites:
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """
 
-import asyncio
-import json
 import logging
 import os
 from typing import (
     Any,
     Dict,
-    List,
-    Optional,
 )
 from unittest import mock
 from unittest.mock import (
@@ -52,12 +48,10 @@ from pydantic_ai.models.test import TestModel
 
 from galaxy.agents import (
     agent_registry,
-    BaseGalaxyAgent,
     CustomToolAgent,
     ErrorAnalysisAgent,
     GalaxyAgentDependencies,
     QueryRouterAgent,
-    ToolRecommendationAgent,
 )
 from galaxy.agents.custom_tool import SimpleTool
 from galaxy_test.base.populators import (
@@ -839,7 +833,7 @@ class TestAgentUnitLiveLLM:
         for query, expected_agent in test_cases:
             decision = await router.route_query(query)
             assert decision.primary_agent == expected_agent, (
-                f"Query '{query}' should route to {expected_agent}, " f"got {decision.primary_agent}"
+                f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
             )
 
     @pytest.mark.asyncio
@@ -933,7 +927,7 @@ class TestAgentConsistencyLiveLLM:
             else:
                 # Should route to expected agent
                 assert decision.primary_agent == expected_agent, (
-                    f"Query '{query}' should route to {expected_agent}, " f"got {decision.primary_agent}"
+                    f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
                 )
 
     @pytest.mark.asyncio
