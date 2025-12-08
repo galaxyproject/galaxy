@@ -73,8 +73,12 @@ class AgentRegistry:
 
         try:
             return agent_class(deps)
-        except Exception as e:
-            log.error(f"Failed to create agent {agent_type}: {e}")
+        except (ImportError, TypeError, ValueError):
+            log.exception(f"Failed to create agent {agent_type}")
+            raise
+        except RuntimeError:
+            # Covers issues like missing dependencies or configuration problems
+            log.exception(f"Runtime error creating agent {agent_type}")
             raise
 
     def is_registered(self, agent_type: str) -> bool:
