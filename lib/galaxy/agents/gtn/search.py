@@ -173,8 +173,8 @@ class GTNSearchDB:
                 cursor.execute("SELECT COUNT(*) FROM tutorials")
                 count = cursor.fetchone()[0]
                 log.info(f"GTN database loaded with {count} tutorials")
-        except Exception as e:
-            raise RuntimeError(f"Failed to initialize GTN database: {e}")
+        except sqlite3.Error as e:
+            raise RuntimeError(f"Failed to initialize GTN database: {e}") from e
 
     def _get_connection(self) -> sqlite3.Connection:
         """Get a database connection."""
@@ -279,8 +279,8 @@ class GTNSearchDB:
 
                 return search_results
 
-        except Exception as e:
-            log.error(f"Search failed for query '{query}': {e}")
+        except sqlite3.Error as e:
+            log.warning(f"Search failed for query '{query}': {e}")
             return []
 
     def search_faqs(
@@ -368,8 +368,8 @@ class GTNSearchDB:
 
                 return faq_results
 
-        except Exception as e:
-            log.error(f"FAQ search failed for query '{query}': {e}")
+        except sqlite3.Error as e:
+            log.warning(f"FAQ search failed for query '{query}': {e}")
             return []
 
     def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:
@@ -401,8 +401,8 @@ class GTNSearchDB:
 
                 return None
 
-        except Exception as e:
-            log.error(f"Failed to get tutorial content for {topic}/{tutorial}: {e}")
+        except sqlite3.Error as e:
+            log.warning(f"Failed to get tutorial content for {topic}/{tutorial}: {e}")
             return None
 
     def get_topics(self) -> List[str]:
@@ -420,8 +420,8 @@ class GTNSearchDB:
 
                 return [row["topic"] for row in results]
 
-        except Exception as e:
-            log.error(f"Failed to get topics: {e}")
+        except sqlite3.Error as e:
+            log.warning(f"Failed to get topics: {e}")
             return []
 
     def get_metadata(self) -> Dict[str, Any]:
@@ -443,8 +443,8 @@ class GTNSearchDB:
 
                 return metadata
 
-        except Exception as e:
-            log.error(f"Failed to get metadata: {e}")
+        except sqlite3.Error as e:
+            log.warning(f"Failed to get metadata: {e}")
             return {}
 
     def suggest_queries(self, partial: str) -> List[str]:
@@ -487,8 +487,8 @@ class GTNSearchDB:
 
                 return suggestions
 
-        except Exception as e:
-            log.error(f"Failed to get query suggestions: {e}")
+        except sqlite3.Error as e:
+            log.warning(f"Failed to get query suggestions: {e}")
             return []
 
     def get_tutorial_by_id(self, tutorial_id: int) -> Optional[Dict[str, Any]]:
@@ -524,8 +524,8 @@ class GTNSearchDB:
 
                 return None
 
-        except Exception as e:
-            log.error(f"Failed to get tutorial by ID {tutorial_id}: {e}")
+        except sqlite3.Error as e:
+            log.warning(f"Failed to get tutorial by ID {tutorial_id}: {e}")
             return None
 
     def search_by_tools(self, tool_names: List[str], limit: int = 5) -> List[SearchResult]:
@@ -585,6 +585,6 @@ class GTNSearchDB:
 
                 return search_results
 
-        except Exception as e:
-            log.error(f"Failed to search by tools: {e}")
+        except sqlite3.Error as e:
+            log.warning(f"Failed to search by tools: {e}")
             return []

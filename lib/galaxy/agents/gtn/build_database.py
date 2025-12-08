@@ -213,7 +213,7 @@ class GTNDatabaseBuilder:
             FAQ object or None if parsing fails
         """
         try:
-            with open(faq_file, "r", encoding="utf-8") as f:
+            with open(faq_file, encoding="utf-8") as f:
                 content = f.read()
 
             # Extract frontmatter
@@ -279,7 +279,7 @@ class GTNDatabaseBuilder:
             Tutorial object or None if parsing fails
         """
         try:
-            with open(tutorial_file, "r", encoding="utf-8") as f:
+            with open(tutorial_file, encoding="utf-8") as f:
                 content = f.read()
 
             # Extract frontmatter (YAML between --- markers)
@@ -347,7 +347,6 @@ class GTNDatabaseBuilder:
         without requiring external dependencies.
         """
         result = {}
-        current_key = None
         current_list = None
 
         for line in yaml_content.split("\n"):
@@ -386,11 +385,9 @@ class GTNDatabaseBuilder:
                     # This might be a list
                     current_list = []
                     result[key] = current_list
-                    current_key = key
                 else:
                     result[key] = value
                     current_list = None
-                    current_key = key
 
         return result
 
