@@ -16,6 +16,7 @@ from pydantic import (
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -149,36 +150,46 @@ outputs:
 The tool is ready to use in Galaxy."""
 
             # Add action suggestions
+            is_structured = metadata["method"] == "structured"
             suggestions = [
                 ActionSuggestion(
                     action_type=ActionType.SAVE_TOOL,
                     description="Save this tool to Galaxy",
                     parameters={"tool_yaml": metadata["tool_yaml"], "tool_id": metadata["tool_id"]},
-                    confidence="high" if metadata["method"] == "structured" else "medium",
+                    confidence=ConfidenceLevel.HIGH if is_structured else ConfidenceLevel.MEDIUM,
                     priority=1,
                 ),
                 ActionSuggestion(
                     action_type=ActionType.TEST_TOOL,
                     description="Test this tool",
                     parameters={"tool_id": metadata["tool_id"]},
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=2,
                 ),
             ]
 
             return AgentResponse(
                 content=response_content,
-                confidence="high" if metadata["method"] == "structured" else "medium",
+                confidence=ConfidenceLevel.HIGH if is_structured else ConfidenceLevel.MEDIUM,
                 agent_type=self.agent_type,
                 suggestions=suggestions,
                 metadata=metadata,
             )
 
-        except Exception as e:
-            log.error(f"Tool creation failed: {e}")
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.error(f"Tool creation network error: {e}")
+            return AgentResponse(
+                content=f"Failed to create tool due to network issues: {str(e)}\n\nPlease try again.",
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[],
+                metadata={"error": str(e)},
+            )
+        except ValueError as e:
+            log.error(f"Tool creation value error: {e}")
             return AgentResponse(
                 content=f"Failed to create tool: {str(e)}\n\nPlease provide clear requirements for your tool.",
-                confidence="low",
+                confidence=ConfidenceLevel.LOW,
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={"error": str(e)},

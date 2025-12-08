@@ -117,9 +117,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
             else:
                 # For pydantic-ai, the result might be wrapped
                 return result
-        except Exception as e:
-            log.error(f"Router agent failed: {e}")
-            # Fallback routing logic
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.warning(f"Router agent network error, using fallback: {e}")
+            return self._fallback_routing(query, context)
+        except ValueError as e:
+            log.warning(f"Router agent value error, using fallback: {e}")
             return self._fallback_routing(query, context)
 
     def _fallback_routing(self, query: str, context: Dict[str, Any] = None) -> RoutingDecision:

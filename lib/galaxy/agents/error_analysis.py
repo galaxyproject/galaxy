@@ -114,8 +114,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "external_id": job.external_id,
                 "destination_id": job.destination_id,
             }
-        except Exception as e:
-            log.error(f"Error getting job details for {job_id}: {e}")
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error getting job details for {job_id}: {e}")
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
     async def get_tool_info(self, tool_id: str) -> Dict[str, Any]:
@@ -136,8 +136,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "requirements": [str(r) for r in tool.requirements] if hasattr(tool, "requirements") else [],
                 "help_text": tool.raw_help[:500] if hasattr(tool, "raw_help") and tool.raw_help else "",
             }
-        except Exception as e:
-            log.error(f"Error getting tool info for {tool_id}: {e}")
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error getting tool info for {tool_id}: {e}")
             return {"error": f"Failed to retrieve tool info: {str(e)}"}
 
     async def search_error_patterns(self, error_text: str) -> List[Dict[str, Any]]:
@@ -195,8 +195,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
             return patterns
 
-        except Exception as e:
-            log.error(f"Error searching patterns: {e}")
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error searching patterns: {e}")
             return []
 
     async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
@@ -262,8 +262,11 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                     },
                 )
 
-        except Exception as e:
-            log.error(f"Error analysis failed: {e}")
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.warning(f"Error analysis network error: {e}")
+            return self._get_fallback_response(query, str(e))
+        except ValueError as e:
+            log.warning(f"Error analysis value error: {e}")
             return self._get_fallback_response(query, str(e))
 
     def _format_job_context(self, job_details: Dict[str, Any]) -> str:
@@ -337,7 +340,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.TOOL_RUN,
                     description=f"Try alternative: {approach[:100]}...",
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=2,
                 )
             )
@@ -348,7 +351,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.DOCUMENTATION,
                     description="Check related documentation",
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     priority=2,
                 )
             )
@@ -359,7 +362,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.CONTACT_SUPPORT,
                     description="Contact Galaxy administrator",
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 )
             )

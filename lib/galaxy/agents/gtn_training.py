@@ -26,6 +26,7 @@ from pydantic_ai import (
     RunContext,
 )
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -133,8 +134,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     )
 
                     return json.dumps({"results": [r.to_dict() for r in results], "count": len(results)})
-                except Exception as e:
-                    log.error(f"GTN search failed: {e}")
+                except (AttributeError, KeyError, TypeError) as e:
+                    log.warning(f"GTN search failed: {e}")
                     return json.dumps({"error": str(e)})
 
             @agent.tool
@@ -158,8 +159,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 try:
                     content = self.gtn_db.get_tutorial_content(topic, tutorial, max_length)
                     return content or f"Tutorial {topic}/{tutorial} not found"
-                except Exception as e:
-                    log.error(f"Failed to get tutorial content: {e}")
+                except (AttributeError, KeyError, TypeError) as e:
+                    log.warning(f"Failed to get tutorial content: {e}")
                     return f"Error: {e}"
 
             @agent.tool
@@ -176,8 +177,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 try:
                     topics = self.gtn_db.get_topics()
                     return json.dumps({"topics": topics, "count": len(topics)})
-                except Exception as e:
-                    log.error(f"Failed to get topics: {e}")
+                except (AttributeError, KeyError, TypeError) as e:
+                    log.warning(f"Failed to get topics: {e}")
                     return json.dumps({"error": str(e)})
 
             @agent.tool
@@ -202,8 +203,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     return json.dumps(
                         {"results": [r.to_dict() for r in results], "count": len(results), "tools_searched": tool_names}
                     )
-                except Exception as e:
-                    log.error(f"Tool search failed: {e}")
+                except (AttributeError, KeyError, TypeError) as e:
+                    log.warning(f"Tool search failed: {e}")
                     return json.dumps({"error": str(e)})
 
         return agent
@@ -249,7 +250,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             if not self.gtn_db:
                 return AgentResponse(
                     content="GTN database is not available. Please ensure it's properly initialized.",
-                    confidence="low",
+                    confidence=ConfidenceLevel.LOW,
                     agent_type=self.agent_type,
                     suggestions=[],
                 )
@@ -287,7 +288,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 # Format the response
                 content = self._format_response(response_data)
                 suggestions = self._create_suggestions(response_data)
-                confidence = "high" if response_data.tutorials else "medium"
+                confidence = ConfidenceLevel.HIGH if response_data.tutorials else ConfidenceLevel.MEDIUM
 
                 return AgentResponse(
                     content=content,
@@ -312,7 +313,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
                 return AgentResponse(
                     content=parsed_result.get("content", response_text),
-                    confidence=parsed_result.get("confidence", "medium"),
+                    confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
                     agent_type=self.agent_type,
                     suggestions=parsed_result.get("suggestions", []),
                     metadata={
@@ -321,8 +322,11 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     },
                 )
 
-        except Exception as e:
-            log.error(f"GTN training agent failed: {e}")
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.error(f"GTN training agent network error: {e}")
+            return self._get_error_response(str(e))
+        except ValueError as e:
+            log.error(f"GTN training agent value error: {e}")
             return self._get_error_response(str(e))
 
     def _format_response(self, response_data: GTNSearchResponse) -> str:
@@ -409,7 +413,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     action_type=ActionType.VIEW_EXTERNAL,
                     description=f"Open tutorial: {title}",
                     parameters={"url": url},
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 )
             )
@@ -434,7 +438,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         parameters={
                             "url": f"https://training.galaxyproject.org/training-material/topics/{topic.lower()}/"
                         },
-                        confidence="medium",
+                        confidence=ConfidenceLevel.MEDIUM,
                         priority=2,
                     )
                 )
@@ -467,7 +471,16 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         tutorials = re.search(r"TUTORIALS:\s*([^\n]+)", response_text, re.IGNORECASE)
         topics = re.search(r"TOPICS:\s*([^\n]+)", response_text, re.IGNORECASE)
         summary = re.search(r"SUMMARY:\s*([^\n]+)", response_text, re.IGNORECASE)
-        confidence = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
+        confidence_match = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
+
+        # Parse confidence level
+        confidence_level = ConfidenceLevel.MEDIUM
+        if confidence_match:
+            conf_str = confidence_match.group(1).lower()
+            if conf_str == "high":
+                confidence_level = ConfidenceLevel.HIGH
+            elif conf_str == "low":
+                confidence_level = ConfidenceLevel.LOW
 
         # Build content
         content_parts = []
@@ -494,18 +507,18 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         suggestions = []
         if tutorials and tutorials.group(1).strip():
             suggestions.append(
-                {
-                    "action_type": "VIEW_EXTERNAL",
-                    "description": "Visit Galaxy Training Network",
-                    "parameters": {"url": "https://training.galaxyproject.org/training-material/"},
-                    "confidence": confidence.group(1).lower() if confidence else "medium",
-                    "priority": 1,
-                }
+                ActionSuggestion(
+                    action_type=ActionType.VIEW_EXTERNAL,
+                    description="Visit Galaxy Training Network",
+                    parameters={"url": "https://training.galaxyproject.org/training-material/"},
+                    confidence=confidence_level,
+                    priority=1,
+                )
             )
 
         return {
             "content": "\n".join(content_parts),
-            "confidence": confidence.group(1).lower() if confidence else "medium",
+            "confidence": confidence_level,
             "tutorial_count": len(tutorials.group(1).split(",")) if tutorials and tutorials.group(1).strip() else 0,
             "suggestions": suggestions,
         }
@@ -523,14 +536,14 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return AgentResponse(
             content=f"I encountered an error while searching training materials: {error_message}\n\n"
             f"You can browse tutorials directly at: https://training.galaxyproject.org/training-material/",
-            confidence="low",
+            confidence=ConfidenceLevel.LOW,
             agent_type=self.agent_type,
             suggestions=[
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,
                     description="Visit Galaxy Training Network",
                     parameters={"url": "https://training.galaxyproject.org/training-material/"},
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 )
             ],
