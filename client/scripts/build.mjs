@@ -2,8 +2,6 @@
 /**
  * Galaxy client build script
  *
- * Replaces gulp for pre-build tasks: icons and visualization plugins.
- *
  * Usage:
  *   node scripts/build.mjs           # Run both icons and plugins (parallel)
  *   node scripts/build.mjs icons     # Build icons only
