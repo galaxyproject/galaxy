@@ -197,6 +197,9 @@ fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then
     if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        if ! python -m pip --version >/dev/null; then
+            python -m ensurepip
+        fi
         ${PIP_CMD} install "pip>=${MIN_PIP_VERSION}" wheel
     fi
     # shellcheck disable=SC2086
