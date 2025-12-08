@@ -3,12 +3,12 @@ Error analysis agent for enhanced tool error diagnosis.
 """
 
 import logging
+import re
 from pathlib import Path
 from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Union,
 )
 
@@ -16,12 +16,12 @@ from pydantic import BaseModel
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
     BaseGalaxyAgent,
-    ConfidenceLevel,
     GalaxyAgentDependencies,
 )
 
@@ -386,8 +386,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
     def _parse_simple_response(self, response_text: str) -> Dict[str, Any]:
         """Parse simple text response into structured format."""
-        import re
-
         # Extract structured information from text
         error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", response_text, re.IGNORECASE)
         cause = re.search(r"CAUSE:\s*([^\n]+)", response_text, re.IGNORECASE)

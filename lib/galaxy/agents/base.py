@@ -15,6 +15,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -25,6 +26,14 @@ from galaxy.schema.agents import (
     ActionType,
     ConfidenceLevel,
 )
+
+if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
+    from galaxy.managers.datasets import DatasetManager
+    from galaxy.managers.jobs import JobManager
+    from galaxy.managers.workflows import WorkflowsManager
+    from galaxy.tools import ToolBox
+    from galaxy.tools.cache import ToolCache
 
 # Try to import pydantic-ai components
 try:
@@ -89,12 +98,16 @@ class AgentResponse:
         content: str,
         confidence: Union[str, ConfidenceLevel],
         agent_type: str,
-        suggestions: List[ActionSuggestion] = None,
-        metadata: Dict[str, Any] = None,
+        suggestions: Optional[List[ActionSuggestion]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         reasoning: Optional[str] = None,
     ):
         self.content = content
-        self.confidence = confidence
+        # Normalize confidence to ConfidenceLevel enum
+        if isinstance(confidence, str):
+            self.confidence = ConfidenceLevel(confidence.lower())
+        else:
+            self.confidence = confidence
         self.agent_type = agent_type
         self.suggestions = suggestions or []
         self.metadata = metadata or {}
@@ -107,13 +120,12 @@ class GalaxyAgentDependencies:
 
     trans: ProvidesUserContext
     user: User
-    config: Any  # GalaxyAppConfiguration
-    # Additional managers will be added as needed
-    job_manager: Optional[Any] = None
-    dataset_manager: Optional[Any] = None
-    workflow_manager: Optional[Any] = None
-    tool_cache: Optional[Any] = None
-    toolbox: Optional[Any] = None
+    config: "GalaxyAppConfiguration"
+    job_manager: Optional["JobManager"] = None
+    dataset_manager: Optional["DatasetManager"] = None
+    workflow_manager: Optional["WorkflowsManager"] = None
+    tool_cache: Optional["ToolCache"] = None
+    toolbox: Optional["ToolBox"] = None
 
 
 class BaseGalaxyAgent(ABC):
@@ -131,7 +143,7 @@ class BaseGalaxyAgent(ABC):
 
         if not HAS_PYDANTIC_AI:
             raise ImportError(
-                "pydantic-ai is required for agent functionality. " "Please install with: pip install pydantic-ai"
+                "pydantic-ai is required for agent functionality. Please install with: pip install pydantic-ai"
             )
 
         self.agent = self._create_agent()
@@ -518,8 +530,19 @@ class BaseGalaxyAgent(ABC):
 
             return str(response_data)
 
-        except Exception as e:
-            error_msg = f"Unable to call {agent_type} agent: {str(e)}"
+        except ValueError as e:
+            # Unknown agent type
+            error_msg = f"Unknown agent type '{agent_type}': {e}"
+            log.warning(f"Agent-to-agent call failed: {error_msg}")
+            return error_msg
+        except UnexpectedModelBehavior as e:
+            # LLM returned unexpected response
+            error_msg = f"Model behavior error calling {agent_type}: {e}"
+            log.warning(f"Agent-to-agent call failed: {error_msg}")
+            return error_msg
+        except (ConnectionError, TimeoutError) as e:
+            # Network-related errors
+            error_msg = f"Network error calling {agent_type} agent: {e}"
             log.warning(f"Agent-to-agent call failed: {error_msg}")
             return error_msg
 

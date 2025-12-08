@@ -14,6 +14,7 @@ from pydantic import (
     Field,
 )
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from .base import (
     ActionSuggestion,
@@ -90,8 +91,11 @@ outputs:
                         "method": "structured",
                     }
 
-                except Exception as e:
-                    log.warning(f"Structured output failed, falling back to template: {e}")
+                except UnexpectedModelBehavior as e:
+                    log.warning(f"Structured output failed (model behavior), falling back to template: {e}")
+                    use_structured = False
+                except (ConnectionError, TimeoutError) as e:
+                    log.warning(f"Structured output failed (network), falling back to template: {e}")
                     use_structured = False
 
             if not use_structured:
