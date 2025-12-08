@@ -1,10 +1,14 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Generate TypeScript exports for Galaxy custom icons
  */
-function generateIconsTypeScript() {
+export function generateIconsTypeScript() {
     // Read the generated icons JSON
     const iconsJsonPath = path.resolve(__dirname, "../src/assets/icons.json");
     const outputPath = path.resolve(__dirname, "../src/components/icons/galaxyIcons.ts");
@@ -69,8 +73,6 @@ export type IconLike = IconDefinition | GalaxyIconDefinition;
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     generateIconsTypeScript();
 }
-
-module.exports = generateIconsTypeScript;
