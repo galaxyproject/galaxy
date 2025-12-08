@@ -36,6 +36,7 @@ FileSourceTemplateType = Literal[
     "posix",
     "s3fs",
     "azure",
+    "azureflat",
     "onedata",
     "webdav",
     "dropbox",
@@ -171,6 +172,24 @@ class AzureFileSourceConfiguration(StrictModel):
     container_name: str
     account_key: str
     namespace_type: str = "hierarchical"
+    writable: bool = False
+
+
+class AzureFlatFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["azureflat"]
+    account_name: Union[str, TemplateExpansion]
+    container_name: Union[str, TemplateExpansion, None] = None
+    account_key: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class AzureFlatFileSourceConfiguration(StrictModel):
+    type: Literal["azureflat"]
+    account_name: str
+    container_name: Optional[str] = None
+    account_key: str
     writable: bool = False
 
 
@@ -338,6 +357,7 @@ FileSourceTemplateConfiguration = Annotated[
         S3FSFileSourceTemplateConfiguration,
         FtpFileSourceTemplateConfiguration,
         AzureFileSourceTemplateConfiguration,
+        AzureFlatFileSourceTemplateConfiguration,
         OnedataFileSourceTemplateConfiguration,
         WebdavFileSourceTemplateConfiguration,
         DropboxFileSourceTemplateConfiguration,
@@ -359,6 +379,7 @@ FileSourceConfiguration = Annotated[
         S3FSFileSourceConfiguration,
         FtpFileSourceConfiguration,
         AzureFileSourceConfiguration,
+        AzureFlatFileSourceConfiguration,
         OnedataFileSourceConfiguration,
         WebdavFileSourceConfiguration,
         DropboxFileSourceConfiguration,
@@ -438,6 +459,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "posix": PosixFileSourceConfiguration,
     "s3fs": S3FSFileSourceConfiguration,
     "azure": AzureFileSourceConfiguration,
+    "azureflat": AzureFlatFileSourceConfiguration,
     "onedata": OnedataFileSourceConfiguration,
     "webdav": WebdavFileSourceConfiguration,
     "dropbox": DropboxFileSourceConfiguration,
