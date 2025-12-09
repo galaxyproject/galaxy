@@ -78,8 +78,8 @@ function addFiles(files: FileList | File[] | null) {
 
     const fileArray = Array.from(files);
 
-    const defaultExtension = configOptions.value?.defaultExtension ?? "auto";
-    const defaultDbKey = configOptions.value?.defaultDbKey ?? "?";
+    const defaultExtension = configOptions.value?.defaultExtension || "auto";
+    const defaultDbKey = configOptions.value?.defaultDbKey || "?";
 
     for (const file of fileArray) {
         selectedFiles.value.push({
