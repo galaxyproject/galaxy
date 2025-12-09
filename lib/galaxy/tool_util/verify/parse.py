@@ -144,6 +144,7 @@ def _description_from_tool_source(
             required_data_tables,
             required_loc_files,
         )
+        profile = tool_source.parse_profile()
         processed_test_dict = ValidToolTestDict(
             {
                 "inputs": processed_inputs,
@@ -164,16 +165,19 @@ def _description_from_tool_source(
                 "required_loc_files": required_loc_files,
                 "tool_id": tool_id,
                 "tool_version": tool_version,
+                "profile": profile,
                 "test_index": test_index,
                 "maxseconds": maxseconds,
                 "error": False,
             }
         )
     except Exception:
+        profile = tool_source.parse_profile()
         processed_test_dict = InvalidToolTestDict(
             {
                 "tool_id": tool_id,
                 "tool_version": tool_version,
+                "profile": profile,
                 "test_index": test_index,
                 "inputs": {},
                 "error": True,
