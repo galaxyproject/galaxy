@@ -53,7 +53,7 @@ const initialPage = computed(() => {
 const pagination = ref({
     page: initialPage.value,
     rowsNumber: undefined as number | undefined,
-    rowsPerPage: rowsPerPage,
+    rowsPerPage: rowsPerPage.value,
 })
 
 const INDEX_COLUMN: QTableColumn = {
@@ -145,6 +145,11 @@ watch(
     }
 )
 
+// Sync rowsPerPage when route query changes
+watch(rowsPerPage, (newVal) => {
+    pagination.value.rowsPerPage = newVal
+})
+
 onMounted(() => {
     makeRequest()
 })
@@ -192,7 +197,7 @@ onMounted(() => {
                     class="disable-hover-hack"
                 >
                     <q-td colspan="100%">
-                        <span class="text-weight-regular q-ml-md text-grey">
+                        <span class="text-weight-regular q-ml-md text-grey description-truncate">
                             {{ props.row.description }}
                         </span>
                     </q-td>
@@ -205,6 +210,14 @@ onMounted(() => {
 <style>
 .disable-hover-hack > td::before {
     background: rgba(0, 0, 0, 0) !important;
+}
+
+.description-truncate {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 </style>
 <!-- https://codepen.io/smolinari/pen/bGVxKPE -->
