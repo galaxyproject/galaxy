@@ -181,7 +181,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                         <template v-slot:cell(extension)="{ item }">
                             <BFormSelect v-model="item.extension" size="sm" :disabled="!configurationsReady">
-                                <option v-for="ext in effectiveExtensions" :key="item.name + ext.id" :value="ext.id">
+                                <option v-for="(ext, extIndex) in effectiveExtensions" :key="extIndex" :value="ext.id">
                                     {{ ext.text }}
                                 </option>
                             </BFormSelect>
@@ -189,7 +189,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                         <template v-slot:cell(dbKey)="{ item }">
                             <BFormSelect v-model="item.dbKey" size="sm" :disabled="!configurationsReady">
-                                <option v-for="dbKey in listDbKeys" :key="item.name + dbKey.id" :value="dbKey.id">
+                                <option v-for="(dbKey, dbKeyIndex) in listDbKeys" :key="dbKeyIndex" :value="dbKey.id">
                                     {{ dbKey.text }}
                                 </option>
                             </BFormSelect>
