@@ -87,11 +87,21 @@ const isRecordType = computed(() => {
     return collectionType == "record" || collectionType == "list:record" || collectionType == "sample_sheet:record";
 });
 
+/** Debounce timer to prevent constant object creation while typing */
+let columnDefinitionsTimer: ReturnType<typeof setTimeout> | null = null;
+
 function onColumnDefinitions(newColumnDefinitions: SampleSheetColumnDefinitions) {
-    const state = cleanToolState();
-    console.log(newColumnDefinitions);
-    state.column_definitions = newColumnDefinitions;
-    emit("onChange", state);
+    // If existing timer, clear it to prevent emitting the value while the user is still typing
+    if (columnDefinitionsTimer) {
+        clearTimeout(columnDefinitionsTimer);
+    }
+
+    columnDefinitionsTimer = setTimeout(() => {
+        const state = cleanToolState();
+        state.column_definitions = newColumnDefinitions;
+        emit("onChange", state);
+        columnDefinitionsTimer = null;
+    }, 500);
 }
 
 const formatsAsList = computed(() => {
