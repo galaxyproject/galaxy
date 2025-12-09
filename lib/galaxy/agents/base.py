@@ -374,6 +374,33 @@ class BaseGalaxyAgent(ABC):
         # Default to not using structured output for unknown models (safer)
         return False
 
+    def _requires_structured_output(self) -> bool:
+        """
+        Override in agents that require structured output to function.
+
+        When True, the agent will return a graceful error response if the
+        configured model doesn't support structured output, rather than
+        attempting a fallback that may produce poor results.
+        """
+        return False
+
+    def _validate_model_capabilities(self) -> Optional[str]:
+        """
+        Validate that the configured model meets this agent's requirements.
+
+        Returns:
+            None if valid, error message string if invalid.
+        """
+        if self._requires_structured_output() and not self._supports_structured_output():
+            model = self._get_agent_config("model", "unknown")
+            return (
+                f"The {self.agent_type} agent requires a model with structured output support. "
+                f"The current model '{model}' does not support this feature. "
+                f"Please configure a compatible model (e.g., gpt-4o, claude-3-sonnet) in "
+                f"galaxy.yml under inference_services.{self.agent_type}.model"
+            )
+        return None
+
     def _get_agent_config(self, key: str, default: Any = None) -> Any:
         """
         Get configuration value for this agent with fallback logic.
