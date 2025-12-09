@@ -65,6 +65,11 @@ const bulkExtensionWarning = computed(() => {
     return ext?.upload_warning || null;
 });
 
+function getExtensionWarning(extensionId: string): string | null {
+    const ext = findExtension(effectiveExtensions.value, extensionId);
+    return ext?.upload_warning || null;
+}
+
 function setAllExtensions(extension: string | null) {
     if (extension) {
         selectedFiles.value.forEach((file) => {
@@ -237,11 +242,22 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </template>
 
                         <template v-slot:cell(extension)="{ item }">
-                            <BFormSelect v-model="item.extension" size="sm" :disabled="!configurationsReady">
-                                <option v-for="(ext, extIndex) in effectiveExtensions" :key="extIndex" :value="ext.id">
-                                    {{ ext.text }}
-                                </option>
-                            </BFormSelect>
+                            <div class="d-flex align-items-center">
+                                <BFormSelect v-model="item.extension" size="sm" :disabled="!configurationsReady">
+                                    <option
+                                        v-for="(ext, extIndex) in effectiveExtensions"
+                                        :key="extIndex"
+                                        :value="ext.id">
+                                        {{ ext.text }}
+                                    </option>
+                                </BFormSelect>
+                                <FontAwesomeIcon
+                                    v-if="getExtensionWarning(item.extension)"
+                                    v-b-tooltip.hover.noninteractive
+                                    class="text-warning ml-1 flex-shrink-0"
+                                    :icon="faExclamationTriangle"
+                                    :title="getExtensionWarning(item.extension)" />
+                            </div>
                         </template>
 
                         <template v-slot:head(dbKey)>
