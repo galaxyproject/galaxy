@@ -151,11 +151,6 @@
             ${self.overlay(visible=self.overlay_visible)}
 
             <div id="columns" class="d-flex">
-                %if self.has_left_panel:
-                    <div id="left">
-                        ${self.left_panel()}
-                    </div>
-                %endif
                 <div id="center" class="inbound">
                     ${self.center_panel()}
                 </div>
