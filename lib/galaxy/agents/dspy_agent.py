@@ -10,6 +10,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Literal,
     Optional,
 )
 
@@ -64,7 +65,7 @@ class DSPyToolRecommendation(BaseModel):
 
     recommended_tool: str = Field(description="Primary tool recommendation")
     reasoning: str = Field(description="Reasoning behind the recommendation")
-    confidence: str = Field(description="Confidence level")
+    confidence: Literal["low", "medium", "high"] = Field(description="Confidence level")
     alternatives: List[str] = Field(default_factory=list, description="Alternative tools")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Suggested parameters")
 

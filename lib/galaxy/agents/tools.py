@@ -9,6 +9,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Literal,
     Optional,
 )
 
@@ -29,6 +30,10 @@ from .base import (
 
 log = logging.getLogger(__name__)
 
+# Type alias for confidence levels - using Literal inlines the enum values
+# in the JSON schema, avoiding $defs references that vLLM can't handle
+ConfidenceLiteral = Literal["low", "medium", "high"]
+
 
 class SimplifiedToolRecommendationResult(BaseModel):
     """Simplified result for local LLMs - avoids nested models and enums."""
@@ -38,7 +43,7 @@ class SimplifiedToolRecommendationResult(BaseModel):
     alternative_tools: List[Dict[str, Any]] = []
     workflow_suggestion: Optional[str] = None
     parameter_guidance: Dict[str, Any] = {}
-    confidence: str  # "low", "medium", or "high" - plain string to avoid $defs in JSON schema
+    confidence: ConfidenceLiteral
     reasoning: str
     search_keywords: List[str] = []
 
