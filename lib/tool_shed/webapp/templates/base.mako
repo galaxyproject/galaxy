@@ -1,6 +1,3 @@
-<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
-<% self.js_app = None %>
-
 <% _=n_ %>
 <!DOCTYPE HTML>
 <html>
@@ -50,9 +47,12 @@
 </%def>
 
 <%def name="javascript_app()">
-
-    ${ galaxy_client.load( app=self.js_app ) }
-
+    <script type="text/javascript">
+        var options = {
+            root: '${h.url_for( "/" )}',
+            session_csrf_token: '${ trans.session_csrf_token }'
+        };
+    </script>
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.
