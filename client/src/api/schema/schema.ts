@@ -7659,7 +7659,7 @@ export interface components {
             /** Ext */
             ext: string;
             /** Hashes */
-            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            hashes?: components["schemas"]["FileHash"][] | null;
             /**
              * Identifier
              * @description A unique identifier for this element within the collection.
@@ -10101,17 +10101,7 @@ export interface components {
          */
         DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
         /** DatasetHash */
-        "DatasetHash-Input": {
-            /**
-             * Hash Function
-             * @enum {string}
-             */
-            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
-            /** Hash Value */
-            hash_value: string;
-        };
-        /** DatasetHash */
-        "DatasetHash-Output": {
+        DatasetHash: {
             /**
              * Extra Files Path
              * @description The path to the extra files used to generate the hash.
@@ -11730,6 +11720,16 @@ export interface components {
              */
             action_type: "fill_defaults";
         };
+        /** FileHash */
+        FileHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
         /** FileLibraryFolderItem */
         FileLibraryFolderItem: {
             /** Can Manage */
@@ -11855,7 +11855,7 @@ export interface components {
             /** Ext */
             ext: string;
             /** Hashes */
-            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            hashes?: components["schemas"]["FileHash"][] | null;
             /** Info */
             info?: string | null;
             /** Location */
@@ -12725,7 +12725,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes?: components["schemas"]["DatasetHash-Output"][] | null;
+            hashes?: components["schemas"]["DatasetHash"][] | null;
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
@@ -12999,7 +12999,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes: components["schemas"]["DatasetHash-Output"][];
+            hashes: components["schemas"]["DatasetHash"][];
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
