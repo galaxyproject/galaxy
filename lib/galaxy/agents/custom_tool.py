@@ -1,5 +1,5 @@
 """
-Custom tool creation agent for Galaxy - simplified version using UserToolSource.
+Custom tool creation agent for Galaxy - uses UserToolSource for proper tool definitions.
 """
 
 import logging
@@ -9,14 +9,11 @@ from typing import (
     Dict,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+import yaml
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from galaxy.schema.agents import ConfidenceLevel
+from galaxy.tool_util_models import UserToolSource
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -28,30 +25,26 @@ from .base import (
 log = logging.getLogger(__name__)
 
 
-class SimpleTool(BaseModel):
-    """Simplified tool model for basic Galaxy tools."""
-
-    id: str = Field(description="Tool ID, lowercase with underscores")
-    name: str = Field(description="Human-readable tool name")
-    version: str = Field(description="Tool version, e.g. 1.0.0")
-    description: str = Field(description="Brief tool description")
-    command: str = Field(description="Shell command to execute")
-    container: str = Field(description="Docker/Singularity container")
-    inputs_description: str = Field(description="Description of input files/parameters")
-    outputs_description: str = Field(description="Description of output files")
-
-
 class CustomToolAgent(BaseGalaxyAgent):
     """
-    Agent that creates custom Galaxy tools with fallback for models without structured output.
+    Agent that creates custom Galaxy tools using UserToolSource schema.
+
+    This agent requires a model with structured output support to generate
+    valid Galaxy tool definitions. If the configured model doesn't support
+    structured output, it returns a helpful error message guiding the
+    operator to configure an appropriate model.
     """
 
+    def _requires_structured_output(self) -> bool:
+        """CustomToolAgent requires structured output for proper tool generation."""
+        return True
+
     def _create_agent(self) -> Agent:
-        """Create agent - tries structured output first."""
+        """Create agent with UserToolSource as the output type."""
         return Agent(
             self._get_model(),
             deps_type=GalaxyAgentDependencies,
-            output_type=SimpleTool,
+            output_type=UserToolSource,
             system_prompt=self.get_system_prompt(),
         )
 
@@ -61,108 +54,69 @@ class CustomToolAgent(BaseGalaxyAgent):
         return prompt_path.read_text()
 
     async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
-        """Process tool creation request with fallback."""
-        use_structured = self._supports_structured_output()
+        """Process tool creation request."""
+        # Check model capabilities first
+        capability_error = self._validate_model_capabilities()
+        if capability_error:
+            return AgentResponse(
+                content=capability_error,
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[
+                    ActionSuggestion(
+                        action_type=ActionType.CONFIGURATION,
+                        description="Configure a structured-output capable model for custom_tool agent",
+                        parameters={"config_key": f"inference_services.{self.agent_type}.model"},
+                        confidence=ConfidenceLevel.HIGH,
+                        priority=1,
+                    )
+                ],
+                metadata={"error": "model_capability", "requires": "structured_output"},
+            )
 
         try:
-            if use_structured:
-                log.info("Using structured output")
-                # Try structured output first
-                try:
-                    result = await self._run_with_retry(query)
-                    tool = result.output if hasattr(result, "output") else result.data
+            # Run the agent to generate a UserToolSource
+            result = await self._run_with_retry(query)
+            tool = result.output if hasattr(result, "output") else result.data
 
-                    # Create YAML from structured output
-                    tool_yaml = f"""class: GalaxyUserTool
-id: {tool.id}
-name: {tool.name}
-version: {tool.version}
-description: {tool.description}
-container: {tool.container}
-shell_command: {tool.command}
-inputs:
-  - {tool.inputs_description}
-outputs:
-  - {tool.outputs_description}"""
+            # Convert UserToolSource to YAML
+            tool_dict = tool.model_dump(by_alias=True, exclude_none=True)
+            tool_yaml = yaml.dump(tool_dict, default_flow_style=False, sort_keys=False)
 
-                    metadata = {
-                        "tool_id": tool.id,
-                        "tool_name": tool.name,
-                        "tool_yaml": tool_yaml,
-                        "method": "structured",
-                    }
+            metadata = {
+                "tool_id": tool.id,
+                "tool_name": tool.name,
+                "tool_yaml": tool_yaml,
+                "method": "structured",
+            }
 
-                except UnexpectedModelBehavior as e:
-                    log.warning(f"Structured output failed (model behavior), falling back to template: {e}")
-                    use_structured = False
-                except (ConnectionError, TimeoutError) as e:
-                    log.warning(f"Structured output failed (network), falling back to template: {e}")
-                    use_structured = False
-
-            if not use_structured:
-                log.info("Using simple template fallback")
-                # For DeepSeek, just generate a basic template since it hangs on complex prompts
-                # Extract key info from query
-                tool_id = "custom_tool"
-                tool_name = "Custom Tool"
-                if "bwa" in query.lower():
-                    tool_id = "bwa_mem_paired"
-                    tool_name = "BWA-MEM Paired End"
-                    container = "quay.io/biocontainers/bwa:0.7.17"
-                    command = "bwa mem reference.fa reads1.fq reads2.fq > output.sam"
-                    inputs = "- Reference genome (FASTA)\n  - Read 1 (FASTQ)\n  - Read 2 (FASTQ)"
-                    outputs = "- Aligned reads (SAM)"
-                else:
-                    container = "ubuntu:latest"
-                    command = "echo 'Tool command here'"
-                    inputs = "- Input files"
-                    outputs = "- Output files"
-
-                tool_yaml = f"""class: GalaxyUserTool
-id: {tool_id}
-name: {tool_name}
-version: 1.0.0
-description: Tool created from user request
-container: {container}
-shell_command: {command}
-inputs:
-  {inputs}
-outputs:
-  {outputs}"""
-
-                metadata = {
-                    "tool_id": tool_id,
-                    "tool_name": tool_name,
-                    "tool_yaml": tool_yaml,
-                    "method": "simple_template",
-                }
-
-            # Create response
+            # Create response content
             response_content = f"""I've created a custom Galaxy tool:
 
 ```yaml
-{metadata['tool_yaml']}
+{tool_yaml}
 ```
 
-**Tool ID**: {metadata['tool_id']}
-**Name**: {metadata['tool_name']}
+**Tool ID**: {tool.id}
+**Name**: {tool.name}
+**Version**: {tool.version}
+**Container**: {tool.container}
 
-The tool is ready to use in Galaxy."""
+The tool is ready to be saved and used in Galaxy."""
 
             # Add action suggestions
-            is_structured = metadata["method"] == "structured"
             suggestions = [
                 ActionSuggestion(
                     action_type=ActionType.SAVE_TOOL,
                     description="Save this tool to Galaxy",
-                    parameters={"tool_yaml": metadata["tool_yaml"], "tool_id": metadata["tool_id"]},
-                    confidence=ConfidenceLevel.HIGH if is_structured else ConfidenceLevel.MEDIUM,
+                    parameters={"tool_yaml": tool_yaml, "tool_id": tool.id},
+                    confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 ),
                 ActionSuggestion(
                     action_type=ActionType.TEST_TOOL,
                     description="Test this tool",
-                    parameters={"tool_id": metadata["tool_id"]},
+                    parameters={"tool_id": tool.id},
                     confidence=ConfidenceLevel.MEDIUM,
                     priority=2,
                 ),
@@ -170,7 +124,7 @@ The tool is ready to use in Galaxy."""
 
             return AgentResponse(
                 content=response_content,
-                confidence=ConfidenceLevel.HIGH if is_structured else ConfidenceLevel.MEDIUM,
+                confidence=ConfidenceLevel.HIGH,
                 agent_type=self.agent_type,
                 suggestions=suggestions,
                 metadata=metadata,

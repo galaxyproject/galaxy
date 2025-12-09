@@ -36,6 +36,7 @@ class ActionType(str, Enum):
     SAVE_TOOL = "save_tool"
     TEST_TOOL = "test_tool"
     REFINE_QUERY = "refine_query"
+    CONFIGURATION = "configuration"  # Suggest configuration change
 
 
 class ActionSuggestion(BaseModel):
