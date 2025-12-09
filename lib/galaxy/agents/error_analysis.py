@@ -9,14 +9,13 @@ from typing import (
     Any,
     Dict,
     List,
-    Union,
+    Literal,
 )
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
 
-from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -27,6 +26,10 @@ from .base import (
 
 log = logging.getLogger(__name__)
 
+# Type alias for confidence levels - using Literal inlines the enum values
+# in the JSON schema, avoiding $defs references that vLLM can't handle
+ConfidenceLiteral = Literal["low", "medium", "high"]
+
 
 class ErrorAnalysisResult(BaseModel):
     """Structured result from error analysis - simplified for local LLMs."""
@@ -36,7 +39,7 @@ class ErrorAnalysisResult(BaseModel):
     likely_cause: str
     solution_steps: List[str]
     alternative_approaches: List[str] = []
-    confidence: Union[str, ConfidenceLevel]  # "low", "medium", or "high"
+    confidence: ConfidenceLiteral
     related_documentation: List[str] = []
     requires_admin: bool = False
 
@@ -340,7 +343,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.TOOL_RUN,
                     description=f"Try alternative: {approach[:100]}...",
-                    confidence=ConfidenceLevel.MEDIUM,
+                    confidence="medium",
                     priority=2,
                 )
             )
@@ -351,7 +354,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.DOCUMENTATION,
                     description="Check related documentation",
-                    confidence=ConfidenceLevel.HIGH,
+                    confidence="high",
                     priority=2,
                 )
             )
@@ -362,7 +365,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.CONTACT_SUPPORT,
                     description="Contact Galaxy administrator",
-                    confidence=ConfidenceLevel.HIGH,
+                    confidence="high",
                     priority=1,
                 )
             )

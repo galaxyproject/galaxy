@@ -9,12 +9,12 @@ from typing import (
     Any,
     Dict,
     List,
+    Literal,
 )
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
-from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -26,6 +26,10 @@ from .base import (
 
 log = logging.getLogger(__name__)
 
+# Type alias for confidence levels - using Literal inlines the enum values
+# in the JSON schema, avoiding $defs references that vLLM can't handle
+ConfidenceLiteral = Literal["low", "medium", "high"]
+
 
 class RoutingDecision(BaseModel):
     """Structured decision from the router agent."""
@@ -33,18 +37,9 @@ class RoutingDecision(BaseModel):
     primary_agent: str
     secondary_agents: List[str] = []
     complexity: str  # "simple" or "complex"
-    confidence: str = "medium"  # "low", "medium", or "high" - plain string to avoid $defs in JSON schema
+    confidence: ConfidenceLiteral = "medium"
     reasoning: str
     direct_response: str = ""  # If router can answer directly
-
-    def get_confidence_level(self) -> ConfidenceLevel:
-        """Convert string confidence to ConfidenceLevel enum."""
-        conf_str = (self.confidence or "medium").lower()
-        if conf_str == "high":
-            return ConfidenceLevel.HIGH
-        elif conf_str == "low":
-            return ConfidenceLevel.LOW
-        return ConfidenceLevel.MEDIUM
 
 
 class QueryRouterAgent(BaseGalaxyAgent):
@@ -224,7 +219,7 @@ For specific tools, please also cite the individual tool publications.""",
         if routing_decision.direct_response:
             return AgentResponse(
                 content=routing_decision.direct_response,
-                confidence=routing_decision.get_confidence_level(),
+                confidence=routing_decision.confidence,
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={"routing_decision": routing_decision.model_dump(), "handled_directly": True},
@@ -238,7 +233,7 @@ For specific tools, please also cite the individual tool publications.""",
                 action_type=ActionType.TOOL_RUN,
                 description=f"Route to {routing_decision.primary_agent} agent",
                 parameters={"agent": routing_decision.primary_agent},
-                confidence=routing_decision.get_confidence_level(),
+                confidence=routing_decision.confidence,
                 priority=1,
             )
         ]
@@ -250,14 +245,14 @@ For specific tools, please also cite the individual tool publications.""",
                     action_type=ActionType.TOOL_RUN,
                     description=f"Also consult {secondary_agent} agent",
                     parameters={"agent": secondary_agent},
-                    confidence=ConfidenceLevel.MEDIUM,
+                    confidence="medium",
                     priority=2,
                 )
             )
 
         return AgentResponse(
             content=content,
-            confidence=routing_decision.get_confidence_level(),
+            confidence=routing_decision.confidence,
             agent_type=self.agent_type,
             suggestions=suggestions,
             metadata={"routing_decision": routing_decision.model_dump(), "handled_directly": False},
