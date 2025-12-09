@@ -11,6 +11,7 @@ from typing import (
 
 import yaml
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 
 from galaxy.schema.agents import ConfidenceLevel
 from galaxy.tool_util_models import UserToolSource
@@ -147,4 +148,55 @@ The tool is ready to be saved and used in Galaxy."""
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={"error": str(e)},
+            )
+        except ModelHTTPError as e:
+            # Handle schema/grammar errors from model backends (vLLM, LiteLLM, etc.)
+            error_str = str(e).lower()
+            if "grammar" in error_str or "$defs" in error_str or "pointer" in error_str:
+                log.warning(f"Tool creation schema error (model may not support complex JSON schemas): {e}")
+                model = self._get_agent_config("model", "unknown")
+                return AgentResponse(
+                    content=(
+                        f"The model '{model}' failed to generate a tool definition due to JSON schema limitations. "
+                        "This typically happens with local inference backends (vLLM, LiteLLM proxies) that don't "
+                        "support complex nested JSON schemas.\n\n"
+                        "To resolve this, configure a model that fully supports structured output "
+                        "(e.g., gpt-4o, claude-3-sonnet) via their native APIs."
+                    ),
+                    confidence=ConfidenceLevel.LOW,
+                    agent_type=self.agent_type,
+                    suggestions=[
+                        ActionSuggestion(
+                            action_type=ActionType.CONFIGURATION,
+                            description="Configure a model with full structured output support",
+                            parameters={"config_key": f"inference_services.{self.agent_type}.model"},
+                            confidence=ConfidenceLevel.HIGH,
+                            priority=1,
+                        )
+                    ],
+                    metadata={"error": "schema_limitation", "model": model},
+                )
+            raise
+        except UnexpectedModelBehavior as e:
+            # Handle validation failures when model can't produce valid structured output
+            log.warning(f"Model failed to produce valid tool definition: {e}")
+            model = self._get_agent_config("model", "unknown")
+            return AgentResponse(
+                content=(
+                    f"The model '{model}' was unable to generate a valid tool definition after multiple attempts. "
+                    "This may indicate the model doesn't fully support the required structured output format.\n\n"
+                    "Try using a model with better structured output support (e.g., gpt-4o, claude-3-sonnet)."
+                ),
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[
+                    ActionSuggestion(
+                        action_type=ActionType.CONFIGURATION,
+                        description="Configure a model with better structured output support",
+                        parameters={"config_key": f"inference_services.{self.agent_type}.model"},
+                        confidence=ConfidenceLevel.HIGH,
+                        priority=1,
+                    )
+                ],
+                metadata={"error": "validation_failure", "model": model},
             )

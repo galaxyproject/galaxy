@@ -53,7 +53,7 @@ from galaxy.agents import (
     GalaxyAgentDependencies,
     QueryRouterAgent,
 )
-from galaxy.agents.custom_tool import SimpleTool
+from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
@@ -146,16 +146,19 @@ class TestAgentsApiMocked(ApiTestCase):
         mock_agent = AsyncMock()
         mock_agent_class.return_value = mock_agent
 
-        # Mock tool creation
-        mock_tool = SimpleTool(
-            id="line_counter",
-            name="Line Counter",
-            version="1.0.0",
-            description="Counts lines in a file",
-            command="wc -l < $input > $output",
-            container="",
-            inputs_description="Text file to count lines",
-            outputs_description="Line count",
+        # Mock tool creation with UserToolSource
+        mock_tool = UserToolSource(
+            **{
+                "class": "GalaxyUserTool",
+                "id": "line-counter",
+                "name": "Line Counter",
+                "version": "1.0.0",
+                "description": "Counts lines in a file",
+                "container": "ubuntu:latest",
+                "shell_command": "wc -l < $(inputs.input_file.path) > output.txt",
+                "inputs": [],
+                "outputs": [],
+            }
         )
 
         async def mock_run(*args, **kwargs):
@@ -177,7 +180,7 @@ class TestAgentsApiMocked(ApiTestCase):
         self._assert_status_code_is_ok(response)
         data = response.json()
         assert "metadata" in data
-        assert data["metadata"]["tool_id"] == "line_counter"
+        assert data["metadata"]["tool_id"] == "line-counter"
         assert "wc -l" in data["metadata"]["tool_yaml"]
 
     @patch("galaxy.agents.error_analysis.Agent")
@@ -440,50 +443,51 @@ class TestAgentUnitMocked:
     @pytest.mark.asyncio
     async def test_custom_tool_agent_structured_output(self):
         """Test custom tool agent with structured output support."""
-        # Test with a model that supports structured output
-        self.mock_config.ai_model = "llama-4-scout"
+        # Test with a model that supports structured output (gpt-4o)
+        self.mock_config.ai_model = "gpt-4o"
         agent = CustomToolAgent(self.deps)
 
-        # Mock the agent run to return a SimpleTool
+        # Mock the agent run to return a UserToolSource
         with mock.patch.object(agent.agent, "run") as mock_run:
-            from galaxy.agents.custom_tool import SimpleTool
-
-            mock_tool = SimpleTool(
-                id="test_tool",
-                name="Test Tool",
-                version="1.0.0",
-                description="A test tool",
-                command="echo test",
-                container="ubuntu:latest",
-                inputs_description="Test inputs",
-                outputs_description="Test outputs",
+            mock_tool = UserToolSource(
+                **{
+                    "class": "GalaxyUserTool",
+                    "id": "test-tool",
+                    "name": "Test Tool",
+                    "version": "1.0.0",
+                    "description": "A test tool",
+                    "container": "ubuntu:latest",
+                    "shell_command": "echo test",
+                    "inputs": [],
+                    "outputs": [],
+                }
             )
 
             mock_result = mock.Mock()
-            # Agent checks for .output first, then .data (see custom_tool.py line 138)
             mock_result.output = mock_tool
             mock_result.data = mock_tool
             mock_run.return_value = mock_result
 
             response = await agent.process("Create a test tool")
 
-            assert response.confidence in ["high", "medium"]
-            assert response.metadata["tool_id"] == "test_tool"
+            assert response.confidence.value in ["high", "medium"]
+            assert response.metadata["tool_id"] == "test-tool"
             assert response.metadata["method"] == "structured"
 
     @pytest.mark.asyncio
-    async def test_custom_tool_agent_fallback(self):
-        """Test custom tool agent with fallback for DeepSeek."""
-        # Test with DeepSeek which needs fallback
+    async def test_custom_tool_agent_requires_structured_output(self):
+        """Test custom tool agent returns helpful error when model doesn't support structured output."""
+        # Test with DeepSeek which doesn't support structured output
         self.mock_config.ai_model = "deepseek-r1"
         agent = CustomToolAgent(self.deps)
 
         response = await agent.process("Create a BWA-MEM tool")
 
-        # Should use simple template fallback
-        assert response.metadata["method"] == "simple_template"
-        assert response.metadata["tool_id"] == "bwa_mem_paired"
-        assert "bwa" in response.metadata["tool_yaml"].lower()
+        # Should return capability error, not attempt fallback
+        assert response.metadata.get("error") == "model_capability"
+        assert response.metadata.get("requires") == "structured_output"
+        assert "structured output" in response.content.lower()
+        assert response.confidence.value == "low"
 
     def test_agent_registry(self):
         """Test that all required agents are registered."""

@@ -352,23 +352,22 @@ class BaseGalaxyAgent(ABC):
         return "Please try again later or contact support if the issue persists."
 
     def _supports_structured_output(self) -> bool:
-        """Check if current model supports structured output (tool calling/JSON mode)."""
+        """Check if current model supports structured output (tool calling/JSON mode).
+
+        Note: This checks basic structured output capability, not complex nested schemas.
+        Models via local endpoints (vLLM, LiteLLM) may support simple structured output
+        but fail on complex schemas with $defs. Agents requiring complex schemas should
+        handle those runtime failures gracefully.
+        """
         model_name = self._get_agent_config("model", "").lower()
-        base_url = self._get_agent_config("api_base_url", "").lower()
 
         # DeepSeek models don't support structured output at all
         if "deepseek" in model_name:
             return False
 
-        # vLLM/local endpoints often don't support complex JSON schemas with $defs
-        # This includes Jetstream, local llama, etc.
-        if any(indicator in base_url for indicator in ["localhost", "127.0.0.1", "jetstream"]):
-            # Even "scout" models on vLLM don't support complex schemas
-            if "llama" in model_name or "scout" in model_name:
-                return False
-
-        # These models via their native APIs have good structured output support
-        if any(m in model_name for m in ["gpt", "claude"]):
+        # Models with known structured output support (native APIs or compatible proxies)
+        # llama-4-scout and gpt-oss work for basic structured output via LiteLLM
+        if any(m in model_name for m in ["gpt", "claude", "llama-4-scout", "gpt-oss"]):
             return True
 
         # Default to not using structured output for unknown models (safer)
