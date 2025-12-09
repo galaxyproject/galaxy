@@ -459,7 +459,6 @@ function toggleHistory() {
         loadChatHistory();
     }
 }
-
 </script>
 
 <template>

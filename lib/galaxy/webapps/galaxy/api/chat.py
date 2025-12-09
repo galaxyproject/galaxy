@@ -4,7 +4,6 @@ API Controller providing Chat functionality
 
 import json
 import logging
-import time
 from typing import (
     Annotated,
     Any,
@@ -28,14 +27,6 @@ from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
-from galaxy.schema.agents import (
-    AgentListResponse,
-    AgentQueryRequest,
-    AgentQueryResponse,
-    AgentResponse,
-    AvailableAgent,
-    ConfidenceLevel,
-)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ChatPayload,
@@ -50,22 +41,12 @@ from galaxy.webapps.galaxy.api import (
 
 # Import agent system
 try:
-    from galaxy.agents import (
-        agent_registry,
-        BaseGalaxyAgent,
-        GalaxyAgentDependencies,
-    )
-    from galaxy.agents.error_analysis import ErrorAnalysisAgent
-    from galaxy.agents.router import QueryRouterAgent
+    from galaxy.agents import GalaxyAgentDependencies
 
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    agent_registry = None
     GalaxyAgentDependencies = None
-    BaseGalaxyAgent = None
-    QueryRouterAgent = None
-    ErrorAnalysisAgent = None
 
 # Import pydantic-ai components
 try:
@@ -513,123 +494,3 @@ class ChatAPI:
             agent_type=agent_type,
         )
 
-    @router.get("/api/ai/agents")
-    def list_agents(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user: User = DependsOnUser,
-    ) -> AgentListResponse:
-        """List available AI agents."""
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
-        agents = []
-        for agent_type in agent_registry.list_agents():
-            agent_info = agent_registry.get_agent_info(agent_type)
-
-            # Check if agent is enabled in config
-            agent_config = getattr(self.config, "agents", {}).get(agent_type, {})
-            enabled = agent_config.get("enabled", True)
-
-            agents.append(
-                AvailableAgent(
-                    agent_type=agent_type,
-                    name=agent_info["class_name"].replace("Agent", "").replace("_", " ").title(),
-                    description=agent_info.get("description", "No description available"),
-                    enabled=enabled,
-                    model=agent_config.get("model"),
-                    specialties=self._get_agent_specialties(agent_type),
-                )
-            )
-
-        return AgentListResponse(agents=agents, total_count=len(agents))
-
-    @router.post("/api/ai/query")
-    async def query_agent(
-        self,
-        request: AgentQueryRequest,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user: User = DependsOnUser,
-    ) -> AgentQueryResponse:
-        """Query a specific AI agent."""
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
-        start_time = time.time()
-
-        try:
-            # Get full agent response with all metadata and routing info
-            result = await self._get_agent_response_full(request.query, request.agent_type, trans, user)
-
-            # Create agent response object using schema version
-            agent_response = AgentResponse(
-                content=result["content"],
-                confidence=result.get("confidence", ConfidenceLevel.MEDIUM),
-                agent_type=result.get("agent_type", request.agent_type),
-                suggestions=result.get("suggestions", []),
-                metadata=result.get("metadata", {}),
-                reasoning=result.get("reasoning"),
-            )
-
-            processing_time = time.time() - start_time
-
-            return AgentQueryResponse(
-                response=agent_response,
-                routing_info=result.get("routing_info"),
-                processing_time=processing_time,
-            )
-
-        except Exception as e:
-            log.error(f"Error in agent query: {e}")
-            raise ConfigurationError(f"Agent query failed: {str(e)}")
-
-    def _get_agent_specialties(self, agent_type: str) -> list:
-        """Get specialties for an agent type."""
-        specialties_map = {
-            "router": ["Query routing", "Agent selection", "Task classification"],
-            "error_analysis": ["Tool errors", "Job failures", "Debugging", "Error diagnosis"],
-            "custom_tool": ["Custom tool creation", "Tool wrapper development", "Parameter configuration"],
-            "dataset_analyzer": ["Dataset analysis", "Data validation", "Quality assessment", "Preprocessing"],
-            "tool_recommendation": ["Tool selection", "Parameter guidance", "Tool discovery"],
-        }
-        return specialties_map.get(agent_type, [])
-
-    @router.post("/api/ai/tools/recommend")
-    async def recommend_tools(
-        self,
-        query: str,
-        input_format: Optional[str] = None,
-        output_format: Optional[str] = None,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user: User = DependsOnUser,
-    ) -> Dict[str, Any]:
-        """Get tool recommendations for a specific task."""
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
-        # Build context
-        context = {}
-        if input_format:
-            context["input_format"] = input_format
-        if output_format:
-            context["output_format"] = output_format
-
-        try:
-            response = await self.agent_service.execute_agent(
-                agent_type="tool_recommendation",
-                query=query,
-                trans=trans,
-                user=user,
-                context=context,
-            )
-
-            # Return structured response
-            return {
-                "recommendations": response["content"],
-                "confidence": response["confidence"],
-                "suggestions": response["suggestions"],
-                "metadata": response.get("metadata", {}),
-            }
-        except Exception as e:
-            log.error(f"Tool recommendation failed: {e}")
-            raise ConfigurationError(f"Tool recommendation failed: {str(e)}")

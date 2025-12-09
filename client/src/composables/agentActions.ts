@@ -8,7 +8,8 @@ import { useRouter } from "vue-router/composables";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 
-// Action types from backend
+/* eslint-disable no-unused-vars */
+// Action types from backend - values are used in switch/case and icon maps
 export enum ActionType {
     TOOL_RUN = "tool_run",
     PARAMETER_CHANGE = "parameter_change",
@@ -21,6 +22,7 @@ export enum ActionType {
     REFINE_QUERY = "refine_query",
     CONFIGURATION = "configuration",
 }
+/* eslint-enable no-unused-vars */
 
 export interface ActionSuggestion {
     action_type: ActionType;

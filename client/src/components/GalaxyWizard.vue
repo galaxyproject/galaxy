@@ -44,7 +44,7 @@ async function submitQuery() {
     }
 
     // Use direct error analysis endpoint for better performance and clarity
-    const { data, error } = await GalaxyApi().POST("/api/agents/error-analysis", {
+    const { data, error } = await GalaxyApi().POST("/api/ai/agents/error-analysis", {
         body: {
             query: query.value,
             job_id: props.jobId,
