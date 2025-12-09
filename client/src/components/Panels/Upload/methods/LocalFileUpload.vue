@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { faCloudUploadAlt, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCloudUploadAlt, faExclamationTriangle, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormInput, BFormSelect, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { findExtension } from "@/components/Upload/utils";
 import { useFileDrop } from "@/composables/fileDrop";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import { useUploadQueue } from "@/composables/uploadQueue";
@@ -52,13 +53,41 @@ const totalSize = computed(() => {
     return bytesToString(bytes);
 });
 
+// Bulk selectors
+const bulkExtension = ref<string | null>(null);
+const bulkDbKey = ref<string | null>(null);
+
+const bulkExtensionWarning = computed(() => {
+    if (!bulkExtension.value) {
+        return null;
+    }
+    const ext = findExtension(effectiveExtensions.value, bulkExtension.value);
+    return ext?.upload_warning || null;
+});
+
+function setAllExtensions(extension: string | null) {
+    if (extension) {
+        selectedFiles.value.forEach((file) => {
+            file.extension = extension;
+        });
+    }
+}
+
+function setAllDbKeys(dbKey: string | null) {
+    if (dbKey) {
+        selectedFiles.value.forEach((file) => {
+            file.dbKey = dbKey;
+        });
+    }
+}
+
 const tableFields = [
     { key: "name", label: "Name", sortable: false, tdClass: "file-name-cell" },
-    { key: "extension", label: "Type", sortable: false },
-    { key: "dbKey", label: "Database", sortable: false },
-    { key: "size", label: "Size", sortable: false },
+    { key: "extension", label: "Type", sortable: false, thStyle: { minWidth: "180px" } },
+    { key: "dbKey", label: "Database", sortable: false, thStyle: { minWidth: "200px" } },
+    { key: "size", label: "Size", sortable: false, thStyle: { width: "100px" } },
     { key: "options", label: "Options", sortable: false },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right" },
+    { key: "actions", label: "", sortable: false, tdClass: "text-right", thStyle: { width: "50px" } },
 ];
 
 watch(hasFiles, (ready) => emit("ready", ready), { immediate: true });
@@ -158,7 +187,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             <!-- File Table with Metadata Editing -->
             <div v-else class="file-list">
                 <div class="file-list-header">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
                         <span class="font-weight-bold">{{ selectedFiles.length }} file(s) selected</span>
                         <span class="text-muted">Total: {{ totalSize }}</span>
                     </div>
@@ -179,12 +208,62 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             <BFormInput v-model="item.name" size="sm" :placeholder="item.file.name" />
                         </template>
 
+                        <template v-slot:head(extension)>
+                            <div class="d-flex align-items-center column-header">
+                                <span class="column-label">Type</span>
+                                <BFormSelect
+                                    v-model="bulkExtension"
+                                    v-b-tooltip.hover.noninteractive
+                                    class="bulk-select"
+                                    size="sm"
+                                    title="Set file format for all files"
+                                    :disabled="!configurationsReady"
+                                    @change="setAllExtensions">
+                                    <option :value="null">Set all...</option>
+                                    <option
+                                        v-for="(ext, extIndex) in effectiveExtensions"
+                                        :key="extIndex"
+                                        :value="ext.id">
+                                        {{ ext.text }}
+                                    </option>
+                                </BFormSelect>
+                                <FontAwesomeIcon
+                                    v-if="bulkExtensionWarning"
+                                    v-b-tooltip.hover.noninteractive
+                                    class="text-warning ml-1"
+                                    :icon="faExclamationTriangle"
+                                    :title="bulkExtensionWarning" />
+                            </div>
+                        </template>
+
                         <template v-slot:cell(extension)="{ item }">
                             <BFormSelect v-model="item.extension" size="sm" :disabled="!configurationsReady">
                                 <option v-for="(ext, extIndex) in effectiveExtensions" :key="extIndex" :value="ext.id">
                                     {{ ext.text }}
                                 </option>
                             </BFormSelect>
+                        </template>
+
+                        <template v-slot:head(dbKey)>
+                            <div class="d-flex align-items-center column-header">
+                                <span class="column-label">Database</span>
+                                <BFormSelect
+                                    v-model="bulkDbKey"
+                                    v-b-tooltip.hover.noninteractive
+                                    class="bulk-select"
+                                    size="sm"
+                                    title="Set database key for all files"
+                                    :disabled="!configurationsReady"
+                                    @change="setAllDbKeys">
+                                    <option :value="null">Set all...</option>
+                                    <option
+                                        v-for="(dbKey, dbKeyIndex) in listDbKeys"
+                                        :key="dbKeyIndex"
+                                        :value="dbKey.id">
+                                        {{ dbKey.text }}
+                                    </option>
+                                </BFormSelect>
+                            </div>
                         </template>
 
                         <template v-slot:cell(dbKey)="{ item }">
@@ -320,7 +399,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
     flex-shrink: 0;
     border-bottom: 1px solid $border-color;
     padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .file-table-container {
@@ -338,6 +417,20 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
     :deep(.file-name-cell) {
         min-width: 200px;
+    }
+
+    .column-header {
+        gap: 0.5rem;
+
+        .column-label {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .bulk-select {
+            flex: 1;
+            min-width: 0;
+        }
     }
 }
 
