@@ -13,11 +13,13 @@ export enum ActionType {
     TOOL_RUN = "tool_run",
     PARAMETER_CHANGE = "parameter_change",
     WORKFLOW_STEP = "workflow_step",
+    DOCUMENTATION = "documentation",
     CONTACT_SUPPORT = "contact_support",
+    VIEW_EXTERNAL = "view_external",
     SAVE_TOOL = "save_tool",
     TEST_TOOL = "test_tool",
     REFINE_QUERY = "refine_query",
-    VIEW_EXTERNAL = "view_external",
+    CONFIGURATION = "configuration",
 }
 
 export interface ActionSuggestion {
@@ -83,6 +85,14 @@ export function useAgentActions() {
 
                 case ActionType.VIEW_EXTERNAL:
                     handleViewExternal(action);
+                    break;
+
+                case ActionType.DOCUMENTATION:
+                    handleDocumentation(action);
+                    break;
+
+                case ActionType.CONFIGURATION:
+                    handleConfiguration(action);
                     break;
 
                 default:
@@ -232,7 +242,38 @@ export function useAgentActions() {
 
         // Open URL in new tab
         window.open(url, "_blank");
-        toast.success("Opening tutorial in new tab");
+        toast.success("Opening in new tab");
+    }
+
+    /**
+     * Handle DOCUMENTATION action - open tool documentation
+     */
+    function handleDocumentation(action: ActionSuggestion) {
+        const toolId = action.parameters.tool_id;
+
+        if (toolId && toolId !== "unknown") {
+            // Navigate to tool help page
+            router.push({
+                path: "/",
+                query: {
+                    tool_id: toolId,
+                    show_help: "true",
+                },
+            });
+            toast.info(`Opening documentation for ${toolId}`);
+        } else {
+            // Open general Galaxy documentation
+            window.open("https://training.galaxyproject.org/", "_blank");
+            toast.info("Opening Galaxy Training Network");
+        }
+    }
+
+    /**
+     * Handle CONFIGURATION action - show configuration guidance
+     */
+    function handleConfiguration(action: ActionSuggestion) {
+        const configKey = action.parameters.config_key;
+        toast.info(`Configuration needed: ${configKey || action.description}`);
     }
 
     /**
@@ -283,9 +324,11 @@ export function useAgentActions() {
             [ActionType.TEST_TOOL]: "🧪",
             [ActionType.PARAMETER_CHANGE]: "⚙️",
             [ActionType.WORKFLOW_STEP]: "📊",
+            [ActionType.DOCUMENTATION]: "📖",
             [ActionType.CONTACT_SUPPORT]: "🆘",
             [ActionType.REFINE_QUERY]: "✏️",
             [ActionType.VIEW_EXTERNAL]: "🔗",
+            [ActionType.CONFIGURATION]: "⚙️",
         };
         return icons[actionType] || "❓";
     }

@@ -21,6 +21,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import ActionCard from "./ChatGXY/ActionCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faThumbsUp, faThumbsDown, faPaperPlane, faUser, faMagic, faHistory, faTrash, faClock);
 
@@ -459,23 +460,6 @@ function toggleHistory() {
     }
 }
 
-// Format timestamp for display
-function formatTime(timestamp: string) {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-
-    if (hours < 1) {
-        const minutes = Math.floor(diff / (1000 * 60));
-        return `${minutes}m ago`;
-    } else if (hours < 24) {
-        return `${hours}h ago`;
-    } else {
-        const days = Math.floor(hours / 24);
-        return `${days}d ago`;
-    }
-}
 </script>
 
 <template>
@@ -540,7 +524,7 @@ function formatTime(timestamp: string) {
                             <span class="history-agent">{{ getAgentIcon(item.agent_type) }}</span>
                             <span class="history-time">
                                 <FontAwesomeIcon :icon="faClock" class="mr-1" />
-                                {{ formatTime(item.timestamp) }}
+                                <UtcDate :date="item.timestamp" mode="elapsed" />
                             </span>
                         </div>
                     </div>
