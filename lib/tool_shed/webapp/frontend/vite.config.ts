@@ -27,6 +27,18 @@ export default defineConfig({
                 changeOrigin: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
                 secure: !process.env.CHANGE_ORIGIN,
             },
+            "/api_internal": {
+                target: process.env.TOOL_SHED_URL || "http://127.0.0.1:9009",
+                changeOrigin: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
+                secure: !process.env.CHANGE_ORIGIN,
+            },
+            // Proxy backend root to get session_csrf_token cookie - visit /backend_session first
+            "/backend_session": {
+                target: process.env.TOOL_SHED_URL || "http://127.0.0.1:9009",
+                changeOrigin: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
+                secure: !process.env.CHANGE_ORIGIN,
+                rewrite: () => "/",
+            },
         },
     },
 })
