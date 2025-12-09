@@ -33,9 +33,18 @@ class RoutingDecision(BaseModel):
     primary_agent: str
     secondary_agents: List[str] = []
     complexity: str  # "simple" or "complex"
-    confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
+    confidence: str = "medium"  # "low", "medium", or "high" - plain string to avoid $defs in JSON schema
     reasoning: str
     direct_response: str = ""  # If router can answer directly
+
+    def get_confidence_level(self) -> ConfidenceLevel:
+        """Convert string confidence to ConfidenceLevel enum."""
+        conf_str = (self.confidence or "medium").lower()
+        if conf_str == "high":
+            return ConfidenceLevel.HIGH
+        elif conf_str == "low":
+            return ConfidenceLevel.LOW
+        return ConfidenceLevel.MEDIUM
 
 
 class QueryRouterAgent(BaseGalaxyAgent):
@@ -170,23 +179,23 @@ class QueryRouterAgent(BaseGalaxyAgent):
             # If no keywords matched, default to tool_recommendation
             best_agent = AgentType.TOOL_RECOMMENDATION
             reasoning = "No clear intent keywords found, defaulting to tool recommendation."
-            confidence = ConfidenceLevel.LOW
+            confidence = "low"
         else:
             best_agent = max(scores, key=scores.get)
             reasoning = f"Query contains keywords related to {best_agent.replace('_', ' ')}."
             # Determine confidence based on score
             if scores[best_agent] > 1.5:
-                confidence = ConfidenceLevel.HIGH
+                confidence = "high"
             elif scores[best_agent] > 0.5:
-                confidence = ConfidenceLevel.MEDIUM
+                confidence = "medium"
             else:
-                confidence = ConfidenceLevel.LOW
+                confidence = "low"
 
         # Simple direct responses for greetings or citations
         if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
             return RoutingDecision(
                 primary_agent="router",
-                confidence=ConfidenceLevel.HIGH,
+                confidence="high",
                 reasoning="User is asking for citation information.",
                 direct_response="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
 
@@ -215,7 +224,7 @@ For specific tools, please also cite the individual tool publications.""",
         if routing_decision.direct_response:
             return AgentResponse(
                 content=routing_decision.direct_response,
-                confidence=routing_decision.confidence,
+                confidence=routing_decision.get_confidence_level(),
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={"routing_decision": routing_decision.model_dump(), "handled_directly": True},
@@ -229,7 +238,7 @@ For specific tools, please also cite the individual tool publications.""",
                 action_type=ActionType.TOOL_RUN,
                 description=f"Route to {routing_decision.primary_agent} agent",
                 parameters={"agent": routing_decision.primary_agent},
-                confidence=routing_decision.confidence,
+                confidence=routing_decision.get_confidence_level(),
                 priority=1,
             )
         ]
@@ -248,7 +257,7 @@ For specific tools, please also cite the individual tool publications.""",
 
         return AgentResponse(
             content=content,
-            confidence=routing_decision.confidence,
+            confidence=routing_decision.get_confidence_level(),
             agent_type=self.agent_type,
             suggestions=suggestions,
             metadata={"routing_decision": routing_decision.model_dump(), "handled_directly": False},
@@ -314,7 +323,7 @@ For specific tools, please also cite the individual tool publications.""",
                 primary_agent=agent,
                 secondary_agents=[],
                 complexity="simple",
-                confidence=ConfidenceLevel.MEDIUM,
+                confidence="medium",
                 reasoning=reasoning,
             )
         else:
