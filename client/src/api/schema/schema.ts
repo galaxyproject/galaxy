@@ -24,7 +24,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/ai/query": {
+    "/api/ai/agents/custom-tool": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Custom Tool
+         * @description Create a custom Galaxy tool.
+         */
+        post: operations["create_custom_tool_api_ai_agents_custom_tool_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/agents/error-analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Error
+         * @description Analyze job errors and provide debugging assistance.
+         */
+        post: operations["analyze_error_api_ai_agents_error_analysis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/agents/query": {
         parameters: {
             query?: never;
             header?: never;
@@ -35,16 +75,16 @@ export interface paths {
         put?: never;
         /**
          * Query Agent
-         * @description Query a specific AI agent.
+         * @description Query an AI agent. Use agent_type='auto' for automatic routing.
          */
-        post: operations["query_agent_api_ai_query_post"];
+        post: operations["query_agent_api_ai_agents_query_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/ai/tools/recommend": {
+    "/api/ai/agents/tool-recommendation": {
         parameters: {
             query?: never;
             header?: never;
@@ -55,9 +95,9 @@ export interface paths {
         put?: never;
         /**
          * Recommend Tools
-         * @description Get tool recommendations for a specific task.
+         * @description Get tool recommendations for a specific analysis task.
          */
-        post: operations["recommend_tools_api_ai_tools_recommend_post"];
+        post: operations["recommend_tools_api_ai_agents_tool_recommendation_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -101,6 +141,46 @@ export interface paths {
          *     Returns enhanced response with agent metadata and action suggestions.
          */
         post: operations["query_api_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchange/{exchange_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Exchange Feedback
+         * @description Set feedback for a general chat exchange.
+         */
+        put: operations["set_exchange_feedback_api_chat_exchange__exchange_id__feedback_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchange/{exchange_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Exchange Messages
+         * @description Get all messages for a specific chat exchange.
+         */
+        get: operations["get_exchange_messages_api_chat_exchange__exchange_id__messages_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2505,6 +2585,23 @@ export interface paths {
          *     or hand-crafted JSON dictionary.
          */
         post: operations["create_from_store_api_histories__history_id__contents_from_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/histories/{history_id}/copy_contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy datasets or dataset collections to other histories. */
+        post: operations["history_contents__copy_contents"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6550,6 +6647,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return bootstrapped client context */
+        get: operations["index_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ga4gh/drs/v1/objects/{object_id}": {
         parameters: {
             query?: never;
@@ -6729,7 +6843,17 @@ export interface components {
          * @description Types of actions agents can suggest.
          * @enum {string}
          */
-        ActionType: "tool_run" | "parameter_change" | "workflow_step" | "documentation" | "contact_support";
+        ActionType:
+            | "tool_run"
+            | "parameter_change"
+            | "workflow_step"
+            | "documentation"
+            | "contact_support"
+            | "view_external"
+            | "save_tool"
+            | "test_tool"
+            | "refine_query"
+            | "configuration";
         /** AddInputAction */
         AddInputAction: {
             /**
@@ -7384,6 +7508,26 @@ export interface components {
              */
             type: string;
         };
+        /** Body_analyze_error_api_ai_agents_error_analysis_post */
+        Body_analyze_error_api_ai_agents_error_analysis_post: {
+            /**
+             * Error Details
+             * @description Additional error details
+             */
+            error_details?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Job Id
+             * @description Job ID for context
+             */
+            job_id?: number | null;
+            /**
+             * Query
+             * @description Description of the error or problem
+             */
+            query: string;
+        };
         /** Body_create_api_histories_post */
         Body_create_api_histories_post: {
             /**
@@ -7404,6 +7548,21 @@ export interface components {
             history_id?: unknown;
             /** Name */
             name?: unknown;
+        };
+        /** Body_create_custom_tool_api_ai_agents_custom_tool_post */
+        Body_create_custom_tool_api_ai_agents_custom_tool_post: {
+            /**
+             * Context
+             * @description Additional context for tool creation
+             */
+            context?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Query
+             * @description Description of the tool to create
+             */
+            query: string;
         };
         /** Body_create_form_api_libraries__library_id__contents_post */
         Body_create_form_api_libraries__library_id__contents_post: {
@@ -7481,6 +7640,24 @@ export interface components {
             landing_uuid?: unknown;
             /** Targets */
             targets: unknown;
+        };
+        /** Body_recommend_tools_api_ai_agents_tool_recommendation_post */
+        Body_recommend_tools_api_ai_agents_tool_recommendation_post: {
+            /**
+             * Input Format
+             * @description Input data format
+             */
+            input_format?: string | null;
+            /**
+             * Output Format
+             * @description Desired output format
+             */
+            output_format?: string | null;
+            /**
+             * Query
+             * @description Description of the analysis task
+             */
+            query: string;
         };
         /** BooleanParameterModel */
         BooleanParameterModel: {
@@ -7760,6 +7937,11 @@ export interface components {
              * @default
              */
             context: string | null;
+            /**
+             * Exchange ID
+             * @description The ID of an existing chat exchange to continue.
+             */
+            exchange_id?: number | null;
             /**
              * Query
              * @description The query to be sent to the chatbot.
@@ -8445,6 +8627,19 @@ export interface components {
              */
             name: string;
         };
+        /** ContextResponse */
+        ContextResponse: {
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Session Csrf Token */
+            session_csrf_token?: string | null;
+            /** User */
+            user: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * ConvertedDatasetsMap
          * @description Map of `file extension` -> `converted dataset encoded id`
@@ -8454,6 +8649,27 @@ export interface components {
          */
         ConvertedDatasetsMap: {
             [key: string]: string;
+        };
+        /** CopyDatasetsPayload */
+        CopyDatasetsPayload: {
+            /** Source Content */
+            source_content: components["schemas"]["CopyDatasetsPayloadSourceEntry"][];
+            /** Target History Ids */
+            target_history_ids?: string[] | null;
+            /** Target History Name */
+            target_history_name?: string | null;
+        };
+        /** CopyDatasetsPayloadSourceEntry */
+        CopyDatasetsPayloadSourceEntry: {
+            /** Id */
+            id: string;
+            /** Type */
+            type: string;
+        };
+        /** CopyDatasetsResponse */
+        CopyDatasetsResponse: {
+            /** History Ids */
+            history_ids: string[];
         };
         /** CreateDataLandingPayload */
         CreateDataLandingPayload: {
@@ -24743,7 +24959,101 @@ export interface operations {
             };
         };
     };
-    query_agent_api_ai_query_post: {
+    create_custom_tool_api_ai_agents_custom_tool_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_create_custom_tool_api_ai_agents_custom_tool_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    analyze_error_api_ai_agents_error_analysis_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_analyze_error_api_ai_agents_error_analysis_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    query_agent_api_ai_agents_query_post: {
         parameters: {
             query?: never;
             header?: {
@@ -24788,13 +25098,9 @@ export interface operations {
             };
         };
     };
-    recommend_tools_api_ai_tools_recommend_post: {
+    recommend_tools_api_ai_agents_tool_recommendation_post: {
         parameters: {
-            query: {
-                query: string;
-                input_format?: string | null;
-                output_format?: string | null;
-            };
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -24802,7 +25108,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_recommend_tools_api_ai_agents_tool_recommendation_post"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -24904,6 +25214,100 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_exchange_feedback_api_chat_exchange__exchange_id__feedback_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": number;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_exchange_messages_api_chat_exchange__exchange_id__messages_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Request Error */
@@ -32928,6 +33332,54 @@ export interface operations {
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents__copy_contents: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyDatasetsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyDatasetsResponse"];
                 };
             };
             /** @description Request Error */
@@ -45613,6 +46065,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_context_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextResponse"];
                 };
             };
             /** @description Request Error */
