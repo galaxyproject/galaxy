@@ -185,7 +185,6 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
 fi
 
 : "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
-: "${PYPI_INDEX_URL:=https://pypi.python.org/simple}"
 : "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
 
 requirement_args="-r requirements.txt"
@@ -203,7 +202,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
         ${PIP_CMD} install "pip>=${MIN_PIP_VERSION}" wheel
     fi
     # shellcheck disable=SC2086
-    ${PIP_CMD} install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    ${PIP_CMD} install $requirement_args --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
     set_galaxy_config_file_var
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
@@ -211,7 +210,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
             ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
     fi
 fi
 
