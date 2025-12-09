@@ -56,7 +56,5 @@ jobs:
         run: tox -e lint_docstring_include_list
       - name: Run mypy checks
         run: tox -e mypy
-      - uses: psf/black@stable
-        with:
-          version: ">=25.1.0"
-      - uses: isort/isort-action@v1
+      - name: Run format checks
+        run: tox -e format
