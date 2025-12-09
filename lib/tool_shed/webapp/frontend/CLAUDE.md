@@ -73,3 +73,33 @@ const { data } = await ToolShedApi().GET("/api/repositories", { params: { query:
 
 ## Path Alias
 `@/` maps to `src/` directory.
+
+## Accessibility (WCAG 2.1 AA)
+
+### Key Patterns
+- **Skip link**: `App.vue` - hidden until focused, targets `#main-content`
+- **Landmarks**: `role="banner"` on header, `role="main"` on page container
+- **Live regions**: `ErrorBanner.vue` uses `role="alert"`, `LoadingDiv.vue` uses `role="status"`
+- **Icon buttons**: Use `aria-label` not `title` for accessible names
+- **Focus indicators**: Global `:focus-visible` styles in `App.vue`
+
+### Components with ARIA
+| Component | ARIA Attrs |
+|-----------|------------|
+| `App.vue` | Skip link, landmarks, focus CSS |
+| `ShedToolbar.vue` | `aria-label` on icon buttons, `aria-haspopup` on dropdowns |
+| `ErrorBanner.vue` | `role="alert"`, `aria-live="assertive"` |
+| `LoadingDiv.vue` | `role="status"`, `aria-live="polite"` |
+| `RepositoryExplore.vue` | `aria-label` on FAB and icon buttons |
+| `PaginatedRepositoriesGrid.vue` | `aria-label` on table |
+
+### Quasar Notes
+- `q-btn-dropdown` auto-manages `aria-expanded`
+- `q-select` has built-in label association
+- Use `aria-label` on icon-only `q-btn` components
+- FABs (`q-fab`) need explicit `aria-label` on trigger
+
+### Notification System
+- `util.ts` `notify()` - uses Quasar Notify (toast messages)
+- `ErrorBanner.vue` - inline persistent errors with dismiss
+- `LoadingDiv.vue` - spinner with status message

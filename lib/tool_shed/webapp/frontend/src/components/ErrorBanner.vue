@@ -28,7 +28,14 @@ const effectiveShow = computed(() => props.error && show.value)
 
 <template>
     <div class="q-pa-md q-gutter-sm">
-        <q-banner inline-actions rounded class="bg-negative text-white" v-if="effectiveShow">
+        <q-banner
+            inline-actions
+            rounded
+            class="bg-negative text-white"
+            role="alert"
+            aria-live="assertive"
+            v-if="effectiveShow"
+        >
             <strong>{{ props.error }}</strong>
             <template #action>
                 <q-btn flat label="Dismiss" @click="dismiss" />

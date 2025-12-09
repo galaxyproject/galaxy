@@ -163,6 +163,7 @@ onMounted(() => {
             :rows-per-page-options="[rowsPerPage]"
             :no-data-label="noDataLabel"
             hide-header
+            :aria-label="title"
             @request="onRequest"
         >
             <template #top>
