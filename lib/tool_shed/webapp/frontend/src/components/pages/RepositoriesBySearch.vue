@@ -13,6 +13,7 @@ import { repositorySearch } from "@/api"
 import { notifyOnCatch } from "@/util"
 
 const searchQuery = ref("")
+let currentSearchId = 0
 
 type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
@@ -21,18 +22,26 @@ async function onRequest(query: Query): Promise<QueryResults> {
     if (!queryValue) {
         return emptyQueryResults()
     }
+    const thisSearchId = ++currentSearchId
     try {
         const data = await repositorySearch({
             q: queryValue,
             page: query.page,
             page_size: query.rowsPerPage,
         })
+        // Discard results if a newer search has been initiated
+        if (thisSearchId !== currentSearchId) {
+            return emptyQueryResults()
+        }
         return {
             items: data.hits.map(adaptHit),
             rowsNumber: Number.parseInt(data.total_results),
         }
     } catch (e) {
-        notifyOnCatch(e)
+        // Only report errors for current search
+        if (thisSearchId === currentSearchId) {
+            notifyOnCatch(e)
+        }
         return emptyQueryResults()
     }
 }
