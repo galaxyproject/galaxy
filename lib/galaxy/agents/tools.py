@@ -71,6 +71,25 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         # Add tools for tool discovery and analysis
         @agent.tool
+        async def search_galaxy_tools(ctx: RunContext[GalaxyAgentDependencies], query: str) -> str:
+            """Search Galaxy's toolbox for tools matching a query.
+
+            Use this to find real tool IDs for tools you want to recommend.
+            Returns tool id, name, description, and category for matching tools.
+            """
+            results = await self.search_tools(query)
+            if not results:
+                return f"No tools found matching '{query}'"
+
+            formatted = []
+            for tool in results[:10]:
+                formatted.append(
+                    f"- ID: {tool['id']}, Name: {tool['name']}, "
+                    f"Description: {tool['description'][:100]}..."
+                )
+            return f"Found {len(results)} tools:\n" + "\n".join(formatted)
+
+        @agent.tool
         async def get_training_materials(
             ctx: RunContext[GalaxyAgentDependencies], tool_names: str, analysis_type: str = ""
         ) -> str:
@@ -284,6 +303,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 else:
                     recommendation = result
 
+                log.info(f"Tool recommendation result: primary_tools={recommendation.primary_tools}")
                 content = self._format_recommendation_response(recommendation)
                 suggestions = self._create_suggestions(recommendation)
 
@@ -416,55 +436,25 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         # Suggest running the top tool
         if recommendation.primary_tools:
             top_tool = recommendation.primary_tools[0]
+            log.debug(f"Creating suggestion for top_tool: {top_tool}")
             tool_name = top_tool.get("name", top_tool.get("tool_name", "Unknown tool"))
             tool_id = top_tool.get("id", top_tool.get("tool_id", ""))
-            # Normalize confidence for comparison
-            conf_value = recommendation.confidence
-            if isinstance(conf_value, str):
-                conf_value = conf_value.lower()
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Run {tool_name}",
-                    parameters={"tool_id": tool_id, "tool_name": tool_name},
-                    confidence=ConfidenceLevel.MEDIUM if conf_value == "medium" else ConfidenceLevel.HIGH,
-                    priority=1,
+            log.debug(f"Extracted tool_name={tool_name}, tool_id={tool_id}")
+            # Only add suggestions if we have a valid tool_id
+            if tool_id:
+                # Normalize confidence for comparison
+                conf_value = recommendation.confidence
+                if isinstance(conf_value, str):
+                    conf_value = conf_value.lower()
+                suggestions.append(
+                    ActionSuggestion(
+                        action_type=ActionType.TOOL_RUN,
+                        description=f"Open {tool_name}",
+                        parameters={"tool_id": tool_id, "tool_name": tool_name},
+                        confidence=ConfidenceLevel.MEDIUM if conf_value == "medium" else ConfidenceLevel.HIGH,
+                        priority=1,
+                    )
                 )
-            )
-
-        # Suggest workflow if applicable
-        if recommendation.workflow_suggestion:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.WORKFLOW_STEP,
-                    description="Follow recommended workflow",
-                    confidence=ConfidenceLevel.MEDIUM,
-                    priority=2,
-                )
-            )
-
-        # Suggest documentation review
-        if recommendation.primary_tools:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.DOCUMENTATION,
-                    description="Review tool documentation",
-                    confidence=ConfidenceLevel.HIGH,
-                    priority=3,
-                )
-            )
-
-        # Parameter changes if recommended
-        if recommendation.parameter_guidance:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.PARAMETER_CHANGE,
-                    description="Apply recommended parameters",
-                    parameters=recommendation.parameter_guidance,
-                    confidence=ConfidenceLevel.MEDIUM,
-                    priority=2,
-                )
-            )
 
         return suggestions
 
@@ -531,10 +521,13 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         # Create suggestions
         suggestions = []
         if tool and tool.group(1).strip():
+            tool_name = tool.group(1).strip()
+            tool_id_value = tool_id.group(1).strip() if tool_id else tool_name.lower().replace(" ", "_")
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.TOOL_RUN,
-                    description=f"Run {tool.group(1).strip()}",
+                    description=f"Run {tool_name}",
+                    parameters={"tool_id": tool_id_value, "tool_name": tool_name},
                     confidence=confidence_level,
                     priority=1,
                 )
