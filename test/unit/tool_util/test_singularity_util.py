@@ -18,3 +18,13 @@ def test_build_singularity_run_command_no_cleanenv_ipc_pid():
         ipc=False,
     )
     assert cmd == "singularity -s exec --contain --no-mount tmp busybox echo hi"
+
+
+def test_build_singularity_run_command_apptainer_no_contain():
+    cmd = build_singularity_run_command(
+        container_command="echo hi",
+        image="busybox",
+        singularity_cmd="apptainer",
+        contain=False,
+    )
+    assert cmd == "apptainer -s exec --cleanenv --ipc --pid --no-mount tmp busybox echo hi"

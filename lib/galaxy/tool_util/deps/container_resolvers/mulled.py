@@ -3,36 +3,33 @@
 import logging
 import os
 import subprocess
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
 from typing import (
     Any,
-    Callable,
     Container as TypingContainer,
     Dict,
     List,
-    NamedTuple,
     Optional,
-    Type,
     TYPE_CHECKING,
-    Union,
 )
 
 from requests import Session
 from typing_extensions import Literal
 
 from galaxy.util import (
-    safe_makedirs,
     string_as_bool,
-    unicodify,
-    which,
 )
 from galaxy.util.commands import shell
 from . import (
-    ContainerResolver,
+    ApptainerCliContainerResolver,
+    CacheDirectory,
+    CachedMulledImageSingleTarget,
+    CachedTarget,
+    CachedV1MulledImageMultiTarget,
+    CachedV2MulledImageMultiTarget,
+    CliContainerResolver,
+    list_docker_cached_mulled_images,
     ResolutionCache,
+    SingularityCliContainerResolver,
 )
 from ..conda_util import CondaTarget
 from ..container_classes import (
@@ -41,7 +38,6 @@ from ..container_classes import (
     DockerContainer,
     SingularityContainer,
 )
-from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
     ensure_installed,
     InvolucroContext,
@@ -55,7 +51,6 @@ from ..mulled.util import (
     split_tag,
     v1_image_name,
     v2_image_name,
-    version_sorted,
 )
 from ..requirements import (
     ContainerDescription,
@@ -69,198 +64,6 @@ if TYPE_CHECKING:
     )
 
 log = logging.getLogger(__name__)
-
-
-class CachedMulledImageSingleTarget(NamedTuple):
-    package_name: str
-    version: Optional[str]
-    build: Optional[str]
-    image_identifier: str
-
-
-class CachedV1MulledImageMultiTarget(NamedTuple):
-    hash: str
-    build: Optional[str]
-    image_identifier: str
-
-
-class CachedV2MulledImageMultiTarget(NamedTuple):
-    image_name: str
-    version_hash: Optional[str]
-    build: Optional[str]
-    image_identifier: str
-
-    @property
-    def package_hash(self) -> str:
-        # Make this work for Singularity file name or fully qualified Docker repository
-        # image names.
-        image_name = self.image_name
-        if "/" not in image_name:
-            return image_name
-        else:
-            return image_name.rsplit("/")[-1]
-
-
-CachedTarget = Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarget, CachedV2MulledImageMultiTarget]
-
-
-class CacheDirectory(metaclass=ABCMeta):
-    def __init__(self, path: str, hash_func: Literal["v1", "v2"] = "v2") -> None:
-        self.path = path
-        self.hash_func = hash_func
-
-    def _list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
-        contents = os.listdir(self.path)
-        sorted_images = version_sorted(contents)
-        raw_images = (identifier_to_cached_target(name, self.hash_func) for name in sorted_images)
-        return [i for i in raw_images if i is not None]
-
-    @abstractmethod
-    def list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
-        """Generate a list of cached, mulled images in the cache."""
-
-    @abstractmethod
-    def invalidate_cache(self) -> None:
-        """Invalidate the cache."""
-
-
-class UncachedCacheDirectory(CacheDirectory):
-    cacher_type = "uncached"
-
-    def list_cached_mulled_images_from_path(
-        self,
-    ) -> List[CachedTarget]:
-        return self._list_cached_mulled_images_from_path()
-
-    def invalidate_cache(self) -> None:
-        pass
-
-
-class DirMtimeCacheDirectory(CacheDirectory):
-    cacher_type = "dir_mtime"
-
-    def __init__(self, path: str, **kwargs):
-        super().__init__(path, **kwargs)
-        self.invalidate_cache()
-
-    def __get_mtime(self) -> float:
-        return os.stat(self.path).st_mtime
-
-    def __cache(self) -> None:
-        self.__contents = self._list_cached_mulled_images_from_path()
-        self.__mtime = self.__get_mtime()
-        log.debug(f"Cached images in path {self.path} at directory mtime {self.__mtime}")
-
-    def list_cached_mulled_images_from_path(
-        self,
-    ) -> List[CachedTarget]:
-        mtime = self.__get_mtime()
-        if mtime != self.__mtime:
-            if mtime < self.__mtime:
-                log.warning(
-                    f"Modification time '{mtime}' of cache directory '{self.path}' is older than previous "
-                    f"modification time '{self.__mtime}'! Cache directory will be recached"
-                )
-            self.__cache()
-        return self.__contents
-
-    def invalidate_cache(self) -> None:
-        self.__mtime = -1.0
-        self.__contents = []
-
-
-def get_cache_directory_cacher(cacher_type: Optional[str]) -> Type[CacheDirectory]:
-    # these can become a separate module and use plugin_config if we need more
-    cachers: Dict[str, Type[CacheDirectory]] = {
-        UncachedCacheDirectory.cacher_type: UncachedCacheDirectory,
-        DirMtimeCacheDirectory.cacher_type: DirMtimeCacheDirectory,
-    }
-    cacher_type = cacher_type or "uncached"
-    return cachers[cacher_type]
-
-
-def list_docker_cached_mulled_images(
-    namespace: Optional[str] = None,
-    hash_func: Literal["v1", "v2"] = "v2",
-    resolution_cache: Optional[ResolutionCache] = None,
-) -> List[CachedTarget]:
-    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:cached_images"
-    if resolution_cache is not None and cache_key in resolution_cache:
-        images_and_versions = resolution_cache.get(cache_key)
-    else:
-        command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
-        try:
-            images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
-        except subprocess.CalledProcessError:
-            log.info("Call to `docker images` failed, configured container resolution may be broken")
-            return []
-        images_and_versions = [":".join(line.split()[0:2]) for line in images_and_versions[1:]]
-        if resolution_cache is not None:
-            resolution_cache[cache_key] = images_and_versions
-
-    def output_line_to_image(line: str) -> Optional[CachedTarget]:
-        image = identifier_to_cached_target(line, hash_func, namespace=namespace)
-        return image
-
-    name_filter = get_filter(namespace)
-    sorted_images = version_sorted(list(filter(name_filter, images_and_versions)))
-    raw_images = (output_line_to_image(_) for _ in sorted_images)
-    return [i for i in raw_images if i is not None]
-
-
-def identifier_to_cached_target(
-    identifier: str, hash_func: Literal["v1", "v2"], namespace: Optional[str] = None
-) -> Optional[CachedTarget]:
-    if ":" in identifier:
-        image_name, version = identifier.rsplit(":", 1)
-    else:
-        image_name = identifier
-        version = None
-
-    if not version or version == "latest":
-        version = None
-
-    image: Optional[CachedTarget] = None
-    prefix = ""
-    if namespace is not None:
-        prefix = f"quay.io/{namespace}/"
-    if image_name.startswith(f"{prefix}mulled-v1-"):
-        if hash_func == "v2":
-            return None
-
-        hash = image_name
-        build = None
-        if version and version.isdigit():
-            build = version
-        image = CachedV1MulledImageMultiTarget(hash, build, identifier)
-    elif image_name.startswith(f"{prefix}mulled-v2-"):
-        if hash_func == "v1":
-            return None
-
-        version_hash = None
-        build = None
-        if version:
-            if "-" in version:
-                version_hash, build = version.rsplit("-", 1)
-            elif version.isdigit():
-                version_hash, build = None, version
-            else:
-                log.debug(f"Unparsable mulled image tag encountered [{version}]")
-
-        image = CachedV2MulledImageMultiTarget(image_name, version_hash, build, identifier)
-    else:
-        build = None
-        if version and "--" in version:
-            version, build = split_tag(version)
-        if prefix and image_name.startswith(prefix):
-            image_name = image_name[len(prefix) :]
-        image = CachedMulledImageSingleTarget(image_name, version, build, identifier)
-    return image
-
-
-def get_filter(namespace: Optional[str]) -> Callable[[str], bool]:
-    prefix = "quay.io/" if namespace is None else f"quay.io/{namespace}"
-    return lambda name: name.startswith(prefix) and name.count("/") == 2
 
 
 def find_best_matching_cached_image(
@@ -344,6 +147,7 @@ def singularity_cached_container_description(
     cache_directory: CacheDirectory,
     hash_func: Literal["v1", "v2"] = "v2",
     shell: str = DEFAULT_CONTAINER_SHELL,
+    cmd: Optional[str] = None,
 ) -> Optional[ContainerDescription]:
     if len(targets) == 0:
         return None
@@ -351,7 +155,7 @@ def singularity_cached_container_description(
     if not os.path.exists(cache_directory.path):
         return None
 
-    cached_images = cache_directory.list_cached_mulled_images_from_path()
+    cached_images = cache_directory.list_cached_images_from_path()
     image = find_best_matching_cached_image(targets, cached_images, hash_func)
 
     container = None
@@ -360,6 +164,7 @@ def singularity_cached_container_description(
             os.path.abspath(os.path.join(cache_directory.path, image.image_identifier)),
             type="singularity",
             shell=shell,
+            cmd=cmd,
         )
     return container
 
@@ -463,44 +268,6 @@ def targets_to_mulled_name(
     return name
 
 
-class CliContainerResolver(ContainerResolver):
-    container_type = "docker"
-    cli = "docker"
-
-    def __init__(self, app_info: "AppInfo", **kwargs) -> None:
-        super().__init__(app_info=app_info, **kwargs)
-        self._cli_available = bool(which(self.cli))
-
-    @property
-    def cli_available(self) -> bool:
-        return self._cli_available
-
-    @cli_available.setter
-    def cli_available(self, value: bool) -> None:
-        if not value:
-            log.info(
-                f"{self.cli} CLI not available, cannot list or pull images in Galaxy process. Does not impact kubernetes."
-            )
-        self._cli_available = value
-
-
-class SingularityCliContainerResolver(CliContainerResolver):
-    container_type = "singularity"
-    cli = "singularity"
-
-    def __init__(self, app_info: "AppInfo", hash_func: Literal["v1", "v2"] = "v2", **kwargs) -> None:
-        super().__init__(app_info=app_info, **kwargs)
-        self.hash_func = hash_func
-        self.cache_directory_cacher_type = kwargs.get("cache_directory_cacher_type")
-        cacher_class = get_cache_directory_cacher(self.cache_directory_cacher_type)
-        cache_directory_path = kwargs.get("cache_directory")
-        if not cache_directory_path:
-            assert self.app_info.container_image_cache_path
-            cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
-        self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
-        safe_makedirs(self.cache_directory.path)
-
-
 class CachedMulledDockerContainerResolver(CliContainerResolver):
     resolver_type = "cached_mulled"
     shell = "/bin/bash"
@@ -546,11 +313,23 @@ class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
         targets = mulled_targets(tool_info)
         log.debug(f"Image name for tool {tool_info.tool_id}: {image_name(targets, self.hash_func)}")
         return singularity_cached_container_description(
-            targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell
+            targets,
+            self.cache_directory,
+            hash_func=self.hash_func,
+            shell=self.shell,
+            cmd=self.cmd,
         )
 
     def __str__(self) -> str:
         return f"CachedMulledSingularityContainerResolver[cache_directory={self.cache_directory.path}]"
+
+
+class CachedMulledApptainerContainerResolver(ApptainerCliContainerResolver, CachedMulledSingularityContainerResolver):
+    resolver_type = "cached_mulled_apptainer"
+    shell = "/bin/bash"
+
+    def __str__(self) -> str:
+        return f"CachedMulledApptainerContainerResolver[cache_directory={self.cache_directory.path},apptainer_exec={self.apptainer_exec}]"
 
 
 class MulledDockerContainerResolver(CliContainerResolver):
@@ -715,6 +494,14 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
         return f"MulledSingularityContainerResolver[namespace={self.namespace}]"
 
 
+class MulledApptainerContainerResolver(ApptainerCliContainerResolver, MulledSingularityContainerResolver):
+    resolver_type = "mulled_apptainer"
+    protocol = "docker://"
+
+    def __str__(self) -> str:
+        return f"MulledApptainerContainerResolver[namespace={self.namespace},apptainer_exec={self.apptainer_exec}]"
+
+
 class BuildMulledDockerContainerResolver(CliContainerResolver):
     """Build for Docker mulled images matching tool dependencies."""
 
@@ -817,6 +604,15 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
         return f"BuildSingularityContainerResolver[cache_directory={self.cache_directory.path}]"
 
 
+class BuildMulledApptainerContainerResolver(ApptainerCliContainerResolver, BuildMulledSingularityContainerResolver):
+    resolver_type = "build_mulled_apptainer"
+    shell = "/bin/bash"
+    builds_on_resolution = True
+
+    def __str__(self) -> str:
+        return f"BuildApptainerContainerResolver[cache_directory={self.cache_directory.path},apptainer_exec={self.apptainer_exec}]"
+
+
 def mulled_targets(tool_info: "ToolInfo") -> List[CondaTarget]:
     return requirements_to_mulled_targets(tool_info.requirements)
 
@@ -833,8 +629,11 @@ def image_name(targets: List[CondaTarget], hash_func: Literal["v1", "v2"]) -> st
 __all__ = (
     "CachedMulledDockerContainerResolver",
     "CachedMulledSingularityContainerResolver",
+    "CachedMulledApptainerContainerResolver",
     "MulledDockerContainerResolver",
     "MulledSingularityContainerResolver",
+    "MulledApptainerContainerResolver",
     "BuildMulledDockerContainerResolver",
     "BuildMulledSingularityContainerResolver",
+    "BuildMulledApptainerContainerResolver",
 )

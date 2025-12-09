@@ -59,11 +59,11 @@ def ensure_installed(installable_context: InstallableContext, install_func, auto
             installed = True
         return installed
 
-    if not os.path.lexists(parent_path):
+    if auto_init and parent_path and not os.path.lexists(parent_path):
         os.mkdir(parent_path)
 
     try:
-        if auto_init and os.access(parent_path, os.W_OK):
+        if auto_init and parent_path and os.access(parent_path, os.W_OK):
             with FileLock(os.path.join(parent_path, desc.lower()), timeout=300):
                 return _check()
         else:
