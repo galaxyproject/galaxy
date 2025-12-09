@@ -14,11 +14,13 @@ interface RepositoryExploreProps {
     repository: Repository
     currentRevision?: string | null
     dense?: boolean
+    showDetailsLink?: boolean
 }
 
 const props = withDefaults(defineProps<RepositoryExploreProps>(), {
     currentRevision: null,
     dense: false,
+    showDetailsLink: false,
 })
 
 const changelog = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/shortlog`)
@@ -38,7 +40,12 @@ const buttonProperties = computed(() => {
 </script>
 <template>
     <q-fab class="q-px-md" color="secondary" text-color="primary" icon="explore" direction="down" v-if="!dense">
-        <q-fab-action icon="sym_r_overview" label="Details" @click="goToRepository(props.repository.id)" />
+        <q-fab-action
+            v-if="showDetailsLink"
+            icon="sym_r_overview"
+            label="Details"
+            @click="goToRepository(props.repository.id)"
+        />
         <!-- receipt_long? -->
         <q-fab-action icon="difference" label="Changelog" @click="navigate(changelog)" />
         <q-fab-action icon="list" label="Contents" @click="navigate(contents)" />

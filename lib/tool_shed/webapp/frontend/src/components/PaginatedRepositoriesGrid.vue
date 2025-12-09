@@ -147,7 +147,7 @@ onMounted(() => {
                         <span class="text-weight-bold">
                             <repository-link :id="props.row.id" :name="props.row.name" :owner="props.row.owner" />
                         </span>
-                        <repository-explore :repository="props.row" :dense="true" />
+                        <repository-explore :repository="props.row" :dense="true" :show-details-link="true" />
                     </q-td>
                 </q-tr>
                 <q-tr
