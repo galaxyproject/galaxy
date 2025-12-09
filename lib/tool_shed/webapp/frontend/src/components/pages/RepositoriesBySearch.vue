@@ -87,7 +87,7 @@ watch(
 </script>
 <template>
     <page-container>
-        <q-input debounce="20" filled v-model="searchQuery" label="Search Repositories" />
+        <q-input debounce="1000" filled v-model="searchQuery" label="Search Repositories" />
         <PaginatedRepositoriesGrid
             ref="grid"
             v-if="searchQuery && searchQuery.length > 1"
