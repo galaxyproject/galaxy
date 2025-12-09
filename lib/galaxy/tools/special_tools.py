@@ -14,4 +14,5 @@ SPECIAL_TOOLS = {
 def load_lib_tools(toolbox):
     for name, path in SPECIAL_TOOLS.items():
         tool = toolbox.load_hidden_lib_tool(os.path.abspath(os.path.join(os.path.dirname(__file__), path)))
-        log.debug("Loaded %s tool: %s", name, tool.id)
+        if tool:
+            log.debug("Loaded %s tool: %s", name, tool.id)

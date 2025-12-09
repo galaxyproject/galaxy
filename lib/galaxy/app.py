@@ -358,7 +358,12 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
         self.dynamic_tool_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
-        self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
+        if self.is_webapp:
+            self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
+        else:
+            from galaxy.tools.toolbox.toolbox_adapter import DatabaseToolBox
+
+            self._toolbox = DatabaseToolBox(self.config.tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(self.config.file_path)
         app_info = AppInfo(

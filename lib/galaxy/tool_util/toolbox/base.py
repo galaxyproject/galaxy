@@ -67,6 +67,7 @@ from .views.static import StaticToolPanelView
 if TYPE_CHECKING:
     from galaxy.model import (
         DynamicTool,
+        Job,
         User,
         Workflow,
     )
@@ -212,9 +213,10 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         self._tool_config_watcher = self.app.watchers.tool_config_watcher
         self._filter_factory = FilterFactory(self)
         self._tool_tag_manager = self.tool_tag_manager()
+        self.known_tool_source_hashes = self._get_toolbox_hashes()
         self._init_tools_from_configs(config_filenames)
 
-        if self.app.name == "galaxy" and self._integrated_tool_panel_config_has_contents:
+        if self.app.name == "galaxy" and self.app.is_webapp and self._integrated_tool_panel_config_has_contents:
             self._load_tool_panel()
 
         toolbox = self
@@ -258,10 +260,31 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         for tool_panel_view in tool_panel_views_list:
             self._tool_panel_views[tool_panel_view.to_model().id] = tool_panel_view
 
-        if self.app.name == "galaxy":
+        if self.app.name == "galaxy" and self.app.is_webapp:
             self._load_tool_panel_views()
-        if save_integrated_tool_panel:
+        if self.app.is_webapp and save_integrated_tool_panel:
             self._save_integrated_tool_panel()
+
+    def tool_for_job(
+        self,
+        job: "Job",
+        exact=True,
+        check_access=True,
+        user: Optional["User"] = None,
+        tool_version: Optional[str] = None,
+    ) -> Optional["Tool"]:
+        if (dynamic_tool := job.dynamic_tool) is not None:
+            if check_access:
+                if not user:
+                    return None
+                if not dynamic_tool.public:
+                    self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
+            return self.dynamic_tool_to_tool(dynamic_tool)
+        else:
+            return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+
+    def _get_toolbox_hashes(self):
+        return set()
 
     def _default_panel_view(self, trans):
         config = self.app.config
