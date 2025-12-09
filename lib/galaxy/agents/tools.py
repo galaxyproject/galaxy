@@ -10,7 +10,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from pydantic import (
@@ -32,14 +31,14 @@ log = logging.getLogger(__name__)
 
 
 class SimplifiedToolRecommendationResult(BaseModel):
-    """Simplified result for local LLMs - avoids nested models."""
+    """Simplified result for local LLMs - avoids nested models and enums."""
 
     # Instead of nested ToolMatch objects, we'll use simple dictionaries
     primary_tools: List[Dict[str, Any]]  # Each dict has tool_id, tool_name, description, etc.
     alternative_tools: List[Dict[str, Any]] = []
     workflow_suggestion: Optional[str] = None
     parameter_guidance: Dict[str, Any] = {}
-    confidence: Union[str, ConfidenceLevel]  # "low", "medium", or "high"
+    confidence: str  # "low", "medium", or "high" - plain string to avoid $defs in JSON schema
     reasoning: str
     search_keywords: List[str] = []
 
@@ -307,9 +306,18 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 content = self._format_recommendation_response(recommendation)
                 suggestions = self._create_suggestions(recommendation)
 
+                # Convert string confidence to enum
+                conf_str = recommendation.confidence.lower() if recommendation.confidence else "medium"
+                if conf_str == "high":
+                    confidence = ConfidenceLevel.HIGH
+                elif conf_str == "low":
+                    confidence = ConfidenceLevel.LOW
+                else:
+                    confidence = ConfidenceLevel.MEDIUM
+
                 return AgentResponse(
                     content=content,
-                    confidence=recommendation.confidence,
+                    confidence=confidence,
                     agent_type=self.agent_type,
                     suggestions=suggestions,
                     metadata={
@@ -442,16 +450,19 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.debug(f"Extracted tool_name={tool_name}, tool_id={tool_id}")
             # Only add suggestions if we have a valid tool_id
             if tool_id:
-                # Normalize confidence for comparison
-                conf_value = recommendation.confidence
-                if isinstance(conf_value, str):
-                    conf_value = conf_value.lower()
+                conf_value = (recommendation.confidence or "medium").lower()
+                if conf_value == "high":
+                    action_confidence = ConfidenceLevel.HIGH
+                elif conf_value == "low":
+                    action_confidence = ConfidenceLevel.LOW
+                else:
+                    action_confidence = ConfidenceLevel.MEDIUM
                 suggestions.append(
                     ActionSuggestion(
                         action_type=ActionType.TOOL_RUN,
                         description=f"Open {tool_name}",
                         parameters={"tool_id": tool_id, "tool_name": tool_name},
-                        confidence=ConfidenceLevel.MEDIUM if conf_value == "medium" else ConfidenceLevel.HIGH,
+                        confidence=action_confidence,
                         priority=1,
                     )
                 )
