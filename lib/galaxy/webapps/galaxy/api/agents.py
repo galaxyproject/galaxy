@@ -24,6 +24,7 @@ from galaxy.schema.agents import (
     AvailableAgent,
     ConfidenceLevel,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -137,7 +138,7 @@ class AgentAPI:
     async def analyze_error(
         self,
         query: str = Body(..., description="Description of the error or problem"),
-        job_id: Optional[int] = Body(None, description="Job ID for context"),
+        job_id: Optional[DecodedDatabaseIdField] = Body(None, description="Job ID for context"),
         error_details: Optional[Dict[str, Any]] = Body(None, description="Additional error details"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
