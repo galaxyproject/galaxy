@@ -398,12 +398,12 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             "confidence": confidence.group(1).lower() if confidence else "medium",
             "error_category": error_type.group(1).strip() if error_type else "unknown",
             "suggestions": [
-                {
-                    "action_type": "CONTACT_SUPPORT",
-                    "description": "Get additional help if this doesn't resolve the issue",
-                    "confidence": "medium",
-                    "priority": 2,
-                }
+                ActionSuggestion(
+                    action_type=ActionType.CONTACT_SUPPORT,
+                    description="Get additional help if this doesn't resolve the issue",
+                    confidence="medium",
+                    priority=2,
+                )
             ],
         }
 
