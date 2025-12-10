@@ -823,11 +823,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "username": username,
         }
         is_galaxy_app = trans.webapp.name == "galaxy"
-        allow_profile_edit = (
-            trans.app.config.enable_account_interface
-            and not trans.app.config.use_remote_user
-            and not trans.app.config.disable_local_accounts
-        )
+        allow_profile_edit = trans.app.config.enable_account_interface
         if allow_profile_edit or not is_galaxy_app:
             inputs.append(
                 {
