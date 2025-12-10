@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faArrowAltCircleUp, faSave } from "@fortawesome/free-regular-svg-icons";
+import { faArrowAltCircleUp, faLightbulb, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { loader, useMonaco, VueMonacoEditor } from "@guolao/vue-monaco-editor";
 import * as monaco from "monaco-editor";
@@ -144,6 +144,53 @@ async function importFromUrl() {
         errorMsg.value = { err_code: -1, err_msg: `Couldn't import YAML from URL: ${error}` };
     }
 }
+
+const generating = ref(false);
+
+async function generateViaLLM() {
+    const userPrompt = prompt("Describe the tool you would like to build");
+    if (!userPrompt) {
+        return;
+    }
+
+    generating.value = true;
+    errorMsg.value = undefined;
+
+    try {
+        const response = await GalaxyApi().POST("/api/ai/agents/custom-tool", {
+            body: { query: userPrompt },
+        });
+
+        if (response.error) {
+            errorMsg.value = { err_code: response.error.err_code, err_msg: response.error.err_msg };
+            return;
+        }
+
+        // Check if the response contains tool YAML in metadata
+        const metadata = response.data?.metadata as { tool_yaml?: string; error?: string } | undefined;
+        const toolYaml = metadata?.tool_yaml;
+        if (toolYaml) {
+            yamlRepresentation.value = toolYaml;
+        } else if (metadata?.error === "model_capability") {
+            // Model doesn't support structured output
+            errorMsg.value = {
+                err_code: -1,
+                err_msg:
+                    "The configured AI model doesn't support tool generation. Please contact your administrator to configure a compatible model.",
+            };
+        } else {
+            const content = response.data?.content as string | undefined;
+            errorMsg.value = {
+                err_code: -1,
+                err_msg: content ?? "Failed to generate tool definition",
+            };
+        }
+    } catch (error) {
+        errorMsg.value = { err_code: -1, err_msg: `Couldn't generate YAML: ${error}` };
+    } finally {
+        generating.value = false;
+    }
+}
 </script>
 
 <template>
@@ -153,6 +200,15 @@ async function importFromUrl() {
         </b-alert>
         <div class="d-flex flex-gapx-1">
             <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">Tool Editor</Heading>
+            <b-button
+                variant="secondary"
+                size="m"
+                title="Generate via AI"
+                data-description="Generate via AI"
+                :disabled="generating"
+                @click="generateViaLLM"
+                ><FontAwesomeIcon :icon="faLightbulb"
+            /></b-button>
             <b-button
                 variant="secondary"
                 size="m"
