@@ -1,27 +1,35 @@
 <template>
     <div v-if="suggestions.length > 0" class="action-card">
-        <div class="action-header">
-            <strong>Suggested Actions:</strong>
-        </div>
+        <div class="action-header">Suggested Actions</div>
         <div class="action-list">
             <button
                 v-for="action in sortedSuggestions"
                 :key="`${action.action_type}-${action.description}`"
                 class="btn action-button"
-                :class="`btn-${getVariant(action.priority)}`"
+                :class="getButtonClass(action.priority)"
                 :disabled="processingAction"
                 @click="$emit('handle-action', action)">
-                <span class="action-icon">{{ getIcon(action.action_type) }}</span>
+                <FontAwesomeIcon :icon="getIcon(action.action_type)" fixed-width />
                 <span class="action-text">{{ action.description }}</span>
-                <span v-if="action.confidence" class="action-confidence">
-                    <small>({{ action.confidence }})</small>
-                </span>
             </button>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import {
+    faBook,
+    faCog,
+    faFlask,
+    faLifeRing,
+    faPencilAlt,
+    faPlay,
+    faSave,
+    faSitemap,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import { type ActionSuggestion, ActionType } from "@/composables/agentActions";
@@ -44,80 +52,80 @@ const sortedSuggestions = computed(() => {
     return [...props.suggestions].sort((a, b) => a.priority - b.priority);
 });
 
-function getIcon(actionType: ActionType): string {
-    const icons: Partial<Record<ActionType, string>> = {
-        [ActionType.TOOL_RUN]: "🔧",
-        [ActionType.SAVE_TOOL]: "💾",
-        [ActionType.TEST_TOOL]: "🧪",
-        [ActionType.PARAMETER_CHANGE]: "⚙️",
-        [ActionType.WORKFLOW_STEP]: "📊",
-        [ActionType.CONTACT_SUPPORT]: "🆘",
-        [ActionType.REFINE_QUERY]: "✏️",
-    };
-    return icons[actionType as ActionType] || "❓";
+const iconMap: Partial<Record<ActionType, IconDefinition>> = {
+    [ActionType.TOOL_RUN]: faPlay,
+    [ActionType.SAVE_TOOL]: faSave,
+    [ActionType.TEST_TOOL]: faFlask,
+    [ActionType.PARAMETER_CHANGE]: faCog,
+    [ActionType.WORKFLOW_STEP]: faSitemap,
+    [ActionType.CONTACT_SUPPORT]: faLifeRing,
+    [ActionType.REFINE_QUERY]: faPencilAlt,
+    [ActionType.DOCUMENTATION]: faBook,
+    [ActionType.CONFIGURATION]: faCog,
+};
+
+function getIcon(actionType: ActionType): IconDefinition {
+    return iconMap[actionType] || faWrench;
 }
 
-function getVariant(priority: number): string {
+function getButtonClass(priority: number): string {
     switch (priority) {
         case 1:
-            return "primary";
+            return "btn-outline-primary";
         case 2:
-            return "secondary";
-        case 3:
-            return "info";
+            return "btn-outline-secondary";
         default:
-            return "light";
+            return "btn-outline-secondary";
     }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "@/style/scss/theme/blue.scss";
+
 .action-card {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 12px;
-    margin-top: 12px;
+    background: $white;
+    border: $border-default;
+    border-radius: $border-radius-base;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
 }
 
 .action-header {
-    margin-bottom: 8px;
-    color: #495057;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.5rem;
 }
 
 .action-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .action-button {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    font-size: 0.875rem;
-    border-radius: 20px;
-    transition: all 0.2s ease;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: $border-radius-large;
+    transition: all 0.15s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 }
 
-.action-button:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.action-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.action-icon {
-    font-size: 1rem;
-}
-
-.action-confidence {
-    opacity: 0.7;
-    font-style: italic;
+.action-text {
+    white-space: nowrap;
 }
 </style>
