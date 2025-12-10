@@ -23,9 +23,15 @@ This module contains two test suites:
 ### All live LLM tests:
     GALAXY_TEST_ENABLE_LIVE_LLM=1 pytest lib/galaxy_test/api/test_agents.py -k LiveLLM -v
 
-### Configuration for live tests:
+### Configuration for live API tests (TestAgentsApiLiveLLM):
+    export GALAXY_TEST_AI_API_KEY="your-api-key"
+    export GALAXY_TEST_AI_MODEL="llama-4-scout"
+    export GALAXY_TEST_AI_API_BASE_URL="http://localhost:4000/v1/"
+    export GALAXY_TEST_ENABLE_LIVE_LLM=1
+
+### Configuration for live unit tests (TestAgentUnitLiveLLM):
     export GALAXY_AI_API_KEY="your-api-key"
-    export GALAXY_AI_MODEL="llama-4-scout"  # or deepseek-r1
+    export GALAXY_AI_MODEL="llama-4-scout"
     export GALAXY_AI_API_BASE_URL="http://localhost:4000/v1/"
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """

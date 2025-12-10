@@ -290,6 +290,18 @@ backends:
     # Used by shed's twill dependency stuff
     # TODO: read from Galaxy's config API.
     os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, "dependencies")
+
+    # AI/LLM configuration for agent tests
+    ai_api_key = os.environ.get("GALAXY_TEST_AI_API_KEY")
+    ai_api_base_url = os.environ.get("GALAXY_TEST_AI_API_BASE_URL")
+    ai_model = os.environ.get("GALAXY_TEST_AI_MODEL")
+    if ai_api_key:
+        config["ai_api_key"] = ai_api_key
+    if ai_api_base_url:
+        config["ai_api_base_url"] = ai_api_base_url
+    if ai_model:
+        config["ai_model"] = ai_model
+
     return config
 
 
