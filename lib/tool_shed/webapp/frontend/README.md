@@ -19,6 +19,8 @@ If you want to target an external V2 tool shed API run
 TOOL_SHED_URL=https://testtoolshed.g2.bx.psu.edu CHANGE_ORIGIN=true yarn vite dev
 ```
 
+To login when targeting an external backend, you need to get the `session_csrf_token` cookie set first. Visit `/backend_session` in your browser before logging in - this proxies to the backend's root route which sets the required cookie.
+
 Note that you still need a local backend to generate the graphql schema.
 
 To run a local toolshed patched for rapid bootstrapping and in local Vite dev server mode

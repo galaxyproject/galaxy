@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { getParsedTool, ParsedTool } from "@/api"
+import { errorMessageAsString } from "@/util"
 import LoadingDiv from "@/components/LoadingDiv.vue"
+import ErrorBanner from "@/components/ErrorBanner.vue"
 import PreformattedContent from "@/components/PreformattedContent.vue"
 import BioToolsLink from "@/components/BioToolsLink.vue"
 import BioconductorLink from "@/components/BioconductorLink.vue"
@@ -18,12 +20,18 @@ const props = defineProps<Props>()
 
 const tool = ref<ParsedTool>()
 const loading = ref(true)
+const errorMessage = ref<string | null>(null)
 
 watch(
     props,
     async () => {
         loading.value = true
-        tool.value = await getParsedTool(props.trsToolId, props.version)
+        errorMessage.value = null
+        try {
+            tool.value = await getParsedTool(props.trsToolId, props.version)
+        } catch (e) {
+            errorMessage.value = errorMessageAsString(e)
+        }
         loading.value = false
     },
     { immediate: true }
@@ -86,6 +94,15 @@ const linkedFromOlderRevision = computed(() => {
             </q-banner>
         </div>
         <loading-div v-if="loading" message="Loading tool information" />
+        <div v-else-if="errorMessage">
+            <error-banner :error="errorMessage" />
+            <q-banner rounded class="bg-info text-white q-mx-md">
+                <p>
+                    This error may be caused by stale repository metadata. The repository owner or a Tool Shed
+                    administrator can fix this by resetting the repository metadata.
+                </p>
+            </q-banner>
+        </div>
         <q-card v-else>
             <q-card-section class="bg-primary text-white col-grow">
                 <div class="text-h6">{{ toolTitle }}</div>
