@@ -134,7 +134,7 @@ class TestAgentsApiMocked(ApiTestCase):
         mock_agent.run = mock_run
 
         response = self._post(
-            "ai/query",
+            "ai/agents/query",
             data={
                 "query": "Create a BWA-MEM tool for paired-end reads",
                 "agent_type": "auto",
@@ -176,7 +176,7 @@ class TestAgentsApiMocked(ApiTestCase):
         mock_agent.run = mock_run
 
         response = self._post(
-            "ai/query",
+            "ai/agents/query",
             data={
                 "query": "Create a simple tool that counts lines in a file",
                 "agent_type": "custom_tool",
@@ -221,7 +221,7 @@ class TestAgentsApiMocked(ApiTestCase):
         mock_job_id = "test_job_123"
 
         response = self._post(
-            "ai/query",
+            "ai/agents/query",
             data={
                 "query": "Why did my job fail?",
                 "agent_type": "error_analysis",
@@ -768,7 +768,7 @@ class TestAgentsApiLiveLLM(ApiTestCase):
     def test_query_agent_auto_routing_live(self):
         """Test automatic agent routing with live LLM."""
         response = self._post(
-            "ai/query",
+            "ai/agents/query",
             data={
                 "query": "Create a BWA-MEM tool for paired-end reads",
                 "agent_type": "auto",
@@ -785,7 +785,7 @@ class TestAgentsApiLiveLLM(ApiTestCase):
     def test_query_custom_tool_agent_live(self):
         """Test custom tool agent with live LLM."""
         response = self._post(
-            "ai/query",
+            "ai/agents/query",
             data={
                 "query": "Create a simple tool that counts lines in a file",
                 "agent_type": "custom_tool",
