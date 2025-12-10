@@ -85,7 +85,11 @@ Deprecation Notices
   The Reports app was a separate web application that connected to the Galaxy database to display
   information about jobs, workflows, users, and system usage. Administrators currently using the
   Reports app should plan to migrate to alternative monitoring and analytics solutions before
-  Galaxy 26.0 is released next year.
+  Galaxy 26.0 is released next year. The following GTN tutorials provide guidance on alternative
+  monitoring approaches:
+
+  * `Galaxy Monitoring with Telegraf and Grafana <https://training.galaxyproject.org/training-material/topics/admin/tutorials/monitoring/tutorial.html>`__
+  * `Galaxy Monitoring with gxadmin <https://training.galaxyproject.org/training-material/topics/admin/tutorials/gxadmin/tutorial.html>`__
 
 Release Team
 ===========================================================
