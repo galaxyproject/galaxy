@@ -305,6 +305,12 @@ export function useUploadQueue() {
                     item.error = `Uploaded successfully, but ${errorMsg}`;
                 }
             });
+        } finally {
+            // Remove batch from tracking array to free memory
+            const batchIndex = batches.indexOf(batch);
+            if (batchIndex !== -1) {
+                batches.splice(batchIndex, 1);
+            }
         }
     }
 
@@ -412,13 +418,43 @@ export function useUploadQueue() {
         return ids;
     }
 
+    /**
+     * Removes batches that no longer have any active upload items.
+     * Called when uploads are cleared from the state.
+     */
+    function cleanupOrphanedBatches(): void {
+        for (let i = batches.length - 1; i >= 0; i--) {
+            const batch = batches[i];
+            if (!batch) {
+                continue;
+            }
+
+            const hasActiveUploads = batch.ids.some((id) =>
+                uploadState.activeItems.value.some((item) => item.id === id),
+            );
+
+            if (!hasActiveUploads) {
+                batches.splice(i, 1);
+            }
+        }
+    }
+
+    /** Removes all completed uploads from the state */
+    function clearCompleted(): void {
+        uploadState.clearCompleted();
+        cleanupOrphanedBatches();
+    }
+
+    /** Clears all uploads from the state */
+    function clearAll(): void {
+        uploadState.clearAll();
+        batches.length = 0; // Clear all batches when clearing all uploads
+    }
+
     return {
-        /** Enqueue items for upload */
         enqueue,
-        /** Removes all completed uploads from the state */
-        clearCompleted: () => uploadState.clearCompleted(),
-        /** Clears all uploads from the state */
-        clearAll: () => uploadState.clearAll(),
+        clearCompleted,
+        clearAll,
         /** Access to upload state for UI components */
         state: uploadState,
     };
