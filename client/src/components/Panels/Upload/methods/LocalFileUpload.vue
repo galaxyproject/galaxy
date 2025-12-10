@@ -119,7 +119,7 @@ function toggleAllToPosixLines() {
 const tableFields = [
     { key: "name", label: "Name", sortable: false, tdClass: "file-name-cell" },
     { key: "extension", label: "Type", sortable: false, thStyle: { minWidth: "180px" } },
-    { key: "dbKey", label: "Database", sortable: false, thStyle: { minWidth: "200px" } },
+    { key: "dbKey", label: "Reference", sortable: false, thStyle: { minWidth: "200px" } },
     { key: "size", label: "Size", sortable: false, thStyle: { width: "90px" } },
     { key: "options", label: "Upload Settings", sortable: false, thStyle: { minWidth: "140px" } },
     { key: "actions", label: "", sortable: false, tdClass: "text-right", thStyle: { width: "40px" } },
@@ -240,7 +240,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         show-empty
                         thead-class="file-table-header">
                         <template v-slot:cell(name)="{ item }">
-                            <BFormInput v-model="item.name" size="sm" :placeholder="item.file.name" />
+                            <BFormInput
+                                v-model="item.name"
+                                v-b-tooltip.hover.noninteractive
+                                size="sm"
+                                :placeholder="item.file.name"
+                                title="Dataset name in your history" />
                         </template>
 
                         <template v-slot:head(extension)>
@@ -273,7 +278,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                         <template v-slot:cell(extension)="{ item }">
                             <div class="d-flex align-items-center">
-                                <BFormSelect v-model="item.extension" size="sm" :disabled="!configurationsReady">
+                                <BFormSelect
+                                    v-model="item.extension"
+                                    v-b-tooltip.hover.noninteractive
+                                    size="sm"
+                                    title="File format (auto-detect recommended)"
+                                    :disabled="!configurationsReady">
                                     <option
                                         v-for="(ext, extIndex) in effectiveExtensions"
                                         :key="extIndex"
@@ -292,7 +302,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                         <template v-slot:head(dbKey)>
                             <div class="d-flex align-items-center column-header">
-                                <span class="column-label">Database</span>
+                                <span class="column-label">Reference</span>
                                 <BFormSelect
                                     v-model="bulkDbKey"
                                     v-b-tooltip.hover.noninteractive
@@ -313,7 +323,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </template>
 
                         <template v-slot:cell(dbKey)="{ item }">
-                            <BFormSelect v-model="item.dbKey" size="sm" :disabled="!configurationsReady">
+                            <BFormSelect
+                                v-model="item.dbKey"
+                                v-b-tooltip.hover.noninteractive
+                                size="sm"
+                                title="Database key for this dataset"
+                                :disabled="!configurationsReady">
                                 <option v-for="(dbKey, dbKeyIndex) in listDbKeys" :key="dbKeyIndex" :value="dbKey.id">
                                     {{ dbKey.text }}
                                 </option>
@@ -372,7 +387,11 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </template>
 
                         <template v-slot:cell(actions)="{ index }">
-                            <button class="btn btn-link text-danger p-0" @click="removeFile(index)">
+                            <button
+                                v-b-tooltip.hover.noninteractive
+                                class="btn btn-link text-danger p-0"
+                                title="Remove file from list"
+                                @click="removeFile(index)">
                                 <FontAwesomeIcon :icon="faTimes" />
                             </button>
                         </template>
@@ -380,11 +399,24 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
 
                 <div class="file-list-actions mt-2">
-                    <GButton color="blue" @click="handleBrowse">
+                    <GButton
+                        color="blue"
+                        tooltip
+                        tooltip-placement="top"
+                        title="Browse and add more files to the upload list"
+                        @click="handleBrowse">
                         <FontAwesomeIcon :icon="faLaptop" class="mr-1" />
                         Add More Files
                     </GButton>
-                    <GButton outline color="grey" @click="clearAll"> Clear All </GButton>
+                    <GButton
+                        outline
+                        color="grey"
+                        tooltip
+                        tooltip-placement="top"
+                        title="Remove all files from the upload list"
+                        @click="clearAll">
+                        Clear All
+                    </GButton>
                 </div>
             </div>
 
