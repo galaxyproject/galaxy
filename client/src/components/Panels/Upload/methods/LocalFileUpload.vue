@@ -86,12 +86,42 @@ function setAllDbKeys(dbKey: string | null) {
     }
 }
 
+const allSpaceToTab = computed(() => selectedFiles.value.length > 0 && selectedFiles.value.every((f) => f.spaceToTab));
+
+const allToPosixLines = computed(
+    () => selectedFiles.value.length > 0 && selectedFiles.value.every((f) => f.toPosixLines),
+);
+
+const spaceToTabIndeterminate = computed(
+    () =>
+        selectedFiles.value.length > 0 &&
+        selectedFiles.value.some((f) => f.spaceToTab) &&
+        !selectedFiles.value.every((f) => f.spaceToTab),
+);
+
+const toPosixLinesIndeterminate = computed(
+    () =>
+        selectedFiles.value.length > 0 &&
+        selectedFiles.value.some((f) => f.toPosixLines) &&
+        !selectedFiles.value.every((f) => f.toPosixLines),
+);
+
+function toggleAllSpaceToTab() {
+    const newValue = !allSpaceToTab.value;
+    selectedFiles.value.forEach((f) => (f.spaceToTab = newValue));
+}
+
+function toggleAllToPosixLines() {
+    const newValue = !allToPosixLines.value;
+    selectedFiles.value.forEach((f) => (f.toPosixLines = newValue));
+}
+
 const tableFields = [
     { key: "name", label: "Name", sortable: false, tdClass: "file-name-cell" },
     { key: "extension", label: "Type", sortable: false, thStyle: { minWidth: "180px" } },
     { key: "dbKey", label: "Database", sortable: false, thStyle: { minWidth: "200px" } },
     { key: "size", label: "Size", sortable: false, thStyle: { width: "90px" } },
-    { key: "options", label: "Upload Configuration", sortable: false, thStyle: { minWidth: "140px" } },
+    { key: "options", label: "Upload Settings", sortable: false, thStyle: { minWidth: "140px" } },
     { key: "actions", label: "", sortable: false, tdClass: "text-right", thStyle: { width: "40px" } },
 ];
 
@@ -294,6 +324,33 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             {{ bytesToString(item.file.size) }}
                         </template>
 
+                        <template v-slot:head(options)>
+                            <div class="options-header">
+                                <span class="options-title">Upload Settings</span>
+                                <div class="d-flex align-items-center">
+                                    <BFormCheckbox
+                                        v-b-tooltip.hover.noninteractive
+                                        :checked="allSpaceToTab"
+                                        :indeterminate="spaceToTabIndeterminate"
+                                        size="sm"
+                                        class="mr-2"
+                                        title="Toggle all: Convert spaces to tab characters"
+                                        @change="toggleAllSpaceToTab">
+                                        <span class="small">Spaces→Tabs</span>
+                                    </BFormCheckbox>
+                                    <BFormCheckbox
+                                        v-b-tooltip.hover.noninteractive
+                                        :checked="allToPosixLines"
+                                        :indeterminate="toPosixLinesIndeterminate"
+                                        size="sm"
+                                        title="Toggle all: Convert line endings to POSIX standard"
+                                        @change="toggleAllToPosixLines">
+                                        <span class="small">POSIX</span>
+                                    </BFormCheckbox>
+                                </div>
+                            </div>
+                        </template>
+
                         <template v-slot:cell(options)="{ item }">
                             <div class="d-flex align-items-center">
                                 <BFormCheckbox
@@ -425,8 +482,6 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .file-list-header {
     flex-shrink: 0;
     border-bottom: 1px solid $border-color;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.5rem;
 }
 
 .file-table-container {
@@ -439,7 +494,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
         position: sticky;
         top: 0;
         background-color: $white;
-        z-index: 1;
+        z-index: 100;
     }
 
     :deep(.file-name-cell) {
@@ -457,6 +512,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
         .bulk-select {
             flex: 1;
             min-width: 0;
+        }
+    }
+
+    .options-header {
+        .options-title {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
         }
     }
 }
