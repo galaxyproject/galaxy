@@ -90,9 +90,9 @@ const tableFields = [
     { key: "name", label: "Name", sortable: false, tdClass: "file-name-cell" },
     { key: "extension", label: "Type", sortable: false, thStyle: { minWidth: "180px" } },
     { key: "dbKey", label: "Database", sortable: false, thStyle: { minWidth: "200px" } },
-    { key: "size", label: "Size", sortable: false, thStyle: { width: "100px" } },
-    { key: "options", label: "Options", sortable: false },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right", thStyle: { width: "50px" } },
+    { key: "size", label: "Size", sortable: false, thStyle: { width: "90px" } },
+    { key: "options", label: "Upload Configuration", sortable: false, thStyle: { minWidth: "140px" } },
+    { key: "actions", label: "", sortable: false, tdClass: "text-right", thStyle: { width: "40px" } },
 ];
 
 watch(hasFiles, (ready) => emit("ready", ready), { immediate: true });
@@ -295,11 +295,22 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </template>
 
                         <template v-slot:cell(options)="{ item }">
-                            <div class="d-flex flex-column">
-                                <BFormCheckbox v-model="item.spaceToTab" size="sm" class="mb-1">
-                                    Spaces→Tabs
+                            <div class="d-flex align-items-center">
+                                <BFormCheckbox
+                                    v-model="item.spaceToTab"
+                                    v-b-tooltip.hover.noninteractive
+                                    size="sm"
+                                    class="mr-2"
+                                    title="Convert spaces to tab characters">
+                                    <span class="small">Spaces→Tabs</span>
                                 </BFormCheckbox>
-                                <BFormCheckbox v-model="item.toPosixLines" size="sm"> POSIX </BFormCheckbox>
+                                <BFormCheckbox
+                                    v-model="item.toPosixLines"
+                                    v-b-tooltip.hover.noninteractive
+                                    size="sm"
+                                    title="Convert line endings to POSIX standard">
+                                    <span class="small">POSIX</span>
+                                </BFormCheckbox>
                             </div>
                         </template>
 
