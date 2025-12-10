@@ -68,9 +68,9 @@ class CustomToolAgent(BaseGalaxyAgent):
                 agent_type=self.agent_type,
                 suggestions=[
                     ActionSuggestion(
-                        action_type=ActionType.CONFIGURATION,
-                        description="Configure a structured-output capable model for custom_tool agent",
-                        parameters={"config_key": f"inference_services.{self.agent_type}.model"},
+                        action_type=ActionType.CONTACT_SUPPORT,
+                        description="Contact your Galaxy administrator to configure AI tool generation",
+                        parameters={},
                         confidence=ConfidenceLevel.HIGH,
                         priority=1,
                     )

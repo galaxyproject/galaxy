@@ -5,6 +5,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { useConfig } from "@/composables/config";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -44,6 +45,7 @@ export interface AgentResponse {
 export function useAgentActions() {
     const router = useRouter();
     const toast = useToast();
+    const { config } = useConfig();
     const processingAction = ref(false);
     const showToolModal = ref(false);
     const toolModalContent = ref<any>({});
@@ -224,10 +226,11 @@ export function useAgentActions() {
     }
 
     /**
-     * Handle CONTACT_SUPPORT action
+     * Handle CONTACT_SUPPORT action - use configured support URL or default
      */
     function handleContactSupport() {
-        window.open("https://galaxyproject.org/support/", "_blank");
+        const supportUrl = config.value.support_url || "https://galaxyproject.org/support/";
+        window.open(supportUrl, "_blank");
         toast.info("Opening Galaxy support page");
     }
 
