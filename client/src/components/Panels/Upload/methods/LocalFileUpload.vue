@@ -37,6 +37,7 @@ const {
 interface FileWithMetadata {
     file: File;
     name: string;
+    size: number;
     extension: string;
     dbKey: string;
     spaceToTab: boolean;
@@ -129,14 +130,14 @@ const tableFields = [
     {
         key: "name",
         label: "Name",
-        sortable: false,
+        sortable: true,
         thStyle: { minWidth: "200px", width: "auto" },
         tdClass: "file-name-cell align-middle",
     },
     {
         key: "size",
         label: "Size",
-        sortable: false,
+        sortable: true,
         thStyle: { minWidth: "80px", width: "80px" },
         tdClass: "align-middle",
     },
@@ -188,6 +189,7 @@ function addFiles(files: FileList | File[] | null) {
         selectedFiles.value.push({
             file,
             name: file.name,
+            size: file.size,
             extension: defaultExtension,
             dbKey: defaultDbKey,
             spaceToTab: false,
@@ -284,6 +286,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 @blur="restoreOriginalName(item)" />
                         </template>
 
+                        <template v-slot:cell(size)="{ item }">
+                            {{ bytesToString(item.size) }}
+                        </template>
+
                         <template v-slot:head(extension)>
                             <div class="column-header-vertical">
                                 <span class="column-title">Type</span>
@@ -367,10 +373,6 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                     {{ dbKey.text }}
                                 </option>
                             </BFormSelect>
-                        </template>
-
-                        <template v-slot:cell(size)="{ item }">
-                            {{ bytesToString(item.file.size) }}
                         </template>
 
                         <template v-slot:head(options)>
