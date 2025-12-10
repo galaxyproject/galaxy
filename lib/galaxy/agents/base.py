@@ -366,8 +366,9 @@ class BaseGalaxyAgent(ABC):
             return False
 
         # Models with known structured output support (native APIs or compatible proxies)
-        # llama-4-scout and gpt-oss work for basic structured output via LiteLLM
-        if any(m in model_name for m in ["gpt", "claude", "llama-4-scout", "gpt-oss"]):
+        # llama-4-scout works for basic structured output via LiteLLM
+        # gpt-oss models support json_object but not strict json_schema mode
+        if any(m in model_name for m in ["gpt-4", "gpt-3", "claude", "llama-4-scout"]):
             return True
 
         # Default to not using structured output for unknown models (safer)
