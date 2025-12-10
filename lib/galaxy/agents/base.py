@@ -394,10 +394,11 @@ class BaseGalaxyAgent(ABC):
         if self._requires_structured_output() and not self._supports_structured_output():
             model = self._get_agent_config("model", "unknown")
             return (
-                f"The {self.agent_type} agent requires a model with structured output support. "
-                f"The current model '{model}' does not support this feature. "
-                f"Please configure a compatible model (e.g., gpt-4o, claude-3-sonnet) in "
-                f"galaxy.yml under inference_services.{self.agent_type}.model"
+                f"The model '{model}' failed to generate a tool definition due to JSON schema limitations. "
+                f"This typically happens with local inference backends (vLLM, LiteLLM proxies) that don't "
+                f"support complex nested JSON schemas.\n\n"
+                f"To resolve this, configure a model that fully supports structured output "
+                f"(e.g., gpt-4o, claude-3-sonnet) via their native APIs."
             )
         return None
 
