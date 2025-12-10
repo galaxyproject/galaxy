@@ -798,6 +798,80 @@ class TestAgentsApiLiveLLM(ApiTestCase):
         tool_yaml = agent_response["metadata"]["tool_yaml"]
         assert "command" in tool_yaml or "shell_command" in tool_yaml
 
+    def test_error_analysis_endpoint_live(self):
+        """Test the dedicated error-analysis endpoint."""
+        response = self._post(
+            "ai/agents/error-analysis",
+            data={
+                "query": "My BWA job failed with exit code 137 and stderr shows 'Killed'",
+                "error_details": {"tool_id": "bwa_mem", "exit_code": 137},
+            },
+            json=True,
+        )
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        assert "content" in data
+        assert "confidence" in data
+        # Should mention memory or OOM since exit code 137 is SIGKILL
+        content = data["content"].lower()
+        assert any(word in content for word in ["memory", "kill", "resource", "oom"])
+
+    def test_tool_recommendation_endpoint_live(self):
+        """Test the dedicated tool-recommendation endpoint."""
+        response = self._post(
+            "ai/agents/tool-recommendation",
+            data={
+                "query": "I have paired-end FASTQ files and want to align them to a reference genome",
+                "input_format": "fastq",
+            },
+            json=True,
+        )
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        assert "content" in data
+        assert "confidence" in data
+        # Should mention alignment tools
+        content = data["content"].lower()
+        assert any(word in content for word in ["bwa", "bowtie", "align", "map"])
+
+    def test_custom_tool_endpoint_live(self):
+        """Test the dedicated custom-tool endpoint."""
+        response = self._post(
+            "ai/agents/custom-tool",
+            data={
+                "query": "Create a tool that counts sequences in a FASTA file",
+            },
+            json=True,
+        )
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        assert "content" in data
+        assert "metadata" in data
+        # Should generate tool YAML
+        metadata = data["metadata"]
+        assert "tool_yaml" in metadata or "tool_id" in metadata
+
+    def test_chat_endpoint_live(self):
+        """Test the chat endpoint with auto routing."""
+        response = self._post(
+            "chat?query=What%20tools%20are%20available%20for%20RNA-seq%3F&agent_type=auto",
+            data={},
+            json=True,
+        )
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        assert "response" in data
+        # Should return some content about RNA-seq
+        assert len(data["response"]) > 0
+
+    def test_chat_history_endpoint(self):
+        """Test the chat history endpoint."""
+        response = self._get("chat/history?limit=5")
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        # Should return a list (may be empty)
+        assert isinstance(data, list)
+
 
 @pytestmark_live_llm
 class TestAgentUnitLiveLLM:
