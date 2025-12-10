@@ -24,6 +24,7 @@ const emit = defineEmits(["workbookContents"]);
 </script>
 <template>
     <BCard
+        data-description="workbook upload card"
         data-galaxy-file-drop-target
         :class="dropZoneClasses"
         @drop.prevent="handleDrop"
@@ -38,7 +39,7 @@ const emit = defineEmits(["workbookContents"]);
             </BAlert>
         </div>
         <div>
-            <BLink href="#" @click.prevent="browseFiles">
+            <BLink data-description="workbook upload link" href="#" @click.prevent="browseFiles">
                 <FontAwesomeIcon size="xl" :icon="faUpload" />
                 Drop completed workbook here or click to upload.
             </BLink>

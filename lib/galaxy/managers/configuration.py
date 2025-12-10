@@ -13,9 +13,9 @@ from typing import (
 
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.structured_app import StructuredApp
+from galaxy.util.markdown import weasyprint_available
 
 log = logging.getLogger(__name__)
 

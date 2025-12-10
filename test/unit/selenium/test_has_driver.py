@@ -1051,6 +1051,64 @@ class TestScreenshots:
         # PNG magic bytes: 89 50 4E 47 0D 0A 1A 0A
         assert screenshot_bytes[:8] == b"\x89PNG\r\n\x1a\n"
 
+    def test_highlight_element_basic(self, has_driver_instance, base_url):
+        """Test highlighting an element with red border."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        # Get border before highlighting
+        original_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+
+        # Highlight element
+        with has_driver_instance.highlight_element(element):
+            # Border should be red while in context
+            current_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+            assert "red" in current_border.lower()
+            assert "3px" in current_border or "3" in current_border
+
+        # Border should be restored after context exits
+        restored_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+        assert restored_border == original_border
+
+    def test_highlight_element_restores_on_exception(self, has_driver_instance, base_url):
+        """Test that border is restored even if exception occurs in context."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        # Get border before highlighting
+        original_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+
+        # Highlight element and raise exception
+        try:
+            with has_driver_instance.highlight_element(element):
+                raise ValueError("Test exception")
+        except ValueError:
+            pass
+
+        # Border should still be restored
+        restored_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+        assert restored_border == original_border
+
+    def test_highlight_element_with_existing_border(self, has_driver_instance, base_url):
+        """Test highlighting element that already has a border."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        element = has_driver_instance.find_element_by_id("test-div")
+
+        # Set a blue border first
+        has_driver_instance.execute_script("arguments[0].style.border = '2px solid blue';", element)
+        original_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+
+        # Highlight element
+        with has_driver_instance.highlight_element(element):
+            # Border should be red
+            current_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+            assert "red" in current_border.lower()
+
+        # Border should be restored to blue
+        restored_border = has_driver_instance.execute_script("return arguments[0].style.border;", element)
+        assert restored_border == original_border
+        assert "blue" in restored_border.lower() or "2px" in restored_border
+
 
 class TestAccessibility:
     """Tests for axe_eval accessibility testing."""

@@ -88,6 +88,8 @@ function executeActivity(activity: Activity) {
                 v-for="activity in filteredActivities"
                 :key="activity.id"
                 class="activity-settings-item p-2 cursor-pointer"
+                :data-activity-id="activity.id"
+                :data-activity-visible="!!activity.visible"
                 @click="executeActivity(activity)">
                 <div class="d-flex justify-content-between align-items-start">
                     <span class="d-flex justify-content-between w-100">

@@ -5,7 +5,7 @@ HTML content - best to test in insolation and verify the security of our
 dependencies.
 """
 
-from galaxy.managers.markdown_util import to_html
+from galaxy.util.markdown import to_html
 
 
 def test_basics():

@@ -611,6 +611,34 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         return self.driver.get_screenshot_as_png()
 
+    def highlight_element(self, element: WebElementProtocol):
+        """
+        Highlight element with red border for screenshots (context manager).
+
+        Returns context manager that places thick red border around element
+        and removes it on exit.
+
+        Args:
+            element: Element to highlight
+
+        Returns:
+            Context manager that highlights on enter and clears on exit
+        """
+
+        @contextmanager
+        def _highlight_context():
+            # Store original border style
+            original_border = self.execute_script("return arguments[0].style.border;", element)
+            try:
+                # Apply thick red border
+                self.execute_script("arguments[0].style.border = '3px solid red';", element)
+                yield
+            finally:
+                # Restore original border
+                self.execute_script(f"arguments[0].style.border = '{original_border}';", element)
+
+        return _highlight_context()
+
     def close(self) -> None:
         """Cleanup the current browser tab/page."""
         self.driver.close()

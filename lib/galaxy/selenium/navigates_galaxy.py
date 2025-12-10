@@ -5,6 +5,7 @@ Implementer must provide a self.build_url method to target Galaxy.
 
 import collections
 import contextlib
+import json
 import random
 import string
 import time
@@ -964,6 +965,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def hover_over(self, target):
         self.hover(target)
 
+    def wait_for_upload_modal(self):
+        self.components.upload.build_button.wait_for_visible()
+        self.components.upload.build_button.wait_for_clickable()
+
     def perform_single_upload(self, test_path, **kwd) -> HistoryEntry:
         before_latest_history_item = self.latest_history_entry()
         self._perform_upload(test_path=test_path, **kwd)
@@ -1160,6 +1165,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             file_upload = self.wait_for_selector(f'div#{tab_id} input[type="file"]')
             file_upload.send_keys(test_path)
 
+    def workbook_upload(self, test_path: str, which: Literal["shortcut", "card"] = "shortcut"):
+        rule_builder = self.components.rule_builder
+        if self.backend_type == "playwright":
+            with self.page.expect_file_chooser() as fc_info:
+                if which == "shortcut":
+                    rule_builder.workbook_upload_button.wait_for_and_click()
+                else:
+                    rule_builder.workbook_upload_link.wait_for_and_click()
+            file_chooser = fc_info.value
+            file_chooser.set_files(test_path)
+        else:
+            if which == "shortcut":
+                rule_builder.workbook_upload_button.wait_for_and_click()
+                file_upload = rule_builder.workbook_upload_file_input.wait_for_present()
+            else:
+                rule_builder.workbook_upload_link.wait_for_and_click()
+                file_upload = rule_builder.workbook_upload_file_input_explicit.wait_for_present()
+            file_upload.send_keys(test_path)
+
     def upload_paste_data(self, pasted_content, tab_id="regular"):
         tab_locator = f"div#{tab_id}"
         self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
@@ -1207,6 +1231,29 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         upload = self.components.upload
         upload.rule_dataset_selector.wait_for_visible()
         upload.rule_dataset_selector_row(rowindex=row).wait_for_and_click()
+
+    def ensure_rules_activity_enabled(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        if self.components.rule_builder.activity.is_absent:
+            activity_bar = self.components.activity_bar
+            # Odd problems here - settings bar may be clickable but not yet wired up?
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.sleep_for(self.wait_types.UX_RENDER)
+            activity_bar.settings.wait_for_and_click()
+            activity_bar.additional_activities.wait_for_present()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            assert activity_bar.show_activity(activity_id="rules").wait_for_present()
+            activity_bar.show_activity(activity_id="rules").wait_for_and_click()
+            self.components.rule_builder.activity.wait_for_visible()
+            activity_bar.settings.wait_for_and_click()
+
+    def click_rules_activity(self):
+        self.components.rule_builder.activity.wait_for_and_click()
+
+    def rule_builder_import(self):
+        rule_builder = self.components.rule_builder
+        rule_builder.wizard_import.wait_for_and_click()
 
     def rule_builder_set_collection_name(self, name):
         rule_builder = self.components.rule_builder
@@ -1366,6 +1413,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.rule_builder_enter_source_text(json)
         rule_builder.main_button_ok.wait_for_and_click()
         rule_builder.view_source.wait_for_visible()
+
+    def rule_builder_show_and_get_source(self) -> str:
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+        source_elem = rule_builder.source.wait_for_visible()
+        source_value = source_elem.get_attribute("value")
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+        return source_value
+
+    def rule_builder_show_and_get_source_as_json(self) -> dict:
+        source_text = self.rule_builder_show_and_get_source()
+        return json.loads(source_text)
 
     def rule_builder_enter_source_text(self, json):
         rule_builder = self.components.rule_builder
