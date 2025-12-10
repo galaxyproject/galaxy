@@ -2065,7 +2065,7 @@ class ToolModule(WorkflowModule):
         if self.tool and self.tool.raw_help and self.tool.raw_help.format == "restructuredtext":
             host_url = self.trans.url_builder("/")
             static_path = self.trans.url_builder(static_path) if static_path else ""
-            return self.tool.help.render(host_url=host_url, static_path=static_path)
+            return self.tool.render_help(host_url=host_url, static_path=static_path)
 
     # ---- Configuration time -----------------------------------------------
 
