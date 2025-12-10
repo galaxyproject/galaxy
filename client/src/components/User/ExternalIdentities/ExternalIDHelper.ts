@@ -3,28 +3,18 @@ import axios from "axios";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 
-/** Shape of the OIDC config object coming from Galaxy’s `/api/config`. */
-export type OIDCConfig = Record<
-    string,
-    {
-        icon?: string;
-        label?: string;
-        custom_button_text?: string;
-        end_user_registration_endpoint?: string;
-        profile_url?: string;
-    }
->;
+export type OIDCConfigEntry = {
+    icon?: string;
+    label?: string;
+    custom_button_text?: string;
+    end_user_registration_endpoint?: string;
+    profile_url?: string;
+};
 
-export type OIDCConfigWithRegistration = Record<
-    string,
-    {
-        icon?: string;
-        label?: string;
-        custom_button_text?: string;
-        end_user_registration_endpoint: string;
-        profile_url?: string;
-    }
->;
+/** Shape of the OIDC config object coming from Galaxy’s `/api/config`. */
+export type OIDCConfig = Record<string, OIDCConfigEntry>;
+
+export type OIDCConfigWithRegistration = Record<string, OIDCConfigEntry & { end_user_registration_endpoint: string }>;
 
 /** Return the per-IDP config, minus anything the caller wants to hide. */
 export function getFilteredOIDCIdps(oidcConfig: OIDCConfig, exclude: string[] = []): OIDCConfig {
@@ -98,16 +88,24 @@ export function isOnlyOneOIDCProviderConfigured(config: OIDCConfig): boolean {
     return Object.keys(config).length === 1;
 }
 
-export function hasSingleOidcProfile(config: OIDCConfig): boolean {
+export function getSingleOidcConfig(config: OIDCConfig): OIDCConfigEntry | null {
     const providers = Object.keys(config);
     if (providers.length !== 1) {
-        return false;
+        return null;
     }
     const idp = providers[0];
     if (idp === undefined) {
         throw new Error("OIDC provider key is undefined.");
     }
-    return isOnlyOneOIDCProviderConfigured(config) && !!config[idp]?.profile_url;
+    return config[idp] || null;
+}
+
+export function hasSingleOidcProfile(config: OIDCConfig): boolean {
+    if (!isOnlyOneOIDCProviderConfigured(config)) {
+        return false;
+    }
+    const idp_config = getSingleOidcConfig(config);
+    return !!idp_config?.profile_url;
 }
 
 export async function redirectToSingleProvider(config: OIDCConfig): Promise<string | null> {
