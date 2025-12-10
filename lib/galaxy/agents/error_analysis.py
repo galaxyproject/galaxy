@@ -40,7 +40,6 @@ class ErrorAnalysisResult(BaseModel):
     solution_steps: List[str]
     alternative_approaches: List[str] = []
     confidence: ConfidenceLiteral
-    related_documentation: List[str] = []
     requires_admin: bool = False
 
 
@@ -314,12 +313,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         if analysis.requires_admin:
             parts.append("\n⚠️ **Note**: This issue may require administrator assistance.")
 
-        # Documentation links
-        if analysis.related_documentation:
-            parts.append("\n**Related Documentation**:")
-            for doc in analysis.related_documentation:
-                parts.append(f"• {doc}")
-
         return "\n".join(parts)
 
     def _create_suggestions(self, analysis: ErrorAnalysisResult) -> List[ActionSuggestion]:
@@ -348,17 +341,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 )
             )
 
-        # Documentation
-        if analysis.related_documentation:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.DOCUMENTATION,
-                    description="Check related documentation",
-                    confidence="high",
-                    priority=2,
-                )
-            )
-
         # Admin contact if needed
         if analysis.requires_admin:
             suggestions.append(
@@ -376,13 +358,15 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         """Simple system prompt for models without structured output."""
         return """
         You are a Galaxy platform error analysis expert. Analyze the error and provide a helpful response.
-        
+
+        CRITICAL: Never invent URLs, documentation links, or external references. Only state facts you are certain about.
+
         Respond in this exact format:
         ERROR_TYPE: [category like tool_failure, permission_denied, resource_exhausted, etc.]
         CAUSE: [brief explanation of what went wrong]
         SOLUTION: [step-by-step fix]
         CONFIDENCE: [high/medium/low]
-        
+
         Example:
         ERROR_TYPE: command_not_found
         CAUSE: Required tool or dependency is not installed
@@ -426,4 +410,3 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
     def _get_fallback_content(self) -> str:
         """Get fallback content for error analysis failures."""
         return "Unable to complete error analysis at this time."
-
