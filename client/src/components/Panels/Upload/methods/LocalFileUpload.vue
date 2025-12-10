@@ -7,6 +7,7 @@ import { computed, ref, watch } from "vue";
 import { findExtension } from "@/components/Upload/utils";
 import { useFileDrop } from "@/composables/fileDrop";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
+import type { CollectionConfig, SupportedCollectionType } from "@/composables/uploadQueue";
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { bytesToString } from "@/utils/utils";
 
@@ -48,10 +49,60 @@ const selectedFiles = ref<FileWithMetadata[]>([]);
 const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 
+// Collection creation state
+const createCollection = ref(false);
+const collectionName = ref("");
+const collectionType = ref<SupportedCollectionType>("list");
+
 const hasFiles = computed(() => selectedFiles.value.length > 0);
 const totalSize = computed(() => {
     const bytes = selectedFiles.value.reduce((sum, item) => sum + item.file.size, 0);
     return bytesToString(bytes);
+});
+
+// Collection validation
+const collectionValidation = computed(() => {
+    if (!createCollection.value) {
+        return { valid: true, message: "" };
+    }
+
+    if (!collectionName.value.trim()) {
+        return { valid: false, message: "Collection name is required" };
+    }
+
+    if (collectionType.value === "list:paired") {
+        if (selectedFiles.value.length < 2) {
+            return { valid: false, message: "List of pairs requires at least 2 files" };
+        }
+        if (selectedFiles.value.length % 2 !== 0) {
+            return { valid: false, message: "List of pairs requires an even number of files" };
+        }
+    } else if (collectionType.value === "list") {
+        if (selectedFiles.value.length < 1) {
+            return { valid: false, message: "List requires at least 1 file" };
+        }
+    }
+
+    return { valid: true, message: "" };
+});
+
+// Pairing preview for list:paired
+const filePairs = computed(() => {
+    if (collectionType.value !== "list:paired") {
+        return [];
+    }
+
+    const pairs = [];
+    for (let i = 0; i < selectedFiles.value.length; i += 2) {
+        if (i + 1 < selectedFiles.value.length) {
+            pairs.push({
+                index: i / 2,
+                forward: selectedFiles.value[i],
+                reverse: selectedFiles.value[i + 1],
+            });
+        }
+    }
+    return pairs;
 });
 
 const bulkExtension = ref<string | null>(null);
@@ -215,6 +266,9 @@ function handleBrowse() {
 
 function clearAll() {
     selectedFiles.value = [];
+    createCollection.value = false;
+    collectionName.value = "";
+    collectionType.value = "list";
 }
 
 function startUpload() {
@@ -231,8 +285,20 @@ function startUpload() {
         fileData: item.file,
     }));
 
-    uploadQueue.enqueue(uploads);
+    const collectionConfig: CollectionConfig | undefined = createCollection.value
+        ? {
+              name: collectionName.value.trim(),
+              type: collectionType.value,
+              hideSourceItems: true,
+              historyId: props.targetHistoryId,
+          }
+        : undefined;
+
+    uploadQueue.enqueue(uploads, collectionConfig);
     selectedFiles.value = [];
+    createCollection.value = false;
+    collectionName.value = "";
+    collectionType.value = "list";
 }
 
 defineExpose<UploadMethodComponent>({ startUpload });
@@ -434,6 +500,84 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     </BTable>
                 </div>
 
+                <!-- Collection Creation Section -->
+                <div class="collection-section mt-3">
+                    <BFormCheckbox v-model="createCollection" switch>
+                        <strong>Create a collection from these files</strong>
+                    </BFormCheckbox>
+
+                    <div v-if="createCollection" class="collection-config mt-2">
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <label for="collection-name-input" class="form-label small mb-1">
+                                    Collection Name
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <BFormInput
+                                    id="collection-name-input"
+                                    v-model="collectionName"
+                                    size="sm"
+                                    placeholder="Enter collection name"
+                                    :state="collectionValidation.valid ? null : false" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="collection-type-select" class="form-label small mb-1">
+                                    Collection Type
+                                </label>
+                                <BFormSelect
+                                    id="collection-type-select"
+                                    v-model="collectionType"
+                                    size="sm"
+                                    :options="[
+                                        { value: 'list', text: 'List' },
+                                        { value: 'list:paired', text: 'List of Pairs' },
+                                    ]" />
+                            </div>
+                        </div>
+
+                        <!-- Validation Message -->
+                        <div v-if="!collectionValidation.valid" class="text-danger small mt-1">
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-1" />
+                            {{ collectionValidation.message }}
+                        </div>
+
+                        <!-- Pairing Preview for list:paired -->
+                        <div
+                            v-if="collectionType === 'list:paired' && filePairs.length > 0"
+                            class="pairing-preview mt-2">
+                            <div class="small text-muted mb-1">
+                                <strong>Pairing Preview:</strong>
+                                Files will be paired consecutively
+                            </div>
+                            <div class="pairs-list">
+                                <div
+                                    v-for="pair in filePairs"
+                                    :key="pair.index"
+                                    class="pair-item small d-flex align-items-center">
+                                    <span class="pair-number">{{ pair.index + 1 }}.</span>
+                                    <span v-if="pair.forward && pair.reverse" class="pair-files">
+                                        <span class="badge badge-primary mr-1">Forward</span>
+                                        {{ pair.forward.name }}
+                                        <span class="mx-2">+</span>
+                                        <span class="badge badge-success mr-1">Reverse</span>
+                                        {{ pair.reverse.name }}
+                                    </span>
+                                </div>
+                                <div v-if="selectedFiles.length % 2 !== 0" class="text-warning small mt-1">
+                                    <FontAwesomeIcon :icon="faExclamationTriangle" />
+                                    Last file will be skipped (odd number of files)
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info about source items -->
+                        <div class="small text-muted mt-2">
+                            <FontAwesomeIcon icon="info-circle" class="mr-1" />
+                            Individual uploaded files will be hidden after collection creation
+                        </div>
+                    </div>
+                </div>
+
                 <div class="file-list-actions mt-2">
                     <GButton
                         color="blue"
@@ -622,5 +766,54 @@ defineExpose<UploadMethodComponent>({ startUpload });
     justify-content: flex-start;
     padding-top: 1rem;
     border-top: 1px solid $border-color;
+}
+
+.collection-section {
+    padding: 0.75rem;
+    background-color: lighten($gray-100, 2%);
+    border-radius: $border-radius-base;
+    border: 1px solid $border-color;
+
+    .collection-config {
+        padding-top: 0.5rem;
+        border-top: 1px solid $border-color;
+    }
+
+    .pairing-preview {
+        background-color: $white;
+        border: 1px solid $border-color;
+        border-radius: $border-radius-base;
+        padding: 0.5rem;
+
+        .pairs-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .pair-item {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid lighten($border-color, 5%);
+
+            &:last-child {
+                border-bottom: none;
+            }
+
+            .pair-number {
+                font-weight: 600;
+                min-width: 30px;
+                color: $text-muted;
+            }
+
+            .pair-files {
+                flex: 1;
+                word-break: break-word;
+
+                .badge {
+                    font-size: 0.7rem;
+                    padding: 0.15rem 0.4rem;
+                }
+            }
+        }
+    }
 }
 </style>
