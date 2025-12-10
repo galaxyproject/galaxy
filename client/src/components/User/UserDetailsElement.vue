@@ -81,7 +81,7 @@ const getStoragePercentageClass = (percentage: number) => {
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
-@import "_breakpoints.scss";
+@import "@/style/scss/_breakpoints.scss";
 
 .user-details-element {
     container: user-details-element;

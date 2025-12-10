@@ -12,12 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import UploadContainer from "./UploadContainer.vue";
 import UploadModal from "./UploadModal.vue";
 
-vi.mock("@/composables/config", () => ({
-    useConfig: vi.fn(() => ({
-        config: {},
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
 
 const { server, http } = useServerMock();
 

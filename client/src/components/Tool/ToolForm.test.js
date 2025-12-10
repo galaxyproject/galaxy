@@ -41,9 +41,9 @@ describe("ToolForm", () => {
             }),
         );
 
-        // the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
+        // the PersonViewer component uses a BPopover that doesn't work in the test environment. It would be
         // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
-        // stub out the Popover piece I think.
+        // stub out the Popover piece.
         suppressBootstrapVueWarnings();
 
         axiosMock = new MockAdapter(axios);

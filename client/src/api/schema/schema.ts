@@ -2421,6 +2421,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/copy_contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy datasets or dataset collections to other histories. */
+        post: operations["history_contents__copy_contents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/custom_builds_metadata": {
         parameters: {
             query?: never;
@@ -6460,6 +6477,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return bootstrapped client context */
+        get: operations["index_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ga4gh/drs/v1/objects/{object_id}": {
         parameters: {
             query?: never;
@@ -7625,7 +7659,7 @@ export interface components {
             /** Ext */
             ext: string;
             /** Hashes */
-            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            hashes?: components["schemas"]["FileHash"][] | null;
             /**
              * Identifier
              * @description A unique identifier for this element within the collection.
@@ -8196,6 +8230,19 @@ export interface components {
              */
             name: string;
         };
+        /** ContextResponse */
+        ContextResponse: {
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Session Csrf Token */
+            session_csrf_token?: string | null;
+            /** User */
+            user: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * ConvertedDatasetsMap
          * @description Map of `file extension` -> `converted dataset encoded id`
@@ -8205,6 +8252,27 @@ export interface components {
          */
         ConvertedDatasetsMap: {
             [key: string]: string;
+        };
+        /** CopyDatasetsPayload */
+        CopyDatasetsPayload: {
+            /** Source Content */
+            source_content: components["schemas"]["CopyDatasetsPayloadSourceEntry"][];
+            /** Target History Ids */
+            target_history_ids?: string[] | null;
+            /** Target History Name */
+            target_history_name?: string | null;
+        };
+        /** CopyDatasetsPayloadSourceEntry */
+        CopyDatasetsPayloadSourceEntry: {
+            /** Id */
+            id: string;
+            /** Type */
+            type: string;
+        };
+        /** CopyDatasetsResponse */
+        CopyDatasetsResponse: {
+            /** History Ids */
+            history_ids: string[];
         };
         /** CreateDataLandingPayload */
         CreateDataLandingPayload: {
@@ -10033,17 +10101,7 @@ export interface components {
          */
         DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
         /** DatasetHash */
-        "DatasetHash-Input": {
-            /**
-             * Hash Function
-             * @enum {string}
-             */
-            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
-            /** Hash Value */
-            hash_value: string;
-        };
-        /** DatasetHash */
-        "DatasetHash-Output": {
+        DatasetHash: {
             /**
              * Extra Files Path
              * @description The path to the extra files used to generate the hash.
@@ -11662,6 +11720,16 @@ export interface components {
              */
             action_type: "fill_defaults";
         };
+        /** FileHash */
+        FileHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
+        };
         /** FileLibraryFolderItem */
         FileLibraryFolderItem: {
             /** Can Manage */
@@ -11787,7 +11855,7 @@ export interface components {
             /** Ext */
             ext: string;
             /** Hashes */
-            hashes?: components["schemas"]["DatasetHash-Input"][] | null;
+            hashes?: components["schemas"]["FileHash"][] | null;
             /** Info */
             info?: string | null;
             /** Location */
@@ -11835,6 +11903,7 @@ export interface components {
                 | "posix"
                 | "s3fs"
                 | "azure"
+                | "azureflat"
                 | "onedata"
                 | "webdav"
                 | "dropbox"
@@ -11844,7 +11913,8 @@ export interface components {
                 | "zenodo"
                 | "rspace"
                 | "dataverse"
-                | "huggingface";
+                | "huggingface"
+                | "omero";
             /** Variables */
             variables?:
                 | (
@@ -12655,7 +12725,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes?: components["schemas"]["DatasetHash-Output"][] | null;
+            hashes?: components["schemas"]["DatasetHash"][] | null;
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
@@ -12929,7 +12999,7 @@ export interface components {
              * Hashes
              * @description The list of hashes associated with this dataset.
              */
-            hashes: components["schemas"]["DatasetHash-Output"][];
+            hashes: components["schemas"]["DatasetHash"][];
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
@@ -22993,6 +23063,7 @@ export interface components {
                 | "posix"
                 | "s3fs"
                 | "azure"
+                | "azureflat"
                 | "onedata"
                 | "webdav"
                 | "dropbox"
@@ -23002,7 +23073,8 @@ export interface components {
                 | "zenodo"
                 | "rspace"
                 | "dataverse"
-                | "huggingface";
+                | "huggingface"
+                | "omero";
             /** Uri Root */
             uri_root: string;
             /**
@@ -32447,6 +32519,54 @@ export interface operations {
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents__copy_contents: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyDatasetsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyDatasetsResponse"];
                 };
             };
             /** @description Request Error */
@@ -45132,6 +45252,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_context_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextResponse"];
                 };
             };
             /** @description Request Error */

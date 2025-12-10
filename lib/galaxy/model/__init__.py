@@ -826,6 +826,11 @@ class UserObjectstoreUsage(BaseModel):
     total_disk_usage: float
 
 
+class UserWorkflowMenuEntry(BaseModel):
+    id: str
+    name: str
+
+
 class User(Base, Dictifiable, RepresentById):
     """
     Data for a Galaxy user or admin and relations to their
@@ -1563,10 +1568,15 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
     metric_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
 
 
+InpDataDictT = dict[str, Optional["DatasetInstance"]]
+OutDataDictT = dict[str, "DatasetInstance"]
+OutCollectionsDictT = dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
+
+
 class IoDicts(NamedTuple):
-    inp_data: dict[str, Optional["DatasetInstance"]]
-    out_data: dict[str, "DatasetInstance"]
-    out_collections: dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
+    inp_data: InpDataDictT
+    out_data: OutDataDictT
+    out_collections: OutCollectionsDictT
 
 
 class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):

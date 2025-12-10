@@ -43,7 +43,7 @@ jobs:
         matrix:
             python-version: ['3.9']
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || '' }}
           persist-credentials: false
@@ -73,7 +73,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || '' }}
       - name: Read Node.js version

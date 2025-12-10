@@ -1,15 +1,11 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { nextTick } from "vue";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 
 describe("HeadlessMultiselect", () => {
-    // this function is not implemented in jsdom
-    // mocking it to avoid false errors
-    Element.prototype.scrollIntoView = vi.fn();
-
     const localVue = getLocalVue();
 
     type Props = InstanceType<typeof HeadlessMultiselect>["$props"];

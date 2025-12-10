@@ -93,7 +93,7 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
         propsData: {
             workflowId: ownsWorkflow ? SAMPLE_WORKFLOW.id : OTHER_USER_WORKFLOW_ID,
             historyId: TEST_HISTORY_ID,
-            invocationUpdateTime: version === "invocation" ? INVOCATION_TIME : undefined,
+            invocationCreateTime: version === "invocation" ? INVOCATION_TIME : undefined,
             showDetails: version === "run_form",
         },
         localVue,
@@ -165,7 +165,7 @@ describe("WorkflowAnnotation renders", () => {
         const { wrapper } = await mountWorkflowAnnotation("invocation");
 
         const timeInfo = wrapper.find(SELECTORS.TIME_INFO);
-        expect(timeInfo.text()).toContain("updated");
+        expect(timeInfo.text()).toContain("invoked");
         expect(timeInfo.find(SELECTORS.DATE).attributes("title")).toBe(INVOCATION_TIME);
     });
 });

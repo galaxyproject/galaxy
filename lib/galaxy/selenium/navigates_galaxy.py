@@ -2159,7 +2159,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def history_panel_click_copy_elements(self):
-        self.use_bootstrap_dropdown(option="copy datasets", menu="history action menu")
+        self.use_bootstrap_dropdown(option="copy datasets", menu="history options")
 
     def use_bootstrap_dropdown(self, option=None, menu=None):
         """uses bootstrap dropdown by data-description attributes"""
@@ -2249,21 +2249,17 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def history_panel_item_edit(self, hid):
         self.display_dataset(hid)
 
-        # Find and click the Edit tab - using a more reliable selector
-        # BVue generates '.nav-item a' elements with a title attribute matching the tab title
-        edit_tab_button = self.wait_for_selector_clickable(
-            ".nav-item[title='Edit dataset attributes and metadata'] > a.nav-link"
-        )
-        edit_tab_button.click()
+        @retry_during_transitions
+        def _click_edit_tab():
+            self.components.dataset_view.edit_tab.wait_for_and_click()
 
-        # Wait for the edit attributes panel to be visible
+        _click_edit_tab()
         self.components.edit_dataset_attributes._.wait_for_visible()
 
     def display_dataset(self, hid):
         item = self.history_panel_item_component(hid=hid)
         item.display_button.wait_for_and_click()
-        # Wait for the DatasetView component to load
-        self.wait_for_selector_visible(".dataset-view")
+        self.components.dataset_view._.wait_for_visible()
 
     def show_dataset_details(self, hid):
         self.display_dataset(hid)

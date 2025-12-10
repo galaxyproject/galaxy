@@ -103,7 +103,7 @@ onMounted(async () => {
     await until(workflow).toBeTruthy();
     await nextTick();
 
-    // @ts-ignore: TS2339 webpack dev issue. hopefully we can remove this with vite
+    // @ts-ignore: TS2339 component method not exposed in template ref type
     workflowGraph.value?.fitWorkflow(0.25, 1.5, 20.0);
 });
 

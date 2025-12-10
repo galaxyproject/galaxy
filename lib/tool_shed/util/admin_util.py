@@ -20,7 +20,7 @@ from galaxy.security.validate_user_input import validate_password
 from galaxy.util import inflector
 from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web.form_builder import CheckboxField
-from galaxy.web.legacy_framework.grids import (
+from tool_shed.grids.framework import (
     Grid,
     GridOperation,
 )

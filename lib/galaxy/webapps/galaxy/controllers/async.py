@@ -230,4 +230,6 @@ class ASync(BaseUIController):
 
             trans.sa_session.commit()
 
-        return trans.fill_template("root/tool_runner.mako", out_data={}, num_jobs=1, job_errors=[])
+        return trans.show_ok_message(
+            "A job has been successfully added to the queue. You can check the status of queued jobs in the History panel."
+        )

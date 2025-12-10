@@ -304,7 +304,7 @@ async function onCancel() {
         <WorkflowAnnotation
             v-if="props.isFullPage"
             :workflow-id="invocation.workflow_id"
-            :invocation-update-time="invocation.update_time"
+            :invocation-create-time="invocation.create_time"
             :history-id="invocation.history_id">
             <template v-slot:middle-content>
                 <div class="progress-bars mx-1">

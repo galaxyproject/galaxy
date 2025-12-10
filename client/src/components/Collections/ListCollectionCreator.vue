@@ -702,7 +702,7 @@ function selectionAsHdaSummary(value: any): HDASummary {
 </template>
 
 <style scoped lang="scss">
-@import "base.scss";
+@import "@/style/scss/base.scss";
 @import "@/style/scss/theme/blue.scss";
 
 .list-collection-creator {

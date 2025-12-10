@@ -402,7 +402,7 @@ class DataRequestHdca(LegacyRequestModelAttributes):
     id: StrictStr
 
 
-class DatasetHash(StrictModel):
+class FileHash(StrictModel):
     hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
     hash_value: StrictStr
 
@@ -416,7 +416,7 @@ class BaseDataRequest(StrictModel):
     created_from_basename: Optional[StrictStr] = None
     info: Optional[StrictStr] = None
     tags: Optional[List[str]] = None
-    hashes: Optional[List[DatasetHash]] = None
+    hashes: Optional[List[FileHash]] = None
     space_to_tab: bool = False
     to_posix_lines: bool = False
 

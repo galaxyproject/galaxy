@@ -99,7 +99,7 @@ function getOptionType(type: string) {
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
-@import "_breakpoints.scss";
+@import "@/style/scss/_breakpoints.scss";
 
 .source-options-list {
     .source-options-list-search {

@@ -107,6 +107,8 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
     GenerateHistoryContentDownload,
     MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
@@ -527,6 +529,21 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         elif history_content_type == HistoryContentType.dataset_collection:
             return self.__create_dataset_collection(trans, history, payload, serialization_params)
         raise exceptions.UnknownContentsType(f"Unknown contents type: {payload.type}")
+
+    def copy_contents(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        payload: CopyDatasetsPayload,
+    ) -> CopyDatasetsResponse:
+        """
+        Service wrapper for copying datasets and dataset collections between histories.
+        """
+        return self.history_contents_manager.copy_contents(
+            trans=trans,
+            history_id=history_id,
+            payload=payload,
+        )
 
     def create_from_store(
         self,

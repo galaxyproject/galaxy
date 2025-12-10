@@ -32,9 +32,9 @@ from galaxy.web.form_builder import (
     CheckboxField,
     SelectField,
 )
-from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.dependencies.repository import relation_builder
+from tool_shed.grids import framework as grids
 from tool_shed.managers.repositories import readmes
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.tools import (

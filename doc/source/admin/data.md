@@ -427,6 +427,47 @@ configuration).
 
 ![](file_source_rspace_configuration.png)
 
+#### `ascp`
+
+The `ascp` file source plugin provides high-speed file downloads using the Aspera FASP protocol.
+It requires the `ascp` binary to be installed and accessible on the Galaxy server.
+
+Example configuration for EBI SRA downloads:
+
+```yaml
+- type: ascp
+  id: ebi_aspera
+  label: "EBI Aspera Downloads"
+  doc: "High-speed downloads from EBI SRA using Aspera FASP protocol"
+  ascp_path: "ascp"  # Path to ascp binary
+  user: "era-fasp"
+  host: "fasp.sra.ebi.ac.uk"
+  port: 33001
+  rate_limit: "300m"  # Transfer rate limit (e.g., "300m" for 300 Mbps)
+  disable_encryption: true  # Disable encryption for maximum speed
+  # Retry and resume configuration (optional)
+  max_retries: 3
+  retry_base_delay: 2.0
+  retry_max_delay: 60.0
+  enable_resume: true
+  # SSH key content (required) - embed the key directly in the configuration
+  ssh_key_content: |
+    -----BEGIN RSA PRIVATE KEY-----
+    <YOUR ACTUAL SSH PRIVATE KEY CONTENT>
+    -----END RSA PRIVATE KEY-----
+  # SSH key passphrase. https://embl.service-now.com/kb?id=kb_article_view&sys_kb_id=4cc60cf8c398a610bf313dfc0501314c#mcetoc_1idpn4k0to
+  ssh_key_passphrase: sample_passphrase
+```
+
+The plugin is **download-only** and supports automatic retry with exponential backoff for transient 
+network errors and can resume interrupted transfers. Both `ascp://` and `fasp://` URL schemes are supported.
+
+**SSH Key Configuration Note:** The plugin requires SSH key content (not file paths) because Galaxy jobs often 
+run on clusters that don't mount Galaxy's root or configuration directories. The configuration block is copied 
+to the job's directory, but referenced key paths wouldn't be accessible.
+
+**Note:** The plugin does not support browsing directories or uploading files (`writable: false`, `browsable: false`).
+
 ### YAML Syntax
 
 ![galaxy.files.templates.models](file_source_templates.png)

@@ -1077,7 +1077,7 @@ steps:
         assert len(empty_search_response.json()) == 0
 
     @pytest.mark.require_new_history
-    @transient_failure(issue=21242, potentially_fixed=True)
+    @transient_failure(issue=21242)
     def test_delete_job_with_message(self, history_id):
         # Setup a job that will take a while to run so we can verify our cancelling
         input_dataset_id = self.__history_with_ok_dataset(history_id)

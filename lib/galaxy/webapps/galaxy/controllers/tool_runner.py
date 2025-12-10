@@ -53,7 +53,7 @@ class ToolRunner(BaseUIController):
 
         # tool id not available, redirect to main page
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # tool id is not matching, display an error
         if not tool:
@@ -113,7 +113,18 @@ class ToolRunner(BaseUIController):
             error(galaxy.util.unicodify(e))
         if len(params) > 0:
             trans.log_event(f"Tool params: {str(params)}", tool_id=tool_id)
-        return trans.fill_template("root/tool_runner.mako", **vars)
+        status_text = "You can check the status of queued jobs in the History panel."
+        job_errors = vars.get("job_errors")
+        num_jobs = vars.get("num_jobs")
+        if job_errors:
+            errors = "\n".join(f"- {job_error}" for job_error in job_errors)
+            message = f"There were errors setting up {len(job_errors)} submitted job(s):\n{errors}"
+            return trans.show_error_message(message)
+        if num_jobs > 1:
+            message = f"{num_jobs} jobs have been successfully added to the queue. {status_text}"
+        else:
+            message = f"A job has been successfully added to the queue. {status_text}"
+        return trans.show_ok_message(message)
 
     @web.expose
     def rerun(self, trans, id=None, job_id=None, **kwd):
@@ -160,7 +171,7 @@ class ToolRunner(BaseUIController):
         Subverting did not work on Chrome 31
         """
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:

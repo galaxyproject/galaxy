@@ -442,7 +442,7 @@ describe("FormData", () => {
         });
         const noCheckLinked = wrapper.find("input[type='checkbox']");
         expect(noCheckLinked.exists()).toBeFalsy();
-        await wrapper.find("[title='Multiple datasets'").trigger("click");
+        await wrapper.find("[title='Multiple datasets']").trigger("click");
         expect(wrapper.emitted()!.input![1]![0]).toEqual(null);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
@@ -508,7 +508,7 @@ describe("FormData", () => {
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
         expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
-        await wrapper.find("[title='Multiple datasets'").trigger("click");
+        await wrapper.find("[title='Multiple datasets']").trigger("click");
         expect(options.at(0).classes()).toContain("active");
         expect(wrapper.emitted()!.input![2]![0]).toEqual(null);
     });

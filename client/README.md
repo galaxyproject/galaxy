@@ -59,8 +59,8 @@ Or, with the package scripts from this `client` directory:
 
     yarn run develop
 
-This will start up an extra client development server running on port 8081. Open
-your browser to `http://localhost:8081` (instead of the default 8080 that Galaxy
+This will start up an extra client development server running on port 5173. Open
+your browser to `http://localhost:5173` (instead of the default 8080 that Galaxy
 would run on), and you should see Galaxy like normal. Except now, when you
 change client code it'll automatically rebuild _and_ reload the relevant portion
 of the application for you. Lastly, if you are running Galaxy at a location
@@ -76,7 +76,7 @@ also possible if you set the `CHANGE_ORIGIN` environment variable:
 
 You can also specify a particular port to bind the dev server to:
 
-    WEBPACK_PORT=8083 yarn run develop
+    VITE_PORT=8083 yarn run develop
 
 ## Running a Separate Server
 
@@ -101,8 +101,8 @@ apply site-wide.
 
 On build, the compiled css bundle is served at `/static/dist/base.css`.
 
-As mentioned above, `make client` will rebuild styles as a part of the webpack
-build. For iterative development, "Watch Mode" rebuilds as described above do
+As mentioned above, `make client` will rebuild styles as a part of the build
+process. For iterative development, "Watch Mode" rebuilds as described above do
 include style changes.
 
 ## Client-Side Unit Testing

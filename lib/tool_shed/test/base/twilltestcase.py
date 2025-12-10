@@ -415,7 +415,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         self._visit_galaxy_url("/")
         html = page_content()
         token_def_index = html.find("session_csrf_token")
-        token_sep_index = html.find(":", token_def_index)
+        token_sep_index = html.find("=", token_def_index)
         token_quote_start_index = html.find('"', token_sep_index)
         token_quote_end_index = html.find('"', token_quote_start_index + 1)
         token = html[(token_quote_start_index + 1) : token_quote_end_index]

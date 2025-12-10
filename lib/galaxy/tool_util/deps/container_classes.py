@@ -52,23 +52,28 @@ python << EOF
 from __future__ import print_function
 
 import json
-import re
 import subprocess
 import tarfile
 
 t = tarfile.TarFile("${cached_image_file}")
 meta_str = t.extractfile('repositories').read()
 meta = json.loads(meta_str)
-tag, tag_value = next(iter(meta.items()))
-rev, rev_value = next(iter(tag_value.items()))
+repository, tag_value = next(iter(meta.items()))
+tag, id = next(iter(tag_value.items()))
 cmd = "${images_cmd}"
-proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, text=True)
 stdo, stde = proc.communicate()
 found = False
 for line in stdo.split("\n"):
-    tmp = re.split(r'\s+', line)
-    if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
-        found = True
+    line = line.strip()
+    if line:
+        try:
+            img = json.loads(line)
+            if img.get("Repository") == repository and img.get("Tag") == tag and img.get("ID") == id:
+                found = True
+                break
+        except (json.JSONDecodeError, ValueError):
+            pass
 if not found:
     print("Loading image")
     cmd = "cat ${cached_image_file} | ${load_cmd}"
@@ -503,7 +508,7 @@ _on_exit() {{
 {run_command}"""
 
     def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
-        images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
+        images_cmd = docker_util.build_docker_images_command(truncate=False, format="json", **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
         return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(

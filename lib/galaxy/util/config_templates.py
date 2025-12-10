@@ -641,8 +641,6 @@ def _make_field_optional(field_info: FieldInfo):
     """Returns the field's definition to be used in a `create_model()` call to make the field optional."""
     annotation = field_info.annotation
     assert annotation is not None
-    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
-        annotation = make_model_with_all_fields_optional(annotation)
     if field_info.is_required():
         return Annotated[Union[annotation, None], field_info], None
     else:
