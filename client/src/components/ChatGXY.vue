@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
+    faBug,
+    faChartBar,
     faClock,
+    faGraduationCap,
     faHistory,
     faMagic,
     faPaperPlane,
+    faPlus,
+    faRobot,
+    faRoute,
     faThumbsDown,
     faThumbsUp,
     faTrash,
     faUser,
+    faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
@@ -20,10 +27,9 @@ import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ActionCard from "./ChatGXY/ActionCard.vue";
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-library.add(faThumbsUp, faThumbsDown, faPaperPlane, faUser, faMagic, faHistory, faTrash, faClock);
 
 interface Message {
     id: string;
@@ -67,15 +73,34 @@ const hasLoadedInitialChat = ref(false);
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
 
-const agentTypes = [
-    { value: "auto", label: "🧙 Auto (Router)", description: "Let the wizard decide" },
-    { value: "error_analysis", label: "🔍 Error Analysis", description: "Debug tool errors" },
-    { value: "tool_recommendation", label: "🔧 Tool Recommendation", description: "Find the right tools" },
-    { value: "dspy_tool_recommendation", label: "🤖 DSPy Tools", description: "Advanced reasoning for tool selection" },
-    { value: "custom_tool", label: "⚡ Custom Tool", description: "Create custom tools" },
-    { value: "dataset_analyzer", label: "📊 Dataset Analyzer", description: "Analyze datasets" },
-    { value: "gtn_training", label: "📚 Training Materials", description: "Find tutorials and guides" },
+interface AgentType {
+    value: string;
+    label: string;
+    icon: IconDefinition;
+    description: string;
+}
+
+const agentTypes: AgentType[] = [
+    { value: "auto", label: "Auto (Router)", icon: faMagic, description: "Intelligent routing" },
+    { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
+    { value: "tool_recommendation", label: "Tool Recommendation", icon: faWrench, description: "Find the right tools" },
+    { value: "dspy_tool_recommendation", label: "DSPy Tools", icon: faRobot, description: "Advanced tool selection" },
+    { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
+    { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
+    { value: "gtn_training", label: "Training Materials", icon: faGraduationCap, description: "Find tutorials" },
 ];
+
+// Map agent types to their icons for quick lookup
+const agentIconMap: Record<string, IconDefinition> = {
+    auto: faMagic,
+    router: faRoute,
+    error_analysis: faBug,
+    tool_recommendation: faWrench,
+    dspy_tool_recommendation: faRobot,
+    custom_tool: faPlus,
+    dataset_analyzer: faChartBar,
+    gtn_training: faGraduationCap,
+};
 
 onMounted(async () => {
     // Try to load the most recent chat
@@ -251,43 +276,19 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
     }
 }
 
-function getAgentIcon(agentType?: string) {
-    switch (agentType) {
-        case "router":
-            return "🧙";
-        case "error_analysis":
-            return "🔍";
-        case "tool_recommendation":
-            return "🔧";
-        case "dspy_tool_recommendation":
-            return "🤖";
-        case "custom_tool":
-            return "⚡";
-        case "dataset_analyzer":
-            return "📊";
-        case "gtn_training":
-            return "📚";
-        default:
-            return "🤖";
-    }
+function getAgentIcon(agentType?: string): IconDefinition {
+    return agentIconMap[agentType || ""] || faRobot;
 }
 
 function getAgentLabel(agentType?: string) {
     const agent = agentTypes.find((a) => a.value === agentType);
-    return agent?.label.split(" ").slice(1).join(" ") || "AI Assistant";
+    return agent?.label || "AI Assistant";
 }
 
-function getAgentDescription(agentType?: string) {
-    const descriptions = {
-        router: "Intelligent query routing and task classification",
-        error_analysis: "Debugging tool errors and job failures",
-        tool_recommendation: "Finding the right Galaxy tools for your analysis",
-        dspy_tool_recommendation: "Advanced reasoning for tool selection using DSPy",
-        custom_tool: "Creating custom Galaxy tools and wrappers",
-        dataset_analyzer: "Analyzing datasets and data quality assessment",
-        gtn_training: "Finding tutorials and training materials",
-    };
-    return descriptions[agentType as keyof typeof descriptions] || "General AI assistance";
+function getAgentResponseOrEmpty(response?: AgentResponse): AgentResponse {
+    return (
+        response || ({ content: "", agent_type: "", confidence: "low", suggestions: [], metadata: {} } as AgentResponse)
+    );
 }
 
 async function loadChatHistory() {
@@ -300,7 +301,7 @@ async function loadChatHistory() {
         });
 
         if (data && !error) {
-            chatHistory.value = data as ChatHistoryItem[];
+            chatHistory.value = data as unknown as ChatHistoryItem[];
         }
     } catch (e) {
         console.error("Failed to load chat history:", e);
@@ -425,7 +426,7 @@ async function loadLatestChat() {
         });
 
         if (data && !error && data.length > 0) {
-            const latestChat = data[0] as ChatHistoryItem;
+            const latestChat = data[0] as unknown as ChatHistoryItem;
             await loadPreviousChat(latestChat);
             hasLoadedInitialChat.value = true;
         }
@@ -462,41 +463,27 @@ function toggleHistory() {
 </script>
 
 <template>
-    <div class="chatgxy-container card">
-        <div class="card-header">
-            <div class="d-flex align-items-center justify-content-between">
-                <h3 class="mb-0 d-flex align-items-center">
-                    <FontAwesomeIcon :icon="faMagic" fixed-width />
-                    ChatGXY
-                    <span v-if="currentChatId" class="badge badge-info ml-2" style="font-size: 0.6em">
-                        Continuing Chat #{{ currentChatId }}
-                    </span>
-                </h3>
-                <div class="d-flex align-items-center">
-                    <button class="btn btn-sm btn-primary mr-2" title="Start New Chat" @click="startNewChat">
-                        <FontAwesomeIcon :icon="faPaperPlane" fixed-width />
-                        New Chat
-                    </button>
-                    <button
-                        class="btn btn-sm btn-outline-secondary mr-3"
-                        :title="showHistory ? 'Hide History' : 'Show History'"
-                        @click="toggleHistory">
-                        <FontAwesomeIcon :icon="faHistory" fixed-width />
-                        History
-                    </button>
-                    <div class="agent-selector">
-                        <label for="agent-select" class="mr-2">Agent:</label>
-                        <select id="agent-select" v-model="selectedAgentType" class="form-control form-control-sm">
-                            <option v-for="agent in agentTypes" :key="agent.value" :value="agent.value">
-                                {{ agent.label }}
-                            </option>
-                        </select>
-                    </div>
-                </div>
+    <div class="chatgxy-container">
+        <div class="chatgxy-header">
+            <Heading h2 :icon="faMagic" size="lg">
+                <span>ChatGXY</span>
+            </Heading>
+            <div class="header-actions">
+                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
+                    New
+                </button>
+                <button
+                    class="btn btn-sm"
+                    :class="showHistory ? 'btn-primary' : 'btn-outline-primary'"
+                    :title="showHistory ? 'Hide History' : 'Show History'"
+                    @click="toggleHistory">
+                    <FontAwesomeIcon :icon="faHistory" fixed-width />
+                </button>
             </div>
         </div>
 
-        <div class="card-body d-flex">
+        <div class="chatgxy-body">
             <!-- History Sidebar -->
             <div v-if="showHistory" class="history-sidebar">
                 <div class="history-header">
@@ -520,7 +507,9 @@ function toggleHistory() {
                         @click="() => loadPreviousChat(item)">
                         <div class="history-query">{{ item.query }}</div>
                         <div class="history-meta">
-                            <span class="history-agent">{{ getAgentIcon(item.agent_type) }}</span>
+                            <span class="history-agent">
+                                <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
+                            </span>
                             <span class="history-time">
                                 <FontAwesomeIcon :icon="faClock" class="mr-1" />
                                 <UtcDate :date="item.timestamp" mode="elapsed" />
@@ -535,84 +524,70 @@ function toggleHistory() {
                 <div
                     v-for="message in messages"
                     :key="message.id"
-                    :class="['message', message.role === 'user' ? 'user-message' : 'assistant-message']">
-                    <div class="message-header">
-                        <span class="message-icon">
-                            <FontAwesomeIcon v-if="message.role === 'user'" :icon="faUser" fixed-width />
-                            <span v-else>{{ getAgentIcon(message.agentType) }}</span>
-                        </span>
-                        <div class="message-agent-info">
-                            <span class="message-role">
-                                {{ message.role === "user" ? "You" : getAgentLabel(message.agentType) }}
-                            </span>
-                            <span
-                                v-if="message.role === 'assistant' && message.agentType"
-                                class="agent-description"
-                                :title="getAgentDescription(message.agentType)">
-                                {{ getAgentDescription(message.agentType) }}
-                            </span>
+                    :class="['notebook-cell', message.role === 'user' ? 'query-cell' : 'response-cell']">
+                    <!-- Query cell (user input) -->
+                    <template v-if="message.role === 'user'">
+                        <div class="cell-label">
+                            <FontAwesomeIcon :icon="faUser" fixed-width />
+                            <span>Query</span>
                         </div>
-                        <div class="message-badges">
-                            <span
-                                v-if="message.confidence"
-                                class="confidence-badge"
-                                :class="`confidence-${message.confidence}`"
-                                :title="`Confidence: ${message.confidence}`">
-                                {{ message.confidence }}
-                            </span>
+                        <div class="cell-content">{{ message.content }}</div>
+                    </template>
+
+                    <!-- Response cell (assistant output) -->
+                    <template v-else>
+                        <div class="cell-label">
+                            <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
+                            <span>{{ getAgentLabel(message.agentType) }}</span>
                             <span
                                 v-if="message.routingInfo"
-                                class="routing-info"
+                                class="routing-badge"
                                 :title="message.routingInfo.reasoning">
-                                → {{ getAgentLabel(message.routingInfo.selected_agent) }}
+                                via Router
                             </span>
                         </div>
-                    </div>
+                        <div class="cell-content">
+                            <!-- eslint-disable-next-line vue/no-v-html -->
+                            <div v-html="renderMarkdown(message.content)" />
 
-                    <div class="message-content">
-                        <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-if="message.role === 'assistant'" v-html="renderMarkdown(message.content)" />
-                        <div v-else>{{ message.content }}</div>
-                    </div>
-
-                    <!-- Action suggestions for assistant messages -->
-                    <ActionCard
-                        v-if="message.role === 'assistant' && message.suggestions?.length"
-                        :suggestions="message.suggestions"
-                        :processing-action="processingAction"
-                        @handle-action="(action) => handleAction(action, message.agentResponse || {})" />
-
-                    <div
-                        v-if="
-                            message.role === 'assistant' &&
-                            !message.content.startsWith('❌') &&
-                            !message.isSystemMessage
-                        "
-                        class="message-feedback">
-                        <button
-                            class="btn btn-link btn-sm"
-                            :disabled="message.feedback !== null"
-                            :class="{ 'feedback-given': message.feedback === 'up' }"
-                            @click="sendFeedback(message.id, 'up')">
-                            <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                        </button>
-                        <button
-                            class="btn btn-link btn-sm"
-                            :disabled="message.feedback !== null"
-                            :class="{ 'feedback-given': message.feedback === 'down' }"
-                            @click="sendFeedback(message.id, 'down')">
-                            <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                        </button>
-                        <span v-if="message.feedback" class="feedback-text">Thanks for feedback!</span>
-                    </div>
+                            <!-- Action suggestions -->
+                            <ActionCard
+                                v-if="message.suggestions?.length"
+                                :suggestions="message.suggestions"
+                                :processing-action="processingAction"
+                                @handle-action="
+                                    (action) => handleAction(action, getAgentResponseOrEmpty(message.agentResponse))
+                                " />
+                        </div>
+                        <div v-if="!message.content.startsWith('❌') && !message.isSystemMessage" class="cell-footer">
+                            <button
+                                class="feedback-btn"
+                                :disabled="message.feedback !== null"
+                                :class="{ active: message.feedback === 'up' }"
+                                title="Helpful"
+                                @click="sendFeedback(message.id, 'up')">
+                                <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
+                            </button>
+                            <button
+                                class="feedback-btn"
+                                :disabled="message.feedback !== null"
+                                :class="{ active: message.feedback === 'down' }"
+                                title="Not helpful"
+                                @click="sendFeedback(message.id, 'down')">
+                                <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
+                            </button>
+                            <span v-if="message.feedback" class="feedback-text">Thanks!</span>
+                        </div>
+                    </template>
                 </div>
 
-                <div v-if="busy" class="message assistant-message">
-                    <div class="message-header">
-                        <span class="message-icon">{{ getAgentIcon(selectedAgentType) }}</span>
-                        <span class="message-role">{{ getAgentLabel(selectedAgentType) }}</span>
+                <!-- Loading state -->
+                <div v-if="busy" class="notebook-cell response-cell loading-cell">
+                    <div class="cell-label">
+                        <FontAwesomeIcon :icon="getAgentIcon(selectedAgentType)" fixed-width />
+                        <span>{{ getAgentLabel(selectedAgentType) }}</span>
                     </div>
-                    <div class="message-content">
+                    <div class="cell-content">
                         <BSkeleton animation="wave" width="85%" />
                         <BSkeleton animation="wave" width="55%" />
                         <BSkeleton animation="wave" width="70%" />
@@ -621,15 +596,15 @@ function toggleHistory() {
             </div>
         </div>
 
-        <div class="card-footer">
+        <div class="chatgxy-footer">
             <div class="chat-input-container">
                 <label for="chat-input" class="sr-only">Chat message</label>
                 <textarea
                     id="chat-input"
                     v-model="query"
                     :disabled="busy"
-                    placeholder="Ask me anything about Galaxy..."
-                    rows="2"
+                    placeholder="Ask about tools, workflows, errors, or anything Galaxy..."
+                    rows="1"
                     class="form-control chat-input"
                     @keydown.enter.prevent="!$event.shiftKey && submitQuery()" />
                 <button :disabled="busy || !query.trim()" class="btn btn-primary send-button" @click="submitQuery">
@@ -637,267 +612,252 @@ function toggleHistory() {
                     <LoadingSpan v-else message="" />
                 </button>
             </div>
-            <div class="chat-hints">
-                <small class="text-muted">
-                    Press Enter to send, Shift+Enter for new line. Try asking about tools, errors, or workflows!
-                </small>
-            </div>
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
+@import "@/style/scss/theme/blue.scss";
+
 .chatgxy-container {
-    height: 80vh;
+    height: calc(100vh - #{$masthead-height} - 2rem);
     display: flex;
     flex-direction: column;
-
-    .card-body {
-        flex: 1;
-        overflow: hidden;
-        padding: 0;
-    }
-
-    .card-footer {
-        flex-shrink: 0;
-        position: sticky;
-        bottom: 0;
-        background: white;
-        border-top: 1px solid #dee2e6;
-        z-index: 10;
-    }
+    background: $white;
+    border-radius: $border-radius-large;
+    overflow: hidden;
 }
 
-.agent-selector {
+.chatgxy-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: $panel-bg-color;
+    border-bottom: $border-default;
 
-    select {
-        width: 200px;
+    .header-actions {
+        display: flex;
+        gap: 0.5rem;
     }
 }
 
+.chatgxy-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.chatgxy-footer {
+    padding: 0.75rem 1rem;
+    background: $panel-bg-color;
+    border-top: $border-default;
+}
+
+// Notebook-style cells
 .chat-messages {
-    height: 100%;
+    flex: 1;
     overflow-y: auto;
-    padding: 1rem;
-    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    background: $white;
 }
 
-.message {
-    margin-bottom: 1.5rem;
-    animation: fadeIn 0.3s;
+.notebook-cell {
+    margin-bottom: 1rem;
+    animation: fadeIn 0.2s ease-out;
 
-    &.user-message {
-        .message-content {
-            background: #007bff;
-            color: white;
-            margin-left: 2rem;
-            margin-right: 0;
-            border-radius: 18px 18px 4px 18px;
+    &.query-cell {
+        .cell-label {
+            color: $brand-primary;
+        }
+
+        .cell-content {
+            border-left: 3px solid $brand-primary;
+            background: rgba($brand-primary, 0.04);
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            color: $text-color;
         }
     }
 
-    &.assistant-message {
-        .message-content {
-            background: white;
-            color: #333;
-            margin-left: 0;
-            margin-right: 2rem;
-            border-radius: 18px 18px 18px 4px;
-            border: 1px solid #dee2e6;
+    &.response-cell {
+        .cell-label {
+            color: $text-muted;
+        }
+
+        .cell-content {
+            border-left: 3px solid $brand-secondary;
+            background: $panel-bg-color;
+            padding: 0.75rem 1rem;
+        }
+
+        &.loading-cell {
+            .cell-content {
+                opacity: 0.7;
+            }
         }
     }
 }
 
-.message-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-    color: #6c757d;
-
-    .message-icon {
-        margin-right: 0.5rem;
-    }
-
-    .message-role {
-        font-weight: 600;
-        margin-right: 0.5rem;
-    }
-}
-
-.message-agent-info {
+.cell-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.5rem;
-
-    .agent-icon {
-        font-size: 1.1rem;
-    }
-
-    .agent-name {
-        font-weight: 600;
-        color: #495057;
-    }
-}
-
-.agent-description {
-    font-size: 0.75rem;
-    color: #6c757d;
-    font-style: italic;
-    margin-left: 1.6rem;
-    margin-bottom: 0.25rem;
-}
-
-.message-badges {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: 1.6rem;
-}
-
-.confidence-badge {
-    padding: 0.125rem 0.5rem;
-    border-radius: 12px;
     font-size: 0.75rem;
     font-weight: 600;
-
-    &.confidence-high {
-        background: #d4edda;
-        color: #155724;
-    }
-
-    &.confidence-medium {
-        background: #fff3cd;
-        color: #856404;
-    }
-
-    &.confidence-low {
-        background: #f8d7da;
-        color: #721c24;
-    }
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.375rem;
+    padding-left: 0.25rem;
 }
 
-.routing-info {
-    margin-left: 0.5rem;
-    padding: 0.125rem 0.5rem;
-    background: #e7f3ff;
-    color: #0056b3;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 500;
+.routing-badge {
+    font-weight: 400;
+    font-size: 0.65rem;
+    color: $text-light;
+    text-transform: none;
     cursor: help;
 
-    &:hover {
-        background: #d1e7fd;
+    &::before {
+        content: "·";
+        margin: 0 0.25rem;
     }
 }
 
-.message-content {
-    padding: 0.75rem 1rem;
+.cell-content {
+    border-radius: $border-radius-base;
     word-wrap: break-word;
+    line-height: 1.6;
 
-    ::v-deep {
-        p:last-child {
-            margin-bottom: 0;
-        }
+    :deep(p:last-child) {
+        margin-bottom: 0;
+    }
+
+    :deep(p:first-child) {
+        margin-top: 0;
+    }
+
+    :deep(code) {
+        background: rgba($brand-dark, 0.08);
+        padding: 0.125rem 0.375rem;
+        border-radius: $border-radius-base;
+        font-family: $font-family-monospace;
+        font-size: 0.85em;
+    }
+
+    :deep(pre) {
+        background: $white;
+        border: $border-default;
+        padding: 0.75rem;
+        border-radius: $border-radius-base;
+        overflow-x: auto;
+        margin: 0.75rem 0;
 
         code {
-            background: rgba(0, 0, 0, 0.05);
-            padding: 0.125rem 0.25rem;
-            border-radius: 3px;
+            background: none;
+            padding: 0;
         }
+    }
 
-        pre {
-            background: #f6f8fa;
-            padding: 0.75rem;
-            border-radius: 6px;
-            overflow-x: auto;
-        }
+    :deep(ul),
+    :deep(ol) {
+        margin-bottom: 0.75rem;
+        padding-left: 1.5rem;
+    }
+
+    :deep(li) {
+        margin-bottom: 0.25rem;
     }
 }
 
-.message-feedback {
+.cell-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
     margin-top: 0.5rem;
-    margin-left: 2rem;
+    padding-left: 0.25rem;
+}
 
-    .feedback-given {
-        color: #28a745;
+.feedback-btn {
+    background: none;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    color: $text-light;
+    cursor: pointer;
+    border-radius: $border-radius-base;
+    transition: all 0.15s;
+
+    &:hover:not(:disabled) {
+        color: $brand-primary;
+        background: rgba($brand-primary, 0.08);
     }
 
-    .feedback-text {
-        font-size: 0.75rem;
-        color: #6c757d;
-        margin-left: 0.5rem;
+    &:disabled {
+        cursor: default;
+        opacity: 0.5;
+    }
+
+    &.active {
+        color: $brand-success;
     }
 }
 
+.feedback-text {
+    font-size: 0.7rem;
+    color: $text-light;
+    margin-left: 0.25rem;
+}
+
+// Input area
 .chat-input-container {
     display: flex;
     gap: 0.5rem;
     align-items: flex-end;
-    min-height: 44px; /* Ensure consistent height */
 
     .chat-input {
         flex: 1;
-        resize: none; /* Prevent manual resizing */
-        transition: none; /* Prevent transition effects */
+        resize: none;
+        border-radius: $border-radius-base;
+        padding: 0.625rem 0.875rem;
+        border: $border-default;
+        font-size: 0.9rem;
+        min-height: 2.5rem;
+        max-height: 8rem;
+
+        &:focus {
+            border-color: $brand-primary;
+            box-shadow: 0 0 0 2px rgba($brand-primary, 0.1);
+            outline: none;
+        }
     }
 
     .send-button {
         flex-shrink: 0;
-        align-self: flex-end;
+        border-radius: $border-radius-base;
+        padding: 0.5rem 0.875rem;
     }
 }
 
-.chat-hints {
-    margin-top: 0.5rem;
-    text-align: center;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-// History Sidebar Styles
+// History sidebar
 .history-sidebar {
-    width: 300px;
-    border-right: 1px solid #dee2e6;
-    background: white;
+    width: 280px;
+    border-right: $border-default;
+    background: $panel-bg-color;
     display: flex;
     flex-direction: column;
 
     .history-header {
-        padding: 1rem;
-        border-bottom: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+        border-bottom: $border-default;
         display: flex;
         justify-content: space-between;
         align-items: center;
 
         h5 {
             margin: 0;
-            font-size: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: $text-color;
         }
     }
 
@@ -907,18 +867,18 @@ function toggleHistory() {
     }
 
     .history-item {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 0.625rem 1rem;
+        border-bottom: 1px solid darken($panel-bg-color, 5%);
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: background-color 0.15s;
 
         &:hover {
-            background-color: #f8f9fa;
+            background: darken($panel-bg-color, 3%);
         }
 
         .history-query {
-            font-size: 0.875rem;
-            color: #333;
+            font-size: 0.8rem;
+            color: $text-color;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -929,14 +889,44 @@ function toggleHistory() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.75rem;
-            color: #6c757d;
+            font-size: 0.7rem;
+            color: $text-light;
+
+            .history-agent {
+                color: $brand-primary;
+            }
 
             .history-time {
                 display: flex;
                 align-items: center;
+                gap: 0.25rem;
             }
         }
     }
+}
+
+// Animations
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+// Accessibility
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 </style>
