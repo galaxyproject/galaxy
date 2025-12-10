@@ -99,7 +99,15 @@ export function isOnlyOneOIDCProviderConfigured(config: OIDCConfig): boolean {
 }
 
 export function hasSingleOidcProfile(config: OIDCConfig): boolean {
-    return isOnlyOneOIDCProviderConfigured(config) && !!config.profile_url;
+    const providers = Object.keys(config);
+    if (providers.length !== 1) {
+        return false;
+    }
+    const idp = providers[0];
+    if (idp === undefined) {
+        throw new Error("OIDC provider key is undefined.");
+    }
+    return isOnlyOneOIDCProviderConfigured(config) && !!config[idp]?.profile_url;
 }
 
 export async function redirectToSingleProvider(config: OIDCConfig): Promise<string | null> {
