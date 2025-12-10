@@ -220,6 +220,7 @@ class YamlToolSource(ToolSource):
         output_collections = {}
         for output in output_collection_defs:
             output_collections[output.name] = output
+            outputs[output.name] = output
 
         return outputs, output_collections
 
@@ -231,7 +232,7 @@ class YamlToolSource(ToolSource):
         name = output_dict.get("name")
         label = output_dict.get("label")
         default_format = output_dict.get("format", "data")
-        collection_type = output_dict.get("type", None)
+        collection_type = output_dict.get("collection_type", None)
         collection_type_source = output_dict.get("type_source", None)
         structured_like = output_dict.get("structured_like", None)
         inherit_format = False
