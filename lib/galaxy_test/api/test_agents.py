@@ -309,7 +309,9 @@ class TestAgentUnitMocked:
 
         for query, expected_agent in test_cases:
             decision = await router.route_query(query)
-            assert decision.primary_agent == expected_agent, f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
+            assert (
+                decision.primary_agent == expected_agent
+            ), f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
             # Just verify we got a reasoning string, don't check exact phrasing (LLM variability)
             assert len(decision.reasoning) > 0, f"Query '{query}' should have reasoning"
 
@@ -836,9 +838,9 @@ class TestAgentUnitLiveLLM:
 
         for query, expected_agent in test_cases:
             decision = await router.route_query(query)
-            assert decision.primary_agent == expected_agent, (
-                f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
-            )
+            assert (
+                decision.primary_agent == expected_agent
+            ), f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
 
     @pytest.mark.asyncio
     async def test_custom_tool_agent_with_scout(self):
@@ -930,9 +932,9 @@ class TestAgentConsistencyLiveLLM:
                 assert decision.direct_response is not None, f"Query '{query}' should get direct response"
             else:
                 # Should route to expected agent
-                assert decision.primary_agent == expected_agent, (
-                    f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
-                )
+                assert (
+                    decision.primary_agent == expected_agent
+                ), f"Query '{query}' should route to {expected_agent}, got {decision.primary_agent}"
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("query,expected_agent", TEST_QUERIES)

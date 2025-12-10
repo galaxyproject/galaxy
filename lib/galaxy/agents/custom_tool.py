@@ -11,7 +11,10 @@ from typing import (
 
 import yaml
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
+from pydantic_ai.exceptions import (
+    ModelHTTPError,
+    UnexpectedModelBehavior,
+)
 
 from galaxy.schema.agents import ConfidenceLevel
 from galaxy.tool_util_models import UserToolSource

@@ -192,10 +192,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             try:
                 agent = agent_registry.get_agent(agent_name, self.deps)
                 # Execute with timeout protection
-                response = await asyncio.wait_for(
-                    agent.process(current_query, context or {}),
-                    timeout=timeout
-                )
+                response = await asyncio.wait_for(agent.process(current_query, context or {}), timeout=timeout)
                 responses[agent_name] = response
 
                 # For sequential execution, next agent can see previous results
@@ -225,10 +222,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             try:
                 agent = agent_registry.get_agent(agent_name, self.deps)
                 # Execute with timeout protection
-                response = await asyncio.wait_for(
-                    agent.process(query, context or {}),
-                    timeout=timeout
-                )
+                response = await asyncio.wait_for(agent.process(query, context or {}), timeout=timeout)
                 return agent_name, response
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")

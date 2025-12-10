@@ -491,7 +491,9 @@ class BaseGalaxyAgent(ABC):
         """Get the max tokens setting for this agent."""
         return self._get_agent_config("max_tokens", 2000)
 
-    async def _call_agent_from_tool(self, agent_type: str, query: str, ctx, usage=None, context: Dict[str, Any] = None) -> str:
+    async def _call_agent_from_tool(
+        self, agent_type: str, query: str, ctx, usage=None, context: Dict[str, Any] = None
+    ) -> str:
         """
         Centralized helper method for calling other agents from within tool functions.
 
