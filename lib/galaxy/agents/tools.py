@@ -88,8 +88,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             formatted = []
             for tool in results[:10]:
                 formatted.append(
-                    f"- ID: {tool['id']}, Name: {tool['name']}, "
-                    f"Description: {tool['description'][:100]}..."
+                    f"- ID: {tool['id']}, Name: {tool['name']}, " f"Description: {tool['description'][:100]}..."
                 )
             return f"Found {len(results)} tools:\n" + "\n".join(formatted)
 
@@ -130,12 +129,14 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             for tool_id in tool_ids[:20]:  # Limit to top 20 results
                 tool = self.deps.toolbox.get_tool(tool_id)
                 if tool and not tool.hidden:
-                    tools.append({
-                        "id": tool.id,
-                        "name": tool.name,
-                        "description": tool.description or "",
-                        "category": tool.get_panel_section()[1] or "",
-                    })
+                    tools.append(
+                        {
+                            "id": tool.id,
+                            "name": tool.name,
+                            "description": tool.description or "",
+                            "category": tool.get_panel_section()[1] or "",
+                        }
+                    )
 
             return tools
 
@@ -168,20 +169,24 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 details["inputs"] = []
                 for input_name, input_param in tool.inputs.items():
                     if hasattr(input_param, "type"):
-                        details["inputs"].append({
-                            "name": input_name,
-                            "type": input_param.type,
-                            "label": getattr(input_param, "label", input_name),
-                        })
+                        details["inputs"].append(
+                            {
+                                "name": input_name,
+                                "type": input_param.type,
+                                "label": getattr(input_param, "label", input_name),
+                            }
+                        )
 
             # Add output information
             if hasattr(tool, "outputs"):
                 details["outputs"] = []
                 for output_name, output_param in tool.outputs.items():
-                    details["outputs"].append({
-                        "name": output_name,
-                        "format": getattr(output_param, "format", "unknown"),
-                    })
+                    details["outputs"].append(
+                        {
+                            "name": output_name,
+                            "format": getattr(output_param, "format", "unknown"),
+                        }
+                    )
 
             return details
 
@@ -555,4 +560,3 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             "has_alternatives": bool(alternatives and alternatives.group(1).strip()),
             "suggestions": suggestions,
         }
-
