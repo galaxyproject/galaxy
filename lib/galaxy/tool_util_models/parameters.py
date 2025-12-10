@@ -1175,6 +1175,7 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def default_value(self) -> Optional[str]:
+        assert not self.multiple
         if self.options:
             for option in self.options:
                 if option.selected:
@@ -1183,6 +1184,13 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             if not self.optional:
                 return self.options[0].value
 
+        return None
+
+    @property
+    def default_values(self) -> Optional[List[str]]:
+        assert self.multiple
+        if self.options:
+            return [option.value for option in self.options if option.selected]
         return None
 
     @property
