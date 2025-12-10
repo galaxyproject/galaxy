@@ -53,7 +53,6 @@ const totalSize = computed(() => {
     return bytesToString(bytes);
 });
 
-// Bulk selectors
 const bulkExtension = ref<string | null>(null);
 const bulkDbKey = ref<string | null>(null);
 
@@ -116,13 +115,53 @@ function toggleAllToPosixLines() {
     selectedFiles.value.forEach((f) => (f.toPosixLines = newValue));
 }
 
+function restoreOriginalName(item: FileWithMetadata) {
+    if (!item.name.trim()) {
+        item.name = item.file.name;
+    }
+}
+
+function isNameValid(name: string): boolean | null {
+    return name.trim().length > 0 ? null : false;
+}
+
 const tableFields = [
-    { key: "name", label: "Name", sortable: false, tdClass: "file-name-cell" },
-    { key: "extension", label: "Type", sortable: false, thStyle: { minWidth: "180px" } },
-    { key: "dbKey", label: "Reference", sortable: false, thStyle: { minWidth: "200px" } },
-    { key: "size", label: "Size", sortable: false, thStyle: { width: "90px" } },
-    { key: "options", label: "Upload Settings", sortable: false, thStyle: { minWidth: "140px" } },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right", thStyle: { width: "40px" } },
+    {
+        key: "name",
+        label: "Name",
+        sortable: false,
+        thStyle: { minWidth: "200px", width: "auto" },
+        tdClass: "file-name-cell align-middle",
+    },
+    {
+        key: "size",
+        label: "Size",
+        sortable: false,
+        thStyle: { minWidth: "80px", width: "80px" },
+        tdClass: "align-middle",
+    },
+    {
+        key: "extension",
+        label: "Type",
+        sortable: false,
+        thStyle: { minWidth: "100px", width: "180px" },
+        tdClass: "align-middle",
+    },
+    {
+        key: "dbKey",
+        label: "Reference",
+        sortable: false,
+        thStyle: { minWidth: "100px", width: "200px" },
+        tdClass: "align-middle",
+    },
+    {
+        key: "options",
+        label: "Upload Settings",
+        sortable: false,
+        thStyle: { width: "140px" },
+        tdClass: "align-middle",
+    },
+    { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
 ];
 
 watch(hasFiles, (ready) => emit("ready", ready), { immediate: true });
@@ -202,13 +241,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
         <!-- Drop Zone -->
         <div
             ref="dropZoneElement"
-            role="button"
             tabindex="0"
             class="drop-zone"
             data-galaxy-file-drop-target
-            :class="{ 'drop-zone-active': isFileOverDropZone, 'has-files': hasFiles }"
-            @keydown.enter="handleBrowse"
-            @keydown.space.prevent="handleBrowse">
+            :class="{ 'drop-zone-active': isFileOverDropZone, 'has-files': hasFiles }">
             <div v-if="!hasFiles" class="drop-zone-content">
                 <FontAwesomeIcon :icon="faCloudUploadAlt" class="drop-zone-icon" />
                 <p class="drop-zone-text">Drag files here</p>
@@ -232,29 +268,28 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <BTable
                         :items="selectedFiles"
                         :fields="tableFields"
-                        primary-key="name"
                         hover
                         striped
                         small
                         fixed
-                        show-empty
                         thead-class="file-table-header">
-                        <template v-slot:cell(name)="{ item }">
+                        <template v-slot:cell(name)="{ item, index }">
                             <BFormInput
+                                :key="`name-${index}`"
                                 v-model="item.name"
                                 v-b-tooltip.hover.noninteractive
                                 size="sm"
-                                :placeholder="item.file.name"
-                                title="Dataset name in your history" />
+                                :state="isNameValid(item.name)"
+                                title="Dataset name in your history (required)"
+                                @blur="restoreOriginalName(item)" />
                         </template>
 
                         <template v-slot:head(extension)>
-                            <div class="d-flex align-items-center column-header">
-                                <span class="column-label">Type</span>
+                            <div class="column-header-vertical">
+                                <span class="column-title">Type</span>
                                 <BFormSelect
                                     v-model="bulkExtension"
                                     v-b-tooltip.hover.noninteractive
-                                    class="bulk-select"
                                     size="sm"
                                     title="Set file format for all files"
                                     :disabled="!configurationsReady"
@@ -270,7 +305,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 <FontAwesomeIcon
                                     v-if="bulkExtensionWarning"
                                     v-b-tooltip.hover.noninteractive
-                                    class="text-warning ml-1"
+                                    class="text-warning warning-icon"
                                     :icon="faExclamationTriangle"
                                     :title="bulkExtensionWarning" />
                             </div>
@@ -301,12 +336,11 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </template>
 
                         <template v-slot:head(dbKey)>
-                            <div class="d-flex align-items-center column-header">
-                                <span class="column-label">Reference</span>
+                            <div class="column-header-vertical">
+                                <span class="column-title">Reference</span>
                                 <BFormSelect
                                     v-model="bulkDbKey"
                                     v-b-tooltip.hover.noninteractive
-                                    class="bulk-select"
                                     size="sm"
                                     title="Set database key for all files"
                                     :disabled="!configurationsReady"
@@ -389,7 +423,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         <template v-slot:cell(actions)="{ index }">
                             <button
                                 v-b-tooltip.hover.noninteractive
-                                class="btn btn-link text-danger p-0"
+                                class="btn btn-link text-danger remove-btn"
                                 title="Remove file from list"
                                 @click="removeFile(index)">
                                 <FontAwesomeIcon :icon="faTimes" />
@@ -446,7 +480,6 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .drop-zone {
     border: 2px dashed $border-color;
     border-radius: $border-radius-large;
-    padding: 2rem;
     text-align: center;
     transition: all 0.3s ease;
     background-color: $gray-100;
@@ -519,31 +552,44 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .file-table-container {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: auto;
+
+    :deep(.table) {
+        table-layout: auto;
+        min-width: 100%;
+    }
 
     :deep(.file-table-header) {
         position: sticky;
         top: 0;
         background-color: $white;
         z-index: 100;
+
+        th {
+            vertical-align: middle;
+            white-space: nowrap;
+        }
     }
 
     :deep(.file-name-cell) {
         min-width: 200px;
     }
 
-    .column-header {
-        gap: 0.5rem;
+    .column-header-vertical {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        position: relative;
 
-        .column-label {
+        .column-title {
             font-weight: 600;
-            white-space: nowrap;
+            margin-bottom: 0.25rem;
         }
 
-        .bulk-select {
-            flex: 1;
-            min-width: 0;
+        .warning-icon {
+            position: absolute;
+            right: 0;
+            top: 0;
         }
     }
 
@@ -552,6 +598,17 @@ defineExpose<UploadMethodComponent>({ startUpload });
             display: block;
             font-weight: 600;
             margin-bottom: 0.25rem;
+        }
+    }
+
+    .remove-btn {
+        width: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+            background-color: rgba($brand-danger, 0.1);
         }
     }
 }

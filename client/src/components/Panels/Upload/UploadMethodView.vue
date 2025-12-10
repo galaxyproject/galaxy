@@ -89,7 +89,7 @@ function handleReadyStateChange(ready: boolean) {
             </div>
 
             <!-- Upload Method Content (scrollable) -->
-            <div class="flex-grow-1 overflow-auto p-3">
+            <div class="flex-grow-1 overflow-auto p-1">
                 <component
                     :is="method.component"
                     ref="uploadMethodRef"
