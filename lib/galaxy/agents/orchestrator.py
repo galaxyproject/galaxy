@@ -123,6 +123,9 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         except ValueError as e:
             log.error(f"Orchestration value error: {e}")
             return self._get_fallback_response(query, str(e))
+        except Exception as e:
+            log.error(f"Unexpected error during orchestration: {e}")
+            return self._get_fallback_response(query, str(e))
 
     async def _get_agent_plan(self, query: str) -> AgentPlan:
         """Get plan for which agents to call."""
