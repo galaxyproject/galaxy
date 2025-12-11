@@ -26,7 +26,12 @@ class AgentRegistry:
         self._agents: Dict[str, Type[BaseGalaxyAgent]] = {}
         self._agent_metadata: Dict[str, Dict] = {}
 
-    def register(self, agent_type: str, agent_class: Type[BaseGalaxyAgent], metadata: Optional[Dict] = None):
+    def register(
+        self,
+        agent_type: str,
+        agent_class: Type[BaseGalaxyAgent],
+        metadata: Optional[Dict] = None,
+    ):
         """
         Register an agent type.
 

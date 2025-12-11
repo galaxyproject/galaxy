@@ -73,7 +73,9 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         async def get_alternative_tools(ctx: RunContext[GalaxyAgentDependencies], task_description: str) -> str:
             """Get alternative tool recommendations when current tools fail."""
             return await self._call_agent_from_tool(
-                "tool_recommendation", f"Find alternative tools for this task: {task_description}", ctx
+                "tool_recommendation",
+                f"Find alternative tools for this task: {task_description}",
+                ctx,
             )
 
         return agent
@@ -379,7 +381,11 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         # Extract structured information from text
         error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", response_text, re.IGNORECASE)
         cause = re.search(r"CAUSE:\s*([^\n]+)", response_text, re.IGNORECASE)
-        solution = re.search(r"SOLUTION:\s*([^\n]+(?:\n\s*\d+\..*)?)", response_text, re.IGNORECASE | re.DOTALL)
+        solution = re.search(
+            r"SOLUTION:\s*([^\n]+(?:\n\s*\d+\..*)?)",
+            response_text,
+            re.IGNORECASE | re.DOTALL,
+        )
         confidence = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
 
         # Build content

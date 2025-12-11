@@ -324,7 +324,17 @@ class BaseGalaxyAgent(ABC):
         # Check for common service connectivity issues to provide a better message.
         is_service_error = any(
             indicator in error_msg.lower()
-            for indicator in ["connection", "timeout", "api", "401", "403", "500", "502", "503", "rate limit"]
+            for indicator in [
+                "connection",
+                "timeout",
+                "api",
+                "401",
+                "403",
+                "500",
+                "502",
+                "503",
+                "rate limit",
+            ]
         )
 
         if is_service_error:
@@ -344,7 +354,11 @@ class BaseGalaxyAgent(ABC):
                     priority=1,
                 )
             ],
-            metadata={"fallback": True, "error": error_msg, "service_unavailable": is_service_error},
+            metadata={
+                "fallback": True,
+                "error": error_msg,
+                "service_unavailable": is_service_error,
+            },
         )
 
     def _get_fallback_content(self) -> str:
@@ -494,7 +508,12 @@ class BaseGalaxyAgent(ABC):
         return self._get_agent_config("max_tokens", 2000)
 
     async def _call_agent_from_tool(
-        self, agent_type: str, query: str, ctx, usage=None, context: Dict[str, Any] = None
+        self,
+        agent_type: str,
+        query: str,
+        ctx,
+        usage=None,
+        context: Dict[str, Any] = None,
     ) -> str:
         """
         Centralized helper method for calling other agents from within tool functions.
@@ -589,7 +608,11 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
 
     def _create_agent(self) -> Agent:
         """Create a simple agent with text output."""
-        return Agent(self._get_model(), deps_type=GalaxyAgentDependencies, system_prompt=self.get_system_prompt())
+        return Agent(
+            self._get_model(),
+            deps_type=GalaxyAgentDependencies,
+            system_prompt=self.get_system_prompt(),
+        )
 
     def _format_response(self, result: Any, query: str, context: Dict[str, Any]) -> AgentResponse:
         """Format simple text response."""

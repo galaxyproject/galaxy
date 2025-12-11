@@ -389,7 +389,8 @@ class GTNSearchDB:
                 cursor = conn.cursor()
 
                 result = cursor.execute(
-                    "SELECT content FROM tutorials WHERE topic = ? AND tutorial = ?", (topic, tutorial)
+                    "SELECT content FROM tutorials WHERE topic = ? AND tutorial = ?",
+                    (topic, tutorial),
                 )
 
                 row = result.fetchone()
@@ -463,7 +464,8 @@ class GTNSearchDB:
 
                 # Get example queries that match the partial
                 results = cursor.execute(
-                    "SELECT query FROM example_queries WHERE query LIKE ? LIMIT 5", (f"%{partial}%",)
+                    "SELECT query FROM example_queries WHERE query LIKE ? LIMIT 5",
+                    (f"%{partial}%",),
                 )
 
                 suggestions = [row["query"] for row in results]

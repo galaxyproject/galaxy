@@ -130,17 +130,29 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
                 try:
                     results = self.gtn_db.search(
-                        query=query, topic=topic, difficulty=difficulty, hands_on_only=hands_on_only, limit=limit
+                        query=query,
+                        topic=topic,
+                        difficulty=difficulty,
+                        hands_on_only=hands_on_only,
+                        limit=limit,
                     )
 
-                    return json.dumps({"results": [r.to_dict() for r in results], "count": len(results)})
+                    return json.dumps(
+                        {
+                            "results": [r.to_dict() for r in results],
+                            "count": len(results),
+                        }
+                    )
                 except (AttributeError, KeyError, TypeError) as e:
                     log.warning(f"GTN search failed: {e}")
                     return json.dumps({"error": str(e)})
 
             @agent.tool
             async def get_tutorial_content(
-                ctx: RunContext[GalaxyAgentDependencies], topic: str, tutorial: str, max_length: int = 2000
+                ctx: RunContext[GalaxyAgentDependencies],
+                topic: str,
+                tutorial: str,
+                max_length: int = 2000,
             ) -> str:
                 """
                 Get content of a specific tutorial.
@@ -183,7 +195,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
             @agent.tool
             async def search_tutorials_by_tools(
-                ctx: RunContext[GalaxyAgentDependencies], tool_names: List[str], limit: int = 5
+                ctx: RunContext[GalaxyAgentDependencies],
+                tool_names: List[str],
+                limit: int = 5,
             ) -> str:
                 """
                 Find tutorials that use specific Galaxy tools.
@@ -201,7 +215,11 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 try:
                     results = self.gtn_db.search_by_tools(tool_names, limit)
                     return json.dumps(
-                        {"results": [r.to_dict() for r in results], "count": len(results), "tools_searched": tool_names}
+                        {
+                            "results": [r.to_dict() for r in results],
+                            "count": len(results),
+                            "tools_searched": tool_names,
+                        }
                     )
                 except (AttributeError, KeyError, TypeError) as e:
                     log.warning(f"Tool search failed: {e}")

@@ -76,7 +76,11 @@ Please only say that something went wrong when configuing the ai prompt in your 
 
 JobIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
-    Field(default=None, title="Job ID", description="The Job ID the chat exchange is linked to."),
+    Field(
+        default=None,
+        title="Job ID",
+        description="The Job ID the chat exchange is linked to.",
+    ),
 ]
 JobIdPathParam = Annotated[
     DecodedDatabaseIdField,
@@ -96,7 +100,8 @@ class ChatAPI:
         self,
         job_id: Optional[
             Annotated[
-                DecodedDatabaseIdField, Query(title="Job ID", description="The Job ID for backwards compatibility")
+                DecodedDatabaseIdField,
+                Query(title="Job ID", description="The Job ID for backwards compatibility"),
             ]
         ] = None,
         payload: Optional[ChatPayload] = None,
@@ -114,7 +119,12 @@ class ChatAPI:
         Returns enhanced response with agent metadata and action suggestions.
         """
         # Initialize response structure
-        result = {"response": "", "error_code": 0, "error_message": "", "agent_response": None}
+        result = {
+            "response": "",
+            "error_code": 0,
+            "error_message": "",
+            "agent_response": None,
+        }
 
         # Determine query source - either from payload (job-based) or query param (general)
         if payload and payload.query:
@@ -319,7 +329,10 @@ class ChatAPI:
     ) -> Dict[str, Any]:
         """Set feedback for a general chat exchange."""
         chat_exchange = self.chat_manager.set_feedback_for_exchange(trans, exchange_id, feedback)
-        return {"message": "Feedback saved", "feedback": chat_exchange.messages[0].feedback}
+        return {
+            "message": "Feedback saved",
+            "feedback": chat_exchange.messages[0].feedback,
+        }
 
     @router.get("/api/chat/exchange/{exchange_id}/messages")
     def get_exchange_messages(
@@ -404,7 +417,10 @@ class ChatAPI:
                 # Add system prompt and user info
                 messages = [
                     {"role": "system", "content": system_prompt},
-                    {"role": "system", "content": f"You will address the user as {username}"},
+                    {
+                        "role": "system",
+                        "content": f"You will address the user as {username}",
+                    },
                     {"role": "user", "content": query},
                 ]
 
@@ -431,7 +447,10 @@ class ChatAPI:
         try:
             messages = [
                 {"role": "system", "content": system_prompt},
-                {"role": "system", "content": f"You will address the user as {username}"},
+                {
+                    "role": "system",
+                    "content": f"You will address the user as {username}",
+                },
                 {"role": "user", "content": query},
             ]
             response = openai.chat.completions.create(

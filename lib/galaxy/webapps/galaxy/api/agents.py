@@ -64,8 +64,6 @@ class AgentAPI:
         if not HAS_AGENTS:
             raise ConfigurationError("Agent system is not available")
 
-        from galaxy.config import GalaxyAppConfiguration
-
         config = trans.app.config
 
         agents = []
@@ -235,9 +233,22 @@ class AgentAPI:
         """Get specialties for an agent type."""
         specialties_map = {
             "router": ["Query routing", "Agent selection", "Task classification"],
-            "error_analysis": ["Tool errors", "Job failures", "Debugging", "Error diagnosis"],
-            "custom_tool": ["Custom tool creation", "Tool wrapper development", "Parameter configuration"],
-            "tool_recommendation": ["Tool selection", "Parameter guidance", "Tool discovery"],
+            "error_analysis": [
+                "Tool errors",
+                "Job failures",
+                "Debugging",
+                "Error diagnosis",
+            ],
+            "custom_tool": [
+                "Custom tool creation",
+                "Tool wrapper development",
+                "Parameter configuration",
+            ],
+            "tool_recommendation": [
+                "Tool selection",
+                "Parameter guidance",
+                "Tool discovery",
+            ],
             "gtn_training": ["Tutorials", "Learning materials", "Training resources"],
         }
         return specialties_map.get(agent_type, [])

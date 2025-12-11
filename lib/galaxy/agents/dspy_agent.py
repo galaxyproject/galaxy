@@ -11,7 +11,6 @@ from typing import (
     Dict,
     List,
     Literal,
-    Optional,
 )
 
 from pydantic import (
@@ -81,7 +80,7 @@ class DSPyGalaxyAgent(BaseGalaxyAgent):
     def __init__(self, deps: GalaxyAgentDependencies):
         """Initialize DSPy agent."""
         if not HAS_DSPY:
-            raise ImportError("DSPy is required for DSPyGalaxyAgent. " "Please install with: pip install dspy-ai")
+            raise ImportError("DSPy is required for DSPyGalaxyAgent. Please install with: pip install dspy-ai")
 
         super().__init__(deps)
 

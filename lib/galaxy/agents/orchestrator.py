@@ -169,7 +169,11 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         sequential = "sequential=true" in response_text.lower()
 
         # Extract reasoning
-        reasoning_match = re.search(r"reasoning[=:]?\s*[\"']?(.*?)[\"']?$", response_text, re.IGNORECASE | re.MULTILINE)
+        reasoning_match = re.search(
+            r"reasoning[=:]?\s*[\"']?(.*?)[\"']?$",
+            response_text,
+            re.IGNORECASE | re.MULTILINE,
+        )
         reasoning = reasoning_match.group(1) if reasoning_match else "Multi-agent coordination"
 
         return AgentPlan(agents=agents, sequential=sequential, reasoning=reasoning)
@@ -202,7 +206,9 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
                 responses[agent_name] = _create_error_response(
-                    agent_name, f"Agent {agent_name} timed out after {timeout} seconds", is_timeout=True
+                    agent_name,
+                    f"Agent {agent_name} timed out after {timeout} seconds",
+                    is_timeout=True,
                 )
             except (ValueError, ConnectionError, TimeoutError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
@@ -227,7 +233,9 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
                 return agent_name, _create_error_response(
-                    agent_name, f"Agent {agent_name} timed out after {timeout} seconds", is_timeout=True
+                    agent_name,
+                    f"Agent {agent_name} timed out after {timeout} seconds",
+                    is_timeout=True,
                 )
             except (ValueError, ConnectionError, TimeoutError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
