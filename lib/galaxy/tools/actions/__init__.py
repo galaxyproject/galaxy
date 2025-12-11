@@ -163,7 +163,9 @@ class DefaultToolAction(ToolAction):
 
         def visitor(input, value, prefix, prefixed_name: str, parent=None, **kwargs):
             def process_dataset(data, formats=None):
-                if not data or isinstance(data, RuntimeValue):
+                # default file coming from a workflow
+                is_workflow_default = isinstance(data, dict) and data.get("class") == "File"
+                if not data or isinstance(data, RuntimeValue) or is_workflow_default:
                     return None
                 if formats is None:
                     formats = input.formats
@@ -723,7 +725,7 @@ class DefaultToolAction(ToolAction):
         )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name, data in out_data.items():
-            if name not in incoming and name not in child_dataset_names:
+            if getattr(data, "hid", None) is None or (name not in incoming and name not in child_dataset_names):
                 # don't add already existing datasets, i.e. async created
                 history.stage_addition(data)
         history.add_pending_items(set_output_hid=set_output_hid)
@@ -986,6 +988,9 @@ class DefaultToolAction(ToolAction):
                     if name not in reductions:
                         reductions[name] = []
                     reductions[name].append(dataset_collection)
+
+                if getattr(dataset_collection, "ephemeral", False):
+                    dataset_collection = dataset_collection.persistent_object
 
                 # TODO: verify can have multiple with same name, don't want to lose traceability
                 if isinstance(dataset_collection, model.HistoryDatasetCollectionAssociation):

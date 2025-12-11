@@ -7,13 +7,14 @@ from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     ColorToolParameter,
     DirectoryUriToolParameter,
+    FieldTypeToolParameter,
     FloatToolParameter,
     IntegerToolParameter,
     TextToolParameter,
 )
 
-INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri"]
-default_source_type = dict[str, Union[int, float, bool, str]]
+INPUT_PARAMETER_TYPES = Literal["text", "integer", "float", "boolean", "color", "directory_uri", "field"]
+default_source_type = dict[str, Union[None, int, float, bool, str]]
 tool_param_type = Union[
     TextToolParameter,
     IntegerToolParameter,
@@ -21,6 +22,7 @@ tool_param_type = Union[
     BooleanToolParameter,
     ColorToolParameter,
     DirectoryUriToolParameter,
+    FieldTypeToolParameter,
 ]
 
 
@@ -42,4 +44,6 @@ def get_default_parameter(param_type: INPUT_PARAMETER_TYPES) -> tool_param_type:
         input_default_value = ColorToolParameter(None, default_source)
     elif param_type == "directory_uri":
         input_default_value = DirectoryUriToolParameter(None, default_source)
+    elif param_type == "field":
+        input_default_value = FieldTypeToolParameter(None, default_source)
     return input_default_value

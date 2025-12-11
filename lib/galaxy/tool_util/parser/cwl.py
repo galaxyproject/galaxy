@@ -2,13 +2,20 @@ import json
 import logging
 import math
 from typing import (
+    Any,
+    Dict,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
+from uuid import UUID
 
 import packaging.version
 
-from galaxy.tool_util.cwl.parser import tool_proxy
+from galaxy.tool_util.cwl.parser import (
+    tool_proxy,
+    tool_proxy_from_persistent_representation,
+)
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util_models.tool_source import HelpContent
 from .interface import (
@@ -20,12 +27,20 @@ from .output_actions import (
     ToolOutputActionApp,
     ToolOutputActionGroup,
 )
-from .output_objects import ToolOutput
+from .output_collection_def import dataset_collector_descriptions_from_list
+from .output_objects import (
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputCollectionStructure,
+)
 from .stdio import (
     StdioErrorLevel,
     ToolStdioExitCode,
 )
-from .yaml import YamlInputSource
+from .yaml import (
+    YamlInputSource,
+    YamlPageSource,
+)
 
 if TYPE_CHECKING:
     from galaxy.tool_util.cwl.parser import (
@@ -33,7 +48,24 @@ if TYPE_CHECKING:
         ToolProxy,
     )
 
+GX_INTERFACE_NAMESPACE = "http://galaxyproject.org/cwl#interface"
+
+CWL_DEFAULT_FILE_OUTPUT = "data"  # set to _sniff_ to sniff output types automatically.
+
 log = logging.getLogger(__name__)
+
+
+def strip_namespace(ordered_dict, namespace):
+    if isinstance(ordered_dict, dict):
+        value = {}
+        for k, v in ordered_dict.items():
+            if k.startswith(namespace):
+                k = k[len(namespace) :]
+            value[k] = strip_namespace(v, namespace)
+        return value
+    elif isinstance(ordered_dict, list):
+        return [strip_namespace(v, namespace) for v in ordered_dict]
+    return ordered_dict
 
 
 class CwlToolSource(ToolSource):
@@ -42,12 +74,18 @@ class CwlToolSource(ToolSource):
     def __init__(
         self,
         tool_file: Optional[str] = None,
+        tool_object: Optional[Dict[str, Any]] = None,
         strict_cwl_validation: bool = True,
+        tool_directory: Optional[str] = None,
+        uuid: Optional[Union[UUID, str]] = None,
         tool_proxy: Optional["ToolProxy"] = None,
     ):
-        self._tool_proxy = tool_proxy
         self._source_path = tool_file
+        self._source_object = tool_object
         self._strict_cwl_validation = strict_cwl_validation
+        self._tool_directory = tool_directory
+        self._uuid = uuid
+        self._tool_proxy = tool_proxy
 
     @property
     def source_path(self):
@@ -56,11 +94,35 @@ class CwlToolSource(ToolSource):
     @property
     def tool_proxy(self) -> "ToolProxy":
         if self._tool_proxy is None:
-            self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)
+            if self._source_path is not None:
+                self._tool_proxy = tool_proxy(
+                    self._source_path,
+                    strict_cwl_validation=self._strict_cwl_validation,
+                    tool_directory=self._tool_directory,
+                    uuid=self._uuid,
+                )
+            else:
+                assert self._source_object
+                assert "uuid" in self._source_object
+                self._tool_proxy = tool_proxy_from_persistent_representation(
+                    self._source_object,
+                    strict_cwl_validation=self._strict_cwl_validation,
+                    tool_directory=self._tool_directory,
+                )
         return self._tool_proxy
 
+    def _get_gx_interface(self):
+        rval = None
+        for h in self.tool_proxy.hints_or_requirements_of_class(GX_INTERFACE_NAMESPACE):
+            rval = strip_namespace(h, GX_INTERFACE_NAMESPACE[: -len("interface")])
+
+        return rval
+
     def parse_tool_type(self):
-        return "cwl"
+        if self._get_gx_interface() is not None:
+            return "galactic_cwl"
+        else:
+            return "cwl"
 
     def parse_id(self):
         return self.tool_proxy.galaxy_id()
@@ -108,16 +170,36 @@ class CwlToolSource(ToolSource):
 
     def parse_stdio(self):
         # TODO: remove duplication with YAML
-        # New format - starting out just using exit code.
-        exit_code_lower = ToolStdioExitCode()
-        exit_code_lower.range_start = -math.inf
-        exit_code_lower.range_end = -1
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        exit_code_high = ToolStdioExitCode()
-        exit_code_high.range_start = 1
-        exit_code_high.range_end = math.inf
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        return [exit_code_lower, exit_code_high], []
+        exit_codes = []
+
+        success_codes = sorted(set(self.tool_proxy._tool.tool.get("successCodes") or [0]))
+
+        last_success_code = None
+
+        for success_code in success_codes:
+            if last_success_code is not None and success_code == last_success_code + 1:
+                last_success_code = success_code
+                continue
+
+            exit_code = ToolStdioExitCode()
+            range_start = -math.inf
+            if last_success_code is not None:
+                range_start = last_success_code + 1
+
+            exit_code.range_start = range_start
+            exit_code.range_end = success_code - 1
+            exit_code.error_level = StdioErrorLevel.FATAL
+            exit_codes.append(exit_code)
+
+            last_success_code = success_code
+
+        exit_code = ToolStdioExitCode()
+        exit_code.range_start = last_success_code + 1
+        exit_code.range_end = math.inf
+        exit_code.error_level = StdioErrorLevel.FATAL
+        exit_codes.append(exit_code)
+
+        return exit_codes, []
 
     def parse_interpreter(self):
         return None
@@ -135,26 +217,46 @@ class CwlToolSource(ToolSource):
         return []
 
     def parse_input_pages(self) -> PagesSource:
-        page_source = CwlPageSource(self.tool_proxy)
+        gx_interface = self._get_gx_interface()
+        if gx_interface is None:
+            page_source: PageSource = CwlPageSource(self.tool_proxy)
+        else:
+            page_source = YamlPageSource(gx_interface["inputs"])
         return PagesSource([page_source])
 
     def parse_outputs(self, app: Optional[ToolOutputActionApp]):
         output_instances = self.tool_proxy.output_instances()
         outputs = {}
+        output_collections = {}
         output_defs = []
         for output_instance in output_instances:
             output_defs.append(self._parse_output(app, output_instance))
         # TODO: parse outputs collections
         for output_def in output_defs:
-            outputs[output_def.name] = output_def
-        return outputs, {}
+            if isinstance(output_def, ToolOutput):
+                outputs[output_def.name] = output_def
+            else:
+                outputs[output_def.name] = output_def
+                output_collections[output_def.name] = output_def
+        return outputs, output_collections
 
     def _parse_output(self, app: Optional[ToolOutputActionApp], output_instance: "OutputInstance"):
+        output_type = output_instance.output_data_type
+        if isinstance(output_type, dict) and output_type.get("type") == "record":
+            return self._parse_output_record(output_instance)
+        elif isinstance(output_type, dict) and output_type.get("type") == "array":
+            return self._parse_output_array(output_instance)
+        else:
+            return self._parse_output_data(app, output_instance)
+
+    def _parse_output_data(self, app: Optional[ToolOutputActionApp], output_instance: "OutputInstance"):
         name = output_instance.name
         # TODO: handle filters, actions, change_format
         output = ToolOutput(name)
         if "File" in output_instance.output_data_type:
-            output.format = "_sniff_"
+            output.format = CWL_DEFAULT_FILE_OUTPUT
+        elif "Directory" in output_instance.output_data_type:
+            output.format = "directory"
         else:
             output.format = "expression.json"
         output.change_format = []
@@ -169,6 +271,35 @@ class CwlToolSource(ToolSource):
         if app is not None:
             output.actions = ToolOutputActionGroup(app, None)
         return output
+
+    def _parse_output_record(self, output_instance: "OutputInstance"):
+        name = output_instance.name
+        # TODO: clean output bindings and other non-structure information
+        # from this.
+        fields = output_instance.output_data_type.get("fields")
+        output_collection = ToolOutputCollection(
+            name,
+            ToolOutputCollectionStructure(
+                collection_type="record",
+                fields=fields,
+            ),
+        )
+        return output_collection
+
+    def _parse_output_array(self, output_instance: "OutputInstance"):
+        name = output_instance.name
+        # TODO: Handle nested arrays and such...
+        dataset_collector_descriptions = dataset_collector_descriptions_from_list(
+            [{"from_provided_metadata": True}],
+        )
+        output_collection = ToolOutputCollection(
+            name,
+            ToolOutputCollectionStructure(
+                collection_type="list",
+                dataset_collector_descriptions=dataset_collector_descriptions,
+            ),
+        )
+        return output_collection
 
     def parse_requirements(self):
         containers = []
@@ -192,6 +323,16 @@ class CwlToolSource(ToolSource):
 
     def parse_xrefs(self):
         return []
+
+    def parse_provided_metadata_style(self):
+        return "default"
+
+    def parse_cores_min(self):
+        for h in self.tool_proxy.hints_or_requirements_of_class("ResourceRequirement"):
+            cores_min = h.get("coresMin")
+            if cores_min:
+                return cores_min
+        return 1
 
     def parse_license(self):
         return None

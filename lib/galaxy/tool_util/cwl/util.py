@@ -8,6 +8,8 @@ import hashlib
 import io
 import json
 import os
+import pathlib
+import shutil
 import tarfile
 import tempfile
 import urllib.parse
@@ -58,6 +60,7 @@ OutputPropertiesType = TypedDict(
         "secondaryFiles": List[Any],
         "checksum": str,
         "size": int,
+        "format": Optional[str],
     },
     total=False,
 )
@@ -68,6 +71,8 @@ def output_properties(
     content: Optional[bytes] = None,
     basename=None,
     pseudo_location=False,
+    cwl_formats: Optional[List[str]] = None,
+    download_url="",
 ) -> OutputPropertiesType:
     checksum = hashlib.sha1()
     properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
@@ -91,14 +96,16 @@ def output_properties(
         f.close()
     properties["checksum"] = f"sha1${checksum.hexdigest()}"
     properties["size"] = filesize
+    properties["format"] = cwl_formats[0] if cwl_formats else None
     set_basename_and_derived_properties(properties, basename)
-    _handle_pseudo_location(properties, pseudo_location)
+    _handle_pseudo_location(properties, pseudo_location, download_url)
     return properties
 
 
-def _handle_pseudo_location(properties, pseudo_location):
+def _handle_pseudo_location(properties, pseudo_location, download_url):
     if pseudo_location:
-        properties["location"] = properties["basename"]
+        # TODO: should be a URI to the dataset on the server
+        properties["location"] = pseudo_location.rstrip("/api") + download_url
 
 
 def abs_path_or_uri(path_or_uri: str, relative_to: str, resolve_data: Optional[Callable[[str], Optional[str]]]) -> str:
@@ -297,19 +304,39 @@ def galactic_job_json(
 
     def replacement_directory(value: Dict[str, Any]) -> Dict[str, Any]:
         file_path = value.get("location", None) or value.get("path", None)
-        if file_path is None:
-            return value
-        if not os.path.isabs(file_path):
+        temp_dir = None
+        try:
+            if file_path is None:
+                # Probably a directory literal
+                # Make directory, create tar, put listing
+                temp_dir = tempfile.mkdtemp(prefix="file_literal_upload_dir")
+                base_dir = pathlib.Path(temp_dir) / value["basename"]
+                base_dir.mkdir()
+                for entry in value["listing"]:
+                    if entry["class"] == "File":
+                        if "contents" in entry:
+                            with open(base_dir / entry["basename"], "w") as fh:
+                                fh.write(entry["contents"])
+                        elif "path" in entry:
+                            # if path is abspath test_data_directory is ignored, so no need to check if path is abspath
+                            entry_path = os.path.join(test_data_directory, entry["path"])
+                            os.symlink(entry_path, str((base_dir / entry["path"]).resolve()))
+                    else:
+                        raise Exception(f"{entry['class']} unimplemented")
+                file_path = str(base_dir.resolve())
+
             file_path = os.path.join(test_data_directory, file_path)
 
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".tar")
+            with tarfile.open(fileobj=tmp, mode="w:", dereference=True) as tf:
+                tf.add(file_path, ".")
+        finally:
+            if temp_dir:
+                shutil.rmtree(temp_dir)
         file_type = value.get("filetype", None) or value.get("format", None) or "directory"
-
-        tmp = tempfile.NamedTemporaryFile(delete=False)
-        tf = tarfile.open(fileobj=tmp, mode="w:")
-        tf.add(file_path, ".")
-        tf.close()
-
-        return upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
+        upload_response = upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
+        upload_response.update(value)
+        return upload_response
 
     def replacement_list(value) -> Dict[str, str]:
         collection_element_identifiers = []
@@ -538,7 +565,12 @@ def output_to_cwl_json(
 
             if file_or_directory == "File":
                 dataset_dict = get_dataset(output_metadata)
-                properties = output_properties(pseudo_location=pseudo_location, **dataset_dict)
+                properties = output_properties(
+                    pseudo_location=pseudo_location,
+                    cwl_formats=output_metadata["cwl_formats"],
+                    download_url=output_metadata["download_url"],
+                    **dataset_dict,
+                )
                 basename = properties["basename"]
                 extra_files = get_extra_files(output_metadata)
                 found_index = False
@@ -564,7 +596,13 @@ def output_to_cwl_json(
                             if extra_file_class == "File":
                                 ec = get_dataset(output_metadata, filename=path)
                                 ec["basename"] = extra_file_basename
-                                ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
+                                filename = f"{dir_path}/{extra_file_basename}"
+                                _download_url = (
+                                    output_metadata["download_url"] + f"?filename={urllib.parse.quote_plus(filename)}"
+                                )
+                                ec_properties = output_properties(
+                                    pseudo_location=pseudo_location, download_url=_download_url, **ec
+                                )
                             elif extra_file_class == "Directory":
                                 ec_properties = {}
                                 ec_properties["class"] = "Directory"
@@ -592,7 +630,12 @@ def output_to_cwl_json(
                             if extra_file_class == "File":
                                 ec = get_dataset(output_metadata, filename=path)
                                 ec["basename"] = ec_basename
-                                ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
+                                download_url = (
+                                    output_metadata["download_url"] + f"?filename={urllib.parse.quote_plus(path)}"
+                                )
+                                ec_properties = output_properties(
+                                    pseudo_location=pseudo_location, download_url=download_url, **ec
+                                )
                             elif extra_file_class == "Directory":
                                 ec_properties = {}
                                 ec_properties["class"] = "Directory"
@@ -613,6 +656,11 @@ def output_to_cwl_json(
                     "basename": basename,
                     "listing": listing,
                 }
+                _handle_pseudo_location(
+                    properties,
+                    pseudo_location=pseudo_location,
+                    download_url=output_metadata["download_url"] + "?to_ext=directory",
+                )
 
                 extra_files = get_extra_files(output_metadata)
                 for extra_file in extra_files:
@@ -642,13 +690,6 @@ def output_to_cwl_json(
         return None
     else:
         raise NotImplementedError("Unknown history content type encountered")
-
-
-def download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, output_path):
-    output_metadata = get_metadata(galaxy_output.history_content_type, galaxy_output.history_content_id)
-    dataset_dict = get_dataset(output_metadata)
-    with open(output_path, "wb") as fh:
-        fh.write(dataset_dict["content"])
 
 
 def guess_artifact_type(path):

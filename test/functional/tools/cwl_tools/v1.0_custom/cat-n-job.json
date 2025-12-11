@@ -1,0 +1,7 @@
+{
+    "file1": {
+        "class": "File",
+        "path": "hello.txt"
+    },
+    "numbering": true
+}

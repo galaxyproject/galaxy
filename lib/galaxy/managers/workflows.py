@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import tempfile
 import uuid
 from typing import (
     Annotated,
@@ -84,6 +85,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.cwl import workflow_proxy
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values,
@@ -607,7 +609,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans = WorkRequestContext(app=self.app, user=user)
 
         as_dict = {"src": "from_path", "path": path}
-        workflow_class, as_dict, object_id = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
+        workflow_class, as_dict, object_id, _ = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
         assert workflow_class == "GalaxyWorkflow"
         # Format 2 Galaxy workflow.
         galaxy_interface = Format2ConverterGalaxyInterface()
@@ -637,7 +639,7 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow_path = as_dict.get("path")
             workflow_directory = os.path.normpath(os.path.dirname(workflow_path))
 
-        workflow_class, as_dict, object_id = artifact_class(trans, as_dict)
+        workflow_class, as_dict, object_id, _ = artifact_class(trans, as_dict)
         if workflow_class == "GalaxyWorkflow" or "yaml_content" in as_dict:
             # Format 2 Galaxy workflow.
             galaxy_interface = Format2ConverterGalaxyInterface()
@@ -649,6 +651,27 @@ class WorkflowContentsManager(UsesAnnotations):
                 )
             except yaml.scanner.ScannerError as e:
                 raise exceptions.MalformedContents(str(e))
+        elif workflow_class == "Workflow":
+            # create a temporary file for the workflow if it is provided
+            # as JSON, to make it parseable by the WorkflowProxy
+            if workflow_path is None:
+                with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
+                    json.dump(as_dict, f)
+                    workflow_path = f.name
+                if object_id:
+                    workflow_path += "#" + object_id
+                wf_proxy = workflow_proxy(workflow_path)
+                os.unlink(f.name)
+            else:
+                # TODO: consume and use object_id...
+                if object_id:
+                    workflow_path += "#" + object_id
+                wf_proxy = workflow_proxy(workflow_path)
+            tool_reference_proxies = wf_proxy.tool_reference_proxies()
+            for tool_reference_proxy in tool_reference_proxies:
+                # TODO: Namespace IDS in workflows.
+                self.app.dynamic_tool_manager.create_tool_from_proxy(tool_reference_proxy)
+            as_dict = wf_proxy.to_dict()
 
         return RawWorkflowDescription(as_dict, workflow_path)
 
@@ -799,6 +822,10 @@ class WorkflowContentsManager(UsesAnnotations):
         data = raw_workflow_description.as_dict
         if isinstance(data, str):
             data = json.loads(data)
+        if "src" in data:
+            assert data["src"] == "path"
+            wf_proxy = workflow_proxy(data["path"])
+            data = wf_proxy.to_dict()
 
         # Create new workflow from source data
         workflow = model.Workflow()
@@ -1885,6 +1912,22 @@ class WorkflowContentsManager(UsesAnnotations):
             "input_connections", {}
         )
         step.temp_input_connections = temp_input_connections  # type: ignore[assignment]
+
+        if "inputs" in step_dict:
+            for input_dict in step_dict["inputs"]:
+                step_input = model.WorkflowStepInput(step)
+                step_input.name = input_dict["name"]
+                step_input.merge_type = input_dict.get("merge_type", step_input.default_merge_type)
+                step_input.scatter_type = input_dict.get("scatter_type", step_input.default_scatter_type)
+                value_from = input_dict.get("value_from", None)
+                # if value_from is None:
+                #     # Super hacky - we probably need distinct value from and
+                #     # default handling.
+                #     value_from = input_dict.get("default")
+                step_input.value_from = value_from
+                step_input.default_value = input_dict.get("default")
+                if step_input.default_value:
+                    step_input.default_value_set = True
 
         # Create the model class for the step
         steps.append(step)
