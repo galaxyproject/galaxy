@@ -7362,7 +7362,11 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         minimize_copies=False,
         copy_hid=True,
     ):
-        new_collection = DatasetCollection(collection_type=self.collection_type, element_count=self.element_count)
+        new_collection = DatasetCollection(
+            collection_type=self.collection_type,
+            element_count=self.element_count,
+            column_definitions=self.column_definitions,
+        )
         for element in self.elements:
             element.copy_to_collection(
                 new_collection,
