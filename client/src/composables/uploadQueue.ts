@@ -19,12 +19,19 @@ import { createFileUploadItem, createPastedUploadItem, createUrlUploadItem, uplo
 /** Supported collection types for automatic collection creation */
 export type SupportedCollectionType = "list" | "list:paired";
 
-/** Collection configuration for batch uploads */
-export interface CollectionConfig {
+/** Collection creation input from UI components */
+export interface CollectionCreationInput {
     /** Name of the collection to create */
     name: string;
     /** Type of collection: 'list' or 'list:paired' */
     type: SupportedCollectionType;
+}
+
+/**
+ * Collection configuration for batch uploads that will be combined
+ * into a collection after uploads complete.
+ */
+export interface CollectionConfig extends CollectionCreationInput {
     /** Whether to hide source datasets after collection creation */
     hideSourceItems: boolean;
     /** Target history ID where the collection will be created */
