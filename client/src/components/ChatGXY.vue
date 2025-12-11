@@ -19,7 +19,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
-import { nextTick, onMounted, ref } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { type ActionSuggestion, type AgentResponse, useAgentActions } from "@/composables/agentActions";
@@ -244,6 +244,13 @@ function scrollToBottom() {
         });
     }
 }
+
+// Scroll to bottom when busy state changes to show loading skeleton
+watch(busy, (isBusy) => {
+    if (isBusy) {
+        nextTick(() => scrollToBottom());
+    }
+});
 
 async function sendFeedback(messageId: string, value: "up" | "down") {
     const message = messages.value.find((m) => m.id === messageId);
