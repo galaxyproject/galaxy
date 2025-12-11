@@ -255,13 +255,29 @@ class WorkflowInvoker:
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
                 log_function = log.error
-                if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
-                    log_function = log.info
+                failure_details = []
+                if isinstance(e, modules.FailWorkflowEvaluation):
+                    if e.why.reason in FAILURE_REASONS_EXPECTED:
+                        log_function = log.info
+                    failure_details.append(f"reason={e.why.reason}")
+                    if hasattr(e.why, 'output_name') and e.why.output_name:
+                        failure_details.append(f"output_name={e.why.output_name}")
+                    if hasattr(e.why, 'dependent_workflow_step_id') and e.why.dependent_workflow_step_id:
+                        failure_details.append(f"dependent_step_id={e.why.dependent_workflow_step_id}")
+                    if hasattr(e.why, 'workflow_step_id') and e.why.workflow_step_id:
+                        failure_details.append(f"failed_step_id={e.why.workflow_step_id}")
+                    if hasattr(e.why, 'details') and e.why.details:
+                        failure_details.append(f"details={e.why.details}")
+                else:
+                    failure_details.append(f"{type(e).__name__}: {str(e)}")
+                failure_reason = ", ".join(failure_details) if failure_details else "unknown"
+
                 log_function(
-                    "Failed to schedule %s for %s, problem occurred on %s.",
+                    "Failed to schedule %s for %s, problem occurred on %s. Failure reason: %s",
                     self.workflow_invocation.log_str(),
                     self.workflow_invocation.workflow.log_str(),
                     step.log_str(),
+                    failure_reason,
                 )
                 if isinstance(e, MessageException):
                     # This is the highest level at which we can inject the step id
