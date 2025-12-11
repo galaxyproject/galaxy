@@ -13,10 +13,10 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 
 const PROFILE_URL = "https://profile.example.com";
 const MOCK_CONFIG = {
-    oidc_profile_url: PROFILE_URL,
     oidc: {
         provider: {
             label: "Example Provider",
+            profile_url: PROFILE_URL,
         },
     },
 };
