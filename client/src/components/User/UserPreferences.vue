@@ -61,12 +61,12 @@ const activePreferences = computed(() => {
     const enabledPreferences = Object.entries(userPreferencesEntries).filter(([, value]) => !value.disabled);
     return Object.fromEntries(enabledPreferences);
 });
-// Show the OIDC profile management widget if local accounts disabled and OIDC profile is configured
+// Show the OIDC profile management widget if local account editing is disabled and OIDC profile is configured
 // through a single provider
 const showOidcProfile = computed<boolean>(() => {
     if (isConfigLoaded.value) {
         const oidcConfig: OIDCConfig = config.value.oidc;
-        return config.value.enable_oidc && config.value.disable_local_accounts && hasSingleOidcProfile(oidcConfig);
+        return config.value.enable_oidc && !config.value.enable_account_interface && hasSingleOidcProfile(oidcConfig);
     } else {
         return false;
     }
@@ -100,7 +100,7 @@ async function makeDataPrivate() {
                 "of your new data in these histories is created as private.  Any " +
                 "datasets within that are currently shared will need " +
                 "to be re-shared or published.  Are you sure you " +
-                "want to do this?",
+                "want to do this?"
         ),
         {
             title: "Do you want to make all data private?",
@@ -108,7 +108,7 @@ async function makeDataPrivate() {
             cancelTitle: "No, do not make data private",
             cancelVariant: "outline-primary",
             centered: true,
-        },
+        }
     );
     if (confirmed) {
         axios.post(withPrefix(`/history/make_private?all_histories=true`)).then(() => {
