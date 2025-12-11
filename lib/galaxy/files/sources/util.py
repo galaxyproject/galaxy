@@ -1,5 +1,13 @@
+import json
+import logging
 import time
-from typing import Optional
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
+from urllib.parse import quote
 
 from galaxy import exceptions
 from galaxy.files import (
@@ -18,15 +26,47 @@ from galaxy.util import (
 from galaxy.util.config_parsers import IpAllowedListEntryT
 from galaxy.util.path import StrPath
 
+log = logging.getLogger(__name__)
+
+# Constants
+CHUNK_SIZE = 8192
+
 
 def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
     missing_client_func = f"Galaxy client cannot currently fetch URIs {desc}."
-    header = f"Missing client functionaltiy required to fetch DRS URI {drs_uri}."
-    rest_of_message = """Currently Galaxy client only works with HTTP/HTTPS targets but extensions for
-    other types would be gladly welcomed by the Galaxy team. Please
-    report use cases not covered by this function to our issue tracker
-    at https://github.com/galaxyproject/galaxy/issues/new.
-    """
+    header = f"Missing client functionality required to fetch DRS URI {drs_uri}."
+
+    # Provide specific help for S3 access methods
+    if "s3" in desc.lower():
+        rest_of_message = """For S3 access methods, this DRS resource uses AWS S3 storage.
+
+        S3 URLs are now handled through Galaxy's file source system. If you're seeing this error,
+        it means no configured S3 file source can handle the S3 URLs returned by this DRS service.
+
+        Most research data repositories require specific AWS credentials for S3 access:
+        - Public datasets: May work with anonymous S3 file source (anon: true)
+        - Controlled access: Requires specific AWS credentials/permissions
+        - SPARC datasets: Use "Requester Pays" model (user pays ~$0.09/GB)
+
+        To enable S3 support in Galaxy, configure an S3 file source:
+
+        file_sources:
+          - type: s3fs
+            anon: true              # For public buckets
+            # OR with credentials:
+            key: YOUR_AWS_ACCESS_KEY
+            secret: YOUR_AWS_SECRET_KEY
+            id: s3_research_data
+
+        Galaxy includes a stock S3 file source for basic anonymous access, but it may not
+        work with all S3 buckets depending on their access policies.
+        """
+    else:
+        rest_of_message = """Currently Galaxy client only works with HTTP/HTTPS targets but extensions for
+        other types would be gladly welcomed by the Galaxy team. Please
+        report use cases not covered by this function to our issue tracker
+        at https://github.com/galaxyproject/galaxy/issues/new.
+        """
     return NotImplementedError(f"{header} {missing_client_func} {rest_of_message}")
 
 
@@ -51,16 +91,19 @@ def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[d
         return response
 
 
-def _get_access_info(obj_url: str, access_method: dict, headers=None) -> tuple[str, dict]:
-    try:
-        access_url = access_method["access_url"]
-    except KeyError:
+def _get_access_info(obj_url: str, access_method: dict, headers: Optional[dict] = None) -> tuple[str, dict]:
+    # Prefer access_id resolution to get signed/authenticated URLs
+    if "access_id" in access_method:
         access_id = access_method["access_id"]
         access_get_url = f"{obj_url}/access/{access_id}"
         access_response = requests.get(access_get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
         access_response.raise_for_status()
         access_response_object = access_response.json()
         access_url = access_response_object
+    elif "access_url" in access_method:
+        access_url = access_method["access_url"]
+    else:
+        raise ValueError("Access method must contain either 'access_id' or 'access_url'")
 
     url = access_url["url"]
     headers_list = access_url.get("headers") or []
@@ -70,6 +113,154 @@ def _get_access_info(obj_url: str, access_method: dict, headers=None) -> tuple[s
         headers_as_dict[key] = value
 
     return url, headers_as_dict
+
+
+class CompactIdentifierResolver:
+    _instance: Optional["CompactIdentifierResolver"] = None
+    _initialized: bool = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, cache_ttl: int = 86400):
+        # Prevent re-initialization of singleton
+        if not self._initialized:
+            self._cache: Dict[str, Dict] = {}
+            self._cache_ttl = cache_ttl
+            self._initialized = True
+
+    @classmethod
+    def _reset_singleton(cls):
+        """Reset the singleton instance - for testing only."""
+        cls._instance = None
+        cls._initialized = False
+
+    def _is_cached(self, prefix: str) -> bool:
+        if prefix not in self._cache:
+            return False
+        cached_time = self._cache[prefix].get("timestamp", 0)
+        return (time.time() - cached_time) < self._cache_ttl
+
+    def _cache_result(self, prefix: str, url_pattern: str):
+        self._cache[prefix] = {"url_pattern": url_pattern, "timestamp": time.time()}
+
+    def _query_identifiers_org(self, prefix: str) -> Optional[str]:
+        try:
+            namespace_url = (
+                f"https://registry.api.identifiers.org/restApi/namespaces/search/findByPrefix?prefix={prefix}"
+            )
+            response = requests.get(namespace_url, timeout=DEFAULT_SOCKET_TIMEOUT)
+            response.raise_for_status()
+
+            namespace_data = response.json()
+            if not namespace_data or "_links" not in namespace_data:
+                return None
+
+            if "resources" in namespace_data["_links"]:
+                resources_url = namespace_data["_links"]["resources"]["href"]
+            else:
+                return None
+            response = requests.get(resources_url, timeout=DEFAULT_SOCKET_TIMEOUT)
+            response.raise_for_status()
+
+            resources = response.json()
+            if "_embedded" in resources and "resources" in resources["_embedded"]:
+                official_resource = None
+                fallback_resource = None
+
+                for resource in resources["_embedded"]["resources"]:
+                    if "urlPattern" in resource:
+                        if resource.get("official", False):
+                            official_resource = resource
+                            break
+                        elif fallback_resource is None:
+                            fallback_resource = resource
+
+                best_resource = official_resource or fallback_resource
+                if best_resource:
+                    return best_resource["urlPattern"]
+
+        except requests.exceptions.RequestException as e:
+            log.warning(f"Failed to query identifiers.org for prefix {prefix}: {e}")
+        except (KeyError, json.JSONDecodeError) as e:
+            log.warning(f"Invalid response from identifiers.org for prefix {prefix}: {e}")
+
+        return None
+
+    def resolve_prefix(self, prefix: str) -> Optional[str]:
+        if self._is_cached(prefix):
+            return self._cache[prefix]["url_pattern"]
+
+        url_pattern = self._query_identifiers_org(prefix)
+
+        if url_pattern:
+            self._cache_result(prefix, url_pattern)
+            log.info(f"Resolved DRS prefix '{prefix}' to URL pattern: {url_pattern}")
+        else:
+            log.warning(f"Could not resolve DRS prefix '{prefix}' via identifiers.org")
+
+        return url_pattern
+
+
+def parse_compact_identifier(drs_uri: str) -> Tuple[str, str]:
+    if not drs_uri.startswith("drs://"):
+        raise ValueError(f"Not a valid DRS URI: {drs_uri}")
+
+    rest_of_uri = drs_uri[len("drs://") :]
+
+    colon_idx = rest_of_uri.find(":")
+    if colon_idx == -1:
+        raise ValueError(f"Invalid compact identifier format (missing colon): {drs_uri}")
+
+    prefix = rest_of_uri[:colon_idx]
+    accession = rest_of_uri[colon_idx + 1 :]
+
+    if not all(c.islower() or c.isdigit() or c in "._" for c in prefix):
+        raise ValueError(
+            f"Invalid prefix format '{prefix}': must contain only lowercase letters, numbers, dots, and underscores"
+        )
+
+    if not prefix or not accession:
+        raise ValueError(f"Empty prefix or accession in compact identifier: {drs_uri}")
+
+    return prefix, accession
+
+
+def resolve_compact_identifier_to_url(drs_uri: str, resolver: Optional[CompactIdentifierResolver] = None) -> str:
+    prefix, accession = parse_compact_identifier(drs_uri)
+
+    if resolver is None:
+        resolver = CompactIdentifierResolver()
+
+    url_pattern = resolver.resolve_prefix(prefix)
+    if not url_pattern:
+        raise ValueError(f"Could not resolve prefix '{prefix}' via identifiers.org")
+
+    # Special handling for DRS providers with inconsistent identifiers.org registrations.
+    # Some providers register URL patterns that include resource types (e.g., "/package/{$id}")
+    # but their sample IDs also include the resource type (e.g., "package/uuid"),
+    # creating duplication during pattern substitution. This affects multiple providers:
+    # - SPARC DRS: drs://sparc.drs:package/uuid → URL pattern has "/package/{$id}"
+    # - GTEx on AnVIL: drs://dg.ANV0:dg.ANV0/uuid → prefix appears twice
+    # See: https://github.com/ga4gh/data-repository-service-schemas/issues/340
+    if prefix == "sparc.drs" and accession.startswith("package/") and "/package/{$id}" in url_pattern:
+        # Remove "package/" from the accession to avoid duplication
+        accession = accession[8:]  # len("package/") = 8
+        log.debug(f"Adjusted SPARC DRS accession to avoid duplication: {accession}")
+
+    encoded_accession = quote(accession, safe="")
+    resolved_url = url_pattern.replace("{$id}", encoded_accession)
+
+    if not resolved_url.startswith(("http://", "https://")):
+        raise ValueError(f"Resolved URL is not HTTP(S): {resolved_url}")
+
+    # Additional validation to prevent URL injection
+    if "\n" in resolved_url or "\r" in resolved_url:
+        raise ValueError(f"Invalid characters in resolved URL: {resolved_url}")
+
+    return resolved_url
 
 
 def fetch_drs_to_file(
@@ -84,16 +275,33 @@ def fetch_drs_to_file(
     """Fetch contents of drs:// URI to a target path."""
     if not drs_uri.startswith("drs://"):
         raise ValueError(f"Unknown scheme for drs_uri {drs_uri}")
+
     rest_of_drs_uri = drs_uri[len("drs://") :]
-    if "/" not in rest_of_drs_uri:
-        # DRS URI uses compact identifiers, not yet implemented.
-        # https://ga4gh.github.io/data-repository-service-schemas/preview/release/drs-1.2.0/docs/more-background-on-compact-identifiers.html
-        raise _not_implemented(drs_uri, "that use compact identifiers")
-    netspec, object_id = rest_of_drs_uri.split("/", 1)
-    scheme = "https"
-    if force_http:
-        scheme = "http"
-    get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
+
+    # Try compact identifier first (prefix:accession format)
+    get_url = None
+    if ":" in rest_of_drs_uri:
+        try:
+            get_url = resolve_compact_identifier_to_url(drs_uri)
+            log.info(f"Resolved compact identifier DRS URI {drs_uri} to {get_url}")
+        except ValueError as e:
+            # If compact identifier resolution fails and we have "/", try legacy format
+            if "/" in rest_of_drs_uri:
+                log.debug(f"Compact identifier resolution failed for {drs_uri}, trying legacy format: {e}")
+                get_url = None
+            else:
+                raise ValueError(f"Failed to resolve compact identifier DRS URI {drs_uri}: {str(e)}")
+
+    # Fall back to legacy format if compact identifier failed
+    if get_url is None:
+        if "/" in rest_of_drs_uri:
+            netspec, object_id = rest_of_drs_uri.split("/", 1)
+            scheme = "https"
+            if force_http:
+                scheme = "http"
+            get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
+        else:
+            raise ValueError(f"Invalid DRS URI format: {drs_uri}")
     response = retry_and_get(get_url, retry_options or RetryOptions(), headers=headers)
     response.raise_for_status()
     response_object = response.json()
@@ -108,6 +316,15 @@ def fetch_drs_to_file(
         if access_method["type"] == "https":
             extra_props = {
                 "http_headers": access_headers or {},
+                "fetch_url_allowlist": fetch_url_allowlist or [],
+            }
+            opts.extra_props = PartialFilesSourceProperties(**extra_props)
+        elif access_method["type"] == "s3":
+            # S3 access method - requires S3 file source configuration
+            # Note: SPARC datasets use "Requester Pays" buckets which require
+            # RequestPayer='requester' parameter (not currently supported by Galaxy S3 file source)
+            log.debug(f"Processing S3 access method: {access_url}")
+            extra_props = {
                 "fetch_url_allowlist": fetch_url_allowlist or [],
             }
             opts.extra_props = PartialFilesSourceProperties(**extra_props)
@@ -127,9 +344,13 @@ def fetch_drs_to_file(
             )
             downloaded = True
             break
-        except exceptions.RequestParameterInvalidException:
+        except exceptions.RequestParameterInvalidException as e:
+            log.debug(f"Failed to fetch via {access_method['type']} access method: {e}")
+            continue
+        except Exception as e:
+            log.debug(f"Unexpected error with {access_method['type']} access method: {e}")
             continue
 
     if not downloaded:
         unimplemented_access_types = [m["type"] for m in access_methods]
-        raise _not_implemented(drs_uri, f"that is fetched via unimplemented types ({unimplemented_access_types})")
+        raise _not_implemented(drs_uri, f"that are fetched via unimplemented types ({unimplemented_access_types})")
