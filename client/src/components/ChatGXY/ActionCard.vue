@@ -20,13 +20,11 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faBook,
-    faCog,
-    faFlask,
+    faExternalLinkAlt,
     faLifeRing,
     faPencilAlt,
     faPlay,
     faSave,
-    faSitemap,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -52,16 +50,13 @@ const sortedSuggestions = computed(() => {
     return [...props.suggestions].sort((a, b) => a.priority - b.priority);
 });
 
-const iconMap: Partial<Record<ActionType, IconDefinition>> = {
+const iconMap: Record<ActionType, IconDefinition> = {
     [ActionType.TOOL_RUN]: faPlay,
     [ActionType.SAVE_TOOL]: faSave,
-    [ActionType.TEST_TOOL]: faFlask,
-    [ActionType.PARAMETER_CHANGE]: faCog,
-    [ActionType.WORKFLOW_STEP]: faSitemap,
     [ActionType.CONTACT_SUPPORT]: faLifeRing,
     [ActionType.REFINE_QUERY]: faPencilAlt,
     [ActionType.DOCUMENTATION]: faBook,
-    [ActionType.CONFIGURATION]: faCog,
+    [ActionType.VIEW_EXTERNAL]: faExternalLinkAlt,
 };
 
 function getIcon(actionType: ActionType): IconDefinition {
