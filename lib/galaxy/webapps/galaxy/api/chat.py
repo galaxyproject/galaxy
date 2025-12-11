@@ -301,10 +301,10 @@ class ChatAPI:
             trans.sa_session.commit()
             log.info(f"Successfully deleted {count} exchanges with {message_count} messages for user {user.id}")
             return {"message": f"Cleared {count} chat exchanges with {message_count} messages"}
-        except Exception as e:
+        except Exception:
             trans.sa_session.rollback()
-            log.exception(f"Error clearing chat history: {e}")
-            return {"message": f"Error clearing history: {str(e)}"}
+            log.exception("Error clearing chat history")
+            return {"message": "Error clearing history"}
 
     @router.put("/api/chat/{job_id}/feedback")
     def feedback(
