@@ -6843,17 +6843,7 @@ export interface components {
          * @description Types of actions agents can suggest.
          * @enum {string}
          */
-        ActionType:
-            | "tool_run"
-            | "parameter_change"
-            | "workflow_step"
-            | "documentation"
-            | "contact_support"
-            | "view_external"
-            | "save_tool"
-            | "test_tool"
-            | "refine_query"
-            | "configuration";
+        ActionType: "tool_run" | "documentation" | "contact_support" | "view_external" | "save_tool" | "refine_query";
         /** AddInputAction */
         AddInputAction: {
             /**
@@ -7521,7 +7511,7 @@ export interface components {
              * Job Id
              * @description Job ID for context
              */
-            job_id?: number | null;
+            job_id?: string | null;
             /**
              * Query
              * @description Description of the error or problem
