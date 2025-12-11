@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 import yaml
@@ -57,7 +58,7 @@ class CustomToolAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "custom_tool_structured.md"
         return prompt_path.read_text()
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """Process tool creation request."""
         # Check model capabilities first
         capability_error = self._validate_model_capabilities()
@@ -117,13 +118,6 @@ The tool is ready to be saved and used in Galaxy."""
                     confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 ),
-                ActionSuggestion(
-                    action_type=ActionType.TEST_TOOL,
-                    description="Test this tool",
-                    parameters={"tool_id": tool.id},
-                    confidence=ConfidenceLevel.MEDIUM,
-                    priority=2,
-                ),
             ]
 
             return AgentResponse(
@@ -170,9 +164,9 @@ The tool is ready to be saved and used in Galaxy."""
                     agent_type=self.agent_type,
                     suggestions=[
                         ActionSuggestion(
-                            action_type=ActionType.CONFIGURATION,
-                            description="Configure a model with full structured output support",
-                            parameters={"config_key": f"inference_services.{self.agent_type}.model"},
+                            action_type=ActionType.CONTACT_SUPPORT,
+                            description="Contact support for help configuring a compatible model",
+                            parameters={},
                             confidence=ConfidenceLevel.HIGH,
                             priority=1,
                         )
@@ -194,9 +188,9 @@ The tool is ready to be saved and used in Galaxy."""
                 agent_type=self.agent_type,
                 suggestions=[
                     ActionSuggestion(
-                        action_type=ActionType.CONFIGURATION,
-                        description="Configure a model with better structured output support",
-                        parameters={"config_key": f"inference_services.{self.agent_type}.model"},
+                        action_type=ActionType.CONTACT_SUPPORT,
+                        description="Contact support for help configuring a compatible model",
+                        parameters={},
                         confidence=ConfidenceLevel.HIGH,
                         priority=1,
                     )

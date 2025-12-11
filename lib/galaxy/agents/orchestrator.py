@@ -10,6 +10,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
 )
 
 from pydantic import BaseModel
@@ -80,7 +81,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "orchestrator.md"
         return prompt_path.read_text()
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
         Process an orchestration request and coordinate multiple agents.
 
@@ -183,7 +184,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return self._get_agent_config("agent_timeout", 60.0)
 
     async def _execute_sequential(
-        self, agents: List[str], query: str, context: Dict[str, Any] = None
+        self, agents: List[str], query: str, context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, AgentResponse]:
         """Execute agents sequentially with timeout protection."""
         from galaxy.agents import agent_registry
@@ -217,7 +218,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return responses
 
     async def _execute_parallel(
-        self, agents: List[str], query: str, context: Dict[str, Any] = None
+        self, agents: List[str], query: str, context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, AgentResponse]:
         """Execute agents in parallel with timeout protection."""
         from galaxy.agents import agent_registry

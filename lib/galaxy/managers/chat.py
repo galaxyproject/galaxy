@@ -94,6 +94,7 @@ class ChatManager:
         import json
 
         # Handle both string responses and full agent response objects
+        conversation_data: Dict[str, Any]
         if isinstance(response_data, str):
             conversation_data = {
                 "query": query,
@@ -314,7 +315,7 @@ class ChatManager:
 
             # Optionally filter out job-related chats
             if not include_job_chats:
-                stmt = stmt.where(ChatExchange.job_id is None)
+                stmt = stmt.where(ChatExchange.job_id.is_(None))
 
             # Order by most recent first and apply limit
             stmt = stmt.order_by(ChatExchange.id.desc()).limit(limit)

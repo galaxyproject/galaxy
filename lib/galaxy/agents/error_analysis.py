@@ -10,6 +10,7 @@ from typing import (
     Dict,
     List,
     Literal,
+    Optional,
 )
 
 from pydantic import BaseModel
@@ -112,10 +113,10 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "stderr": job.stderr[:2000] if job.stderr else "",  # Limit output size
                 "stdout": job.stdout[:1000] if job.stdout else "",
                 "command_line": job.command_line,
-                "parameters": job.get_param_values() if hasattr(job, "get_param_values") else {},
+                "parameters": job.get_param_values(self.deps.trans.app) if hasattr(job, "get_param_values") else {},
                 "create_time": job.create_time.isoformat() if job.create_time else None,
                 "update_time": job.update_time.isoformat() if job.update_time else None,
-                "external_id": job.external_id,
+                "external_id": job.job_runner_external_id,
                 "destination_id": job.destination_id,
             }
         except (AttributeError, KeyError, TypeError) as e:
@@ -138,7 +139,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "version": tool.version,
                 "description": tool.description or "",
                 "requirements": [str(r) for r in tool.requirements] if hasattr(tool, "requirements") else [],
-                "help_text": tool.raw_help[:500] if hasattr(tool, "raw_help") and tool.raw_help else "",
+                "help_text": str(tool.raw_help)[:500] if hasattr(tool, "raw_help") and tool.raw_help else "",
             }
         except (AttributeError, KeyError, TypeError) as e:
             log.warning(f"Error getting tool info for {tool_id}: {e}")
@@ -203,7 +204,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error searching patterns: {e}")
             return []
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
         Process an error analysis request.
 

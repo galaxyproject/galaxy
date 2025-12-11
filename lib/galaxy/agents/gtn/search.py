@@ -149,7 +149,7 @@ class FAQResult:
 class GTNSearchDB:
     """Interface to the GTN search database."""
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: Optional[str] = None):
         """
         Initialize connection to GTN search database.
 
@@ -159,9 +159,9 @@ class GTNSearchDB:
         if db_path is None:
             # Default to the bundled database
             current_dir = Path(__file__).parent
-            db_path = current_dir / "data" / "gtn_search.db"
-
-        self.db_path = Path(db_path)
+            self.db_path = current_dir / "data" / "gtn_search.db"
+        else:
+            self.db_path = Path(db_path)
 
         if not self.db_path.exists():
             raise FileNotFoundError(f"GTN database not found at {self.db_path}")
@@ -233,7 +233,7 @@ class GTNSearchDB:
                     WHERE tutorials_fts MATCH ?
                 """
 
-                params = [fts_query]
+                params: List[Any] = [fts_query]
 
                 # Add filters
                 conditions = []
@@ -328,7 +328,7 @@ class GTNSearchDB:
                     WHERE faqs_fts MATCH ?
                 """
 
-                params = [fts_query]
+                params: List[Any] = [fts_query]
 
                 # Add filters
                 conditions = []
@@ -550,7 +550,7 @@ class GTNSearchDB:
 
                 # Build query to search in tools_json field
                 tool_conditions = []
-                params = []
+                params: List[Any] = []
                 for tool in tool_names:
                     tool_conditions.append("tools_json LIKE ?")
                     params.append(f"%{tool}%")
