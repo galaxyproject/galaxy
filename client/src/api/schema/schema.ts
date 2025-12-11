@@ -36,6 +36,9 @@ export interface paths {
         /**
          * Create Custom Tool
          * @description Create a custom Galaxy tool.
+         *
+         *     Note: Returns AgentResponse with tool_yaml in metadata. A dedicated
+         *     CustomToolResponse schema may be cleaner for this endpoint in the future.
          */
         post: operations["create_custom_tool_api_ai_agents_custom_tool_post"];
         delete?: never;
@@ -24989,9 +24992,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AgentResponse"];
                 };
             };
             /** @description Request Error */
@@ -25036,9 +25037,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AgentResponse"];
                 };
             };
             /** @description Request Error */
@@ -25128,9 +25127,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AgentResponse"];
                 };
             };
             /** @description Request Error */

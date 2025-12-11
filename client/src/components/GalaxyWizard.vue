@@ -64,9 +64,10 @@ async function submitQuery() {
         }
 
         // Check for errors in metadata
-        if (data.metadata?.error) {
+        const metadataError = data.metadata?.error as string | undefined;
+        if (metadataError) {
             hasError.value = true;
-            errorMessage.value = data.metadata.error;
+            errorMessage.value = metadataError;
         }
     }
 

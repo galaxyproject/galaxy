@@ -140,7 +140,7 @@ class AgentAPI:
         error_details: Optional[Dict[str, Any]] = Body(None, description="Additional error details"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Dict[str, Any]:
+    ) -> AgentResponse:
         """Analyze job errors and provide debugging assistance."""
         try:
             # Build context
@@ -164,8 +164,8 @@ class AgentAPI:
                     existing = self.chat_manager.get(trans, job.id)
                     if not existing:
                         # Create new exchange for feedback tracking
-                        exchange = self.chat_manager.create(trans, job.id, response["content"])
-                        response["exchange_id"] = exchange.id
+                        exchange = self.chat_manager.create(trans, job.id, response.content)
+                        response.metadata["exchange_id"] = exchange.id
 
             return response
 
@@ -181,7 +181,7 @@ class AgentAPI:
         output_format: Optional[str] = Body(None, description="Desired output format"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Dict[str, Any]:
+    ) -> AgentResponse:
         """Get tool recommendations for a specific analysis task."""
         try:
             # Build context
@@ -212,8 +212,12 @@ class AgentAPI:
         context: Optional[Dict[str, Any]] = Body(None, description="Additional context for tool creation"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Dict[str, Any]:
-        """Create a custom Galaxy tool."""
+    ) -> AgentResponse:
+        """Create a custom Galaxy tool.
+
+        Note: Returns AgentResponse with tool_yaml in metadata. A dedicated
+        CustomToolResponse schema may be cleaner for this endpoint in the future.
+        """
         try:
             response = await self.agent_service.execute_agent(
                 agent_type="custom_tool",

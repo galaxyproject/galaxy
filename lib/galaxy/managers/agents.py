@@ -12,6 +12,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
+from galaxy.schema.agents import AgentResponse
 
 # Import agent system
 try:
@@ -65,8 +66,8 @@ class AgentService:
         trans: ProvidesUserContext,
         user: User,
         context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """Execute a specific agent and return response dict."""
+    ) -> AgentResponse:
+        """Execute a specific agent and return response."""
         deps = self.create_dependencies(trans, user)
 
         if context is None:
@@ -77,28 +78,29 @@ class AgentService:
             agent = agent_registry.get_agent(agent_type, deps)
             response = await agent.process(query, context)
 
-            return {
-                "content": response.content,
-                "agent_type": response.agent_type,
-                "confidence": response.confidence,
-                "suggestions": [s.model_dump() for s in response.suggestions],
-                "metadata": response.metadata,
-                "reasoning": response.reasoning,
-            }
+            return AgentResponse(
+                content=response.content,
+                agent_type=response.agent_type,
+                confidence=response.confidence,
+                suggestions=response.suggestions,
+                metadata=response.metadata,
+                reasoning=response.reasoning,
+            )
         except ValueError as e:
             log.warning(f"Unknown agent type {agent_type}, falling back to error_analysis: {e}")
             # Fallback to error analysis for unknown agents
             agent = ErrorAnalysisAgent(deps)
             response = await agent.process(query, context)
-            return {
-                "content": response.content,
-                "agent_type": response.agent_type,
-                "confidence": response.confidence,
-                "suggestions": [s.model_dump() for s in response.suggestions],
-                "metadata": response.metadata,
-                "reasoning": response.reasoning,
-                "fallback": True,
-            }
+            metadata = response.metadata.copy()
+            metadata["fallback"] = True
+            return AgentResponse(
+                content=response.content,
+                agent_type=response.agent_type,
+                confidence=response.confidence,
+                suggestions=response.suggestions,
+                metadata=metadata,
+                reasoning=response.reasoning,
+            )
         except OSError as e:
             log.error(f"Network error executing agent {agent_type}: {e}")
             raise
