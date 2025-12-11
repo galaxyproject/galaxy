@@ -3,11 +3,14 @@ import { computed, ref } from "vue";
 
 import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
 import { useHashedUserId } from "@/composables/hashedUserId";
+import { useToast } from "@/composables/toast";
 import { useUserLocalStorageFromHashId } from "@/composables/userLocalStorageFromHashedId";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
     addFavoriteToolQuery,
     getCurrentUser,
+    getProfileUpdates,
+    type ProfileUpdatesResponse,
     removeFavoriteToolQuery,
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
@@ -30,6 +33,7 @@ export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
     const { hashedUserId } = useHashedUserId(currentUser);
+    const toast = useToast();
 
     const currentListViewPreferences = useUserLocalStorageFromHashId<UserListViewPreferences>(
         "user-store-list-view-preferences",
@@ -89,6 +93,24 @@ export const useUserStore = defineStore("userStore", () => {
                         if (isRegisteredUser(user)) {
                             currentUser.value = user;
                             currentPreferences.value = processUserPreferences(user);
+                            // One-time profile update notice from backend (cleared server-side).
+                            const updates: ProfileUpdatesResponse = await getProfileUpdates();
+                            if (updates?.updates && updates.updates.length > 0) {
+                                const labels: Record<string, string> = {
+                                    email: "email address",
+                                    username: "public name",
+                                    fullname: "full name",
+                                };
+                                const fieldList = updates.updates
+                                    .map((field) => labels[field] || field)
+                                    .filter((field, idx, arr) => field && arr.indexOf(field) === idx);
+                                if (fieldList.length > 0) {
+                                    toast.info(
+                                        `Your profile was updated from your identity provider: ${fieldList.join(", ")}.`,
+                                        "Profile updated",
+                                    );
+                                }
+                            }
                         } else if (isAnonymousUser(user)) {
                             currentUser.value = user;
                         } else if (user === null) {
