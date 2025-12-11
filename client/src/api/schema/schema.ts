@@ -84,6 +84,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/plugins/{plugin_name}/chat/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ai Plugins Adapter
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["ai_plugins_adapter_api_ai_plugins__plugin_name__chat_completions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/authenticate/baseauth": {
         parameters: {
             query?: never;
@@ -7865,6 +7885,40 @@ export interface components {
              */
             type: "change_dbkey";
         };
+        /** ChatCompletionRequest */
+        ChatCompletionRequest: {
+            /** Max Tokens */
+            max_tokens?: number | null;
+            /** Messages */
+            messages: components["schemas"]["ChatMessage"][];
+            /**
+             * Stream
+             * @default false
+             */
+            stream: boolean | null;
+            /** Tools */
+            tools?: components["schemas"]["ChatTool"][] | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ChatMessage */
+        ChatMessage: {
+            /** Content */
+            content?: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "assistant" | "system" | "tool" | "user";
+            /** Tool Calls */
+            tool_calls?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ChatPayload */
         ChatPayload: {
             /**
@@ -7901,6 +7955,24 @@ export interface components {
              * @description The response to the chat query.
              */
             response: string;
+        };
+        /** ChatTool */
+        ChatTool: {
+            function: components["schemas"]["ChatToolFunction"];
+            /**
+             * Type
+             * @constant
+             */
+            type: "function";
+        };
+        /** ChatToolFunction */
+        ChatToolFunction: {
+            /** Name */
+            name: string;
+            /** Parameters */
+            parameters: {
+                [key: string]: unknown;
+            };
         };
         /** CheckForUpdatesResponse */
         CheckForUpdatesResponse: {
@@ -25031,6 +25103,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentQueryResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    ai_plugins_adapter_api_ai_plugins__plugin_name__chat_completions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Visualization plugin name used to resolve the AI prompt. */
+                plugin_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatCompletionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */
