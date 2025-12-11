@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
@@ -27,6 +27,17 @@ const historyStore = useHistoryStore();
 const { currentHistoryId, histories } = storeToRefs(historyStore);
 
 const targetHistoryId = ref<string>(currentHistoryId.value || "");
+
+// Keep targetHistoryId in sync with currentHistoryId
+watch(
+    currentHistoryId,
+    (newHistoryId) => {
+        if (newHistoryId && !targetHistoryId.value) {
+            targetHistoryId.value = newHistoryId;
+        }
+    },
+    { immediate: true },
+);
 
 const targetHistoryName = computed(() => {
     return targetHistoryId.value ? historyStore.getHistoryNameById(targetHistoryId.value) : undefined;
