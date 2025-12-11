@@ -213,7 +213,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 )
             except (ValueError, ConnectionError, TimeoutError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
-                responses[agent_name] = _create_error_response(agent_name, f"Error from {agent_name}: {e}")
+                responses[agent_name] = _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
 
         return responses
 
@@ -240,7 +240,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 )
             except (ValueError, ConnectionError, TimeoutError) as e:
                 log.error(f"Error executing agent {agent_name}: {e}")
-                return agent_name, _create_error_response(agent_name, f"Error from {agent_name}: {e}")
+                return agent_name, _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
 
         # Run all agents in parallel
         tasks = [call_agent(agent_name) for agent_name in agents]
