@@ -314,7 +314,7 @@ class ChatManager:
 
             # Optionally filter out job-related chats
             if not include_job_chats:
-                stmt = stmt.where(ChatExchange.job_id == None)
+                stmt = stmt.where(ChatExchange.job_id is None)
 
             # Order by most recent first and apply limit
             stmt = stmt.order_by(ChatExchange.id.desc()).limit(limit)
