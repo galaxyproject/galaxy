@@ -458,7 +458,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                 <div class="file-list-actions mt-2">
                     <GButton
-                        color="blue"
+                        color="grey"
                         tooltip
                         tooltip-placement="top"
                         title="Browse and add more files to the upload list"
