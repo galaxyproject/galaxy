@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { faCloudUploadAlt, faExclamationTriangle, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCloudUploadAlt,
+    faExclamationTriangle,
+    faLaptop,
+    faQuestionCircle,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormInput, BFormSelect, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
@@ -502,9 +508,19 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                 <!-- Collection Creation Section -->
                 <div class="collection-section mt-3">
-                    <BFormCheckbox v-model="createCollection" switch>
-                        <strong>Create a collection from these files</strong>
-                    </BFormCheckbox>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <BFormCheckbox v-model="createCollection" switch>
+                            <strong>Create a collection from these files</strong>
+                        </BFormCheckbox>
+                        <a
+                            href="https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/collections/tutorial.html"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="small text-muted">
+                            <FontAwesomeIcon :icon="faQuestionCircle" class="mr-1" />
+                            Learn more about dataset collections in Galaxy
+                        </a>
+                    </div>
 
                     <div v-if="createCollection" class="collection-config mt-2">
                         <div class="row g-2">
