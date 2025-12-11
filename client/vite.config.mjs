@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +13,7 @@ import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
 import { galaxyLegacyPlugin } from "./vite-plugin-galaxy-legacy.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
 
 /**
  * Plugin to fix D3 v3 ES module compatibility
@@ -58,6 +60,8 @@ export default defineConfig({
         __GALAXY_BUILD_SYSTEM__: JSON.stringify("vite"),
         // Define build timestamp
         __buildTimestamp__: JSON.stringify(new Date().toISOString()),
+        // Define license from package.json
+        __license__: JSON.stringify(packageJson.license),
     },
     plugins: [
         vue({
