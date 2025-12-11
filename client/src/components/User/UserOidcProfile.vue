@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import { isRegisteredUser } from "@/api";
+import { getSingleOidcConfig, type OIDCConfigEntry } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -31,21 +32,29 @@ const email = computed(() => {
     }
     return localize("Not available");
 });
-const profileUrl = computed(() => {
+/** Get the config for the OIDC provider. Note we currently
+ * assume there is only a single OIDC provider when it is being
+ * used to manage profile details (username/email/password)
+ */
+const oidcProviderConfig = computed<OIDCConfigEntry | null>(() => {
     if (!isConfigLoaded.value) {
+        return null;
+    }
+    return getSingleOidcConfig(config.value.oidc);
+});
+const profileUrl = computed(() => {
+    if (oidcProviderConfig.value === null) {
         // Need to return a value to ensure the GButton is
         // rendered as a link
         return "#";
     }
-    return config.value.oidc_profile_url || "";
+    return oidcProviderConfig.value.profile_url;
 });
 const profileButtonLabel = computed(() => {
-    const providers = Object.keys(config.value.oidc) || [];
-    if (providers.length === 0 || providers === null) {
-        return null;
+    if (oidcProviderConfig.value === null) {
+        return "Update profile details";
     }
-    const providerConfig = config.value.oidc[providers[0]!];
-    const providerLabel = providerConfig.custom_button_text || providerConfig.label;
+    const providerLabel = oidcProviderConfig.value.custom_button_text || oidcProviderConfig.value.label;
     if (providerLabel) {
         return `Update profile details at ${providerLabel}`;
     }
@@ -78,7 +87,7 @@ const buttonDisabled = computed(() => !isConfigLoaded.value || !profileUrl.value
                             <em>
                                 {{
                                     localize(
-                                        "Your username is an identifier that will be used to generate addresses for information you share publicly.",
+                                        "Your username is an identifier that will be used to generate addresses for information you share publicly."
                                     )
                                 }}
                             </em>
