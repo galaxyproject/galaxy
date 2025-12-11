@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 import type { UploadMethodComponent, UploadMode } from "./types";
 import { getUploadMethod } from "./uploadMethodRegistry";
@@ -25,6 +26,9 @@ const canUpload = ref(false);
 
 const historyStore = useHistoryStore();
 const { currentHistoryId, histories } = storeToRefs(historyStore);
+
+const userStore = useUserStore();
+const { isAnonymous } = storeToRefs(userStore);
 
 const targetHistoryId = ref<string>(currentHistoryId.value || "");
 
@@ -87,9 +91,12 @@ function handleReadyStateChange(ready: boolean) {
             <!-- Target History Display -->
             <div v-if="method.requiresTargetHistory" class="target-history-banner px-3 py-2">
                 <div class="d-flex align-items-center">
-                    <span class="text-muted mr-2">Destination history:</span>
+                    <span class="text-muted mr-2" title="This is the history where your uploaded data will go">
+                        Destination history:
+                    </span>
                     <strong class="target-history-name">{{ targetHistoryName || "selected history" }}</strong>
                     <a
+                        v-if="!isAnonymous"
                         href="#"
                         class="change-history-link ml-2"
                         title="Change target history for this upload"
