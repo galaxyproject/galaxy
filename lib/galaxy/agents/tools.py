@@ -357,7 +357,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     },
                 )
 
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.warning(f"Tool recommendation network error: {e}")
             return self._get_fallback_response(query, str(e))
         except ValueError as e:
@@ -514,14 +514,14 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         """Simple system prompt for models without structured output."""
         return """
         You are a Galaxy tool recommendation expert. Analyze the user's request and recommend tools.
-        
+
         Respond in this exact format:
         TOOL: [primary tool name]
-        TOOL_ID: [tool identifier] 
+        TOOL_ID: [tool identifier]
         REASON: [why this tool is recommended]
         ALTERNATIVES: [alternative tools, comma-separated]
         CONFIDENCE: [high/medium/low]
-        
+
         Example:
         TOOL: BWA-MEM
         TOOL_ID: bwa_mem

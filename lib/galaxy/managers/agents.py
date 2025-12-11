@@ -99,7 +99,7 @@ class AgentService:
                 "reasoning": response.reasoning,
                 "fallback": True,
             }
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.error(f"Network error executing agent {agent_type}: {e}")
             raise
         except RuntimeError as e:

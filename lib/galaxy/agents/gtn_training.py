@@ -340,7 +340,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     },
                 )
 
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.error(f"GTN training agent network error: {e}")
             return self._get_error_response(str(e))
         except ValueError as e:
@@ -447,19 +447,19 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         """Simple system prompt for models without structured output."""
         return """
         You are a Galaxy training specialist. Help users find relevant Galaxy Training Network tutorials.
-        
+
         Respond in this exact format:
         TUTORIALS: [tutorial name 1, tutorial name 2]
         TOPICS: [topic 1, topic 2]
         SUMMARY: [brief summary of recommendations]
         CONFIDENCE: [high/medium/low]
-        
+
         Example:
         TUTORIALS: Galaxy 101, RNA-seq analysis with Salmon
         TOPICS: Introduction, Transcriptomics
         SUMMARY: For beginners, start with Galaxy 101 to learn the basics, then move to RNA-seq analysis
         CONFIDENCE: high
-        
+
         Always recommend actual GTN tutorials and provide helpful guidance.
         """
 

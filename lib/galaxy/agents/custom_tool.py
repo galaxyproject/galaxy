@@ -128,7 +128,7 @@ The tool is ready to be saved and used in Galaxy."""
                 metadata=metadata,
             )
 
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.error(f"Tool creation network error: {e}")
             return AgentResponse(
                 content=f"Failed to create tool due to network issues: {str(e)}\n\nPlease try again.",

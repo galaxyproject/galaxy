@@ -267,7 +267,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                     },
                 )
 
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.warning(f"Error analysis network error: {e}")
             return self._get_fallback_response(query, str(e))
         except ValueError as e:
