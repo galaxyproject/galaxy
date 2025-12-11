@@ -4,24 +4,22 @@
 
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
+import { parse } from "yaml";
 
+import { type DynamicUnprivilegedToolCreatePayload, GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useToast } from "@/composables/toast";
-import { getAppRoot } from "@/onload/loadConfig";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
 /* eslint-disable no-unused-vars */
 // Action types from backend - values are used in switch/case and icon maps
 export enum ActionType {
     TOOL_RUN = "tool_run",
-    PARAMETER_CHANGE = "parameter_change",
-    WORKFLOW_STEP = "workflow_step",
     DOCUMENTATION = "documentation",
     CONTACT_SUPPORT = "contact_support",
     VIEW_EXTERNAL = "view_external",
     SAVE_TOOL = "save_tool",
-    TEST_TOOL = "test_tool",
     REFINE_QUERY = "refine_query",
-    CONFIGURATION = "configuration",
 }
 /* eslint-enable no-unused-vars */
 
@@ -46,9 +44,8 @@ export function useAgentActions() {
     const router = useRouter();
     const toast = useToast();
     const { config } = useConfig();
+    const unprivilegedToolStore = useUnprivilegedToolStore();
     const processingAction = ref(false);
-    const showToolModal = ref(false);
-    const toolModalContent = ref<any>({});
 
     /**
      * Handle an action suggestion from an agent response
@@ -63,19 +60,7 @@ export function useAgentActions() {
                     break;
 
                 case ActionType.SAVE_TOOL:
-                    await handleSaveTool(action, agentResponse);
-                    break;
-
-                case ActionType.TEST_TOOL:
-                    await handleTestTool(action, agentResponse);
-                    break;
-
-                case ActionType.PARAMETER_CHANGE:
-                    await handleParameterChange(action);
-                    break;
-
-                case ActionType.WORKFLOW_STEP:
-                    await handleWorkflowStep(action);
+                    await handleSaveTool(agentResponse);
                     break;
 
                 case ActionType.CONTACT_SUPPORT:
@@ -83,7 +68,6 @@ export function useAgentActions() {
                     break;
 
                 case ActionType.REFINE_QUERY:
-                    // This is handled in the chat UI itself
                     toast.info("Please refine your query with more details");
                     break;
 
@@ -95,12 +79,10 @@ export function useAgentActions() {
                     handleDocumentation(action);
                     break;
 
-                case ActionType.CONFIGURATION:
-                    handleConfiguration(action);
-                    break;
-
                 default:
-                    console.warn(`Unknown action type: ${action.action_type}`);
+                    // Unknown actions default to contact support
+                    console.warn(`Unknown action type: ${action.action_type}, redirecting to support`);
+                    handleContactSupport();
             }
         } catch (error) {
             console.error("Error handling action:", error);
@@ -136,93 +118,39 @@ export function useAgentActions() {
     }
 
     /**
-     * Handle SAVE_TOOL action - save custom tool YAML
+     * Handle SAVE_TOOL action - save custom tool as unprivileged user tool
      */
-    async function handleSaveTool(action: ActionSuggestion, agentResponse: AgentResponse) {
-        const toolYaml = agentResponse.metadata.tool_yaml || action.parameters.tool_yaml;
-        const toolId = agentResponse.metadata.tool_id || action.parameters.tool_id;
+    async function handleSaveTool(agentResponse: AgentResponse) {
+        const toolYaml = agentResponse.metadata?.tool_yaml;
 
         if (!toolYaml) {
             toast.error("No tool YAML provided for save action");
             return;
         }
 
-        // Show modal for saving tool
-        toolModalContent.value = {
-            type: "save",
-            yaml: toolYaml,
-            toolId: toolId,
-            toolName: agentResponse.metadata.tool_name,
-        };
-        showToolModal.value = true;
-    }
+        try {
+            const representation = parse(toolYaml);
+            const payload: DynamicUnprivilegedToolCreatePayload = {
+                active: true,
+                hidden: false,
+                representation,
+                src: "representation",
+            };
 
-    /**
-     * Handle TEST_TOOL action - open tool testing interface
-     */
-    async function handleTestTool(action: ActionSuggestion, agentResponse: AgentResponse) {
-        const toolId = agentResponse.metadata.tool_id || action.parameters.tool_id;
+            const { data, error } = await GalaxyApi().POST("/api/unprivileged_tools", { body: payload });
 
-        if (!toolId) {
-            toast.error("No tool ID provided for test action");
-            return;
+            if (error) {
+                toast.error(`Failed to save tool: ${String(error)}`);
+                return;
+            }
+
+            toast.success(`Tool "${data.representation.name}" saved successfully!`);
+            unprivilegedToolStore.load(true);
+            router.push(`/tools/editor/${data.uuid}`);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            toast.error(`Error saving tool: ${errorMessage}`);
         }
-
-        // Show modal for testing tool
-        toolModalContent.value = {
-            type: "test",
-            toolId: toolId,
-            toolName: agentResponse.metadata.tool_name,
-            yaml: agentResponse.metadata.tool_yaml,
-        };
-        showToolModal.value = true;
-    }
-
-    /**
-     * Handle PARAMETER_CHANGE action - highlight parameter with suggestion
-     */
-    async function handleParameterChange(action: ActionSuggestion) {
-        const toolId = action.parameters.tool_id;
-        const paramName = action.parameters.param_name;
-        const suggestedValue = action.parameters.suggested_value;
-
-        if (!toolId || !paramName) {
-            toast.error("Incomplete parameter change information");
-            return;
-        }
-
-        // Navigate to tool with highlighted parameter
-        router.push({
-            path: "/",
-            query: {
-                tool_id: toolId,
-                highlight_param: paramName,
-                suggested_value: suggestedValue,
-            },
-        });
-
-        toast.info(`Suggestion: Change '${paramName}' to '${suggestedValue}'`);
-    }
-
-    /**
-     * Handle WORKFLOW_STEP action - navigate to workflow editor
-     */
-    async function handleWorkflowStep(action: ActionSuggestion) {
-        const workflowId = action.parameters.workflow_id;
-        const stepId = action.parameters.step_id;
-
-        if (!workflowId) {
-            toast.error("No workflow ID provided");
-            return;
-        }
-
-        // Navigate to workflow editor
-        const route = stepId
-            ? `/workflows/editor?id=${workflowId}&highlight_step=${stepId}`
-            : `/workflows/editor?id=${workflowId}`;
-
-        router.push(route);
-        toast.success("Opening workflow editor");
     }
 
     /**
@@ -274,66 +202,16 @@ export function useAgentActions() {
     }
 
     /**
-     * Handle CONFIGURATION action - show configuration guidance
-     */
-    function handleConfiguration(action: ActionSuggestion) {
-        const configKey = action.parameters.config_key;
-        toast.info(`Configuration needed: ${configKey || action.description}`);
-    }
-
-    /**
-     * Save tool YAML to user's collection
-     */
-    async function saveToolToCollection(yaml: string, toolId: string) {
-        try {
-            const response = await fetch(`${getAppRoot()}api/agent_tools/save`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    yaml_content: yaml,
-                    tool_id: toolId,
-                    activate: true,
-                }),
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                toast.success(`Tool '${toolId}' saved successfully!`);
-                showToolModal.value = false;
-
-                // Refresh tool panel
-                window.dispatchEvent(new Event("refresh-tool-panel"));
-
-                return true;
-            } else {
-                toast.error(`Failed to save tool: ${result.errors?.join(", ")}`);
-                return false;
-            }
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            toast.error(`Error saving tool: ${errorMessage}`);
-
-            return false;
-        }
-    }
-
-    /**
      * Get action icon based on type
      */
     function getActionIcon(actionType: ActionType): string {
-        const icons = {
+        const icons: Record<ActionType, string> = {
             [ActionType.TOOL_RUN]: "🔧",
             [ActionType.SAVE_TOOL]: "💾",
-            [ActionType.TEST_TOOL]: "🧪",
-            [ActionType.PARAMETER_CHANGE]: "⚙️",
-            [ActionType.WORKFLOW_STEP]: "📊",
             [ActionType.DOCUMENTATION]: "📖",
             [ActionType.CONTACT_SUPPORT]: "🆘",
             [ActionType.REFINE_QUERY]: "✏️",
             [ActionType.VIEW_EXTERNAL]: "🔗",
-            [ActionType.CONFIGURATION]: "⚙️",
         };
         return icons[actionType] || "❓";
     }
@@ -356,10 +234,7 @@ export function useAgentActions() {
 
     return {
         processingAction,
-        showToolModal,
-        toolModalContent,
         handleAction,
-        saveToolToCollection,
         getActionIcon,
         getActionVariant,
     };
