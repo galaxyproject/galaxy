@@ -224,6 +224,12 @@ class WorkflowInvoker:
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         max_jobs_per_iteration_reached = False
+
+        # Pre-populate outputs for all input steps so subworkflows can access them
+        for step in self.workflow_invocation.workflow.steps:
+            if step.is_input_type:
+                self.progress._ensure_input_step_outputs_populated(step)
+
         for step, workflow_invocation_step in remaining_steps:
             max_jobs_to_schedule = self.progress.maximum_jobs_to_schedule_or_none
             if max_jobs_to_schedule is not None and max_jobs_to_schedule <= 0:
@@ -255,13 +261,29 @@ class WorkflowInvoker:
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
                 log_function = log.error
-                if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
-                    log_function = log.info
+                failure_details = []
+                if isinstance(e, modules.FailWorkflowEvaluation):
+                    if e.why.reason in FAILURE_REASONS_EXPECTED:
+                        log_function = log.info
+                    failure_details.append(f"reason={e.why.reason}")
+                    if hasattr(e.why, "output_name") and e.why.output_name:
+                        failure_details.append(f"output_name={e.why.output_name}")
+                    if hasattr(e.why, "dependent_workflow_step_id") and e.why.dependent_workflow_step_id:
+                        failure_details.append(f"dependent_step_id={e.why.dependent_workflow_step_id}")
+                    if hasattr(e.why, "workflow_step_id") and e.why.workflow_step_id:
+                        failure_details.append(f"failed_step_id={e.why.workflow_step_id}")
+                    if hasattr(e.why, "details") and e.why.details:
+                        failure_details.append(f"details={e.why.details}")
+                else:
+                    failure_details.append(f"{type(e).__name__}: {str(e)}")
+                failure_reason = ", ".join(failure_details) if failure_details else "unknown"
+
                 log_function(
-                    "Failed to schedule %s for %s, problem occurred on %s.",
+                    "Failed to schedule %s for %s, problem occurred on %s. Failure reason: %s",
                     self.workflow_invocation.log_str(),
                     self.workflow_invocation.workflow.log_str(),
                     step.log_str(),
+                    failure_reason,
                 )
                 if isinstance(e, MessageException):
                     # This is the highest level at which we can inject the step id
@@ -578,14 +600,26 @@ class WorkflowProgress:
         if outputs is None:
             outputs = {}
 
-        if self.inputs_by_step_id:
-            step_id = step.id
-            if step_id not in self.inputs_by_step_id and "output" not in outputs:
-                default_value = step.get_input_default_value(NO_REPLACEMENT)
-                outputs["output"] = default_value
-            elif step_id in self.inputs_by_step_id:
-                if self.inputs_by_step_id[step_id] is not None or "output" not in outputs:
+        # Check if we have a pre-populated value from _ensure_input_step_outputs_populated
+        # This takes precedence over values from step.state.inputs for input steps
+        # Only use pre-populated values when inputs_by_step_id was available during pre-population
+        if step.is_input_type and self.inputs_by_step_id and step.id in self.outputs:
+            pre_populated = self.outputs.get(step.id)
+            if isinstance(pre_populated, dict) and "output" in pre_populated:
+                outputs["output"] = pre_populated["output"]
+
+        # Output not yet set
+        if "output" not in outputs:
+            if self.inputs_by_step_id:
+                step_id = step.id
+                if step_id not in self.inputs_by_step_id:
+                    default_value = step.get_input_default_value(NO_REPLACEMENT)
+                    outputs["output"] = default_value
+                elif self.inputs_by_step_id[step_id] is not None or "output" not in outputs:
                     outputs["output"] = self.inputs_by_step_id[step_id]
+            else:
+                # When inputs_by_step_id is None (e.g., during recovery), use default
+                outputs["output"] = step.get_input_default_value(NO_REPLACEMENT)
 
         if step.label and step.type == "parameter_input" and "output" in outputs:
             self.runtime_replacements[step.label] = str(outputs["output"])
@@ -650,6 +684,32 @@ class WorkflowProgress:
             assert step.order_index
             raise MessageException(f"Failed to find persisted subworkflow invocation for step [{step.order_index + 1}]")
         return subworkflow_invocation
+
+    def _ensure_input_step_outputs_populated(self, step: "WorkflowStep") -> None:
+        """Pre-populate outputs for input steps that haven't executed yet.
+
+        Input steps have no dependencies, so their output value can be determined
+        immediately. This allows subworkflows to access parent input values before
+        the input step formally executes.
+        """
+        if not step.is_input_type or step.id in self.outputs:
+            return
+
+        # Check if step already executed - if so, skip pre-population
+        step_invocations = self.workflow_invocation.step_invocations_by_step_id()
+        if step.id in step_invocations:
+            invocation_step = step_invocations[step.id]
+            if invocation_step.state == "scheduled":
+                return
+
+        # Determine output value from inputs_by_step_id or default
+        outputs = {}
+        if step.id not in self.inputs_by_step_id:
+            outputs["output"] = step.get_input_default_value(NO_REPLACEMENT)
+        else:
+            outputs["output"] = self.inputs_by_step_id[step.id]
+
+        self.outputs[step.id] = outputs
 
     def subworkflow_invoker(
         self,

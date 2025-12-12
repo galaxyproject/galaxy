@@ -1,0 +1,456 @@
+
+===========================================================
+25.1 Galaxy Release (October 2025)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v25.1.0>`__ for more details.
+
+Highlights
+===========================================================
+
+Discover some of the exciting new features, enhancements, and improvements in Galaxy 25.1.
+
+A Fresh, Modern History List Interface
+--------------------------------------
+
+Galaxy 25.1 introduces a redesigned history list that makes managing your histories more intuitive and
+visually appealing.
+
+- **Card-based design**. Histories are now displayed as clean, modern cards that provide better visual
+  organization in a grid vs list view, as you prefer.
+- **Enhanced information display**. Each history card shows key details at a glance, including 
+  creation date, size, update time, and status indicators in a more structured layout.
+- **Improved responsive design**. The new interface adapts better to different screen sizes and 
+  provides a more consistent experience across devices.
+- **Advanced keyboard navigation and selection**. Navigate through histories using arrow keys, 
+  select multiple histories with Shift+click for range selection, and use keyboard shortcuts 
+  for efficient bulk operations — available across multiple Galaxy list interfaces.
+
+This update modernizes one of Galaxy's core interfaces, providing a cleaner and more user-friendly 
+way to navigate your analysis history collection while adding powerful selection capabilities.
+[`#20744 <https://github.com/galaxyproject/galaxy/pull/20744>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/1kPTyiEr3ks?si=OYLxFeyA82bZ13Xd" title="Galaxy 25.1 - A Fresh, Modern History List Interface" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Smart Sample Sheets for Complex Workflow Inputs
+-----------------------------------------------
+
+Galaxy now supports **Sample Sheets** to simplify complex workflow inputs and data organization. This
+feature allows you to import data from external spreadsheets (CSV, TSV, or Excel) and use them to
+configure workflow parameters and organize datasets.
+
+- **Spreadsheet-style data entry**. Define your experimental data using familiar spreadsheet interfaces
+  with customizable columns for sample names, treatments, conditions, and file locations — whether
+  datasets or remote URLs.
+- **Workflow author-defined templates**. Workflow creators can pre-configure sample sheet templates
+  with specific columns, validation rules, and helpful descriptions, guiding users through proper data
+  organization.
+- **Built into the Apply Rules tool**. Advanced users can leverage sample sheet data within the Apply
+  Rules tool for sophisticated data manipulation and collection operations.
+- **Integration within the Workflow Editor**. Configure workflows to accept sample sheet inputs
+  directly from the Workflow Editor.
+
+Sample Sheets are particularly useful for workflows that require multiple related inputs or when you
+need to process batches of samples with associated metadata in a structured format.
+[`#19305 <https://github.com/galaxyproject/galaxy/pull/19305>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/5sAjEABPh8M?si=sxIX6RV1LtUkH4xW" title="Galaxy 25.1 - Smart Sample Sheets for Complex Workflow Inputs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+An Enhanced Tool Discovery View
+-------------------------------
+
+Galaxy 25.1 introduces a redesigned **Tool Discovery View** that replaces the previous advanced tool
+search with a more powerful and intuitive tool exploration interface.
+
+- **Dedicated Discovery Interface**. Advanced tool search has moved from the tool panel to a rich,
+  dedicated center-panel view optimized for finding the right tools for your analysis.
+- **Card-based Tool Display**. Tools are presented as visually appealing cards with key information,
+  including EDAM ontology tags, descriptions, and links.
+- **Tool Favorites and Sharing**. Easily add tools to your favorites for quick access, and share useful
+  tools with colleagues via the copyable link feature.
+- **EDAM Ontology Integration**. Browse and filter tools by EDAM (EMBRACE Data and Methods) ontologies
+  to discover tools based on scientific domains and data types.
+
+This new interface makes tool discovery more efficient and helps users find the most appropriate tools
+for their specific analysis needs.
+[`#20747 <https://github.com/galaxyproject/galaxy/pull/20747>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/7L_QjcwyBiw?si=gD8tGTr0BTzgv7rw" title="Galaxy 25.1 - Tool Discovery View" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+New Galaxy Charts Visualization Framework
+-----------------------------------------
+
+This release also introduces the **Galaxy Charts** framework, bringing enhanced visualizations and a
+more powerful visualization experience to Galaxy users.
+
+- **Improved Visualization Performance**. Enjoy faster loading times, smoother interactions, and more
+  responsive visualizations built with modern web technologies for a better user experience.
+- **Enhanced IGV.js Genome Browser**. Galaxy now includes a complete IGV.js (Integrative Genome Browser)
+  integration for comprehensive genomic data visualization with multi-track support for BAM, VCF,
+  BigWig, BED, GFF, GTF, and CRAM files.
+- **Automatic Data Integration**. Visualizations now automatically connect to your Galaxy datasets and
+  match reference genomes, eliminating manual configuration steps and making it easier to explore your
+  data.
+- **Expanded Visualization Library**. The new framework enables rapid deployment of cutting-edge
+  visualizations, meaning Galaxy users will see more powerful visualization options in future releases.
+
+*See the Admin Notes and Deprecation Notices sections* :doc:`here <25.1_announce>` *for more details on
+the visualization framework and the removal of Trackster.*
+
+**Featured Implementation: IGV.js Genome Browser**
+
+Galaxy 25.1 ships with a complete IGV.js (Integrative Genome Browser) implementation built on the
+Galaxy Charts framework, showcasing the platform's capabilities:
+
+- **Multi-track Genomic Visualization**. View multiple tracks in various formats including BAM, VCF,
+  BigWig, BED, GFF, GTF, and CRAM files with full support for indexed data and byte-range requests.
+- **Automatic Genome Matching**. Automatically matches dataset database keys against available genomes,
+  supporting both IGV-provided reference genomes and Galaxy-served genomes in 2bit and FASTA formats.
+- **Interactive Exploration**. Full IGV.js functionality including zooming, panning, dynamic track
+  configuration, and multi-sample comparisons for comprehensive genomic data analysis.
+
+The Galaxy Charts framework represents a major advancement in Galaxy's visualization capabilities, 
+making it easier than ever to create sophisticated, interactive visualizations while maintaining full
+integration with Galaxy's data management and analysis ecosystem. Here's a look at the IGV.js addition:
+[`#20943 <https://github.com/galaxyproject/galaxy/pull/20943>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/VC05IvZGPiU?si=tMVdiHS1d5yTOX06" title="Galaxy 25.1 - New Galaxy Charts Visualization Framework" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+A Place to Find your Recent Downloads in Galaxy
+-----------------------------------------------
+
+Galaxy 25.1 introduces a dedicated "Recent Exports & Downloads" page that lists your recent
+exports/downloads.
+
+- **Re-download available items**. Easily access and download files still available in the short-term
+  storage cache.
+- **Navigate to source objects**. Jump directly to the details page of the originating item (e.g.
+  workflow invocation, history, etc.).
+
+This improves the discoverability and accessibility of recent downloads without needing to track links
+manually.
+[`#20585 <https://github.com/galaxyproject/galaxy/pull/20585>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/NMeH_HWuMwA?si=ly9gCTQksghLwRf0" title="Galaxy 25.1 - A Place to Find your Recent Downloads in Galaxy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Visual Indicators for Short-Term Storage Expiration
+---------------------------------------------------
+
+Galaxy 25.1 introduces visual expiration indicators that help users identify when datasets and
+collections are stored in temporary or short-term storage that will be automatically cleaned up.
+
+- **Expiration warnings in history**. Datasets and collections now display countdown timers showing
+  when they will expire, helping users plan data management and downloads before automatic cleanup.
+- **Collection-aware indicators**. Smart detection across dataset collections shows the earliest
+  expiration time when collections contain datasets from mixed storage types.
+- **Admin-configurable expiration periods**. Administrators can set `object_expires_after_days` in
+  object store configurations to match their actual cleanup schedules and inform users appropriately.
+
+*Note that Galaxy instance administrators must set `object_expires_after_days` in their object store
+configurations for these indicators to function correctly.*
+
+This feature is particularly valuable for instances using scratch storage or temporary
+high-performance storage tiers, as it gives users clear visibility into data lifecycle and helps
+prevent unexpected data loss due to automatic cleanup processes.
+[`#20332 <https://github.com/galaxyproject/galaxy/pull/20332>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/CytCTixQTY8?si=taaSIrbl_gM2QhUC" title="Galaxy 25.1 - Visual Indicators for Short-Term Storage Expiration" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Galaxy Tools Now Handle Secrets and Authentication
+--------------------------------------------------
+
+Galaxy 25.1 implements a comprehensive tool credentials system, allowing tools to securely access
+external services by defining authentication credentials (variables and secrets) in tool requirements
+while keeping sensitive information separate from tool definitions.
+
+- **Credential Definition in Tools**. Tools can define credential requirements using `<credentials>`
+  elements within `<requirements>` with support for both variables (non-sensitive config like URLs,
+  usernames) and secrets (sensitive data like passwords, API keys).
+- **Secure Storage & Management**. Integration with Galaxy's vault system provides secure secret
+  storage with user-specific credential isolation by tool and service, plus credential groups for
+  organizing multiple credential sets.
+- **REST API**. Complete CRUD operations enable credential management with user credential listing,
+  group-based credential organization, and secure deletion with vault cleanup.
+- **Frontend Integration**. Unified credential management UI appears for every tool with workflow-level
+  credential status display, multi-tool credential coordination, and real-time credential validation
+  and feedback.
+- **Tool Execution Integration**. Automatic credential injection as environment variables with job
+  context tracking for credential usage, supporting tool proxies and various tool types while
+  maintaining backward compatibility.
+
+This system provides secure credential management for tools that need to access external APIs,
+databases, or cloud services, ensuring sensitive authentication information is properly protected
+while making it easy for users to configure and manage their credentials across different tools and
+workflows.
+[`#19084 <https://github.com/galaxyproject/galaxy/pull/19084>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/2xEFtTS3DSk?si=TvG5EUBy96Otrt9T" title="Galaxy 25.1 - Tools Now Handle Secrets and Authentication" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Search for Steps, Tools and Subworkflows within the Workflow Editor
+-------------------------------------------------------------------
+
+As with many improvements to the Workflow Editor in recent releases, Galaxy 25.1 adds the ability to
+search for several properties of all elements in the workflow graph, displays the search results in a
+list, and highlights them when clicked.
+[`#20390 <https://github.com/galaxyproject/galaxy/pull/20390>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/Guma5nPqZ_8?si=BuQ2xkiCCULhV_Q5" title="Galaxy 25.1 - A Search in the Workflow Editor" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+A Redesign of your User Preferences
+-----------------------------------
+
+The User Preferences interface has been redesigned to enhance user experience through improved
+navigation and a modernised interface.
+[`#19658 <https://github.com/galaxyproject/galaxy/pull/19658>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/vTjJtStlf9w?si=98P65gcBJP0xNDZA" title="Galaxy 25.1 - A Redesign of your User Preferences" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+----
+
+Visualizations Updates
+===========================================================
+
+.. visualizations
+* [igv] Allow selection of genomes from history fasta/2bit
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21269`_
+* Add Hyphy Vision Result Viewer
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21196`_
+* Enable drag-and-drop of collection elements in IGV
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21173`_
+* Update Javascript package licenses to MIT
+  (thanks to `@mr-c <https://github.com/mr-c>`__).
+  `Pull Request 20264`_
+* Install Visualization plugins as self-contained packages
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20348`_
+* Restore Nora
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20387`_
+* Install visualizations directly to static path, avoid duplication
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20372`_
+* Add rerun.io web viewer
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20202`_
+* Update tiffviewer visualization to version 0.0.3
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 20658`_
+* Consolidate visualization mako, avoid user agent styles
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20760`_
+* Enable data label column selection in basic Plotly plots and add heatmap
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20813`_
+* Update JupyterLite version to 0.6.4
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20877`_
+* Add Multiple Sequence Alignment Viewer 2.0
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20907`_
+* Make jupyterlite default visualization for ipynb
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20931`_
+* Fix JupyterLite History Identifier Retrieval Without Dataset
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20971`_
+* Save IGV locus and improve error handling
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20996`_
+* Bump vitessce to 3.8.2
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21003`_
+* Fix and migrate HIV-TRACE to Charts Visualization Framework
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21006`_
+* Add README and update the minimal visualization example
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21007`_
+* Allow creation of visualizations without dataset
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20914`_
+* Adds IGV.js Visualization
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20943`_
+
+Datatypes Updates
+===========================================================
+
+.. datatypes
+* New datatype addition: HAL
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21379`_
+* Add PNTS datatype for 3D Tiles Point Cloud
+  (thanks to `@kgerb <https://github.com/kgerb>`__).
+  `Pull Request 21414`_
+* Backport fix anndata datatype update
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 21111`_
+* Fix MIME type for LAZ datatype
+  (thanks to `@kysrpex <https://github.com/kysrpex>`__).
+  `Pull Request 21202`_
+* Add SpatialData datatype
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 21000`_
+* support ZARR v3 for  Spatialdata dt
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 21265`_
+* Fix forward merge
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21307`_
+* Fix tool-provided metadata for CONVERTER_tar_to_directory
+  (thanks to `@mr-c <https://github.com/mr-c>`__).
+  `Pull Request 20260`_
+* Pin isa-rwval 0.10.11, drop conditional import handling
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20527`_
+* Remove ``num_unique_values`` tiff metadata element
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20464`_
+* Add LocusZoom Visualization
+  (thanks to `@elmedjadjirayane <https://github.com/elmedjadjirayane>`__).
+  `Pull Request 20354`_
+* Add mzMLb and MBI datatypes
+  (thanks to `@chambm <https://github.com/chambm>`__).
+  `Pull Request 20632`_
+* Pairtool updated format and sniffers
+  (thanks to `@Smeds <https://github.com/Smeds>`__).
+  `Pull Request 20634`_
+* Add `num_unique_values` tiff metadata element, fixed
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 20669`_
+* add fasta.bz2 as auto_compressed type
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 20496`_
+* Add support for M4A audio files
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 20667`_
+* Add datatype for LexicMap index
+  (thanks to `@Smeds <https://github.com/Smeds>`__).
+  `Pull Request 20586`_
+* Bump requirement of directory converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 20834`_
+* Undo accidental push
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 20854`_
+* Fix Ipynb datatype sniffer and add unit tests
+  (thanks to `@ksuderman <https://github.com/ksuderman>`__).
+  `Pull Request 20811`_
+* Add axt and maf to auto_compressed_types
+  (thanks to `@richard-burhans <https://github.com/richard-burhans>`__).
+  `Pull Request 20875`_
+* Add HiC datatype
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 20874`_
+* Fix DOCX detection and add PPTX support
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 20827`_
+* Fix anndata metadata
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 20778`_
+* Use a streaming based parser (ijson) when setting metadata for biom1 files
+  (thanks to `@ksuderman <https://github.com/ksuderman>`__).
+  `Pull Request 20851`_
+* Add support for picking ``from_work_dir`` directory
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20916`_
+* Skip sam metadata if we have too many references
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20820`_
+* Extract: do not use common prefix dir
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 20929`_
+* Add Auspice JSON datatype
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
+  `Pull Request 20466`_
+* Clean up code from pyupgrade
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 20642`_
+* Add safetensors datatype
+  (thanks to `@nilchia <https://github.com/nilchia>`__).
+  `Pull Request 20754`_
+* Add freq.json datatype subclass
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21012`_
+* Merge 25.0 into dev
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21018`_
+* New datatype addition: beast.trees datatype
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21055`_
+* New datatype addition: gam for vg toolkit
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21096`_
+* Prefix download link
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 21112`_
+* Add LAS and LAZ file format
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21049`_
+* Add display_in_upload to LAZ and LAS
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21060`_
+* Type annotation fixes for mypy 1.16.0
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 20424`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Set minimum profile version for expression tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21151`_
+* Drop ucsc test server from sample build sites
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20723`_
+* Drop Python helper script from sort1 tool
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 20876`_
+* Update requirements of sort1 tool
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 20892`_
+* Update maf tools with profiles, required_files, and requirements
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20865`_
+* Modernize tools in the filters/ dir
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 20840`_
+* Add special case for BAM files in RStudio
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 20692`_
+* Fix comp1 / test_subworkflow_map_over_data_column
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 20992`_
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v25.1.0>`__ for more details.
+The admin-facing release notes are available :doc:`here <25.1_announce>`.
+
+.. include:: 25.1_prs.rst
+
+----
+
+.. include:: _thanks.rst
