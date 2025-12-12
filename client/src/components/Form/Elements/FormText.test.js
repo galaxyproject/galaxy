@@ -67,7 +67,7 @@ describe("FormText", () => {
         expect(el.props("value")).toEqual("field_1");
         await wrapper.setProps({ multiple: true });
         const elMultiple = wrapper.find("textarea");
-        expect(elMultiple.props("value")).toEqual("field_1\nfield_2\nfield_3\n");
+        expect(elMultiple.props("value")).toEqual("field_1\nfield_2\nfield_3");
     });
 
     it("should be able to accept an empty array as value", async () => {
