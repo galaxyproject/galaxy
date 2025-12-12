@@ -46,7 +46,7 @@ try:
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    GalaxyAgentDependencies = None  # type: ignore[assignment,misc]
+    GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
 
 # Import pydantic-ai components
 try:

@@ -14,7 +14,7 @@ from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
 
-# Import agent system
+# Import agent system (pydantic_ai is optional)
 try:
     from galaxy.agents import (
         agent_registry,
@@ -26,10 +26,10 @@ try:
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    agent_registry = None  # type: ignore[assignment]
-    GalaxyAgentDependencies = None  # type: ignore[assignment,misc]
-    QueryRouterAgent = None  # type: ignore[assignment,misc]
-    ErrorAnalysisAgent = None  # type: ignore[assignment,misc]
+    agent_registry = None  # type: ignore[assignment,misc,unused-ignore]
+    GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
+    QueryRouterAgent = None  # type: ignore[assignment,misc,unused-ignore]
+    ErrorAnalysisAgent = None  # type: ignore[assignment,misc,unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class AgentService:
         user: User,
         context: Optional[Dict[str, Any]] = None,
         agent_type: str = "auto",
-    ) -> Dict[str, Any]:
+    ) -> AgentResponse:
         """Route query to appropriate agent and execute. Uses router if agent_type is 'auto'."""
         deps = self.create_dependencies(trans, user)
 
@@ -134,13 +134,13 @@ class AgentService:
 
             if routing_decision.direct_response:
                 log.info("Router: Handling with direct response (no agent needed)")
-                return {
-                    "content": routing_decision.direct_response,
-                    "agent_type": "router",
-                    "confidence": routing_decision.confidence,
-                    "suggestions": [],
-                    "metadata": {"handled_directly": True},
-                }
+                return AgentResponse(
+                    content=routing_decision.direct_response,
+                    agent_type="router",
+                    confidence=routing_decision.confidence,
+                    suggestions=[],
+                    metadata={"handled_directly": True},
+                )
 
             # Use the primary agent recommended by router
             actual_agent_type = routing_decision.primary_agent
@@ -156,7 +156,7 @@ class AgentService:
 
         # Add routing information if we used the router
         if routing_reasoning:
-            result["routing_info"] = {
+            result.metadata["routing_info"] = {
                 "selected_agent": actual_agent_type,
                 "reasoning": routing_reasoning,
             }
