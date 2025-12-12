@@ -1626,3 +1626,55 @@ class Prm(Text):
         False
         """
         return file_prefix.startswith("RBT_PARAMETER_FILE_V1.00")
+
+
+class ODV(Text):
+    file_ext = "odv"
+
+    MetadataElement(name="meta_var_count", default=0, desc="Number of Meta Variables", readonly=True)
+    MetadataElement(name="var_count", default=0, desc="Number of Variables", readonly=True)
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is has some required details in General section
+        """
+        header = file_prefix.contents_header.lower()
+        keywords = ["collectionformat", "odvcf"]
+        return all(keyword in header for keyword in keywords)
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
+        dataset.metadata.meta_var_count = 0
+        dataset.metadata.var_count = 0
+
+        section = None
+        try:
+            with open(dataset.get_file_name(), encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+
+                    if line.startswith("[") and line.endswith("]"):
+                        section = line[1:-1].strip()
+                        if section != "General":
+                            # Stop after [General] section
+                            break
+                        continue
+
+                    if section != "General" or not line or "=" not in line:
+                        continue
+
+                    key, value = map(str.strip, line.split("=", 1))
+                    if key == "NumberOfMetaVariables":
+                        dataset.metadata.meta_var_count = int(value)
+                    elif key == "NumberOfVariables":
+                        dataset.metadata.var_count = int(value)
+
+        except Exception:
+            log.exception("Error in set_meta")
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.get_file_name())
+            dataset.blurb = f"ODV Collection Format: {dataset.metadata.meta_var_count} meta variables, {dataset.metadata.var_count} variables"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disc"
