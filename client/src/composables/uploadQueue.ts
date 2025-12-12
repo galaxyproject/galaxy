@@ -10,14 +10,11 @@
 import type { CollectionElementIdentifiers } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import type { FetchDataResponse } from "@/api/tools";
-import type { NewUploadItem } from "@/components/Panels/Upload/uploadState";
+import type { NewUploadItem, SupportedCollectionType } from "@/components/Panels/Upload/uploadState";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { errorMessageAsString } from "@/utils/simple-error";
 import type { UploadItem } from "@/utils/upload";
 import { createFileUploadItem, createPastedUploadItem, createUrlUploadItem, uploadDatasets } from "@/utils/upload";
-
-/** Supported collection types for automatic collection creation */
-export type SupportedCollectionType = "list" | "list:paired";
 
 /** Collection creation input from UI components */
 export interface CollectionCreationInput {
@@ -123,6 +120,7 @@ function buildCollectionElements(
     } else {
         // List of pairs: group consecutive files into pairs
         const pairs: CollectionElementIdentifiers = [];
+        const usedNames = new Set<string>();
 
         for (let i = 0; i < items.length; i += 2) {
             if (i + 1 >= items.length) {
@@ -138,7 +136,16 @@ function buildCollectionElements(
                 continue;
             }
 
-            const pairName = extractPairName(item1.name, item2.name) || `pair_${Math.floor(i / 2) + 1}`;
+            const basePairName = extractPairName(item1.name, item2.name) || `pair_${Math.floor(i / 2) + 1}`;
+            let pairName = basePairName;
+
+            // Ensure unique pair names by adding suffix if needed
+            let counter = 1;
+            while (usedNames.has(pairName)) {
+                pairName = `${basePairName}_${counter}`;
+                counter++;
+            }
+            usedNames.add(pairName);
 
             pairs.push({
                 collection_type: "paired",
@@ -270,25 +277,57 @@ export function useUploadQueue() {
     /**
      * Creates a dataset collection from uploaded datasets.
      *
-     * @param batch - Collection batch with uploaded dataset IDs
+     * @param batchId - Batch ID in upload state
      */
-    async function createCollection(batch: CollectionBatch): Promise<void> {
-        if (batch.datasetIds.length === 0) {
+    async function createCollection(batchId: string): Promise<void> {
+        const batchState = uploadState.getBatch(batchId);
+        if (!batchState) {
+            console.error(`Batch not found: ${batchId}`);
             return;
         }
 
-        const { name, type, hideSourceItems, historyId } = batch.collectionConfig;
+        // Check if collection already created (avoid duplicates on retry)
+        if (batchState.collectionId) {
+            console.log(`Collection already created for batch ${batchId}: ${batchState.collectionId}`);
+            return;
+        }
+
+        const { name, type, hideSourceItems, historyId, datasetIds } = batchState;
+
+        // Check if we have dataset IDs (either from persisted state or internal batch)
+        if (!datasetIds || datasetIds.length === 0) {
+            const errorMsg = "No dataset IDs available for collection creation";
+            uploadState.setBatchError(batchId, errorMsg);
+            return;
+        }
+
+        // Get upload items to build collection elements
+        // Try internal batch first (has full item data), fall back to state
+        const batch = batches.find((b) => b.ids[0] && batchState.uploadIds.includes(b.ids[0]));
+        const items =
+            batch?.items ||
+            batchState.uploadIds
+                .map((id) => uploadState.activeItems.value.find((u) => u.id === id))
+                .filter((item): item is NonNullable<typeof item> => item !== undefined);
+
+        if (items.length === 0) {
+            const errorMsg = "No upload items available for collection creation";
+            uploadState.setBatchError(batchId, errorMsg);
+            return;
+        }
+
+        uploadState.updateBatchStatus(batchId, "creating-collection");
 
         try {
             // Build element identifiers based on collection type
-            const elementIdentifiers = buildCollectionElements(batch.items, batch.datasetIds, type);
+            const elementIdentifiers = buildCollectionElements(items, datasetIds, type);
 
             if (elementIdentifiers.length === 0) {
                 throw new Error("No valid collection elements to create");
             }
 
             // Create collection using the API
-            await createHistoryDatasetCollectionInstanceFull({
+            const response = await createHistoryDatasetCollectionInstanceFull({
                 name,
                 collection_type: type,
                 element_identifiers: elementIdentifiers,
@@ -299,25 +338,54 @@ export function useUploadQueue() {
                 fields: "auto",
             });
 
-            console.log(`Successfully created ${type} collection: ${name}`);
+            uploadState.setBatchCollectionId(batchId, response.id);
+            uploadState.updateBatchStatus(batchId, "completed");
+
+            console.log(`Successfully created ${type} collection: ${name} (${response.id})`);
         } catch (err) {
             // Collection creation failed - datasets are still uploaded
-            const errorMsg = `Collection creation failed: ${errorMessageAsString(err)}`;
-            console.error(errorMsg);
+            const errorMsg = errorMessageAsString(err);
+            console.error("Collection creation failed:", errorMsg);
+
+            uploadState.setBatchError(batchId, errorMsg);
 
             // Mark all batch items with error message (non-fatal)
-            batch.ids.forEach((id) => {
+            batchState.uploadIds.forEach((id) => {
                 const item = uploadState.activeItems.value.find((i) => i.id === id);
                 if (item && !item.error) {
-                    item.error = `Uploaded successfully, but ${errorMsg}`;
+                    item.error = `Uploaded successfully, but collection creation failed: ${errorMsg}`;
                 }
             });
-        } finally {
-            // Remove batch from tracking array to free memory
-            const batchIndex = batches.indexOf(batch);
-            if (batchIndex !== -1) {
-                batches.splice(batchIndex, 1);
+        }
+    }
+
+    /**
+     * Retries collection creation for a failed batch.
+     * @param batchId - Batch ID to retry
+     */
+    async function retryCollectionCreation(batchId: string): Promise<void> {
+        const batch = uploadState.getBatch(batchId);
+        if (!batch) {
+            console.error(`Batch not found: ${batchId}`);
+            return;
+        }
+
+        // Reset error state
+        batch.error = undefined;
+        uploadState.updateBatchStatus(batchId, "uploading");
+
+        // Clear error messages from individual upload items
+        batch.uploadIds.forEach((id) => {
+            const item = uploadState.activeItems.value.find((i) => i.id === id);
+            if (item && item.error?.includes("collection creation failed")) {
+                item.error = undefined;
             }
+        });
+
+        try {
+            await createCollection(batchId);
+        } catch (err) {
+            uploadState.setBatchError(batchId, `Retry failed: ${errorMessageAsString(err)}`);
         }
     }
 
@@ -353,6 +421,7 @@ export function useUploadQueue() {
 
             // Find the batch this upload belongs to
             const batch = batches.find((b) => b.ids.includes(id));
+            const batchId = item.batchId;
 
             await uploadDatasets([uploadItem], {
                 progress: (percentage) => uploadState.updateProgress(id, percentage),
@@ -360,7 +429,7 @@ export function useUploadQueue() {
                     uploadState.updateProgress(id, 100);
 
                     // Collect dataset IDs for collection creation
-                    if (batch && response.outputs) {
+                    if (batch && batchId && response.outputs) {
                         // The outputs field is Record<string, unknown> but is actually an array of dataset objects
                         const outputs = response.outputs as unknown as Array<{
                             id: string;
@@ -369,18 +438,20 @@ export function useUploadQueue() {
                         }>;
                         const datasetId = outputs[0]?.id;
                         if (datasetId) {
+                            // Store in both internal batch and persisted state
                             batch.datasetIds.push(datasetId);
+                            uploadState.addBatchDatasetId(batchId, datasetId);
                         }
 
                         // Check if all batch uploads are complete
-                        const allComplete = batch.ids.every((batchId) => {
-                            const batchItem = uploadState.activeItems.value.find((i) => i.id === batchId);
+                        const allComplete = batch.ids.every((uploadId) => {
+                            const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
                             return batchItem?.status === "completed" || batchItem?.status === "error";
                         });
 
                         // If batch is complete, create collection
                         if (allComplete) {
-                            createCollection(batch).catch((err) => {
+                            createCollection(batchId).catch((err) => {
                                 console.error("Unexpected collection creation error:", err);
                             });
                         }
@@ -408,11 +479,25 @@ export function useUploadQueue() {
      * @returns Array of upload IDs for tracking
      */
     function enqueue(items: NewUploadItem[], collectionConfig?: CollectionConfig): string[] {
-        const ids = items.map((item) => uploadState.addUploadItem(item));
-        queue.push(...ids);
+        let batchId: string | undefined;
 
-        // If collection config provided, create a batch to track them
+        // If collection config provided, create a batch in state
         if (collectionConfig) {
+            // Create batch first to get the ID
+            batchId = uploadState.addBatch(collectionConfig, []);
+        }
+
+        // Add upload items with batch ID
+        const ids = items.map((item) => uploadState.addUploadItem(item, batchId));
+
+        // Update batch with upload IDs
+        if (batchId && collectionConfig) {
+            const batch = uploadState.getBatch(batchId);
+            if (batch) {
+                batch.uploadIds = ids;
+            }
+
+            // Create internal batch for dataset ID tracking
             batches.push({
                 ids,
                 items,
@@ -421,6 +506,7 @@ export function useUploadQueue() {
             });
         }
 
+        queue.push(...ids);
         processNext();
         return ids;
     }
@@ -446,6 +532,44 @@ export function useUploadQueue() {
         }
     }
 
+    /**
+     * Recovers incomplete collection creation on initialization.
+     * Checks for batches where uploads completed but collection wasn't created.
+     */
+    function recoverIncompleteBatches(): void {
+        uploadState.activeBatches.value.forEach((batch) => {
+            // Skip if collection already created or batch has errors
+            if (batch.collectionId || batch.status === "error") {
+                return;
+            }
+
+            // Check if all uploads in batch are completed
+            const allCompleted = batch.uploadIds.every((uploadId) => {
+                const upload = uploadState.activeItems.value.find((u) => u.id === uploadId);
+                return upload?.status === "completed";
+            });
+
+            // If uploads are complete and we have dataset IDs, try to create the collection
+            if (allCompleted && batch.uploadIds.length > 0 && batch.datasetIds.length > 0) {
+                console.log(`Recovering incomplete batch: ${batch.name}`);
+                // Attempt to create the collection
+                createCollection(batch.id).catch((err) => {
+                    console.error("Recovery failed:", err);
+                    uploadState.setBatchError(batch.id, "Collection creation interrupted. Please retry manually.");
+                });
+            } else if (allCompleted && batch.uploadIds.length > 0) {
+                // Uploads complete but no dataset IDs (shouldn't happen, but handle gracefully)
+                uploadState.setBatchError(
+                    batch.id,
+                    "Collection creation interrupted and cannot be recovered. Dataset IDs not available.",
+                );
+            }
+        });
+    }
+
+    // Initialize: recover any incomplete batches from previous session
+    recoverIncompleteBatches();
+
     /** Removes all completed uploads from the state */
     function clearCompleted(): void {
         uploadState.clearCompleted();
@@ -462,6 +586,7 @@ export function useUploadQueue() {
         enqueue,
         clearCompleted,
         clearAll,
+        retryCollectionCreation,
         /** Access to upload state for UI components */
         state: uploadState,
     };
