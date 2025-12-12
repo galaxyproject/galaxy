@@ -45,7 +45,12 @@ The following configuration options are new
 config/galaxy.yml.sample:galaxy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  mapping.tool_shed.mapping.allow_local_account_creation
+-  mapping.galaxy.mapping.allow_local_account_creation
+-  mapping.galaxy.mapping.citation_bibtex
+-  mapping.galaxy.mapping.disable_local_accounts
+-  mapping.galaxy.mapping.enable_tool_generated_tours
+-  mapping.galaxy.mapping.oidc_auth_pipeline
+-  mapping.galaxy.mapping.oidc_auth_pipeline_extra
 
 
 Removed
@@ -56,7 +61,8 @@ The following configuration options have been completely removed
 config/galaxy.yml.sample:galaxy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  mapping.tool_shed.mapping.allow_user_creation
+-  mapping.galaxy.mapping.allow_user_creation
+-  mapping.galaxy.mapping.enable_tool_document_cache
 
 
 Deprecation Notices
