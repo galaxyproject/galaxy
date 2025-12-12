@@ -620,8 +620,8 @@ class Grid:
     title = ""
     model_class: Optional[type] = None
     show_item_checkboxes = False
-    template = "legacy/grid_base.mako"
-    async_template = "legacy/grid_base_async.mako"
+    template = "grid_base.mako"
+    async_template = "grid_base_async.mako"
     use_async = False
     use_hide_message = True
     global_actions: list[GridAction] = []
