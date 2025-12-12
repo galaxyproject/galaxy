@@ -25,13 +25,14 @@ from jwt import (
     InvalidIssuerError,
     InvalidSignatureError,
 )
+from social_core.backends.open_id_connect import OpenIdConnectAuth
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.authnz.managers import AuthnzManager
+from galaxy.authnz.oidc_utils import decode_access_token as decode_access_token_oidc
 from galaxy.authnz.psa_authnz import (
-    _decode_access_token_helper,
     AUTH_PIPELINE,
     decode_access_token,
     PSAAuthnz,
@@ -189,11 +190,14 @@ def test_decode_access_token():
     dummy_access_token = create_access_token()
     mock_social = MagicMock()
     mock_social.extra_data.get.return_value = dummy_access_token.access_token_str
+    # Create a mock backend that's recognized as an OIDC backend
     mock_backend = MagicMock()
     public_key_data = get_jwk_data(dummy_access_token.public_key)
     mock_backend.find_valid_key.return_value = public_key_data
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
+    # Make isinstance() checks pass by setting __class__ after configuring the mock
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Check that access token is decoded successfully to return the original data
     data = decode_access_token(social=mock_social, backend=mock_backend)
     assert data["access_token"] == dummy_access_token.access_token_data
@@ -208,17 +212,20 @@ def test_decode_access_token_invalid_key():
     incorrect_public_key, incorrect_private_key = generate_public_private_key_pair()
     mock_social = MagicMock()
     mock_social.extra_data.get.return_value = dummy_access_token.access_token_str
+    # Create a mock backend that's recognized as an OIDC backend
     mock_backend = MagicMock()
     incorrect_public_key_data = get_jwk_data(incorrect_public_key)
     mock_backend.find_valid_key.return_value = incorrect_public_key_data
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
+    # Make isinstance() checks pass by setting __class__ after configuring the mock
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Test that the decode function returns None for the access token
     result = decode_access_token(social=mock_social, backend=mock_backend)
     assert result["access_token"] is None
     # Test the actual decoding raises expected error
     with pytest.raises(InvalidSignatureError):
-        _decode_access_token_helper(token_str=dummy_access_token.access_token_str, backend=mock_backend)
+        decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
 def test_decode_access_token_invalid_issuer():
@@ -230,17 +237,20 @@ def test_decode_access_token_invalid_issuer():
     dummy_access_token = create_access_token(iss="https://invalid.url")
     mock_social = MagicMock()
     mock_social.extra_data.get.return_value = dummy_access_token.access_token_str
+    # Create a mock backend that's recognized as an OIDC backend
     mock_backend = MagicMock()
     public_key_data = get_jwk_data(dummy_access_token.public_key)
     mock_backend.find_valid_key.return_value = public_key_data
     mock_backend.strategy.config = {"accepted_audiences": dummy_access_token.access_token_data["aud"]}
     mock_backend.id_token_issuer.return_value = "https://validissuer.com"
+    # Make isinstance() checks pass by setting __class__ after configuring the mock
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Test that the decode function returns None for the access token
     result = decode_access_token(social=mock_social, backend=mock_backend)
     assert result["access_token"] is None
     # Test the actual decoding raises expected error
     with pytest.raises(InvalidIssuerError):
-        _decode_access_token_helper(token_str=dummy_access_token.access_token_str, backend=mock_backend)
+        decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
 def test_decode_access_token_invalid_audience():
@@ -252,17 +262,20 @@ def test_decode_access_token_invalid_audience():
     dummy_access_token = create_access_token(aud="https://invalidaudience.url")
     mock_social = MagicMock()
     mock_social.extra_data.get.return_value = dummy_access_token.access_token_str
+    # Create a mock backend that's recognized as an OIDC backend
     mock_backend = MagicMock()
     public_key_data = get_jwk_data(dummy_access_token.public_key)
     mock_backend.find_valid_key.return_value = public_key_data
     mock_backend.strategy.config = {"accepted_audiences": ["https://validaudience.url"]}
     mock_backend.id_token_issuer.return_value = dummy_access_token.access_token_data["iss"]
+    # Make isinstance() checks pass by setting __class__ after configuring the mock
+    mock_backend.__class__ = OpenIdConnectAuth  # type: ignore[assignment]
     # Test that the decode function returns None for the access token
     result = decode_access_token(social=mock_social, backend=mock_backend)
     assert result["access_token"] is None
     # Test the actual decoding raises expected error
     with pytest.raises(InvalidAudienceError):
-        _decode_access_token_helper(token_str=dummy_access_token.access_token_str, backend=mock_backend)
+        decode_access_token_oidc(token_str=dummy_access_token.access_token_str, backend=mock_backend)
 
 
 def test_decode_access_token_opaque_token():
@@ -292,6 +305,7 @@ def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backe
         oidc_auth_pipeline=custom_auth_pipeline,
         oidc_auth_pipeline_extra=None,
         oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
     )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
@@ -315,6 +329,7 @@ def test_oidc_config_auth_pipeline_extra(mock_oidc_config_file, mock_oidc_backen
         oidc_auth_pipeline=None,
         oidc_auth_pipeline_extra=custom_auth_pipeline_extra,
         oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
     )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
@@ -340,6 +355,7 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
         oidc_auth_pipeline=custom_auth_pipeline,
         oidc_auth_pipeline_extra=custom_auth_pipeline_extra,
         oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
     )
     manager = AuthnzManager(
         app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file

@@ -39,7 +39,6 @@ omero-py #type: omero # Requires manual installation of additional dependencies,
 
 # Vault backend
 hvac
-custos-sdk
 
 # Chronos client
 chronos-python==1.2.1

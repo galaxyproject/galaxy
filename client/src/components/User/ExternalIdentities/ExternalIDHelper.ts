@@ -26,7 +26,7 @@ export type OIDCConfigWithRegistration = Record<
 
 /** Return the per-IDP config, minus anything the caller wants to hide. */
 export function getFilteredOIDCIdps(oidcConfig: OIDCConfig, exclude: string[] = []): OIDCConfig {
-    const blacklist = new Set(["cilogon", "custos", ...exclude]);
+    const blacklist = new Set(["cilogon", ...exclude]);
     const filtered: OIDCConfig = {};
     Object.entries(oidcConfig).forEach(([idp, cfg]) => {
         if (!blacklist.has(idp)) {
@@ -51,11 +51,11 @@ export function getOIDCIdpsWithRegistration(oidcConfig: OIDCConfig): OIDCConfigW
 
 /** Do we need to show the institution picker at all? */
 export const getNeedShowCilogonInstitutionList = (cfg: OIDCConfig): boolean => {
-    return Boolean(cfg.cilogon || cfg.custos);
+    return Boolean(cfg.cilogon);
 };
 
 /**
- * Generic OIDC login (all providers *except* CILogon/Custos).
+ * Generic OIDC login (all providers *except* CILogon).
  * Returns the redirect URI Galaxy gives back, or throws.
  */
 export async function submitOIDCLogon(idp: string, redirectParam: string | null = null): Promise<string | null> {
@@ -73,13 +73,12 @@ export async function submitOIDCLogon(idp: string, redirectParam: string | null 
 }
 
 /**
- * CILogon/Custos login.
- * @param idp        "cilogon" | "custos"
+ * CILogon login.
  * @param useIDPHint If true, append ?idphint=
  * @param idpHint    The entityID to hint with (ignored when useIDPHint = false)
  */
-export async function submitCILogon(idp: string, useIDPHint = false, idpHint?: string): Promise<string | null> {
-    let url = withPrefix(`/authnz/${idp}/login/`);
+export async function submitCILogon(useIDPHint = false, idpHint?: string): Promise<string | null> {
+    let url = withPrefix("/authnz/cilogon/login/");
     if (useIDPHint && idpHint) {
         url += `?idphint=${encodeURIComponent(idpHint)}`;
     }
@@ -108,8 +107,8 @@ export async function redirectToSingleProvider(config: OIDCConfig): Promise<stri
         throw new Error("OIDC provider key is undefined.");
     }
 
-    if (idp === "cilogon" || idp === "custos") {
-        const redirectUri = await submitCILogon(idp, false);
+    if (idp === "cilogon") {
+        const redirectUri = await submitCILogon(false);
         return redirectUri;
     } else {
         const redirectUri = await submitOIDCLogon(idp, "");

@@ -864,7 +864,6 @@ class User(Base, Dictifiable, RepresentById):
     addresses: Mapped[list["UserAddress"]] = relationship(
         back_populates="user", order_by=lambda: desc(UserAddress.update_time)
     )
-    custos_auth: Mapped[list["CustosAuthnzToken"]] = relationship(back_populates="user")
     chat_exchanges: Mapped[list["ChatExchange"]] = relationship(back_populates="user")
     default_permissions: Mapped[list["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[list["UserGroupAssociation"]] = relationship(back_populates="user")
@@ -1133,14 +1132,6 @@ ON CONFLICT
                 return auth
         return None
 
-    def _get_custos_auth(self, provider_backend):
-        if not self.custos_auth:
-            return None
-        for auth in self.custos_auth:
-            if auth.provider == provider_backend and auth.refresh_token:
-                return auth
-        return None
-
     def get_oidc_tokens(self, provider_backend):
         tokens = {"id": None, "access": None, "refresh": None}
         auth = self._get_social_auth(provider_backend)
@@ -1149,14 +1140,6 @@ ON CONFLICT
             tokens["refresh"] = auth.extra_data.get("refresh_token", None)
             tokens["id"] = auth.extra_data.get("id_token", None)
             return tokens
-
-        # no social auth found, check custos auth
-        auth = self._get_custos_auth(provider_backend)
-        if auth:
-            tokens["access"] = auth.access_token
-            tokens["refresh"] = auth.refresh_token
-            tokens["id"] = auth.id_token
-
         return tokens
 
     @property
@@ -10946,7 +10929,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     )
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: ClassVar[Optional[Session]] = None
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider
@@ -11085,25 +11068,6 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         cls.sa_session.add(instance)
         cls.sa_session.commit()
         return instance
-
-
-class CustosAuthnzToken(Base, RepresentById):
-    __tablename__ = "custos_authnz_token"
-    __table_args__ = (
-        UniqueConstraint("user_id", "external_user_id", "provider"),
-        UniqueConstraint("external_user_id", "provider"),
-    )
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), nullable=True)
-    external_user_id: Mapped[Optional[str]] = mapped_column(String(255))
-    provider: Mapped[Optional[str]] = mapped_column(String(255))
-    access_token: Mapped[Optional[str]] = mapped_column(Text)
-    id_token: Mapped[Optional[str]] = mapped_column(Text)
-    refresh_token: Mapped[Optional[str]] = mapped_column(Text)
-    expiration_time: Mapped[datetime] = mapped_column(nullable=True)
-    refresh_expiration_time: Mapped[datetime] = mapped_column(nullable=True)
-    user: Mapped["User"] = relationship("User", back_populates="custos_auth")
 
 
 class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
