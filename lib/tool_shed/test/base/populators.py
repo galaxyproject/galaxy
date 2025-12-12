@@ -398,9 +398,13 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(metadata_response)
         return RepositoryMetadata(root=metadata_response.json())
 
-    def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
+    def reset_metadata(
+        self, repository: HasRepositoryId, dry_run: bool = False, verbose: bool = False
+    ) -> ResetMetadataOnRepositoryResponse:
         repository_id = self._repository_id(repository)
-        request = ResetMetadataOnRepositoryRequest(repository_id=repository_id)
+        request = ResetMetadataOnRepositoryRequest(
+            repository_id=repository_id, dry_run=dry_run, verbose=verbose
+        )
         reset_response = self._api_interactor.post(
             "repositories/reset_metadata_on_repository", json=request.model_dump()
         )

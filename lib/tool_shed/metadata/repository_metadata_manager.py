@@ -1,5 +1,9 @@
 import logging
 import tempfile
+from dataclasses import (
+    dataclass,
+    field,
+)
 from typing import (
     Any,
     Optional,
@@ -8,6 +12,11 @@ from typing import (
 from sqlalchemy import (
     false,
     select,
+)
+
+from tool_shed_client.schema import (
+    ChangesetMetadataStatus,
+    ResetMetadataActionT,
 )
 
 from galaxy import util
@@ -40,6 +49,13 @@ from tool_shed.webapp.model import (
 from tool_shed.webapp.model.db import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class ResetMetadataResult:
+    """Result of reset_all_metadata_on_repository_in_tool_shed operation."""
+
+    changeset_details: Optional[list[ChangesetMetadataStatus]] = None
 
 
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
@@ -249,6 +265,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         self.user = user
         # Repository metadata comparisons for changeset revisions.
         self.EQUAL = "equal"
+        self.INITIAL = "initial"
         self.NO_METADATA = "no metadata"
         self.NOT_EQUAL_AND_NOT_SUBSET = "not equal and not subset"
         self.SUBSET = "subset"
@@ -282,7 +299,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repositories_select_field.add_option(option_label, option_value)
         return repositories_select_field
 
-    def _clean_repository_metadata(self, changeset_revisions):
+    def _clean_repository_metadata(self, changeset_revisions, dry_run: bool = False):
         assert self.repository
         # Delete all repository_metadata records associated with the repository that have
         # a changeset_revision that is not in changeset_revisions.  We sometimes see multiple
@@ -292,9 +309,10 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         for repository_metadata in get_repository_metadata(self.sa_session, self.repository.id):
             changeset_revision = repository_metadata.changeset_revision
             if changeset_revision not in changeset_revisions:
-                self.sa_session.delete(repository_metadata)
-                session = self.sa_session()
-                session.commit()
+                if not dry_run:
+                    self.sa_session.delete(repository_metadata)
+                    session = self.sa_session()
+                    session.commit()
 
     def compare_changeset_revisions(self, ancestor_changeset_revision, ancestor_metadata_dict):
         """
@@ -465,6 +483,19 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
 
     def create_or_update_repository_metadata(self, changeset_revision, metadata_dict):
         """Create or update a repository_metadata record in the tool shed."""
+        repository_metadata, _ = self.create_or_update_repository_metadata_with_details(
+            changeset_revision, metadata_dict
+        )
+        return repository_metadata
+
+    def create_or_update_repository_metadata_with_details(
+        self, changeset_revision, metadata_dict, dry_run: bool = False
+    ) -> tuple[Optional[RepositoryMetadata], ResetMetadataActionT]:
+        """Create or update a repository_metadata record in the tool shed.
+
+        Returns tuple of (repository_metadata, action) where action is one of:
+        "created", "updated", "unchanged"
+        """
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tools = False
@@ -493,6 +524,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         repository_metadata = repository_metadata_by_changeset_revision(
             self.app.model, self.repository.id, changeset_revision
         )
+        action: ResetMetadataActionT
         if repository_metadata:
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable
@@ -501,6 +533,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repository_metadata.includes_tools = includes_tools
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
             repository_metadata.includes_workflows = False
+            action = "updated"
         else:
             repository_metadata = RepositoryMetadata(
                 repository_id=self.repository.id,
@@ -513,16 +546,18 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 includes_tool_dependencies=includes_tool_dependencies,
                 includes_workflows=False,
             )
+            action = "created"
         assert repository_metadata
         # Always set the default values for the following columns.  When resetting all metadata
         # on a repository this will reset the values.
         assert repository_metadata
         repository_metadata.missing_test_components = False
-        self.sa_session.add(repository_metadata)
-        session = self.sa_session()
-        session.commit()
+        if not dry_run:
+            self.sa_session.add(repository_metadata)
+            session = self.sa_session()
+            session.commit()
 
-        return repository_metadata
+        return repository_metadata, action
 
     def different_revision_defines_tip_only_repository_dependency(self, rd_tup, repository_dependencies):
         """
@@ -784,15 +819,28 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 # record is not needed.
                 return False
 
-    def reset_all_metadata_on_repository_in_tool_shed(self, repository_clone_url=None):
-        """Reset all metadata on a single repository in a tool shed."""
+    def reset_all_metadata_on_repository_in_tool_shed(
+        self, repository_clone_url=None, dry_run: bool = False, verbose: bool = False
+    ) -> ResetMetadataResult:
+        """Reset all metadata on a single repository in a tool shed.
+
+        Args:
+            repository_clone_url: URL to clone from (defaults to self.repository_clone_url)
+            dry_run: If True, don't persist any changes to DB
+            verbose: If True, return detailed per-changeset info in result
+
+        Returns:
+            ResetMetadataResult with optional changeset_details if verbose=True
+        """
         assert self.repository
-        log.debug(f"Resetting all metadata on repository: {self.repository.name}")
+        log.debug(f"Resetting all metadata on repository: {self.repository.name} (dry_run={dry_run})")
         repo = self.repository.hg_repo
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
         changeset_revisions: list[Optional[str]] = []
+        # Collect per-changeset details if verbose mode
+        changeset_details: list[ChangesetMetadataStatus] = []
         # When a new repository_metadata record is created, it always uses the values of
         # metadata_changeset_revision and metadata_dict.
         metadata_changeset_revision = None
@@ -810,14 +858,15 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             log.error(f"Failed to clone repository: {error_message}")
             basic_util.remove_dir(work_dir)
             self._clean_repository_metadata(changeset_revisions)
-            return
+            return ResetMetadataResult(changeset_details=changeset_details if verbose else None)
 
         try:
             for changeset in self.repository.get_changesets_for_setting_metadata(self.app):
                 ctx = repo[changeset]
-                log.debug("Updating to changeset revision: %s", str(ctx.rev()))
-                hg_util.update_repository(work_dir, str(ctx.rev()))
-                log.debug("Generating metadata for changeset revision: %s", str(ctx.rev()))
+                numeric_rev = ctx.rev()
+                log.debug("Updating to changeset revision: %s", str(numeric_rev))
+                hg_util.update_repository(work_dir, str(numeric_rev))
+                log.debug("Generating metadata for changeset revision: %s", str(numeric_rev))
                 self.set_changeset_revision(str(ctx))
                 self.set_repository_files_dir(work_dir)
                 self.generate_metadata_for_changeset_revision()
@@ -839,45 +888,130 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         )
                         log.debug(f"comparison {comparison}")
                         if comparison in [self.NO_METADATA, self.EQUAL, self.SUBSET]:
+                            if verbose:
+                                changeset_details.append(
+                                    ChangesetMetadataStatus(
+                                        changeset_revision=str(ctx),
+                                        numeric_revision=numeric_rev,
+                                        action="skipped",
+                                        comparison_result=comparison,
+                                        has_tools="tools" in (self.metadata_dict or {}),
+                                        has_repository_dependencies="repository_dependencies"
+                                        in (self.metadata_dict or {}),
+                                        has_tool_dependencies="tool_dependencies" in (self.metadata_dict or {}),
+                                    )
+                                )
                             ancestor_changeset_revision = self.changeset_revision
                             ancestor_metadata_dict = self.metadata_dict
                         elif comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
                             metadata_changeset_revision = ancestor_changeset_revision
                             metadata_dict = ancestor_metadata_dict
-                            self.create_or_update_repository_metadata(metadata_changeset_revision, metadata_dict)
+                            _, action = self.create_or_update_repository_metadata_with_details(
+                                metadata_changeset_revision, metadata_dict, dry_run=dry_run
+                            )
                             changeset_revisions.append(metadata_changeset_revision)
+                            if verbose:
+                                changeset_details.append(
+                                    ChangesetMetadataStatus(
+                                        changeset_revision=str(ctx),
+                                        numeric_revision=numeric_rev,
+                                        action=action,
+                                        comparison_result=comparison,
+                                        has_tools="tools" in (metadata_dict or {}),
+                                        has_repository_dependencies="repository_dependencies"
+                                        in (metadata_dict or {}),
+                                        has_tool_dependencies="tool_dependencies" in (metadata_dict or {}),
+                                    )
+                                )
                             ancestor_changeset_revision = self.changeset_revision
                             ancestor_metadata_dict = self.metadata_dict
                     else:
                         # We're at the beginning of the change log.
                         ancestor_changeset_revision = self.changeset_revision
                         ancestor_metadata_dict = self.metadata_dict
+                        if verbose:
+                            changeset_details.append(
+                                ChangesetMetadataStatus(
+                                    changeset_revision=str(ctx),
+                                    numeric_revision=numeric_rev,
+                                    action="pending",
+                                    comparison_result=self.INITIAL,
+                                    has_tools="tools" in (self.metadata_dict or {}),
+                                    has_repository_dependencies="repository_dependencies"
+                                    in (self.metadata_dict or {}),
+                                    has_tool_dependencies="tool_dependencies" in (self.metadata_dict or {}),
+                                )
+                            )
                     if not ctx.children():
                         metadata_changeset_revision = self.changeset_revision
                         metadata_dict = self.metadata_dict
                         # We're at the end of the change log.
-                        self.create_or_update_repository_metadata(metadata_changeset_revision, metadata_dict)
+                        _, action = self.create_or_update_repository_metadata_with_details(
+                            metadata_changeset_revision, metadata_dict, dry_run=dry_run
+                        )
                         changeset_revisions.append(metadata_changeset_revision)
+                        if verbose:
+                            # Replace any prior entry for this ctx (from INITIAL or NOT_EQUAL branches)
+                            # with final persisted state
+                            if changeset_details and changeset_details[-1].changeset_revision == str(ctx):
+                                changeset_details.pop()
+                            changeset_details.append(
+                                ChangesetMetadataStatus(
+                                    changeset_revision=str(ctx),
+                                    numeric_revision=numeric_rev,
+                                    action=action,
+                                    has_tools="tools" in (metadata_dict or {}),
+                                    has_repository_dependencies="repository_dependencies" in (metadata_dict or {}),
+                                    has_tool_dependencies="tool_dependencies" in (metadata_dict or {}),
+                                )
+                            )
                         ancestor_changeset_revision = None
                         ancestor_metadata_dict = None
                 elif ancestor_metadata_dict:
                     # We reach here only if self.metadata_dict is empty and ancestor_metadata_dict is not.
                     if not ctx.children():
                         # We're at the end of the change log.
-                        self.create_or_update_repository_metadata(metadata_changeset_revision, metadata_dict)
+                        _, action = self.create_or_update_repository_metadata_with_details(
+                            metadata_changeset_revision, metadata_dict, dry_run=dry_run
+                        )
                         changeset_revisions.append(metadata_changeset_revision)
+                        if verbose:
+                            changeset_details.append(
+                                ChangesetMetadataStatus(
+                                    changeset_revision=str(ctx),
+                                    numeric_revision=numeric_rev,
+                                    action=action,
+                                    has_tools="tools" in (metadata_dict or {}),
+                                    has_repository_dependencies="repository_dependencies" in (metadata_dict or {}),
+                                    has_tool_dependencies="tool_dependencies" in (metadata_dict or {}),
+                                )
+                            )
                         ancestor_changeset_revision = None
                         ancestor_metadata_dict = None
+                else:
+                    # No metadata for this changeset
+                    if verbose:
+                        changeset_details.append(
+                            ChangesetMetadataStatus(
+                                changeset_revision=str(ctx),
+                                numeric_revision=numeric_rev,
+                                action="skipped",
+                                comparison_result=self.NO_METADATA,
+                            )
+                        )
         finally:
             basic_util.remove_dir(work_dir)
         # Delete all repository_metadata records for this repository that do not have a changeset_revision
         # value in changeset_revisions.
-        self._clean_repository_metadata(changeset_revisions)
+        self._clean_repository_metadata(changeset_revisions, dry_run=dry_run)
         # Set tool version information for all downloadable changeset revisions.  Get the list of changeset
         # revisions from the changelog.
-        self._reset_all_tool_versions(repo)
+        if not dry_run:
+            self._reset_all_tool_versions(repo, dry_run=dry_run)
 
-    def _reset_all_tool_versions(self, repo):
+        return ResetMetadataResult(changeset_details=changeset_details if verbose else None)
+
+    def _reset_all_tool_versions(self, repo, dry_run: bool = False):
         """Reset tool version lineage for those changeset revisions that include valid tools."""
         assert self.repository
         changeset_revisions_that_contain_tools = _get_changeset_revisions_that_contain_tools(
@@ -912,9 +1046,10 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                     tool_versions_dict[tool_dict["guid"]] = parent_id
             if tool_versions_dict:
                 repository_metadata.tool_versions = tool_versions_dict
-                self.sa_session.add(repository_metadata)
-                session = self.sa_session()
-                session.commit()
+                if not dry_run:
+                    self.sa_session.add(repository_metadata)
+                    session = self.sa_session()
+                    session.commit()
 
     def reset_metadata_on_selected_repositories(self, **kwd):
         """

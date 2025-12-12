@@ -468,11 +468,13 @@ def readmes(app: ToolShedApp, repository: Repository, changeset_revision: str) -
     return {}
 
 
-def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> ResetMetadataOnRepositoryResponse:
+def reset_metadata_on_repository(
+    trans: ProvidesUserContext, repository_id, dry_run: bool = False, verbose: bool = False
+) -> ResetMetadataOnRepositoryResponse:
     app: ToolShedApp = trans.app
 
-    def handle_repository(trans, start_time, repository):
-        results = dict(start_time=start_time, repository_status=[])
+    def handle_repository(trans, start_time, repository, dry_run: bool, verbose: bool):
+        results: dict = dict(start_time=start_time, repository_status=[], dry_run=dry_run)
         try:
             rmm = repository_metadata_manager.RepositoryMetadataManager(
                 trans,
@@ -481,7 +483,11 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
                 updating_installed_repository=False,
                 persist=False,
             )
-            rmm.reset_all_metadata_on_repository_in_tool_shed()
+            reset_result = rmm.reset_all_metadata_on_repository_in_tool_shed(
+                dry_run=dry_run, verbose=verbose
+            )
+            if verbose:
+                results["changeset_details"] = reset_result.changeset_details
             rmm_invalid_file_tups = rmm.get_invalid_file_tups()
             if rmm_invalid_file_tups:
                 message = generate_message_for_invalid_tools(
@@ -489,8 +495,9 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
                 )
                 results["status"] = "warning"
             else:
+                action_desc = "Would reset" if dry_run else "Successfully reset"
                 message = (
-                    f"Successfully reset metadata on repository {repository.name} owned by {repository.user.username}"
+                    f"{action_desc} metadata on repository {repository.name} owned by {repository.user.username}"
                 )
                 results["status"] = "ok"
         except Exception as e:
@@ -505,8 +512,8 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
     if repository_id is not None:
         repository = get_repository_in_tool_shed(app, repository_id)
         start_time = strftime("%Y-%m-%d %H:%M:%S")
-        log.debug(f"{start_time}...resetting metadata on repository {repository.name}")
-        results = handle_repository(trans, start_time, repository)
+        log.debug(f"{start_time}...resetting metadata on repository {repository.name} (dry_run={dry_run})")
+        results = handle_repository(trans, start_time, repository, dry_run, verbose)
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
         results["stop_time"] = stop_time
     return ResetMetadataOnRepositoryResponse(**results)

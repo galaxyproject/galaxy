@@ -298,6 +298,13 @@ RequiredRepositoryChangesetRevisionParam: str = Query(..., title="Changeset Revi
 OptionalRepositoryIdParam: Optional[str] = Query(None, title="TSR ID")
 OptionalHexlifyParam: Optional[bool] = Query(True, title="Hexlify response")
 
+DryRunQueryParam: bool = Query(
+    False, title="Dry Run", description="Preview changes without persisting to database"
+)
+VerboseQueryParam: bool = Query(
+    False, title="Verbose", description="Return detailed per-changeset information"
+)
+
 CategoryIdPathParam: str = Path(
     ..., title="Category ID", description="The encoded database identifier of the category."
 )

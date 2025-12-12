@@ -216,6 +216,24 @@ class RepositoryMetadata(RootModel):
 
 class ResetMetadataOnRepositoryRequest(BaseModel):
     repository_id: str
+    dry_run: bool = False
+    verbose: bool = False
+
+
+ResetMetadataActionT = Literal["created", "updated", "skipped", "unchanged", "pending"]
+
+
+class ChangesetMetadataStatus(BaseModel):
+    """Per-changeset detail during reset metadata operation."""
+
+    changeset_revision: str
+    numeric_revision: int
+    action: ResetMetadataActionT
+    comparison_result: Optional[str] = None  # "initial", "equal", "subset", "not_equal_and_not_subset", "no_metadata"
+    has_tools: bool = False
+    has_repository_dependencies: bool = False
+    has_tool_dependencies: bool = False
+    error: Optional[str] = None
 
 
 class ResetMetadataOnRepositoryResponse(BaseModel):
@@ -223,6 +241,8 @@ class ResetMetadataOnRepositoryResponse(BaseModel):
     repository_status: list[str]
     start_time: str
     stop_time: str
+    dry_run: bool = False
+    changeset_details: Optional[list[ChangesetMetadataStatus]] = None
 
 
 # Ugh - use with care - param descriptions scraped from older version of the API.

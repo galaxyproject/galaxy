@@ -355,6 +355,87 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         api_asserts.assert_status_code_is_ok(response)
         populator.assert_has_n_installable_revisions(repository, 3)
 
+    @skip_if_api_v1
+    def test_reset_metadata_dry_run(self):
+        """Verify dry_run=True returns success but doesn't modify repository."""
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker")
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+        response = self.api_interactor.post(
+            f"repositories/{repository.id}/reset_metadata",
+            params={"dry_run": True},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        result = response.json()
+        assert result["status"] == "ok"
+        assert result["dry_run"] is True
+        assert "Would reset" in result["repository_status"][0]
+        # changeset_details should be None when verbose=False (default)
+        assert result.get("changeset_details") is None
+
+        # Revisions should still be there (nothing changed)
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+    @skip_if_api_v1
+    def test_reset_metadata_verbose(self):
+        """Verify verbose=True returns per-changeset details."""
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker")
+
+        response = self.api_interactor.post(
+            f"repositories/{repository.id}/reset_metadata",
+            params={"verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        result = response.json()
+        assert result["status"] == "ok"
+        assert result["changeset_details"] is not None
+        assert len(result["changeset_details"]) >= 1
+
+        # Verify changeset detail structure
+        for detail in result["changeset_details"]:
+            assert "changeset_revision" in detail
+            assert "numeric_revision" in detail
+            assert detail["action"] in ["created", "updated", "skipped", "unchanged"]
+
+    @skip_if_api_v1
+    def test_reset_metadata_dry_run_and_verbose(self):
+        """Verify dry_run + verbose returns details without persisting."""
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+        response = self.api_interactor.post(
+            f"repositories/{repository.id}/reset_metadata",
+            params={"dry_run": True, "verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        result = response.json()
+
+        assert result["dry_run"] is True
+        assert result["changeset_details"] is not None
+        assert len(result["changeset_details"]) > 0
+
+        # Verify repo unchanged
+        populator.assert_has_n_installable_revisions(repository, 3)
+
+    @skip_if_api_v1
+    def test_reset_metadata_legacy_endpoint_with_dry_run(self):
+        """Verify legacy endpoint supports dry_run in request body."""
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker")
+
+        response = self.api_interactor.post(
+            "repositories/reset_metadata_on_repository",
+            json={"repository_id": repository.id, "dry_run": True, "verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        result = response.json()
+
+        assert result["dry_run"] is True
+        assert result["changeset_details"] is not None
+
     def _get_only_revision(self, repository: HasRepositoryId) -> RepositoryRevisionMetadata:
         populator = self.populator
         repository_metadata = populator.get_metadata(repository)
