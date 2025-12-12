@@ -331,8 +331,15 @@ export function useUploadState() {
      */
     function clearCompleted() {
         items.value = items.value.filter((u) => u.status !== "completed");
-        // Remove batches where all uploads are completed
-        batches.value = batches.value.filter((b) => b.status !== "completed");
+        // Remove batches that have no remaining upload items or are completed
+        batches.value = batches.value.filter((b) => {
+            if (b.status === "completed") {
+                return false;
+            }
+            // Remove batch if none of its upload items remain
+            const hasRemainingItems = b.uploadIds.some((uploadId) => items.value.some((item) => item.id === uploadId));
+            return hasRemainingItems;
+        });
     }
 
     /**
