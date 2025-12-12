@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
--------
-25.1rc1
--------
+-------------------
+25.1.0 (2025-12-12)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Clean up code from pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20642 <https://github.com/galaxyproject/galaxy/pull/20642>`_
 
 -------------------
 25.0.4 (2025-11-18)

@@ -1,6 +1,6 @@
 {
   "name": "@galaxyproject/galaxy-client",
-  "version": "25.0.4",
+  "version": "25.1.0",
   "description": "Galaxy client application build system",
   "keywords": [
     "galaxy"
