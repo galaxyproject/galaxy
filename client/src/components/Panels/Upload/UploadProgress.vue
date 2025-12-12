@@ -22,13 +22,21 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 const uploadQueue = useUploadQueue();
-const { batchesWithProgress, standaloneUploads, activeItems, completedCount, errorCount, hasCompleted } =
-    useUploadState();
+const uploadState = useUploadState();
+const { batchesWithProgress, standaloneUploads, activeItems, completedCount, errorCount, hasCompleted } = uploadState;
 
 const breadcrumbItems = [{ title: "Import Data", to: "/upload" }, { title: "Upload Progress" }];
 
 // Track expanded batches
 const expandedBatches = useUserLocalStorage<string[]>("uploadPanel.expandedBatches", []);
+
+function cleanupExpandedBatches() {
+    const currentBatchIds = new Set(uploadState.activeBatches.value.map((b) => b.id));
+    expandedBatches.value = expandedBatches.value.filter((id) => currentBatchIds.has(id));
+}
+
+// Clean up stale batch IDs from expandedBatches (one-time on mount)
+cleanupExpandedBatches();
 
 function isExpanded(batchId: string): boolean {
     return expandedBatches.value.includes(batchId);
@@ -41,6 +49,16 @@ function toggleBatch(batchId: string) {
     } else {
         expandedBatches.value.push(batchId);
     }
+}
+
+function onClearCompleted() {
+    uploadQueue.clearCompleted();
+    cleanupExpandedBatches();
+}
+
+function onClearAll() {
+    uploadQueue.clearAll();
+    cleanupExpandedBatches();
 }
 
 function getFileIcon(file: UploadItem) {
@@ -119,10 +137,10 @@ async function retryBatch(batchId: string) {
     <div class="upload-progress-view d-flex flex-column h-100">
         <BreadcrumbHeading :items="breadcrumbItems">
             <div v-if="activeItems.length > 0" class="d-flex flex-gapx-1">
-                <GButton v-if="hasCompleted" size="small" outline color="grey" @click="uploadQueue.clearCompleted()">
+                <GButton v-if="hasCompleted" size="small" outline color="grey" @click="onClearCompleted()">
                     Clear Completed
                 </GButton>
-                <GButton size="small" outline color="grey" @click="uploadQueue.clearAll()"> Clear All </GButton>
+                <GButton size="small" outline color="grey" @click="onClearAll()"> Clear All </GButton>
             </div>
         </BreadcrumbHeading>
 
