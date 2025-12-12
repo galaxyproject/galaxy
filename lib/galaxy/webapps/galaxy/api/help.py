@@ -25,14 +25,12 @@ class HelpAPI:
     @router.get(
         "/api/help/forum/search",
         summary="Search the Galaxy Help forum.",
+        unstable=True,
     )
     def search_forum(
         self,
         query: Annotated[str, Query(description="Search query to use for searching the Galaxy Help forum.")],
         trans: ProvidesUserContext = DependsOnTrans,  # Require session or API key, don't make public
     ) -> HelpForumSearchResponse:
-        """Search the Galaxy Help forum using the Discourse API.
-
-        **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
-        """
+        """Search the Galaxy Help forum using the Discourse API."""
         return self.service.search_forum(query)

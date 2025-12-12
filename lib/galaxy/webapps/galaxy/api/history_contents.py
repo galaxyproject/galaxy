@@ -1029,6 +1029,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/archive/{filename}.{format}",
         summary="Build and return a compressed archive of the selected history contents.",
         operation_id="history_contents__archive_named",
+        unstable=True,
     )
     def archive_named(
         self,
@@ -1042,9 +1043,7 @@ class FastAPIHistoryContents:
         dry_run: Optional[bool] = DryRunQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ):
-        """Build and return a compressed archive of the selected history contents.
-
-        **Note**: this is a volatile endpoint and settings and behavior may change."""
+        """Build and return a compressed archive of the selected history contents."""
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
@@ -1054,6 +1053,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/archive",
         summary="Build and return a compressed archive of the selected history contents.",
         operation_id="history_contents__archive",
+        unstable=True,
     )
     def archive(
         self,
@@ -1063,9 +1063,7 @@ class FastAPIHistoryContents:
         dry_run: Optional[bool] = DryRunQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ):
-        """Build and return a compressed archive of the selected history contents.
-
-        **Note**: this is a volatile endpoint and settings and behavior may change."""
+        """Build and return a compressed archive of the selected history contents."""
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
