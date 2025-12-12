@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * List Agents
-         * @description List available AI agents.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["list_agents_api_ai_agents_get"];
         put?: never;
@@ -35,10 +35,7 @@ export interface paths {
         put?: never;
         /**
          * Create Custom Tool
-         * @description Create a custom Galaxy tool.
-         *
-         *     Note: Returns AgentResponse with tool_yaml in metadata. A dedicated
-         *     CustomToolResponse schema may be cleaner for this endpoint in the future.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["create_custom_tool_api_ai_agents_custom_tool_post"];
         delete?: never;
@@ -58,7 +55,7 @@ export interface paths {
         put?: never;
         /**
          * Analyze Error
-         * @description Analyze job errors and provide debugging assistance.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["analyze_error_api_ai_agents_error_analysis_post"];
         delete?: never;
@@ -78,7 +75,7 @@ export interface paths {
         put?: never;
         /**
          * Query Agent
-         * @description Query an AI agent. Use agent_type='auto' for automatic routing.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["query_agent_api_ai_agents_query_post"];
         delete?: never;
@@ -98,7 +95,7 @@ export interface paths {
         put?: never;
         /**
          * Recommend Tools
-         * @description Get tool recommendations for a specific analysis task.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["recommend_tools_api_ai_agents_tool_recommendation_post"];
         delete?: never;
@@ -135,13 +132,7 @@ export interface paths {
         put?: never;
         /**
          * Query
-         * @description ChatGXY endpoint - handles both job-based and general chat queries
-         *
-         *     Backwards compatible with both formats:
-         *     1. Old format: job_id in query params + payload body with query/context
-         *     2. New format: query and agent_type in query params for general chat
-         *
-         *     Returns enhanced response with agent metadata and action suggestions.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["query_api_chat_post"];
         delete?: never;
@@ -160,7 +151,7 @@ export interface paths {
         get?: never;
         /**
          * Set Exchange Feedback
-         * @description Set feedback for a general chat exchange.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         put: operations["set_exchange_feedback_api_chat_exchange__exchange_id__feedback_put"];
         post?: never;
@@ -179,7 +170,7 @@ export interface paths {
         };
         /**
          * Get Exchange Messages
-         * @description Get all messages for a specific chat exchange.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["get_exchange_messages_api_chat_exchange__exchange_id__messages_get"];
         put?: never;
@@ -199,14 +190,14 @@ export interface paths {
         };
         /**
          * Get Chat History
-         * @description Get user's chat history.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["get_chat_history_api_chat_history_get"];
         put?: never;
         post?: never;
         /**
          * Clear Chat History
-         * @description Clear user's chat history (non-job chats only).
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         delete: operations["clear_chat_history_api_chat_history_delete"];
         options?: never;
@@ -224,7 +215,7 @@ export interface paths {
         get?: never;
         /**
          * Feedback
-         * @description Provide feedback on the chatbot response.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         put: operations["feedback_api_chat__job_id__feedback_put"];
         post?: never;
@@ -823,9 +814,7 @@ export interface paths {
         /**
          * Resolve parameters as a list for nested display.
          * @deprecated
-         * @description Resolve parameters as a list for nested display.
-         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         *     this endpoint will change frequently.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["resolve_parameters_display_api_datasets__dataset_id__parameters_display_get"];
         put?: never;
@@ -1820,9 +1809,7 @@ export interface paths {
         };
         /**
          * Search the Galaxy Help forum.
-         * @description Search the Galaxy Help forum using the Discourse API.
-         *
-         *     **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["search_forum_api_help_forum_search_get"];
         put?: never;
@@ -2187,9 +2174,7 @@ export interface paths {
         };
         /**
          * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         *     **Note**: this is a volatile endpoint and settings and behavior may change.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["history_contents__archive"];
         put?: never;
@@ -2209,9 +2194,7 @@ export interface paths {
         };
         /**
          * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         *     **Note**: this is a volatile endpoint and settings and behavior may change.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["history_contents__archive_named"];
         put?: never;
@@ -3455,9 +3438,7 @@ export interface paths {
         };
         /**
          * Resolve parameters as a list for nested display.
-         * @description Resolve parameters as a list for nested display.
-         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         *     this endpoint will change frequently.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["resolve_parameters_display_api_jobs__job_id__parameters_display_get"];
         put?: never;
@@ -5510,13 +5491,13 @@ export interface paths {
         };
         /**
          * Return information about beacon share settings
-         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["get_beacon_settings_api_users__user_id__beacon_get"];
         put?: never;
         /**
          * Change beacon setting
-         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["set_beacon_settings_api_users__user_id__beacon_post"];
         delete?: never;

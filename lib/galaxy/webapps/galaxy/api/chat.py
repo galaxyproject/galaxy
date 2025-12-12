@@ -27,6 +27,7 @@ from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
+from galaxy.schema.agents import AgentResponse
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ChatPayload,
@@ -190,8 +191,8 @@ class ChatAPI:
                 agent_response = await self._get_agent_response_full(
                     query_text, agent_type, trans, user, job, full_context
                 )
-                result["response"] = agent_response["content"]
-                result["agent_response"] = agent_response
+                result["response"] = agent_response.content
+                result["agent_response"] = agent_response.model_dump()
             else:
                 # Fallback to legacy implementation
                 self._ensure_ai_configured()
@@ -489,7 +490,7 @@ class ChatAPI:
     ) -> str:
         """Get response using the new agent system (legacy method for compatibility)."""
         result = await self._get_agent_response_full(query, agent_type, trans, user, job, context)
-        return result["content"]
+        return result.content
 
     async def _get_agent_response_full(
         self,
@@ -499,7 +500,7 @@ class ChatAPI:
         user: User,
         job=None,
         context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+    ) -> AgentResponse:
         """Get full agent response with metadata and suggestions."""
         # Prepare context - merge passed context with job context
         if context is None:
