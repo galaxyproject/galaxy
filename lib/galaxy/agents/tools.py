@@ -24,6 +24,7 @@ from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
+    AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
@@ -55,6 +56,8 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
     This agent helps users discover tools, understand tool capabilities,
     and provides guidance on tool selection and parameter configuration.
     """
+
+    agent_type = AgentType.TOOL_RECOMMENDATION
 
     def _create_agent(self) -> Agent:
         """Create the tool recommendation agent with conditional structured output."""

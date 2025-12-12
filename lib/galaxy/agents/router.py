@@ -51,6 +51,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
     agent(s) should handle a user's query based on the content and context.
     """
 
+    agent_type = AgentType.ROUTER
+
     def _create_agent(self) -> Agent:
         """Create the router agent with structured output."""
         model_name = self._get_agent_config("model", "")

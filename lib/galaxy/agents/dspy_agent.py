@@ -23,6 +23,7 @@ from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
+    AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
@@ -77,6 +78,8 @@ class DSPyGalaxyAgent(BaseGalaxyAgent):
     This agent demonstrates how to integrate DSPy's declarative programming
     and optimization capabilities with Galaxy's agent framework.
     """
+
+    agent_type = AgentType.DSPY_TOOL_RECOMMENDATION
 
     def __init__(self, deps: GalaxyAgentDependencies):
         """Initialize DSPy agent."""

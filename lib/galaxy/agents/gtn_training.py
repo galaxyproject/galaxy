@@ -31,6 +31,7 @@ from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
+    AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
@@ -68,6 +69,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
     This agent searches the GTN database to help users find relevant tutorials,
     create learning paths, and understand Galaxy tools through hands-on training.
     """
+
+    agent_type = AgentType.GTN_TRAINING
 
     def __init__(self, deps: GalaxyAgentDependencies):
         """Initialize the GTN training agent."""
