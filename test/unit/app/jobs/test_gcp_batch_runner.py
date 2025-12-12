@@ -20,6 +20,7 @@ class TestSanitizeLabelValue:
             ("@#$%", "unknown"),  # all invalid chars
             ("valid-label_123", "valid-label-123"),  # underscores replaced with dashes
             ("a" * 100, "a" * 63),  # truncation at max_length
+            ("a" * 62 + "-x", "a" * 62), # a truncated identified does not end with a dash
         ],
     )
     def test_sanitize_label_value(self, input_value, expected):
