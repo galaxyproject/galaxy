@@ -231,6 +231,9 @@ Visualizations Updates
 ===========================================================
 
 .. visualizations
+* [igv] Allow selection of genomes from history fasta/2bit
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21269`_
 * Add Hyphy Vision Result Viewer
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 21196`_
@@ -296,6 +299,12 @@ Datatypes Updates
 ===========================================================
 
 .. datatypes
+* New datatype addition: HAL
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21379`_
+* Add PNTS datatype for 3D Tiles Point Cloud
+  (thanks to `@kgerb <https://github.com/kgerb>`__).
+  `Pull Request 21414`_
 * Backport fix anndata datatype update
   (thanks to `@nilchia <https://github.com/nilchia>`__).
   `Pull Request 21111`_
