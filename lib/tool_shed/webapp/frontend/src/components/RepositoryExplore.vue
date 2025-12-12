@@ -50,13 +50,21 @@ const buttonProperties = computed(() => {
     >
         <q-fab-action
             v-if="showDetailsLink"
+            color="secondary"
+            text-color="black"
             icon="sym_r_overview"
             label="Details"
             @click="goToRepository(props.repository.id)"
         />
         <!-- receipt_long? -->
-        <q-fab-action icon="difference" label="Changelog" @click="navigate(changelog)" />
-        <q-fab-action icon="list" label="Contents" @click="navigate(contents)" />
+        <q-fab-action
+            color="secondary"
+            text-color="black"
+            icon="difference"
+            label="Changelog"
+            @click="navigate(changelog)"
+        />
+        <q-fab-action color="secondary" text-color="black" icon="list" label="Contents" @click="navigate(contents)" />
         <!-- folder_zip -->
     </q-fab>
     <q-btn-group class="q-mx-xl" dense rounded push v-else>
