@@ -4,7 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormInput, BFormSelect } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/uploadQueue";
+import type { SupportedCollectionType } from "@/components/Panels/Upload/uploadState";
+import type { CollectionCreationInput } from "@/composables/uploadQueue";
 
 interface FileItem {
     name: string;
