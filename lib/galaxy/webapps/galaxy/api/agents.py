@@ -39,7 +39,7 @@ try:
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    agent_registry = None  # type: ignore[assignment]
+    agent_registry = None  # type: ignore[assignment,unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -110,21 +110,11 @@ class AgentAPI:
                 agent_type=request.agent_type,
             )
 
-            # Create agent response object
-            agent_response = AgentResponse(
-                content=result["content"],
-                confidence=result.get("confidence", ConfidenceLevel.MEDIUM),
-                agent_type=result.get("agent_type", request.agent_type),
-                suggestions=result.get("suggestions", []),
-                metadata=result.get("metadata", {}),
-                reasoning=result.get("reasoning"),
-            )
-
             processing_time = time.time() - start_time
 
             return AgentQueryResponse(
-                response=agent_response,
-                routing_info=result.get("routing_info"),
+                response=result,
+                routing_info=result.metadata.get("routing_info"),
                 processing_time=processing_time,
             )
 
