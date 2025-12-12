@@ -316,6 +316,13 @@ export function useUploadQueue() {
             return;
         }
 
+        // Validate items have required data
+        if (items.length !== batchState.uploadIds.length) {
+            const errorMsg = `Cannot create collection: only ${items.length} of ${batchState.uploadIds.length} upload items found. This can happen after a page refresh. Please re-upload the files or manually create the collection.`;
+            uploadState.setBatchError(batchId, errorMsg);
+            return;
+        }
+
         uploadState.updateBatchStatus(batchId, "creating-collection");
 
         try {
@@ -350,7 +357,8 @@ export function useUploadQueue() {
             uploadState.setBatchError(batchId, errorMsg);
 
             // Mark all batch items with error message (non-fatal)
-            batchState.uploadIds.forEach((id) => {
+            const batchForError = uploadState.getBatch(batchId);
+            batchForError?.uploadIds.forEach((id) => {
                 const item = uploadState.activeItems.value.find((i) => i.id === id);
                 if (item && !item.error) {
                     item.error = `Uploaded successfully, but collection creation failed: ${errorMsg}`;
@@ -452,7 +460,7 @@ export function useUploadQueue() {
                         // If batch is complete, create collection
                         if (allComplete) {
                             createCollection(batchId).catch((err) => {
-                                console.error("Unexpected collection creation error:", err);
+                                uploadState.setBatchError(batchId, errorMessageAsString(err));
                             });
                         }
                     }
@@ -552,6 +560,20 @@ export function useUploadQueue() {
             // If uploads are complete and we have dataset IDs, try to create the collection
             if (allCompleted && batch.uploadIds.length > 0 && batch.datasetIds.length > 0) {
                 console.log(`Recovering incomplete batch: ${batch.name}`);
+
+                // Check if we still have the upload items (they might be lost after refresh)
+                const availableItems = batch.uploadIds.filter((uploadId) =>
+                    uploadState.activeItems.value.find((u) => u.id === uploadId),
+                );
+
+                if (availableItems.length !== batch.uploadIds.length) {
+                    uploadState.setBatchError(
+                        batch.id,
+                        `Collection creation failed: upload data lost after page refresh. Please re-upload the files to create the collection or manually create the collection.`,
+                    );
+                    return;
+                }
+
                 // Attempt to create the collection
                 createCollection(batch.id).catch((err) => {
                     console.error("Recovery failed:", err);
@@ -561,7 +583,7 @@ export function useUploadQueue() {
                 // Uploads complete but no dataset IDs (shouldn't happen, but handle gracefully)
                 uploadState.setBatchError(
                     batch.id,
-                    "Collection creation interrupted and cannot be recovered. Dataset IDs not available.",
+                    "Collection creation interrupted and cannot be recovered. Dataset IDs not available. Please create the collection manually.",
                 );
             }
         });
