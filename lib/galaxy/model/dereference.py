@@ -105,6 +105,7 @@ def derefence_collection_element(
         element=child_dataset_collection,
         element_identifier=element.identifier,
         element_index=element_index,
+        columns=element.columns,
     )
     sa_session.add(child_dataset_collection)
     for index, child_element in enumerate(element.elements):
@@ -135,6 +136,7 @@ def dereference_collection_dataset_element(
         element=hda,
         element_identifier=element.identifier,
         element_index=element_index,
+        columns=element.columns,
     )
     parent_dataset_collection.elements.append(dce)
 
