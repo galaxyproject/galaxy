@@ -10,6 +10,29 @@ History
 
 
 -------------------
+25.1.0 (2025-12-12)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Extract: do not use common prefix dir by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20929 <https://github.com/galaxyproject/galaxy/pull/20929>`_
+* Test and fix CORS on exceptions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21105 <https://github.com/galaxyproject/galaxy/pull/21105>`_
+
+============
+Enhancements
+============
+
+* Implement Sample Sheets  by `@jmchilton <https://github.com/jmchilton>`_ in `#19305 <https://github.com/galaxyproject/galaxy/pull/19305>`_
+* Empower Users to More Pragmatically Import Datasets & Collections From Tables by `@jmchilton <https://github.com/jmchilton>`_ in `#20288 <https://github.com/galaxyproject/galaxy/pull/20288>`_
+* Type annotation fixes for mypy 1.16.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20424 <https://github.com/galaxyproject/galaxy/pull/20424>`_
+* Remove deprecated tool document cache by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20510 <https://github.com/galaxyproject/galaxy/pull/20510>`_
+* Refactor Files Sources Framework for stronger typing using pydantic models by `@davelopez <https://github.com/davelopez>`_ in `#20728 <https://github.com/galaxyproject/galaxy/pull/20728>`_
+* Support remote file source hashes by `@davelopez <https://github.com/davelopez>`_ in `#20853 <https://github.com/galaxyproject/galaxy/pull/20853>`_
+
+-------------------
 25.0.4 (2025-11-18)
 -------------------
 

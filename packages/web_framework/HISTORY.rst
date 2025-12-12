@@ -10,6 +10,19 @@ History
 
 
 -------------------
+25.1.0 (2025-12-12)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Update Javascript package licenses to MIT by `@mr-c <https://github.com/mr-c>`_ in `#20264 <https://github.com/galaxyproject/galaxy/pull/20264>`_
+* Type annotation fixes for mypy 1.16.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20424 <https://github.com/galaxyproject/galaxy/pull/20424>`_
+* Clean up code from pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20642 <https://github.com/galaxyproject/galaxy/pull/20642>`_
+
+-------------------
 25.0.4 (2025-11-18)
 -------------------
 

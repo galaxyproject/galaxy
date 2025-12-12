@@ -10,6 +10,49 @@ History
 
 
 -------------------
+25.1.0 (2025-12-12)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix typo in lib/galaxy/config/sample/job_conf.sample.yml: enviroment --> environment by `@blankenberg <https://github.com/blankenberg>`_ in `#20652 <https://github.com/galaxyproject/galaxy/pull/20652>`_
+
+============
+Enhancements
+============
+
+* Implement Sample Sheets  by `@jmchilton <https://github.com/jmchilton>`_ in `#19305 <https://github.com/galaxyproject/galaxy/pull/19305>`_
+* Add rerun.io web viewer by `@guerler <https://github.com/guerler>`_ in `#20202 <https://github.com/galaxyproject/galaxy/pull/20202>`_
+* Split Login and Register, enable OIDC Registration. by `@uwwint <https://github.com/uwwint>`_ in `#20287 <https://github.com/galaxyproject/galaxy/pull/20287>`_
+* Add LocusZoom Visualization by `@elmedjadjirayane <https://github.com/elmedjadjirayane>`_ in `#20354 <https://github.com/galaxyproject/galaxy/pull/20354>`_
+* Remove deprecated tool document cache by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20510 <https://github.com/galaxyproject/galaxy/pull/20510>`_
+* Decode OIDC access token as part of authentication pipeline by `@marius-mather <https://github.com/marius-mather>`_ in `#20547 <https://github.com/galaxyproject/galaxy/pull/20547>`_
+* Display the Galaxy Citation within the Export Tool References List by `@mschatz <https://github.com/mschatz>`_ in `#20584 <https://github.com/galaxyproject/galaxy/pull/20584>`_
+* Clean up code from pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20642 <https://github.com/galaxyproject/galaxy/pull/20642>`_
+* Update location of latest tpv shared db by `@nuwang <https://github.com/nuwang>`_ in `#20651 <https://github.com/galaxyproject/galaxy/pull/20651>`_
+* Allow adding extra steps to the default pipeline of the OIDC authentication by `@marius-mather <https://github.com/marius-mather>`_ in `#20845 <https://github.com/galaxyproject/galaxy/pull/20845>`_
+* Various Container Execution Enhancements (including GCP Batch support) by `@jmchilton <https://github.com/jmchilton>`_ in `#20862 <https://github.com/galaxyproject/galaxy/pull/20862>`_
+* Replace tour_generator webhook with internal API and frontend by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20868 <https://github.com/galaxyproject/galaxy/pull/20868>`_
+* Add axt and maf to auto_compressed_types by `@richard-burhans <https://github.com/richard-burhans>`_ in `#20875 <https://github.com/galaxyproject/galaxy/pull/20875>`_
+* Add Multiple Sequence Alignment Viewer 2.0 by `@guerler <https://github.com/guerler>`_ in `#20907 <https://github.com/galaxyproject/galaxy/pull/20907>`_
+* Add tool to add nesting level to collection by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20926 <https://github.com/galaxyproject/galaxy/pull/20926>`_
+* Make jupyterlite default visualization for ipynb by `@guerler <https://github.com/guerler>`_ in `#20931 <https://github.com/galaxyproject/galaxy/pull/20931>`_
+* Allow addressing user defined tools in job config by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20932 <https://github.com/galaxyproject/galaxy/pull/20932>`_
+* Allow specifying a command for determining a docker host port by `@natefoo <https://github.com/natefoo>`_ in `#20953 <https://github.com/galaxyproject/galaxy/pull/20953>`_
+* Add freq.json datatype subclass by `@guerler <https://github.com/guerler>`_ in `#21012 <https://github.com/galaxyproject/galaxy/pull/21012>`_
+* New datatype addition: HAL by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#21379 <https://github.com/galaxyproject/galaxy/pull/21379>`_
+* Add PNTS datatype for 3D Tiles Point Cloud by `@kgerb <https://github.com/kgerb>`_ in `#21414 <https://github.com/galaxyproject/galaxy/pull/21414>`_
+
+=============
+Other changes
+=============
+
+* Merge `release_25.0` into `dev` by `@davelopez <https://github.com/davelopez>`_ in `#20484 <https://github.com/galaxyproject/galaxy/pull/20484>`_
+
+-------------------
 25.0.4 (2025-11-18)
 -------------------
 

@@ -10,6 +10,58 @@ History
 
 
 -------------------
+25.1.0 (2025-12-12)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix a transiently failing API test. by `@jmchilton <https://github.com/jmchilton>`_ in `#20278 <https://github.com/galaxyproject/galaxy/pull/20278>`_
+* Fix `multiple="true"` data collection map over for shell_command tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20859 <https://github.com/galaxyproject/galaxy/pull/20859>`_
+* Fix default conditional test parameters... by `@jmchilton <https://github.com/jmchilton>`_ in `#20942 <https://github.com/galaxyproject/galaxy/pull/20942>`_
+* Test and fix CORS on exceptions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21105 <https://github.com/galaxyproject/galaxy/pull/21105>`_
+* Fix type annotation in test_run_workflow_use_cached_job_implicit_conv… by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21138 <https://github.com/galaxyproject/galaxy/pull/21138>`_
+* Fix proxy endpoint encoding by `@davelopez <https://github.com/davelopez>`_ in `#21169 <https://github.com/galaxyproject/galaxy/pull/21169>`_
+* Fix optional subworkflow input scheduling bug by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21435 <https://github.com/galaxyproject/galaxy/pull/21435>`_
+* Maintain columns on sample sheet map over by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21436 <https://github.com/galaxyproject/galaxy/pull/21436>`_
+
+============
+Enhancements
+============
+
+* Don't serialize view of item in delete/purge request by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18732 <https://github.com/galaxyproject/galaxy/pull/18732>`_
+* Add tags to output datasets from tool form by `@PlushZ <https://github.com/PlushZ>`_ in `#19225 <https://github.com/galaxyproject/galaxy/pull/19225>`_
+* Implement Sample Sheets  by `@jmchilton <https://github.com/jmchilton>`_ in `#19305 <https://github.com/galaxyproject/galaxy/pull/19305>`_
+* Consider collections in on_strings for parameters accepting multiple datasets by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#19817 <https://github.com/galaxyproject/galaxy/pull/19817>`_
+* Empower Users to More Pragmatically Import Datasets & Collections From Tables by `@jmchilton <https://github.com/jmchilton>`_ in `#20288 <https://github.com/galaxyproject/galaxy/pull/20288>`_
+* Prepare ``ToolBox.dynamic_tool_to_tool()`` for CWL formats by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20364 <https://github.com/galaxyproject/galaxy/pull/20364>`_
+* Test case for using URL-based workflow inputs with implicit conversions. by `@jmchilton <https://github.com/jmchilton>`_ in `#20509 <https://github.com/galaxyproject/galaxy/pull/20509>`_
+* Implement Data Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#20592 <https://github.com/galaxyproject/galaxy/pull/20592>`_
+* Clean up code from pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20642 <https://github.com/galaxyproject/galaxy/pull/20642>`_
+* Add more info to inheritance chain by `@arash77 <https://github.com/arash77>`_ in `#20701 <https://github.com/galaxyproject/galaxy/pull/20701>`_
+* Attempt to reuse previously materialized datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20718 <https://github.com/galaxyproject/galaxy/pull/20718>`_
+* Add configfiles support and various enhancements for user defined tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20761 <https://github.com/galaxyproject/galaxy/pull/20761>`_
+* Modernize tools in the filters/ dir by `@natefoo <https://github.com/natefoo>`_ in `#20840 <https://github.com/galaxyproject/galaxy/pull/20840>`_
+* Replace tour_generator webhook with internal API and frontend by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#20868 <https://github.com/galaxyproject/galaxy/pull/20868>`_
+* Allow addressing user defined tools in job config by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20932 <https://github.com/galaxyproject/galaxy/pull/20932>`_
+* Limit admin requirement of selected tool data api endpoints by `@guerler <https://github.com/guerler>`_ in `#20949 <https://github.com/galaxyproject/galaxy/pull/20949>`_
+* Allow sending and tracking landing request origin by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20957 <https://github.com/galaxyproject/galaxy/pull/20957>`_
+* Track landing request with invocation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20960 <https://github.com/galaxyproject/galaxy/pull/20960>`_
+* Use workflow-style payload in data landing request by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21107 <https://github.com/galaxyproject/galaxy/pull/21107>`_
+* Tighter API for tool run tagging. by `@jmchilton <https://github.com/jmchilton>`_ in `#21210 <https://github.com/galaxyproject/galaxy/pull/21210>`_
+
+=============
+Other changes
+=============
+
+* Merge `release_25.0` into `dev` by `@davelopez <https://github.com/davelopez>`_ in `#20484 <https://github.com/galaxyproject/galaxy/pull/20484>`_
+* Sample Sheet Bug Fixes around Preserving Collection Metadata by `@jmchilton <https://github.com/jmchilton>`_ in `#20749 <https://github.com/galaxyproject/galaxy/pull/20749>`_
+* Validate sample sheet column definitions in workflow definitions on backend. by `@jmchilton <https://github.com/jmchilton>`_ in `#20880 <https://github.com/galaxyproject/galaxy/pull/20880>`_
+* Fix ``TOOL_WITH_SHELL_COMMAND``  import source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21070 <https://github.com/galaxyproject/galaxy/pull/21070>`_
+
+-------------------
 25.0.4 (2025-11-18)
 -------------------
 

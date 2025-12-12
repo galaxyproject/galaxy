@@ -10,6 +10,34 @@ History
 
 
 -------------------
+25.1.0 (2025-12-12)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Change wording of the client side storage handling by `@bgruening <https://github.com/bgruening>`_ in `#19815 <https://github.com/galaxyproject/galaxy/pull/19815>`_
+* Fix GCS file source to handle virtual directories without marker objects by `@dannon <https://github.com/dannon>`_ in `#21051 <https://github.com/galaxyproject/galaxy/pull/21051>`_
+* Fix Huggingface timestamp parsing when `last_commit` is missing by `@davelopez <https://github.com/davelopez>`_ in `#21072 <https://github.com/galaxyproject/galaxy/pull/21072>`_
+* Fixes download for restricted Zenodo records by `@davelopez <https://github.com/davelopez>`_ in `#21274 <https://github.com/galaxyproject/galaxy/pull/21274>`_
+
+============
+Enhancements
+============
+
+* Type annotation fixes for mypy 1.16.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20424 <https://github.com/galaxyproject/galaxy/pull/20424>`_
+* Add Dataverse template by `@davelopez <https://github.com/davelopez>`_ in `#20551 <https://github.com/galaxyproject/galaxy/pull/20551>`_
+* Clean up code from pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20642 <https://github.com/galaxyproject/galaxy/pull/20642>`_
+* Add `fsspec` base implementation for File Source plugins by `@davelopez <https://github.com/davelopez>`_ in `#20698 <https://github.com/galaxyproject/galaxy/pull/20698>`_
+* Refactor Files Sources Framework for stronger typing using pydantic models by `@davelopez <https://github.com/davelopez>`_ in `#20728 <https://github.com/galaxyproject/galaxy/pull/20728>`_
+* Adapt S3 file source to fsspec by `@davelopez <https://github.com/davelopez>`_ in `#20794 <https://github.com/galaxyproject/galaxy/pull/20794>`_
+* Fix fsspec fs path handling by `@davelopez <https://github.com/davelopez>`_ in `#20799 <https://github.com/galaxyproject/galaxy/pull/20799>`_
+* Add Hugging Face 🤗 file source and user-defined template by `@davelopez <https://github.com/davelopez>`_ in `#20805 <https://github.com/galaxyproject/galaxy/pull/20805>`_
+* Support remote file source hashes by `@davelopez <https://github.com/davelopez>`_ in `#20853 <https://github.com/galaxyproject/galaxy/pull/20853>`_
+
+-------------------
 25.0.4 (2025-11-18)
 -------------------
 

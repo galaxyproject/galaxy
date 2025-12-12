@@ -10,6 +10,70 @@ History
 
 
 -------------------
+25.1.0 (2025-12-12)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix alembic down_revision for trigger replacement migration by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20501 <https://github.com/galaxyproject/galaxy/pull/20501>`_
+* Add a merge migration, revert previous edit by `@jdavcs <https://github.com/jdavcs>`_ in `#20507 <https://github.com/galaxyproject/galaxy/pull/20507>`_
+* Add missing cleanup table by `@jdavcs <https://github.com/jdavcs>`_ in `#20594 <https://github.com/galaxyproject/galaxy/pull/20594>`_
+* Fix anndata metadata by `@nilchia <https://github.com/nilchia>`_ in `#20778 <https://github.com/galaxyproject/galaxy/pull/20778>`_
+* Fix Ipynb datatype sniffer and add unit tests. by `@ksuderman <https://github.com/ksuderman>`_ in `#20811 <https://github.com/galaxyproject/galaxy/pull/20811>`_
+* Bump requirement of directory converters by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20834 <https://github.com/galaxyproject/galaxy/pull/20834>`_
+* Extract: do not use common prefix dir by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20929 <https://github.com/galaxyproject/galaxy/pull/20929>`_
+* Ensure that conversion_key is defined by `@guerler <https://github.com/guerler>`_ in `#20984 <https://github.com/galaxyproject/galaxy/pull/20984>`_
+* Fix invocation export dataset exclusion by `@davelopez <https://github.com/davelopez>`_ in `#21091 <https://github.com/galaxyproject/galaxy/pull/21091>`_
+* Restore job.get_param_values by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21130 <https://github.com/galaxyproject/galaxy/pull/21130>`_
+* Improve _touch_collection_update_time_cte performance by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21134 <https://github.com/galaxyproject/galaxy/pull/21134>`_
+* Assorted workbook upload fixes.  by `@jmchilton <https://github.com/jmchilton>`_ in `#21203 <https://github.com/galaxyproject/galaxy/pull/21203>`_
+* Fix database revision tags by `@jdavcs <https://github.com/jdavcs>`_ in `#21377 <https://github.com/galaxyproject/galaxy/pull/21377>`_
+* Maintain columns on sample sheet map over by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21436 <https://github.com/galaxyproject/galaxy/pull/21436>`_
+
+============
+Enhancements
+============
+
+* Support credentials(secrets/variables) in tool requirements by `@arash77 <https://github.com/arash77>`_ in `#19084 <https://github.com/galaxyproject/galaxy/pull/19084>`_
+* Implement Sample Sheets  by `@jmchilton <https://github.com/jmchilton>`_ in `#19305 <https://github.com/galaxyproject/galaxy/pull/19305>`_
+* Empower Users to More Pragmatically Import Datasets & Collections From Tables by `@jmchilton <https://github.com/jmchilton>`_ in `#20288 <https://github.com/galaxyproject/galaxy/pull/20288>`_
+* Add short term storage expiration indicator to history items by `@davelopez <https://github.com/davelopez>`_ in `#20332 <https://github.com/galaxyproject/galaxy/pull/20332>`_
+* Type annotation fixes for mypy 1.16.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20424 <https://github.com/galaxyproject/galaxy/pull/20424>`_
+* Implement dataset source requested transformations. by `@jmchilton <https://github.com/jmchilton>`_ in `#20435 <https://github.com/galaxyproject/galaxy/pull/20435>`_
+* Remove deprecated tool document cache by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20510 <https://github.com/galaxyproject/galaxy/pull/20510>`_
+* Decode OIDC access token as part of authentication pipeline by `@marius-mather <https://github.com/marius-mather>`_ in `#20547 <https://github.com/galaxyproject/galaxy/pull/20547>`_
+* Implement Data Landing Requests by `@jmchilton <https://github.com/jmchilton>`_ in `#20592 <https://github.com/galaxyproject/galaxy/pull/20592>`_
+* Clean up code from pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20642 <https://github.com/galaxyproject/galaxy/pull/20642>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#20680 <https://github.com/galaxyproject/galaxy/pull/20680>`_
+* Attempt to reuse previously materialized datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20718 <https://github.com/galaxyproject/galaxy/pull/20718>`_
+* Refactor Files Sources Framework for stronger typing using pydantic models by `@davelopez <https://github.com/davelopez>`_ in `#20728 <https://github.com/galaxyproject/galaxy/pull/20728>`_
+* Hierarchical display collection dataset states by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20731 <https://github.com/galaxyproject/galaxy/pull/20731>`_
+* Use a streaming based parser (ijson) when setting metadata for biom1 files. by `@ksuderman <https://github.com/ksuderman>`_ in `#20851 <https://github.com/galaxyproject/galaxy/pull/20851>`_
+* Improve type annotation for job runners and ``InteractiveToolManager`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#20871 <https://github.com/galaxyproject/galaxy/pull/20871>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#20905 <https://github.com/galaxyproject/galaxy/pull/20905>`_
+* Allow sending and tracking landing request origin by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20957 <https://github.com/galaxyproject/galaxy/pull/20957>`_
+* Track landing request with invocation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20960 <https://github.com/galaxyproject/galaxy/pull/20960>`_
+* Optimize /api/invocations/steps/{step_id} by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21249 <https://github.com/galaxyproject/galaxy/pull/21249>`_
+* A better way to designate config_watcher by `@jdavcs <https://github.com/jdavcs>`_ in `#21426 <https://github.com/galaxyproject/galaxy/pull/21426>`_
+
+=============
+Other changes
+=============
+
+* Small tweaks and cleanup from sample sheets branch by `@jmchilton <https://github.com/jmchilton>`_ in `#20229 <https://github.com/galaxyproject/galaxy/pull/20229>`_
+* Merge `release_25.0` into `dev` by `@davelopez <https://github.com/davelopez>`_ in `#20484 <https://github.com/galaxyproject/galaxy/pull/20484>`_
+* Merge release_25.0 into dev by `@davelopez <https://github.com/davelopez>`_ in `#20490 <https://github.com/galaxyproject/galaxy/pull/20490>`_
+* Sample Sheet Bug Fixes around Preserving Collection Metadata by `@jmchilton <https://github.com/jmchilton>`_ in `#20749 <https://github.com/galaxyproject/galaxy/pull/20749>`_
+* Add tool_id and tool_version column to tool_landing_request table by `@mvdbeek <https://github.com/mvdbeek>`_ in `#20795 <https://github.com/galaxyproject/galaxy/pull/20795>`_
+* Add 25.1 migration tags by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21017 <https://github.com/galaxyproject/galaxy/pull/21017>`_
+* Restore .get_metadata function by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21045 <https://github.com/galaxyproject/galaxy/pull/21045>`_
+* Fix forward merge by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21307 <https://github.com/galaxyproject/galaxy/pull/21307>`_
+* Fix db revision tags by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21442 <https://github.com/galaxyproject/galaxy/pull/21442>`_
+
+-------------------
 25.0.4 (2025-11-18)
 -------------------
 
