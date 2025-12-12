@@ -96,9 +96,10 @@ class DatabaseHeartbeat:
             session.add(worker_process)
         # We only want a single process watching the various config files on the file system.
         # We just pick the max server name for simplicity
-        is_config_watcher = self.server_name == max(
+        webapp_servers = [
             p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1) if p.app_type == WEBAPP
-        )
+        ]
+        is_config_watcher = bool(webapp_servers) and self.server_name == max(webapp_servers)
         if is_config_watcher != self.is_config_watcher:
             self.is_config_watcher = is_config_watcher
 
