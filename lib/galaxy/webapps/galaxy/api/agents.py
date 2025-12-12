@@ -22,7 +22,6 @@ from galaxy.schema.agents import (
     AgentQueryResponse,
     AgentResponse,
     AvailableAgent,
-    ConfidenceLevel,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
