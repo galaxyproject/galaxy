@@ -57,6 +57,7 @@ class AgentService:
             config=self.config,
             job_manager=self.job_manager,
             toolbox=toolbox,
+            get_agent=agent_registry.get_agent,
         )
 
     async def execute_agent(

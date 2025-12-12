@@ -4,7 +4,6 @@ Base classes for Galaxy AI agents.
 
 import asyncio
 import logging
-import re
 from abc import (
     ABC,
     abstractmethod,
@@ -12,6 +11,7 @@ from abc import (
 from dataclasses import dataclass
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
     Optional,
@@ -138,20 +138,22 @@ class GalaxyAgentDependencies:
     workflow_manager: Optional["WorkflowsManager"] = None
     tool_cache: Optional["ToolCache"] = None
     toolbox: Optional["ToolBox"] = None
+    # Callable to get agent instances, avoids circular import in base.py
+    get_agent: Optional[Callable[[str, "GalaxyAgentDependencies"], "BaseGalaxyAgent"]] = None
 
 
 class BaseGalaxyAgent(ABC):
     """Base class for all Galaxy AI agents."""
 
+    # Subclasses must define their agent type explicitly
+    agent_type: str
+
     def __init__(self, deps: GalaxyAgentDependencies):
         """Initialize the agent with dependencies."""
         self.deps = deps
-        # Convert PascalCase to snake_case: CustomToolAgent -> custom_tool_agent -> custom_tool
-        # Handle acronyms: GTNTrainingAgent -> gtn_training_agent -> gtn_training
-        class_name = self.__class__.__name__
-        # Insert underscore before uppercase letters that follow lowercase or are followed by lowercase
-        snake_case = re.sub(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "_", class_name).lower()
-        self.agent_type = snake_case.replace("_agent", "").replace("agent", "")
+
+        if not hasattr(self, "agent_type") or not self.agent_type:
+            raise NotImplementedError(f"{self.__class__.__name__} must define 'agent_type' class attribute")
 
         if not HAS_PYDANTIC_AI:
             raise ImportError(
@@ -414,6 +416,9 @@ class BaseGalaxyAgent(ABC):
         """
         Validate that the configured model meets this agent's requirements.
 
+        Called by subclasses (e.g., CustomToolAgent) before attempting operations
+        that require specific model capabilities like structured output.
+
         Returns:
             None if valid, error message string if invalid.
         """
@@ -555,11 +560,11 @@ class BaseGalaxyAgent(ABC):
             )
         """
         try:
-            # Import here to avoid circular imports
-            from galaxy.agents import agent_registry
+            if ctx.deps.get_agent is None:
+                raise RuntimeError("get_agent not configured in dependencies")
 
-            # Get the target agent
-            target_agent = agent_registry.get_agent(agent_type, ctx.deps)
+            # Get the target agent using the injected callable
+            target_agent = ctx.deps.get_agent(agent_type, ctx.deps)
 
             # Prepare query with context if available
             full_query = query
