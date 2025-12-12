@@ -290,6 +290,7 @@ backends:
     # Used by shed's twill dependency stuff
     # TODO: read from Galaxy's config API.
     os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, "dependencies")
+
     return config
 
 

@@ -43,13 +43,14 @@ async function submitQuery() {
         return;
     }
 
-    const { data, error } = await GalaxyApi().POST("/api/chat", {
-        params: {
-            query: { job_id: props.jobId },
-        },
+    // Use direct error analysis endpoint for better performance and clarity
+    const { data, error } = await GalaxyApi().POST("/api/ai/agents/error-analysis", {
         body: {
             query: query.value,
-            context: props.context,
+            job_id: props.jobId,
+            error_details: {
+                context_type: props.context,
+            },
         },
     });
 
@@ -57,21 +58,16 @@ async function submitQuery() {
         errorMessage.value = errorMessageAsString(error, "Failed to get response from the server.");
         hasError.value = true;
     } else {
-        if (data.response) {
-            queryResponse.value = data.response;
+        // Direct endpoint returns agent response format
+        if (data.content) {
+            queryResponse.value = data.content;
         }
 
-        // If there's an error code or message, set the error flag and message
-        if (data.error_code || data.error_message) {
+        // Check for errors in metadata
+        const metadataError = data.metadata?.error as string | undefined;
+        if (metadataError) {
             hasError.value = true;
-
-            if (data.error_code && data.error_message) {
-                errorMessage.value = `${data.error_message} (Error ${data.error_code})`;
-            } else if (data.error_message) {
-                errorMessage.value = data.error_message;
-            } else if (data.error_code) {
-                errorMessage.value = `Error ${data.error_code}`;
-            }
+            errorMessage.value = metadataError;
         }
     }
 
