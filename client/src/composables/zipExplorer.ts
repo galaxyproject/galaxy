@@ -14,10 +14,9 @@ import {
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
-import { defaultModel, type FileStream, type UploadItem } from "@/components/Upload/model";
+import { defaultModel, type FileStream } from "@/components/Upload/model";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
-import { uploadPayload } from "@/utils/upload-payload";
-import { uploadSubmit } from "@/utils/upload-submit";
+import { buildUploadPayload, type LocalFileUploadItem, submitUpload } from "@/utils/upload";
 
 export { isFileEntry, type IZipExplorer, ROCrateZipExplorer } from "ro-crate-zip-explorer";
 
@@ -167,7 +166,7 @@ export function useZipExplorer() {
             throw new Error("There is no history available to upload the selected files.");
         }
 
-        const uploadItems: UploadItem[] = [];
+        const uploadItems: LocalFileUploadItem[] = [];
         for (const { file, entry } of toUploadToHistory) {
             const fileStream: FileStream = {
                 name: file.name,
@@ -176,18 +175,23 @@ export function useZipExplorer() {
                 lastModified: entry.dateTime.getTime(),
                 isStream: true,
             };
-            const uploadItem = {
-                ...defaultModel,
-                fileName: file.name,
-                fileSize: entry.fileSize,
+            const uploadItem: LocalFileUploadItem = {
+                src: "files",
+                name: file.name,
+                size: entry.fileSize,
                 fileData: fileStream,
-                fileMode: "local",
+                historyId: historyId,
+                dbkey: defaultModel.dbKey,
+                ext: defaultModel.extension,
+                space_to_tab: defaultModel.spaceToTab,
+                to_posix_lines: defaultModel.toPosixLines,
+                deferred: defaultModel.deferred ?? false,
             };
             uploadItems.push(uploadItem);
         }
         try {
-            const data = uploadPayload(uploadItems, historyId);
-            uploadSubmit({ data });
+            const payload = buildUploadPayload(uploadItems);
+            submitUpload({ data: payload });
         } catch (e) {
             rethrowSimple(e);
         }

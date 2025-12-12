@@ -134,5 +134,14 @@ export function useFileDrop(
         true,
     );
 
+    useEventListener(
+        dropZone,
+        "drop",
+        () => {
+            isFileOverDropZone.value = false;
+        },
+        true,
+    );
+
     return { isFileOverDocument, isFileOverDropZone };
 }

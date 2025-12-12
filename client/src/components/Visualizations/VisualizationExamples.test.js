@@ -6,17 +6,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { useToast } from "@/composables/toast";
-import { uploadPayload } from "@/utils/upload-payload.js";
-import { sendPayload } from "@/utils/upload-submit.js";
+import { createUrlUploadItem, uploadDatasets } from "@/utils/upload";
 
 import UploadExamples from "./VisualizationExamples.vue";
 
-vi.mock("@/utils/upload-payload.js", () => ({
-    uploadPayload: vi.fn(() => "mockedPayload"),
-}));
-
-vi.mock("@/utils/upload-submit.js", () => ({
-    sendPayload: vi.fn(),
+vi.mock("@/utils/upload", () => ({
+    createUrlUploadItem: vi.fn((url, historyId, options) => ({
+        src: "url",
+        url,
+        historyId,
+        name: options?.name ?? "default",
+        ext: options?.ext ?? "auto",
+    })),
+    uploadDatasets: vi.fn(),
 }));
 
 vi.mock("@/composables/toast");
@@ -78,15 +80,26 @@ describe("UploadExamples.vue", () => {
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items.at(0).find("a").trigger("click");
-        expect(uploadPayload).toHaveBeenCalledWith(
-            [{ fileMode: "new", fileName: "Example 1", fileUri: urlData[0].url, extension: urlData[0].ftype }],
-            "fake-history-id",
-        );
-        expect(sendPayload).toHaveBeenCalledWith("mockedPayload", {
-            success: expect.any(Function),
-            error: expect.any(Function),
+        expect(createUrlUploadItem).toHaveBeenCalledWith(urlData[0].url, "fake-history-id", {
+            name: "Example 1",
+            ext: urlData[0].ftype,
         });
-        vi.mocked(sendPayload).mock.calls[0][1].success();
+        expect(uploadDatasets).toHaveBeenCalledWith(
+            [
+                expect.objectContaining({
+                    src: "url",
+                    url: urlData[0].url,
+                    historyId: "fake-history-id",
+                    name: "Example 1",
+                    ext: urlData[0].ftype,
+                }),
+            ],
+            {
+                success: expect.any(Function),
+                error: expect.any(Function),
+            },
+        );
+        vi.mocked(uploadDatasets).mock.calls[0][1].success();
         expect(toastSuccess).toHaveBeenCalledWith("The sample dataset 'Example 1' is being uploaded to your history.");
     });
 
@@ -97,7 +110,7 @@ describe("UploadExamples.vue", () => {
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items.at(1).find("a").trigger("click");
-        vi.mocked(sendPayload).mock.calls[0][1].error();
+        vi.mocked(uploadDatasets).mock.calls[0][1].error();
         expect(toastError).toHaveBeenCalledWith("Uploading the sample dataset 'Example 2' has failed.");
     });
 
