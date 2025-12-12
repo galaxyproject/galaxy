@@ -48,9 +48,10 @@ export default {
         }
     },
     render() {
-        const slot = this.$slots.default;
-        if (slot) {
-            return slot({
+        // Use $scopedSlots for Vue 3 compat mode
+        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        if (slotFn) {
+            return slotFn({
                 isExpanded: this.isExpanded,
                 setExpanded: this.setExpanded,
                 collapseAll: this.reset,
