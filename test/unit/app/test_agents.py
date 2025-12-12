@@ -27,6 +27,9 @@ from unittest.mock import (
 )
 
 import pytest
+
+# Skip entire module if pydantic_ai is not installed
+pydantic_ai = pytest.importorskip("pydantic_ai")
 from pydantic_ai.models.test import TestModel
 
 from galaxy.agents import (
