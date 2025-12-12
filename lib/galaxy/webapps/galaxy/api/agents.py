@@ -48,13 +48,16 @@ router = Router(tags=["ai"])
 
 @router.cbv
 class AgentAPI:
-    """AI agent endpoints under /api/ai/agents/."""
+    """AI agent endpoints under /api/ai/agents/.
+
+    **BETA**: This API is experimental and may change without notice.
+    """
 
     agent_service: AgentService = depends(AgentService)
     chat_manager: ChatManager = depends(ChatManager)
     job_manager: JobManager = depends(JobManager)
 
-    @router.get("/api/ai/agents")
+    @router.get("/api/ai/agents", unstable=True)
     def list_agents(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -87,7 +90,7 @@ class AgentAPI:
 
         return AgentListResponse(agents=agents, total_count=len(agents))
 
-    @router.post("/api/ai/agents/query")
+    @router.post("/api/ai/agents/query", unstable=True)
     async def query_agent(
         self,
         request: AgentQueryRequest,
@@ -122,7 +125,7 @@ class AgentAPI:
             log.exception(f"Error in agent query: {e}")
             raise ConfigurationError(f"Agent query failed: {str(e)}")
 
-    @router.post("/api/ai/agents/error-analysis")
+    @router.post("/api/ai/agents/error-analysis", unstable=True)
     async def analyze_error(
         self,
         query: str = Body(..., description="Description of the error or problem"),
@@ -163,7 +166,7 @@ class AgentAPI:
             log.exception(f"Error in error analysis: {e}")
             raise ConfigurationError(f"Error analysis failed: {str(e)}")
 
-    @router.post("/api/ai/agents/tool-recommendation")
+    @router.post("/api/ai/agents/tool-recommendation", unstable=True)
     async def recommend_tools(
         self,
         query: str = Body(..., description="Description of the analysis task"),
@@ -195,7 +198,7 @@ class AgentAPI:
             log.exception(f"Error in tool recommendation: {e}")
             raise ConfigurationError(f"Tool recommendation failed: {str(e)}")
 
-    @router.post("/api/ai/agents/custom-tool")
+    @router.post("/api/ai/agents/custom-tool", unstable=True)
     async def create_custom_tool(
         self,
         query: str = Body(..., description="Description of the tool to create"),

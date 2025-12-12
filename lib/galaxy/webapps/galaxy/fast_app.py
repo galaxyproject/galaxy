@@ -89,6 +89,14 @@ api_tags_metadata = [
         "description": "Operations with remote dataset sources.",
     },
     {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
+    {
+        "name": "ai",
+        "description": "**BETA**: AI agent operations. This API is experimental and may change without notice.",
+    },
+    {
+        "name": "chat",
+        "description": "**BETA**: Chat interface for AI agents. This API is experimental and may change without notice.",
+    },
 ]
 
 
