@@ -6,7 +6,13 @@
     <edam_operation>operation_3359</edam_operation>
   </edam_operations>
   <configfiles>
-    <configfile name="out_config"><![CDATA[#for $key in $input.keys()
+    <configfile name="out_config"><![CDATA[#if $include_headers and $input.collection.column_definitions
+#set $headers = [col_def['name'] for col_def in $input.collection.column_definitions]
+#set $header_string = '\t'.join($headers)
+#set $tab = '\t'
+element_identifier$tab$header_string
+#end if
+#for $key in $input.keys()
 #set $row = $input.sample_sheet_row($key)
 #set $row_as_string = '\t'.join(map(lambda x: str($none_replace) if x is None else (str($empty_replace) if x == "" else (str($bool_true_replace) if x is True else (str($bool_false_replace) if x is False else str(x)))), $row))
 #set $tab = '\t'
@@ -19,6 +25,8 @@ cp '$out_config' '$output'
 
   <inputs>
     <param type="data_collection" collection_type="sample_sheet,sample_sheet:paired,sample_sheet:paired_or_unpaired,sample_sheet:record" name="input" label="Sample sheet to convert" />
+    <param name="include_headers" label="Include column headers" type="boolean" checked="false" help="If enabled, the first line of output will contain the column names from the sample sheet definition.">
+    </param>
     <param name="none_replace" label="Replace 'null' values with" type="text" value="" help="Default is just an empty string '', but in some cases '-' might read better.">
     </param>
     <param name="empty_replace" label="Replace empty string values with" type="text" value="" help="Default is just to keep the empty string '', but in some cases '-' might read better.">
@@ -38,6 +46,12 @@ Synopsis
 ========
 
 Takes a sample sheet dataset collection and converts the sample sheet metadata into a tabular dataset.
+
+The output is a tab-separated file where each row corresponds to an element in the sample sheet collection.
+The first column contains the element identifier, followed by columns for each metadata field defined in the sample sheet.
+
+When "Include column headers" is enabled, the first row will contain the column names, with "element_identifier"
+as the first column followed by the names from the sample sheet column definitions.
 
   ]]></help>
 </tool>
