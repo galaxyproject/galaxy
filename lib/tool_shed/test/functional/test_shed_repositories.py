@@ -436,6 +436,53 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert result["dry_run"] is True
         assert result["changeset_details"] is not None
 
+    @skip_if_api_v1
+    def test_reset_metadata_verbose_includes_before_after(self):
+        """Verify verbose=True returns repository_metadata_before and after snapshots."""
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker")
+
+        response = self.api_interactor.post(
+            f"repositories/{repository.id}/reset_metadata",
+            params={"verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        result = response.json()
+
+        # Verify before/after are present
+        assert "repository_metadata_before" in result
+        assert "repository_metadata_after" in result
+        assert result["repository_metadata_before"] is not None
+        assert result["repository_metadata_after"] is not None
+
+        # Verify structure - should have revision keys
+        before = result["repository_metadata_before"]
+        after = result["repository_metadata_after"]
+        assert len(before) > 0
+        assert len(after) > 0
+
+        # Verify each revision has tools with tool_config
+        for rev_key, rev_data in after.items():
+            if rev_data.get("tools"):
+                for tool in rev_data["tools"]:
+                    assert "tool_config" in tool
+
+    @skip_if_api_v1
+    def test_reset_metadata_non_verbose_omits_before_after(self):
+        """Verify verbose=False (default) omits before/after metadata."""
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker")
+
+        response = self.api_interactor.post(
+            f"repositories/{repository.id}/reset_metadata",
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        result = response.json()
+
+        # Before/after should be None when not verbose
+        assert result.get("repository_metadata_before") is None
+        assert result.get("repository_metadata_after") is None
+
     def _get_only_revision(self, repository: HasRepositoryId) -> RepositoryRevisionMetadata:
         populator = self.populator
         repository_metadata = populator.get_metadata(repository)

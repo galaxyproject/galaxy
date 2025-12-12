@@ -56,6 +56,9 @@ class ResetMetadataResult:
     """Result of reset_all_metadata_on_repository_in_tool_shed operation."""
 
     changeset_details: Optional[list[ChangesetMetadataStatus]] = None
+    # Regenerated metadata objects keyed by "{numeric_rev}:{changeset_hash}"
+    # These are the in-memory objects (possibly not persisted if dry_run=True)
+    regenerated_metadata: dict[str, RepositoryMetadata] = field(default_factory=dict)
 
 
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
@@ -841,6 +844,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         changeset_revisions: list[Optional[str]] = []
         # Collect per-changeset details if verbose mode
         changeset_details: list[ChangesetMetadataStatus] = []
+        # Collect regenerated metadata objects (keyed by changeset_revision hash)
+        regenerated_metadata: dict[str, RepositoryMetadata] = {}
         # When a new repository_metadata record is created, it always uses the values of
         # metadata_changeset_revision and metadata_dict.
         metadata_changeset_revision = None
@@ -906,10 +911,12 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         elif comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
                             metadata_changeset_revision = ancestor_changeset_revision
                             metadata_dict = ancestor_metadata_dict
-                            _, action = self.create_or_update_repository_metadata_with_details(
+                            repo_metadata, action = self.create_or_update_repository_metadata_with_details(
                                 metadata_changeset_revision, metadata_dict, dry_run=dry_run
                             )
                             changeset_revisions.append(metadata_changeset_revision)
+                            if repo_metadata and metadata_changeset_revision:
+                                regenerated_metadata[metadata_changeset_revision] = repo_metadata
                             if verbose:
                                 changeset_details.append(
                                     ChangesetMetadataStatus(
@@ -946,10 +953,12 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         metadata_changeset_revision = self.changeset_revision
                         metadata_dict = self.metadata_dict
                         # We're at the end of the change log.
-                        _, action = self.create_or_update_repository_metadata_with_details(
+                        repo_metadata, action = self.create_or_update_repository_metadata_with_details(
                             metadata_changeset_revision, metadata_dict, dry_run=dry_run
                         )
                         changeset_revisions.append(metadata_changeset_revision)
+                        if repo_metadata and metadata_changeset_revision:
+                            regenerated_metadata[metadata_changeset_revision] = repo_metadata
                         if verbose:
                             # Replace any prior entry for this ctx (from INITIAL or NOT_EQUAL branches)
                             # with final persisted state
@@ -971,10 +980,12 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                     # We reach here only if self.metadata_dict is empty and ancestor_metadata_dict is not.
                     if not ctx.children():
                         # We're at the end of the change log.
-                        _, action = self.create_or_update_repository_metadata_with_details(
+                        repo_metadata, action = self.create_or_update_repository_metadata_with_details(
                             metadata_changeset_revision, metadata_dict, dry_run=dry_run
                         )
                         changeset_revisions.append(metadata_changeset_revision)
+                        if repo_metadata and metadata_changeset_revision:
+                            regenerated_metadata[metadata_changeset_revision] = repo_metadata
                         if verbose:
                             changeset_details.append(
                                 ChangesetMetadataStatus(
@@ -1009,7 +1020,10 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         if not dry_run:
             self._reset_all_tool_versions(repo, dry_run=dry_run)
 
-        return ResetMetadataResult(changeset_details=changeset_details if verbose else None)
+        return ResetMetadataResult(
+            changeset_details=changeset_details if verbose else None,
+            regenerated_metadata=regenerated_metadata,
+        )
 
     def _reset_all_tool_versions(self, repo, dry_run: bool = False):
         """Reset tool version lineage for those changeset revisions that include valid tools."""

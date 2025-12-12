@@ -243,6 +243,9 @@ class ResetMetadataOnRepositoryResponse(BaseModel):
     stop_time: str
     dry_run: bool = False
     changeset_details: Optional[list[ChangesetMetadataStatus]] = None
+    # Full metadata snapshots for diffing (only when verbose=True)
+    repository_metadata_before: Optional["RepositoryMetadata"] = None
+    repository_metadata_after: Optional["RepositoryMetadata"] = None
 
 
 # Ugh - use with care - param descriptions scraped from older version of the API.
