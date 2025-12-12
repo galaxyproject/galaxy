@@ -352,7 +352,7 @@
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="bwa_mem2_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
     <datatype extension="lexicmap_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
-    <datatype extension="kmindex" type="galaxy.datatypes.data:Directory" display_in_upload="false" subclass="true"/>
+    <datatype extension="kmindex" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
     <datatype extension="zarr" type="galaxy.datatypes.data:ZarrDirectory">
         <infer_from suffix="zarr" />
     </datatype>
