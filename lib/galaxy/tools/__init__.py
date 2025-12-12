@@ -25,7 +25,6 @@ from urllib.parse import unquote_plus
 from uuid import UUID
 
 import webob.exc
-from mako.template import Template
 from packaging.version import Version
 from sqlalchemy import (
     delete,
@@ -1014,7 +1013,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     tool_action: ToolAction
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
-    __help: Optional[Template]
     job_search: "JobSearch"
     version: str
 
@@ -1095,7 +1093,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.javascript_requirements: Optional[list[JavascriptRequirement]] = None
         self.credentials: Optional[list[CredentialsRequirement]] = None
         self._is_workflow_compatible = None
-        self.__help = None
         self.__tests: Optional[str] = None
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
@@ -1949,20 +1946,24 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             )
 
     @property
-    def help(self) -> Template:
+    def help_html(self) -> str:
+        """Returns the help content converted from RST to HTML (without variable substitution)."""
         help_content = self.raw_help
         assert help_content
         assert help_content.format == "restructuredtext"
         try:
-            return Template(
-                rst_to_html(help_content.content),
-                input_encoding="utf-8",
-                default_filters=["decode.utf8"],
-                encoding_errors="replace",
-            )
+            return rst_to_html(help_content.content)
         except Exception:
             log.info("Exception while parsing help for tool with id '%s'", self.id)
-            return Template("", input_encoding="utf-8")
+            return ""
+
+    def render_help(self, static_path: str, host_url: str) -> str:
+        """Renders the help HTML with variable substitution for static_path and host_url."""
+        help_html = self.help_html
+        # Replace Mako-style variables with actual values
+        help_html = help_html.replace("${static_path}", static_path)
+        help_html = help_html.replace("${host_url}", host_url)
+        return help_html
 
     @property
     def biotools_reference(self) -> Optional[str]:
@@ -2831,8 +2832,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
         # modified to be relative to the repository root.
         image_found = False
-        if self.help is not None:
-            tool_help = self.help._source
+        if self.raw_help is not None and self.raw_help.format == "restructuredtext":
+            tool_help = self.help_html
             # Check each line of the rendered tool help for an image tag that points to a location under static/
             for help_line in tool_help.split("\n"):
                 image_regex = re.compile(r'img alt="[^"]+" src="\${static_path}/([^"]+)"')
@@ -2990,10 +2991,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             if help_content:
                 help_format = help_content.format
                 if help_format == "restructuredtext":
-                    help_txt = self.help.render(
+                    help_txt = self.render_help(
                         static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
                     )
-                    help_txt = unicodify(help_txt)
 
             tool_dict["help"] = help_txt
             tool_dict["help_format"] = help_format
@@ -3066,10 +3066,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         tool_help = ""
         tool_help_format = "restructuredtext"
         if self.raw_help and self.raw_help.format == "restructuredtext":
-            tool_help = self.help.render(
+            tool_help = self.render_help(
                 static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
             )
-            tool_help = unicodify(tool_help, "utf-8")
         elif self.raw_help:
             tool_help = self.raw_help.content
             tool_help_format = self.raw_help.format
