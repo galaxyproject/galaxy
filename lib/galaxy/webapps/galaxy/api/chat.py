@@ -90,12 +90,17 @@ JobIdPathParam = Annotated[
 
 @router.cbv
 class ChatAPI:
+    """Chat interface for AI agents.
+
+    **BETA**: This API is experimental and may change without notice.
+    """
+
     config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
     chat_manager: ChatManager = depends(ChatManager)
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
 
-    @router.post("/api/chat")
+    @router.post("/api/chat", unstable=True)
     async def query(
         self,
         job_id: Optional[
@@ -227,7 +232,7 @@ class ChatAPI:
         # Return the enhanced response structure
         return ChatResponse(**result)
 
-    @router.get("/api/chat/history")
+    @router.get("/api/chat/history", unstable=True)
     def get_chat_history(
         self,
         limit: int = Query(default=50, description="Maximum number of chats to return"),
@@ -271,7 +276,7 @@ class ChatAPI:
 
         return history
 
-    @router.delete("/api/chat/history")
+    @router.delete("/api/chat/history", unstable=True)
     def clear_chat_history(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -306,7 +311,7 @@ class ChatAPI:
             log.exception("Error clearing chat history")
             return {"message": "Error clearing history"}
 
-    @router.put("/api/chat/{job_id}/feedback")
+    @router.put("/api/chat/{job_id}/feedback", unstable=True)
     def feedback(
         self,
         job_id: JobIdPathParam,
@@ -319,7 +324,7 @@ class ChatAPI:
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
         return chat_response.messages[0].feedback
 
-    @router.put("/api/chat/exchange/{exchange_id}/feedback")
+    @router.put("/api/chat/exchange/{exchange_id}/feedback", unstable=True)
     def set_exchange_feedback(
         self,
         exchange_id: int,
@@ -334,7 +339,7 @@ class ChatAPI:
             "feedback": chat_exchange.messages[0].feedback,
         }
 
-    @router.get("/api/chat/exchange/{exchange_id}/messages")
+    @router.get("/api/chat/exchange/{exchange_id}/messages", unstable=True)
     def get_exchange_messages(
         self,
         exchange_id: int,
