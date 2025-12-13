@@ -12,7 +12,6 @@ Specific providers (Keycloak, CILogon, etc.) should inherit from this class.
 """
 
 import logging
-import os
 
 from pkce import generate_pkce_pair
 from social_core.backends.open_id_connect import OpenIdConnectAuth
@@ -84,18 +83,3 @@ class GalaxyOpenIdConnect(OpenIdConnectAuth):
                     pass
 
         return params
-
-    def user_data(self, access_token, *args, **kwargs):
-        """
-        Fetch user data from the userinfo endpoint.
-
-        Override to enable localhost development mode with relaxed SSL requirements.
-        For security, this ONLY applies to http://localhost: URLs.
-        """
-        # Allow insecure transport ONLY for HTTP (not HTTPS) localhost development
-        if self.redirect_uri and self.redirect_uri.startswith("http://localhost:"):
-            if os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") != "1":
-                log.warning("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' for localhost development")
-                os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
-        return super().user_data(access_token, *args, **kwargs)
