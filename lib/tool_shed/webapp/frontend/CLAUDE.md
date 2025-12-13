@@ -85,6 +85,13 @@ When creating reusable UI components, add examples to `src/components/pages/Comp
 </component-showcase>
 ```
 
+When writing unit tests that cover special cases (edge cases, error states, long content, special characters, etc.), consider adding those same cases to the Component Showcase. This helps developers:
+- Visually verify the component handles edge cases correctly
+- See how the component looks in various states during development
+- Document expected behavior for different scenarios
+
+For example, if you test a component with long text or special characters, add showcase examples demonstrating those cases.
+
 ## Path Alias
 `@/` maps to `src/` directory.
 
@@ -117,3 +124,245 @@ When creating reusable UI components, add examples to `src/components/pages/Comp
 - `util.ts` `notify()` - uses Quasar Notify (toast messages)
 - `ErrorBanner.vue` - inline persistent errors with dismiss
 - `LoadingDiv.vue` - spinner with status message
+
+## Testing (Vitest + Vue Test Utils)
+
+### Setup
+Tests use Vitest with `@vue/test-utils` for component testing. Test files should be co-located with components (e.g., `MyComponent.vue` → `MyComponent.test.ts`) or in a `__tests__` directory.
+
+### Best Practices for AI-Developed Tests
+
+#### 1. Test Behavior, Not Implementation
+Focus on what the component does from a user's perspective, not internal implementation details:
+```typescript
+// ✅ Good: Tests user-visible behavior
+test('displays error message when API fails', async () => {
+  vi.mocked(ToolShedApi).mockReturnValue({ error: { status: 500 } })
+  const wrapper = mount(MyComponent)
+  await flushPromises()
+  expect(wrapper.text()).toContain('Error loading data')
+})
+
+// ❌ Bad: Tests implementation details
+test('calls fetchData method', () => {
+  const fetchDataSpy = vi.spyOn(wrapper.vm, 'fetchData')
+  // ...
+})
+```
+
+#### 2. Use Real Queries Over Test IDs
+Prefer semantic queries (text, labels, roles) over test IDs:
+```typescript
+// ✅ Good: Uses accessible queries
+const button = wrapper.find('button[aria-label="Submit"]')
+const error = wrapper.find('[role="alert"]')
+
+// ❌ Avoid: Test IDs unless necessary
+const button = wrapper.find('[data-testid="submit-btn"]')
+```
+
+#### 3. Mock External Dependencies
+Mock API calls, router, and Pinia stores at the module level:
+```typescript
+import { vi } from 'vitest'
+import { ToolShedApi } from '@/schema'
+
+vi.mock('@/schema', () => ({
+  ToolShedApi: vi.fn(),
+}))
+
+test('loads repository data', async () => {
+  vi.mocked(ToolShedApi).mockReturnValue({
+    GET: vi.fn().mockResolvedValue({ data: { name: 'test-repo' } }),
+  })
+  // ...
+})
+```
+
+#### 4. Test Composition API Components Properly
+For Composition API components, use `mount()` and interact with the component as a user would:
+```typescript
+import { mount } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import MyComponent from '@/components/MyComponent.vue'
+
+describe('MyComponent', () => {
+  it('updates count when button clicked', async () => {
+    const wrapper = mount(MyComponent)
+    const button = wrapper.find('button')
+    await button.trigger('click')
+    expect(wrapper.text()).toContain('Count: 1')
+  })
+})
+```
+
+#### 5. Test Options API Components
+For Options API components, avoid accessing `wrapper.vm` directly. Test through the template:
+```typescript
+// ✅ Good: Tests through template
+test('shows message prop', () => {
+  const wrapper = mount(MyComponent, {
+    props: { message: 'Hello' },
+  })
+  expect(wrapper.text()).toContain('Hello')
+})
+
+// ❌ Avoid: Direct vm access
+expect(wrapper.vm.message).toBe('Hello')
+```
+
+#### 6. Mock Quasar Components When Needed
+Quasar components can be mocked if they're not the focus of the test:
+```typescript
+import { mount, config } from '@vue/test-utils'
+
+config.global.stubs = {
+  'q-btn': { template: '<button><slot /></button>' },
+  'q-input': { template: '<input />' },
+}
+```
+
+#### 7. Test Pinia Stores in Isolation
+Test stores separately from components:
+```typescript
+import { setActivePinia, createPinia } from 'pinia'
+import { useAuthStore } from '@/stores/auth.store'
+
+describe('auth store', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('sets user on login', () => {
+    const store = useAuthStore()
+    store.setUser({ id: 1, username: 'test' })
+    expect(store.user?.username).toBe('test')
+  })
+})
+```
+
+#### 8. Use `flushPromises()` for Async Operations
+Wait for async operations to complete:
+```typescript
+import { flushPromises } from '@vue/test-utils'
+
+test('loads data asynchronously', async () => {
+  const wrapper = mount(MyComponent)
+  await flushPromises()
+  expect(wrapper.text()).toContain('Loaded')
+})
+```
+
+#### 9. Test Router Navigation
+Mock `vue-router` and verify navigation calls:
+```typescript
+import { vi } from 'vitest'
+const mockPush = vi.fn()
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+}))
+
+test('navigates on click', async () => {
+  const wrapper = mount(MyComponent)
+  await wrapper.find('a').trigger('click')
+  expect(mockPush).toHaveBeenCalledWith('/expected-route')
+})
+```
+
+#### 10. Keep Tests Focused and Independent
+Each test should verify one behavior and be independent:
+```typescript
+// ✅ Good: Focused test
+test('displays loading state', () => {
+  const wrapper = mount(MyComponent, {
+    props: { loading: true },
+  })
+  expect(wrapper.find('[role="status"]').exists()).toBe(true)
+})
+
+// ❌ Bad: Multiple concerns
+test('component does everything', () => {
+  // Tests loading, error, success, navigation...
+})
+```
+
+#### 11. Use Descriptive Test Names
+Test names should clearly describe what is being tested:
+```typescript
+// ✅ Good: Clear and descriptive
+test('displays error banner when API returns 500', async () => {})
+test('hides submit button when form is invalid', () => {})
+
+// ❌ Bad: Vague
+test('works correctly', () => {})
+test('component test', () => {})
+```
+
+#### 12. Clean Up After Tests
+Reset mocks and clear state between tests:
+```typescript
+import { beforeEach, afterEach, vi } from 'vitest'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+```
+
+### Common Patterns
+
+#### Testing Components with Props
+```typescript
+test('renders with required props', () => {
+  const wrapper = mount(MyComponent, {
+    props: {
+      title: 'Test Title',
+      count: 5,
+    },
+  })
+  expect(wrapper.text()).toContain('Test Title')
+})
+```
+
+#### Testing User Interactions
+```typescript
+test('calls handler on button click', async () => {
+  const handleClick = vi.fn()
+  const wrapper = mount(MyComponent, {
+    props: { onClick: handleClick },
+  })
+  await wrapper.find('button').trigger('click')
+  expect(handleClick).toHaveBeenCalledTimes(1)
+})
+```
+
+#### Testing Conditional Rendering
+```typescript
+test('shows content when condition is true', () => {
+  const wrapper = mount(MyComponent, {
+    props: { show: true },
+  })
+  expect(wrapper.find('.content').exists()).toBe(true)
+})
+
+test('hides content when condition is false', () => {
+  const wrapper = mount(MyComponent, {
+    props: { show: false },
+  })
+  expect(wrapper.find('.content').exists()).toBe(false)
+})
+```
+
+### AI-Specific Guidelines
+
+When generating tests with AI:
+1. **Avoid over-testing**: Don't test every method or computed property. Focus on user-facing behavior.
+2. **Don't test framework code**: Vue, Quasar, and Pinia are already tested. Test your application logic.
+3. **Test edge cases**: Include tests for error states, empty data, and boundary conditions.
+4. **Keep tests maintainable**: If implementation changes, tests should only break if behavior changes.
+5. **Use TypeScript**: Leverage type safety to catch errors early.
+6. **Mock at the right level**: Mock external services (API, router) but test component logic with real data.

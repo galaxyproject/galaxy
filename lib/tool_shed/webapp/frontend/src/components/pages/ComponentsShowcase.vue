@@ -26,8 +26,18 @@ import LandingInfoSections from "@/components/LandingInfoSections.vue"
         </component-showcase>
 
         <component-showcase title="ErrorBanner">
-            <component-showcase-example title="with supplied message">
+            <component-showcase-example title="default error message">
                 <error-banner error="My Cool Error Message" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="long error message">
+                <error-banner
+                    error="This is a very long error message that might wrap or cause layout issues in the UI, but should still be displayed correctly to the user with proper formatting and readability."
+                />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="error with special characters">
+                <error-banner error="Error: &lt;script&gt;alert('xss')&lt;/script&gt; & 'quotes' &amp; symbols" />
             </component-showcase-example>
         </component-showcase>
 

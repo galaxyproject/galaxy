@@ -20,9 +20,12 @@ function dismiss() {
     emits("dismiss")
 }
 
-watch(ref(props.error), () => {
-    show.value = true
-})
+watch(
+    () => props.error,
+    () => {
+        show.value = true
+    }
+)
 const effectiveShow = computed(() => props.error && show.value)
 </script>
 
