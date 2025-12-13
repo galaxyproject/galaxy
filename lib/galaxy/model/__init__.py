@@ -8181,6 +8181,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             collection=collection,
             element_index=self.element_index,
             element_identifier=self.element_identifier,
+            columns=self.columns,
         )
         return new_element
 

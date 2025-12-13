@@ -508,6 +508,73 @@ class TestDatasetCollectionsApi(ApiTestCase):
         ], f"Expected [3, 'control'], got {output_elements[2]['columns']}"
         assert output_elements[2]["element_identifier"] == "sample3"
 
+    def test_copy_sample_sheet_collection(self, history_id):
+        """Test that copying a sample sheet collection preserves columns metadata."""
+        # Create a sample sheet collection with columns metadata
+        contents = [
+            ("sample1", "content1"),
+            ("sample2", "content2"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="original sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[
+                {"type": "int", "name": "replicate", "optional": False},
+                {"type": "string", "name": "condition", "optional": False},
+            ],
+            rows={
+                "sample1": [1, "control"],
+                "sample2": [2, "treatment"],
+            },
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        original_collection = self._check_create_response(create_response)
+        original_hdca_id = original_collection["id"]
+
+        # Verify the original sample sheet has columns metadata
+        original_elements = original_collection["elements"]
+        assert len(original_elements) == 2
+        assert original_elements[0]["columns"] == [1, "control"]
+        assert original_elements[1]["columns"] == [2, "treatment"]
+
+        # Copy the collection using the new copy_collection method
+        copy_response = self.dataset_collection_populator.copy_collection(
+            history_id, original_hdca_id, copy_elements=True, wait=False
+        )
+        copied_collection = copy_response.json()
+
+        # Fetch the full details of the copied collection
+        copied_collection_details = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=copied_collection["id"]
+        )
+
+        # Verify the copied collection has the same columns metadata
+        copied_elements = copied_collection_details["elements"]
+        assert len(copied_elements) == 2, f"Expected 2 elements, got {len(copied_elements)}"
+
+        # Check that columns metadata was preserved for each element
+        self._assert_has_keys(copied_elements[0], "columns")
+        assert copied_elements[0]["columns"] == [
+            1,
+            "control",
+        ], f"Expected [1, 'control'], got {copied_elements[0]['columns']}"
+        assert copied_elements[0]["element_identifier"] == "sample1"
+
+        self._assert_has_keys(copied_elements[1], "columns")
+        assert copied_elements[1]["columns"] == [
+            2,
+            "treatment",
+        ], f"Expected [2, 'treatment'], got {copied_elements[1]['columns']}"
+        assert copied_elements[1]["element_identifier"] == "sample2"
+
+        # Verify column definitions are preserved
+        assert copied_collection_details["column_definitions"] == original_collection["column_definitions"]
+        assert copied_collection_details["collection_type"] == "sample_sheet"
+
     def test_workbook_download(self):
         xlsx_file = self.dataset_collection_populator.download_workbook(
             "sample_sheet",

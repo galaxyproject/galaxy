@@ -3442,6 +3442,20 @@ class BaseDatasetCollectionPopulator:
         payload = self.create_list_payload(history_id, instance_type="history", **kwds)
         return self.__create(payload, wait=wait)
 
+    def copy_collection(self, history_id: str, hdca_id: str, copy_elements: bool = True, wait: bool = False):
+        """Copy an existing dataset collection to a history."""
+        payload = {
+            "source": "hdca",
+            "content": hdca_id,
+            "type": "dataset_collection",
+            "copy_elements": copy_elements,
+        }
+        copy_response = self.dataset_populator._post(
+            f"histories/{history_id}/contents/dataset_collections", payload, json=True
+        )
+        api_asserts.assert_status_code_is_ok(copy_response)
+        return copy_response
+
     def upload_collection(self, history_id: str, collection_type, elements, wait: bool = False, **kwds):
         payload = self.__create_payload_fetch(history_id, collection_type, contents=elements, **kwds)
         return self.__create(payload, wait=wait)
