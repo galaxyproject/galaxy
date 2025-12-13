@@ -372,6 +372,7 @@ def _materialize_collection_element(
         element=materialized_object,
         element_index=element.element_index,
         element_identifier=element.element_identifier,
+        columns=element.columns,
     )
     return materialized_element
 
