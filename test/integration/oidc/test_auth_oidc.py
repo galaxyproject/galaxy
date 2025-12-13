@@ -107,7 +107,7 @@ class AbstractTestCases:
         # regex to find the action attribute on the HTML login page
         #   returned by Keycloak
         REGEX_KEYCLOAK_LOGIN_ACTION = re.compile(r"action=\"(.*?)\"\s+")
-        REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token\": \"(.*)\"")
+        REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token = \"(.*)\"")
         container_name: ClassVar[str]
         backend_config_file: ClassVar[str]
         provider_name: ClassVar[str]
@@ -212,7 +212,6 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     This test now uses the unified PSA-based Keycloak backend.
     """
 
-    REGEX_GALAXY_CSRF_TOKEN = re.compile(r"session_csrf_token = \"(.*)\"")
     provider_name = "keycloak"
 
     @classmethod
