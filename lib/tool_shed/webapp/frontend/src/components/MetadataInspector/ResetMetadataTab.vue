@@ -48,7 +48,7 @@ async function applyReset() {
             },
         })
         previewResult.value = data ?? null
-        emit("resetComplete")
+        // Don't auto-refresh - let user see results first, they can click "New Preview" to refresh
     } catch (e) {
         notifyOnCatch(e)
     } finally {
@@ -57,6 +57,10 @@ async function applyReset() {
 }
 
 function clearPreview() {
+    // If we had completed a non-dry-run reset, refresh parent data
+    if (previewResult.value && !previewResult.value.dry_run) {
+        emit("resetComplete")
+    }
     previewResult.value = null
 }
 </script>

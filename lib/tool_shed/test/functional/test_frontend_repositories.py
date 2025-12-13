@@ -113,3 +113,29 @@ class TestFrontendRepositories(PlaywrightTestCase):
         page.get_by_role("button", name="Preview Changes").click()
         page.wait_for_selector("text=Preview Results")  # Wait for results
         self.screenshot("metadata_inspector_reset_preview")
+
+    @skip_if_api_v1
+    def test_metadata_inspector_reset_full(self):
+        """Perform a full metadata reset and verify completion."""
+        self.login()
+        self._setup_repo_and_visit_inspector(multi_revision=True)
+        page = self._page
+
+        # Navigate to Reset Metadata tab
+        page.locator("[role=tab]").filter(has_text="Reset Metadata").click()
+        page.wait_for_load_state("networkidle")
+
+        # Preview changes first
+        page.get_by_role("button", name="Preview Changes").click()
+        page.wait_for_selector("text=Preview Results")
+        expect(page.locator("text=(dry run)")).to_be_visible()
+
+        # Apply the reset
+        page.get_by_role("button", name="Apply Now").click()
+        page.wait_for_selector("text=Reset Complete", timeout=60000)
+
+        # Verify dry run indicator is gone and status shows success
+        expect(page.locator("text=(dry run)")).not_to_be_visible()
+        expect(page.locator(".q-chip").filter(has_text="ok")).to_be_visible()
+
+        self.screenshot("metadata_inspector_reset_complete")
