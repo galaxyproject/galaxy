@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 
@@ -493,3 +494,88 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         only_revision = list(metadata_for_revisions.values())[0]
         assert only_revision
         return only_revision
+
+    @skip_if_api_v1
+    def test_generate_frontend_fixtures(self):
+        """Generate JSON fixture files for frontend unit tests.
+
+        This test captures real API responses and writes them to JSON files that can be
+        used as typed mock data in Vitest unit tests for MetadataInspector components.
+
+        By default, fixtures are written to a temp directory and the path is printed.
+        To write fixtures to the frontend test directory, set:
+
+            TOOL_SHED_FIXTURE_OUTPUT_DIR=lib/tool_shed/webapp/frontend/src/components/MetadataInspector/__fixtures__
+
+        The generated fixtures include:
+        - repository_metadata_column_maker.json: Multi-revision repo with tools (RepositoryMetadata)
+        - repository_metadata_bismark.json: Repo with invalid_tools (RepositoryMetadata)
+        - reset_metadata_preview.json: Dry-run reset response (ResetMetadataOnRepositoryResponse)
+        - reset_metadata_applied.json: Applied reset response (ResetMetadataOnRepositoryResponse)
+        """
+        populator = self.populator
+        output_dir = os.environ.get("TOOL_SHED_FIXTURE_OUTPUT_DIR", tempfile.mkdtemp(prefix="ts_fixtures_"))
+        os.makedirs(output_dir, exist_ok=True)
+
+        # 1. RepositoryMetadata - column_maker (multi-revision with tools)
+        column_maker_repo = populator.setup_test_data_repo("column_maker")
+        metadata_response = self.api_interactor.get(
+            f"repositories/{column_maker_repo.id}/metadata?downloadable_only=false"
+        )
+        api_asserts.assert_status_code_is_ok(metadata_response)
+        column_maker_metadata = metadata_response.json()
+        assert len(column_maker_metadata) >= 3, "column_maker should have 3+ revisions"
+
+        with open(os.path.join(output_dir, "repository_metadata_column_maker.json"), "w") as f:
+            json.dump(column_maker_metadata, f, indent=2)
+
+        # 2. RepositoryMetadata - bismark (with invalid_tools)
+        bismark_repo = populator.setup_bismark_repo()
+        bismark_response = self.api_interactor.get(
+            f"repositories/{bismark_repo.id}/metadata?downloadable_only=false"
+        )
+        api_asserts.assert_status_code_is_ok(bismark_response)
+        bismark_metadata = bismark_response.json()
+        # Verify it has invalid_tools
+        has_invalid = any(
+            rev.get("invalid_tools") for rev in bismark_metadata.values()
+        )
+        assert has_invalid, "bismark should have invalid_tools"
+
+        with open(os.path.join(output_dir, "repository_metadata_bismark.json"), "w") as f:
+            json.dump(bismark_metadata, f, indent=2)
+
+        # 3. ResetMetadataOnRepositoryResponse - dry_run preview
+        preview_response = self.api_interactor.post(
+            f"repositories/{column_maker_repo.id}/reset_metadata",
+            params={"dry_run": True, "verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(preview_response)
+        preview_data = preview_response.json()
+        assert preview_data["dry_run"] is True
+        assert preview_data["changeset_details"] is not None
+
+        with open(os.path.join(output_dir, "reset_metadata_preview.json"), "w") as f:
+            json.dump(preview_data, f, indent=2)
+
+        # 4. ResetMetadataOnRepositoryResponse - applied (non-dry-run)
+        # Use a fresh repo so we don't affect other tests
+        apply_repo = populator.setup_test_data_repo("column_maker")
+        apply_response = self.api_interactor.post(
+            f"repositories/{apply_repo.id}/reset_metadata",
+            params={"dry_run": False, "verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(apply_response)
+        apply_data = apply_response.json()
+        assert apply_data["dry_run"] is False
+        assert apply_data["changeset_details"] is not None
+
+        with open(os.path.join(output_dir, "reset_metadata_applied.json"), "w") as f:
+            json.dump(apply_data, f, indent=2)
+
+        print(f"\nFixtures written to: {output_dir}")
+        print("Files generated:")
+        for f in sorted(os.listdir(output_dir)):
+            filepath = os.path.join(output_dir, f)
+            size = os.path.getsize(filepath)
+            print(f"  - {f} ({size} bytes)")
