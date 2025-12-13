@@ -94,8 +94,7 @@ class TestWorkflowProgress(TestCase):
                 workflow_invocation_step.state = "scheduled"
                 workflow_invocation_step.workflow_step = self._step(i)
                 assert step_id == self._step(i).id
-                # workflow_invocation_step.workflow_invocation = self.invocation
-                self.invocation.steps.append(workflow_invocation_step)
+                workflow_invocation_step.workflow_invocation = self.invocation
 
             workflow_invocation_step_state = model.WorkflowRequestStepState()
             workflow_invocation_step_state.workflow_step_id = step_id
@@ -111,6 +110,7 @@ class TestWorkflowProgress(TestCase):
         else:
             workflow_invocation_step = model.WorkflowInvocationStep()
             workflow_invocation_step.workflow_step = self._step(index)
+            workflow_invocation_step.workflow_invocation = self.invocation
             return workflow_invocation_step
 
     def test_connect_data_input(self):
@@ -211,6 +211,7 @@ class TestWorkflowProgress(TestCase):
         subworkflow_invocation_step.workflow_step_id = subworkflow_input_step.id
         subworkflow_invocation_step.state = "new"
         subworkflow_invocation_step.workflow_step = subworkflow_input_step
+        subworkflow_invocation_step.workflow_invocation = subworkflow_invocation
 
         subworkflow_progress.set_outputs_for_input(subworkflow_invocation_step)
 
