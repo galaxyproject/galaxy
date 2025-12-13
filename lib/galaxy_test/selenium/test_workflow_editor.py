@@ -328,18 +328,18 @@ steps:
         node.title.wait_for_and_click()
         columns = self.components.tool_form.parameter_textarea(parameter="col")
         textarea_columns = columns.wait_for_visible()
-        assert textarea_columns.get_attribute("value") == "1\n2\n3\n"
+        assert textarea_columns.get_attribute("value") == "1\n2\n3"
         column_names = self.components.tool_form.parameter_textarea(parameter="col_names")
         textarea_column_names = column_names.wait_for_visible()
-        assert textarea_column_names.get_attribute("value") == "a\nb\nc\n"
+        assert textarea_column_names.get_attribute("value") == "a\nb\nc"
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.set_text_element(columns, "4\n5\n6\n")
+        self.set_text_element(columns, "4\n5\n6")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         self.driver.refresh()
         node.title.wait_for_and_click()
         textarea_columns = columns.wait_for_visible()
-        assert textarea_columns.get_attribute("value") == "4\n5\n6\n"
+        assert textarea_columns.get_attribute("value") == "4\n5\n6"
 
     @selenium_test
     def test_integer_input(self):
