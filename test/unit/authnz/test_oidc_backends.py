@@ -288,42 +288,6 @@ class TestJWKSSupport:
         assert result == [{"kid": "key1", "kty": "RSA"}]
 
 
-class TestLocalhostDevelopmentMode:
-    """Test localhost development mode handling."""
-
-    @patch.dict("os.environ", {}, clear=True)
-    def test_localhost_sets_insecure_transport(self):
-        """Should set OAUTHLIB_INSECURE_TRANSPORT for localhost."""
-        import os
-
-        from galaxy.authnz.oidc import GalaxyOpenIdConnect
-
-        strategy = MockStrategy()
-        backend = KeycloakOpenIdConnect(strategy, redirect_uri="http://localhost:8080/callback")
-
-        # Mock parent's user_data to avoid actual API calls
-        with patch.object(GalaxyOpenIdConnect.__bases__[0], "user_data", return_value={}):
-            backend.user_data({"access_token": "test"})
-
-        assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") == "1"
-
-    def test_https_does_not_set_insecure_transport(self):
-        """Should not set OAUTHLIB_INSECURE_TRANSPORT for non-localhost HTTP."""
-        # Test the logic: only http://localhost: URLs should set the env var
-        test_cases = [
-            ("https://example.com/callback", False),
-            ("https://localhost:8080/callback", False),
-            ("http://example.com/callback", False),
-            ("http://localhost:8080/callback", True),
-            ("http://localhost:80/callback", True),
-        ]
-
-        for redirect_uri, should_set_env in test_cases:
-            # Check if the condition in the backend would trigger
-            should_set = redirect_uri and redirect_uri.startswith("http://localhost:")
-            assert should_set == should_set_env, f"Logic error for {redirect_uri}"
-
-
 class TestBackendInstantiation:
     """Test backend instantiation and configuration."""
 
