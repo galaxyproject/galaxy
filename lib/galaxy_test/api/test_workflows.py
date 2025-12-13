@@ -5648,6 +5648,98 @@ test_data:
             messages = subworkflow_invocation.get("messages", [])
             assert len(messages) == 0, f"Expected no error messages, got: {messages}"
 
+    def test_run_subworkflow_with_boolean_parameter_in_when_condition(self):
+        """Test boolean false parameter passed to subworkflow with when condition.
+
+        This test verifies that boolean parameters (especially false) are properly
+        passed from parent to subworkflow when the subworkflow has:
+        1. Delayed scheduling (via $link)
+        2. A when condition that uses the boolean parameter
+
+        Previously, false values were converted to None in the when expression evaluation,
+        causing "when_not_boolean" errors.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            workflow = """
+class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  some_file:
+    type: data
+steps:
+  nested_workflow:
+    in:
+      subworkflow_should_run: should_run
+      subworkflow_file: some_file
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        subworkflow_should_run: boolean
+        subworkflow_file: data
+      steps:
+        expression:
+          tool_id: expression_forty_two
+          state: {}
+        conditional_step:
+          tool_id: cheetah_casting
+          in:
+            subworkflow_should_run: subworkflow_should_run
+          state:
+            floattest: 3.14
+            inttest:
+              $link: expression/out1
+          when: $(inputs.subworkflow_should_run)
+test_data:
+  some_file:
+    value: 1.bed
+    type: File
+  should_run:
+    value: false
+    type: raw
+"""
+            summary = self._run_workflow(workflow, history_id=history_id, wait=True, assert_ok=True)
+
+            # Verify parent workflow executed successfully
+            parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert parent_invocation["state"] == "scheduled"
+
+            # Find the subworkflow step and get its invocation
+            subworkflow_step = None
+            for step in parent_invocation["steps"]:
+                if step.get("subworkflow_invocation_id"):
+                    subworkflow_step = step
+                    break
+
+            assert subworkflow_step is not None, "No subworkflow step found"
+            subworkflow_invocation_id = subworkflow_step["subworkflow_invocation_id"]
+            subworkflow_invocation = self.workflow_populator.get_invocation(
+                subworkflow_invocation_id, step_details=True
+            )
+
+            # The subworkflow should have succeeded
+            assert (
+                subworkflow_invocation["state"] == "scheduled"
+            ), f"Expected subworkflow to succeed, got state: {subworkflow_invocation['state']}"
+
+            # Should not have error messages (previously failed with "when_not_boolean")
+            messages = subworkflow_invocation.get("messages", [])
+            assert len(messages) == 0, f"Expected no error messages, got: {messages}"
+
+            # Find the conditional step in the subworkflow and verify it was skipped
+            # (when condition was false, so step should not execute)
+            conditional_step = None
+            for step in subworkflow_invocation["steps"]:
+                if step.get("workflow_step_label") == "conditional_step":
+                    conditional_step = step
+                    break
+
+            assert conditional_step is not None, "Conditional step not found in subworkflow"
+            # The step should have been skipped because should_run=false
+            assert len(conditional_step["jobs"]) == 0 or all(
+                j["state"] == "skipped" for j in conditional_step["jobs"]
+            ), "Expected conditional step to be skipped when should_run=false"
+
     def test_run_with_non_optional_data_unspecified_fails_invocation(self):
         with self.dataset_populator.test_history() as history_id:
             error = self._run_jobs(

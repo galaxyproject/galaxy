@@ -623,6 +623,12 @@ class WorkflowProgress:
 
         if step.label and step.type == "parameter_input" and "output" in outputs:
             self.runtime_replacements[step.label] = str(outputs["output"])
+        invocation = invocation_step.workflow_invocation
+        if not invocation.has_input_for_step(step.id):
+            content = outputs.get("output", NO_REPLACEMENT)
+            if content is not NO_REPLACEMENT:
+                log.info("ADDING INPUT FOR STEP %s: %s", step.id, content, exc_info=True)
+                invocation.add_input(content, step.id)
         self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
     def effective_replacement_dict(self):
