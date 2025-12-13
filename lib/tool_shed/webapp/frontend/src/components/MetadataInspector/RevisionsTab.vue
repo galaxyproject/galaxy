@@ -75,7 +75,7 @@ watch(
                 @update:model-value="toggleExpand(rev.key)"
                 expand-icon-toggle
             >
-                <template v-slot:header>
+                <template #header>
                     <q-item-section avatar>
                         <q-icon
                             :name="rev.data.downloadable ? 'sym_r_check_circle' : 'sym_r_cancel'"
@@ -102,7 +102,7 @@ watch(
                         </ul>
                     </q-card-section>
                     <q-card-section>
-                        <MetadataJsonViewer :data="rev.data" modelName="RepositoryRevisionMetadata" />
+                        <MetadataJsonViewer :data="rev.data" model-name="RepositoryRevisionMetadata" />
                     </q-card-section>
                 </q-card>
             </q-expansion-item>

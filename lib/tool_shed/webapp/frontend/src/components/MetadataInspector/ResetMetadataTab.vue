@@ -65,12 +65,10 @@ function clearPreview() {
     <div>
         <!-- Initial state -->
         <q-banner v-if="!previewResult" class="bg-blue-1 q-mb-md">
-            <template v-slot:avatar>
+            <template #avatar>
                 <q-icon name="sym_r_info" color="primary" />
             </template>
-            <div>
-                <strong>Reset metadata</strong> regenerates all revision metadata from repository contents.
-            </div>
+            <div><strong>Reset metadata</strong> regenerates all revision metadata from repository contents.</div>
             <div class="q-mt-sm text-caption">
                 Use cases:
                 <ul class="q-mb-none">
@@ -79,7 +77,7 @@ function clearPreview() {
                     <li>Repair missing or incomplete metadata</li>
                 </ul>
             </div>
-            <template v-slot:action>
+            <template #action>
                 <q-btn color="primary" label="Preview Changes" @click="runPreview" :loading="loading" />
             </template>
         </q-banner>
@@ -93,7 +91,11 @@ function clearPreview() {
                             <span class="text-weight-bold">
                                 {{ previewResult.dry_run ? "Preview Results" : "Reset Complete" }}
                             </span>
-                            <q-chip :color="previewResult.status === 'ok' ? 'positive' : 'warning'" size="sm" class="q-ml-sm">
+                            <q-chip
+                                :color="previewResult.status === 'ok' ? 'positive' : 'warning'"
+                                size="sm"
+                                class="q-ml-sm"
+                            >
                                 {{ previewResult.status }}
                             </q-chip>
                             <span v-if="previewResult.dry_run" class="text-caption q-ml-sm">(dry run)</span>

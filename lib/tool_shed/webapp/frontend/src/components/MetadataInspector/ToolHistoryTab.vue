@@ -18,6 +18,7 @@ interface ToolVersion {
     revision: string
     numericRevision: number
     version: string
+    name: string
     description: string
     tool: RepositoryTool
 }
@@ -46,6 +47,7 @@ const toolHistories = computed<ToolHistory[]>(() => {
                 revision: key,
                 numericRevision,
                 version: tool.version,
+                name: tool.name,
                 description: tool.description,
                 tool,
             })
@@ -83,8 +85,12 @@ function toggleTool(toolId: string) {
             </q-card-section>
 
             <q-timeline color="primary" layout="dense" class="q-px-md">
-                <q-timeline-entry v-for="ver in history.versions" :key="ver.revision" :subtitle="ver.description">
-                    <template v-slot:title>
+                <q-timeline-entry
+                    v-for="ver in history.versions"
+                    :key="ver.revision"
+                    :subtitle="`${ver.name} ${ver.description}`"
+                >
+                    <template #title>
                         <div class="row items-center q-gutter-sm">
                             <span class="text-weight-medium">{{ ver.version }}</span>
                             <q-badge color="grey-6">[{{ ver.numericRevision }}]</q-badge>
@@ -105,7 +111,7 @@ function toggleTool(toolId: string) {
                         :model-value="expandedTools.has(`${history.toolId}-${ver.revision}`)"
                         @update:model-value="toggleTool(`${history.toolId}-${ver.revision}`)"
                     >
-                        <MetadataJsonViewer :data="ver.tool" modelName="RepositoryTool" :deep="3" />
+                        <MetadataJsonViewer :data="ver.tool" model-name="RepositoryTool" :deep="3" />
                     </q-expansion-item>
                 </q-timeline-entry>
             </q-timeline>

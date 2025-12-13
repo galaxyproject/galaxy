@@ -47,7 +47,7 @@ const columns = [
         :pagination="{ rowsPerPage: 0 }"
         hide-pagination
     >
-        <template v-slot:body-cell-action="props">
+        <template #body-cell-action="props">
             <q-td :props="props">
                 <q-chip
                     :color="actionColors[props.value] || 'grey'"
@@ -59,12 +59,15 @@ const columns = [
                 </q-chip>
             </q-td>
         </template>
-        <template v-slot:body-cell-tools="props">
+        <template #body-cell-tools="props">
             <q-td :props="props">
-                <q-icon :name="props.value ? 'sym_r_check' : 'sym_r_close'" :color="props.value ? 'positive' : 'grey'" />
+                <q-icon
+                    :name="props.value ? 'sym_r_check' : 'sym_r_close'"
+                    :color="props.value ? 'positive' : 'grey'"
+                />
             </q-td>
         </template>
-        <template v-slot:body-cell-error="props">
+        <template #body-cell-error="props">
             <q-td :props="props">
                 <span v-if="props.value" class="text-negative">{{ props.value }}</span>
             </q-td>

@@ -73,11 +73,11 @@ function onResetComplete() {
 
             <!-- Invalid tools warning banner -->
             <q-banner v-if="totalInvalidTools > 0" class="bg-warning text-white">
-                <template v-slot:avatar>
+                <template #avatar>
                     <q-icon name="sym_r_warning" />
                 </template>
                 {{ totalInvalidTools }} invalid tool(s) found across revisions.
-                <template v-slot:action>
+                <template #action>
                     <q-btn flat label="View in Revisions" @click="activeTab = 'revisions'" />
                 </template>
             </q-banner>
@@ -99,10 +99,10 @@ function onResetComplete() {
                     <ToolHistoryTab :metadata="repositoryMetadata" @goToRevision="goToRevision" />
                 </q-tab-panel>
                 <q-tab-panel name="revisions">
-                    <RevisionsTab :metadata="repositoryMetadata" :expandRevision="expandRevision" />
+                    <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
                 </q-tab-panel>
                 <q-tab-panel name="reset" v-if="canManage">
-                    <ResetMetadataTab :repositoryId="repositoryId" @resetComplete="onResetComplete" />
+                    <ResetMetadataTab :repository-id="repositoryId" @resetComplete="onResetComplete" />
                 </q-tab-panel>
             </q-tab-panels>
         </q-card>

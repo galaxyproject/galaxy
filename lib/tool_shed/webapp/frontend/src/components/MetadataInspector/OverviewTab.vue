@@ -53,7 +53,7 @@ const currentRevisionData = computed(() => {
         <MetadataJsonViewer
             v-if="currentRevisionData"
             :data="currentRevisionData"
-            modelName="RepositoryRevisionMetadata"
+            model-name="RepositoryRevisionMetadata"
         />
         <div v-else class="text-grey">No metadata available</div>
     </div>
