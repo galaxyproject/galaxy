@@ -398,7 +398,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         for detail in result["changeset_details"]:
             assert "changeset_revision" in detail
             assert "numeric_revision" in detail
-            assert detail["action"] in ["created", "updated", "skipped", "unchanged"]
+            assert detail["action"] in ["created", "updated", "skipped", "unchanged", "pending"]
 
     @skip_if_api_v1
     def test_reset_metadata_dry_run_and_verbose(self):

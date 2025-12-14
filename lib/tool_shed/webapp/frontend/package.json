@@ -15,7 +15,8 @@
     "extract-descriptions": "node scripts/extract-schema-descriptions.js",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "dev-testtoolshed": "TOOL_SHED_URL=https://testtoolshed.g2.bx.psu.edu CHANGE_ORIGIN=true yarn vite dev"
   },
   "devDependencies": {
     "@quasar/vite-plugin": "^1.0.4",

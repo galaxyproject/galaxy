@@ -9,6 +9,55 @@ import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
 import LandingSearchBox from "@/components/LandingSearchBox.vue"
 import LandingInfoSections from "@/components/LandingInfoSections.vue"
+
+// MetadataInspector components
+import ChangesetSummaryTable from "@/components/MetadataInspector/ChangesetSummaryTable.vue"
+import JsonDiffViewer from "@/components/MetadataInspector/JsonDiffViewer.vue"
+import MetadataJsonViewer from "@/components/MetadataInspector/MetadataJsonViewer.vue"
+import RevisionsTab from "@/components/MetadataInspector/RevisionsTab.vue"
+import OverviewTab from "@/components/MetadataInspector/OverviewTab.vue"
+import ToolHistoryTab from "@/components/MetadataInspector/ToolHistoryTab.vue"
+
+// Fixtures for MetadataInspector demos
+import {
+    repositoryMetadataColumnMaker,
+    repositoryMetadataBismark,
+    resetMetadataPreview,
+    getChangesetDetails,
+    getFirstRevision,
+    makeChangeset,
+    type RepositoryMetadata,
+} from "@/components/MetadataInspector/__fixtures__"
+
+// Prepared demo data
+const changesetsAllActions = [
+    makeChangeset({ numeric_revision: 5, action: "created", changeset_revision: "abc1234567890" }),
+    makeChangeset({ numeric_revision: 4, action: "updated", changeset_revision: "def2345678901" }),
+    makeChangeset({ numeric_revision: 3, action: "unchanged", changeset_revision: "ghi3456789012" }),
+    makeChangeset({ numeric_revision: 2, action: "skipped", has_tools: false, changeset_revision: "jkl4567890123" }),
+    makeChangeset({
+        numeric_revision: 1,
+        action: "error" as never,
+        has_tools: false,
+        error: "Failed to parse tool XML: invalid syntax at line 42",
+        changeset_revision: "mno5678901234",
+    }),
+]
+
+const changesetsFromFixture = getChangesetDetails(resetMetadataPreview)
+
+const sampleRevisionData = getFirstRevision(repositoryMetadataColumnMaker)
+
+// JSON diff examples
+const diffBefore = { name: "my_tool", version: "1.0.0", description: "Old description" }
+const diffAfter = { name: "my_tool", version: "1.1.0", description: "New improved description", author: "dev" }
+const diffIdentical = { name: "unchanged", version: "1.0.0" }
+
+// Single revision for simpler demos
+const singleRevisionMetadata: RepositoryMetadata = (() => {
+    const keys = Object.keys(repositoryMetadataColumnMaker)
+    return { [keys[0]]: repositoryMetadataColumnMaker[keys[0]] }
+})()
 </script>
 
 <template>
@@ -71,6 +120,96 @@ import LandingInfoSections from "@/components/LandingInfoSections.vue"
         <component-showcase title="LandingInfoSections">
             <component-showcase-example title="defaults">
                 <landing-info-sections />
+            </component-showcase-example>
+        </component-showcase>
+
+        <!-- MetadataInspector Components -->
+        <div class="text-h5 q-my-lg">MetadataInspector Components</div>
+
+        <component-showcase title="ChangesetSummaryTable">
+            <component-showcase-example title="all action types">
+                <ChangesetSummaryTable :changesets="changesetsAllActions" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="real fixture data">
+                <ChangesetSummaryTable :changesets="changesetsFromFixture" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="empty">
+                <ChangesetSummaryTable :changesets="[]" />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="JsonDiffViewer">
+            <component-showcase-example title="with changes (added, modified)">
+                <JsonDiffViewer :before="diffBefore" :after="diffAfter" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="no changes">
+                <JsonDiffViewer :before="diffIdentical" :after="diffIdentical" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="complex metadata diff">
+                <JsonDiffViewer
+                    :before="resetMetadataPreview.repository_metadata_before"
+                    :after="resetMetadataPreview.repository_metadata_after"
+                />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="MetadataJsonViewer">
+            <component-showcase-example title="revision metadata with tooltips">
+                <MetadataJsonViewer
+                    v-if="sampleRevisionData"
+                    :data="sampleRevisionData"
+                    model-name="RepositoryRevisionMetadata"
+                />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="collapsed (deep=1)">
+                <MetadataJsonViewer v-if="sampleRevisionData" :data="sampleRevisionData" :deep="1" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="expanded (deep=4)">
+                <MetadataJsonViewer v-if="sampleRevisionData" :data="sampleRevisionData" :deep="4" />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="RevisionsTab">
+            <component-showcase-example title="multi-revision repo (column_maker)">
+                <RevisionsTab :metadata="repositoryMetadataColumnMaker" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="with invalid tools (bismark)">
+                <RevisionsTab :metadata="repositoryMetadataBismark" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="empty metadata">
+                <RevisionsTab :metadata="null" />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="OverviewTab">
+            <component-showcase-example title="with revision selector">
+                <OverviewTab :metadata="repositoryMetadataColumnMaker" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="single revision">
+                <OverviewTab :metadata="singleRevisionMetadata" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="no metadata">
+                <OverviewTab :metadata="null" />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="ToolHistoryTab">
+            <component-showcase-example title="tool version timeline">
+                <ToolHistoryTab :metadata="repositoryMetadataColumnMaker" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="no tools">
+                <ToolHistoryTab :metadata="null" />
             </component-showcase-example>
         </component-showcase>
     </page-container>
