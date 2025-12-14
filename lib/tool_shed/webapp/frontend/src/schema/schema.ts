@@ -960,7 +960,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "created" | "updated" | "skipped" | "unchanged"
+            action: "created" | "updated" | "skipped" | "unchanged" | "pending"
             /** Changeset Revision */
             changeset_revision: string
             /** Comparison Result */
