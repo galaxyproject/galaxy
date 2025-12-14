@@ -41,16 +41,6 @@ function toolSummary(data: any): string {
     return tools.map((t: any) => `${t.id} (${t.version})`).join(", ")
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function depSummary(data: any): string {
-    const repoDeps = data.repository_dependencies?.length || 0
-    const toolDeps = data.tool_dependencies ? Object.keys(data.tool_dependencies).length : 0
-    const parts = []
-    if (repoDeps > 0) parts.push(`${repoDeps} repo dep${repoDeps > 1 ? "s" : ""}`)
-    if (toolDeps > 0) parts.push(`${toolDeps} tool dep${toolDeps > 1 ? "s" : ""}`)
-    return parts.length > 0 ? parts.join(", ") : "No dependencies"
-}
-
 // Auto-expand if prop provided
 watch(
     () => props.expandRevision,
@@ -85,7 +75,6 @@ watch(
                     <q-item-section>
                         <q-item-label>[{{ rev.numericRevision }}:{{ rev.hash.substring(0, 7) }}]</q-item-label>
                         <q-item-label caption>{{ toolSummary(rev.data) }}</q-item-label>
-                        <q-item-label caption>{{ depSummary(rev.data) }}</q-item-label>
                     </q-item-section>
                     <q-item-section side v-if="rev.data.invalid_tools?.length > 0">
                         <q-badge color="warning" :label="`${rev.data.invalid_tools.length} invalid`" />

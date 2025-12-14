@@ -189,25 +189,6 @@ describe("RevisionsTab", () => {
     })
 
     describe("edge cases", () => {
-        it("handles revision with repository dependencies", () => {
-            const keys = Object.keys(fixtureMetadata)
-            const depsMetadata: RepositoryMetadata = {
-                [keys[0]]: makeRevision({
-                    repository_dependencies: [
-                        makeRevision() as unknown as RepositoryRevisionMetadata,
-                        makeRevision() as unknown as RepositoryRevisionMetadata,
-                    ],
-                    has_repository_dependencies: true,
-                }),
-            }
-
-            const wrapper = mount(RevisionsTab, {
-                props: { metadata: depsMetadata },
-            })
-
-            expect(wrapper.text()).toContain("2 repo deps")
-        })
-
         it("handles revision with many invalid tools", () => {
             const keys = Object.keys(fixtureMetadata)
             const manyInvalidMetadata: RepositoryMetadata = {
