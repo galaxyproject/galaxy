@@ -57,9 +57,8 @@ function onResetComplete() {
         <error-banner v-else-if="!repository" error="Failed to load repository" />
         <q-card v-else>
             <q-card-section class="bg-primary text-white">
-                <div class="text-h6">Metadata Inspector: {{ repository.name }}</div>
-                <div class="text-subtitle2">
-                    Owner:
+                <div class="text-h6">{{ repository.name }} – <em>Metadata Inspector</em></div>
+                <div class="text-subtitle">
                     <router-link
                         class="text-white"
                         style="text-decoration: none"
@@ -67,7 +66,6 @@ function onResetComplete() {
                     >
                         {{ repository.owner }}
                     </router-link>
-                    | {{ revisionCount }} revision(s)
                 </div>
             </q-card-section>
 
@@ -85,7 +83,7 @@ function onResetComplete() {
             <q-tabs v-model="activeTab" class="text-primary" align="left">
                 <q-tab name="overview" label="Overview" />
                 <q-tab name="tool-history" label="Tool History" />
-                <q-tab name="revisions" label="Revisions" />
+                <q-tab name="revisions" :label="`Revisions (${revisionCount})`" />
                 <q-tab name="reset" label="Reset Metadata" v-if="canManage" />
             </q-tabs>
 
