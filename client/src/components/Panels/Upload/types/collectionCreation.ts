@@ -2,8 +2,20 @@
  * Collection creation related types and interfaces
  */
 
-import type { SupportedCollectionType } from "@/components/Panels/Upload/uploadState";
-import type { CollectionCreationInput } from "@/composables/uploadQueue";
+/**
+ * Supported collection types in Galaxy
+ */
+export type SupportedCollectionType = "list" | "list:paired";
+
+/**
+ * Collection creation input from UI components
+ */
+export interface CollectionCreationInput {
+    /** Name of the collection to create */
+    name: string;
+    /** Type of collection: 'list' or 'list:paired' */
+    type: SupportedCollectionType;
+}
 
 /**
  * Validation state for a collection configuration

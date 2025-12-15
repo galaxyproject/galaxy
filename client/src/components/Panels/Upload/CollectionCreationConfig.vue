@@ -7,8 +7,8 @@ import { computed, ref, watch } from "vue";
 import type {
     CollectionCreationState,
     CollectionTypeOption,
+    SupportedCollectionType,
 } from "@/components/Panels/Upload/types/collectionCreation";
-import type { SupportedCollectionType } from "@/components/Panels/Upload/uploadState";
 
 interface FileItem {
     name: string;
