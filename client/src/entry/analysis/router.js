@@ -624,7 +624,7 @@ export function getRouter(Galaxy) {
                                 !Galaxy.config.enable_oidc ||
                                     Galaxy.config.enable_account_interface ||
                                     !hasSingleOidcProfile(Galaxy.config.oidc),
-                                "/user"
+                                "/user",
                             ) || redirectAnon(),
                     },
                     {
