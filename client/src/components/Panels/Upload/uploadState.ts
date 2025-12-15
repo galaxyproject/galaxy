@@ -1,6 +1,7 @@
 import { computed } from "vue";
 
 import type { FetchDatasetHash } from "@/api/tools";
+import type { SupportedCollectionType } from "@/components/Panels/Upload/types/collectionCreation";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 import type { UploadMode } from "./types";
@@ -13,9 +14,6 @@ export type UploadStatus = "queued" | "uploading" | "processing" | "completed" |
 
 /** Collection batch lifecycle status */
 export type BatchStatus = "uploading" | "creating-collection" | "completed" | "error";
-
-/** Supported collection types */
-export type SupportedCollectionType = "list" | "list:paired";
 
 /** Collection batch state tracking */
 export interface CollectionBatchState {
