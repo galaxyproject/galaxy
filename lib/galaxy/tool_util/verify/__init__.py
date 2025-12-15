@@ -530,7 +530,7 @@ def intersection_over_union(
     This is particularly useful when specific image regions must always be labeled with a designated label value (e.g., the image background is often labeled with 0 or -1).
     """
     assert mask1.dtype == mask2.dtype
-    assert mask1.ndim == mask2.ndim == 2
+    assert mask1.ndim == mask2.ndim
     assert mask1.shape == mask2.shape
     for label in pin_labels or []:
         count = sum(label in mask for mask in (mask1, mask2))
