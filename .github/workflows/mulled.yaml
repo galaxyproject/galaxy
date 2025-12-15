@@ -44,7 +44,7 @@ jobs:
       - name: Run tests
         run: tox -e mulled
         working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Mulled unit test results (${{ matrix.python-version }})
