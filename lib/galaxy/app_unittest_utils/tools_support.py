@@ -27,12 +27,17 @@ datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
+def mock_app_for_tool_support() -> UniverseApplication:
+    app = cast(UniverseApplication, MockApp())
+    app.config.new_file_path = tempfile.mkdtemp()
+    app.config.admin_users = "mary@example.com"
+    return app
+
+
 class UsesApp:
     def setup_app(self):
         self.test_directory = tempfile.mkdtemp()
-        self.app = cast(UniverseApplication, MockApp())
-        self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
-        self.app.config.admin_users = "mary@example.com"
+        self.app = mock_app_for_tool_support()
 
     def tear_down_app(self):
         shutil.rmtree(self.test_directory)

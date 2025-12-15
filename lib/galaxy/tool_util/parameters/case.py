@@ -10,6 +10,7 @@ from typing import (
 )
 
 from packaging.version import Version
+from typing_extensions import Literal
 
 from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
@@ -160,7 +161,10 @@ def test_case_state(
     unhandled_inputs = []
     state: Dict[str, Any] = {}
 
-    handled_inputs = _merge_level_into_state(tool_parameter_bundle, inputs, state, profile, warnings, None)
+    state_representation = test_dict.get("value_state_representation", "test_case_xml")
+    handled_inputs = _merge_level_into_state(
+        tool_parameter_bundle, inputs, state, profile, state_representation, warnings, None
+    )
 
     for test_input in inputs:
         input_name = test_input["name"]
@@ -200,12 +204,15 @@ def _merge_level_into_state(
     inputs: ToolSourceTestInputs,
     state_at_level: dict,
     profile: str,
+    state_representation: Literal["test_case_xml", "test_case_json"],
     warnings: List[str],
     prefix: Optional[str],
 ) -> Set[str]:
     handled_inputs: Set[str] = set()
     for tool_input in tool_inputs:
-        handled_inputs.update(_merge_into_state(tool_input, inputs, state_at_level, profile, warnings, prefix))
+        handled_inputs.update(
+            _merge_into_state(tool_input, inputs, state_at_level, profile, state_representation, warnings, prefix)
+        )
 
     return handled_inputs
 
@@ -223,6 +230,7 @@ def _merge_into_state(
     inputs: ToolSourceTestInputs,
     state_at_level: dict,
     profile: str,
+    state_representation: Literal["test_case_xml", "test_case_json"],
     warnings: List[str],
     prefix: Optional[str],
 ) -> Set[str]:
@@ -240,10 +248,14 @@ def _merge_into_state(
         when: ConditionalWhen = _select_which_when(tool_input, conditional_state, inputs, state_path)
         test_parameter = tool_input.test_parameter
         handled_inputs.update(
-            _merge_into_state(test_parameter, inputs, conditional_state, profile, warnings, state_path)
+            _merge_into_state(
+                test_parameter, inputs, conditional_state, profile, state_representation, warnings, state_path
+            )
         )
         handled_inputs.update(
-            _merge_level_into_state(when.parameters, inputs, conditional_state, profile, warnings, state_path)
+            _merge_level_into_state(
+                when.parameters, inputs, conditional_state, profile, state_representation, warnings, state_path
+            )
         )
     elif isinstance(tool_input, (RepeatParameterModel,)):
         repeat_state_array = state_at_level.get(input_name, [])
@@ -261,7 +273,13 @@ def _merge_into_state(
             repeat_instance_prefix = f"{state_path}_{i}"
             handled_inputs.update(
                 _merge_level_into_state(
-                    tool_input.parameters, inputs, repeat_state_array[i], profile, warnings, repeat_instance_prefix
+                    tool_input.parameters,
+                    inputs,
+                    repeat_state_array[i],
+                    profile,
+                    state_representation,
+                    warnings,
+                    repeat_instance_prefix,
                 )
             )
     elif isinstance(tool_input, (SectionParameterModel,)):
@@ -270,7 +288,9 @@ def _merge_into_state(
             state_at_level[input_name] = section_state
 
         handled_inputs.update(
-            _merge_level_into_state(tool_input.parameters, inputs, section_state, profile, warnings, state_path)
+            _merge_level_into_state(
+                tool_input.parameters, inputs, section_state, profile, state_representation, warnings, state_path
+            )
         )
     else:
         test_input = _input_for(state_path, inputs)
@@ -283,17 +303,24 @@ def _merge_into_state(
             elif isinstance(tool_input, (DataParameterModel,)):
                 if tool_input.multiple:
                     value = test_input["value"]
-                    input_value_list = []
+                    input_value_list: List[Any] = []
                     if value:
-                        test_input_values = cast(str, value).split(",")
-                        for test_input_value in test_input_values:
-                            instance_test_input = test_input.copy()
-                            instance_test_input["value"] = test_input_value
-                            input_value_json = xml_data_input_to_json(instance_test_input)
-                            input_value_list.append(input_value_json)
+                        if state_representation == "test_case_json":
+                            input_value_list = test_input["value"] if test_input["value"] is not None else []
+                        else:
+                            test_input_values = cast(str, value).split(",")
+                            for test_input_value in test_input_values:
+                                instance_test_input = test_input.copy()
+                                instance_test_input["value"] = test_input_value
+                                input_value_json = xml_data_input_to_json(instance_test_input)
+                                input_value_list.append(input_value_json)
+
                     input_value = input_value_list
                 else:
-                    input_value = xml_data_input_to_json(test_input)
+                    if state_representation == "test_case_json":
+                        input_value = test_input["value"]
+                    else:
+                        input_value = xml_data_input_to_json(test_input)
             else:
                 input_value = test_input["value"]
                 input_value = legacy_from_string(tool_input, input_value, warnings, profile)

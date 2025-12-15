@@ -1,0 +1,35 @@
+class: GalaxyUserTool
+id: gx_boolean_user
+version: "1.0.0"
+name: gx_boolean_user
+shell_command: echo '$(inputs.parameter)' >> output.txt
+inputs:
+  - name: parameter
+    type: boolean
+    truevalue: mytrue
+    falsevalue: myfalse
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: output.txt
+tests:
+  - outputs:
+      output:
+        asserts:
+          - has_line:
+              line: 'false'
+  - inputs:
+      parameter: false
+    outputs:
+      output:
+        asserts:
+          - has_line:
+              line: 'false'
+  - inputs:
+      parameter: true
+    outputs:
+      output:
+        asserts:
+          - has_line:
+              line: 'true'
