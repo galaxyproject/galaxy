@@ -27,9 +27,8 @@ function initializeRowData(rowData: AgRowData[]) {
     if (collectionDetailed) {
         for (const element of collectionDetailed.elements) {
             const row: AgRowData = { __model_object: element };
-            (collectionDetailed.column_definitions || []).forEach((colDef) => {
-                // TODO:
-                row[colDef.name] = "foobar";
+            (collectionDetailed.column_definitions || []).forEach((colDef, colIndex) => {
+                row[colDef.name] = element.columns ? element.columns[colIndex] : null;
             });
             rowData.push(row);
         }
