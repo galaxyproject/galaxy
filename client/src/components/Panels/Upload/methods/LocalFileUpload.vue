@@ -7,11 +7,12 @@ import { computed, ref, watch } from "vue";
 import { findExtension } from "@/components/Upload/utils";
 import { useFileDrop } from "@/composables/fileDrop";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
-import type { CollectionConfig, CollectionCreationInput } from "@/composables/uploadQueue";
+import type { CollectionConfig } from "@/composables/uploadQueue";
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { bytesToString } from "@/utils/utils";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { CollectionCreationState } from "../types/collectionCreation";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -51,12 +52,30 @@ const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
-const collectionConfig = ref<CollectionCreationInput | null>(null);
+const collectionState = ref<CollectionCreationState>({
+    config: null,
+    validation: {
+        isValid: true,
+        isActive: false,
+        message: "",
+    },
+});
 
 const hasFiles = computed(() => selectedFiles.value.length > 0);
 const totalSize = computed(() => {
     const bytes = selectedFiles.value.reduce((sum, item) => sum + item.file.size, 0);
     return bytesToString(bytes);
+});
+
+const isReadyToUpload = computed(() => {
+    if (!hasFiles.value) {
+        return false;
+    }
+    // If collection creation is active, it must be valid to proceed
+    if (collectionState.value.validation.isActive && !collectionState.value.validation.isValid) {
+        return false;
+    }
+    return true;
 });
 
 const bulkExtension = ref<string | null>(null);
@@ -170,7 +189,11 @@ const tableFields = [
     { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
 ];
 
-watch(hasFiles, (ready) => emit("ready", ready), { immediate: true });
+watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
+
+function handleCollectionStateChange(state: CollectionCreationState) {
+    collectionState.value = state;
+}
 
 function onDrop(evt: DragEvent) {
     if (evt.dataTransfer?.files) {
@@ -237,10 +260,10 @@ function startUpload() {
         fileData: item.file,
     }));
 
-    const fullCollectionConfig: CollectionConfig | undefined = collectionConfig.value
+    const fullCollectionConfig: CollectionConfig | undefined = collectionState.value.config
         ? {
-              name: collectionConfig.value.name,
-              type: collectionConfig.value.type,
+              name: collectionState.value.config.name,
+              type: collectionState.value.config.type,
               hideSourceItems: true,
               historyId: props.targetHistoryId,
           }
@@ -454,7 +477,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 <CollectionCreationConfig
                     ref="collectionConfigComponent"
                     :files="selectedFiles"
-                    @update:config="collectionConfig = $event" />
+                    @update:state="handleCollectionStateChange" />
 
                 <div class="file-list-actions mt-2">
                     <GButton

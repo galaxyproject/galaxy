@@ -4,31 +4,28 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormInput, BFormSelect } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import type {
+    CollectionCreationState,
+    CollectionTypeOption,
+} from "@/components/Panels/Upload/types/collectionCreation";
 import type { SupportedCollectionType } from "@/components/Panels/Upload/uploadState";
-import type { CollectionCreationInput } from "@/composables/uploadQueue";
 
 interface FileItem {
     name: string;
 }
 
-interface CollectionTypeOption {
-    value: SupportedCollectionType;
-    text: string;
-}
-
-interface Props {
+interface CollectionCreationConfigProps {
     /** Array of file items for validation and pairing preview */
     files: FileItem[];
 }
 
-const props = defineProps<Props>();
+const props = defineProps<CollectionCreationConfigProps>();
 
 const emit = defineEmits<{
-    /** Emits collection configuration when valid */
-    (e: "update:config", config: CollectionCreationInput | null): void;
+    (e: "update:state", state: CollectionCreationState): void;
 }>();
 
-const createCollection = ref(false);
+const isCreateCollectionActive = ref(false);
 const collectionName = ref("");
 const collectionType = ref<SupportedCollectionType>("list");
 
@@ -38,7 +35,7 @@ const collectionTypeOptions: CollectionTypeOption[] = [
 ];
 
 const collectionValidation = computed(() => {
-    if (!createCollection.value) {
+    if (!isCreateCollectionActive.value) {
         return { valid: true, message: "" };
     }
 
@@ -83,25 +80,33 @@ const filePairs = computed(() => {
     return pairs;
 });
 
-// Emit config updates when valid
+// Emit state updates when collection configuration changes
 watch(
-    [createCollection, collectionName, collectionType, collectionValidation],
+    [isCreateCollectionActive, collectionName, collectionType, collectionValidation],
     () => {
-        if (createCollection.value && collectionValidation.value.valid) {
-            emit("update:config", {
-                name: collectionName.value.trim(),
-                type: collectionType.value,
-            });
-        } else {
-            emit("update:config", null);
-        }
+        const config =
+            isCreateCollectionActive.value && collectionValidation.value.valid
+                ? {
+                      name: collectionName.value.trim(),
+                      type: collectionType.value,
+                  }
+                : null;
+
+        emit("update:state", {
+            config,
+            validation: {
+                isActive: isCreateCollectionActive.value,
+                isValid: collectionValidation.value.valid,
+                message: collectionValidation.value.message,
+            },
+        });
     },
     { immediate: true },
 );
 
 /** Reset the collection configuration to initial state */
 function reset() {
-    createCollection.value = false;
+    isCreateCollectionActive.value = false;
     collectionName.value = "";
     collectionType.value = "list";
 }
@@ -112,7 +117,7 @@ defineExpose({ reset });
 <template>
     <div class="collection-section mt-3">
         <div class="d-flex align-items-center justify-content-between">
-            <BFormCheckbox v-model="createCollection" switch>
+            <BFormCheckbox v-model="isCreateCollectionActive" switch>
                 <strong>Create a collection from these files</strong>
             </BFormCheckbox>
             <a
@@ -125,7 +130,7 @@ defineExpose({ reset });
             </a>
         </div>
 
-        <div v-if="createCollection" class="collection-config mt-2">
+        <div v-if="isCreateCollectionActive" class="collection-config mt-2">
             <div class="row g-2">
                 <div class="col-md-8">
                     <label for="collection-name-input" class="form-label small mb-1">
