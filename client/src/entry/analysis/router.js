@@ -5,6 +5,7 @@ import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
 import { APIKey } from "@/components/User/APIKey";
 import { ExternalIdentities } from "@/components/User/ExternalIdentities";
+import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
@@ -618,7 +619,13 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/oidc-profile",
                         component: UserOidcProfile,
-                        redirect: redirectAnon(),
+                        redirect:
+                            redirectIf(
+                                !Galaxy.config.enable_oidc ||
+                                    Galaxy.config.enable_account_interface ||
+                                    !hasSingleOidcProfile(Galaxy.config.oidc),
+                                "/user"
+                            ) || redirectAnon(),
                     },
                     {
                         path: "user/external_ids",
