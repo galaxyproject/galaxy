@@ -10,19 +10,15 @@
 import type { CollectionElementIdentifiers } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import type { FetchDataResponse } from "@/api/tools";
-import type { NewUploadItem, SupportedCollectionType } from "@/components/Panels/Upload/uploadState";
+import type {
+    CollectionCreationInput,
+    SupportedCollectionType,
+} from "@/components/Panels/Upload/types/collectionCreation";
+import type { NewUploadItem } from "@/components/Panels/Upload/uploadState";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { errorMessageAsString } from "@/utils/simple-error";
 import type { UploadItem } from "@/utils/upload";
 import { createFileUploadItem, createPastedUploadItem, createUrlUploadItem, uploadDatasets } from "@/utils/upload";
-
-/** Collection creation input from UI components */
-export interface CollectionCreationInput {
-    /** Name of the collection to create */
-    name: string;
-    /** Type of collection: 'list' or 'list:paired' */
-    type: SupportedCollectionType;
-}
 
 /**
  * Collection configuration for batch uploads that will be combined
