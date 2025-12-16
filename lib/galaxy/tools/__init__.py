@@ -4200,24 +4200,32 @@ class FlattenTool(DatabaseOperationTool):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
         new_elements = {}
+        new_rows = {}
         copied_datasets = []
 
-        def add_elements(collection, prefix=""):
+        def add_elements(collection, prefix="", columns=None):
             for dce in collection.elements:
+                columns = columns or dce.columns
                 dce_object = dce.element_object
                 dce_identifier = dce.element_identifier
                 identifier = f"{prefix}{join_identifier}{dce_identifier}" if prefix else dce_identifier
                 if dce.is_collection:
-                    add_elements(dce_object, prefix=identifier)
+                    add_elements(dce_object, prefix=identifier, columns=columns)
                 else:
                     copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
                     new_elements[identifier] = copied_dataset
+                    new_rows[identifier] = dce.columns
                     copied_datasets.append(copied_dataset)
 
         add_elements(hdca.collection)
         self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False
+            next(iter(self.outputs.values())),
+            "output",
+            elements=new_elements,
+            propagate_hda_tags=False,
+            column_definitions=hdca.collection.column_definitions,
+            rows=new_rows,
         )
 
 
