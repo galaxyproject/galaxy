@@ -3984,6 +3984,13 @@ class MergeCollectionTool(DatabaseOperationTool):
         for incoming_repeat in incoming["inputs"]:
             input_lists.append(incoming_repeat["input"])
 
+        all_column_definitions = [input_list.collection.column_definitions for input_list in input_lists]
+        column_definitions = (
+            all_column_definitions[0]
+            if all_column_definitions and all(cd == all_column_definitions[0] for cd in all_column_definitions)
+            else None
+        )
+
         dupl_actions = "keep_first"
         suffix_pattern = None
         if (advanced := incoming.get("advanced", None)) is not None:
@@ -3993,6 +4000,7 @@ class MergeCollectionTool(DatabaseOperationTool):
                 suffix_pattern = advanced["conflict"]["suffix_pattern"]
 
         new_element_structure = {}
+        new_rows = {}
 
         # Which inputs does the identifier appear in.
         identifiers_map: dict[str, list[int]] = {}
@@ -4031,6 +4039,7 @@ class MergeCollectionTool(DatabaseOperationTool):
                     effective_identifer = element_identifier
 
                 new_element_structure[effective_identifer] = element
+                new_rows[effective_identifer] = dce.columns
 
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = {}
@@ -4043,7 +4052,12 @@ class MergeCollectionTool(DatabaseOperationTool):
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False
+            next(iter(self.outputs.values())),
+            "output",
+            elements=new_elements,
+            propagate_hda_tags=False,
+            column_definitions=column_definitions,
+            rows=new_rows if column_definitions else None,
         )
 
 
