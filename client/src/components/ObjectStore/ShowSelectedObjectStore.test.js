@@ -47,9 +47,11 @@ const USER_OBJECT_STORE_DATA = {
 
 function mountWithPreferredStoreId(preferredObjectStoreId) {
     const wrapper = mount(ShowSelectedObjectStore, {
-        propsData: { preferredObjectStoreId, forWhat: "Data goes into..." },
-        localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        props: { preferredObjectStoreId, forWhat: "Data goes into..." },
+        global: {
+            ...localVue,
+            plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn })],
+        },
     });
     return wrapper;
 }

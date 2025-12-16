@@ -19,10 +19,10 @@ describe("Index.vue", () => {
         // just make sure the component renders to catch obvious big errors
         const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = shallowMount(Index, {
-            propsData: {
+            props: {
                 historyId: "test_id",
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         await flushPromises();

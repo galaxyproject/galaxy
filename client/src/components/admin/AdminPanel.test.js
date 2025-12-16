@@ -21,7 +21,7 @@ vi.mock("vue-router", () => ({
 
 function createTarget(propsData = {}) {
     return mount(MountTarget, {
-        localVue,
+        global: localVue,
         propsData,
         stubs: {
             routerLink: true,

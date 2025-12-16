@@ -74,7 +74,7 @@ function mountNode(mounter: typeof shallowMount = shallowMount, propsData = {}, 
             scroll: MOCK_SCROLL,
             ...propsData,
         },
-        localVue,
+        global: localVue,
         pinia: testingPinia,
         provide: { workflowId: "mock-workflow", transform: ref(zoomIdentity), isDragging: ref(false) },
     });

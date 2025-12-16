@@ -30,10 +30,10 @@ async function mountBroadcastForm(props?: object) {
     };
 
     const wrapper = mount(BroadcastForm as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

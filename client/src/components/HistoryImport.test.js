@@ -48,8 +48,8 @@ describe("HistoryImport.vue", () => {
         );
 
         wrapper = mount(HistoryImport, {
-            propsData: {},
-            localVue,
+            props: {},
+            global: localVue,
             router,
         });
         await flushPromises();

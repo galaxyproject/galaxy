@@ -160,7 +160,7 @@ describe("Index", () => {
                     workflows: [],
                     toolbox: [],
                 },
-                localVue,
+                global: localVue,
                 pinia: testingPinia,
                 // mock out components that have exposed methods used by Index.vue.
                 stubs: editorStubs(),
@@ -654,7 +654,7 @@ describe("Index", () => {
                     toolbox: [],
                     ...propsData,
                 },
-                localVue,
+                global: localVue,
                 pinia: testingPinia,
                 stubs: editorStubs(),
             });

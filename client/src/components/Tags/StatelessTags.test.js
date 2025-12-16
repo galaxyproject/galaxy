@@ -1,17 +1,18 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import StatelessTags from "./StatelessTags.vue";
 
 describe("Tags/StatelessTags.vue", () => {
-    const localVue = createLocalVue();
+    const localVue = getLocalVue();
 
     const testTags = ["abc", "def", "ghi"];
     let wrapper;
     let emitted;
 
     beforeEach(async () => {
-        wrapper = mount(StatelessTags, { localVue });
+        wrapper = mount(StatelessTags, { global: localVue });
         await wrapper.setProps({
             value: testTags,
         });

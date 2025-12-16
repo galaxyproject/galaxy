@@ -75,7 +75,7 @@ describe("WorkflowComment", () => {
 
     it("changes position and size reactively", async () => {
         const wrapper = shallowMount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment },
                 scale: 1,
                 rootOffset: {},
@@ -119,7 +119,7 @@ describe("WorkflowComment", () => {
 
     it("displays the correct comment type", async () => {
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment, type: "text", data: { size: 1, text: "HelloWorld" } },
                 scale: 1,
                 rootOffset: {},
@@ -145,7 +145,7 @@ describe("WorkflowComment", () => {
         const testComment = { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } } as TextWorkflowComment;
 
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: testComment,
                 scale: 1,
                 rootOffset: {},
@@ -175,7 +175,7 @@ describe("WorkflowComment", () => {
 
     it("forwards pan events", () => {
         const wrapper = mount(WorkflowComment as any, {
-            propsData: {
+            props: {
                 comment: { ...comment, id: 123, data: { size: 1, text: "HelloWorld" } },
                 scale: 1,
                 rootOffset: {},

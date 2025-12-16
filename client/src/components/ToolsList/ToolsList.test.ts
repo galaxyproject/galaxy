@@ -98,7 +98,7 @@ describe("ToolsList", () => {
 
     it("performs an advanced search with a router push", async () => {
         const wrapper = mount(ToolsList as object, {
-            localVue,
+            global: localVue,
             pinia,
             router,
         });
@@ -131,10 +131,10 @@ describe("ToolsList", () => {
 
     it("detects filters in the route and searches the backend", async () => {
         mount(ToolsList as object, {
-            localVue,
+            global: localVue,
             pinia,
             router,
-            propsData: FILTER_SETTINGS,
+            props: FILTER_SETTINGS,
         });
 
         expect(fetchToolsMock).toHaveBeenCalledWith(WHOOSH_QUERY);

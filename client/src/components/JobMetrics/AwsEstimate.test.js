@@ -12,14 +12,14 @@ const localVue = getLocalVue();
 describe("JobMetrics/AwsEstimate.vue", () => {
     it("renders nothing if no matching EC2 instance exists.", async () => {
         const wrapper = mount(AwsEstimate, {
-            propsData: {
+            props: {
                 jobId: "0",
                 jobRuntimeInSeconds: 0,
                 coresAllocated: -999,
                 memoryAllocatedInMebibyte: -999,
                 ec2Instances,
             },
-            localVue,
+            global: localVue,
         });
 
         await wrapper.vm.$nextTick();
@@ -31,8 +31,8 @@ describe("JobMetrics/AwsEstimate.vue", () => {
             const JOB_ID = Math.random().toString(36).substring(2);
 
             const wrapper = mount(AwsEstimate, {
-                localVue,
-                propsData: {
+                global: localVue,
+                props: {
                     jobId: JOB_ID,
                     jobRuntimeInSeconds: Number(seconds),
                     coresAllocated: Number(cores),

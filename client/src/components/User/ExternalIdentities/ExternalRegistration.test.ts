@@ -13,7 +13,7 @@ function mountExtReg(cfg: object) {
     const idpsWithRegistration = getOIDCIdpsWithRegistration(cfg as OIDCConfig);
     return shallowMount(ExternalRegistration as object, {
         pinia,
-        propsData: { idpsWithRegistration },
+        props: { idpsWithRegistration },
         stubs: {
             GAlert: true,
             GButton: true,

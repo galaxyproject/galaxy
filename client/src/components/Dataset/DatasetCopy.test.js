@@ -19,7 +19,7 @@ beforeEach(() => {
 
 function mountComponent() {
     const wrapper = mount(DatasetCopy, {
-        localVue,
+        global: localVue,
         directives: { localize: () => {} },
         stubs: { RouterLink: { template: "<a><slot /></a>" } },
         pinia,
