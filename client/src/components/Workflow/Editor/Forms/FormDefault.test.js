@@ -18,7 +18,7 @@ describe("FormDefault", () => {
 
     beforeEach(() => {
         wrapper = mount(FormDefault, {
-            propsData: {
+            props: {
                 datatypes: [],
                 step: {
                     id: 0,
@@ -34,7 +34,7 @@ describe("FormDefault", () => {
                     outputs,
                 },
             },
-            localVue,
+            global: localVue,
             pinia: createTestingPinia({ createSpy: vi.fn }),
             provide: {
                 workflowId: "mock-workflow",

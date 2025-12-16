@@ -121,13 +121,12 @@ describe("ToolPanel", () => {
 
         const pinia = createPinia();
         const wrapper = mount(ToolPanel as object, {
-            propsData: {
+            props: {
                 workflow: false,
                 editorWorkflows: null,
                 useSearchWorker: false,
             },
-            localVue,
-            router,
+            global: localVue,
             pinia,
         });
 

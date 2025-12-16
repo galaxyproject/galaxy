@@ -15,9 +15,9 @@ vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany");
 
 function mountSelectMany(props: Partial<PropType<typeof FormSelectMany>>) {
     return mount(FormSelectMany as any, {
-        propsData: { options: [], value: [], ...props },
+        props: { options: [], value: [], ...props },
         pinia,
-        localVue,
+        global: localVue,
     });
 }
 

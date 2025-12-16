@@ -39,7 +39,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
         };
         wrapper = mount(WorkflowStorageConfiguration, {
             propsData,
-            localVue,
+            global: localVue,
             pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     }

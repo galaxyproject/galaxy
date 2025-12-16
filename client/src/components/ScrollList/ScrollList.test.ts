@@ -94,14 +94,14 @@ describe("ScrollList with local loader and data", () => {
     beforeEach(async () => {
         testLoader.mockClear();
         wrapper = mount(ScrollList as object, {
-            propsData: {
+            props: {
                 loader: (offset: number, limit: number) => testLoader(offset, limit),
                 itemKey: (item: TestItem) => item.id,
                 limit: BUFFER_SIZE,
                 name: "test item",
                 namePlural: "test items",
             },
-            localVue: getLocalVue(),
+            global: getLocalVue(),
             scopedSlots: {
                 item: TEST_ITEM_SLOT,
             },
@@ -169,14 +169,14 @@ describe("ScrollList with prop items and no local state", () => {
     beforeEach(() => {
         testLoader.mockClear();
         wrapper = mount(ScrollList as object, {
-            propsData: {
+            props: {
                 propItems: TEST_ITEMS,
                 propTotalCount: TOTAL_ITEMS,
                 itemKey: (item: TestItem) => item.id,
                 name: ITEM_NAME,
                 namePlural: ITEM_NAME_PLURAL,
             },
-            localVue: getLocalVue(),
+            global: getLocalVue(),
             scopedSlots: {
                 item: TEST_ITEM_SLOT,
             },
@@ -208,7 +208,7 @@ describe("ScrollList with prop items and a local state loader", () => {
         expectedTotalItemCount = 0;
 
         wrapper = mount(ScrollList as object, {
-            propsData: {
+            props: {
                 // We make sure the `loader` updates the `propItems` (mock the loader loading via a pinia store for e.g.)
                 loader: (offset: number, limit: number) => testLoader(offset, limit, wrapper),
                 limit: BUFFER_SIZE,
@@ -219,7 +219,7 @@ describe("ScrollList with prop items and a local state loader", () => {
                 namePlural: ITEM_NAME_PLURAL,
                 adjustForTotalCountChanges: false, // Default; we will adjust this to test this later
             },
-            localVue: getLocalVue(),
+            global: getLocalVue(),
             scopedSlots: {
                 item: TEST_ITEM_SLOT,
             },

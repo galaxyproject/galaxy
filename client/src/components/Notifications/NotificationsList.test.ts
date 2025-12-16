@@ -24,7 +24,7 @@ async function mountNotificationsList() {
     notificationsStore.notifications = mergeObjectListsById(FAKE_NOTIFICATIONS, []);
 
     const wrapper = mount(NotificationsList as object, {
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

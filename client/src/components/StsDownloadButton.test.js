@@ -27,12 +27,12 @@ async function mountStsDownloadButtonWrapper(config) {
 
     const pinia = createPinia();
     const wrapper = mount(StsDownloadButton, {
-        propsData: {
+        props: {
             title: "my title",
             fallbackUrl: FALLBACK_URL,
             downloadEndpoint: DOWNLOAD_ENDPOINT,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
     await flushPromises();

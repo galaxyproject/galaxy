@@ -23,7 +23,7 @@ const UNLIMITED_USAGE: QuotaUsage = toQuotaUsage({
 });
 
 function mountQuotaUsageBarWith(quotaUsage: QuotaUsage) {
-    const wrapper = mount(QuotaUsageBar as object, { propsData: { quotaUsage }, localVue });
+    const wrapper = mount(QuotaUsageBar as object, { props: { quotaUsage }, localVue });
     return wrapper;
 }
 

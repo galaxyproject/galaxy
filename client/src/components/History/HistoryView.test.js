@@ -87,8 +87,8 @@ async function createWrapper(localVue, currentUserId, history) {
     router.push(`/history/${history.id}`);
 
     const wrapper = mount(HistoryView, {
-        propsData: { id: history.id },
-        localVue,
+        props: { id: history.id },
+        global: localVue,
         provide: {
             store: {
                 dispatch: vi.fn,

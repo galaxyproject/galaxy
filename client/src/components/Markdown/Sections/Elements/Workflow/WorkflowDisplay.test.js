@@ -27,12 +27,12 @@ function mountDefault() {
         }),
     );
     return mount(MountTarget, {
-        propsData: {
+        props: {
             workflowId: "workflow_id",
             embedded: false,
             expanded: false,
         },
-        localVue,
+        global: localVue,
     });
 }
 
@@ -46,12 +46,12 @@ function mountError(errContent) {
         }),
     );
     return mount(MountTarget, {
-        propsData: {
+        props: {
             workflowId: "workflow_id",
             embedded: false,
             expanded: false,
         },
-        localVue,
+        global: localVue,
     });
 }
 

@@ -40,7 +40,7 @@ function shallowMountRegister(routerQuery: object = {}) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
 
     return shallowMount(Register as object, {
-        localVue,
+        global: localVue,
         pinia,
         mocks: {
             $router: mockRouter(routerQuery),

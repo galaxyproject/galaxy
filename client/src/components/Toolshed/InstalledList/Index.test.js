@@ -38,7 +38,7 @@ describe("InstalledList", () => {
     it("test installed list", async () => {
         const localVue = getLocalVue();
         const wrapper = mount(Index, {
-            propsData: {
+            props: {
                 filter: "",
             },
             stubs: {
@@ -46,7 +46,7 @@ describe("InstalledList", () => {
                 GLink,
                 LoadingSpan: true,
             },
-            localVue,
+            global: localVue,
         });
         expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading installed repositories");
         await wrapper.vm.$nextTick();
