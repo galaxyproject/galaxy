@@ -591,7 +591,12 @@ class GTNDatabaseBuilder:
                         title, description, content, topic
                     ) VALUES (?, ?, ?, ?)
                 """,
-                    (tutorial.title, tutorial.description, tutorial.content, tutorial.topic),
+                    (
+                        tutorial.title,
+                        tutorial.description,
+                        tutorial.content,
+                        tutorial.topic,
+                    ),
                 )
 
             except Exception as e:
@@ -663,12 +668,19 @@ class GTNDatabaseBuilder:
         }
 
         for key, value in metadata.items():
-            cursor.execute("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)", (key, value))
+            cursor.execute(
+                "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+                (key, value),
+            )
 
         # Add example queries
         example_queries = [
             ("RNA-seq", "Find RNA sequencing tutorials", "analysis"),
-            ("differential expression", "Tutorials on differential expression analysis", "analysis"),
+            (
+                "differential expression",
+                "Tutorials on differential expression analysis",
+                "analysis",
+            ),
             ("quality control", "QC and data preprocessing tutorials", "preprocessing"),
             ("workflow", "Workflow creation and management", "galaxy"),
             ("beginner", "Tutorials for beginners", "skill-level"),
