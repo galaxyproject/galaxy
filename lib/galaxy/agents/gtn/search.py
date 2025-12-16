@@ -216,7 +216,7 @@ class GTNSearchDB:
                 # Build the base query
                 # Note: FTS5 tables are separate, so we join on rowid
                 sql = """
-                    SELECT 
+                    SELECT
                         t.id,
                         t.topic,
                         t.tutorial,
@@ -314,7 +314,7 @@ class GTNSearchDB:
 
                 # Build the query
                 sql = """
-                    SELECT 
+                    SELECT
                         f.id,
                         f.category,
                         f.filename,
@@ -474,11 +474,11 @@ class GTNSearchDB:
                 if len(suggestions) < 5:
                     topic_results = cursor.execute(
                         """
-                        SELECT topic, COUNT(*) as count 
-                        FROM tutorials 
-                        WHERE topic LIKE ? 
-                        GROUP BY topic 
-                        ORDER BY count DESC 
+                        SELECT topic, COUNT(*) as count
+                        FROM tutorials
+                        WHERE topic LIKE ?
+                        GROUP BY topic
+                        ORDER BY count DESC
                         LIMIT ?
                         """,
                         (f"%{partial}%", 5 - len(suggestions)),
@@ -509,7 +509,7 @@ class GTNSearchDB:
 
                 result = cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         id, topic, tutorial, title, description, url,
                         difficulty, hands_on, time_estimation, content,
                         questions, objectives, key_points,
@@ -556,7 +556,7 @@ class GTNSearchDB:
                     params.append(f"%{tool}%")
 
                 sql = f"""
-                    SELECT 
+                    SELECT
                         id, topic, tutorial, title, url, description,
                         difficulty, hands_on, time_estimation
                     FROM tutorials
