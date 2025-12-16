@@ -23,6 +23,7 @@ from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
+    AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
@@ -39,6 +40,8 @@ class CustomToolAgent(BaseGalaxyAgent):
     structured output, it returns a helpful error message guiding the
     operator to configure an appropriate model.
     """
+
+    agent_type = AgentType.CUSTOM_TOOL
 
     def _requires_structured_output(self) -> bool:
         """CustomToolAgent requires structured output for proper tool generation."""

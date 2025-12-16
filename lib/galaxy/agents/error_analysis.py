@@ -21,6 +21,7 @@ from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
+    AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
@@ -51,6 +52,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
     This agent specializes in analyzing Galaxy tool errors, job failures, and providing
     step-by-step solutions with high accuracy and detailed guidance.
     """
+
+    agent_type = AgentType.ERROR_ANALYSIS
 
     def _create_agent(self) -> Agent:
         """Create the error analysis agent with conditional structured output."""

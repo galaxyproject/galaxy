@@ -19,6 +19,7 @@ from pydantic_ai import Agent
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     AgentResponse,
+    AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
@@ -53,9 +54,10 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
     to provide comprehensive solutions.
     """
 
+    agent_type = AgentType.ORCHESTRATOR
+
     def __init__(self, deps: GalaxyAgentDependencies):
         super().__init__(deps)
-        self.agent_type = "orchestrator"  # Override to use simple name
 
     def _create_agent(self) -> Agent:
         """Create the orchestrator agent with conditional structured output."""
