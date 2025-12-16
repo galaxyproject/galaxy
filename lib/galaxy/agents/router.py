@@ -135,11 +135,30 @@ class QueryRouterAgent(BaseGalaxyAgent):
         # Define keyword sets for different intents
         intent_keywords = {
             AgentType.ERROR_ANALYSIS: (
-                ["error", "fail", "crash", "not work", "broken", "stderr", "exit code", "died", "killed"],
+                [
+                    "error",
+                    "fail",
+                    "crash",
+                    "not work",
+                    "broken",
+                    "stderr",
+                    "exit code",
+                    "died",
+                    "killed",
+                ],
                 1.0,  # Base score
             ),
             AgentType.CUSTOM_TOOL: (
-                ["create", "build", "make", "wrap", "custom tool", "new tool", "yaml", "xml definition"],
+                [
+                    "create",
+                    "build",
+                    "make",
+                    "wrap",
+                    "custom tool",
+                    "new tool",
+                    "yaml",
+                    "xml definition",
+                ],
                 1.0,
             ),
             AgentType.TOOL_RECOMMENDATION: (
@@ -222,7 +241,10 @@ For specific tools, please also cite the individual tool publications.""",
                 confidence=routing_decision.confidence,
                 agent_type=self.agent_type,
                 suggestions=[],
-                metadata={"routing_decision": routing_decision.model_dump(), "handled_directly": True},
+                metadata={
+                    "routing_decision": routing_decision.model_dump(),
+                    "handled_directly": True,
+                },
             )
 
         # Otherwise, provide routing guidance
@@ -255,7 +277,10 @@ For specific tools, please also cite the individual tool publications.""",
             confidence=routing_decision.confidence,
             agent_type=self.agent_type,
             suggestions=suggestions,
-            metadata={"routing_decision": routing_decision.model_dump(), "handled_directly": False},
+            metadata={
+                "routing_decision": routing_decision.model_dump(),
+                "handled_directly": False,
+            },
             reasoning=routing_decision.reasoning,
         )
 

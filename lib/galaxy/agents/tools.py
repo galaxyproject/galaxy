@@ -39,9 +39,7 @@ class SimplifiedToolRecommendationResult(BaseModel):
     """Simplified result for local LLMs - avoids nested models and enums."""
 
     # Instead of nested ToolMatch objects, we'll use simple dictionaries
-    primary_tools: List[
-        Dict[str, Any]
-    ]  # Each dict has tool_id, tool_name, description, etc.
+    primary_tools: List[Dict[str, Any]]  # Each dict has tool_id, tool_name, description, etc.
     alternative_tools: List[Dict[str, Any]] = []
     workflow_suggestion: Optional[str] = None
     parameter_guidance: Dict[str, Any] = {}
@@ -77,9 +75,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         # Add tools for tool discovery and analysis
         @agent.tool
-        async def search_galaxy_tools(
-            ctx: RunContext[GalaxyAgentDependencies], query: str
-        ) -> str:
+        async def search_galaxy_tools(ctx: RunContext[GalaxyAgentDependencies], query: str) -> str:
             """Search Galaxy's toolbox for tools matching a query.
 
             Use this to find real tool IDs for tools you want to recommend.
@@ -116,9 +112,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "tool_recommendation.md"
         return prompt_path.read_text()
 
-    async def search_tools(
-        self, query: str, category: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    async def search_tools(self, query: str, category: Optional[str] = None) -> List[Dict[str, Any]]:
         """Search for tools in the Galaxy toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available in agent dependencies")
@@ -169,9 +163,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 "version": tool.version,
                 "description": tool.description or "",
                 "category": tool.get_panel_section()[1] or "",
-                "requirements": [str(r) for r in tool.requirements]
-                if hasattr(tool, "requirements")
-                else [],
+                "requirements": [str(r) for r in tool.requirements] if hasattr(tool, "requirements") else [],
             }
 
             # Add input information
@@ -252,9 +244,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             "Utilities",
         ]
 
-    async def process(
-        self, query: str, context: Dict[str, Any] = None
-    ) -> AgentResponse:
+    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
         """
         Process a tool recommendation request.
 
@@ -278,9 +268,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
             if exact_match:
                 # Found an exact match, bypass LLM and respond directly
-                log.info(
-                    f"Found exact tool match for query '{trimmed_query}', bypassing LLM."
-                )
+                log.info(f"Found exact tool match for query '{trimmed_query}', bypassing LLM.")
 
                 recommendation = SimplifiedToolRecommendationResult(
                     primary_tools=[exact_match],
@@ -326,18 +314,12 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 else:
                     recommendation = result
 
-                log.info(
-                    f"Tool recommendation result: primary_tools={recommendation.primary_tools}"
-                )
+                log.info(f"Tool recommendation result: primary_tools={recommendation.primary_tools}")
                 content = self._format_recommendation_response(recommendation)
                 suggestions = self._create_suggestions(recommendation)
 
                 # Convert string confidence to enum
-                conf_str = (
-                    recommendation.confidence.lower()
-                    if recommendation.confidence
-                    else "medium"
-                )
+                conf_str = recommendation.confidence.lower() if recommendation.confidence else "medium"
                 if conf_str == "high":
                     confidence = ConfidenceLevel.HIGH
                 elif conf_str == "low":
@@ -361,9 +343,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 )
             else:
                 # Handle simple text output from DeepSeek
-                response_text = (
-                    str(result.data) if hasattr(result, "data") else str(result)
-                )
+                response_text = str(result.data) if hasattr(result, "data") else str(result)
                 parsed_result = self._parse_simple_response(response_text)
 
                 return AgentResponse(
@@ -373,9 +353,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     suggestions=parsed_result.get("suggestions", []),
                     metadata={
                         "method": "simple_text",
-                        "has_alternatives": parsed_result.get(
-                            "has_alternatives", False
-                        ),
+                        "has_alternatives": parsed_result.get("has_alternatives", False),
                     },
                 )
 
@@ -429,9 +407,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         return list(set(keywords))
 
-    def _format_recommendation_response(
-        self, recommendation: SimplifiedToolRecommendationResult
-    ) -> str:
+    def _format_recommendation_response(self, recommendation: SimplifiedToolRecommendationResult) -> str:
         """Format the recommendation into user-friendly content."""
         parts = []
 
@@ -451,9 +427,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                         "   - ⚠️ *This tool does not appear to be installed on this Galaxy server. "
                         "Contact your administrator to request installation.*"
                     )
-                parts.append(
-                    f"   - {tool.get('description', 'No description available')}"
-                )
+                parts.append(f"   - {tool.get('description', 'No description available')}")
                 if "relevance_score" in tool:
                     parts.append(f"   - Relevance: {tool['relevance_score']:.0%}")
                 if tool.get("input_formats"):
@@ -466,15 +440,11 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             parts.append("\n**Alternative Options:**")
             for tool in recommendation.alternative_tools[:2]:
                 tool_name = tool.get("name", tool.get("tool_name", "Unknown"))
-                parts.append(
-                    f"- **{tool_name}**: {tool.get('description', 'No description')}"
-                )
+                parts.append(f"- **{tool_name}**: {tool.get('description', 'No description')}")
 
         # Workflow suggestion
         if recommendation.workflow_suggestion:
-            parts.append(
-                f"\n**Workflow Suggestion:**\n{recommendation.workflow_suggestion}"
-            )
+            parts.append(f"\n**Workflow Suggestion:**\n{recommendation.workflow_suggestion}")
 
         # Parameter guidance
         if recommendation.parameter_guidance:
@@ -488,9 +458,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         return "\n".join(parts)
 
-    def _create_suggestions(
-        self, recommendation: SimplifiedToolRecommendationResult
-    ) -> List[ActionSuggestion]:
+    def _create_suggestions(self, recommendation: SimplifiedToolRecommendationResult) -> List[ActionSuggestion]:
         """Create action suggestions from recommendation."""
         suggestions = []
 
@@ -521,9 +489,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     )
                 )
             elif tool_id:
-                log.warning(
-                    f"Tool '{tool_id}' recommended but not found in toolbox - skipping suggestion"
-                )
+                log.warning(f"Tool '{tool_id}' recommended but not found in toolbox - skipping suggestion")
 
         return suggestions
 
@@ -570,12 +536,8 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         tool = re.search(r"TOOL:\s*([^\n]+)", response_text, re.IGNORECASE)
         tool_id = re.search(r"TOOL_ID:\s*([^\n]+)", response_text, re.IGNORECASE)
         reason = re.search(r"REASON:\s*([^\n]+)", response_text, re.IGNORECASE)
-        alternatives = re.search(
-            r"ALTERNATIVES:\s*([^\n]+)", response_text, re.IGNORECASE
-        )
-        confidence_match = re.search(
-            r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE
-        )
+        alternatives = re.search(r"ALTERNATIVES:\s*([^\n]+)", response_text, re.IGNORECASE)
+        confidence_match = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
 
         # Parse confidence level
         confidence_level = ConfidenceLevel.MEDIUM
@@ -590,11 +552,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         content_parts = []
         if tool and tool.group(1).strip():
             tool_name = tool.group(1).strip()
-            tool_id_value = (
-                tool_id.group(1).strip()
-                if tool_id
-                else tool_name.lower().replace(" ", "_")
-            )
+            tool_id_value = tool_id.group(1).strip() if tool_id else tool_name.lower().replace(" ", "_")
             content_parts.append(f"**Recommended Tool:** {tool_name}")
             content_parts.append(f"Tool ID: `{tool_id_value}`")
 
@@ -612,11 +570,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         suggestions = []
         if tool and tool.group(1).strip():
             tool_name = tool.group(1).strip()
-            tool_id_value = (
-                tool_id.group(1).strip()
-                if tool_id
-                else tool_name.lower().replace(" ", "_")
-            )
+            tool_id_value = tool_id.group(1).strip() if tool_id else tool_name.lower().replace(" ", "_")
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.TOOL_RUN,

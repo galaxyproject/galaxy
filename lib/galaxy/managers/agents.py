@@ -154,6 +154,9 @@ class AgentService:
 
         # Add routing information if we used the router
         if routing_reasoning:
-            result["routing_info"] = {"selected_agent": actual_agent_type, "reasoning": routing_reasoning}
+            result["routing_info"] = {
+                "selected_agent": actual_agent_type,
+                "reasoning": routing_reasoning,
+            }
 
         return result
