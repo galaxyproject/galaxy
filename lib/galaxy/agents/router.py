@@ -10,6 +10,7 @@ from typing import (
     Dict,
     List,
     Literal,
+    Optional,
 )
 
 from pydantic import BaseModel
@@ -74,7 +75,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
         return prompt_path.read_text()
 
-    async def route_query(self, query: str, context: Dict[str, Any] = None) -> RoutingDecision:
+    async def route_query(self, query: str, context: Optional[Dict[str, Any]] = None) -> RoutingDecision:
         """
         Route a query to appropriate agent(s).
 
@@ -128,7 +129,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             log.warning(f"Router agent value error, using fallback: {e}")
             return self._fallback_routing(query, context)
 
-    def _fallback_routing(self, query: str, context: Dict[str, Any] = None) -> RoutingDecision:
+    def _fallback_routing(self, query: str, context: Optional[Dict[str, Any]] = None) -> RoutingDecision:
         """Fallback routing when AI router fails - uses intent-based heuristics."""
         query_lower = query.lower()
 
@@ -195,7 +196,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             reasoning = "No clear intent keywords found, defaulting to tool recommendation."
             confidence = "low"
         else:
-            best_agent = max(scores, key=scores.get)
+            best_agent = max(scores, key=lambda k: scores[k])
             reasoning = f"Query contains keywords related to {best_agent.replace('_', ' ')}."
             # Determine confidence based on score
             if scores[best_agent] > 1.5:
@@ -209,6 +210,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
             return RoutingDecision(
                 primary_agent="router",
+                complexity="simple",
                 confidence="high",
                 reasoning="User is asking for citation information.",
                 direct_response="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
@@ -225,7 +227,7 @@ For specific tools, please also cite the individual tool publications.""",
             direct_response="",
         )
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
         Process a routing request and return guidance.
 

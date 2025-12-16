@@ -25,10 +25,10 @@ try:
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    agent_registry = None
-    GalaxyAgentDependencies = None
-    QueryRouterAgent = None
-    ErrorAnalysisAgent = None
+    agent_registry = None  # type: ignore[assignment]
+    GalaxyAgentDependencies = None  # type: ignore[assignment,misc]
+    QueryRouterAgent = None  # type: ignore[assignment,misc]
+    ErrorAnalysisAgent = None  # type: ignore[assignment,misc]
 
 log = logging.getLogger(__name__)
 

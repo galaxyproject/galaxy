@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Literal,
+    Optional,
 )
 
 from pydantic import (
@@ -129,7 +130,7 @@ class DSPyGalaxyAgent(BaseGalaxyAgent):
         Provide detailed reasoning and consider alternative approaches.
         """
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
         Process query using DSPy modules.
 

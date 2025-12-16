@@ -1329,7 +1329,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         """Load agent configuration with defaults."""
         # Set default agent configuration if not present
         if not hasattr(self, "agents"):
-            self.agents = {}
+            self.agents: dict = {}
 
         # Default agent configurations
         default_agents = {

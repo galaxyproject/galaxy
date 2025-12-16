@@ -46,7 +46,7 @@ try:
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    GalaxyAgentDependencies = None
+    GalaxyAgentDependencies = None  # type: ignore[assignment,misc]
 
 # Import pydantic-ai components
 try:
@@ -109,7 +109,7 @@ class ChatAPI:
         agent_type: str = Query(default="auto", description="Agent type to use for the query"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Dict[str, Any]:
+    ) -> ChatResponse:
         """ChatGXY endpoint - handles both job-based and general chat queries
 
         Backwards compatible with both formats:
@@ -160,14 +160,14 @@ class ChatAPI:
 
         # Check if we're continuing an existing conversation (do this ONCE at the beginning)
         exchange_id = None
-        if hasattr(payload, "exchange_id") and payload.exchange_id:
+        if payload is not None and hasattr(payload, "exchange_id") and payload.exchange_id:
             exchange_id = payload.exchange_id
 
         # Use new agent system if available, otherwise fallback to legacy
         try:
             if HAS_AGENTS and HAS_PYDANTIC_AI:
                 # Build context with conversation history
-                full_context = query_context.copy() if query_context else {}
+                full_context: Dict[str, Any] = query_context.copy() if query_context else {}
 
                 # If we have an exchange_id, ALWAYS load conversation history from database (source of truth)
                 if exchange_id:
@@ -198,7 +198,7 @@ class ChatAPI:
             # Save chat exchange to database
             if job:
                 # Job-based chat
-                exchange = self.chat_manager.create(trans, job.id, result["response"])
+                exchange = self.chat_manager.create(trans, job.id, str(result["response"]))
                 result["exchange_id"] = exchange.id
             elif trans.user:
                 # Use the exchange_id we already extracted at the beginning
@@ -225,7 +225,7 @@ class ChatAPI:
             result["error_message"] = str(e)
 
         # Return the enhanced response structure
-        return result
+        return ChatResponse(**result)
 
     @router.get("/api/chat/history")
     def get_chat_history(

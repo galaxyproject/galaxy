@@ -74,6 +74,18 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+# Re-export common types for convenience
+__all__ = [
+    "ActionSuggestion",
+    "ActionType",
+    "AgentResponse",
+    "AgentType",
+    "BaseGalaxyAgent",
+    "ConfidenceLevel",
+    "GalaxyAgentDependencies",
+    "SimpleGalaxyAgent",
+]
+
 
 # Agent type constants
 class AgentType:
@@ -104,10 +116,10 @@ class AgentResponse:
     ):
         self.content = content
         # Normalize confidence to ConfidenceLevel enum
-        if isinstance(confidence, str):
-            self.confidence = ConfidenceLevel(confidence.lower())
-        else:
+        if isinstance(confidence, ConfidenceLevel):
             self.confidence = confidence
+        else:
+            self.confidence = ConfidenceLevel(confidence.lower())
         self.agent_type = agent_type
         self.suggestions = suggestions or []
         self.metadata = metadata or {}
@@ -193,7 +205,7 @@ class BaseGalaxyAgent(ABC):
 
         return None
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
         Process a query and return structured response.
 
@@ -223,7 +235,7 @@ class BaseGalaxyAgent(ABC):
             result = await self._run_with_retry(full_prompt)
 
             # Format the response
-            return self._format_response(result, query, context)
+            return self._format_response(result, query, context or {})
 
         except UnexpectedModelBehavior as e:
             log.exception(f"Unexpected model behavior in {self.agent_type} agent")
@@ -513,7 +525,7 @@ class BaseGalaxyAgent(ABC):
         query: str,
         ctx,
         usage=None,
-        context: Dict[str, Any] = None,
+        context: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Centralized helper method for calling other agents from within tool functions.

@@ -123,7 +123,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             panel_view = self.deps.config.default_panel_view or "default"
 
             # Use Galaxy's built-in tool search via the app's toolbox_search
-            toolbox_search = self.deps.trans.app.toolbox_search
+            toolbox_search = self.deps.trans.app.toolbox_search  # type: ignore[attr-defined]
             tool_ids = toolbox_search.search(query, panel_view, self.deps.config)
 
             # Get tool details for found tools
@@ -157,7 +157,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 return {"id": tool_id, "error": "Tool not found"}
 
             # Build comprehensive tool details
-            details = {
+            details: Dict[str, Any] = {
                 "id": tool.id,
                 "name": tool.name,
                 "version": tool.version,
@@ -244,7 +244,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             "Utilities",
         ]
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
         Process a tool recommendation request.
 
@@ -472,7 +472,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
             # Only add suggestions if we have a valid tool_id AND the tool exists
             if tool_id and self._verify_tool_exists(tool_id):
-                conf_value = (recommendation.confidence or "medium").lower()
+                conf_value = recommendation.confidence.lower()
                 if conf_value == "high":
                     action_confidence = ConfidenceLevel.HIGH
                 elif conf_value == "low":

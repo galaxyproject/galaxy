@@ -39,7 +39,7 @@ try:
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    agent_registry = None
+    agent_registry = None  # type: ignore[assignment]
 
 log = logging.getLogger(__name__)
 
