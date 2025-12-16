@@ -141,6 +141,10 @@ function getExpandToggleTitle(detailsShowing: boolean): string {
     return detailsShowing ? "Collapse content" : "Expand content";
 }
 
+function getExpandAllToggleTitle(allExpanded: boolean): string {
+    return allExpanded ? "Collapse all" : "Expand all";
+}
+
 function getTruncatedContent(content: string, maxLength = 50): string {
     if (content.length <= maxLength) {
         return content;
@@ -222,6 +226,13 @@ function toggleAllSpaceToTab() {
 function toggleAllToPosixLines() {
     const newValue = !allToPosixLines.value;
     pasteItems.value.forEach((f) => (f.toPosixLines = newValue));
+}
+
+const allExpanded = computed(() => pasteItems.value.length > 0 && pasteItems.value.every((f) => f._showDetails));
+
+function toggleAllExpanded() {
+    const newValue = !allExpanded.value;
+    pasteItems.value.forEach((f) => (f._showDetails = newValue));
 }
 
 // Table configuration
@@ -339,6 +350,18 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     small
                     fixed
                     thead-class="paste-table-header">
+                    <!-- Expand toggle column header -->
+                    <template v-slot:head(expand)>
+                        <button
+                            v-b-tooltip.hover.noninteractive
+                            class="btn btn-link btn-sm p-0"
+                            :title="getExpandAllToggleTitle(allExpanded)"
+                            :aria-label="getExpandAllToggleTitle(allExpanded)"
+                            @click="toggleAllExpanded">
+                            <FontAwesomeIcon :icon="allExpanded ? faChevronDown : faChevronRight" fixed-width />
+                        </button>
+                    </template>
+
                     <!-- Expand toggle column -->
                     <template v-slot:cell(expand)="{ toggleDetails, detailsShowing }">
                         <button
