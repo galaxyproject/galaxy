@@ -72,6 +72,11 @@ const isReadyToUpload = computed(() => {
     if (!hasItems.value) {
         return false;
     }
+    // Check if any URL is invalid
+    const hasInvalidUrls = urlItems.value.some((item) => isValidUrl(item.url) === false);
+    if (hasInvalidUrls) {
+        return false;
+    }
     // If collection creation is active, it must be valid to proceed
     if (collectionState.value.validation.isActive && !collectionState.value.validation.isValid) {
         return false;
@@ -99,12 +104,35 @@ function extractNameFromUrl(url: string): string {
     return url;
 }
 
-function isValidUrl(url: string): boolean | null {
+function validateUrl(url: string): { isValid: boolean; message: string | null } {
     if (!url.trim()) {
-        return false;
+        return { isValid: false, message: "URL is required" };
     }
-    const hasValidProtocol = url.startsWith("http://") || url.startsWith("https://") || url.startsWith("ftp://");
-    return hasValidProtocol ? null : false;
+
+    try {
+        const urlObj = new URL(url);
+
+        if (!urlObj.host) {
+            return { isValid: false, message: "URL must include a valid hostname" };
+        }
+
+        const hasContent = urlObj.pathname !== "/" || urlObj.search || urlObj.hash;
+        if (!hasContent) {
+            return { isValid: false, message: "URL should point to a specific file or resource" };
+        }
+
+        return { isValid: true, message: null };
+    } catch {
+        return { isValid: false, message: "URL format is invalid or missing protocol" };
+    }
+}
+
+function isValidUrl(url: string): boolean {
+    return validateUrl(url).isValid;
+}
+
+function getUrlValidationMessage(url: string): string {
+    return validateUrl(url).message || url;
 }
 
 function isNameValid(name: string): boolean | null {
@@ -385,14 +413,8 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 v-b-tooltip.hover.noninteractive
                                 size="sm"
                                 :state="isValidUrl(item.url)"
-                                :title="item.url"
+                                :title="getUrlValidationMessage(item.url)"
                                 class="url-input" />
-                            <FontAwesomeIcon
-                                v-if="isValidUrl(item.url) === false"
-                                v-b-tooltip.hover.noninteractive
-                                class="text-warning ml-1 flex-shrink-0"
-                                :icon="faExclamationTriangle"
-                                title="URL should start with http://, https://, or ftp://" />
                         </div>
                     </template>
 
