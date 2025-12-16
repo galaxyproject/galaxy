@@ -29,10 +29,10 @@ describe("ToLink.vue", () => {
             }),
         );
         wrapper = shallowMount(ToLink, {
-            propsData: {
+            props: {
                 historyId: TEST_HISTORY_ID,
             },
-            localVue,
+            global: localVue,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find("loadingspan-stub").exists()).toBeTruthy();

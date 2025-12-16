@@ -32,10 +32,10 @@ async function initWrapper(fileSource?: BrowsableFilesSourcePlugin) {
     );
 
     const wrapper = mount(RDMDestinationSelector as object, {
-        propsData: {
+        props: {
             fileSource,
         },
-        localVue,
+        global: localVue,
     });
     await flushPromises();
     return wrapper;

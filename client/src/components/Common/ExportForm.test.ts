@@ -12,8 +12,8 @@ describe("ExportForm.vue", () => {
 
     beforeEach(async () => {
         wrapper = mount(ExportForm as object, {
-            propsData: {},
-            localVue,
+            props: {},
+            global: localVue,
         });
     });
 

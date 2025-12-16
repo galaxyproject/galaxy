@@ -60,7 +60,7 @@ describe("UploadModal.vue", () => {
 
         wrapper = mount(UploadModal, {
             propsData,
-            localVue,
+            global: localVue,
             stubs: {
                 GTabs: true,
                 GTab: true,

@@ -12,10 +12,10 @@ const localVue = getLocalVue();
 async function createWrapper(component, localVue, userData) {
     const pinia = createPinia();
     const wrapper = shallowMount(component, {
-        propsData: {
+        props: {
             query: "mock",
         },
-        localVue,
+        global: localVue,
         pinia,
     });
     const userStore = useUserStore();

@@ -1,6 +1,6 @@
-import { suppressDebugConsole } from "@tests/vitest/helpers";
-import { createLocalVue, mount } from "@vue/test-utils";
-import { createPinia, mapState } from "pinia";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import { createPinia, mapState, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -9,7 +9,6 @@ import { useHistoryStore } from "@/stores/historyStore";
 
 import { watchHistoryOnce } from "./watchHistory";
 
-const pinia = createPinia();
 const { server, http } = useServerMock();
 
 const testApp = {
@@ -22,6 +21,7 @@ const testApp = {
 
 describe("watchHistory", () => {
     let wrapper;
+    let pinia;
     const historyData = {
         id: "history-id",
         update_time: "0",
@@ -48,12 +48,15 @@ describe("watchHistory", () => {
     ];
 
     beforeEach(() => {
-        const localVue = createLocalVue();
+        pinia = createPinia();
+        setActivePinia(pinia);
         useHistoryItemsStore(pinia);
 
         wrapper = mount(testApp, {
-            localVue,
-            pinia,
+            global: {
+                ...getLocalVue(),
+                plugins: [pinia],
+            },
         });
 
         const historyStore = useHistoryStore();

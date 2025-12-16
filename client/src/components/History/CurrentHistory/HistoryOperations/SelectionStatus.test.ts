@@ -20,8 +20,8 @@ const SOMETHING_SELECTED = {
 
 async function mountHistorySelectionStatusWith(props: Record<string, any>) {
     const wrapper = shallowMount(HistorySelectionStatus as object, {
-        propsData: props,
-        localVue,
+        props: props,
+        global: localVue,
     });
 
     await flushPromises();
