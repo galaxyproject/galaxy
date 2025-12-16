@@ -73,7 +73,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         """Initialize the GTN training agent."""
         super().__init__(deps)
 
-        # Initialize GTN database
+        # Initialize GTN database (lazy - only when DB file exists)
+        self.gtn_db: Optional[GTNSearchDB] = None
         try:
             self.gtn_db = GTNSearchDB()
             log.info("GTN database initialized successfully")
