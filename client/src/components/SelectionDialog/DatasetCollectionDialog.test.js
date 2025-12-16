@@ -1,4 +1,6 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import { BTable } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,7 +25,7 @@ describe("DatasetCollectionDialog.vue", () => {
     let localVue;
 
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
     });
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
@@ -40,8 +42,8 @@ describe("DatasetCollectionDialog.vue", () => {
         );
 
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: localVue,
         });
 
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
@@ -60,8 +62,8 @@ describe("DatasetCollectionDialog.vue", () => {
             }),
         );
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: localVue,
         });
         await flushPromises();
         expect(wrapper.findComponent(GAlert).text()).toBe("Bad error");

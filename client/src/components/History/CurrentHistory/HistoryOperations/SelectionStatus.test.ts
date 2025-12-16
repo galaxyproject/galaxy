@@ -21,7 +21,7 @@ const SOMETHING_SELECTED = {
 async function mountHistorySelectionStatusWith(props: Record<string, any>) {
     const wrapper = mount(HistorySelectionStatus as object, {
         propsData: props,
-        localVue,
+        global: localVue,
     });
 
     await flushPromises();

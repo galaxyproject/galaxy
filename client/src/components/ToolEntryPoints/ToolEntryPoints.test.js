@@ -59,10 +59,10 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         });
         setActivePinia(testPinia);
         wrapper = mount(ToolEntryPoints, {
-            propsData: {
+            props: {
                 jobId: "52e496b945151ee8",
             },
-            localVue,
+            global: localVue,
             pinia: testPinia,
             router,
         });
@@ -85,10 +85,10 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
         });
         setActivePinia(testPinia);
         wrapper = mount(ToolEntryPoints, {
-            propsData: {
+            props: {
                 jobId: "52e496b945151ee8",
             },
-            localVue,
+            global: localVue,
             pinia: testPinia,
             router,
         });

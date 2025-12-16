@@ -72,8 +72,8 @@ describe("NodeOutput", () => {
         const simpleDataStep = stepForLabel("simple data", stepStore.steps);
         const propsData = propsForStep(simpleDataStep);
         const wrapper = shallowMount(NodeOutput as any, {
-            propsData: propsData,
-            localVue,
+            props: propsData,
+            global: localVue,
             pinia,
             provide: { transform, workflowId: "mock-workflow" },
         });
@@ -95,8 +95,8 @@ describe("NodeOutput", () => {
         } as any);
         const propsData = propsForStep(simpleDataStep);
         const wrapper = shallowMount(NodeOutput as any, {
-            propsData: propsData,
-            localVue,
+            props: propsData,
+            global: localVue,
             pinia,
             provide: { transform, workflowId: "mock-workflow" },
         });

@@ -17,10 +17,10 @@ describe("DatasetDownload", () => {
 
     beforeEach(() => {
         wrapper = mount(DatasetDownload as object, {
-            propsData: {
+            props: {
                 item: items[0],
             },
-            localVue,
+            global: localVue,
         });
     });
 

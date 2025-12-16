@@ -95,12 +95,12 @@ async function mountHistoryExportWizard(options: MountOptions = {}) {
     setActivePinia(pinia);
 
     const wrapper = mount(HistoryExportWizard as object, {
-        propsData: {
+        props: {
             historyId,
             historyName,
             isBusy,
         },
-        localVue,
+        global: localVue,
         pinia,
         router,
     });

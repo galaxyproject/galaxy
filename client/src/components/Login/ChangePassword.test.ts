@@ -39,12 +39,11 @@ describe("ChangePassword", () => {
         // when the component calls router.push("/") on successful submit
         await router.push("/change-password").catch(() => {});
         wrapper = mount(MountTarget as object, {
-            propsData: {
+            props: {
                 messageText: "message_text",
                 messageVariant: "message_variant",
             },
-            localVue,
-            router,
+            global: localVue,
         });
     });
 

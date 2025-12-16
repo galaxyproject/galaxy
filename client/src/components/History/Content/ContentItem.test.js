@@ -54,7 +54,7 @@ describe("ContentItem", () => {
         );
 
         wrapper = mount(ContentItem, {
-            propsData: {
+            props: {
                 expandDataset: true,
                 item,
                 id: 1,
@@ -65,7 +65,7 @@ describe("ContentItem", () => {
                 selectable: false,
                 filterable: true,
             },
-            localVue,
+            global: localVue,
             stubs: {
                 DatasetDetails: true,
                 vueTagsInput: false,

@@ -11,8 +11,8 @@ describe("HeadlessMultiselect", () => {
     type Props = InstanceType<typeof HeadlessMultiselect>["$props"];
     const mountWithProps = (props: Props) => {
         return mount(HeadlessMultiselect as any, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
             attachTo: document.body,
         });
     };

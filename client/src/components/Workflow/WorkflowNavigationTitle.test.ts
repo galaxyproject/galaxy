@@ -113,11 +113,11 @@ async function mountWorkflowNavigationTitle(
     }
 
     const wrapper = shallowMount(WorkflowNavigationTitle as object, {
-        propsData: {
+        props: {
             invocation,
             workflowId,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
 

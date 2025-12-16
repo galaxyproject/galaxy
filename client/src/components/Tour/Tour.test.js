@@ -35,8 +35,8 @@ describe("Tour", () => {
     beforeEach(async () => {
         server.use(http.get("/api/tours", ({ response }) => response(200).json(mockTours)));
         wrapper = shallowMount(TourList, {
-            propsData: {},
-            localVue,
+            props: {},
+            global: localVue,
         });
         await flushPromises();
     });

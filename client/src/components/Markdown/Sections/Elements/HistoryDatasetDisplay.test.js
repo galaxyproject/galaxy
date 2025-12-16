@@ -75,7 +75,7 @@ describe("HistoryDatasetDisplay", () => {
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(content)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            localVue,
+            global: localVue,
             propsData: { datasetId, ...propsData },
             pinia: setUpDatatypesStore(),
         });

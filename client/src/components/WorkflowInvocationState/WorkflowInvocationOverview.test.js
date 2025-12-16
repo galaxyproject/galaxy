@@ -57,7 +57,7 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
         };
         const wrapper = shallowMount(WorkflowInvocationOverview, {
             propsData,
-            localVue,
+            global: localVue,
             pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();

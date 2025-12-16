@@ -63,7 +63,7 @@ describe("ActivityBar", () => {
             }),
         );
         wrapper = shallowMount(mountTarget, {
-            localVue,
+            global: localVue,
             pinia,
         });
     });

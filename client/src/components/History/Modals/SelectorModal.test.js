@@ -66,8 +66,8 @@ describe("History SelectorModal.vue", () => {
 
         const pinia = createPinia();
         wrapper = mount(SelectorModal, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
             pinia,
             stubs: {
                 icon: { template: "<div></div>" },

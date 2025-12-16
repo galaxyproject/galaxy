@@ -30,7 +30,7 @@ const FAKE_QUOTA_USAGES_LIST: QuotaUsage[] = [
 ];
 
 function mountQuotaUsageSummaryWith(quotaUsages: QuotaUsage[]) {
-    const wrapper = shallowMount(QuotaUsageSummary as object, { propsData: { quotaUsages }, localVue });
+    const wrapper = shallowMount(QuotaUsageSummary as object, { props: { quotaUsages }, localVue });
     return wrapper;
 }
 

@@ -54,12 +54,12 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
     );
 
     const wrapper = mount(SelectPreferredStore as object, {
-        propsData: {
+        props: {
             preferredObjectStoreId: preferredObjectStoreId,
             history: TEST_HISTORY,
             show: true,
         },
-        localVue,
+        global: localVue,
     });
 
     await flushPromises();
@@ -138,7 +138,7 @@ describe("SelectPreferredStore.vue", () => {
                 history: TEST_HISTORY,
                 show: true,
             },
-            localVue,
+            global: localVue,
         });
 
         await flushPromises();

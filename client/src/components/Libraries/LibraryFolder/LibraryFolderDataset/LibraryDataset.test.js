@@ -75,7 +75,7 @@ async function mountLibraryDatasetWrapper(localVue, router, expectDatasetId, isA
         folder_id: FOLDER_ID,
     };
     const wrapper = mount(LibraryDataset, {
-        localVue,
+        global: localVue,
         router,
         propsData,
         stubs: {

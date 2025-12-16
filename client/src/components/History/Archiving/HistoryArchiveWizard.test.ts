@@ -46,8 +46,8 @@ async function mountComponentWithHistory(history?: HistorySummary) {
     vi.spyOn(historyStore, "getHistoryById").mockImplementation((_history_id: string) => history as HistorySummary);
 
     const wrapper = shallowMount(HistoryArchiveWizard as object, {
-        propsData: { historyId: TEST_HISTORY_ID },
-        localVue,
+        props: { historyId: TEST_HISTORY_ID },
+        global: localVue,
         pinia,
     });
     await flushPromises();

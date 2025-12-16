@@ -23,8 +23,8 @@ async function mountComponent(component: object, propsData: object = {}): Promis
     setActivePinia(pinia);
 
     const wrapper = mount(component, {
-        localVue,
-        propsData,
+        global: localVue,
+        props: propsData,
         pinia,
         // No router is installed in this harness; the stub exposes the `to` prop so links can be asserted.
         stubs: { RouterLink: RouterLinkStub },
