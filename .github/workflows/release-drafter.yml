@@ -22,7 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: dev
           sparse-checkout: |
             lib/galaxy/version.py
 
