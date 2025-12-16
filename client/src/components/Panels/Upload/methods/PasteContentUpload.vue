@@ -8,7 +8,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormInput, BFormSelect, BTable } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import { findExtension } from "@/components/Upload/utils";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
@@ -51,6 +51,8 @@ const collectionState = ref<CollectionCreationState>({
         message: "",
     },
 });
+
+const tableContainerRef = ref<HTMLElement | null>(null);
 
 interface PasteItem {
     id: number;
@@ -104,6 +106,17 @@ function addPasteItem() {
         spaceToTab: false,
         toPosixLines: false,
         _showDetails: true,
+    });
+
+    scrollToBottom();
+}
+
+function scrollToBottom() {
+    nextTick(() => {
+        if (tableContainerRef.value) {
+            const container = tableContainerRef.value;
+            container.scrollTop = container.scrollHeight;
+        }
     });
 }
 
@@ -317,7 +330,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
             </div>
 
-            <div class="paste-table-container">
+            <div ref="tableContainerRef" class="paste-table-container">
                 <BTable
                     :items="pasteItems"
                     :fields="tableFields"
