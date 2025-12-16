@@ -145,13 +145,6 @@ function getExpandAllToggleTitle(allExpanded: boolean): string {
     return allExpanded ? "Collapse all" : "Expand all";
 }
 
-function getTruncatedContent(content: string, maxLength = 50): string {
-    if (content.length <= maxLength) {
-        return content;
-    }
-    return content.substring(0, maxLength) + "...";
-}
-
 function handleCollectionStateChange(state: CollectionCreationState) {
     collectionState.value = state;
 }
@@ -242,7 +235,7 @@ const tableFields = [
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { minWidth: "200px", width: "200px" },
+        thStyle: { width: "200px" },
         tdClass: "paste-name-cell align-middle",
     },
     {
@@ -254,30 +247,30 @@ const tableFields = [
     },
     {
         key: "preview",
-        label: "Preview",
+        label: "Content Preview",
         sortable: false,
-        thStyle: { minWidth: "150px", width: "auto" },
-        tdClass: "align-middle",
+        thStyle: {},
+        tdClass: "align-middle preview-column",
     },
     {
         key: "extension",
         label: "Type",
         sortable: false,
-        thStyle: { minWidth: "100px", width: "180px" },
+        thStyle: { minWidth: "180px", width: "180px" },
         tdClass: "align-middle",
     },
     {
         key: "dbKey",
         label: "Reference",
         sortable: false,
-        thStyle: { minWidth: "100px", width: "200px" },
+        thStyle: { minWidth: "200px", width: "200px" },
         tdClass: "align-middle",
     },
     {
         key: "options",
         label: "Upload Settings",
         sortable: false,
-        thStyle: { width: "140px" },
+        thStyle: { width: "auto" },
         tdClass: "align-middle",
     },
     { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
@@ -388,28 +381,40 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     </template>
 
                     <!-- Size column -->
-                    <template v-slot:cell(size)="{ item }">
-                        {{ getItemSize(item.content) }}
+                    <template v-slot:cell(size)="{ item, toggleDetails }">
+                        <span
+                            class="clickable-cell"
+                            role="button"
+                            tabindex="0"
+                            @click="toggleDetails"
+                            @keydown.enter.prevent="toggleDetails"
+                            @keydown.space.prevent="toggleDetails">
+                            {{ getItemSize(item.content) }}
+                        </span>
                     </template>
 
                     <!-- Preview column -->
-                    <template v-slot:cell(preview)="{ item, detailsShowing }">
+                    <template v-slot:cell(preview)="{ item, toggleDetails }">
                         <div
-                            v-if="item.content && !detailsShowing"
-                            v-b-tooltip.hover.noninteractive
-                            class="preview-text"
-                            :title="item.content">
-                            <span class="text-muted small font-italic">
-                                {{ getTruncatedContent(item.content) }}
+                            class="clickable-cell"
+                            role="button"
+                            tabindex="0"
+                            @click="toggleDetails"
+                            @keydown.enter.prevent="toggleDetails"
+                            @keydown.space.prevent="toggleDetails">
+                            <div v-if="item.content" class="preview-text">
+                                <span class="text-muted small font-italic">
+                                    {{ item.content }}
+                                </span>
+                            </div>
+                            <span
+                                v-else-if="!item.content"
+                                v-b-tooltip.hover.noninteractive
+                                title="This dataset is empty and will be skipped during upload."
+                                class="small font-italic text-danger">
+                                No content
                             </span>
                         </div>
-                        <span
-                            v-else-if="!item.content"
-                            v-b-tooltip.hover.noninteractive
-                            title="This dataset is empty and will be skipped during upload."
-                            class="small font-italic text-danger">
-                            No content yet
-                        </span>
                     </template>
 
                     <!-- Extension column with bulk operations -->
@@ -639,6 +644,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
         min-width: 200px;
     }
 
+    :deep(.preview-column) {
+        width: 100%;
+        max-width: 300px;
+        overflow: hidden;
+    }
+
     .column-header-vertical {
         display: flex;
         flex-direction: column;
@@ -686,6 +697,22 @@ defineExpose<UploadMethodComponent>({ startUpload });
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+    }
+
+    .clickable-cell {
+        cursor: pointer;
+        user-select: none;
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 0.25rem;
+        margin: -0.25rem;
+
+        .preview-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
 }
