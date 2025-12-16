@@ -25,10 +25,10 @@ describe("ToRemoteFile.vue", () => {
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
         wrapper = shallowMount(ToRemoteFile, {
-            propsData: {
+            props: {
                 historyId: TEST_HISTORY_ID,
             },
-            localVue,
+            global: localVue,
         });
     });
 

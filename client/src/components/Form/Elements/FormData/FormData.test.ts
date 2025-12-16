@@ -24,8 +24,8 @@ function createTarget(propsData: Record<string, any>) {
     const datatypesStore = useDatatypesMapperStore();
     datatypesStore.datatypesMapper = testDatatypesMapper;
     return mount(MountTarget as any, {
-        localVue,
-        propsData,
+        global: localVue,
+        props: propsData,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

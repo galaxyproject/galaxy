@@ -50,7 +50,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         setActivePinia(testPinia);
 
         wrapper = mount(InteractiveTools, {
-            localVue,
+            global: localVue,
             pinia: testPinia,
         });
 

@@ -1,5 +1,7 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import Categories from "./Categories.vue";
 
@@ -25,29 +27,29 @@ vi.mock("../services", () => ({
 describe("Categories", () => {
     let localVue;
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
     });
 
     it("test categories loading", () => {
         const wrapper = mount(Categories, {
-            propsData: {
+            props: {
                 loading: true,
                 toolshedUrl: "toolshedUrl",
             },
-            localVue,
+            global: localVue,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading categories...");
     });
 
     it("test categories table", async () => {
         const wrapper = mount(Categories, {
-            propsData: {
+            props: {
                 loading: false,
                 toolshedUrl: "toolshedUrl",
             },
-            localVue,
+            global: localVue,
         });
-        await localVue.nextTick();
+        await nextTick();
         const links = wrapper.findAll("a");
         expect(links.length).toBe(2);
         expect(links.at(0).text()).toBe("name_0");

@@ -9,8 +9,8 @@ const localVue = getLocalVue();
 describe("FormOptionalText", () => {
     const mountFormOptionalText = async (props) =>
         await mount(FormOptionalText, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
         });
 
     it("should display existing values", async () => {

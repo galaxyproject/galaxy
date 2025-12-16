@@ -1,5 +1,7 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import Repositories from "./Repositories.vue";
 
@@ -26,20 +28,20 @@ vi.mock("../services", () => ({
 }));
 
 describe("Repositories", () => {
-    const localVue = createLocalVue();
+    const localVue = getLocalVue();
 
     it("test repository details loading", async () => {
         const wrapper = mount(Repositories, {
-            propsData: {
+            props: {
                 query: "toolname",
                 scrolled: false,
                 toolshedUrl: "toolshedUrl",
             },
-            localVue,
+            global: localVue,
         });
         // Test initial state prior to the data fetch tick -- should be loading.
         expect(wrapper.find(".loading-message").text()).toBe("Loading repositories...");
-        await localVue.nextTick();
+        await nextTick();
         const links = wrapper.findAll("a");
         expect(links.length).toBe(2);
         expect(links.at(0).text()).toBe("name_0");
@@ -47,7 +49,7 @@ describe("Repositories", () => {
         // Reset repositories and state to test empty.
         wrapper.vm.repositories = [];
         wrapper.vm.pageState = 2; // COMPLETE is '2'
-        await localVue.nextTick();
+        await nextTick();
         expect(wrapper.find(".unavailable-message").text()).toBe("No matching repositories found.");
     });
 });

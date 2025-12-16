@@ -59,10 +59,10 @@ describe("DatasetInformation/DatasetInformation", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
 
         wrapper = mount(DatasetInformation as object, {
-            propsData: {
+            props: {
                 dataset: datasetResponse,
             },
-            localVue,
+            global: localVue,
             pinia,
             router,
         });

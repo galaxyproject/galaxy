@@ -1,4 +1,5 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { BAlert, BTable } from "bootstrap-vue";
@@ -23,7 +24,7 @@ describe("DatasetCollectionDialog.vue", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        localVue = createLocalVue();
+        localVue = getLocalVue();
     });
 
     afterEach(() => {
@@ -38,8 +39,8 @@ describe("DatasetCollectionDialog.vue", () => {
             .reply(200, collectionsResponse);
 
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: localVue,
         });
 
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
@@ -57,8 +58,8 @@ describe("DatasetCollectionDialog.vue", () => {
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(403, { err_msg: "Bad error" });
         wrapper = mount(DatasetCollectionDialog, {
-            propsData: mockOptions,
-            localVue: localVue,
+            props: mockOptions,
+            global: localVue,
         });
         await flushPromises();
         expect(wrapper.findComponent(BAlert).text()).toBe("Bad error");

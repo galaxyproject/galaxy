@@ -21,11 +21,11 @@ describe("RefactorConfirmationModal.vue", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         wrapper = shallowMount(RefactorConfirmationModal, {
-            propsData: {
+            props: {
                 refactorActions: [],
                 workflowId: TEST_WORKFLOW_ID,
             },
-            localVue,
+            global: localVue,
         });
     });
 

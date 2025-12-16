@@ -12,9 +12,9 @@ const localVue = getLocalVue();
 async function createWrapper(component, localVue, userData, unwritable = false) {
     const pinia = createPinia();
     const wrapper = mount(component, {
-        localVue,
+        global: localVue,
         pinia,
-        propsData: {
+        props: {
             writeable: !unwritable,
             renameable: !unwritable,
         },

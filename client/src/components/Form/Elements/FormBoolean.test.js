@@ -11,10 +11,10 @@ describe("FormBoolean", () => {
 
     beforeEach(() => {
         wrapper = mount(FormBoolean, {
-            propsData: {
+            props: {
                 value: false,
             },
-            localVue,
+            global: localVue,
         });
     });
 

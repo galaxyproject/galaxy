@@ -76,7 +76,7 @@ vi.mock("../providers/DatasetProvider", () => ({
 
 function mountTarget() {
     return mount(DisplayApplications, {
-        propsData: {
+        props: {
             datasetId: "dataset-id",
         },
         stubs: {
@@ -87,7 +87,7 @@ function mountTarget() {
                 },
             },
         },
-        localVue,
+        global: localVue,
     });
 }
 

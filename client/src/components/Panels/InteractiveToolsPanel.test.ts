@@ -55,7 +55,7 @@ describe("InteractiveToolsPanel component", () => {
         entryPointStore.$patch({ entryPoints: [] });
 
         const wrapper = mount(InteractiveToolsPanel as any, {
-            localVue,
+            global: localVue,
             pinia,
             stubs: {
                 ActivityPanel: true,
@@ -172,7 +172,7 @@ describe("InteractiveToolsPanel component", () => {
         vi.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(vi.fn());
 
         const wrapper = mount(InteractiveToolsPanel as any, {
-            localVue,
+            global: localVue,
             pinia,
             stubs: {
                 ActivityPanel: {

@@ -92,7 +92,7 @@ describe("Lint", () => {
         setActivePinia(pinia);
 
         wrapper = mount(Lint, {
-            propsData: {
+            props: {
                 untypedParameters: getUntypedWorkflowParameters(steps),
                 steps: steps,
                 annotation: "annotation",
@@ -101,7 +101,7 @@ describe("Lint", () => {
                 creator: null,
                 datatypesMapper: testDatatypesMapper,
             },
-            localVue,
+            global: localVue,
             pinia,
             provide: { workflowId: "mock-workflow" },
         });

@@ -92,9 +92,9 @@ describe("JobParameters/JobParameters.vue", () => {
             param: "Iterate?",
         };
 
-        const getSingleParam = async (propsData: { jobId: string; param: string }) => {
+        const getSingleParam = async (_props: { jobId: string; param: string }) => {
             const wrapper = mount(JobParameters as object, {
-                propsData,
+                props: propsData,
                 stubs: {
                     DatasetProvider: DatasetProvider,
                     ContentItem: true,

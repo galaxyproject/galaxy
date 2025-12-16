@@ -13,10 +13,10 @@ async function mountComponent(dsc: object) {
     const jobStateSummary = new JobStateSummary(dsc);
 
     const wrapper = mount(CollectionProgress as object, {
-        propsData: {
+        props: {
             summary: jobStateSummary,
         },
-        localVue,
+        global: localVue,
     });
 
     await flushPromises();

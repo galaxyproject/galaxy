@@ -14,13 +14,13 @@ describe("FormMessage", () => {
     beforeEach(() => {
         vi.useFakeTimers();
         wrapper = mount(FormMessage, {
-            propsData: {
+            props: {
                 message: "test message",
                 variant: "danger",
                 persistent: true,
                 timeout: 1000,
             },
-            localVue,
+            global: localVue,
         });
     });
 

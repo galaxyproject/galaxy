@@ -28,10 +28,10 @@ async function mountDatasetAttributes(conversion_disable = false) {
     });
 
     const wrapper = mount(DatasetAttributes as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
 
@@ -44,12 +44,12 @@ async function buildWrapperWithError(error: string) {
     const axiosMock = new MockAdapter(axios);
     axiosMock.onGet(`/dataset/get_edit?dataset_id=${DATASET_ID}`).reply(400);
     const wrapper = mount(DatasetAttributes as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
             messageText: error,
             messageVariant: "danger",
         },
-        localVue,
+        global: localVue,
         stubs: {
             FontAwesomeIcon: false,
             FormElement: false,
