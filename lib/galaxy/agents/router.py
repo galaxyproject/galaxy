@@ -122,7 +122,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             else:
                 # For pydantic-ai, the result might be wrapped
                 return result
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.warning(f"Router agent network error, using fallback: {e}")
             return self._fallback_routing(query, context)
         except ValueError as e:
@@ -306,16 +306,17 @@ For specific tools, please also cite the individual tool publications.""",
         """Simple system prompt for models that don't support structured output."""
         return """
         You are a Galaxy platform routing assistant. Analyze the user's query and respond with a simple routing decision.
-        
+
         Available agents:
         - error_analysis: For debugging, troubleshooting, job failures
         - custom_tool: For creating new tools, tool development
         - tool_recommendation: For finding tools, "how to" questions, analysis guidance
-        
+
+
         Respond in this exact format:
         ROUTE_TO: [agent_name]
         REASONING: [brief explanation]
-        
+
         Example:
         ROUTE_TO: tool_recommendation
         REASONING: User asking how to perform analysis task

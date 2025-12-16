@@ -117,7 +117,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 },
             )
 
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.error(f"Orchestration network error: {e}")
             return self._get_fallback_response(query, str(e))
         except ValueError as e:
@@ -141,7 +141,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 response_text = str(result.data) if hasattr(result, "data") else str(result)
                 return self._parse_simple_plan(response_text)
 
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.warning(f"Agent plan generation network error, using fallback: {e}")
             return AgentPlan(
                 agents=["tool_recommendation"],

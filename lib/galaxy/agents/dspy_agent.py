@@ -188,7 +188,7 @@ class DSPyGalaxyAgent(BaseGalaxyAgent):
         Available Galaxy tools include:
         - BWA-MEM: For mapping sequencing reads to reference genomes
         - HISAT2: For RNA-seq read alignment
-        - StringTie: For transcript assembly and quantification  
+        - StringTie: For transcript assembly and quantification
         - DESeq2: For differential gene expression analysis
         - FastQC: For quality control of sequencing data
         - Trimmomatic: For read trimming and filtering

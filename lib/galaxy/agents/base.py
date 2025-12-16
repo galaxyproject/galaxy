@@ -241,7 +241,7 @@ class BaseGalaxyAgent(ABC):
             log.exception(f"Unexpected model behavior in {self.agent_type} agent")
             return self._get_fallback_response(query, f"Unexpected model behavior: {str(e)}")
 
-        except (ConnectionError, TimeoutError, OSError) as e:
+        except OSError as e:
             log.warning(f"Network error in {self.agent_type} agent: {e}")
             return self._get_fallback_response(query, str(e))
 
