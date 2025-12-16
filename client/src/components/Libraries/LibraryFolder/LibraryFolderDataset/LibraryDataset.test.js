@@ -74,7 +74,7 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = f
         folder_id: FOLDER_ID,
     };
     const wrapper = mount(LibraryDataset, {
-        localVue,
+        global: localVue,
         propsData,
         stubs: {
             DatatypesProvider: mockDatatypesProvider,

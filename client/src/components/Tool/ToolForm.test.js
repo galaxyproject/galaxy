@@ -67,11 +67,11 @@ describe("ToolForm", () => {
         suppressBootstrapVueWarnings();
 
         wrapper = mount(ToolForm, {
-            propsData: {
+            props: {
                 id: "tool_id",
                 version: "version",
             },
-            localVue,
+            global: localVue,
             stubs: {
                 UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
                 FormDisplay: true,

@@ -19,7 +19,7 @@ describe("SharingIndicators.vue", () => {
             };
             wrapper = shallowMount(SharingIndicators, {
                 propsData,
-                localVue,
+                global: localVue,
             });
         });
 
@@ -42,7 +42,7 @@ describe("SharingIndicators.vue", () => {
             };
             wrapper = shallowMount(SharingIndicators, {
                 propsData,
-                localVue,
+                global: localVue,
             });
         });
 

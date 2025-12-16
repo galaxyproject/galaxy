@@ -34,8 +34,8 @@ describe("DescribeObjectStore.vue", () => {
 
     async function mountWithResponse(response) {
         wrapper = shallowMount(DescribeObjectStore, {
-            propsData: { storageInfo: response, what: "where i am throwing my test dataset" },
-            localVue,
+            props: { storageInfo: response, what: "where i am throwing my test dataset" },
+            global: localVue,
         });
     }
 

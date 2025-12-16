@@ -44,9 +44,8 @@ describe("NewUserConfirmation", () => {
         );
 
         wrapper = mount(MountTarget as object, {
-            propsData: {},
-            localVue,
-            router,
+            props: {},
+            global: localVue,
         });
     });
 

@@ -50,8 +50,8 @@ async function mountHistoryExport() {
     setActivePinia(pinia);
 
     const wrapper = shallowMount(HistoryExport as object, {
-        propsData: { historyId: FAKE_HISTORY_ID },
-        localVue,
+        props: { historyId: FAKE_HISTORY_ID },
+        global: localVue,
         pinia,
     });
     await flushPromises();

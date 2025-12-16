@@ -15,10 +15,10 @@ describe("CollectionProgress", () => {
         const dsc = { job_state_summary: { all_jobs: 3, running: 3 }, populated_state: {} };
         const jobStateSummary = new JobStateSummary(dsc);
         wrapper = mount(CollectionProgress, {
-            propsData: {
+            props: {
                 summary: jobStateSummary,
             },
-            localVue,
+            global: localVue,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
@@ -28,10 +28,10 @@ describe("CollectionProgress", () => {
         const dsc = { job_state_summary: { all_jobs: 5, running: 3, failed: 1, ok: 1 }, populated_state: {} };
         const jobStateSummary = new JobStateSummary(dsc);
         wrapper = mount(CollectionProgress, {
-            propsData: {
+            props: {
                 summary: jobStateSummary,
             },
-            localVue,
+            global: localVue,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
@@ -43,10 +43,10 @@ describe("CollectionProgress", () => {
         const dsc = { job_state_summary: { all_jobs: 3, running: 3 }, populated_state: {} };
         let jobStateSummary = new JobStateSummary(dsc);
         wrapper = mount(CollectionProgress, {
-            propsData: {
+            props: {
                 summary: jobStateSummary,
             },
-            localVue,
+            global: localVue,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
@@ -63,10 +63,10 @@ describe("CollectionProgress", () => {
         const dsc = { job_state_summary: { all_jobs: 3, queued: 3 }, populated_state: {} };
         const jobStateSummary = new JobStateSummary(dsc);
         wrapper = mount(CollectionProgress, {
-            propsData: {
+            props: {
                 summary: jobStateSummary,
             },
-            localVue,
+            global: localVue,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".progress").find(".bg-secondary").attributes("aria-valuenow")).toBe("3");

@@ -97,7 +97,7 @@ async function mountWorkflowInvocationInputOutputTabs(
     );
 
     const wrapper = mount(WorkflowInvocationInputOutputTabs as object, {
-        propsData: {
+        props: {
             invocation,
             terminal,
             tab,

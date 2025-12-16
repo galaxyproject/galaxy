@@ -90,8 +90,8 @@ describe("DownloadItemCard.vue", () => {
     function mountDownloadItemCard(options: { monitoringData?: MonitoringData } = {}) {
         const monitoringData = options.monitoringData || baseMonitoringData;
         return mount(DownloadItemCard as object, {
-            propsData: { monitoringData },
-            localVue,
+            props: { monitoringData },
+            global: localVue,
         });
     }
 

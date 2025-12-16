@@ -28,7 +28,7 @@ vi.mock("@/composables/filter/filter.js", () => {
 function mountTarget() {
     setActivePinia(createPinia());
     return mount(RoleForm, {
-        localVue,
+        global: localVue,
         stubs: {
             FontAwesomeIcon: true,
             FormSelection: true,

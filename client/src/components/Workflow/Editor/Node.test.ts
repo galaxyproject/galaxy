@@ -30,7 +30,7 @@ describe("Node", () => {
         const testingPinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(testingPinia);
         const wrapper = shallowMount(Node as any, {
-            propsData: {
+            props: {
                 id: 0,
                 contentId: "tool name",
                 activeNodeId: 0,
@@ -40,7 +40,7 @@ describe("Node", () => {
                 rootOffset: mockOffset,
                 scroll: MOCK_SCROLL,
             },
-            localVue,
+            global: localVue,
             pinia: testingPinia,
             provide: {
                 workflowId: "mock-workflow",

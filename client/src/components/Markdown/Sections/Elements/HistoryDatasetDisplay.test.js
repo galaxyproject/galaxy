@@ -41,8 +41,8 @@ describe("History Tabular Dataset Display", () => {
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(tabular)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            localVue,
-            propsData: { datasetId },
+            global: localVue,
+            props: { datasetId },
             pinia: setUpDatatypesStore(),
         });
         await flushPromises();
@@ -69,8 +69,8 @@ describe("History Text Dataset Display", () => {
             http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
-            localVue,
-            propsData: { datasetId },
+            global: localVue,
+            props: { datasetId },
             pinia: setUpDatatypesStore(),
         });
         await flushPromises();

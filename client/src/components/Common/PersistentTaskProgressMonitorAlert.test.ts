@@ -48,7 +48,7 @@ const mountComponent = (
     },
 ) => {
     return shallowMount(PersistentTaskProgressMonitorAlert as object, {
-        propsData: {
+        props: {
             ...props,
         },
     });

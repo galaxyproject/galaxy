@@ -26,10 +26,10 @@ describe("ToRemoteFile.vue", () => {
     beforeEach(async () => {
         lastPutRequest = null;
         wrapper = shallowMount(ToRemoteFile, {
-            propsData: {
+            props: {
                 historyId: TEST_HISTORY_ID,
             },
-            localVue,
+            global: localVue,
         });
     });
 

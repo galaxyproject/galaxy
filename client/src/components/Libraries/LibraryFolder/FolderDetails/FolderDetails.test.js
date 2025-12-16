@@ -34,8 +34,8 @@ const ERROR_ALERT = '[data-testid="error-alert"]';
 
 async function mountFolderDetailsWrapper(localVue) {
     const wrapper = mount(FolderDetails, {
-        localVue,
-        propsData: INPUT_PROP_DATA,
+        global: localVue,
+        props: INPUT_PROP_DATA,
     });
     await flushPromises();
     return wrapper;

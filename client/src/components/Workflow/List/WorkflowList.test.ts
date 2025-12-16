@@ -41,7 +41,7 @@ async function mountWorkflowList() {
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {
-        localVue,
+        global: localVue,
         pinia,
         router,
     });

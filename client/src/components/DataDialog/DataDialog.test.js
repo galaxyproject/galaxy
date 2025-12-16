@@ -110,7 +110,7 @@ describe("DataDialog.vue", () => {
 
     it("loads correctly, embeds a SelectionDialog", () => {
         wrapper = shallowMount(DataDialog, {
-            propsData: mockOptions,
+            props: mockOptions,
             stubs: {
                 Icon: true,
             },

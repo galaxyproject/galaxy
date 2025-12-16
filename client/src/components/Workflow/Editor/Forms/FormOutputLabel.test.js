@@ -24,22 +24,22 @@ describe("FormOutputLabel", () => {
         const pinia = createPinia();
         setActivePinia(pinia);
         wrapper = mount(FormOutputLabel, {
-            propsData: {
+            props: {
                 name: "output-name",
                 step: stepOne,
             },
-            localVue,
+            global: localVue,
             pinia,
             provide: { workflowId: "mock-workflow" },
         });
 
         const stepTwo = { id: 1, outputs: [{ name: "other-name" }], workflow_outputs: outputs };
         wrapperOther = mount(FormOutputLabel, {
-            propsData: {
+            props: {
                 name: "other-name",
                 step: stepTwo,
             },
-            localVue,
+            global: localVue,
             pinia,
             provide: { workflowId: "mock-workflow" },
         });

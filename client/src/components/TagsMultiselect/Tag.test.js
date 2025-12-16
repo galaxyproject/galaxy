@@ -8,8 +8,8 @@ const localVue = getLocalVue();
 
 const mountWithProps = (props) => {
     return mount(Tag, {
-        propsData: props,
-        localVue,
+        props: props,
+        global: localVue,
     });
 };
 

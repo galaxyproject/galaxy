@@ -13,8 +13,8 @@ const TEST_MESSAGE = "This is a test message for the badge.";
 
 async function mountBadge(badge: ObjectStoreBadgeType) {
     const wrapper = mount(ObjectStoreBadge as object, {
-        propsData: { badge },
-        localVue,
+        props: { badge },
+        global: localVue,
     });
 
     return wrapper;
