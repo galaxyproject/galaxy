@@ -49,7 +49,7 @@ describe("ToolFooter", () => {
 
     beforeEach(() => {
         wrapper = mount(ToolFooter, {
-            propsData: {
+            props: {
                 id: "tool_a",
                 hasCitations: true,
                 xrefs: [],
@@ -57,7 +57,7 @@ describe("ToolFooter", () => {
                 creators: [],
                 requirements: [],
             },
-            localVue,
+            global: localVue,
             stubs: {
                 CitationItem: false,
                 License: true,

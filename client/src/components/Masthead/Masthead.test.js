@@ -53,10 +53,10 @@ describe("Masthead.vue", () => {
         userStore.currentUser = currentUser;
 
         wrapper = mount(Masthead, {
-            propsData: {
+            props: {
                 windowTab,
             },
-            localVue,
+            global: localVue,
             pinia: testPinia,
         });
         await flushPromises();

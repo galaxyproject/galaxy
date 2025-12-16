@@ -40,9 +40,9 @@ describe("ToolSuccessMessage", () => {
 
     beforeEach(async () => {
         wrapper = mount(ToolSuccessMessage as object, {
-            localVue,
+            global: localVue,
             router,
-            propsData: {
+            props: {
                 jobResponse: TEST_JOB_RESPONSE,
                 toolName: TEST_TOOL_NAME,
             },

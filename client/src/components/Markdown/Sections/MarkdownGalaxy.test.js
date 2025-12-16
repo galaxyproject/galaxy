@@ -68,7 +68,7 @@ function mountComponent(propsData = {}, options = {}) {
     server.use(...handlers);
 
     return mount(MountTarget, {
-        localVue,
+        global: localVue,
         pinia,
         propsData,
         stubs: {

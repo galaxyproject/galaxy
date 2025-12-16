@@ -27,7 +27,7 @@ async function mountComponent() {
     const pinia = createPinia();
 
     const wrapper = mount(UserDeletion as object, {
-        localVue,
+        global: localVue,
         pinia,
     });
 

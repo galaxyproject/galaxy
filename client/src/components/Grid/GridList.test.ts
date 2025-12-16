@@ -102,7 +102,7 @@ interface TargetProps {
 function createTarget(propsData: TargetProps) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     return mount(MountTarget as object, {
-        localVue,
+        global: localVue,
         propsData,
         pinia,
     });

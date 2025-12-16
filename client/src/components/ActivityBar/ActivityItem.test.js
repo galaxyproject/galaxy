@@ -12,7 +12,7 @@ describe("ActivityItem", () => {
 
     beforeEach(async () => {
         wrapper = mount(mountTarget, {
-            propsData: {
+            props: {
                 id: "activity-test-id",
                 activityBarId: "activity-bar-test-id",
                 icon: "activity-test-icon",
@@ -24,7 +24,7 @@ describe("ActivityItem", () => {
                 tooltip: "activity-test-tooltip",
             },
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            localVue,
+            global: localVue,
             stubs: {
                 FontAwesomeIcon: true,
             },

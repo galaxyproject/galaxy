@@ -38,10 +38,10 @@ describe("CollectionDescription", () => {
 
     beforeEach(() => {
         wrapper = mount(CollectionDescription as object, {
-            propsData: {
+            props: {
                 hdca: defaultTestHDCA,
             },
-            localVue,
+            global: localVue,
         });
     });
 

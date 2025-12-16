@@ -10,12 +10,12 @@ import HistoryNavigation from "./HistoryNavigation.vue";
 
 const localVue = getLocalVue();
 
-async function createWrapper(propsData: object, userData?: Partial<RegisteredUser>) {
+async function createWrapper(props: object, userData?: Partial<RegisteredUser>) {
     const pinia = createPinia();
 
     const wrapper = shallowMount(HistoryNavigation as object, {
         propsData,
-        localVue,
+        global: localVue,
         pinia,
     });
 

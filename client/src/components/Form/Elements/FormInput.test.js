@@ -11,11 +11,11 @@ describe("FormInput", () => {
 
     beforeEach(() => {
         wrapper = mount(FormInput, {
-            propsData: {
+            props: {
                 id: "input",
                 value: "initial_value",
             },
-            localVue,
+            global: localVue,
         });
     });
 

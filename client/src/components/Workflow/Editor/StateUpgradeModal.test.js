@@ -8,7 +8,7 @@ describe("StateUpgradeModal.vue", () => {
 
     async function mountWith(stateMessages) {
         wrapper = shallowMount(StateUpgradeModal, {
-            propsData: {
+            props: {
                 stateMessages,
             },
         });

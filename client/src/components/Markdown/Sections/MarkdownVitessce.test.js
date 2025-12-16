@@ -19,7 +19,7 @@ const { server, http } = useServerMock();
 describe("MarkdownVitessce.vue", () => {
     it("displays error on invalid JSON", async () => {
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: "{invalid",
             },
             pinia: createTestingPinia({ createSpy: vi.fn }),
@@ -45,7 +45,7 @@ describe("MarkdownVitessce.vue", () => {
             ],
         };
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
         });
@@ -67,7 +67,7 @@ describe("MarkdownVitessce.vue", () => {
             ],
         };
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
         });
@@ -111,10 +111,10 @@ describe("MarkdownVitessce.vue", () => {
         });
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         const wrapper = mount(MarkdownVitessce, {
-            propsData: {
+            props: {
                 content: JSON.stringify(content),
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         await new Promise((resolve) => setTimeout(resolve));

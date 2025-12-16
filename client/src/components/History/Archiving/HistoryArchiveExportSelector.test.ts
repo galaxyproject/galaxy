@@ -31,8 +31,8 @@ const CONFIRM_DELETE_CHECKBOX = "[type='checkbox']";
 
 async function mountComponentWithHistory(history: HistorySummary) {
     const wrapper = shallowMount(HistoryArchiveExportSelector as object, {
-        propsData: { history },
-        localVue,
+        props: { history },
+        global: localVue,
         stubs: {
             // Stub with the real component to be able to use setChecked
             BFormCheckbox,

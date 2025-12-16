@@ -1,6 +1,8 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import { BTable } from "bootstrap-vue";
 import { beforeEach, describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 
 import DataDialogSearch from "./DataDialogSearch.vue";
 import SelectionDialog from "./SelectionDialog.vue";
@@ -16,10 +18,10 @@ describe("SelectionDialog.vue", () => {
     let localVue;
 
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
         wrapper = mount(SelectionDialog, {
-            propsData: mockOptions,
-            localVue,
+            props: mockOptions,
+            global: localVue,
         });
     });
 
@@ -32,7 +34,7 @@ describe("SelectionDialog.vue", () => {
     });
 
     it("loads header correctly", async () => {
-        await localVue.nextTick();
+        await nextTick();
         expect(wrapper.findComponent(DataDialogSearch).exists()).toBeTruthy();
     });
 

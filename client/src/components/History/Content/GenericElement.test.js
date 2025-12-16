@@ -23,7 +23,7 @@ describe("GenericElement", () => {
         suppressLucideVue2Deprecation();
 
         wrapper = mount(GenericElement, {
-            propsData: {
+            props: {
                 dsc: {
                     elements: [
                         {
@@ -66,7 +66,7 @@ describe("GenericElement", () => {
                     ],
                 },
             },
-            localVue,
+            global: localVue,
             router,
             pinia: createTestingPinia({ createSpy: vi.fn }),
         });

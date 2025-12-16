@@ -31,7 +31,7 @@ describe("ToolSchemaJson/ToolsView.vue", () => {
                 return HttpResponse.json(testToolsListInPanelResponse);
             }),
         );
-        wrapper = shallowMount(ToolsJson, { localVue });
+        wrapper = shallowMount(ToolsJson, { global: localVue });
         await flushPromises();
     });
 
