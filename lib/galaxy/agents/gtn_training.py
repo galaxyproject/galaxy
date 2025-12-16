@@ -250,7 +250,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
-    async def process(self, query: str, context: Dict[str, Any] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
         Process a training-related query.
 
@@ -302,7 +302,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         )
 
                 # Format the response
-                content = self._format_response(response_data)
+                content = self._format_gtn_response(response_data)
                 suggestions = self._create_suggestions(response_data)
                 confidence = ConfidenceLevel.HIGH if response_data.tutorials else ConfidenceLevel.MEDIUM
 
@@ -345,7 +345,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             log.error(f"GTN training agent value error: {e}")
             return self._get_error_response(str(e))
 
-    def _format_response(self, response_data: GTNSearchResponse) -> str:
+    def _format_gtn_response(self, response_data: GTNSearchResponse) -> str:
         """Format the GTN search response into user-friendly text."""
         parts = []
 
@@ -357,22 +357,12 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if response_data.tutorials:
             parts.append("\n**Relevant Tutorials:**")
             for i, tutorial in enumerate(response_data.tutorials, 1):
-                # Handle both dict and object formats
-                if isinstance(tutorial, dict):
-                    title = tutorial.get("title", "Untitled Tutorial")
-                    topic = tutorial.get("topic", "Unknown")
-                    difficulty = tutorial.get("difficulty", "Unknown")
-                    time_estimation = tutorial.get("time_estimation", "Unknown")
-                    url = tutorial.get("url", "#")
-                    description = tutorial.get("description", "")
-                else:
-                    # Handle object format
-                    title = getattr(tutorial, "title", "Untitled Tutorial")
-                    topic = getattr(tutorial, "topic", "Unknown")
-                    difficulty = getattr(tutorial, "difficulty", "Unknown")
-                    time_estimation = getattr(tutorial, "time_estimation", "Unknown")
-                    url = getattr(tutorial, "url", "#")
-                    description = getattr(tutorial, "description", "")
+                title = tutorial.get("title", "Untitled Tutorial")
+                topic = tutorial.get("topic", "Unknown")
+                difficulty = tutorial.get("difficulty", "Unknown")
+                time_estimation = tutorial.get("time_estimation", "Unknown")
+                url = tutorial.get("url", "#")
+                description = tutorial.get("description", "")
 
                 parts.append(f"\n{i}. **{title}**")
                 if description:
@@ -414,15 +404,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         # Suggest opening tutorials
         for tutorial in response_data.tutorials[:3]:  # Top 3 tutorials
-            # Handle both dict and object formats
-            if isinstance(tutorial, dict):
-                title = tutorial.get("title", "Untitled Tutorial")
-                url = tutorial.get("url", "#")
-                topic = tutorial.get("topic", "Unknown")
-            else:
-                title = getattr(tutorial, "title", "Untitled Tutorial")
-                url = getattr(tutorial, "url", "#")
-                topic = getattr(tutorial, "topic", "Unknown")
+            title = tutorial.get("title", "Untitled Tutorial")
+            url = tutorial.get("url", "#")
 
             suggestions.append(
                 ActionSuggestion(
@@ -438,10 +421,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if response_data.tutorials:
             topics = []
             for t in response_data.tutorials:
-                if isinstance(t, dict):
-                    topic = t.get("topic", "Unknown")
-                else:
-                    topic = getattr(t, "topic", "Unknown")
+                topic = t.get("topic", "Unknown")
                 if topic != "Unknown":
                     topics.append(topic)
 
