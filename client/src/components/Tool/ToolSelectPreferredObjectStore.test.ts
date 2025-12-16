@@ -18,8 +18,8 @@ const localVue = getLocalVue(true);
 
 function mountComponent() {
     const wrapper = mount(ToolSelectPreferredObjectStore as object, {
-        propsData: { toolPreferredObjectStoreId: null },
-        localVue,
+        props: { toolPreferredObjectStoreId: null },
+        global: localVue,
     });
     return wrapper;
 }

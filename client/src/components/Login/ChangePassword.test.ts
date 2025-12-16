@@ -20,11 +20,11 @@ describe("ChangePassword", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         wrapper = mount(MountTarget as object, {
-            propsData: {
+            props: {
                 messageText: "message_text",
                 messageVariant: "message_variant",
             },
-            localVue,
+            global: localVue,
         });
     });
 

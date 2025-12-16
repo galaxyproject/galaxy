@@ -62,7 +62,7 @@ function mountComponent(propsData = {}, apiMap = {}) {
         ),
     );
     return mount(MountTarget, {
-        localVue,
+        global: localVue,
         pinia,
         propsData,
         stubs: {

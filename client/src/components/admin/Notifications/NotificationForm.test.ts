@@ -25,10 +25,10 @@ async function mountNotificationForm(props?: object) {
     setActivePinia(pinia);
 
     const wrapper = mount(NotificationForm as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

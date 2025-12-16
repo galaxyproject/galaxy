@@ -93,7 +93,7 @@ function createTestGrid() {
 function createTarget(propsData) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     return mount(MountTarget, {
-        localVue,
+        global: localVue,
         propsData,
         pinia,
     });

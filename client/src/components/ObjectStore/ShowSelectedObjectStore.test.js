@@ -54,8 +54,8 @@ describe("ShowSelectedObjectStore", () => {
             }),
         );
         wrapper = mount(ShowSelectedObjectStore, {
-            propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
-            localVue,
+            props: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
+            global: localVue,
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
@@ -74,8 +74,8 @@ describe("ShowSelectedObjectStore", () => {
         );
 
         wrapper = mount(ShowSelectedObjectStore, {
-            propsData: { preferredObjectStoreId: TEST_USER_OBJECT_STORE_ID, forWhat: "Data goes into..." },
-            localVue,
+            props: { preferredObjectStoreId: TEST_USER_OBJECT_STORE_ID, forWhat: "Data goes into..." },
+            global: localVue,
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();

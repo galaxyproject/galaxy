@@ -90,13 +90,13 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
     );
 
     const wrapper = mount(WorkflowAnnotation as object, {
-        propsData: {
+        props: {
             workflowId: ownsWorkflow ? SAMPLE_WORKFLOW.id : OTHER_USER_WORKFLOW_ID,
             historyId: TEST_HISTORY_ID,
             invocationCreateTime: version === "invocation" ? INVOCATION_TIME : undefined,
             showDetails: version === "run_form",
         },
-        localVue,
+        global: localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
         stubs: {
             FontAwesomeIcon: true,

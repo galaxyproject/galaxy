@@ -9,8 +9,8 @@ const localVue = getLocalVue();
 describe("FormUpload", () => {
     const mountFormUpload = (props) =>
         mount(FormUpload, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
         });
 
     it("should display selected file in disabled textarea", async () => {

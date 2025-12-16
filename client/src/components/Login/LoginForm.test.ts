@@ -24,10 +24,10 @@ const SELECTORS = {
 
 async function mountLoginForm() {
     const wrapper = mount(MountTarget as object, {
-        propsData: {
+        props: {
             sessionCsrfToken: "sessionCsrfToken",
         },
-        localVue,
+        global: localVue,
         router,
         stubs: {
             ExternalLogin: true,

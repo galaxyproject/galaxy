@@ -94,7 +94,7 @@ describe("FormDisplay", () => {
         };
         wrapper = mount(FormDisplay, {
             propsData,
-            localVue,
+            global: localVue,
             stubs: {},
         });
     });

@@ -21,8 +21,8 @@ vi.mock("vue-router", () => ({
 
 function mountTarget(props = {}) {
     return mount(PageForm, {
-        localVue,
-        propsData: props,
+        global: localVue,
+        props: props,
         stubs: {
             FontAwesomeIcon: true,
             BButton: true,

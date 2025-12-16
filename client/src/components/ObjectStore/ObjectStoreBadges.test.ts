@@ -18,8 +18,8 @@ describe("ObjectStoreBadges", () => {
 
     it("should render all badges in array", async () => {
         wrapper = shallowMount(ObjectStoreBadges as object, {
-            propsData: { badges: BADGES },
-            localVue,
+            props: { badges: BADGES },
+            global: localVue,
         });
         const badgeListEl = wrapper.find(".object-store-badges");
         expect(badgeListEl.exists()).toBeTruthy();
@@ -30,8 +30,8 @@ describe("ObjectStoreBadges", () => {
 
     it("should pass along size attributes", async () => {
         wrapper = shallowMount(ObjectStoreBadges as object, {
-            propsData: { badges: BADGES, size: "2x" },
-            localVue,
+            props: { badges: BADGES, size: "2x" },
+            global: localVue,
         });
         const badgeListEl = wrapper.find(".object-store-badges");
         expect(badgeListEl.exists()).toBeTruthy();

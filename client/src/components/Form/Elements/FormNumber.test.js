@@ -10,8 +10,8 @@ const localVue = getLocalVue();
 describe("FormInput", () => {
     const mountFormNumber = async (props) =>
         await mount(FormNumber, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
         });
 
     const getInput = async (wrapper) => await wrapper.find("input[type='number']");

@@ -32,7 +32,7 @@ vi.mock("../services", () => ({
 describe("Monitor", () => {
     it("test monitor", async () => {
         const localVue = getLocalVue();
-        const wrapper = mount(Monitor, { localVue });
+        const wrapper = mount(Monitor, { global: localVue });
         await localVue.nextTick();
         const headers = wrapper.findAll("th");
         expect(headers.length).toBe(3);

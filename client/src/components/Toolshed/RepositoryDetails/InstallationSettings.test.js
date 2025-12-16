@@ -22,7 +22,7 @@ const localVue = getLocalVue();
 describe("InstallationSettings", () => {
     it("test tool repository installer interface", () => {
         const wrapper = mount(InstallationSettings, {
-            propsData: {
+            props: {
                 modalStatic: true,
                 repo: {
                     long_description: "long_description",
@@ -35,7 +35,7 @@ describe("InstallationSettings", () => {
                 toolshedUrl: "toolshedUrl",
                 currentPanel: {},
             },
-            localVue,
+            global: localVue,
         });
         expect(wrapper.find(".title").text()).toBe("Installing 'name'");
         expect(wrapper.find(".description").text()).toBe("long_description");

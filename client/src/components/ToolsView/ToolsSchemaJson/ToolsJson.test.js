@@ -22,7 +22,7 @@ describe("ToolSchemaJson/ToolsView.vue", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet("/api/tools?in_panel=False&tool_help=True").reply(200, testToolsListResponse);
         axiosMock.onGet("/api/tool_panels/default").reply(200, testToolsListInPanelResponse);
-        wrapper = shallowMount(ToolsJson, { localVue });
+        wrapper = shallowMount(ToolsJson, { global: localVue });
         await flushPromises();
     });
 

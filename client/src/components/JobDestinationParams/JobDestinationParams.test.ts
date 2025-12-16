@@ -29,10 +29,10 @@ async function mountJobDestinationParams() {
 
     const pinia = createPinia();
     const wrapper = shallowMount(JobDestinationParams as object, {
-        propsData: {
+        props: {
             jobId: JOB_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
 
