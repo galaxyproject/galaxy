@@ -14,7 +14,10 @@ import logging
 import re
 import sqlite3
 import sys
-from dataclasses import dataclass
+from dataclasses import (
+    dataclass,
+    field,
+)
 from datetime import datetime
 from hashlib import md5
 from pathlib import Path
@@ -23,6 +26,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 # Configure logging
@@ -42,12 +46,7 @@ class FAQ:
     content: str = ""
     content_hash: str = ""
     last_modified: str = ""
-    contributors: List[str] = None
-
-    def __post_init__(self):
-        """Initialize default values for list fields."""
-        if self.contributors is None:
-            self.contributors = []
+    contributors: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -66,31 +65,20 @@ class Tutorial:
     questions: str = ""
     objectives: str = ""
     key_points: str = ""
-    tools: List[str] = None
-    requirements: List[str] = None
-    tags: List[str] = None
+    tools: List[str] = field(default_factory=list)
+    requirements: List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
     content_hash: str = ""
     last_modified: str = ""
     gtn_commit: str = ""
     zenodo_link: str = ""
-    workflows: List[str] = None
-
-    def __post_init__(self):
-        """Initialize default values for list fields."""
-        if self.tools is None:
-            self.tools = []
-        if self.requirements is None:
-            self.requirements = []
-        if self.tags is None:
-            self.tags = []
-        if self.workflows is None:
-            self.workflows = []
+    workflows: List[str] = field(default_factory=list)
 
 
 class GTNDatabaseBuilder:
     """Builds SQLite database from GTN repository."""
 
-    def __init__(self, gtn_path: Path, output_path: Path = None):
+    def __init__(self, gtn_path: Path, output_path: Optional[Path] = None):
         """
         Initialize the database builder.
 
@@ -346,8 +334,8 @@ class GTNDatabaseBuilder:
         This is a basic parser that handles common YAML structures
         without requiring external dependencies.
         """
-        result = {}
-        current_list = None
+        result: Dict[str, Any] = {}
+        current_list: Optional[List[str]] = None
 
         for line in yaml_content.split("\n"):
             line = line.rstrip()
@@ -368,26 +356,30 @@ class GTNDatabaseBuilder:
             if ":" in line and not line.startswith(" ") and not line.startswith("\t"):
                 parts = line.split(":", 1)
                 key = parts[0].strip()
-                value = parts[1].strip() if len(parts) > 1 else ""
+                str_value = parts[1].strip() if len(parts) > 1 else ""
 
                 # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-                elif value.startswith("'") and value.endswith("'"):
-                    value = value[1:-1]
+                if str_value.startswith('"') and str_value.endswith('"'):
+                    str_value = str_value[1:-1]
+                elif str_value.startswith("'") and str_value.endswith("'"):
+                    str_value = str_value[1:-1]
 
                 # Check for boolean values
-                if value.lower() == "true":
-                    value = True
-                elif value.lower() == "false":
-                    value = False
-                elif value == "":
+                parsed_value: Union[str, bool, List[str]]
+                if str_value.lower() == "true":
+                    parsed_value = True
+                elif str_value.lower() == "false":
+                    parsed_value = False
+                elif str_value == "":
                     # This might be a list
                     current_list = []
                     result[key] = current_list
+                    continue
                 else:
-                    result[key] = value
-                    current_list = None
+                    parsed_value = str_value
+
+                result[key] = parsed_value
+                current_list = None
 
         return result
 
