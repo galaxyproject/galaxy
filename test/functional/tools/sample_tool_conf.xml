@@ -263,6 +263,26 @@
   <tool file="converter_target_datatype.xml" />
   <tool file="tool_directory_copy.xml" />
 
+  <!-- CWL Testing -->
+  <tool file="cwl_tools/v1.0/v1.0/cat3-tool.cwl" />
+  <tool file="cwl_tools/v1.0/v1.0/env-tool1.cwl" />
+  <tool file="cwl_tools/v1.0/v1.0/null-expression1-tool.cwl" />
+  <tool file="cwl_tools/v1.0/v1.0/null-expression2-tool.cwl" />
+  <tool file="cwl_tools/v1.0/v1.0/optional-output.cwl" />
+  <tool file="cwl_tools/v1.0/v1.0/parseInt-tool.cwl" />
+  <tool file="cwl_tools/v1.0/v1.0/record-output.cwl" />
+  <tool file="cwl_tools/v1.0/v1.0/sorttool.cwl" />
+  <tool file="cwl_tools/v1.0_custom/any1.cwl" />
+  <tool file="cwl_tools/v1.0_custom/cat1-tool.cwl" />
+  <tool file="cwl_tools/v1.0_custom/cat2-tool.cwl" />
+  <tool file="cwl_tools/v1.0_custom/cat-default.cwl" />
+  <tool file="cwl_tools/v1.0_custom/default_path_custom_1.cwl" />
+  <tool file="cwl_tools/v1.0_custom/index1.cwl" />
+  <tool file="cwl_tools/v1.0_custom/optional-output2.cwl" />
+  <tool file="cwl_tools/v1.0_custom/showindex1.cwl" />
+  <tool file="galactic_cat.cwl" />
+  <tool file="galactic_record_input.cwl" />
+
   <!-- Tools interesting only for building up test workflows. -->
 
   <!-- Next three tools demonstrate concatenating multiple datasets

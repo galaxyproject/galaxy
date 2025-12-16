@@ -58,6 +58,7 @@ from galaxy.tools.parameters import (
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
+    FieldTypeToolParameter,
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
@@ -94,6 +95,7 @@ if TYPE_CHECKING:
     from galaxy.tools import Tool
 
 log = logging.getLogger(__name__)
+CWL_TOOL_TYPES = ("galactic_cwl", "cwl")
 
 
 class ToolErrorLog:
@@ -247,7 +249,12 @@ class ToolEvaluator:
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
 
-        param_dict = TreeDict(self.param_dict)
+        if self.tool.tool_type == "cwl":
+            param_dict: Union[dict[str, Any], TreeDict] = self.param_dict
+        else:
+            # TreeDict provides a way to access parameters without their fully qualified path,
+            # we only need this for Galaxy tools.
+            param_dict = TreeDict(self.param_dict)
 
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
             job_working_directory, "registry.xml"
@@ -261,6 +268,10 @@ class ToolEvaluator:
 
         self.__populate_wrappers(param_dict, input_datasets, job_working_directory)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets)
+        if self.tool.tool_type == "cwl":
+            # don't need the outputs or the sanitization:
+            param_dict["__local_working_directory__"] = self.local_working_directory
+            return param_dict
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, job_working_directory)
         self.__populate_output_collection_wrappers(param_dict, output_collections, job_working_directory)
         self.__populate_unstructured_path_rewrites(param_dict)
@@ -273,6 +284,9 @@ class ToolEvaluator:
         # so we should use it (otherwise the upload tool does not work in real user setups)
         if self.job.tool_id == "upload1":
             param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
+
+        if not isinstance(param_dict, TreeDict):
+            return param_dict
 
         if "input" not in param_dict.data:
 
@@ -514,6 +528,34 @@ class ToolEvaluator:
                     tool_evaluator=self,
                 )
                 input_values[input.name] = wrapper
+            elif isinstance(input, FieldTypeToolParameter):
+                field_wrapper: Optional[Union[InputValueWrapper, DatasetFilenameWrapper, DatasetCollectionWrapper]] = (
+                    None
+                )
+                if value:
+                    assert "value" in value, value
+                    assert "src" in value, value
+                    src = value["src"]
+                    if src == "json":
+                        field_wrapper = InputValueWrapper(input, value, param_dict)
+                    elif src == "hda":
+                        field_wrapper = DatasetFilenameWrapper(
+                            value["value"],
+                            datatypes_registry=self.app.datatypes_registry,
+                            tool=self.tool,
+                            name=input.name,
+                        )
+                    elif src == "hdca":
+                        field_wrapper = DatasetCollectionWrapper(
+                            job_working_directory=job_working_directory,
+                            has_collection=value["value"],
+                            datatypes_registry=self.app.datatypes_registry,
+                            tool=self.tool,
+                            name=input.name,
+                        )
+                    else:
+                        raise ValueError(f"src should be 'json' or 'hda' or 'hdca' but is '{src}'")
+                input_values[input.name] = field_wrapper
             elif isinstance(input, SelectToolParameter):
                 if input.multiple:
                     value = listify(value)
@@ -749,22 +791,28 @@ class ToolEvaluator:
         command_line = None
         if not command:
             return
-        try:
-            # Substituting parameters into the command
-            command_line = fill_template(
-                command, context=param_dict, python_template_version=self.tool.python_template_version
-            )
-            cleaned_command_line = []
-            # Remove leading and trailing whitespace from each line for readability.
-            for line in command_line.split("\n"):
-                cleaned_command_line.append(line.strip())
-            command_line = "\n".join(cleaned_command_line)
-            # Remove newlines from command line, and any leading/trailing white space
-            command_line = command_line.replace("\n", " ").replace("\r", " ").strip()
-        except Exception:
-            # Modify exception message to be more clear
-            # e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ), )
-            raise
+
+        # TODO: this approach replaces specifies a command block as $__cwl_command_state
+        #  and that other approach needs to be unraveled.
+        if self.tool.tool_type in CWL_TOOL_TYPES and "__cwl_command" in param_dict:
+            command_line = param_dict["__cwl_command"]
+        else:
+            try:
+                # Substituting parameters into the command
+                command_line = fill_template(
+                    command, context=param_dict, python_template_version=self.tool.python_template_version
+                )
+                cleaned_command_line = []
+                # Remove leading and trailing whitespace from each line for readability.
+                for line in command_line.split("\n"):
+                    cleaned_command_line.append(line.strip())
+                command_line = "\n".join(cleaned_command_line)
+                # Remove newlines from command line, and any leading/trailing white space
+                command_line = command_line.replace("\n", " ").replace("\r", " ").strip()
+            except Exception:
+                # Modify exception message to be more clear
+                # e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ), )
+                raise
         if interpreter:
             # TODO: path munging for cluster/dataset server relocatability
             executable = command_line.split()[0]
@@ -786,8 +834,11 @@ class ToolEvaluator:
         """
         Build temporary file for file based parameter transfer if needed
         """
+        config_filenames: list[str] = []
+        if self.tool.tool_type in CWL_TOOL_TYPES:
+            # will never happen for cwl tools
+            return config_filenames
         param_dict = self.param_dict
-        config_filenames = []
         for config_file in self.tool.config_files:
             config_text, template_type = self._build_config_file_text(config_file)
             # If a particular filename was forced by the config use it
@@ -807,7 +858,12 @@ class ToolEvaluator:
     def _build_environment_variables(self):
         param_dict = self.param_dict
         environment_variables = self.environment_variables
-        for environment_variable_def in self.tool.environment_variables:
+        environment_variables_raw = self.tool.environment_variables
+        for key, value in param_dict.get("__cwl_command_state", {}).get("env", {}).items():
+            environment_variable = dict(name=key, template=value)
+            environment_variables_raw.append(environment_variable)
+
+        for environment_variable_def in environment_variables_raw:
             directory = self.local_working_directory
             environment_variable = environment_variable_def.copy()
             environment_variable_template = environment_variable_def["template"]
@@ -835,7 +891,9 @@ class ToolEvaluator:
                 else:
                     environment_variable_template = ""
             else:
-                template_type = "cheetah"
+                # CWL tools should not template out values
+                if self.tool.tool_type not in CWL_TOOL_TYPES:
+                    template_type = "cheetah"
             with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
                 config_filename = temp.name
             self._write_workdir_file(
