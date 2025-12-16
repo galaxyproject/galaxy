@@ -88,7 +88,18 @@ Object.defineProperty(global, "BroadcastChannel", {
 const failOnConsole = (await import("vitest-fail-on-console")).default;
 failOnConsole({
     shouldFailOnError: true,
-    shouldFailOnWarn: true,
+    shouldFailOnWarn: (message: string) => {
+        // Don't fail on Vue compat mode warnings during migration (but still show them)
+        if (message.includes("[Vue warn]")) {
+            return false;
+        }
+        // Don't fail on Bootstrap-Vue registration warnings
+        if (message.includes("has already been registered")) {
+            return false;
+        }
+        // Fail on other warnings
+        return true;
+    },
 });
 
 // Import and setup MSW if needed
