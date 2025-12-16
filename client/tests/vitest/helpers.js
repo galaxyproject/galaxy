@@ -3,7 +3,10 @@
  *
  * Note: For Vue 3 / Vue Test Utils v2, we no longer use createLocalVue.
  * Instead, plugins are passed via the `global` mount option.
+ *
+ * Usage: mount(Component, { global: getLocalVue() })
  */
+import { createPinia } from "pinia";
 import { expect, vi } from "vitest";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -35,42 +38,71 @@ const mockedDirective = {
  *
  * Note: BootstrapVue and vue-rx are not compatible with Vue 3.
  * Use component-specific stubs for bootstrap components in tests.
+ *
+ * Includes Pinia store by default for components that use stores.
  */
 export function getLocalVue(instrumentLocalization = false) {
     const l = instrumentLocalization ? testLocalize : _l;
+    const pinia = createPinia();
 
     return {
-        plugins: [[localizationPlugin, l]],
+        plugins: [[localizationPlugin, l], pinia],
         directives: {
             "b-tooltip": mockedDirective,
             "b-popover": mockedDirective,
         },
         stubs: {
-            // Stub common bootstrap-vue components
+            // Stub common bootstrap-vue components (both kebab-case and PascalCase)
             "b-button": true,
+            BButton: true,
             "b-form-input": true,
+            BFormInput: true,
             "b-form-checkbox": true,
+            BFormCheckbox: true,
             "b-modal": true,
+            BModal: true,
             "b-card": true,
+            BCard: true,
             "b-dropdown": true,
+            BDropdown: true,
             "b-dropdown-item": true,
+            BDropdownItem: true,
             "b-alert": true,
+            BAlert: true,
             "b-badge": true,
+            BBadge: true,
             "b-spinner": true,
+            BSpinner: true,
             "b-link": true,
+            BLink: true,
             "b-collapse": true,
+            BCollapse: true,
             "b-form-group": true,
+            BFormGroup: true,
             "b-form-select": true,
+            BFormSelect: true,
             "b-form-textarea": true,
+            BFormTextarea: true,
             "b-table": true,
+            BTable: true,
             "b-pagination": true,
+            BPagination: true,
             "b-tabs": true,
+            BTabs: true,
             "b-tab": true,
+            BTab: true,
             "b-nav": true,
+            BNav: true,
             "b-nav-item": true,
+            BNavItem: true,
             "b-overlay": true,
+            BOverlay: true,
             "b-popover": true,
+            BPopover: true,
             "b-tooltip": true,
+            BTooltip: true,
+            "b-form-row": true,
+            BFormRow: true,
             Portal: true,
             PortalTarget: true,
         },
