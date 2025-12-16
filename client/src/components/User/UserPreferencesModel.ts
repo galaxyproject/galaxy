@@ -34,9 +34,12 @@ export const getUserPreferencesModel: (user_id?: string) => UserPreferencesModel
             title: localize("Manage Information"),
             id: "edit-preferences-information",
             description:
-                isConfigLoaded.value && config.value.enable_account_interface && !config.value.use_remote_user
+                isConfigLoaded.value &&
+                config.value.enable_account_interface &&
+                !config.value.use_remote_user &&
+                !config.value.disable_local_accounts
                     ? localize("Edit your email, addresses and custom parameters or change your public name.")
-                    : localize("Edit your custom parameters."),
+                    : localize("Edit your addresses and custom parameters."),
             url: `/api/users/${user_id}/information/inputs`,
             icon: faUser,
             redirect: "/user",
@@ -49,7 +52,11 @@ export const getUserPreferencesModel: (user_id?: string) => UserPreferencesModel
             url: `/api/users/${user_id}/password/inputs`,
             submitTitle: "Save Password",
             redirect: "/user",
-            disabled: isConfigLoaded.value && (config.value.use_remote_user || !config.value.enable_account_interface),
+            disabled:
+                isConfigLoaded.value &&
+                (config.value.use_remote_user ||
+                    config.value.disable_local_accounts ||
+                    !config.value.enable_account_interface),
         },
         toolbox_filters: {
             title: localize("Manage Toolbox Filters"),

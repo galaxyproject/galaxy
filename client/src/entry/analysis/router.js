@@ -5,6 +5,7 @@ import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
 import { APIKey } from "@/components/User/APIKey";
 import { ExternalIdentities } from "@/components/User/ExternalIdentities";
+import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
@@ -81,6 +82,7 @@ import CustomBuilds from "@/components/User/CustomBuilds.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
+import UserOidcProfile from "@/components/User/UserOidcProfile.vue";
 import UserPreferences from "@/components/User/UserPreferences.vue";
 import UserPreferencesForm from "@/components/User/UserPreferencesForm.vue";
 import DisplayApplication from "@/components/Visualizations/DisplayApplication.vue";
@@ -613,6 +615,17 @@ export function getRouter(Galaxy) {
                         path: "user/credentials",
                         component: CredentialsManagement,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/oidc-profile",
+                        component: UserOidcProfile,
+                        redirect:
+                            redirectIf(
+                                !Galaxy.config.enable_oidc ||
+                                    Galaxy.config.enable_account_interface ||
+                                    !hasSingleOidcProfile(Galaxy.config.oidc),
+                                "/user",
+                            ) || redirectAnon(),
                     },
                     {
                         path: "user/external_ids",
