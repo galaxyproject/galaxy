@@ -20,7 +20,7 @@ jobs:
       - name: Update dependencies
         run: make update-dependencies
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           author: galaxybot <galaxybot@users.noreply.github.com>
           token: ${{ secrets.GALAXYBOT_PAT }}
