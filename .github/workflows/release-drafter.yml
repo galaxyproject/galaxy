@@ -8,6 +8,7 @@ on:
       - 'release_*'
   pull_request_target:
     types: [opened, reopened, synchronize]
+  workflow_dispatch:
 
 permissions:
   contents: read
