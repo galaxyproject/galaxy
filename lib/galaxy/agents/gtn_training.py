@@ -8,6 +8,7 @@ Galaxy workflows through hands-on tutorials.
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import (
     Any,
@@ -34,10 +35,7 @@ from .base import (
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
-from .gtn import (
-    GTNSearchDB,
-    SearchResult,
-)
+from .gtn import GTNSearchDB
 
 log = logging.getLogger(__name__)
 
@@ -77,11 +75,14 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         super().__init__(deps)
 
         # Initialize GTN database (lazy - only when DB file exists)
-        self.gtn_db: Optional[GTNSearchDB] = None
+        self.gtn_db: GTNSearchDB | None = None
         try:
             self.gtn_db = GTNSearchDB()
             log.info("GTN database initialized successfully")
-        except Exception as e:
+        except FileNotFoundError as e:
+            log.warning(f"GTN database file not found: {e}")
+            self.gtn_db = None
+        except OSError as e:
             log.error(f"Failed to initialize GTN database: {e}")
             self.gtn_db = None
 
@@ -392,7 +393,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         # Add prerequisites
         if response_data.prerequisites:
-            parts.append(f"\n**Prerequisites:**")
+            parts.append("\n**Prerequisites:**")
             for prereq in response_data.prerequisites:
                 parts.append(f"- {prereq}")
 
@@ -467,7 +468,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
     def _parse_simple_response(self, response_text: str) -> Dict[str, Any]:
         """Parse simple text response into structured format."""
-        import re
 
         # Extract structured information from text
         tutorials = re.search(r"TUTORIALS:\s*([^\n]+)", response_text, re.IGNORECASE)
