@@ -106,7 +106,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
 
             return AgentResponse(
                 content=combined_content,
-                confidence="high",
+                confidence=ConfidenceLevel.HIGH,
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={
@@ -116,8 +116,11 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 },
             )
 
-        except Exception as e:
-            log.error(f"Orchestration failed: {e}")
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.error(f"Orchestration network error: {e}")
+            return self._get_fallback_response(query, str(e))
+        except ValueError as e:
+            log.error(f"Orchestration value error: {e}")
             return self._get_fallback_response(query, str(e))
 
     async def _get_agent_plan(self, query: str) -> AgentPlan:
@@ -137,8 +140,15 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 response_text = str(result.data) if hasattr(result, "data") else str(result)
                 return self._parse_simple_plan(response_text)
 
-        except Exception as e:
-            log.warning(f"Agent plan generation failed, using fallback: {e}")
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.warning(f"Agent plan generation network error, using fallback: {e}")
+            return AgentPlan(
+                agents=["tool_recommendation"],
+                sequential=False,
+                reasoning="Fallback to single agent due to network error",
+            )
+        except ValueError as e:
+            log.warning(f"Agent plan generation value error, using fallback: {e}")
             return AgentPlan(
                 agents=["tool_recommendation"],
                 sequential=False,

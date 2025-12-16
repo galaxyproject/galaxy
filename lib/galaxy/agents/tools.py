@@ -116,8 +116,8 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
             return tools
 
-        except Exception as e:
-            log.error(f"Error searching tools: {e}")
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error searching tools: {e}")
             return []
 
     async def get_tool_details(self, tool_id: str) -> Dict[str, Any]:
@@ -162,8 +162,8 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
             return details
 
-        except Exception as e:
-            log.error(f"Error getting tool details for {tool_id}: {e}")
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error getting tool details for {tool_id}: {e}")
             return {"id": tool_id, "error": str(e)}
 
     async def check_tool_compatibility(self, tool_id: str, input_format: str) -> bool:
@@ -186,8 +186,8 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                         if input_format in formats or "any" in formats:
                             return True
             return False
-        except Exception as e:
-            log.error(f"Error checking compatibility: {e}")
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error checking compatibility: {e}")
             return False
 
     async def get_tool_categories(self) -> List[str]:
@@ -242,7 +242,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
                 recommendation = SimplifiedToolRecommendationResult(
                     primary_tools=[exact_match],
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     reasoning="This is the tool with the exact name you requested.",
                     search_keywords=[trimmed_query],
                 )
@@ -252,13 +252,13 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
                 return AgentResponse(
                     content=content,
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     agent_type=self.agent_type,
                     suggestions=suggestions,
                     metadata={"method": "fast_path_exact_match"},
                     reasoning=f"Directly matched tool name '{exact_match['name']}'.",
                 )
-        except Exception as e:
+        except (AttributeError, KeyError, TypeError) as e:
             log.warning(f"Fast path tool search failed: {e}. Proceeding with LLM.")
 
         try:
@@ -308,7 +308,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
                 return AgentResponse(
                     content=parsed_result.get("content", response_text),
-                    confidence=parsed_result.get("confidence", "medium"),
+                    confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
                     agent_type=self.agent_type,
                     suggestions=parsed_result.get("suggestions", []),
                     metadata={
@@ -317,8 +317,11 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     },
                 )
 
-        except Exception as e:
-            log.error(f"Tool recommendation failed: {e}")
+        except (ConnectionError, TimeoutError, OSError) as e:
+            log.warning(f"Tool recommendation network error: {e}")
+            return self._get_fallback_response(query, str(e))
+        except ValueError as e:
+            log.warning(f"Tool recommendation value error: {e}")
             return self._get_fallback_response(query, str(e))
 
     def _extract_keywords(self, query: str) -> List[str]:
@@ -415,12 +418,16 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             top_tool = recommendation.primary_tools[0]
             tool_name = top_tool.get("name", top_tool.get("tool_name", "Unknown tool"))
             tool_id = top_tool.get("id", top_tool.get("tool_id", ""))
+            # Normalize confidence for comparison
+            conf_value = recommendation.confidence
+            if isinstance(conf_value, str):
+                conf_value = conf_value.lower()
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.TOOL_RUN,
                     description=f"Run {tool_name}",
                     parameters={"tool_id": tool_id, "tool_name": tool_name},
-                    confidence="medium" if recommendation.confidence == "medium" else "high",
+                    confidence=ConfidenceLevel.MEDIUM if conf_value == "medium" else ConfidenceLevel.HIGH,
                     priority=1,
                 )
             )
@@ -431,7 +438,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.WORKFLOW_STEP,
                     description="Follow recommended workflow",
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=2,
                 )
             )
@@ -442,7 +449,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.DOCUMENTATION,
                     description="Review tool documentation",
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     priority=3,
                 )
             )
@@ -454,7 +461,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     action_type=ActionType.PARAMETER_CHANGE,
                     description="Apply recommended parameters",
                     parameters=recommendation.parameter_guidance,
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=2,
                 )
             )
@@ -492,7 +499,16 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         tool_id = re.search(r"TOOL_ID:\s*([^\n]+)", response_text, re.IGNORECASE)
         reason = re.search(r"REASON:\s*([^\n]+)", response_text, re.IGNORECASE)
         alternatives = re.search(r"ALTERNATIVES:\s*([^\n]+)", response_text, re.IGNORECASE)
-        confidence = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
+        confidence_match = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
+
+        # Parse confidence level
+        confidence_level = ConfidenceLevel.MEDIUM
+        if confidence_match:
+            conf_str = confidence_match.group(1).lower()
+            if conf_str == "high":
+                confidence_level = ConfidenceLevel.HIGH
+            elif conf_str == "low":
+                confidence_level = ConfidenceLevel.LOW
 
         # Build content
         content_parts = []
@@ -516,17 +532,17 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         suggestions = []
         if tool and tool.group(1).strip():
             suggestions.append(
-                {
-                    "action_type": "TOOL_RUN",
-                    "description": f"Run {tool.group(1).strip()}",
-                    "confidence": confidence.group(1).lower() if confidence else "medium",
-                    "priority": 1,
-                }
+                ActionSuggestion(
+                    action_type=ActionType.TOOL_RUN,
+                    description=f"Run {tool.group(1).strip()}",
+                    confidence=confidence_level,
+                    priority=1,
+                )
             )
 
         return {
             "content": "\n\n".join(content_parts),
-            "confidence": confidence.group(1).lower() if confidence else "medium",
+            "confidence": confidence_level,
             "has_alternatives": bool(alternatives and alternatives.group(1).strip()),
             "suggestions": suggestions,
         }
