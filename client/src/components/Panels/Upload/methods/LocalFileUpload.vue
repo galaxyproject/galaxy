@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { faCloudUploadAlt, faExclamationTriangle, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCloudUploadAlt, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BFormInput, BFormSelect, BTable } from "bootstrap-vue";
+import { BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { findExtension } from "@/components/Upload/utils";
 import { useFileDrop } from "@/composables/fileDrop";
+import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
+import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import type { CollectionConfig } from "@/composables/uploadQueue";
 import { useUploadQueue } from "@/composables/uploadQueue";
@@ -15,6 +17,13 @@ import type { UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { CollectionCreationState } from "../types/collectionCreation";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
+import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
+import UploadTableBulkExtensionHeader from "../shared/UploadTableBulkExtensionHeader.vue";
+import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
+import UploadTableExtensionCell from "../shared/UploadTableExtensionCell.vue";
+import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
+import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
+import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
@@ -42,7 +51,7 @@ interface FileWithMetadata {
     name: string;
     size: number;
     extension: string;
-    dbKey: string;
+    dbkey: string;
     spaceToTab: boolean;
     toPosixLines: boolean;
 }
@@ -67,87 +76,14 @@ const totalSize = computed(() => {
     return bytesToString(bytes);
 });
 
-const isReadyToUpload = computed(() => {
-    if (!hasFiles.value) {
-        return false;
-    }
-    // If collection creation is active, it must be valid to proceed
-    if (collectionState.value.validation.isActive && !collectionState.value.validation.isValid) {
-        return false;
-    }
-    return true;
-});
+const { isNameValid, restoreOriginalName: restoreOriginalNameBase } = useUploadItemValidation();
 
-const bulkExtension = ref<string | null>(null);
-const bulkDbKey = ref<string | null>(null);
+const bulk = useBulkUploadOperations(selectedFiles, effectiveExtensions);
 
-const bulkExtensionWarning = computed(() => {
-    if (!bulkExtension.value) {
-        return null;
-    }
-    const ext = findExtension(effectiveExtensions.value, bulkExtension.value);
-    return ext?.upload_warning || null;
-});
-
-function getExtensionWarning(extensionId: string): string | null {
-    const ext = findExtension(effectiveExtensions.value, extensionId);
-    return ext?.upload_warning || null;
-}
-
-function setAllExtensions(extension: string | null) {
-    if (extension) {
-        selectedFiles.value.forEach((file) => {
-            file.extension = extension;
-        });
-    }
-}
-
-function setAllDbKeys(dbKey: string | null) {
-    if (dbKey) {
-        selectedFiles.value.forEach((file) => {
-            file.dbKey = dbKey;
-        });
-    }
-}
-
-const allSpaceToTab = computed(() => selectedFiles.value.length > 0 && selectedFiles.value.every((f) => f.spaceToTab));
-
-const allToPosixLines = computed(
-    () => selectedFiles.value.length > 0 && selectedFiles.value.every((f) => f.toPosixLines),
-);
-
-const spaceToTabIndeterminate = computed(
-    () =>
-        selectedFiles.value.length > 0 &&
-        selectedFiles.value.some((f) => f.spaceToTab) &&
-        !selectedFiles.value.every((f) => f.spaceToTab),
-);
-
-const toPosixLinesIndeterminate = computed(
-    () =>
-        selectedFiles.value.length > 0 &&
-        selectedFiles.value.some((f) => f.toPosixLines) &&
-        !selectedFiles.value.every((f) => f.toPosixLines),
-);
-
-function toggleAllSpaceToTab() {
-    const newValue = !allSpaceToTab.value;
-    selectedFiles.value.forEach((f) => (f.spaceToTab = newValue));
-}
-
-function toggleAllToPosixLines() {
-    const newValue = !allToPosixLines.value;
-    selectedFiles.value.forEach((f) => (f.toPosixLines = newValue));
-}
+const { isReadyToUpload } = useUploadReadyState(hasFiles, collectionState);
 
 function restoreOriginalName(item: FileWithMetadata) {
-    if (!item.name.trim()) {
-        item.name = item.file.name;
-    }
-}
-
-function isNameValid(name: string): boolean | null {
-    return name.trim().length > 0 ? null : false;
+    restoreOriginalNameBase(item, item.file.name);
 }
 
 const tableFields = [
@@ -219,7 +155,7 @@ function addFiles(files: FileList | File[] | null) {
             name: file.name,
             size: file.size,
             extension: defaultExtension,
-            dbKey: defaultDbKey,
+            dbkey: defaultDbKey,
             spaceToTab: false,
             toPosixLines: false,
         });
@@ -252,7 +188,7 @@ function startUpload() {
         name: item.name,
         size: item.file.size,
         targetHistoryId: props.targetHistoryId,
-        dbkey: item.dbKey,
+        dbkey: item.dbkey,
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
@@ -314,14 +250,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         small
                         fixed
                         thead-class="file-table-header">
-                        <template v-slot:cell(name)="{ item, index }">
-                            <BFormInput
-                                :key="`name-${index}`"
-                                v-model="item.name"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
+                        <template v-slot:cell(name)="{ item }">
+                            <UploadTableNameCell
+                                :value="item.name"
                                 :state="isNameValid(item.name)"
-                                title="Dataset name in your history (required)"
+                                tooltip="Dataset name in your history (required)"
+                                @input="item.name = $event"
                                 @blur="restoreOriginalName(item)" />
                         </template>
 
@@ -330,135 +264,57 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </template>
 
                         <template v-slot:head(extension)>
-                            <div class="column-header-vertical">
-                                <span class="column-title">Type</span>
-                                <BFormSelect
-                                    v-model="bulkExtension"
-                                    v-b-tooltip.hover.noninteractive
-                                    size="sm"
-                                    title="Set file format for all files"
-                                    :disabled="!configurationsReady"
-                                    @change="setAllExtensions">
-                                    <option :value="null">Set all...</option>
-                                    <option
-                                        v-for="(ext, extIndex) in effectiveExtensions"
-                                        :key="extIndex"
-                                        :value="ext.id">
-                                        {{ ext.text }}
-                                    </option>
-                                </BFormSelect>
-                                <FontAwesomeIcon
-                                    v-if="bulkExtensionWarning"
-                                    v-b-tooltip.hover.noninteractive
-                                    class="text-warning warning-icon"
-                                    :icon="faExclamationTriangle"
-                                    :title="bulkExtensionWarning" />
-                            </div>
+                            <UploadTableBulkExtensionHeader
+                                :value="bulk.bulkExtension.value"
+                                :extensions="effectiveExtensions"
+                                :warning="bulk.bulkExtensionWarning.value"
+                                :disabled="!configurationsReady"
+                                tooltip="Set file format for all files"
+                                @input="bulk.setAllExtensions" />
                         </template>
 
                         <template v-slot:cell(extension)="{ item }">
-                            <div class="d-flex align-items-center">
-                                <BFormSelect
-                                    v-model="item.extension"
-                                    v-b-tooltip.hover.noninteractive
-                                    size="sm"
-                                    title="File format (auto-detect recommended)"
-                                    :disabled="!configurationsReady">
-                                    <option
-                                        v-for="(ext, extIndex) in effectiveExtensions"
-                                        :key="extIndex"
-                                        :value="ext.id">
-                                        {{ ext.text }}
-                                    </option>
-                                </BFormSelect>
-                                <FontAwesomeIcon
-                                    v-if="getExtensionWarning(item.extension)"
-                                    v-b-tooltip.hover.noninteractive
-                                    class="text-warning ml-1 flex-shrink-0"
-                                    :icon="faExclamationTriangle"
-                                    :title="getExtensionWarning(item.extension)" />
-                            </div>
+                            <UploadTableExtensionCell
+                                :value="item.extension"
+                                :extensions="effectiveExtensions"
+                                :warning="bulk.getExtensionWarning(item.extension)"
+                                :disabled="!configurationsReady"
+                                @input="item.extension = $event" />
                         </template>
 
                         <template v-slot:head(dbKey)>
-                            <div class="column-header-vertical">
-                                <span class="column-title">Reference</span>
-                                <BFormSelect
-                                    v-model="bulkDbKey"
-                                    v-b-tooltip.hover.noninteractive
-                                    size="sm"
-                                    title="Set database key for all files"
-                                    :disabled="!configurationsReady"
-                                    @change="setAllDbKeys">
-                                    <option :value="null">Set all...</option>
-                                    <option
-                                        v-for="(dbKey, dbKeyIndex) in listDbKeys"
-                                        :key="dbKeyIndex"
-                                        :value="dbKey.id">
-                                        {{ dbKey.text }}
-                                    </option>
-                                </BFormSelect>
-                            </div>
+                            <UploadTableBulkDbKeyHeader
+                                :value="bulk.bulkDbKey.value"
+                                :db-keys="listDbKeys"
+                                :disabled="!configurationsReady"
+                                tooltip="Set database key for all files"
+                                @input="bulk.setAllDbKeys" />
                         </template>
 
                         <template v-slot:cell(dbKey)="{ item }">
-                            <BFormSelect
-                                v-model="item.dbKey"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                title="Database key for this dataset"
-                                :disabled="!configurationsReady">
-                                <option v-for="(dbKey, dbKeyIndex) in listDbKeys" :key="dbKeyIndex" :value="dbKey.id">
-                                    {{ dbKey.text }}
-                                </option>
-                            </BFormSelect>
+                            <UploadTableDbKeyCell
+                                :value="item.dbkey"
+                                :db-keys="listDbKeys"
+                                :disabled="!configurationsReady"
+                                @input="item.dbkey = $event" />
                         </template>
 
                         <template v-slot:head(options)>
-                            <div class="options-header">
-                                <span class="options-title">Upload Settings</span>
-                                <div class="d-flex align-items-center">
-                                    <BFormCheckbox
-                                        v-b-tooltip.hover.noninteractive
-                                        :checked="allSpaceToTab"
-                                        :indeterminate="spaceToTabIndeterminate"
-                                        size="sm"
-                                        class="mr-2"
-                                        title="Toggle all: Convert spaces to tab characters"
-                                        @change="toggleAllSpaceToTab">
-                                        <span class="small">Spaces→Tabs</span>
-                                    </BFormCheckbox>
-                                    <BFormCheckbox
-                                        v-b-tooltip.hover.noninteractive
-                                        :checked="allToPosixLines"
-                                        :indeterminate="toPosixLinesIndeterminate"
-                                        size="sm"
-                                        title="Toggle all: Convert line endings to POSIX standard"
-                                        @change="toggleAllToPosixLines">
-                                        <span class="small">POSIX</span>
-                                    </BFormCheckbox>
-                                </div>
-                            </div>
+                            <UploadTableOptionsHeader
+                                :all-space-to-tab="bulk.allSpaceToTab.value"
+                                :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
+                                :all-to-posix-lines="bulk.allToPosixLines.value"
+                                :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
+                                @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
+                                @toggle-to-posix-lines="bulk.toggleAllToPosixLines" />
                         </template>
 
                         <template v-slot:cell(options)="{ item }">
-                            <div class="d-flex align-items-center">
-                                <BFormCheckbox
-                                    v-model="item.spaceToTab"
-                                    v-b-tooltip.hover.noninteractive
-                                    size="sm"
-                                    class="mr-2"
-                                    title="Convert spaces to tab characters">
-                                    <span class="small">Spaces→Tabs</span>
-                                </BFormCheckbox>
-                                <BFormCheckbox
-                                    v-model="item.toPosixLines"
-                                    v-b-tooltip.hover.noninteractive
-                                    size="sm"
-                                    title="Convert line endings to POSIX standard">
-                                    <span class="small">POSIX</span>
-                                </BFormCheckbox>
-                            </div>
+                            <UploadTableOptionsCell
+                                :space-to-tab="item.spaceToTab"
+                                :to-posix-lines="item.toPosixLines"
+                                @updateSpaceToTab="item.spaceToTab = $event"
+                                @updateToPosixLines="item.toPosixLines = $event" />
                         </template>
 
                         <template v-slot:cell(actions)="{ index }">
@@ -516,6 +372,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
+@import "../shared/upload-table-shared.scss";
 
 .local-file-upload {
     height: 100%;
@@ -592,80 +449,22 @@ defineExpose<UploadMethodComponent>({ startUpload });
 }
 
 .file-list-header {
-    flex-shrink: 0;
-    border-bottom: 1px solid $border-color;
+    @include upload-list-header;
 }
 
 .file-table-container {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-
-    :deep(.table) {
-        table-layout: auto;
-        min-width: 100%;
-    }
+    @include upload-table-container;
 
     :deep(.file-table-header) {
-        position: sticky;
-        top: 0;
-        background-color: $white;
-        z-index: 100;
-
-        th {
-            vertical-align: middle;
-            white-space: nowrap;
-        }
+        @include upload-table-header;
     }
 
     :deep(.file-name-cell) {
         min-width: 200px;
     }
-
-    .column-header-vertical {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        position: relative;
-
-        .column-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .warning-icon {
-            position: absolute;
-            right: 0;
-            top: 0;
-        }
-    }
-
-    .options-header {
-        .options-title {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-    }
-
-    .remove-btn {
-        width: 30px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-
-        &:hover {
-            background-color: rgba($brand-danger, 0.1);
-        }
-    }
 }
 
 .file-list-actions {
-    flex-shrink: 0;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-start;
-    padding-top: 1rem;
-    border-top: 1px solid $border-color;
+    @include upload-list-actions;
 }
 </style>
