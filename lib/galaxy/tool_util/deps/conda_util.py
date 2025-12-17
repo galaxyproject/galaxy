@@ -718,7 +718,14 @@ def requirement_to_conda_targets(requirement: "ToolRequirement") -> Optional[Con
     conda_target = None
     if requirement.type == "package":
         assert requirement.name
-        conda_target = CondaTarget(requirement.name, version=requirement.version)
+        version = requirement.version
+        build = None
+        if version:
+            if "=" in version:
+                version, build = version.split("=")
+            elif "--" in version:
+                version, build = version.split("--")
+        conda_target = CondaTarget(requirement.name, version=version, build=build)
     return conda_target
 
 
