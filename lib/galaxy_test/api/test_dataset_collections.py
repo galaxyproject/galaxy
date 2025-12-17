@@ -481,6 +481,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         collection_details = self.dataset_populator.get_history_collection_details(
             history_id, content_id=output_collection["id"]
         )
+        assert collection_details["column_definitions"] == sample_sheet["column_definitions"]
 
         # Verify that the output collection preserved the columns metadata
         output_elements = collection_details["elements"]
