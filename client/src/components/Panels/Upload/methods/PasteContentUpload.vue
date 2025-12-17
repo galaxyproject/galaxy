@@ -5,15 +5,16 @@ import { BTable } from "bootstrap-vue";
 import { computed, nextTick, ref, watch } from "vue";
 
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
+import { useCollectionCreation } from "@/composables/upload/collectionCreation";
+import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
-import { useUploadConfigurations } from "@/composables/uploadConfigurations";
-import type { CollectionConfig } from "@/composables/uploadQueue";
 import { useUploadQueue } from "@/composables/uploadQueue";
+import { mapToPasteContentUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
-import type { CollectionCreationState } from "../types/collectionCreation";
+import type { PasteContentItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
 import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
@@ -38,54 +39,31 @@ const emit = defineEmits<{
 
 const uploadQueue = useUploadQueue();
 
-const {
-    configOptions,
-    effectiveExtensions,
-    listDbKeys,
-    ready: configurationsReady,
-} = useUploadConfigurations(undefined);
-
-const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
-const collectionState = ref<CollectionCreationState>({
-    config: null,
-    validation: {
-        isValid: true,
-        isActive: false,
-        message: "",
-    },
-});
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
 
 const tableContainerRef = ref<HTMLElement | null>(null);
+const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-interface PasteItem {
-    id: number;
-    name: string;
-    content: string;
-    extension: string;
-    dbkey: string;
-    spaceToTab: boolean;
-    toPosixLines: boolean;
-    _showDetails?: boolean;
-}
+const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+    useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
 
-const pasteItems = ref<PasteItem[]>([
-    {
-        id: nextId++,
-        name: "Pasted Dataset 1",
+function createPasteContentItem(id: number, name: string): PasteContentItem {
+    return {
+        id,
+        name,
         content: "",
-        extension: configOptions.value?.defaultExtension || "auto",
-        dbkey: configOptions.value?.defaultDbKey || "?",
-        spaceToTab: false,
-        toPosixLines: false,
+        ...createItemDefaults(),
         _showDetails: true,
-    },
-]);
+    };
+}
+
+const pasteItems = ref<PasteContentItem[]>([createPasteContentItem(nextId++, "Pasted Dataset 1")]);
 
 const hasItems = computed(() => pasteItems.value.some((item) => item.content.trim().length > 0));
 
-const { isNameValid, restoreOriginalName: restoreOriginalNameBase } = useUploadItemValidation();
+const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(pasteItems, effectiveExtensions);
 
@@ -95,17 +73,7 @@ watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
 
 function addPasteItem() {
     const newId = nextId++;
-    pasteItems.value.push({
-        id: newId,
-        name: `Pasted Dataset ${pasteItems.value.length + 1}`,
-        content: "",
-        extension: configOptions.value?.defaultExtension || "auto",
-        dbkey: configOptions.value?.defaultDbKey || "?",
-        spaceToTab: false,
-        toPosixLines: false,
-        _showDetails: true,
-    });
-
+    pasteItems.value.push(createPasteContentItem(newId, `Pasted Dataset ${pasteItems.value.length + 1}`));
     scrollToBottom();
 }
 
@@ -141,16 +109,6 @@ function getExpandToggleTitle(detailsShowing: boolean): string {
 
 function getExpandAllToggleTitle(allExpanded: boolean): string {
     return allExpanded ? "Collapse all" : "Expand all";
-}
-
-function handleCollectionStateChange(state: CollectionCreationState) {
-    collectionState.value = state;
-}
-
-function restoreOriginalName(item: PasteItem) {
-    const index = pasteItems.value.findIndex((i) => i.id === item.id);
-    const originalName = `Pasted Dataset ${index + 1}`;
-    restoreOriginalNameBase(item, originalName);
 }
 
 const allExpanded = computed(() => pasteItems.value.length > 0 && pasteItems.value.every((f) => f._showDetails));
@@ -214,44 +172,14 @@ function startUpload() {
         return;
     }
 
-    const uploads = validItems.map((item) => ({
-        uploadMode: "paste-content" as const,
-        name: item.name,
-        size: new Blob([item.content]).size,
-        targetHistoryId: props.targetHistoryId,
-        dbkey: item.dbkey,
-        extension: item.extension,
-        spaceToTab: item.spaceToTab,
-        toPosixLines: item.toPosixLines,
-        deferred: false,
-        content: item.content,
-    }));
+    const uploads = validItems.map((item) => mapToPasteContentUpload(item, props.targetHistoryId));
+    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
 
-    const fullCollectionConfig: CollectionConfig | undefined = collectionState.value.config
-        ? {
-              name: collectionState.value.config.name,
-              type: collectionState.value.config.type,
-              hideSourceItems: true,
-              historyId: props.targetHistoryId,
-          }
-        : undefined;
-
-    uploadQueue.enqueue(uploads, fullCollectionConfig);
+    uploadQueue.enqueue(uploads, collectionConfig);
 
     // Reset to single empty item
-    const newId = nextId++;
-    pasteItems.value = [
-        {
-            id: newId,
-            name: "Pasted Dataset 1",
-            content: "",
-            extension: configOptions.value?.defaultExtension || "auto",
-            dbkey: configOptions.value?.defaultDbKey || "?",
-            spaceToTab: false,
-            toPosixLines: false,
-        },
-    ];
-    collectionConfigComponent.value?.reset();
+    pasteItems.value = [createPasteContentItem(nextId++, "Pasted Dataset 1")];
+    resetCollection();
 }
 
 defineExpose<UploadMethodComponent>({ startUpload });
@@ -302,13 +230,13 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     </template>
 
                     <!-- Name column -->
-                    <template v-slot:cell(name)="{ item }">
+                    <template v-slot:cell(name)="{ item, index }">
                         <UploadTableNameCell
                             :value="item.name"
                             :state="isNameValid(item.name)"
                             tooltip="Dataset name in your history (required)"
                             @input="item.name = $event"
-                            @blur="restoreOriginalName(item)" />
+                            @blur="restoreOriginalName(item, `Pasted Dataset ${index + 1}`)" />
                     </template>
 
                     <!-- Size column -->
