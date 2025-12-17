@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faExclamationTriangle, faLink, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faLink, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BFormInput, BFormSelect, BTable } from "bootstrap-vue";
+import { BFormInput, BTable } from "bootstrap-vue";
 import { computed, nextTick, ref, watch } from "vue";
 
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
@@ -18,6 +18,10 @@ import type { CollectionCreationState } from "../types/collectionCreation";
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
 import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
 import UploadTableBulkExtensionHeader from "../shared/UploadTableBulkExtensionHeader.vue";
+import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
+import UploadTableExtensionCell from "../shared/UploadTableExtensionCell.vue";
+import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
+import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
@@ -274,12 +278,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     thead-class="url-table-header">
                     <!-- Name column -->
                     <template v-slot:cell(name)="{ item }">
-                        <BFormInput
-                            v-model="item.name"
-                            v-b-tooltip.hover.noninteractive
-                            size="sm"
+                        <UploadTableNameCell
+                            :value="item.name"
                             :state="isNameValid(item.name)"
-                            title="Dataset name in your history (required)"
+                            @input="item.name = $event"
                             @blur="restoreOriginalName(item)" />
                     </template>
 
@@ -299,56 +301,39 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <!-- Extension column with bulk operations -->
                     <template v-slot:head(extension)>
                         <UploadTableBulkExtensionHeader
-                            :model-value="bulk.bulkExtension.value"
+                            :value="bulk.bulkExtension.value"
                             :extensions="effectiveExtensions"
                             :warning="bulk.bulkExtensionWarning.value"
                             :disabled="!configurationsReady"
                             tooltip="Set file format for all URLs"
-                            @update:model-value="bulk.setAllExtensions" />
+                            @input="bulk.setAllExtensions" />
                     </template>
 
                     <template v-slot:cell(extension)="{ item }">
-                        <div class="d-flex align-items-center">
-                            <BFormSelect
-                                v-model="item.extension"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                title="File format (auto-detect recommended)"
-                                :disabled="!configurationsReady">
-                                <option v-for="(ext, extIndex) in effectiveExtensions" :key="extIndex" :value="ext.id">
-                                    {{ ext.text }}
-                                </option>
-                            </BFormSelect>
-                            <FontAwesomeIcon
-                                v-if="bulk.getExtensionWarning(item.extension)"
-                                v-b-tooltip.hover.noninteractive
-                                class="text-warning ml-1 flex-shrink-0"
-                                :icon="faExclamationTriangle"
-                                :title="bulk.getExtensionWarning(item.extension)" />
-                        </div>
+                        <UploadTableExtensionCell
+                            :value="item.extension"
+                            :extensions="effectiveExtensions"
+                            :warning="bulk.getExtensionWarning(item.extension)"
+                            :disabled="!configurationsReady"
+                            @input="item.extension = $event" />
                     </template>
 
                     <!-- DbKey column with bulk operations -->
                     <template v-slot:head(dbKey)>
                         <UploadTableBulkDbKeyHeader
-                            :model-value="bulk.bulkDbKey.value"
+                            :value="bulk.bulkDbKey.value"
                             :db-keys="listDbKeys"
                             :disabled="!configurationsReady"
                             tooltip="Set database key for all URLs"
-                            @update:model-value="bulk.setAllDbKeys" />
+                            @input="bulk.setAllDbKeys" />
                     </template>
 
                     <template v-slot:cell(dbKey)="{ item }">
-                        <BFormSelect
-                            v-model="item.dbkey"
-                            v-b-tooltip.hover.noninteractive
-                            size="sm"
-                            title="Database key for this dataset"
-                            :disabled="!configurationsReady">
-                            <option v-for="(dbKey, dbKeyIndex) in listDbKeys" :key="dbKeyIndex" :value="dbKey.id">
-                                {{ dbKey.text }}
-                            </option>
-                        </BFormSelect>
+                        <UploadTableDbKeyCell
+                            :value="item.dbkey"
+                            :db-keys="listDbKeys"
+                            :disabled="!configurationsReady"
+                            @input="item.dbkey = $event" />
                     </template>
 
                     <!-- Options column with bulk checkboxes -->
@@ -367,31 +352,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     </template>
 
                     <template v-slot:cell(options)="{ item }">
-                        <div class="d-flex align-items-center">
-                            <BFormCheckbox
-                                v-model="item.spaceToTab"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                class="mr-2"
-                                title="Convert spaces to tab characters">
-                                <span class="small">Spaces→Tabs</span>
-                            </BFormCheckbox>
-                            <BFormCheckbox
-                                v-model="item.toPosixLines"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                class="mr-2"
-                                title="Convert line endings to POSIX standard">
-                                <span class="small">POSIX</span>
-                            </BFormCheckbox>
-                            <BFormCheckbox
-                                v-model="item.deferred"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                title="Galaxy will store a reference and fetch data only when needed by a tool">
-                                <span class="small">Deferred</span>
-                            </BFormCheckbox>
-                        </div>
+                        <UploadTableOptionsCell
+                            :space-to-tab="item.spaceToTab"
+                            :to-posix-lines="item.toPosixLines"
+                            :deferred="item.deferred"
+                            :show-deferred="true"
+                            @updateSpaceToTab="item.spaceToTab = $event"
+                            @updateToPosixLines="item.toPosixLines = $event"
+                            @updateDeferred="item.deferred = $event" />
                     </template>
 
                     <!-- Actions column -->
