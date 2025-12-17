@@ -5,15 +5,16 @@ import { BFormInput, BTable } from "bootstrap-vue";
 import { computed, nextTick, ref, watch } from "vue";
 
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
+import { useCollectionCreation } from "@/composables/upload/collectionCreation";
+import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
-import { useUploadConfigurations } from "@/composables/uploadConfigurations";
-import type { CollectionConfig } from "@/composables/uploadQueue";
 import { useUploadQueue } from "@/composables/uploadQueue";
+import { mapToPasteUrlUpload } from "@/utils/upload/itemMappers";
 import { extractNameFromUrl, isValidUrl, validateUrl } from "@/utils/url";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
-import type { CollectionCreationState } from "../types/collectionCreation";
+import type { PasteUrlItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
 import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
@@ -38,39 +39,27 @@ const emit = defineEmits<{
 
 const uploadQueue = useUploadQueue();
 
-const {
-    configOptions,
-    effectiveExtensions,
-    listDbKeys,
-    ready: configurationsReady,
-} = useUploadConfigurations(undefined);
-
-const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
-const collectionState = ref<CollectionCreationState>({
-    config: null,
-    validation: {
-        isValid: true,
-        isActive: false,
-        message: "",
-    },
-});
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
 
 const tableContainerRef = ref<HTMLElement | null>(null);
+const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-interface UrlItem {
-    id: number;
-    url: string;
-    name: string;
-    extension: string;
-    dbkey: string;
-    spaceToTab: boolean;
-    toPosixLines: boolean;
-    deferred: boolean;
-}
+const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+    useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
 
-const urlItems = ref<UrlItem[]>([]);
+function createPasteUrlItem(id: number, url: string, name: string): PasteUrlItem {
+    return {
+        id,
+        url,
+        name,
+        ...createItemDefaults(),
+        deferred: false,
+    };
+}
+
+const urlItems = ref<PasteUrlItem[]>([]);
 const urlText = ref("");
 const showInputArea = ref(true);
 
@@ -78,7 +67,7 @@ const placeholder = "https://example.org/data1.txt\nhttps://example.org/data2.tx
 
 const hasItems = computed(() => urlItems.value.length > 0);
 
-const { isNameValid, restoreOriginalName: restoreOriginalNameBase } = useUploadItemValidation();
+const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(urlItems, effectiveExtensions);
 
@@ -97,10 +86,6 @@ function getUrlValidationMessage(url: string): string {
     return validateUrl(url).message || url;
 }
 
-function restoreOriginalName(item: UrlItem) {
-    restoreOriginalNameBase(item, extractNameFromUrl(item.url));
-}
-
 function addUrlsFromText() {
     if (!urlText.value.trim()) {
         return;
@@ -111,20 +96,8 @@ function addUrlsFromText() {
         .map((u) => u.trim())
         .filter((u) => u.length > 0);
 
-    const defaultExtension = configOptions.value?.defaultExtension || "auto";
-    const defaultDbKey = configOptions.value?.defaultDbKey || "?";
-
     for (const url of urls) {
-        urlItems.value.push({
-            id: nextId++,
-            url,
-            name: extractNameFromUrl(url),
-            extension: defaultExtension,
-            dbkey: defaultDbKey,
-            spaceToTab: false,
-            toPosixLines: false,
-            deferred: false,
-        });
+        urlItems.value.push(createPasteUrlItem(nextId++, url, extractNameFromUrl(url)));
     }
 
     urlText.value = "";
@@ -147,10 +120,6 @@ function scrollToBottom() {
 
 function removeItem(id: number) {
     urlItems.value = urlItems.value.filter((item) => item.id !== id);
-}
-
-function handleCollectionStateChange(state: CollectionCreationState) {
-    collectionState.value = state;
 }
 
 const tableFields = [
@@ -196,7 +165,7 @@ function clearAll() {
     urlItems.value = [];
     urlText.value = "";
     showInputArea.value = true;
-    collectionConfigComponent.value?.reset();
+    resetCollection();
 }
 
 function startUpload() {
@@ -205,35 +174,16 @@ function startUpload() {
         return;
     }
 
-    const uploads = validItems.map((item) => ({
-        uploadMode: "paste-links" as const,
-        name: item.name,
-        size: 0,
-        targetHistoryId: props.targetHistoryId,
-        dbkey: item.dbkey,
-        extension: item.extension,
-        spaceToTab: item.spaceToTab,
-        toPosixLines: item.toPosixLines,
-        deferred: item.deferred,
-        url: item.url,
-    }));
+    const uploads = validItems.map((item) => mapToPasteUrlUpload(item, props.targetHistoryId));
+    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
 
-    const fullCollectionConfig: CollectionConfig | undefined = collectionState.value.config
-        ? {
-              name: collectionState.value.config.name,
-              type: collectionState.value.config.type,
-              hideSourceItems: true,
-              historyId: props.targetHistoryId,
-          }
-        : undefined;
-
-    uploadQueue.enqueue(uploads, fullCollectionConfig);
+    uploadQueue.enqueue(uploads, collectionConfig);
 
     // Reset state
     urlItems.value = [];
     urlText.value = "";
     showInputArea.value = true;
-    collectionConfigComponent.value?.reset();
+    resetCollection();
 }
 
 defineExpose<UploadMethodComponent>({ startUpload });
@@ -282,7 +232,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             :value="item.name"
                             :state="isNameValid(item.name)"
                             @input="item.name = $event"
-                            @blur="restoreOriginalName(item)" />
+                            @blur="restoreOriginalName(item, extractNameFromUrl(item.url))" />
                     </template>
 
                     <!-- URL column -->

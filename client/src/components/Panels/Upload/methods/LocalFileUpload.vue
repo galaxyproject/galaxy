@@ -6,15 +6,16 @@ import { computed, ref, watch } from "vue";
 
 import { useFileDrop } from "@/composables/fileDrop";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
+import { useCollectionCreation } from "@/composables/upload/collectionCreation";
+import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
-import { useUploadConfigurations } from "@/composables/uploadConfigurations";
-import type { CollectionConfig } from "@/composables/uploadQueue";
 import { useUploadQueue } from "@/composables/uploadQueue";
+import { mapToLocalFileUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
-import type { CollectionCreationState } from "../types/collectionCreation";
+import type { LocalFileItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
 import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
@@ -39,36 +40,15 @@ const emit = defineEmits<{
 
 const uploadQueue = useUploadQueue();
 
-const {
-    configOptions,
-    effectiveExtensions,
-    listDbKeys,
-    ready: configurationsReady,
-} = useUploadConfigurations(undefined);
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
 
-interface FileWithMetadata {
-    file: File;
-    name: string;
-    size: number;
-    extension: string;
-    dbkey: string;
-    spaceToTab: boolean;
-    toPosixLines: boolean;
-}
-
-const selectedFiles = ref<FileWithMetadata[]>([]);
+const selectedFiles = ref<LocalFileItem[]>([]);
 const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
-
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
-const collectionState = ref<CollectionCreationState>({
-    config: null,
-    validation: {
-        isValid: true,
-        isActive: false,
-        message: "",
-    },
-});
+
+const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+    useCollectionCreation(collectionConfigComponent);
 
 const hasFiles = computed(() => selectedFiles.value.length > 0);
 const totalSize = computed(() => {
@@ -76,15 +56,11 @@ const totalSize = computed(() => {
     return bytesToString(bytes);
 });
 
-const { isNameValid, restoreOriginalName: restoreOriginalNameBase } = useUploadItemValidation();
+const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(selectedFiles, effectiveExtensions);
 
 const { isReadyToUpload } = useUploadReadyState(hasFiles, collectionState);
-
-function restoreOriginalName(item: FileWithMetadata) {
-    restoreOriginalNameBase(item, item.file.name);
-}
 
 const tableFields = [
     {
@@ -127,10 +103,6 @@ const tableFields = [
 
 watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
 
-function handleCollectionStateChange(state: CollectionCreationState) {
-    collectionState.value = state;
-}
-
 function onDrop(evt: DragEvent) {
     if (evt.dataTransfer?.files) {
         addFiles(evt.dataTransfer.files);
@@ -145,19 +117,14 @@ function addFiles(files: FileList | File[] | null) {
     }
 
     const fileArray = Array.from(files);
-
-    const defaultExtension = configOptions.value?.defaultExtension || "auto";
-    const defaultDbKey = configOptions.value?.defaultDbKey || "?";
+    const defaults = createItemDefaults();
 
     for (const file of fileArray) {
         selectedFiles.value.push({
             file,
             name: file.name,
             size: file.size,
-            extension: defaultExtension,
-            dbkey: defaultDbKey,
-            spaceToTab: false,
-            toPosixLines: false,
+            ...defaults,
         });
     }
 }
@@ -179,35 +146,16 @@ function handleBrowse() {
 
 function clearAll() {
     selectedFiles.value = [];
-    collectionConfigComponent.value?.reset();
+    resetCollection();
 }
 
 function startUpload() {
-    const uploads = selectedFiles.value.map((item) => ({
-        uploadMode: "local-file" as const,
-        name: item.name,
-        size: item.file.size,
-        targetHistoryId: props.targetHistoryId,
-        dbkey: item.dbkey,
-        extension: item.extension,
-        spaceToTab: item.spaceToTab,
-        toPosixLines: item.toPosixLines,
-        deferred: false,
-        fileData: item.file,
-    }));
+    const uploads = selectedFiles.value.map((item) => mapToLocalFileUpload(item, props.targetHistoryId));
+    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
 
-    const fullCollectionConfig: CollectionConfig | undefined = collectionState.value.config
-        ? {
-              name: collectionState.value.config.name,
-              type: collectionState.value.config.type,
-              hideSourceItems: true,
-              historyId: props.targetHistoryId,
-          }
-        : undefined;
-
-    uploadQueue.enqueue(uploads, fullCollectionConfig);
+    uploadQueue.enqueue(uploads, collectionConfig);
     selectedFiles.value = [];
-    collectionConfigComponent.value?.reset();
+    resetCollection();
 }
 
 defineExpose<UploadMethodComponent>({ startUpload });
@@ -256,7 +204,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 :state="isNameValid(item.name)"
                                 tooltip="Dataset name in your history (required)"
                                 @input="item.name = $event"
-                                @blur="restoreOriginalName(item)" />
+                                @blur="restoreOriginalName(item, item.file.name)" />
                         </template>
 
                         <template v-slot:cell(size)="{ item }">
