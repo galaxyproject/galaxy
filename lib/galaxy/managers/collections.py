@@ -137,6 +137,8 @@ class DatasetCollectionManager:
             collection_type_description = structure.collection_type_description
             dataset_collection = DatasetCollection(populated=False)
             dataset_collection.collection_type = collection_type_description.collection_type
+            # Preserve column_definitions from input structure for sample sheets
+            dataset_collection.column_definitions = structure.column_definitions
             elements = []
             for index, (identifier, substructure) in enumerate(structure.children):
                 # TODO: Open question - populate these now or later?

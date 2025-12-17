@@ -8,6 +8,7 @@ on:
       - 'release_*'
   pull_request_target:
     types: [opened, reopened, synchronize]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,7 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: dev
           sparse-checkout: |
             lib/galaxy/version.py
 
@@ -35,7 +35,36 @@ jobs:
           echo "version=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
           echo "Galaxy release version: ${RELEASE_VERSION}"
 
+      - name: Check if we should update draft
+        id: check-draft
+        run: |
+          VERSION="${{ inputs.version || steps.galaxy-version.outputs.version }}"
+
+          # Check if this version is already published
+          PUBLISHED=$(gh release view "v${VERSION}" --json isDraft --jq '.isDraft' 2>/dev/null || echo "not_found")
+
+          if [ "$PUBLISHED" = "false" ]; then
+            echo "Published release v${VERSION} already exists. Skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if a draft exists for a DIFFERENT version (only one draft at a time)
+          EXISTING_DRAFT=$(gh release list --limit 50 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName' | head -1)
+
+          if [ -n "$EXISTING_DRAFT" ] && [ "$EXISTING_DRAFT" != "v${VERSION}" ]; then
+            echo "Draft release $EXISTING_DRAFT already exists (for different version). Skipping v${VERSION}."
+            echo "Only one draft release at a time is supported."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Proceeding with draft for v${VERSION}."
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: release-drafter/release-drafter@v6
+        if: steps.check-draft.outputs.skip == 'false'
         with:
           config-name: release-drafter.yml
           version: ${{ steps.galaxy-version.outputs.version }}

@@ -247,6 +247,7 @@ class MockCollection:
         self.collection_type = collection_type
         self.elements = elements
         self.populated = True
+        self.column_definitions = None
 
 
 class MockCollectionElement:
