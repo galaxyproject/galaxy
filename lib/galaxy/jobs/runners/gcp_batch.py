@@ -90,10 +90,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Initialize Google Cloud Batch client
         self._init_batch_client()
 
-        # Job tracking
-        self._job_names = {}  # job_id -> batch job name mapping
-        self._job_states = {}  # current job state
-
         log.info(
             "GoogleCloudBatchJobRunner initialized for project: %s",
             self.runner_params.get("project_id", "Not specified"),
@@ -119,9 +115,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             if project:
                 self.runner_params["project_id"] = project
             else:
-                raise ValueError(
-                    "Google Cloud project ID not specified and could not be determined from credentials"
-                )
+                raise ValueError("Google Cloud project ID not specified and could not be determined from credentials")
 
         log.info("Google Cloud Batch client initialized successfully")
 
@@ -168,10 +162,9 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             # Submit job to Google Cloud Batch
             batch_job_name = self._submit_batch_job(job_wrapper, ajs)
 
-            # Store job state and add to monitoring queue
+            # Store runner information for tracking if Galaxy restarts
             ajs.job_id = batch_job_name
-            self._job_names[job_wrapper.job_id] = batch_job_name
-            self._job_states[job_wrapper.job_id] = batch_v1.JobStatus.State.STATE_UNSPECIFIED
+            job_wrapper.set_external_id(batch_job_name)
             self.monitor_queue.put(ajs)
 
             log.info("Successfully queued Galaxy job %s as Batch job %s", job_wrapper.get_id_tag(), batch_job_name)
@@ -709,10 +702,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         log.debug("Starting check_watched_item for job %s", job_state.job_id)
 
         batch_job_name = job_state.job_id
-        # log.debug("Checking status of Batch job %s", batch_job_name)
-        if job_state.job_id not in self._job_states:
-            self._job_states[job_state.job_id] = batch_v1.JobStatus.State.STATE_UNSPECIFIED
-        previous_state = self._job_states[job_state.job_id]
         try:
             # Get job status from Google Cloud Batch
             job_path = f"projects/{self.runner_params['project_id']}/locations/{self.runner_params['region']}/jobs/{batch_job_name}"
@@ -720,9 +709,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
             # Process job status
             job_status = batch_job.status.state
-            if job_status != previous_state:
-                log.debug("Job %s changed state from %s to %s", batch_job_name, previous_state, job_status)
-                self._job_states[job_state.job_id] = job_status
+            log.debug("Batch job %s status: %s", batch_job_name, job_status.name)
 
             if job_status == batch_v1.JobStatus.State.SUCCEEDED:
                 log.info("Batch job %s completed successfully", batch_job_name)
@@ -775,20 +762,16 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         job = job_wrapper.get_job()
         log.debug("Starting stop_job for job %s", job.id)
 
-        if job.id in self._job_names:
-            batch_job_name = self._job_names[job.id]
-
+        batch_job_name = job.get_job_runner_external_id()
+        if batch_job_name:
             try:
                 job_path = f"projects/{self.runner_params['project_id']}/locations/{self.runner_params['region']}/jobs/{batch_job_name}"
                 self.batch_client.delete_job(name=job_path)
                 log.info("Cancelled Batch job %s", batch_job_name)
-
             except Exception as e:
                 log.error("Failed to cancel Batch job %s: %s", batch_job_name, e)
-
-            # Clean up tracking
-            self._job_names.pop(job.id, None)
-            self._job_states.pop(job.id, None)
+        else:
+            log.warning("Could not stop job %s - no external job ID", job.id)
 
         log.debug("Finished stop_job for job %s", job.id)
 
