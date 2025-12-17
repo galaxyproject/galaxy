@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { BFormSelect } from "bootstrap-vue";
 
-interface DbKey {
-    id: string;
-    text: string;
-}
+import type { DbKey } from "@/composables/uploadConfigurations";
 
 interface Props {
-    /** Selected bulk dbKey value (v-model) */
-    modelValue: string;
+    /** Selected bulk dbKey value */
+    value: string;
     /** Available database keys to display in dropdown */
     dbKeys: DbKey[];
     /** Whether the dropdown should be disabled */
@@ -23,11 +20,11 @@ withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "update:model-value", value: string): void;
+    (e: "input", value: string): void;
 }>();
 
 function handleInput(value: string) {
-    emit("update:model-value", value);
+    emit("input", value);
 }
 </script>
 
@@ -36,7 +33,7 @@ function handleInput(value: string) {
         <span class="column-title">Reference</span>
         <BFormSelect
             v-b-tooltip.hover.noninteractive
-            :value="modelValue"
+            :value="value"
             size="sm"
             :title="tooltip"
             :disabled="disabled"
