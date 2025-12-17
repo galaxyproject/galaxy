@@ -4,15 +4,21 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormInput, BFormSelect, BTable } from "bootstrap-vue";
 import { computed, nextTick, ref, watch } from "vue";
 
-import { findExtension } from "@/components/Upload/utils";
+import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
+import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import type { CollectionConfig } from "@/composables/uploadQueue";
 import { useUploadQueue } from "@/composables/uploadQueue";
+import { extractNameFromUrl, isValidUrl, validateUrl } from "@/utils/url";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { CollectionCreationState } from "../types/collectionCreation";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
+import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
+import UploadTableBulkExtensionHeader from "../shared/UploadTableBulkExtensionHeader.vue";
+import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
@@ -51,7 +57,7 @@ interface UrlItem {
     id: number;
     url: string;
     name: string;
-    ext: string;
+    extension: string;
     dbkey: string;
     spaceToTab: boolean;
     toPosixLines: boolean;
@@ -68,81 +74,27 @@ const placeholder = "https://example.org/data1.txt\nhttps://example.org/data2.tx
 
 const hasItems = computed(() => urlItems.value.length > 0);
 
-const isReadyToUpload = computed(() => {
-    if (!hasItems.value) {
-        return false;
-    }
-    // Check if any URL is invalid
-    const hasInvalidUrls = urlItems.value.some((item) => isValidUrl(item.url) === false);
-    if (hasInvalidUrls) {
-        return false;
-    }
-    // If collection creation is active, it must be valid to proceed
-    if (collectionState.value.validation.isActive && !collectionState.value.validation.isValid) {
-        return false;
-    }
-    return true;
-});
+const { isNameValid, restoreOriginalName: restoreOriginalNameBase } = useUploadItemValidation();
+
+const bulk = useBulkUploadOperations(urlItems, effectiveExtensions);
+
+// Additional validation for URL items
+const hasInvalidUrls = computed(() => urlItems.value.some((item) => !isValidUrl(item.url)));
+
+const { isReadyToUpload } = useUploadReadyState(
+    hasItems,
+    collectionState,
+    computed(() => !hasInvalidUrls.value),
+);
 
 watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
-
-function extractNameFromUrl(url: string): string {
-    try {
-        const urlObj = new URL(url);
-        const pathname = urlObj.pathname;
-        const segments = pathname.split("/").filter((s) => s.length > 0);
-        if (segments.length > 0) {
-            const lastSegment = segments[segments.length - 1];
-            if (lastSegment) {
-                // Decode URI component to handle encoded characters
-                return decodeURIComponent(lastSegment);
-            }
-        }
-    } catch {
-        // If URL parsing fails, fall through to return the full URL
-    }
-    return url;
-}
-
-function validateUrl(url: string): { isValid: boolean; message: string | null } {
-    if (!url.trim()) {
-        return { isValid: false, message: "URL is required" };
-    }
-
-    try {
-        const urlObj = new URL(url);
-
-        if (!urlObj.host) {
-            return { isValid: false, message: "URL must include a valid hostname" };
-        }
-
-        const hasContent = urlObj.pathname !== "/" || urlObj.search || urlObj.hash;
-        if (!hasContent) {
-            return { isValid: false, message: "URL should point to a specific file or resource" };
-        }
-
-        return { isValid: true, message: null };
-    } catch {
-        return { isValid: false, message: "URL format is invalid or missing protocol" };
-    }
-}
-
-function isValidUrl(url: string): boolean {
-    return validateUrl(url).isValid;
-}
 
 function getUrlValidationMessage(url: string): string {
     return validateUrl(url).message || url;
 }
 
-function isNameValid(name: string): boolean | null {
-    return name.trim().length > 0 ? null : false;
-}
-
 function restoreOriginalName(item: UrlItem) {
-    if (!item.name.trim()) {
-        item.name = extractNameFromUrl(item.url);
-    }
+    restoreOriginalNameBase(item, extractNameFromUrl(item.url));
 }
 
 function addUrlsFromText() {
@@ -163,7 +115,7 @@ function addUrlsFromText() {
             id: nextId++,
             url,
             name: extractNameFromUrl(url),
-            ext: defaultExtension,
+            extension: defaultExtension,
             dbkey: defaultDbKey,
             spaceToTab: false,
             toPosixLines: false,
@@ -197,80 +149,6 @@ function handleCollectionStateChange(state: CollectionCreationState) {
     collectionState.value = state;
 }
 
-function getExtensionWarning(extensionId: string): string | null {
-    const ext = findExtension(effectiveExtensions.value, extensionId);
-    return ext?.upload_warning || null;
-}
-
-// Bulk operations
-const bulkExtension = ref<string | null>(null);
-const bulkDbKey = ref<string | null>(null);
-
-const bulkExtensionWarning = computed(() => {
-    if (!bulkExtension.value) {
-        return null;
-    }
-    const ext = findExtension(effectiveExtensions.value, bulkExtension.value);
-    return ext?.upload_warning || null;
-});
-
-function setAllExtensions(extension: string | null) {
-    if (extension) {
-        urlItems.value.forEach((item) => {
-            item.ext = extension;
-        });
-    }
-}
-
-function setAllDbKeys(dbKey: string | null) {
-    if (dbKey) {
-        urlItems.value.forEach((item) => {
-            item.dbkey = dbKey;
-        });
-    }
-}
-
-const allSpaceToTab = computed(() => urlItems.value.length > 0 && urlItems.value.every((f) => f.spaceToTab));
-
-const allToPosixLines = computed(() => urlItems.value.length > 0 && urlItems.value.every((f) => f.toPosixLines));
-
-const allDeferred = computed(() => urlItems.value.length > 0 && urlItems.value.every((f) => f.deferred));
-
-const spaceToTabIndeterminate = computed(
-    () =>
-        urlItems.value.length > 0 &&
-        urlItems.value.some((f) => f.spaceToTab) &&
-        !urlItems.value.every((f) => f.spaceToTab),
-);
-
-const toPosixLinesIndeterminate = computed(
-    () =>
-        urlItems.value.length > 0 &&
-        urlItems.value.some((f) => f.toPosixLines) &&
-        !urlItems.value.every((f) => f.toPosixLines),
-);
-
-const deferredIndeterminate = computed(
-    () =>
-        urlItems.value.length > 0 && urlItems.value.some((f) => f.deferred) && !urlItems.value.every((f) => f.deferred),
-);
-
-function toggleAllSpaceToTab() {
-    const newValue = !allSpaceToTab.value;
-    urlItems.value.forEach((f) => (f.spaceToTab = newValue));
-}
-
-function toggleAllToPosixLines() {
-    const newValue = !allToPosixLines.value;
-    urlItems.value.forEach((f) => (f.toPosixLines = newValue));
-}
-
-function toggleAllDeferred() {
-    const newValue = !allDeferred.value;
-    urlItems.value.forEach((f) => (f.deferred = newValue));
-}
-
-// Table configuration
 const tableFields = [
     {
         key: "name",
@@ -329,7 +207,7 @@ function startUpload() {
         size: 0,
         targetHistoryId: props.targetHistoryId,
         dbkey: item.dbkey,
-        extension: item.ext,
+        extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
         deferred: item.deferred,
@@ -420,33 +298,19 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Extension column with bulk operations -->
                     <template v-slot:head(extension)>
-                        <div class="column-header-vertical">
-                            <span class="column-title">Type</span>
-                            <BFormSelect
-                                v-model="bulkExtension"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                title="Set file format for all URLs"
-                                :disabled="!configurationsReady"
-                                @change="setAllExtensions">
-                                <option :value="null">Set all...</option>
-                                <option v-for="(ext, extIndex) in effectiveExtensions" :key="extIndex" :value="ext.id">
-                                    {{ ext.text }}
-                                </option>
-                            </BFormSelect>
-                            <FontAwesomeIcon
-                                v-if="bulkExtensionWarning"
-                                v-b-tooltip.hover.noninteractive
-                                class="text-warning warning-icon"
-                                :icon="faExclamationTriangle"
-                                :title="bulkExtensionWarning" />
-                        </div>
+                        <UploadTableBulkExtensionHeader
+                            :model-value="bulk.bulkExtension.value"
+                            :extensions="effectiveExtensions"
+                            :warning="bulk.bulkExtensionWarning.value"
+                            :disabled="!configurationsReady"
+                            tooltip="Set file format for all URLs"
+                            @update:model-value="bulk.setAllExtensions" />
                     </template>
 
                     <template v-slot:cell(extension)="{ item }">
                         <div class="d-flex align-items-center">
                             <BFormSelect
-                                v-model="item.ext"
+                                v-model="item.extension"
                                 v-b-tooltip.hover.noninteractive
                                 size="sm"
                                 title="File format (auto-detect recommended)"
@@ -456,31 +320,22 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 </option>
                             </BFormSelect>
                             <FontAwesomeIcon
-                                v-if="getExtensionWarning(item.ext)"
+                                v-if="bulk.getExtensionWarning(item.extension)"
                                 v-b-tooltip.hover.noninteractive
                                 class="text-warning ml-1 flex-shrink-0"
                                 :icon="faExclamationTriangle"
-                                :title="getExtensionWarning(item.ext)" />
+                                :title="bulk.getExtensionWarning(item.extension)" />
                         </div>
                     </template>
 
                     <!-- DbKey column with bulk operations -->
                     <template v-slot:head(dbKey)>
-                        <div class="column-header-vertical">
-                            <span class="column-title">Reference</span>
-                            <BFormSelect
-                                v-model="bulkDbKey"
-                                v-b-tooltip.hover.noninteractive
-                                size="sm"
-                                title="Set database key for all URLs"
-                                :disabled="!configurationsReady"
-                                @change="setAllDbKeys">
-                                <option :value="null">Set all...</option>
-                                <option v-for="(dbKey, dbKeyIndex) in listDbKeys" :key="dbKeyIndex" :value="dbKey.id">
-                                    {{ dbKey.text }}
-                                </option>
-                            </BFormSelect>
-                        </div>
+                        <UploadTableBulkDbKeyHeader
+                            :model-value="bulk.bulkDbKey.value"
+                            :db-keys="listDbKeys"
+                            :disabled="!configurationsReady"
+                            tooltip="Set database key for all URLs"
+                            @update:model-value="bulk.setAllDbKeys" />
                     </template>
 
                     <template v-slot:cell(dbKey)="{ item }">
@@ -498,40 +353,17 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Options column with bulk checkboxes -->
                     <template v-slot:head(options)>
-                        <div class="options-header">
-                            <span class="options-title">Upload Settings</span>
-                            <div class="d-flex align-items-center">
-                                <BFormCheckbox
-                                    v-b-tooltip.hover.noninteractive
-                                    :checked="allSpaceToTab"
-                                    :indeterminate="spaceToTabIndeterminate"
-                                    size="sm"
-                                    class="mr-2"
-                                    title="Toggle all: Convert spaces to tab characters"
-                                    @change="toggleAllSpaceToTab">
-                                    <span class="small">Spaces→Tabs</span>
-                                </BFormCheckbox>
-                                <BFormCheckbox
-                                    v-b-tooltip.hover.noninteractive
-                                    :checked="allToPosixLines"
-                                    :indeterminate="toPosixLinesIndeterminate"
-                                    size="sm"
-                                    class="mr-2"
-                                    title="Toggle all: Convert line endings to POSIX standard"
-                                    @change="toggleAllToPosixLines">
-                                    <span class="small">POSIX</span>
-                                </BFormCheckbox>
-                                <BFormCheckbox
-                                    v-b-tooltip.hover.noninteractive
-                                    :checked="allDeferred"
-                                    :indeterminate="deferredIndeterminate"
-                                    size="sm"
-                                    title="Toggle all: Galaxy will store a reference and fetch data only when needed by a tool"
-                                    @change="toggleAllDeferred">
-                                    <span class="small">Deferred</span>
-                                </BFormCheckbox>
-                            </div>
-                        </div>
+                        <UploadTableOptionsHeader
+                            :all-space-to-tab="bulk.allSpaceToTab.value"
+                            :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
+                            :all-to-posix-lines="bulk.allToPosixLines.value"
+                            :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
+                            :show-deferred="true"
+                            :all-deferred="bulk.allDeferred.value"
+                            :deferred-indeterminate="bulk.deferredIndeterminate.value"
+                            @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
+                            @toggle-to-posix-lines="bulk.toggleAllToPosixLines"
+                            @toggle-deferred="bulk.toggleAllDeferred" />
                     </template>
 
                     <template v-slot:cell(options)="{ item }">
@@ -607,6 +439,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
+@import "../shared/upload-table-shared.scss";
 
 .paste-links-upload {
     height: 100%;
@@ -640,31 +473,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
 }
 
 .url-list-header {
-    flex-shrink: 0;
-    border-bottom: 1px solid $border-color;
-    padding-bottom: 0.5rem;
+    @include upload-list-header;
 }
 
 .url-table-container {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-
-    :deep(.table) {
-        table-layout: auto;
-        min-width: 100%;
-    }
+    @include upload-table-container;
 
     :deep(.url-table-header) {
-        position: sticky;
-        top: 0;
-        background-color: $white;
-        z-index: 100;
-
-        th {
-            vertical-align: middle;
-            white-space: nowrap;
-        }
+        @include upload-table-header;
     }
 
     :deep(.url-name-cell) {
@@ -681,51 +497,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
             font-size: 0.85rem;
         }
     }
-
-    .column-header-vertical {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        position: relative;
-
-        .column-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .warning-icon {
-            position: absolute;
-            right: 0;
-            top: 0;
-        }
-    }
-
-    .options-header {
-        .options-title {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-    }
-
-    .remove-btn {
-        width: 30px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-
-        &:hover {
-            background-color: rgba($brand-danger, 0.1);
-        }
-    }
 }
 
 .url-list-actions {
-    flex-shrink: 0;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-start;
-    padding-top: 1rem;
-    border-top: 1px solid $border-color;
+    @include upload-list-actions;
 }
 </style>

@@ -1,0 +1,88 @@
+@import "@/style/scss/theme/blue.scss";
+
+/**
+ * Shared styles for upload table components.
+ * Used by LocalFileUpload, PasteContentUpload, and PasteLinksUpload.
+ */
+
+// Table container with scrolling - use as mixin
+@mixin upload-table-container {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+
+    :deep(.table) {
+        table-layout: auto;
+        min-width: 100%;
+    }
+}
+
+// Sticky header for table - use as mixin
+@mixin upload-table-header {
+    position: sticky;
+    top: 0;
+    background-color: $white;
+    z-index: 100;
+
+    th {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+}
+
+// Column header with vertical layout (title + dropdown)
+.column-header-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative;
+
+    .column-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .warning-icon {
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+}
+
+// Options column header
+.options-header {
+    .options-title {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+}
+
+// Remove button in actions column
+.remove-btn {
+    width: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        background-color: rgba($brand-danger, 0.1);
+    }
+}
+
+// Actions at the bottom of the list - use as mixin
+@mixin upload-list-actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-start;
+    padding-top: 1rem;
+    border-top: 1px solid $border-color;
+}
+
+// List header - use as mixin
+@mixin upload-list-header {
+    flex-shrink: 0;
+    border-bottom: 1px solid $border-color;
+    padding-bottom: 0.5rem;
+}

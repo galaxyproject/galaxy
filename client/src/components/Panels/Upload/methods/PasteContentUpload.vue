@@ -58,7 +58,7 @@ interface PasteItem {
     id: number;
     name: string;
     content: string;
-    ext: string;
+    extension: string;
     dbkey: string;
     spaceToTab: boolean;
     toPosixLines: boolean;
@@ -72,7 +72,7 @@ const pasteItems = ref<PasteItem[]>([
         id: nextId++,
         name: "Pasted Dataset 1",
         content: "",
-        ext: configOptions.value?.defaultExtension || "auto",
+        extension: configOptions.value?.defaultExtension || "auto",
         dbkey: configOptions.value?.defaultDbKey || "?",
         spaceToTab: false,
         toPosixLines: false,
@@ -101,7 +101,7 @@ function addPasteItem() {
         id: newId,
         name: `Pasted Dataset ${pasteItems.value.length + 1}`,
         content: "",
-        ext: configOptions.value?.defaultExtension || "auto",
+        extension: configOptions.value?.defaultExtension || "auto",
         dbkey: configOptions.value?.defaultDbKey || "?",
         spaceToTab: false,
         toPosixLines: false,
@@ -180,7 +180,7 @@ const bulkExtensionWarning = computed(() => {
 function setAllExtensions(extension: string | null) {
     if (extension) {
         pasteItems.value.forEach((item) => {
-            item.ext = extension;
+            item.extension = extension;
         });
     }
 }
@@ -285,10 +285,10 @@ function startUpload() {
     const uploads = validItems.map((item) => ({
         uploadMode: "paste-content" as const,
         name: item.name,
-        size: item.content.length,
+        size: new Blob([item.content]).size,
         targetHistoryId: props.targetHistoryId,
         dbkey: item.dbkey,
-        extension: item.ext,
+        extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
         deferred: false,
@@ -313,7 +313,7 @@ function startUpload() {
             id: newId,
             name: "Pasted Dataset 1",
             content: "",
-            ext: configOptions.value?.defaultExtension || "auto",
+            extension: configOptions.value?.defaultExtension || "auto",
             dbkey: configOptions.value?.defaultDbKey || "?",
             spaceToTab: false,
             toPosixLines: false,
@@ -445,7 +445,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <template v-slot:cell(extension)="{ item }">
                         <div class="d-flex align-items-center">
                             <BFormSelect
-                                v-model="item.ext"
+                                v-model="item.extension"
                                 v-b-tooltip.hover.noninteractive
                                 size="sm"
                                 title="File format (auto-detect recommended)"
@@ -455,11 +455,11 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 </option>
                             </BFormSelect>
                             <FontAwesomeIcon
-                                v-if="getExtensionWarning(item.ext)"
+                                v-if="getExtensionWarning(item.extension)"
                                 v-b-tooltip.hover.noninteractive
                                 class="text-warning ml-1 flex-shrink-0"
                                 :icon="faExclamationTriangle"
-                                :title="getExtensionWarning(item.ext)" />
+                                :title="getExtensionWarning(item.extension)" />
                         </div>
                     </template>
 
