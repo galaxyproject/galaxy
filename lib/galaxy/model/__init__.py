@@ -1085,11 +1085,23 @@ WHERE user_id = :user_id and quota_source_label = :label
 
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
-    def adjust_total_disk_usage(self, amount, quota_source_label):
+    def adjust_total_disk_usage(self, amount, quota_source_label, preserve_update_time: bool = False):
         assert amount is not None
         if amount != 0:
             if quota_source_label is None:
-                self.disk_usage = (self.disk_usage or 0) + amount
+                if preserve_update_time:
+                    # Use explicit SQL UPDATE to preserve update_time (avoids triggering onupdate=now)
+                    session = required_object_session(self)
+                    session.execute(
+                        update(User)
+                        .where(User.id == self.id)
+                        .values(
+                            disk_usage=User.disk_usage + amount,
+                            update_time=self.update_time,
+                        )
+                    )
+                else:
+                    self.disk_usage = (self.disk_usage or 0) + amount
             else:
                 # else would work on newer sqlite - 3.24.0
                 engine = required_object_session(self).bind

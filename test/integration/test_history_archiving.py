@@ -1,6 +1,10 @@
+from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
+from sqlalchemy import text
+
+from galaxy import model
 from galaxy.schema.schema import ModelStoreFormat
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
@@ -235,6 +239,113 @@ class TestHistoryArchivingWithExportRecord(PosixFileSourceSetup, IntegrationTest
         self.dataset_populator.download_history_to_store(history_id)
         export_records = self.dataset_populator.get_history_export_tasks(history_id)
         assert len(export_records) == 1
+        last_record = export_records[0]
+        self.dataset_populator.wait_for_export_task_on_record(last_record)
+        assert last_record["ready"] is True
+        return last_record
+
+
+class TestHistoryArchivingUserUpdateTime(PosixFileSourceSetup, IntegrationTestCase):
+    """Test user update_time handling during history archival."""
+
+    dataset_populator: DatasetPopulator
+    task_based = True
+    require_admin_user = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        IntegrationTestCase.handle_galaxy_config_kwds(config)
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_user_archive_own_history_updates_update_time(self):
+        """When a user archives their own history, their update_time should be updated."""
+        history_name = f"for_archiving_{uuid4()}"
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+
+        datasets = self.dataset_populator.get_history_contents(history_id)
+        dataset_ids = [d["id"] for d in datasets]
+
+        # Set old update_time
+        sa_session = self._app.model.session
+        user_api_id = self._get("users/current").json()["id"]
+        user_db_id = self._app.security.decode_id(user_api_id)
+
+        old_update_time = datetime(2020, 1, 1)
+        sa_session.execute(
+            text("UPDATE galaxy_user SET update_time = :time WHERE id = :id"),
+            {"time": old_update_time, "id": user_db_id},
+        )
+        sa_session.commit()
+
+        # Archive with purge
+        target_uri = f"gxfiles://posix_test/history_{history_id}"
+        export_record = self._export_history(history_id, target_uri)
+        archive_response = self.dataset_populator.archive_history(
+            history_id,
+            export_record_id=export_record["id"],
+            purge_history=True,
+        )
+        self._assert_status_code_is_ok(archive_response)
+
+        for dataset_id in dataset_ids:
+            self.dataset_populator.wait_for_purge(history_id, dataset_id)
+
+        user = sa_session.get(model.User, user_db_id)
+        assert user.update_time > old_update_time, (
+            f"User's update_time should be updated when archiving own history. "
+            f"Got {user.update_time}, expected > {old_update_time}"
+        )
+
+    def test_admin_archive_other_user_history_does_not_update_owner_time(self):
+        """When an admin archives another user's history, the owner's update_time should NOT be updated."""
+        owner_email = f"owner_{uuid4()}@test.com"
+        owner_dict = self._setup_user(owner_email)
+        owner_db_id = self._app.security.decode_id(owner_dict["id"])
+
+        with self._different_user(owner_email):
+            history_name = f"for_archiving_{uuid4()}"
+            history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+            datasets = self.dataset_populator.get_history_contents(history_id)
+            dataset_ids = [d["id"] for d in datasets]
+
+        # Set owner's old update_time
+        sa_session = self._app.model.session
+        owner = sa_session.get(model.User, owner_db_id)
+        old_update_time = datetime(2020, 1, 1)
+        sa_session.execute(
+            text("UPDATE galaxy_user SET update_time = :time WHERE id = :id"),
+            {"time": old_update_time, "id": owner_db_id},
+        )
+        sa_session.commit()
+
+        # Admin archives owner's history with purge
+        target_uri = f"gxfiles://posix_test/history_{history_id}"
+        export_record = self._export_history(history_id, target_uri)
+        archive_response = self.dataset_populator.archive_history(
+            history_id,
+            export_record_id=export_record["id"],
+            purge_history=True,
+        )
+        self._assert_status_code_is_ok(archive_response)
+
+        for dataset_id in dataset_ids:
+            self.dataset_populator.wait_for_purge(history_id, dataset_id)
+
+        owner = sa_session.get(model.User, owner_db_id)
+        assert owner.update_time == old_update_time, (
+            f"Owner's update_time should NOT be updated when admin archives their history. "
+            f"Got {owner.update_time}, expected {old_update_time}"
+        )
+
+    def _export_history(self, history_id: str, target_uri: str):
+        """Export history and return export record."""
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, ModelStoreFormat.ROCRATE_ZIP)
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) >= 1
         last_record = export_records[0]
         self.dataset_populator.wait_for_export_task_on_record(last_record)
         assert last_record["ready"] is True
