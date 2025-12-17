@@ -38,6 +38,7 @@ RequiredLocFileT = List[str]
 class ToolTestDescriptionDict(TypedDict):
     tool_id: str
     tool_version: Optional[str]
+    profile: NotRequired[Optional[str]]
     name: str
     test_index: int
     inputs: ExpandedToolInputsJsonified
