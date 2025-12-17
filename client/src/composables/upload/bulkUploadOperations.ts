@@ -1,6 +1,7 @@
 import { computed, type ComputedRef, type Ref, ref } from "vue";
 
 import { findExtension } from "@/components/Upload/utils";
+import type { ExtensionDetails } from "@/composables/uploadConfigurations";
 
 /**
  * Base interface for upload items that support bulk operations.
@@ -12,15 +13,6 @@ export interface BulkUploadItem {
     spaceToTab?: boolean;
     toPosixLines?: boolean;
     deferred?: boolean;
-}
-
-/**
- * Extension details interface matching the structure from uploadConfigurations
- */
-export interface ExtensionDetails {
-    id: string;
-    text: string;
-    upload_warning?: string | null;
 }
 
 /**
