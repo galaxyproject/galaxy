@@ -197,6 +197,7 @@ export function toUploadItem(item: NewUploadItem): UploadItem {
             return createPastedUploadItem(item.content, item.targetHistoryId, baseOptions);
 
         case "paste-links":
+        case "remote-files":
             return createUrlUploadItem(item.url, item.targetHistoryId, baseOptions);
 
         default:
@@ -229,6 +230,7 @@ export function validateUploadItem(item: NewUploadItem): string | undefined {
             break;
 
         case "paste-links":
+        case "remote-files":
             if (!item.url || item.url.trim().length === 0) {
                 return `No URL provided for "${item.name}"`;
             }

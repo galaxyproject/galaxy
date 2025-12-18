@@ -4,6 +4,8 @@
  * before they are converted to upload queue items.
  */
 
+import type { FetchDatasetHash } from "@/api/tools";
+
 /**
  * Base properties shared by all upload method items
  */
@@ -56,4 +58,12 @@ export interface PasteContentItem extends BaseUploadItem, IdentifiableUploadItem
  */
 export interface PasteUrlItem extends BaseUploadItem, IdentifiableUploadItem, DeferrableUploadItem {
     url: string;
+}
+
+/**
+ * Remote file upload item (used in RemoteFilesUpload.vue)
+ */
+export interface RemoteFileItem extends PasteUrlItem {
+    size: number;
+    hashes?: FetchDatasetHash[];
 }
