@@ -149,14 +149,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         except OSError as e:
             log.warning(f"Agent plan generation network error, using fallback: {e}")
             return AgentPlan(
-                agents=["tool_recommendation"],
+                agents=["error_analysis"],
                 sequential=False,
                 reasoning="Fallback to single agent due to network error",
             )
         except ValueError as e:
             log.warning(f"Agent plan generation value error, using fallback: {e}")
             return AgentPlan(
-                agents=["tool_recommendation"],
+                agents=["error_analysis"],
                 sequential=False,
                 reasoning="Fallback to single agent due to planning error",
             )
@@ -169,7 +169,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             agents_str = agents_match.group(1)
             agents = [a.strip().strip("\"'") for a in agents_str.split(",")]
         else:
-            agents = ["tool_recommendation"]  # fallback
+            agents = ["error_analysis"]  # fallback
 
         # Extract sequential flag
         sequential = "sequential=true" in response_text.lower()
@@ -277,7 +277,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return """
         You coordinate multiple Galaxy agents. Determine which agents to call and in what order.
 
-        Available agents: error_analysis, tool_recommendation, gtn_training, custom_tool
+        Available agents: error_analysis, gtn_training, custom_tool
 
         Respond in this format:
         AGENTS: [agent1, agent2]
@@ -285,7 +285,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         REASONING: explanation
 
         Example:
-        AGENTS: [error_analysis, tool_recommendation]
+        AGENTS: [error_analysis, custom_tool]
         SEQUENTIAL: true
-        REASONING: Fix error first, then recommend alternatives
+        REASONING: Analyze error first, then suggest creating a tool
         """

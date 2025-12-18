@@ -161,7 +161,6 @@ class TestAgentUnitMocked:
             "router",
             "custom_tool",
             "error_analysis",
-            "tool_recommendation",
             "gtn_training",
         ]
 
@@ -231,26 +230,26 @@ class TestAgentUnitMocked:
         with patch.object(agent, "_get_agent_plan") as mock_get_plan:
             # Mock a plan that indicates single agent is sufficient
             mock_get_plan.return_value = AgentPlan(
-                agents=["tool_recommendation"],
+                agents=["error_analysis"],
                 sequential=False,
-                reasoning="Single tool recommendation needed",
+                reasoning="Single error analysis needed",
             )
 
             # Mock the actual agent call to avoid running it
             with patch("galaxy.agents.agent_registry.get_agent") as mock_get_agent:
-                mock_tool_agent = AsyncMock()
-                mock_tool_agent.process.return_value = MagicMock(
-                    content="Use BWA-MEM for alignment.",
-                    agent_type="tool_recommendation",
+                mock_error_agent = AsyncMock()
+                mock_error_agent.process.return_value = MagicMock(
+                    content="The job failed due to memory limits.",
+                    agent_type="error_analysis",
                 )
-                mock_get_agent.return_value = mock_tool_agent
+                mock_get_agent.return_value = mock_error_agent
 
-                response = await agent.process("I need tools for RNA-seq analysis")
+                response = await agent.process("Why did my job fail?")
 
                 # Should not orchestrate, just return single agent response
                 assert response.agent_type == "orchestrator"
-                assert response.metadata.get("agents_used") == ["tool_recommendation"]
-                assert "BWA-MEM" in response.content
+                assert response.metadata.get("agents_used") == ["error_analysis"]
+                assert "memory limits" in response.content
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_sequential_execution(self):
@@ -264,9 +263,9 @@ class TestAgentUnitMocked:
 
         # Mock a complex plan requiring sequential orchestration
         complex_plan = AgentPlan(
-            agents=["error_analysis", "tool_recommendation", "gtn_training"],
+            agents=["error_analysis", "gtn_training"],
             sequential=True,
-            reasoning="Multi-step workflow: error diagnosis -> tool alternatives -> learning resources",
+            reasoning="Multi-step workflow: error diagnosis -> learning resources",
         )
 
         # Mock each agent call in the sequential workflow
@@ -282,11 +281,6 @@ class TestAgentUnitMocked:
                 content="Tool failed due to memory issues", agent_type="error_analysis"
             )
 
-            mock_tool_agent = AsyncMock()
-            mock_tool_agent.process.return_value = MagicMock(
-                content="Alternative tools: HISAT2, STAR", agent_type="tool_recommendation"
-            )
-
             mock_training_agent = AsyncMock()
             mock_training_agent.process.return_value = MagicMock(
                 content="Training available: RNA-seq tutorial", agent_type="gtn_training"
@@ -296,8 +290,6 @@ class TestAgentUnitMocked:
             def get_agent_side_effect(agent_type, deps):
                 if agent_type == "error_analysis":
                     return mock_error_agent
-                elif agent_type == "tool_recommendation":
-                    return mock_tool_agent
                 elif agent_type == "gtn_training":
                     return mock_training_agent
                 else:
@@ -305,20 +297,16 @@ class TestAgentUnitMocked:
 
             mock_get_agent.side_effect = get_agent_side_effect
 
-            response = await agent.process(
-                "My RNA-seq tool failed with memory error and I need alternatives and tutorials"
-            )
+            response = await agent.process("My RNA-seq tool failed with memory error and I need tutorials")
 
             # Verify orchestration occurred
             assert response.agent_type == "orchestrator"
             assert response.metadata.get("execution_type") == "sequential"
             assert "memory issues" in response.content
-            assert "Alternative tools" in response.content
             assert "Training available" in response.content
 
             # Verify agents were called in sequence
             assert mock_error_agent.process.called
-            assert mock_tool_agent.process.called
             assert mock_training_agent.process.called
 
     @pytest.mark.asyncio
@@ -333,7 +321,7 @@ class TestAgentUnitMocked:
 
         # Mock parallel plan
         parallel_plan = AgentPlan(
-            agents=["tool_recommendation", "gtn_training"],
+            agents=["error_analysis", "gtn_training"],
             sequential=False,
             reasoning="Independent tasks can run in parallel",
         )
@@ -345,9 +333,9 @@ class TestAgentUnitMocked:
             mock_get_plan.return_value = parallel_plan
 
             # Mock agent responses
-            mock_tool_agent = AsyncMock()
-            mock_tool_agent.process.return_value = MagicMock(
-                content="Recommended tools: BWA, Bowtie2", agent_type="tool_recommendation"
+            mock_error_agent = AsyncMock()
+            mock_error_agent.process.return_value = MagicMock(
+                content="Error diagnosis: memory limit exceeded", agent_type="error_analysis"
             )
 
             mock_training_agent = AsyncMock()
@@ -356,8 +344,8 @@ class TestAgentUnitMocked:
             )
 
             def get_agent_side_effect(agent_type, deps):
-                if agent_type == "tool_recommendation":
-                    return mock_tool_agent
+                if agent_type == "error_analysis":
+                    return mock_error_agent
                 elif agent_type == "gtn_training":
                     return mock_training_agent
                 else:
@@ -365,12 +353,12 @@ class TestAgentUnitMocked:
 
             mock_get_agent.side_effect = get_agent_side_effect
 
-            response = await agent.process("I need alignment tools and training materials")
+            response = await agent.process("I need help with my error and training materials")
 
             # Verify parallel execution
             assert response.agent_type == "orchestrator"
             assert response.metadata.get("execution_type") == "parallel"
-            assert "Recommended tools" in response.content
+            assert "Error diagnosis" in response.content
             assert "Available tutorials" in response.content
 
     @pytest.mark.asyncio
@@ -431,7 +419,7 @@ class TestAgentUnitLiveLLM:
         test_cases = [
             ("Create a BWA tool", "custom_tool"),
             ("Why did my job fail?", "error_analysis"),
-            ("What tools can I use for RNA-seq?", "tool_recommendation"),
+            ("Find me a tutorial on variant calling", "gtn_training"),
         ]
 
         for query, expected_agent in test_cases:
@@ -480,10 +468,6 @@ class TestAgentConsistencyLiveLLM:
         ("Why did my job fail with exit code 127?", "error_analysis"),
         ("Help me debug this memory error", "error_analysis"),
         ("What does 'command not found' mean?", "error_analysis"),
-        # Tool recommendation queries
-        ("What tools can I use for RNA-seq analysis?", "tool_recommendation"),
-        ("How do I convert BAM to FASTQ?", "tool_recommendation"),
-        ("Which aligner should I use for short reads?", "tool_recommendation"),
         # GTN training queries
         ("Find me a tutorial on variant calling", "gtn_training"),
         ("How do I learn Galaxy basics?", "gtn_training"),

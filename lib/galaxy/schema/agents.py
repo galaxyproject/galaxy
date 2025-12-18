@@ -133,34 +133,6 @@ class ErrorAnalysisResponse(BaseModel):
     requires_admin: bool = Field(default=False, description="Whether admin intervention is needed")
 
 
-class ToolRecommendationRequest(BaseModel):
-    """Request for tool recommendations."""
-
-    task_description: str = Field(description="Description of the task to accomplish")
-    input_format: Optional[str] = Field(default=None, description="Format of input data")
-    output_format: Optional[str] = Field(default=None, description="Desired output format")
-    preferences: Dict[str, Any] = Field(default_factory=dict, description="User preferences or constraints")
-
-
-class ToolSuggestion(BaseModel):
-    """Suggestion for a specific tool."""
-
-    tool_id: str = Field(description="Galaxy tool identifier")
-    tool_name: str = Field(description="Human-readable tool name")
-    relevance_score: float = Field(description="Relevance score (0.0 to 1.0)")
-    rationale: str = Field(description="Explanation for why this tool is recommended")
-    suggested_parameters: Dict[str, Any] = Field(default_factory=dict, description="Recommended parameter values")
-
-
-class ToolRecommendationResponse(BaseModel):
-    """Response with tool recommendations."""
-
-    recommended_tools: List[ToolSuggestion] = Field(description="List of recommended tools")
-    workflow_suggestions: List[str] = Field(default_factory=list, description="Suggestions for workflow structure")
-    parameter_recommendations: Dict[str, Any] = Field(default_factory=dict, description="General parameter guidance")
-    confidence: ConfidenceLevel = Field(description="Confidence in the recommendations")
-
-
 class DatasetAnalysisRequest(BaseModel):
     """Request for dataset quality analysis."""
 

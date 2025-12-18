@@ -15,7 +15,6 @@ from typing import (
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.tools import RunContext
 
 from .base import (
     ActionSuggestion,
@@ -70,16 +69,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 system_prompt=self._get_simple_system_prompt(),
-            )
-
-        # Add tools for error analysis
-        @agent.tool
-        async def get_alternative_tools(ctx: RunContext[GalaxyAgentDependencies], task_description: str) -> str:
-            """Get alternative tool recommendations when current tools fail."""
-            return await self._call_agent_from_tool(
-                "tool_recommendation",
-                f"Find alternative tools for this task: {task_description}",
-                ctx,
             )
 
         return agent

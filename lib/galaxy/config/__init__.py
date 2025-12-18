@@ -1345,12 +1345,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 "temperature": 0.2,
                 "max_tokens": 2000,
             },
-            "tool_recommendation": {
-                "enabled": True,
-                "model": "openai:gpt-3.5-turbo",
-                "temperature": 0.5,
-                "max_tokens": 1500,
-            },
             "dataset_analyzer": {
                 "enabled": False,  # Beta feature
                 "model": "openai:gpt-4",

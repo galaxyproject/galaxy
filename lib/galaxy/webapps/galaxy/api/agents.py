@@ -165,38 +165,6 @@ class AgentAPI:
             log.exception(f"Error in error analysis: {e}")
             raise ConfigurationError(f"Error analysis failed: {str(e)}")
 
-    @router.post("/api/ai/agents/tool-recommendation", unstable=True)
-    async def recommend_tools(
-        self,
-        query: str = Body(..., description="Description of the analysis task"),
-        input_format: Optional[str] = Body(None, description="Input data format"),
-        output_format: Optional[str] = Body(None, description="Desired output format"),
-        trans: ProvidesUserContext = DependsOnTrans,
-        user: User = DependsOnUser,
-    ) -> AgentResponse:
-        """Get tool recommendations for a specific analysis task."""
-        try:
-            # Build context
-            context = {}
-            if input_format:
-                context["input_format"] = input_format
-            if output_format:
-                context["output_format"] = output_format
-
-            response = await self.agent_service.execute_agent(
-                agent_type="tool_recommendation",
-                query=query,
-                trans=trans,
-                user=user,
-                context=context,
-            )
-
-            return response
-
-        except Exception as e:
-            log.exception(f"Error in tool recommendation: {e}")
-            raise ConfigurationError(f"Tool recommendation failed: {str(e)}")
-
     @router.post("/api/ai/agents/custom-tool", unstable=True)
     async def create_custom_tool(
         self,
@@ -239,11 +207,6 @@ class AgentAPI:
                 "Custom tool creation",
                 "Tool wrapper development",
                 "Parameter configuration",
-            ],
-            "tool_recommendation": [
-                "Tool selection",
-                "Parameter guidance",
-                "Tool discovery",
             ],
             "gtn_training": ["Tutorials", "Learning materials", "Training resources"],
         }

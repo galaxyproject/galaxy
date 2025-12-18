@@ -15,7 +15,6 @@ import {
     faThumbsUp,
     faTrash,
     faUser,
-    faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
@@ -83,8 +82,6 @@ interface AgentType {
 const agentTypes: AgentType[] = [
     { value: "auto", label: "Auto (Router)", icon: faMagic, description: "Intelligent routing" },
     { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
-    { value: "tool_recommendation", label: "Tool Recommendation", icon: faWrench, description: "Find the right tools" },
-    { value: "dspy_tool_recommendation", label: "DSPy Tools", icon: faRobot, description: "Advanced tool selection" },
     { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
     { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
     { value: "gtn_training", label: "Training Materials", icon: faGraduationCap, description: "Find tutorials" },
@@ -95,8 +92,6 @@ const agentIconMap: Record<string, IconDefinition> = {
     auto: faMagic,
     router: faRoute,
     error_analysis: faBug,
-    tool_recommendation: faWrench,
-    dspy_tool_recommendation: faRobot,
     custom_tool: faPlus,
     dataset_analyzer: faChartBar,
     gtn_training: faGraduationCap,

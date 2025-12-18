@@ -164,25 +164,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 ],
                 1.0,
             ),
-            AgentType.TOOL_RECOMMENDATION: (
-                [
-                    "which tool",
-                    "what tool",
-                    "how to",
-                    "how do i",
-                    "find tool",
-                    "need to",
-                    "want to",
-                    "select",
-                    "filter",
-                    "process",
-                    "convert",
-                    "align",
-                    "map",
-                    "call variants",
-                ],
-                0.5,  # Lower base score as it's a common fallback
-            ),
         }
 
         # Score each intent
@@ -193,9 +174,9 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         # Determine the winning agent
         if not any(scores.values()):
-            # If no keywords matched, default to tool_recommendation
-            best_agent = AgentType.TOOL_RECOMMENDATION
-            reasoning = "No clear intent keywords found, defaulting to tool recommendation."
+            # If no keywords matched, default to orchestrator to coordinate response
+            best_agent = AgentType.ORCHESTRATOR
+            reasoning = "No clear intent keywords found, using orchestrator to coordinate response."
             confidence = "low"
         else:
             best_agent = max(scores, key=lambda k: scores[k])
@@ -312,7 +293,7 @@ For specific tools, please also cite the individual tool publications.""",
         Available agents:
         - error_analysis: For debugging, troubleshooting, job failures
         - custom_tool: For creating new tools, tool development
-        - tool_recommendation: For finding tools, "how to" questions, analysis guidance
+        - orchestrator: For general queries, multi-step tasks
 
 
         Respond in this exact format:
@@ -320,8 +301,8 @@ For specific tools, please also cite the individual tool publications.""",
         REASONING: [brief explanation]
 
         Example:
-        ROUTE_TO: tool_recommendation
-        REASONING: User asking how to perform analysis task
+        ROUTE_TO: error_analysis
+        REASONING: User asking about job failure
         """
 
     def _parse_simple_response(self, response_text: str, query: str) -> RoutingDecision:
@@ -334,15 +315,15 @@ For specific tools, please also cite the individual tool publications.""",
             agent = route_match.group(1).lower()
             reasoning = reasoning_match.group(1).strip() if reasoning_match else "DeepSeek routing"
 
-            # Validate agent is routable (excludes router, orchestrator, experimental agents)
+            # Validate agent is routable
             routable_agents = [
                 AgentType.ERROR_ANALYSIS,
                 AgentType.CUSTOM_TOOL,
-                AgentType.TOOL_RECOMMENDATION,
+                AgentType.ORCHESTRATOR,
             ]
             if agent not in routable_agents:
-                agent = AgentType.TOOL_RECOMMENDATION
-                reasoning = f"Fallback to {AgentType.TOOL_RECOMMENDATION}. Original: {reasoning}"
+                agent = AgentType.ORCHESTRATOR
+                reasoning = f"Fallback to {AgentType.ORCHESTRATOR}. Original: {reasoning}"
 
             return RoutingDecision(
                 primary_agent=agent,

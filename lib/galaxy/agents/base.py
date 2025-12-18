@@ -93,11 +93,9 @@ class AgentType:
 
     ROUTER = "router"
     ERROR_ANALYSIS = "error_analysis"
-    TOOL_RECOMMENDATION = "tool_recommendation"
     CUSTOM_TOOL = "custom_tool"
     GTN_TRAINING = "gtn_training"
     ORCHESTRATOR = "orchestrator"
-    DSPY_TOOL_RECOMMENDATION = "dspy_tool_recommendation"
 
 
 # Internal agent response model (simplified for internal use)
@@ -539,7 +537,7 @@ class BaseGalaxyAgent(ABC):
         reducing code duplication and providing consistent error handling.
 
         Args:
-            agent_type: Type of agent to call (e.g., "tool_recommendation", "gtn_training")
+            agent_type: Type of agent to call (e.g., "error_analysis", "gtn_training")
             query: Query to send to the target agent
             ctx: RunContext from the calling tool function
             usage: Optional usage tracking object (defaults to ctx.usage)
@@ -553,8 +551,8 @@ class BaseGalaxyAgent(ABC):
 
         Example usage in @agent.tool functions:
             response = await self._call_agent_from_tool(
-                "tool_recommendation",
-                f"Find alternatives for: {task}",
+                "error_analysis",
+                f"Analyze this issue: {task}",
                 ctx,
                 context={"conversation_history": history}
             )

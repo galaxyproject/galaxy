@@ -115,7 +115,7 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
                 }
             else:
                 result.data = {
-                    "primary_agent": "tool_recommendation",
+                    "primary_agent": "orchestrator",
                     "reasoning": "General query",
                     "confidence": 0.7,
                 }
@@ -296,24 +296,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         # Should mention memory or OOM since exit code 137 is SIGKILL
         content = data["content"].lower()
         assert any(word in content for word in ["memory", "kill", "resource", "oom"])
-
-    def test_tool_recommendation_endpoint_live(self):
-        """Test the dedicated tool-recommendation endpoint."""
-        response = self._post(
-            "ai/agents/tool-recommendation",
-            data={
-                "query": "I have paired-end FASTQ files and want to align them to a reference genome",
-                "input_format": "fastq",
-            },
-            json=True,
-        )
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        assert "content" in data
-        assert "confidence" in data
-        # Should mention alignment tools
-        content = data["content"].lower()
-        assert any(word in content for word in ["bwa", "bowtie", "align", "map"])
 
     def test_custom_tool_endpoint_live(self):
         """Test the dedicated custom-tool endpoint."""
