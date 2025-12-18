@@ -30,7 +30,7 @@ interface DatasetResponse {
 }
 
 const datasetResponse: DatasetResponse = {
-    id: "FOO_HDA_ID",
+    id: HDA_ID,
     hid: 32,
     uuid: "5e89abe4-e8f7-468a-9ef1-d4e322183fa5",
     name: "Add column on data 31",

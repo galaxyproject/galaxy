@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
@@ -157,14 +157,14 @@ async function onPermanentlyDeleteHistory(historyId: string) {
         <div v-else>
             <BarChart
                 v-if="topTenHistoriesBySizeData"
+                v-bind="byteFormattingForChart"
                 :description="
                     localize(
                         `These are the ${numberOfHistoriesToDisplay} histories that take the most space on your storage. Click on a bar to see more information about the history.`,
                     )
                 "
                 :data="topTenHistoriesBySizeData"
-                :enable-selection="true"
-                v-bind="byteFormattingForChart">
+                :enable-selection="true">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</b>
                     <b-form-select
@@ -198,14 +198,14 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             </BarChart>
             <BarChart
                 v-if="activeVsArchivedVsDeletedTotalSizeData"
+                v-bind="byteFormattingForChart"
                 :title="localize('Active vs Archived vs Deleted Total Size')"
                 :description="
                     localize(
                         'This graph shows the total size taken by your histories, split between active, archived and deleted histories.',
                     )
                 "
-                :data="activeVsArchivedVsDeletedTotalSizeData"
-                v-bind="byteFormattingForChart">
+                :data="activeVsArchivedVsDeletedTotalSizeData">
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip
                         v-if="data"

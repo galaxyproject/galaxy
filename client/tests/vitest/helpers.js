@@ -1,15 +1,13 @@
 /**
  * Unit test debugging utilities for Vitest
+ *
+ * Note: For Vue 3 / Vue Test Utils v2, we no longer use createLocalVue.
+ * Instead, plugins are passed via the `global` mount option.
  */
-import { createLocalVue } from "@vue/test-utils";
-import BootstrapVue from "bootstrap-vue";
-import { PiniaVuePlugin } from "pinia";
-import { expect, test, vi } from "vitest";
-import VueRouter from "vue-router";
+import { expect, vi } from "vitest";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { localizationPlugin } from "@/components/plugins/localization";
-import _short from "@/components/plugins/short";
-import { vueRxShortcutPlugin } from "@/components/plugins/vueRxShortcuts";
 import _l from "@/utils/localization";
 
 function testLocalize(text) {
@@ -20,22 +18,63 @@ function testLocalize(text) {
     }
 }
 
-// Gets a localVue with custom directives
+// Mocked directive for tooltips/popovers
+const mockedDirective = {
+    mounted(el, binding) {
+        el.setAttribute("data-mock-directive", binding.value || el.title);
+    },
+    // Vue 2 compat hook
+    bind(el, binding) {
+        el.setAttribute("data-mock-directive", binding.value || el.title);
+    },
+};
+
+/**
+ * Returns the global mount configuration for Vue Test Utils v2.
+ * Use this with mount() like: mount(Component, { global: getLocalVue() })
+ *
+ * Note: BootstrapVue and vue-rx are not compatible with Vue 3.
+ * Use component-specific stubs for bootstrap components in tests.
+ */
 export function getLocalVue(instrumentLocalization = false) {
-    const localVue = createLocalVue();
-    const mockedDirective = {
-        bind(el, binding) {
-            el.setAttribute("data-mock-directive", binding.value || el.title);
+    const l = instrumentLocalization ? testLocalize : _l;
+
+    return {
+        plugins: [[localizationPlugin, l]],
+        directives: {
+            "b-tooltip": mockedDirective,
+            "b-popover": mockedDirective,
+        },
+        stubs: {
+            // Stub common bootstrap-vue components
+            "b-button": true,
+            "b-form-input": true,
+            "b-form-checkbox": true,
+            "b-modal": true,
+            "b-card": true,
+            "b-dropdown": true,
+            "b-dropdown-item": true,
+            "b-alert": true,
+            "b-badge": true,
+            "b-spinner": true,
+            "b-link": true,
+            "b-collapse": true,
+            "b-form-group": true,
+            "b-form-select": true,
+            "b-form-textarea": true,
+            "b-table": true,
+            "b-pagination": true,
+            "b-tabs": true,
+            "b-tab": true,
+            "b-nav": true,
+            "b-nav-item": true,
+            "b-overlay": true,
+            "b-popover": true,
+            "b-tooltip": true,
+            Portal: true,
+            PortalTarget: true,
         },
     };
-    localVue.use(PiniaVuePlugin);
-    localVue.use(BootstrapVue);
-    const l = instrumentLocalization ? testLocalize : _l;
-    localVue.use(localizationPlugin, l);
-    localVue.use(vueRxShortcutPlugin);
-    localVue.directive("b-tooltip", mockedDirective);
-    localVue.directive("b-popover", mockedDirective);
-    return localVue;
 }
 
 export function suppressDebugConsole() {
@@ -145,12 +184,26 @@ export function expectConfigurationRequest(http, config) {
 }
 
 /**
- * Return a new mocked out router attached to the specified localVue instance.
+ * Create a test router for Vue 3.
+ * For Vue Test Utils v2, pass this to mount options: { global: { plugins: [router] } }
+ */
+export function createTestRouter(routes = []) {
+    // Add a catch-all route to prevent "No match found" warnings
+    const defaultRoutes = [{ path: "/:pathMatch(.*)*", name: "not-found", component: { template: "<div></div>" } }];
+    return createRouter({
+        history: createWebHistory(),
+        routes: [...routes, ...defaultRoutes],
+    });
+}
+
+/**
+ * @deprecated Use createTestRouter() instead and pass to global.plugins
+ * This function is kept for backward compatibility during migration.
  */
 export function injectTestRouter(localVue) {
-    localVue.use(VueRouter);
-    const router = new VueRouter();
-    return router;
+    // In Vue 3, routers are installed via app.use(), not localVue
+    // Return a router that can be passed to mount's global.plugins
+    return createTestRouter();
 }
 
 /**

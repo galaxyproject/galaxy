@@ -3,12 +3,14 @@
         v-if="objectStore.quota.enabled"
         v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
         :quota-source-label="objectStore.quota.source">
-        <LoadingSpan v-if="isLoadingUsage" :message="loadingMessage | localize" />
+        <LoadingSpan v-if="isLoadingUsage" :message="localize(loadingMessage)" />
         <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" :compact="true" />
     </QuotaSourceUsageProvider>
 </template>
 
 <script>
+import { localize } from "@/utils/localization";
+
 import { QuotaSourceUsageProvider } from "./QuotaUsageProvider";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";

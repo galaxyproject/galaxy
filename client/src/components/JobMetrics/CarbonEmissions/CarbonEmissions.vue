@@ -311,9 +311,11 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                     </caption>
 
                     <thead>
-                        <th>Component</th>
-                        <th>Carbon Emissions <sup>1.</sup> <sup>2.</sup> <sup>3.</sup></th>
-                        <th>Energy Usage <sup>2.</sup> <sup>3.</sup></th>
+                        <tr>
+                            <th>Component</th>
+                            <th>Carbon Emissions <sup>1.</sup> <sup>2.</sup> <sup>3.</sup></th>
+                            <th>Energy Usage <sup>2.</sup> <sup>3.</sup></th>
+                        </tr>
                     </thead>
 
                     <tbody>

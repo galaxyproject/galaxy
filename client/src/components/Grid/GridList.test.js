@@ -15,7 +15,7 @@ vi.useFakeTimers();
 
 setupMockConfig({ disabled: false, enabled: true });
 
-vi.mock("vue-router/composables");
+vi.mock("vue-router");
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);

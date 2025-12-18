@@ -42,12 +42,16 @@ export const SimpleProviderMixin = {
         },
     },
     render() {
-        return this.$scopedSlots.default({
-            loading: this.loading,
-            item: this.item,
-            save: this.save,
-            result: this.item,
-        });
+        const slot = this.$slots.default;
+        if (slot) {
+            return slot({
+                loading: this.loading,
+                item: this.item,
+                save: this.save,
+                result: this.item,
+            });
+        }
+        return null;
     },
 };
 
