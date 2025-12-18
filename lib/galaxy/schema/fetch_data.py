@@ -95,6 +95,7 @@ class BaseCollectionTarget(BaseFetchDataTarget):
     tags: Optional[list[str]] = None
     name: Optional[str] = None
     column_definitions: Optional[SampleSheetColumnDefinitions] = None
+    rows: Optional[dict[str, SampleSheetRow]] = None
 
 
 class LibraryDestination(FetchBaseModel):
