@@ -2,7 +2,7 @@ import { mapState } from "pinia";
 
 import { useConfigStore } from "@/stores/configurationStore";
 
-import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
+import ShowSelectedObjectStore from "./ShowSelectedObjectStore.vue";
 
 export default {
     components: {
@@ -24,7 +24,7 @@ export default {
             }
         },
         title() {
-            return this.l(`${this.preferredOrEmptyString} Target Storage Location ${this.titleSuffix || ""}`);
+            return this.l(`${this.preferredOrEmptyString} Target Galaxy Storage ${this.titleSuffix || ""}`);
         },
     },
 };

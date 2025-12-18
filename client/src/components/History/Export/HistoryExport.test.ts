@@ -1,13 +1,13 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue, suppressDebugConsole } from "@tests/jest/helpers";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HistorySummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
-import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,
@@ -18,8 +18,8 @@ import HistoryExport from "./HistoryExport.vue";
 
 const localVue = getLocalVue(true);
 
-jest.mock("@/api/histories.export");
-const mockFetchExportRecords = fetchHistoryExportRecords as jest.MockedFunction<typeof fetchHistoryExportRecords>;
+vi.mock("@/api/histories.export");
+const mockFetchExportRecords = fetchHistoryExportRecords as ReturnType<typeof vi.fn>;
 mockFetchExportRecords.mockResolvedValue([]);
 
 const FAKE_HISTORY_ID = "fake-history-id";
@@ -39,27 +39,14 @@ const FAKE_HISTORY: HistorySummary = {
     url: FAKE_HISTORY_URL,
 };
 
-const REMOTE_FILES_API_RESPONSE: BrowsableFilesSourcePlugin[] = [
-    {
-        id: "test-posix-source",
-        type: "posix",
-        label: "TestSource",
-        doc: "For testing",
-        writable: true,
-        browsable: true,
-        requires_roles: undefined,
-        requires_groups: undefined,
-        supports: {
-            pagination: false,
-            search: false,
-            sorting: false,
-        },
-        uri_root: "gxfiles://test-posix-source",
-    },
-];
+const selectors = {
+    latestExportRecord: "#latest-export-record",
+    showPreviousExportRecordsButton: "#show-old-records-button",
+    fatalErrorAlert: "#fatal-error-alert",
+} as const;
 
 async function mountHistoryExport() {
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = shallowMount(HistoryExport as object, {
@@ -82,32 +69,16 @@ describe("HistoryExport.vue", () => {
                     return response(200).json(FAKE_HISTORY);
                 }
             }),
-
-            http.get("/api/remote_files/plugins", ({ response }) => {
-                return response(200).json([]);
-            })
         );
     });
 
-    it("should render the history name", async () => {
+    it("should not display the latest export record if there is no export record", async () => {
         const wrapper = await mountHistoryExport();
 
-        expect(wrapper.find("#history-name").text()).toBe(FAKE_HISTORY.name);
+        expect(wrapper.find(selectors.latestExportRecord).exists()).toBe(false);
     });
 
-    it("should render export options", async () => {
-        const wrapper = await mountHistoryExport();
-
-        expect(wrapper.find("#history-export-options").exists()).toBe(true);
-    });
-
-    it("should display a message indicating there are no exports where there are none", async () => {
-        const wrapper = await mountHistoryExport();
-
-        expect(wrapper.find("#no-export-records-alert").exists()).toBe(true);
-    });
-
-    it("should render previous records when there is more than one record", async () => {
+    it("should display the previous records button when there is more than one record", async () => {
         mockFetchExportRecords.mockResolvedValue([
             RECENT_STS_DOWNLOAD_RECORD,
             FILE_SOURCE_STORE_RECORD,
@@ -115,79 +86,14 @@ describe("HistoryExport.vue", () => {
         ]);
         const wrapper = await mountHistoryExport();
 
-        expect(wrapper.find("#previous-export-records").exists()).toBe(true);
+        expect(wrapper.find(selectors.showPreviousExportRecordsButton).exists()).toBe(true);
     });
 
-    it("should not render previous records when there is one or less records", async () => {
+    it("should not display the previous records button when there is one or less records", async () => {
         mockFetchExportRecords.mockResolvedValue([RECENT_STS_DOWNLOAD_RECORD]);
         const wrapper = await mountHistoryExport();
 
-        expect(wrapper.find("#previous-export-records").exists()).toBe(false);
-    });
-
-    it("should display file sources tab if there are available", async () => {
-        server.use(
-            http.get("/api/remote_files/plugins", ({ response }) => response(200).json(REMOTE_FILES_API_RESPONSE))
-        );
-
-        const wrapper = await mountHistoryExport();
-
-        expect(wrapper.find("#direct-download-tab").exists()).toBe(true);
-        expect(wrapper.find("#file-source-tab").exists()).toBe(true);
-    });
-
-    it("should not display file sources tab if there are no file sources available", async () => {
-        const wrapper = await mountHistoryExport();
-
-        expect(wrapper.find("#direct-download-tab").exists()).toBe(true);
-        expect(wrapper.find("#file-source-tab").exists()).toBe(false);
-    });
-
-    it("should display the ZENODO tab if the Zenodo plugin is available", async () => {
-        const zenodoPlugin: BrowsableFilesSourcePlugin = {
-            id: "zenodo",
-            type: "rdm",
-            label: "Zenodo",
-            doc: "For testing",
-            writable: true,
-            browsable: true,
-            supports: {
-                pagination: false,
-                search: false,
-                sorting: false,
-            },
-            uri_root: "zenodo://",
-        };
-        server.use(http.get("/api/remote_files/plugins", ({ response }) => response(200).json([zenodoPlugin])));
-
-        const wrapper = await mountHistoryExport();
-
-        expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
-    });
-
-    it("should display the ZENODO tab if the user has a user-defined Zenodo file source", async () => {
-        const userZenodoPlugin: BrowsableFilesSourcePlugin = {
-            id: "998c5bba-b18f-4223-9c93-0f36fa2fdae8",
-            type: "zenodo",
-            label: "ZENODO",
-            doc: "My integration with Zenodo",
-            browsable: true,
-            writable: true,
-            requires_roles: null,
-            requires_groups: null,
-            url: "https://zenodo.org/",
-            supports: {
-                pagination: true,
-                search: true,
-                sorting: false,
-            },
-            uri_root: "gxuserfiles://998c5bba-b18f-4223-9c93-0f36fa2fdae8",
-        };
-        server.use(http.get("/api/remote_files/plugins", ({ response }) => response(200).json([userZenodoPlugin])));
-
-        const wrapper = await mountHistoryExport();
-
-        expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
+        expect(wrapper.find(selectors.showPreviousExportRecordsButton).exists()).toBe(false);
     });
 
     it("should not display a fatal error alert if the history is found and loaded", async () => {
@@ -195,11 +101,7 @@ describe("HistoryExport.vue", () => {
 
         const wrapper = await mountHistoryExport();
 
-        expect(wrapper.find("#fatal-error-alert").exists()).toBe(false);
-
-        expect(wrapper.find("#history-name").exists()).toBe(true);
-        expect(wrapper.find("#history-export-options").exists()).toBe(true);
-        expect(wrapper.find("#direct-download-tab").exists()).toBe(true);
+        expect(wrapper.find(selectors.fatalErrorAlert).exists()).toBe(false);
     });
 
     it("should not render the UI and display a fatal error message if the history cannot be found or loaded", async () => {
@@ -210,17 +112,13 @@ describe("HistoryExport.vue", () => {
                         err_code: 404,
                         err_msg: "History not found",
                     },
-                    { status: 404 }
-                )
-            )
+                    { status: 404 },
+                ),
+            ),
         );
 
         const wrapper = await mountHistoryExport();
 
-        expect(wrapper.find("#fatal-error-alert").exists()).toBe(true);
-
-        expect(wrapper.find("#history-name").exists()).toBe(false);
-        expect(wrapper.find("#history-export-options").exists()).toBe(false);
-        expect(wrapper.find("#direct-download-tab").exists()).toBe(false);
+        expect(wrapper.find(selectors.fatalErrorAlert).exists()).toBe(true);
     });
 });

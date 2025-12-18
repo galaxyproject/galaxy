@@ -6,7 +6,6 @@ import logging
 from typing import (
     Any,
     Callable,
-    Optional,
 )
 
 from webob.exc import (
@@ -24,7 +23,6 @@ from galaxy import (
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.managers import (
     base as managers_base,
-    configuration,
     users,
     workflows,
 )
@@ -49,7 +47,6 @@ from galaxy.model import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import BasicSharedApp
-from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     error,
@@ -231,144 +228,6 @@ class BaseAPIController(BaseController):
         if (ORDER_BY_SEP_CHAR := ",") in order_by_string:
             return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
         return manager.parse_order_by(order_by_string)
-
-
-class JSAppLauncher(BaseUIController):
-    """
-    A controller that launches JavaScript web applications.
-    """
-
-    #: path to js app template
-    JS_APP_MAKO_FILEPATH = "/js-app.mako"
-    #: window-scoped js function to call to start the app (will be passed options, bootstrapped)
-    DEFAULT_ENTRY_FN = "app"
-    #: keys used when serializing current user for bootstrapped data
-    USER_BOOTSTRAP_KEYS = (
-        "id",
-        "email",
-        "username",
-        "is_admin",
-        "total_disk_usage",
-        "nice_total_disk_usage",
-        "quota_percent",
-        "preferences",
-    )
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.user_manager = users.UserManager(app)
-        self.user_serializer = users.CurrentUserSerializer(app)
-        self.config_serializer = configuration.ConfigSerializer(app)
-        self.admin_config_serializer = configuration.AdminConfigSerializer(app)
-
-    def _check_require_login(self, trans):
-        if self.app.config.require_login and self.user_manager.is_anonymous(trans.user):
-            # TODO: this doesn't properly redirect when login is done
-            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
-            login_url = web.url_for(controller="root", action="login")
-            trans.response.send_redirect(login_url)
-
-    @web.expose
-    def client(self, trans, **kwd):
-        """
-        Endpoint for clientside routes.  This ships the primary SPA client.
-
-        Should not be used with url_for -- see
-        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
-        """
-        return self._bootstrapped_client(trans, **kwd)
-
-    # This includes contextualized user options in the bootstrapped data; we
-    # don't want to cache it.
-    @web.do_not_cache
-    def _bootstrapped_client(self, trans, app_name="analysis", **kwd):
-        js_options = self._get_js_options(trans)
-        js_options["config"].update(self._get_extended_config(trans))
-        return self.template(trans, app_name, options=js_options, **kwd)
-
-    def _get_js_options(self, trans, root=None):
-        """
-        Return a dictionary of session/site configuration/options to jsonify
-        and pass onto the js app.
-
-        Defaults to `config`, `user`, and the root url. Pass kwargs to update further.
-        """
-        root = root or web.url_for("/")
-        js_options = {
-            "root": root,
-            "user": self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
-            "config": self._get_site_configuration(trans),
-            "params": dict(trans.request.params),
-            "session_csrf_token": trans.session_csrf_token,
-        }
-        return js_options
-
-    def _get_extended_config(self, trans):
-        config = {
-            "active_view": "analysis",
-            "enable_webhooks": True if trans.app.webhooks_registry.webhooks else False,
-            "message_box_visible": trans.app.config.message_box_visible,
-            "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            "tool_dynamic_configs": list(trans.app.toolbox.dynamic_conf_filenames()),
-        }
-
-        # TODO: move to user
-        stored_workflow_menu_index = {}
-        stored_workflow_menu_entries = []
-        for menu_item in getattr(trans.user, "stored_workflow_menu_entries", []):
-            encoded_stored_workflow_id = trans.security.encode_id(menu_item.stored_workflow_id)
-            if encoded_stored_workflow_id not in stored_workflow_menu_index:
-                stored_workflow_menu_index[encoded_stored_workflow_id] = True
-                stored_workflow_menu_entries.append(
-                    {"id": encoded_stored_workflow_id, "name": util.unicodify(menu_item.stored_workflow.name)}
-                )
-        config["stored_workflow_menu_entries"] = stored_workflow_menu_entries
-        return config
-
-    def _get_site_configuration(self, trans):
-        """
-        Return a dictionary representing Galaxy's current configuration.
-        """
-        try:
-            serializer = self.config_serializer
-            if self.user_manager.is_admin(trans.user, trans=trans):
-                serializer = self.admin_config_serializer
-            return serializer.serialize_to_view(self.app.config, view="all", host=trans.host)
-        except Exception as exc:
-            log.exception(exc)
-            return {}
-
-    def template(
-        self,
-        trans,
-        app_name: str,
-        entry_fn: str = "app",
-        options=None,
-        bootstrapped_data: Optional[dict] = None,
-        masthead: Optional[bool] = True,
-        **additional_options,
-    ):
-        """
-        Render and return the single page mako template that starts the app.
-
-        :param app_name: the first portion of the webpack bundle to as the app.
-        :param entry_fn: the name of the window-scope function that starts the
-                         app. Defaults to 'app'.
-        :param bootstrapped_data: update containing any more data
-                                  the app may need.
-        :param masthead: include masthead elements in the initial page dom.
-        :param additional_options: update to the options sent to the app.
-        """
-        options = options or self._get_js_options(trans)
-        options.update(additional_options)
-        return trans.fill_template(
-            self.JS_APP_MAKO_FILEPATH,
-            js_app_name=app_name,
-            js_app_entry_fn=(entry_fn or self.DEFAULT_ENTRY_FN),
-            options=options,
-            bootstrapped=(bootstrapped_data or {}),
-            masthead=masthead,
-        )
 
 
 class Datatype:
@@ -612,151 +471,11 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
     slug_builder = SlugBuilder()
 
-    def get_tool_def(self, trans, hda):
-        """Returns definition of an interactive tool for an HDA."""
-
-        # Get dataset's job.
-        job = None
-        for job_output_assoc in hda.creating_job_associations:
-            job = job_output_assoc.job
-            break
-        if not job:
-            return None
-
-        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
-        if not tool:
-            return None
-
-        # Tool must have a Trackster configuration.
-        if not tool.trackster_conf:
-            return None
-
-        # -- Get tool definition and add input values from job. --
-        tool_dict = tool.to_dict(trans, io_details=True)
-        tool_param_values = {p.name: p.value for p in job.parameters}
-        tool_param_values = tool.params_from_strings(tool_param_values, trans.app, ignore_errors=True)
-
-        # Only get values for simple inputs for now.
-        inputs_dict = [i for i in tool_dict["inputs"] if i["type"] not in ["data", "hidden_data", "conditional"]]
-        for t_input in inputs_dict:
-            # Add value to tool.
-            if "name" in t_input:
-                name = t_input["name"]
-                if name in tool_param_values:
-                    value = tool_param_values[name]
-                    if isinstance(value, Dictifiable):
-                        value = value.to_dict()
-                    t_input["value"] = value
-
-        return tool_dict
-
     def get_visualization_config(self, trans, visualization):
-        """Returns a visualization's configuration. Only works for trackster visualizations right now."""
-        config = None
-        if visualization.type in ["trackster", "genome"]:
-            # Unpack Trackster config.
-            latest_revision = visualization.latest_revision
-            bookmarks = latest_revision.config.get("bookmarks", [])
-
-            def pack_track(track_dict):
-                unencoded_id = track_dict.get("dataset_id")
-                if unencoded_id:
-                    encoded_id = trans.security.encode_id(unencoded_id)
-                else:
-                    encoded_id = track_dict["dataset"]["id"]
-                hda_ldda = track_dict.get("hda_ldda", "hda")
-
-                dataset = self.get_hda_or_ldda(trans, hda_ldda, encoded_id)
-                try:
-                    prefs = track_dict["prefs"]
-                except KeyError:
-                    prefs = {}
-                track_data_provider = trans.app.data_provider_registry.get_data_provider(
-                    trans, original_dataset=dataset, source="data"
-                )
-                return {
-                    "track_type": dataset.datatype.track_type,
-                    "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
-                    "prefs": prefs,
-                    "mode": track_dict.get("mode", "Auto"),
-                    "filters": track_dict.get("filters", {"filters": track_data_provider.get_filters()}),
-                    "tool": self.get_tool_def(trans, dataset),
-                    "tool_state": track_dict.get("tool_state", {}),
-                }
-
-            def pack_collection(collection_dict):
-                drawables = []
-                for drawable_dict in collection_dict["drawables"]:
-                    if "track_type" in drawable_dict:
-                        drawables.append(pack_track(drawable_dict))
-                    else:
-                        drawables.append(pack_collection(drawable_dict))
-                return {
-                    "obj_type": collection_dict["obj_type"],
-                    "drawables": drawables,
-                    "prefs": collection_dict.get("prefs", []),
-                    "filters": collection_dict.get("filters", {}),
-                }
-
-            def encode_dbkey(dbkey):
-                """
-                Encodes dbkey as needed. For now, prepends user's public name
-                to custom dbkey keys.
-                """
-                encoded_dbkey = dbkey
-                user = visualization.user
-                if "dbkeys" in user.preferences and str(dbkey) in user.preferences["dbkeys"]:
-                    encoded_dbkey = f"{user.username}:{dbkey}"
-                return encoded_dbkey
-
-            # Set tracks.
-            tracks = []
-            if "tracks" in latest_revision.config:
-                # Legacy code.
-                for track_dict in visualization.latest_revision.config["tracks"]:
-                    tracks.append(pack_track(track_dict))
-            elif "view" in latest_revision.config:
-                for drawable_dict in visualization.latest_revision.config["view"]["drawables"]:
-                    if "track_type" in drawable_dict:
-                        tracks.append(pack_track(drawable_dict))
-                    else:
-                        tracks.append(pack_collection(drawable_dict))
-
-            config = {
-                "title": visualization.title,
-                "vis_id": trans.security.encode_id(visualization.id) if visualization.id is not None else None,
-                "tracks": tracks,
-                "bookmarks": bookmarks,
-                "chrom": "",
-                "dbkey": encode_dbkey(visualization.dbkey),
-            }
-
-            if "viewport" in latest_revision.config:
-                config["viewport"] = latest_revision.config["viewport"]
-        else:
-            # Default action is to return config unaltered.
-            latest_revision = visualization.latest_revision
-            config = latest_revision.config
-
+        """Returns a visualization's configuration."""
+        latest_revision = visualization.latest_revision
+        config = latest_revision.config
         return config
-
-    def get_new_track_config(self, trans, dataset):
-        """
-        Returns track configuration dict for a dataset.
-        """
-        # Get data provider.
-        track_data_provider = trans.app.data_provider_registry.get_data_provider(trans, original_dataset=dataset)
-
-        # Get track definition.
-        return {
-            "track_type": dataset.datatype.track_type,
-            "name": dataset.name,
-            "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
-            "prefs": {},
-            "filters": {"filters": track_data_provider.get_filters()},
-            "tool": self.get_tool_def(trans, dataset),
-            "tool_state": {},
-        }
 
     def get_hda_or_ldda(self, trans, hda_ldda, dataset_id):
         """Returns either HDA or LDDA for hda/ldda and id combination."""

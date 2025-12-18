@@ -2,8 +2,8 @@
   version: 0
   name: Zenodo
   description: |
-      Zenodo is an open-access repository for research data, software, publications, and other digital artifacts. It is developed
-      and maintained by CERN and funded by the European Commission as part of the OpenAIRE project. Zenodo provides a free
+      [Zenodo](https://zenodo.org) is an open-access repository for research data, software, publications, and other digital artifacts. It is developed
+      and maintained by [CERN](https://home.cern) and funded by the European Commission as part of the OpenAIRE project. Zenodo provides a free
       platform for researchers to share and preserve their work, ensuring long-term access and reproducibility.
       Zenodo is widely used by researchers, institutions, and organizations to share scientific knowledge and comply
       with open-access mandates from funding agencies.

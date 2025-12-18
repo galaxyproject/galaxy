@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    List,
+    Literal,
     Optional,
     Union,
 )
@@ -10,12 +11,9 @@ from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
 
 from galaxy.schema.schema import Model
+from galaxy.util.hash_util import HashFunctionNames
 
 
 class RemoteFilesTarget(str, Enum):
@@ -109,7 +107,7 @@ class BrowsableFilesSourcePlugin(FilesSourcePlugin):
 
 
 class FilesSourcePluginList(RootModel):
-    root: List[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
+    root: list[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
         default=[],
         title="List of files source plugins",
         examples=[
@@ -136,14 +134,22 @@ class RemoteDirectory(RemoteEntry):
     class_: Literal["Directory"] = Field(..., alias="class")
 
 
+class RemoteFileHash(Model):
+    hash_function: HashFunctionNames
+    hash_value: str
+
+
 class RemoteFile(RemoteEntry):
     class_: Literal["File"] = Field(..., alias="class")
     size: int = Field(..., title="Size", description="The size of the file in bytes.")
     ctime: str = Field(..., title="Creation time", description="The creation time of the file.")
+    hashes: Optional[list[RemoteFileHash]] = Field(
+        None, title="Hashes", description="List of precomputed hashes for the file, if available."
+    )
 
 
 class ListJstreeResponse(RootModel):
-    root: List[Any] = Field(
+    root: list[Any] = Field(
         default=[],
         title="List of files",
         description="List of files in Jstree format.",
@@ -159,7 +165,7 @@ AnyRemoteEntry = Annotated[
 
 
 class ListUriResponse(RootModel):
-    root: List[AnyRemoteEntry] = Field(
+    root: list[AnyRemoteEntry] = Field(
         default=[],
         title="List of remote entries",
         description="List of directories and files.",

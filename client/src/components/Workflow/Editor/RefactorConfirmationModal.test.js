@@ -1,11 +1,15 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { refactor } from "./modules/services";
-import RefactorConfirmationModal from "./RefactorConfirmationModal";
 
-jest.mock("./modules/services");
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
+
+vi.mock("./modules/services", () => ({
+    refactor: vi.fn(),
+}));
 
 const localVue = getLocalVue();
 const TEST_WORKFLOW_ID = "test123";
@@ -15,6 +19,7 @@ describe("RefactorConfirmationModal.vue", () => {
     let wrapper;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         wrapper = shallowMount(RefactorConfirmationModal, {
             propsData: {
                 refactorActions: [],
@@ -35,7 +40,7 @@ describe("RefactorConfirmationModal.vue", () => {
         refactor.mockReturnValue(
             new Promise((then, error) => {
                 error("foo");
-            })
+            }),
         );
         await wrapper.setProps({
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
@@ -55,7 +60,7 @@ describe("RefactorConfirmationModal.vue", () => {
                 then({
                     action_executions: [],
                 });
-            })
+            }),
         );
         await wrapper.setProps({
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
@@ -89,11 +94,12 @@ describe("RefactorConfirmationModal.vue", () => {
                         },
                     ],
                 });
-            })
+            }),
         );
         await wrapper.setProps({
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
+        await flushPromises();
         expect(wrapper.emitted().onWorkflowError).toBeFalsy();
 
         // called with dry run...

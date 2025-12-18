@@ -1,9 +1,7 @@
 import logging
 import os
-from json import dumps
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -19,6 +17,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
@@ -56,6 +55,7 @@ class SetMetadataToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -80,10 +80,10 @@ class SetMetadataToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming: Optional[Dict[str, Any]],
+        incoming: Optional[dict[str, Any]],
         overwrite: bool = True,
         history: Optional[History] = None,
-        job_params: Optional[Dict[str, Any]] = None,
+        job_params: Optional[dict[str, Any]] = None,
     ):
         trans.check_user_activation()
         session = trans.get_galaxy_session()
@@ -109,10 +109,10 @@ class SetMetadataToolAction(ToolAction):
         session_id: Optional[int],
         history_id: Optional[int],
         user: Optional[User] = None,
-        incoming: Optional[Dict[str, Any]] = None,
+        incoming: Optional[dict[str, Any]] = None,
         overwrite: bool = True,
         history: Optional[History] = None,
-        job_params: Optional[Dict[str, Any]] = None,
+        job_params: Optional[dict[str, Any]] = None,
     ):
         """
         Execute using application.
@@ -145,8 +145,6 @@ class SetMetadataToolAction(ToolAction):
         job.tool_id = tool.id
         if user:
             job.user_id = user.id
-        if job_params:
-            job.params = dumps(job_params)
         start_job_state = job.state  # should be job.states.NEW
         try:
             # For backward compatibility, some tools may not have versions yet.

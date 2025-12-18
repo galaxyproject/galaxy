@@ -16,7 +16,7 @@ export function useFileDrop(
     onDrop: Ref<FileDropHandler> | FileDropHandler,
     onDropCancel: Ref<FileDropHandler> | FileDropHandler,
     solo: MaybeRefOrGetter<boolean>,
-    idleTime = 800
+    idleTime = 800,
 ) {
     /** returns true if any other more specific file drop target is on the screen and should
      *  supersede the global file drop or if an existing modal is present and should likewise
@@ -122,7 +122,7 @@ export function useFileDrop(
         () => {
             isFileOverDropZone.value = true;
         },
-        true
+        true,
     );
 
     useEventListener(
@@ -131,7 +131,7 @@ export function useFileDrop(
         () => {
             isFileOverDropZone.value = false;
         },
-        true
+        true,
     );
 
     return { isFileOverDocument, isFileOverDropZone };

@@ -3,6 +3,7 @@ from .framework import (
     managed_history,
     retry_assertion_during_transitions,
     RunsWorkflows,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -12,6 +13,7 @@ from .framework import (
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_rerun(self):

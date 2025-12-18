@@ -1,8 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 import tool_shed.util.shed_util_common as suc
@@ -84,7 +82,7 @@ class CategoriesController(BaseShedAPIController):
         return category_dict
 
     @expose_api_anonymous_and_sessionless
-    def index(self, trans, deleted=False, **kwd) -> List[Dict[str, Any]]:
+    def index(self, trans, deleted=False, **kwd) -> list[dict[str, Any]]:
         """
         GET /api/categories
         Return a list of dictionaries that contain information about each Category.

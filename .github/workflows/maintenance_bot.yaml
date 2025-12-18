@@ -12,11 +12,11 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     env:
-      MILESTONE_NUMBER: 31
+      MILESTONE_NUMBER: 32
     steps:
       - name: Get latest pull request labels
         id: get_pr_labels
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const response = await github.rest.issues.listLabelsOnIssue({
@@ -28,7 +28,7 @@ jobs:
             return response.data;
       - name: Add area labels
         if: ${{ ! contains(join(fromJSON(steps.get_pr_labels.outputs.result).*.name, ', '), 'area/') }}
-        uses: actions/labeler@v5
+        uses: actions/labeler@v6
       - name: Assign milestone
         if: |
           ! github.event.pull_request.milestone &&
@@ -36,7 +36,7 @@ jobs:
           ! contains(github.event.pull_request.labels.*.name, 'status/WIP') &&
           ! contains(github.event.pull_request.title, 'WIP') &&
           ! github.event.pull_request.draft
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.update({

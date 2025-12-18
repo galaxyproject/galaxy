@@ -1,31 +1,28 @@
 """
-Copy of https://github.com/tiangolo/fastapi/blob/master/fastapi/openapi/utils.py with changes from https://github.com/tiangolo/fastapi/pull/10903
+Copy of fastapi/openapi/utils.py from https://github.com/fastapi/fastapi/pull/13918
 """
 
+from collections.abc import Sequence
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Set,
     Union,
 )
 
 from fastapi import routing
 from fastapi._compat import (
-    GenerateJsonSchema,
     get_compat_model_name_map,
-    get_definitions,
 )
 from fastapi.encoders import jsonable_encoder
-from fastapi.openapi.constants import REF_TEMPLATE
 from fastapi.openapi.models import OpenAPI
 from fastapi.openapi.utils import (
     get_fields_from_routes,
     get_openapi_path,
 )
+from pydantic.json_schema import GenerateJsonSchema
 from starlette.routing import BaseRoute
+
+from ._compat import get_definitions
 
 
 def get_openapi(
@@ -37,15 +34,16 @@ def get_openapi(
     description: Optional[str] = None,
     routes: Sequence[BaseRoute],
     webhooks: Optional[Sequence[BaseRoute]] = None,
-    tags: Optional[List[Dict[str, Any]]] = None,
-    servers: Optional[List[Dict[str, Union[str, Any]]]] = None,
+    tags: Optional[list[dict[str, Any]]] = None,
+    servers: Optional[list[dict[str, Union[str, Any]]]] = None,
     terms_of_service: Optional[str] = None,
-    contact: Optional[Dict[str, Union[str, Any]]] = None,
-    license_info: Optional[Dict[str, Union[str, Any]]] = None,
+    contact: Optional[dict[str, Union[str, Any]]] = None,
+    license_info: Optional[dict[str, Union[str, Any]]] = None,
     separate_input_output_schemas: bool = True,
+    external_docs: Optional[dict[str, Any]] = None,
     schema_generator: Optional[GenerateJsonSchema] = None,
-) -> Dict[str, Any]:
-    info: Dict[str, Any] = {"title": title, "version": version}
+) -> dict[str, Any]:
+    info: dict[str, Any] = {"title": title, "version": version}
     if summary:
         info["summary"] = summary
     if description:
@@ -56,28 +54,26 @@ def get_openapi(
         info["contact"] = contact
     if license_info:
         info["license"] = license_info
-    output: Dict[str, Any] = {"openapi": openapi_version, "info": info}
+    output: dict[str, Any] = {"openapi": openapi_version, "info": info}
     if servers:
         output["servers"] = servers
-    components: Dict[str, Dict[str, Any]] = {}
-    paths: Dict[str, Dict[str, Any]] = {}
-    webhook_paths: Dict[str, Dict[str, Any]] = {}
-    operation_ids: Set[str] = set()
+    components: dict[str, dict[str, Any]] = {}
+    paths: dict[str, dict[str, Any]] = {}
+    webhook_paths: dict[str, dict[str, Any]] = {}
+    operation_ids: set[str] = set()
     all_fields = get_fields_from_routes(list(routes or []) + list(webhooks or []))
     model_name_map = get_compat_model_name_map(all_fields)
-    schema_generator = schema_generator or GenerateJsonSchema(ref_template=REF_TEMPLATE)
     field_mapping, definitions = get_definitions(
         fields=all_fields,
-        schema_generator=schema_generator,
         model_name_map=model_name_map,
         separate_input_output_schemas=separate_input_output_schemas,
+        schema_generator=schema_generator,
     )
     for route in routes or []:
         if isinstance(route, routing.APIRoute):
             result = get_openapi_path(
                 route=route,
                 operation_ids=operation_ids,
-                schema_generator=schema_generator,
                 model_name_map=model_name_map,
                 field_mapping=field_mapping,
                 separate_input_output_schemas=separate_input_output_schemas,
@@ -95,7 +91,6 @@ def get_openapi(
             result = get_openapi_path(
                 route=webhook,
                 operation_ids=operation_ids,
-                schema_generator=schema_generator,
                 model_name_map=model_name_map,
                 field_mapping=field_mapping,
                 separate_input_output_schemas=separate_input_output_schemas,
@@ -117,4 +112,6 @@ def get_openapi(
         output["webhooks"] = webhook_paths
     if tags:
         output["tags"] = tags
+    if external_docs:
+        output["externalDocs"] = external_docs
     return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)

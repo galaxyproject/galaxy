@@ -245,7 +245,9 @@ class StagingInterface(metaclass=abc.ABCMeta):
             else:
                 raise ValueError(f"Unsupported type for upload_target: {type(upload_target)}")
 
-        def create_collection_func(element_identifiers: List[Dict[str, Any]], collection_type: str) -> Dict[str, Any]:
+        def create_collection_func(
+            element_identifiers: List[Dict[str, Any]], collection_type: str, rows: Optional[Dict[str, Any]] = None
+        ) -> Dict[str, Any]:
             payload = {
                 "name": "dataset collection",
                 "instance_type": "history",
@@ -253,6 +255,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 "element_identifiers": element_identifiers,
                 "collection_type": collection_type,
                 "fields": None if collection_type != "record" else "auto",
+                "rows": rows,
             }
             return self._post("dataset_collections", payload)
 

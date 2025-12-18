@@ -57,7 +57,7 @@ export function useUpdateIdentifiersForRemoveExtensions(props: HasInitialItemsPr
 
     function updateIdentifierIfUnchanged(
         element: HistoryItemSummary | HasNameAndIdentifier,
-        updatedRemoveExtensions: boolean
+        updatedRemoveExtensions: boolean,
     ) {
         const byId = initialElementsById.value;
         const originalName = byId[element.id]?.name;

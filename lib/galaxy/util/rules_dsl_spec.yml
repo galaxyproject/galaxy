@@ -506,6 +506,28 @@
   final:
     data: [["moo", "barn"], ["meow", "house"], ["bark", "firestation"]]
 
+- doc: add column from a sample sheet by index
+  rules:
+    - type: add_column_from_sample_sheet_index
+      value: 0
+  initial:
+    data: [["moo"], ["cow"]]
+    sources: [{"columns": [0, 1]}, {"columns": [2, 3]}]
+  final:
+    data: [["moo", 0], ["cow", 2]]
+
+- doc: add multiple columns from a sample sheet by index
+  rules:
+    - type: add_column_from_sample_sheet_index
+      value: 0
+    - type: add_column_from_sample_sheet_index
+      value: 1
+  initial:
+    data: [["moo"], ["cow"]]
+    sources: [{"columns": [0, 1]}, {"columns": [2, 3]}]
+  final:
+    data: [["moo", 0, 1], ["cow", 2, 3]]
+
 - rules:
     - type: invalid_rule_type
   error: true

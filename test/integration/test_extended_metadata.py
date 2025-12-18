@@ -44,6 +44,8 @@ TEST_TOOL_IDS = [
     "implicit_conversion",
     "environment_variables",
     "all_output_types",
+    "discover_sort_by",
+    "create_directory_index",
 ]
 
 

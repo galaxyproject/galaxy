@@ -3,7 +3,6 @@ Manager and Serializer for Roles.
 """
 
 import logging
-from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.exc import (
@@ -67,7 +66,7 @@ class RoleManager(base.ModelManager[model.Role]):
 
         return role
 
-    def list_displayable_roles(self, trans: ProvidesUserContext) -> List[Role]:
+    def list_displayable_roles(self, trans: ProvidesUserContext) -> list[Role]:
         return get_displayable_roles(trans.sa_session, trans.user, trans.user_is_admin, trans.app.security_agent)
 
     def create_role(self, trans: ProvidesUserContext, role_definition_model: RoleDefinitionModel) -> model.Role:

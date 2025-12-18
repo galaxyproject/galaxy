@@ -1,14 +1,11 @@
 import os
 import re
-import sys
 from typing import (
     Any,
     List,
     Optional,
     Tuple,
 )
-
-import pytest
 
 from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.parameters import (
@@ -81,10 +78,6 @@ TEST_TOOL_THAT_DO_NOT_VALIDATE = (
 )
 
 MOCK_ID = "thisisafakeid"
-
-
-if sys.version_info < (3, 8):  # noqa: UP036
-    pytest.skip(reason="Pydantic tool parameter models require python3.8 or higher", allow_module_level=True)
 
 
 def test_parameter_test_cases_validate():
@@ -295,13 +288,15 @@ def test_convert_to_requests():
 
 def _validate_path(tool_path: str):
     tool_source = get_tool_source(tool_path)
+    tool_id = tool_source.parse_id()
+    model_name = f"{tool_id} (test case model)"
     parsed_tool = parse_tool(tool_source)
     profile = tool_source.parse_profile()
     test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     for test_case in test_cases:
         if test_case.get("expect_failure"):
             continue
-        test_case_state_and_warnings = case_state(test_case, parsed_tool.inputs, profile)
+        test_case_state_and_warnings = case_state(test_case, parsed_tool.inputs, profile, name=model_name)
         tool_state = test_case_state_and_warnings.tool_state
         assert tool_state.state_representation == "test_case_xml"
 

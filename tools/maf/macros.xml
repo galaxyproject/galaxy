@@ -4,4 +4,9 @@
       <citation type="doi">10.1093/bioinformatics/btr398</citation>
     </citations>
   </xml>
+  <xml name="requirements">
+    <requirements>
+      <requirement type="package" version="0.14.0">bx-python</requirement>
+    </requirements>
+  </xml>
 </macros>

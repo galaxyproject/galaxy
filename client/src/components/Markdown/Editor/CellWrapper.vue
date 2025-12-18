@@ -122,7 +122,7 @@ function handleConfigure(newValue: string) {
 </script>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .cell-wrapper-hover {
     background-color: $gray-100;

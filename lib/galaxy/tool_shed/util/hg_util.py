@@ -3,7 +3,6 @@ import os
 import subprocess
 from typing import (
     Optional,
-    Tuple,
 )
 
 from galaxy.tool_shed.util import basic_util
@@ -14,7 +13,7 @@ log = logging.getLogger(__name__)
 INITIAL_CHANGELOG_HASH = "000000000000"
 
 
-def clone_repository(repository_clone_url: str, repository_file_dir: str, ctx_rev=None) -> Tuple[bool, Optional[str]]:
+def clone_repository(repository_clone_url: str, repository_file_dir: str, ctx_rev=None) -> tuple[bool, Optional[str]]:
     """
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.

@@ -10,7 +10,7 @@
     </span>
 </template>
 <script>
-import StatusDisplay from "./StatusDisplay";
+import StatusDisplay from "./StatusDisplay.vue";
 
 export default {
     components: { StatusDisplay },

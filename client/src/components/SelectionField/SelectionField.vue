@@ -17,7 +17,14 @@
         @dragover.prevent
         @drop.prevent="onDrop">
         <label class="form-label font-weight-bold mb-2" for="multiselect">{{ title }}:</label>
-        <Multiselect id="multiselect" v-model="currentValue" label="name" :options="options" @search-change="search" />
+        <Multiselect
+            id="multiselect"
+            v-model="currentValue"
+            deselect-label=""
+            label="name"
+            :options="options"
+            select-label=""
+            @search-change="search" />
     </div>
 </template>
 
@@ -64,7 +71,7 @@ const props = withDefaults(
         objectName: "",
         objectQuery: undefined,
         objectTitle: undefined,
-    }
+    },
 );
 
 const emit = defineEmits<{
@@ -103,7 +110,7 @@ const droppable = computed(() => ["history_dataset_id", "history_dataset_collect
 
 const title = computed(
     () =>
-        props.objectTitle || `Select a ${props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`
+        props.objectTitle || `Select a ${props.objectType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`,
 );
 
 // Unified search behavior
@@ -188,7 +195,7 @@ function isValidContent(historyContentType: string) {
 watch(
     () => [props.objectType, currentHistoryId.value, lastUpdateTime.value],
     () => search(),
-    { immediate: true }
+    { immediate: true },
 );
 
 defineExpose({ currentValue });

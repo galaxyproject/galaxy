@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -18,8 +17,6 @@ import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
-
-library.add(faTrashAlt, faPalette);
 
 const props = defineProps<{
     comment: MarkdownWorkflowComment;
@@ -44,7 +41,7 @@ useResizable(
     computed(() => props.comment.size),
     ([width, height]) => {
         emit("resize", [width, height]);
-    }
+    },
 );
 
 const textAreaId = useUid("textarea-");
@@ -97,7 +94,7 @@ watch(
         if (!focused.value) {
             showColorSelector.value = false;
         }
-    }
+    },
 );
 
 function onSetColor(color: WorkflowCommentColor) {
@@ -175,10 +172,10 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
-                <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
             </BButton>
             <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
-                <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
             </BButton>
         </BButtonGroup>
 
@@ -191,7 +188,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "buttonGroup.scss";
 
 $gap-x: 0.8rem;
@@ -366,7 +363,9 @@ $min-height: 1.5em;
     }
 
     &.multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

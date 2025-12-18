@@ -17,15 +17,8 @@ from galaxy_test.driver.integration_setup import (
 
 class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(
-            config,
-            cls,
-            required_role_expression=REQUIRED_ROLE_EXPRESSION,
-            required_group_expression=REQUIRED_GROUP_EXPRESSION,
-        )
+    required_role_expression = REQUIRED_ROLE_EXPRESSION
+    required_group_expression = REQUIRED_GROUP_EXPRESSION
 
     def setUp(self):
         super().setUp()
@@ -113,14 +106,7 @@ class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.Inte
 class TestPreferLinksPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        PosixFileSourceSetup.handle_galaxy_config_kwds(
-            config,
-            cls,
-            prefer_links=True,
-        )
+    prefer_links = True
 
     def setUp(self):
         super().setUp()

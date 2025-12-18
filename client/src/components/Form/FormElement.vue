@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowsAltH, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
+import type { IconLike } from "@/components/icons/galaxyIcons";
 import { linkify } from "@/utils/utils";
 
-import { isDataUri } from "./Elements/FormData/types";
+import { type ExtendedCollectionType, isDataUri } from "./Elements/FormData/types";
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
 import FormBoolean from "./Elements/FormBoolean.vue";
@@ -53,12 +53,12 @@ interface FormElementProps {
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
-    collapsedEnableIcon?: string;
-    collapsedDisableIcon?: string;
+    collapsedEnableIcon?: IconLike;
+    collapsedDisableIcon?: IconLike;
     connectedEnableText?: string;
     connectedDisableText?: string;
-    connectedEnableIcon?: string;
-    connectedDisableIcon?: string;
+    connectedEnableIcon?: IconLike;
+    connectedDisableIcon?: IconLike;
     workflowBuildingMode?: boolean;
     /** If true, this element is part of a workflow run form. */
     workflowRun?: boolean;
@@ -70,12 +70,12 @@ const props = withDefaults(defineProps<FormElementProps>(), {
     disabled: false,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
-    collapsedEnableIcon: "far fa-caret-square-down",
-    collapsedDisableIcon: "far fa-caret-square-up",
+    collapsedEnableIcon: () => faCaretSquareDown,
+    collapsedDisableIcon: () => faCaretSquareUp,
     connectedEnableText: "Remove connection from module.",
     connectedDisableText: "Add connection to module.",
-    connectedEnableIcon: "fa fa-times",
-    connectedDisableIcon: "fa fa-arrows-alt-h",
+    connectedEnableIcon: () => faTimes,
+    connectedDisableIcon: () => faArrowsAltH,
     helpFormat: "html",
     workflowBuildingMode: false,
     workflowRun: false,
@@ -85,8 +85,6 @@ const emit = defineEmits<{
     (e: "input", value: FormParameterValue, id: string): void;
     (e: "change", shouldRefresh: boolean): void;
 }>();
-
-library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSquareUp);
 
 /** TODO: remove attrs computed.
  useAttrs is *not* reactive, and does not play nice with type safety.
@@ -115,7 +113,9 @@ const computedPlaceholder = computed(() => {
  */
 const unPopulatedError = computed(
     () =>
-        props.workflowRun && alerts.value?.length === 1 && alerts.value[0] === "Please provide a value for this option."
+        props.workflowRun &&
+        alerts.value?.length === 1 &&
+        alerts.value[0] === "Please provide a value for this option.",
 );
 
 const connected = ref(false);
@@ -167,7 +167,7 @@ const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
 const formDataField = computed(() =>
-    props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null
+    props.type && ["data", "data_collection"].includes(props.type) ? (props.type as "data" | "data_collection") : null,
 );
 const isUriDataField = computed(() => formDataField.value && isDataUri(props.value));
 
@@ -182,8 +182,8 @@ const helpText = computed(() => {
 });
 const nonMdHelp = computed(() =>
     Boolean(helpText.value) && props.helpFormat != "markdown" && (!props.workflowRun || helpText.value !== props.title)
-        ? sanitize(helpText.value!)
-        : ""
+        ? purify.sanitize(helpText.value!)
+        : "",
 );
 const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
 
@@ -215,7 +215,7 @@ const userDefinedTitle = computed(() => {
 const isHiddenType = computed(
     () =>
         ["hidden", "hidden_data", "baseurl"].includes(props.type ?? "") ||
-        (props.attributes && props.attributes.titleonly)
+        (props.attributes && props.attributes.titleonly),
 );
 
 /** Determines if the element renders content below the title. */
@@ -224,7 +224,7 @@ const rendersContent = computed(
         (props.workflowRun && hasAlert.value && !unPopulatedError.value) ||
         showField.value ||
         showPreview.value ||
-        helpText.value
+        helpText.value,
 );
 
 const collapseText = computed(() => (collapsed.value ? props.collapsedEnableText : props.collapsedDisableText));
@@ -249,7 +249,7 @@ const formAlert = ref<string>();
 const alerts = computed(() => {
     return [formAlert.value, props.error, props.warning]
         .filter((v) => v !== undefined && v !== null)
-        .map((v) => linkify(sanitize(v!, { USE_PROFILES: { html: true } })));
+        .map((v) => linkify(purify.sanitize(v!, { USE_PROFILES: { html: true } })));
 });
 
 /** Adds a temporary 2 sec focus to the element. */
@@ -267,6 +267,14 @@ function addTempFocus() {
 function onAlert(value: string | undefined) {
     formAlert.value = value;
 }
+
+const extendedCollectionType = computed<ExtendedCollectionType>(() => {
+    const attrsValue = attrs.value;
+    return {
+        columnDefinitions: attrsValue.column_definitions ?? undefined,
+        fields: attrsValue.fields ?? undefined,
+    };
+});
 </script>
 
 <template>
@@ -389,7 +397,7 @@ function onAlert(value: string | undefined) {
                         ['text', 'password'].includes(props.type ?? '') ||
                         (attrs.is_workflow &&
                             ['data_column', 'drill_down', 'genomebuild', 'group_tag', 'select'].includes(
-                                props.type ?? ''
+                                props.type ?? '',
                             ))
                     "
                     :id="props.id"
@@ -435,6 +443,7 @@ function onAlert(value: string | undefined) {
                     :user-defined-title="userDefinedTitle"
                     :type="formDataField"
                     :collection-types="attrs.collection_types"
+                    :extended-collection-type="extendedCollectionType"
                     :workflow-run="props.workflowRun"
                     @alert="onAlert"
                     @focus="addTempFocus" />
@@ -467,7 +476,7 @@ function onAlert(value: string | undefined) {
 
 <style lang="scss" scoped>
 @import "./_form-elements.scss";
-@import "base.scss";
+@import "@/style/scss/base.scss";
 
 // Workflow Run Form
 .workflow-run-element {

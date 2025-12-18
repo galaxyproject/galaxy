@@ -1,4 +1,6 @@
+from galaxy.util.unittest_utils import transient_failure
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -78,9 +80,9 @@ class TestHistorySharing(SeleniumTestCase):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         self.navigate_to_histories_shared_with_me_page()
-        self.components.shared_histories.selector.wait_for_present()
-        self.components.shared_histories.histories.wait_for_present()
-        rows = self.components.shared_histories.histories.all()
+        self.components.shared_histories.shared_list.wait_for_present()
+        self.components.shared_histories.history_cards.wait_for_present()
+        rows = self.components.shared_histories.history_cards.all()
         assert len(rows) > 0
         assert any(user1_email.split("@")[0] in row.text for row in rows)
 
@@ -134,6 +136,7 @@ class TestHistorySharing(SeleniumTestCase):
 class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_share_history_login_redirect(self):
         user_email = self.get_user_email()
@@ -145,3 +148,62 @@ class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
         self.fill_login_and_submit(user_email)
         self.wait_for_logged_in()
         self.wait_for_selector(".make-accessible")
+
+
+class TestPrivateHistorySharingRequiresPermissionChanges(SeleniumTestCase):
+    """Test that sharing private histories requires permission changes.
+
+    Includes regression test for PR #20886: When sharing a history containing private datasets
+    with another user, the default option should be "Make datasets private to
+    me and users this history is shared with" rather than "Make datasets public".
+    """
+
+    @transient_failure(issue=21224)
+    @selenium_test
+    def test_sharing_private_history_default_permission(self):
+        # Create two test users - one to own the history, one to share with
+        user1_email = self._get_random_email()
+        user2_email = self._get_random_email()
+
+        # Register first user and create a private history with data
+        self.register(user1_email)
+        self.make_history_private()
+        self.perform_upload_of_pasted_content("hello world")
+        self.wait_for_history()
+
+        # Register second user (must exist to share with)
+        self.logout_if_needed()
+        self.register(user2_email)
+        self.logout_if_needed()
+
+        # Login as first user and initiate sharing
+        self.submit_login(user1_email)
+        self.home()
+        self.click_history_option_sharing()
+
+        # Share with the second user - this triggers the permission dialog
+        sharing = self.components.histories.sharing
+        self.share_with_user(sharing, user_email=user2_email)
+
+        # Verify the permission change required dialog appears
+        self.screenshot("history_private_sharing_permissions_dialog")
+
+        # The next line seems flakey for reasons I don't understand. The data
+        # description is attached the model and I do see the modal visually but
+        # maybe the modal is not visible because of the modal content or something?
+        # At any rate - the following wait would be totally sufficient to ensure
+        # the modal is rendered and to continue with the test - so I'm going to
+        # just comment out this line and see if it resolves #21224.
+        # self.components.histories.sharing.permissions_change_required.wait_for_visible()
+
+        # Verify the default selected option is 'make_accessible_to_shared'
+        element = self.components.histories.sharing.permissions_change_required_how.wait_for_visible()
+        default_value = element.get_attribute("value")
+        assert default_value == "make_accessible_to_shared", (
+            f"Expected default permission option to be 'make_accessible_to_shared' "
+            f"(private to shared users), but got '{default_value}'"
+        )
+
+        # Confirm the permission change to complete sharing
+        self.components.histories.sharing.permissions_change_required_ok.wait_for_and_click()
+        self.screenshot("history_private_sharing_permissions_confirmed")

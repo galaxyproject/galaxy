@@ -6,10 +6,8 @@ from urllib.parse import (
 )
 
 import paste.httpexceptions
-from markupsafe import escape
 
 from galaxy import (
-    datatypes,
     util,
     web,
 )
@@ -31,9 +29,7 @@ from galaxy.managers.hdas import (
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import (
     Dataset,
-    History,
     HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
 )
 from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.model.item_attrs import (
@@ -41,16 +37,12 @@ from galaxy.model.item_attrs import (
     UsesItemRatings,
 )
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    inflector,
-    sanitize_text,
-)
+from galaxy.util import sanitize_text
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
 from galaxy.webapps.base.controller import (
     BaseUIController,
-    url_for,
     UsesExtendedMetadataMixin,
 )
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
@@ -94,7 +86,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
         # Backward compatibility with legacy links, should use `/api/datasets/{hda_id}/get_metadata_file` instead
         fh, headers = self.service.get_metadata_file(
-            trans, history_content_id=hda_id, metadata_file=metadata_name, open_file=True
+            trans, history_content_id=self.decode_id(hda_id), metadata_file=metadata_name, open_file=True
         )
         trans.response.headers.update(headers)
         return fh
@@ -371,6 +363,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
                     )
                 else:
+                    # we can't detect datatype if the dataset is not on disk
+                    self.hda_manager.ensure_dataset_on_disk(trans, data)
                     path = data.dataset.get_file_name()
                     datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
@@ -437,39 +431,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             permissions = {manage_permissions_action: [trans.app.security_agent.get_private_user_role(data.user)]}
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
-
-    def _display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
-        """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
-        dataset = self._check_dataset(trans, slug)
-        # Filename used for composite types.
-        if filename:
-            return self.display(trans, dataset_id=slug, filename=filename)
-
-        truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
-        dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.user, dataset)
-
-        # If dataset is chunkable, get first chunk.
-        first_chunk = None
-        if dataset.datatype.CHUNKABLE:
-            first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
-
-        # If data is binary or an image, stream without template; otherwise, use display template.
-        # TODO: figure out a way to display images in display template.
-        if (
-            isinstance(dataset.datatype, datatypes.binary.Binary)
-            or isinstance(dataset.datatype, datatypes.images.Image)
-            or isinstance(dataset.datatype, datatypes.text.Html)
-        ):
-            trans.response.set_content_type(dataset.get_mime())
-            return open(dataset.get_file_name(), "rb")
-        else:
-            return trans.fill_template_mako(
-                "/dataset/display.mako",
-                item=dataset,
-                item_data=dataset_data,
-                truncated=truncated,
-                first_chunk=first_chunk,
-            )
 
     @web.expose
     def display_at(self, trans, dataset_id, filename=None, **kwd):
@@ -544,8 +505,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Decode application name and link name
         if self._can_access_dataset(trans, data, additional_roles=user_roles):
             msg = []
-            preparable_steps = []
-            refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get(app_name)
             if not display_app:
                 log.debug("Unknown display application has been requested: %s", app_name)
@@ -580,7 +539,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         "info",
                     )
                 )
-                refresh = True
             else:
                 # We have permissions, dataset is not deleted and is in OK state, allow access
                 if display_link.display_ready():
@@ -629,171 +587,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         msg.append((f"Invalid action provided: {app_action}", "error"))
                 else:
                     if app_action is None:
-                        refresh = True
-                        trans.response.status = 202
                         msg.append(
                             (
-                                "Launching this display application requires additional datasets to be generated, you can view the status of these jobs below. ",
+                                "Launching this display application requires additional datasets to be generated.",
                                 "info",
                             )
                         )
-                        if not display_link.preparing_display():
-                            display_link.prepare_display()
-                        preparable_steps = display_link.get_prepare_steps()
                     else:
-                        # Ideally we should respond with 202 in both cases.
-                        # Since we don't exactly know if any consumer relies on this we'll just keep continuing to
-                        # respond with a 500 status code.
-                        trans.response.status = 500
-                        return trans.show_error_message(
-                            f"Attempted a view action ({app_action}) on a non-ready display application"
-                        )
-            return trans.fill_template_mako(
-                "dataset/display_application/display.mako",
-                msg=msg,
-                display_app=display_app,
-                display_link=display_link,
-                refresh=refresh,
-                preparable_steps=preparable_steps,
-            )
+                        raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
+            return dict(msg=msg)
         return trans.show_error_message(
             "You do not have permission to view this dataset at an external display application."
-        )
-
-    @web.expose
-    def copy_datasets(
-        self,
-        trans,
-        source_history=None,
-        source_content_ids="",
-        target_history_id=None,
-        target_history_ids="",
-        new_history_name="",
-        do_copy=False,
-        **kwd,
-    ):
-        user = trans.get_user()
-        if source_history is not None:
-            decoded_source_history_id = self.decode_id(source_history)
-            history = self.history_manager.get_owned(
-                decoded_source_history_id, trans.user, current_history=trans.history
-            )
-            current_history = trans.get_history()
-        else:
-            history = current_history = trans.get_history()
-        refresh_frames = []
-        if source_content_ids:
-            if not isinstance(source_content_ids, list):
-                source_content_ids = source_content_ids.split(",")
-            encoded_dataset_collection_ids = [
-                s[len("dataset_collection|") :] for s in source_content_ids if s.startswith("dataset_collection|")
-            ]
-            encoded_dataset_ids = [s[len("dataset|") :] for s in source_content_ids if s.startswith("dataset|")]
-            decoded_dataset_collection_ids = set(map(self.decode_id, encoded_dataset_collection_ids))
-            decoded_dataset_ids = set(map(self.decode_id, encoded_dataset_ids))
-        else:
-            decoded_dataset_collection_ids = []
-            decoded_dataset_ids = []
-        if new_history_name:
-            target_history_ids = []
-        else:
-            if target_history_id:
-                target_history_ids = [self.decode_id(target_history_id)]
-            elif target_history_ids:
-                if not isinstance(target_history_ids, list):
-                    target_history_ids = target_history_ids.split(",")
-                target_history_ids = list({self.decode_id(h) for h in target_history_ids if h})
-            else:
-                target_history_ids = []
-        done_msg = error_msg = ""
-        new_history = None
-        if do_copy:
-            invalid_contents = 0
-            if not (decoded_dataset_ids or decoded_dataset_collection_ids) or not (
-                target_history_ids or new_history_name
-            ):
-                error_msg = "You must provide both source datasets and target histories. "
-            else:
-                if new_history_name:
-                    new_history = History()
-                    new_history.name = new_history_name
-                    new_history.user = user
-                    trans.sa_session.add(new_history)
-                    trans.sa_session.commit()
-                    target_history_ids.append(new_history.id)
-                if user:
-                    target_histories = [
-                        hist
-                        for hist in map(trans.sa_session.query(History).get, target_history_ids)
-                        if hist is not None and hist.user == user
-                    ]
-                else:
-                    target_histories = [history]
-                if len(target_histories) != len(target_history_ids):
-                    error_msg += f"You do not have permission to add datasets to {len(target_history_ids) - len(target_histories)} requested histories.  "
-                source_contents = list(map(trans.sa_session.query(HistoryDatasetAssociation).get, decoded_dataset_ids))
-                source_contents.extend(
-                    map(
-                        trans.sa_session.query(HistoryDatasetCollectionAssociation).get,
-                        decoded_dataset_collection_ids,
-                    )
-                )
-                source_contents.sort(key=lambda content: content.hid)
-                for content in source_contents:
-                    if content is None:
-                        error_msg += "You tried to copy a dataset that does not exist. "
-                        invalid_contents += 1
-                    elif content.history != history:
-                        error_msg += "You tried to copy a dataset which is not in your current history. "
-                        invalid_contents += 1
-                    else:
-                        for hist in target_histories:
-                            if content.history_content_type == "dataset":
-                                copy = content.copy(flush=False)
-                                hist.stage_addition(copy)
-                            else:
-                                copy = content.copy(element_destination=hist)
-                            if user:
-                                copy.copy_tags_from(user, content)
-                        for hist in target_histories:
-                            hist.add_pending_items()
-                trans.sa_session.commit()
-                if current_history in target_histories:
-                    refresh_frames = ["history"]
-                hist_names_str = ", ".join(
-                    '<a href="{}" target="_top">{}</a>'.format(
-                        url_for(
-                            controller="history", action="switch_to_history", hist_id=trans.security.encode_id(hist.id)
-                        ),
-                        escape(hist.name),
-                    )
-                    for hist in target_histories
-                )
-                num_source = len(source_content_ids) - invalid_contents
-                num_target = len(target_histories)
-                done_msg = "{} {} copied to {} {}: {}.".format(
-                    num_source,
-                    inflector.cond_plural(num_source, "dataset"),
-                    num_target,
-                    inflector.cond_plural(num_target, "history"),
-                    hist_names_str,
-                )
-                trans.sa_session.refresh(history)
-        source_contents = history.active_contents
-        target_histories = [history]
-        if user:
-            target_histories = user.active_histories
-        return trans.fill_template(
-            "/dataset/copy_view.mako",
-            source_history=history,
-            current_history=current_history,
-            source_content_ids=source_content_ids,
-            target_history_id=target_history_id,
-            target_history_ids=target_history_ids,
-            source_contents=source_contents,
-            target_histories=target_histories,
-            new_history_name=new_history_name,
-            done_msg=done_msg,
-            error_msg=error_msg,
-            refresh_frames=refresh_frames,
         )

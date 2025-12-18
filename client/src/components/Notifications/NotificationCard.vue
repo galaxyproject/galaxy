@@ -14,6 +14,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
 
 import type { UserNotification } from "@/api/notifications";
+import type { CardAction } from "@/components/Common/GCard.types";
 import { useMarkdown } from "@/composables/markdown";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
@@ -67,7 +68,7 @@ const notificationVariant = computed(() => {
 });
 
 const primaryActions = computed(() => {
-    const tmp = [
+    const tmp: CardAction[] = [
         {
             id: "expiration-time-button",
             label: "",
@@ -76,7 +77,7 @@ const primaryActions = computed(() => {
                       parseISO(props.notification.expiration_time),
                       {
                           addSuffix: true,
-                      }
+                      },
                   )}`
                 : "This notification will never be automatically deleted",
             icon: faHourglassHalf,
@@ -137,9 +138,8 @@ function markNotificationAsSeen() {
         @select="emit('select', [props.notification])">
         <template v-slot:description>
             <template v-if="props.notification.category === 'new_shared_item'">
-                <span>The user</span>
-                <b>{{ props.notification.content.owner_name }}</b>
-                <span>shared </span>
+                <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
+                >{{ " " }}<span>shared </span>
                 <BLink
                     v-b-tooltip.bottom
                     :title="`View ${props.notification.content.item_type} in new tab`"
@@ -150,8 +150,8 @@ function markNotificationAsSeen() {
                     {{ props.notification.content.item_name }}
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
                 </BLink>
-                <em>{{ props.notification.content.item_type }}</em>
-                <span> with you.</span>
+                <em>{{ props.notification.content.item_type }}</em
+                >{{ " " }}<span> with you.</span>
             </template>
             <template v-else>
                 <span class="notification-message" v-html="renderMarkdown(props.notification.content.message)" />

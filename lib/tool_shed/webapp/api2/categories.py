@@ -1,5 +1,4 @@
 from typing import (
-    List,
     Optional,
 )
 
@@ -48,7 +47,7 @@ class FastAPICategories:
         description="index category",
         operation_id="categories__index",
     )
-    def index(self, trans: SessionRequestContext = DependsOnTrans) -> List[CategoryResponse]:
+    def index(self, trans: SessionRequestContext = DependsOnTrans) -> list[CategoryResponse]:
         """
         Return a list of dictionaries that contain information about each Category.
         """

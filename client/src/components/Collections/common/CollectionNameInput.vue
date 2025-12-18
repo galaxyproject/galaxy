@@ -22,12 +22,16 @@ watch(
     () => props.value,
     (newValue) => {
         name.value = newValue;
-    }
+    },
 );
 
 watch(name, (newValue) => {
     emit("input", newValue);
 });
+
+function updateName(v: string) {
+    name.value = v;
+}
 </script>
 
 <template>
@@ -43,6 +47,6 @@ watch(name, (newValue) => {
             size="sm"
             required
             :state="!name ? false : null"
-            @update="(v) => (name = v)" />
+            @update="updateName" />
     </BFormGroup>
 </template>

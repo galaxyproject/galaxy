@@ -106,7 +106,7 @@ const fields: FieldArray = [
                         return {
                             status: "danger",
                             message: `Failed to recalculate disk usage of '${data.username}': ${errorMessageAsString(
-                                error
+                                error,
                             )}.`,
                         };
                     }
@@ -157,7 +157,7 @@ const fields: FieldArray = [
                         return {
                             status: "danger",
                             message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(
-                                error
+                                error,
                             )}.`,
                         };
                     }
@@ -181,7 +181,7 @@ const fields: FieldArray = [
                         return {
                             status: "danger",
                             message: `Failed to generate new API Key for '${data.username}': ${errorMessageAsString(
-                                error
+                                error,
                             )}.`,
                         };
                     }
@@ -250,7 +250,7 @@ const fields: FieldArray = [
                             return {
                                 status: "danger",
                                 message: `Failed to permanently delete '${data.username}': ${errorMessageAsString(
-                                    error
+                                    error,
                                 )}`,
                             };
                         }

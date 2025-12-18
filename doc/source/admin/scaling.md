@@ -79,38 +79,38 @@ Referred to in this documentation as the **Gunicorn + Webless** strategy.
 By default, handler assignment will occur using the **Database Transaction Isolation** or **Database SKIP LOCKED**
 methods (see below).
 
-## Job Handler Assignment Methods
+## Handler Assignment Methods
 
-Job handler assignment methods are configurable with the `assign_with`
-attribute on the `<handlers>` tag in `job_conf.xml`.  The available methods are:
+Job and workflow handler assignment methods are configurable with the `assign_with`
+attribute on the `<handlers>` tag in `job_conf.xml` and `workflow_schedulers_conf.xml` respectively.
+The available methods are:
 
-* **Database Transaction Isolation** (`db-transaction-isolation`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
-  job from the database using SQL transaction isolation, which uses database locks to guarantee that only one handler
-  can select a given job. This occurs by the web worker that receives the tool execution request (via the UI or API)
-  setting a new job's 'handler' column in the database to the configured tag/default (or `_default_` if no tag/default
-  is configured). Handlers "listen" for jobs by selecting jobs from the database that match the handler tag(s) for which
-  they are configured. `db-transaction-isolation` is the default assignment method if no handlers are defined,
-  or handlers are defined but no `assign_with` attribute is set on the `handlers` tag and *Database SKIP LOCKED* is not available.
-
-* **Database SKIP LOCKED** (`db-skip-locked`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
+* **Database SKIP LOCKED** (`db-skip-locked`, recommended) - Items are assigned a handler by handlers selecting the unassigned item from
   the database using `SELECT ... FOR UPDATE SKIP LOCKED` on databases that support this query (see the next section for
   details). This occurs via the same process as *Database Transaction Isolation*, the only difference is the way in
   which handlers query the database. This is the default if no handlers are defined, or handlers are defined but no `assign_with` attribute is set
   on the `handlers` tag and *Database SKIP LOCKED* is available.
 
-* **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
+* **Database Transaction Isolation** (`db-transaction-isolation`) - Items are assigned a handler by handlers selecting the unassigned
+  item from the database using SQL transaction isolation, which uses database locks to guarantee that only one handler
+  can select a given item. This occurs by the web worker that receives the tool or workflow execution request (via the UI or API)
+  setting a new item's 'handler' column in the database to the configured tag/default (or `_default_` if no tag/default
+  is configured). Handlers "listen" for items by selecting items from the database that match the handler tag(s) for which
+  they are configured. `db-transaction-isolation` is the default assignment method if *Database SKIP LOCKED* is not available and no handlers are defined, or handlers are defined but no `assign_with` attribute is set on the `handlers` tag.
+
+* **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new items's 'handler'
   column in the database to the process that created the job at the time it is created. Additionally, if a tool is
   configured to use a specific handler (ID or tag), that handler is assigned (tags by *Database Preassignment*). This is
   the default fallback if no handlers are defined and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
 
-* **In-memory Self Assignment** (`mem-self`) - Jobs are assigned to the web worker that received the tool execution request from the
+* **In-memory Self Assignment** (`mem-self`) - Items are assigned to the web worker that received the tool execution request from the
   user via an internal in-memory queue. If a tool is configured to use a specific handler, that configuration is
   ignored; the process that creates the job *always* handles it. This can be slightly faster than **Database Self
-  Assignment** but only makes sense in single process environments without dedicated job handlers. This option
+  Assignment** but only makes sense in single process environments without dedicated handlers. This option
   supersedes the former `track_jobs_in_database` option in `galaxy.yml` and corresponds to setting that option to
   `false`.
 
-* **Database Preassignment** (`db-preassign`) - Jobs are assigned a handler by selecting one at random from the configured tag or default
+* **Database Preassignment** (`db-preassign`) - Items are assigned a handler by selecting one at random from the configured tag or default
   handlers at the time the job is created. This occurs by the web worker that receives the tool execution request (via
   the UI or API) setting a new job's 'handler' column in the database to the randomly chose handler ID (hence
   "preassignment"). This is the default only if handlers are defined and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
@@ -128,8 +128,8 @@ now (since 19.01) referred to as *Database Preassignment*.  Although still a fal
 does not support *Database SKIP LOCKED* or *Database Transaction Isolation*, preassignment has a few drawbacks:
 
 * Web workers do not have a way to know whether a particular handler is alive when assigning that handler
-* Jobs are not load balanced across handlers
-* Changing the number of handlers requires changing `job_conf.xml` and restarting *all* Galaxy processes
+* Jobs and Workflows are not load balanced across handlers
+* Changing the number of handlers requires changing `job_conf.xml` or `workflow_schedulers_conf.xml` and restarting *all* Galaxy processes
 
 The "database locking" methods (*Database SKIP LOCKED* and *Database Transaction Isolation*) were created to solve
 these issues. The preferred method between the two options is *Database SKIP LOCKED*, but it requires PostgreSQL 9.5
@@ -267,7 +267,7 @@ To bind to ports < 1024 (e.g. if you want to bind to the standard HTTP/HTTPS por
 user and drop privileges to the Galaxy user. However you are strongly encouraged to setup a proxy server
 as described in the [production configuration](production.md) documentation.
 
-### Job Handling
+### Job and Workflow Handling
 
 ```{warning}
 In all strategies, once a handler has been assigned jobs, you cannot unconfigure that handler (e.g. to decrease the
@@ -279,7 +279,7 @@ Alternatively, you can stop the handler and reassign its jobs to another handler
 using an ``UPDATE`` query in the database and is only recommended for advanced Galaxy administrators.
 ```
 
-#### all-in-one job handling
+#### all-in-one handling
 
 Ensure that no `<handlers>` section exists in your `job_conf.xml` (or no `job_conf.xml` exists at all) and start Galaxy
 normally. No additional configuration is required. To increase the number of web workers/job handlers, increase the
@@ -295,7 +295,7 @@ gravity:
     ...
 ```
 
-Jobs will be handled according to rules outlined above in [Job Handler Assignment Methods](#job-handler-assignment-methods).
+Jobs will be handled according to rules outlined above in [Handler Assignment Methods](#handler-assignment-methods).
 
 ```{note}
 If a ``<handlers>`` section is defined in ``job_conf.xml``, Galaxy's web workers will no longer load and start the
@@ -345,7 +345,7 @@ $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler2 --daemonize
 #### Dynamically defined handlers
 
 In order to define handlers dynamically, you must be using one of the new "database locking" handler assignment methods
-as explained in [Job Handler Assignment Methods](#job-handler-assignment-methods), such as in the following
+as explained in [Handler Assignment Methods](#handler-assignment-methods), such as in the following
 `job_conf.xml`:
 
 ```xml
@@ -359,6 +359,18 @@ as explained in [Job Handler Assignment Methods](#job-handler-assignment-methods
 
 Note that we have defined a `<handlers>` section without any `<handler>` entries,
 and we have explicitly configured the assignment method with `assign_with="db-skip-locked"`.
+
+To separate job and workflow scheduling using separate pools make sure that `workflow_schedulers_conf.xml` file
+contains a handlers section that specifies `assign-with="db-skip-locked"`, otherwise job scheduler processes default
+to handling workflow scheduling as well.
+
+```xml
+<workflow_schedulers default="core">
+    <core id="core" />
+    <handlers assign-with="db-skip-locked"/>
+</workflow_schedulers>
+```
+
 
 To let gravity know how many webless handler processes should be started set the number of processes to start in the `gravity:` section of galaxy.yml:
 

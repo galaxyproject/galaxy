@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from galaxy.managers.folders import FolderManager
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
+    from galaxy.managers.interactivetool import InteractiveToolManager
     from galaxy.managers.jobs import JobSearch
     from galaxy.managers.tools import DynamicToolManager
     from galaxy.managers.workflows import (
@@ -79,7 +80,10 @@ class BasicSharedApp(Container):
     auth_manager: AuthManager
     security_agent: Any
     quota_agent: QuotaAgent
-    tool_data_tables: "ToolDataTableManager"
+
+    @property
+    def tool_data_tables(self) -> "ToolDataTableManager":
+        raise NotImplementedError()
 
     @property
     def toolbox(self) -> "ToolBox":
@@ -94,9 +98,12 @@ class MinimalToolApp(Protocol):
     config: Any
     datatypes_registry: Registry
     object_store: BaseObjectStore
-    tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
     security: IdEncodingHelper
+
+    @property
+    def tool_data_tables(self) -> "ToolDataTableManager":
+        raise NotImplementedError()
 
 
 class MinimalApp(BasicSharedApp):
@@ -115,6 +122,7 @@ class MinimalManagerApp(MinimalApp):
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
     geographical_server_location_name: str
+    interactivetool_manager: "InteractiveToolManager"
     dataset_collection_manager: "DatasetCollectionManager"
     history_manager: "HistoryManager"
     hda_manager: "HDAManager"
@@ -170,7 +178,6 @@ class StructuredApp(MinimalManagerApp):
     tool_shed_repository_cache: Optional[ToolShedRepositoryCache]
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
-    interactivetool_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
     visualizations_registry: Any  # 'galaxy.visualization.plugins.registry.VisualizationsRegistry'
     _toolbox_lock: threading.RLock

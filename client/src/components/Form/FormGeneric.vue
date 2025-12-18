@@ -25,15 +25,15 @@
 </template>
 
 <script>
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import { visitInputs } from "components/Form/utilities";
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import { withPrefix } from "utils/redirect";
+import { visitInputs } from "@/components/Form/utilities";
+import { UrlDataProvider } from "@/components/providers/UrlDataProvider";
+import { withPrefix } from "@/utils/redirect";
 
 import { submitData } from "./services";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
 
 export default {
     components: {
@@ -52,7 +52,7 @@ export default {
             default: null,
         },
         icon: {
-            type: String,
+            type: Object,
             default: null,
         },
         submitIcon: {

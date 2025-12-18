@@ -1,8 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -44,11 +45,11 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
         }),
         http.get("/api/users/{user_id}/usage", ({ response }) => {
             return response(200).json(fakeQuotaUsages);
-        })
+        }),
     );
 
     const pinia = createPinia();
-    const wrapper = mount(DiskUsageSummary, {
+    const wrapper = mount(DiskUsageSummary as object, {
         localVue,
         pinia,
     });
@@ -59,7 +60,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
 }
 
 describe("DiskUsageSummary.vue", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     it("should display basic disk usage summary if quotas are NOT enabled", async () => {
         const enableQuotasInConfig = false;
         const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
@@ -104,7 +105,7 @@ describe("DiskUsageSummary.vue", () => {
             }),
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
                 return response(200).json("PENDING");
-            })
+            }),
         );
         const refreshButton = wrapper.find("#refresh-disk-usage");
         await refreshButton.trigger("click");
@@ -115,9 +116,9 @@ describe("DiskUsageSummary.vue", () => {
         server.use(
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
                 return response(200).json("SUCCESS");
-            })
+            }),
         );
-        jest.runAllTimers();
+        vi.runAllTimers();
         await flushPromises();
 
         // The refreshing alert should disappear and the quota usage should be updated

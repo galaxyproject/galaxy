@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faClock, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faClock, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -25,8 +24,6 @@ const filter = ref("");
 const showAdvanced = ref(false);
 const showSelectModal = ref(false);
 const initialLoaded = ref(false);
-
-library.add(faCheckSquare, faClock, faTimes, faUndo);
 
 const { currentUser } = storeToRefs(useUserStore());
 const { histories, currentHistory, historiesLoading } = storeToRefs(useHistoryStore());
@@ -62,7 +59,7 @@ watch(
             initialLoaded.value = true;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 /** computed ref that indicates whether the user has histories pinned */
@@ -103,10 +100,10 @@ const showRecentTitle = computed(() => {
 
 /** Reset to _default_ state; showing 4 latest updated histories */
 function showRecent() {
-    historyStore.pinnedHistories = [];
+    historyStore.clearPinnedHistories();
     Toast.info(
         "Showing the 4 most recently updated histories. Pin histories to this view by clicking on Select Histories.",
-        "History Multiview"
+        "History Multiview",
     );
 }
 </script>

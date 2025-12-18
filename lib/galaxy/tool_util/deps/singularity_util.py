@@ -19,6 +19,7 @@ DEFAULT_SINGULARITY_COMMAND = "singularity"
 DEFAULT_CLEANENV = True
 DEFAULT_IPC = True
 DEFAULT_PID = True
+DEFAULT_CONTAIN = True
 DEFAULT_NO_MOUNT = ["tmp"]
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
@@ -78,6 +79,7 @@ def build_singularity_run_command(
     cleanenv: bool = DEFAULT_CLEANENV,
     ipc: bool = DEFAULT_IPC,
     pid: bool = DEFAULT_PID,
+    contain: bool = DEFAULT_CONTAIN,
     no_mount: Optional[List[str]] = DEFAULT_NO_MOUNT,
 ) -> str:
     volumes = volumes or []
@@ -96,11 +98,9 @@ def build_singularity_run_command(
     )
     command_parts.append("-s")
     command_parts.append("exec")
-    # Singularity mounts some directories, such as $HOME and $PWD by default.
-    # using --contain disables this behaviour and only allows explicitly
-    # requested volumes to be mounted. This gives fully full-control over
-    # the mounting behavior.
-    command_parts.append("--contain")
+
+    if contain:
+        command_parts.append("--contain")
     if working_directory:
         command_parts.extend(["--pwd", shlex.quote(working_directory)])
     if cleanenv:

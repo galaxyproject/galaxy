@@ -33,11 +33,11 @@ watch(
     () => props.objectStoreId,
     async () => {
         fetch();
-    }
+    },
 );
 fetch();
-const loadingMessage = "Loading storage location details";
-const forWhat = "This storage location is";
+const loadingMessage = "Loading Galaxy storage details";
+const forWhat = "This Galaxy storage is";
 </script>
 
 <template>

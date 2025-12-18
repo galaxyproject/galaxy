@@ -12,6 +12,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
     Union,
@@ -40,6 +41,11 @@ class HashFunctionNameEnum(str, Enum):
     sha1 = "SHA-1"
     sha256 = "SHA-256"
     sha512 = "SHA-512"
+
+
+# IMPORTANT: Keep this literal type in sync with HashFunctionNameEnum values above
+# as well as with HASH_NAME_ALIAS and HASH_NAME_MAP below.
+HashFunctionNames = Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
 
 
 HASH_NAME_ALIAS: Dict[str, str] = {

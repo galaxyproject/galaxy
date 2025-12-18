@@ -72,6 +72,10 @@ List of behavior changes associated with profile versions:
 
 - require a valid `data_ref` attribute for `data_column` parameters
 
+### 25.1
+
+- Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
+
 ### Examples
 
 A normal tool:
@@ -105,7 +109,13 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0"/>
         <xs:element name="creator" type="Creator" minOccurs="0"/>
-        <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="requirements" type="Requirements" minOccurs="0">
+          <!-- Ensure unique credentials names across all credentials elements -->
+          <xs:unique name="uniqueCredentialsNames">
+            <xs:selector xpath="credentials"/>
+            <xs:field xpath="@name"/>
+          </xs:unique>
+        </xs:element>
         <xs:element name="required_files" type="RequiredFiles" minOccurs="0"/>
         <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
@@ -139,7 +149,6 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="code" type="Code" minOccurs="0"/>
         <xs:element name="uihints" type="UIhints" minOccurs="0"/>
         <xs:element name="options" type="Options" minOccurs="0"/>
-        <xs:element name="trackster_conf" type="TracksterConf" minOccurs="0"/>
         <xs:element name="citations" type="Citations" minOccurs="0"/>
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required">
@@ -611,10 +620,10 @@ practice.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container tag set for the ``requirement``, ``resource`` and ``container`` tags
-described in greater detail below. ``requirement``s describe software packages
-and other individual computing requirements required to execute a tool, while
-``container``s describe Docker or Singularity containers that should be able to
+This is a container tag set for the ``requirement``, ``resource``, ``container`` and
+``credentials`` tags described in greater detail below. ``requirement``s describe
+software packages and other individual computing requirements required to execute a tool,
+while ``container``s describe Docker or Singularity containers that should be able to
 serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
@@ -623,6 +632,18 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="credentials" type="Credentials" minOccurs="0" maxOccurs="unbounded">
+        <!-- Ensure unique credential names across variables and secrets -->
+        <xs:unique name="uniqueCredentialNames">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@name"/>
+        </xs:unique>
+        <!-- Ensure unique inject_as_env values across variables and secrets -->
+        <xs:unique name="uniqueInjectAsEnv">
+          <xs:selector xpath="variable|secret"/>
+          <xs:field xpath="@inject_as_env"/>
+        </xs:unique>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="Requirement">
@@ -736,6 +757,173 @@ Read more about configuring Galaxy to run Docker jobs
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
+  <xs:complexType name="Credentials">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+The ``credentials`` element allows tools to securely access external services by defining
+a set of authentication credentials. These credentials are managed separately from the tool
+configuration and are injected into the tool's execution environment as environment variables.
+
+Credentials consist of:
+- **Variables**: Non-sensitive configuration values (e.g., server URLs, usernames)
+- **Secrets**: Sensitive authentication data (e.g., passwords, API keys, tokens)
+
+The credentials system provides secure credential management while keeping sensitive
+information separate from tool definitions. Multiple credentials sets can be defined
+within a single ``requirements`` block, each with a unique name. Before executing a tool
+that requires credentials, users must provide the necessary credentials through the Galaxy UI.
+
+### Example
+
+```xml
+<requirements>
+    <credentials name="aws_s3" version="1.0" label="AWS S3 Access" description="Credentials for accessing AWS S3 buckets">
+        <variable name="region" inject_as_env="AWS_REGION" optional="false" label="AWS Region" description="The AWS region where your S3 bucket is located" />
+        <secret name="access_key" inject_as_env="AWS_ACCESS_KEY_ID" optional="false" label="Access Key ID" description="Your AWS access key ID" />
+        <secret name="secret_key" inject_as_env="AWS_SECRET_ACCESS_KEY" optional="false" label="Secret Access Key" description="Your AWS secret access key" />
+    </credentials>
+    <credentials name="database" version="2.1" label="Database Connection" description="Database connection credentials">
+        <variable name="host" inject_as_env="DB_HOST" optional="false" label="Database Host" description="The hostname or IP address of the database server" />
+        <variable name="port" inject_as_env="DB_PORT" optional="true" label="Database Port" description="The port number (default: 5432)" />
+        <secret name="password" inject_as_env="DB_PASSWORD" optional="false" label="Database Password" description="The password for database authentication" />
+    </credentials>
+</requirements>
+```
+
+### Tool Access
+
+Within your tool, access the injected credentials using the specified environment variable names:
+
+```bash
+# Access AWS credentials
+aws s3 ls s3://my-bucket --region $AWS_REGION --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY
+
+# Access database credentials
+psql -h $DB_HOST -p $DB_PORT -U myuser -d mydb -W $DB_PASSWORD
+```
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="variable" type="CredentialsVariable" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="secret" type="CredentialsSecret" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the credential set.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="version" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The version of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description of the credential set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If true, tools can run without credentials; if false, credentials must be provided before execution.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsVariable">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a variable for credentials. The variable is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the variable.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the variable is optional for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the variable.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CredentialsSecret">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This element defines a secret for credentials. The secret is injected into the
+environment of the tool process as an environment variable.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the secret.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="inject_as_env" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The environment variable name to inject the value as.</xs:documentation>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:minLength value="1"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="optional" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the secret is optional for the tool to run.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The label for the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The description for the secret.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:simpleType name="HelpFormatType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Document type of tool help</xs:documentation>
@@ -747,7 +935,7 @@ Read more about configuring Galaxy to run Docker jobs
   </xs:simpleType>
   <xs:complexType name="Help">
     <xs:annotation gxdocs:best_practices="help-tag">
-      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
+      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. Tool help is written in reStructuredText or Markdown. Included here is only an overview of a subset of features. For more information see [the RST site](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html) or the [Markdown site](https://www.markdownguide.org/basic-syntax/).
 
 tag | details
 --- | -------
@@ -1044,29 +1232,6 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
     <xs:attribute name="sanitize" type="PermissiveBoolean" default="true">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute can be used to turn off all input sanitization for a tool.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
-  <xs:complexType name="TracksterConf">
-    <xs:annotation>
-      <xs:documentation xml:lang="en">This directive is used to specify some rarely modified trackster options.</xs:documentation>
-    </xs:annotation>
-    <xs:sequence>
-      <xs:element name="action" type="TracksterAction" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-  <xs:complexType name="TracksterAction">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"/>
-    </xs:annotation>
-    <xs:attribute name="name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"/>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="output_name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"/>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -6041,9 +6206,14 @@ One prominent use case is interval data with a non-standard column order that ca
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Relative path to a file produced by the
-tool in its working directory. Output's contents are set to this file's
-contents. The behaviour when this file does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail.</xs:documentation>
+        <xs:documentation xml:lang="en">Relative path to a file or directory produced by the
+tool in its working directory. Output's contents are set to this paths'
+contents. The behaviour when this path does not exist in the working directory is undefined; the resulting dataset could be empty or the tool execution could fail. To collect directory contents set ``precreate`` to true</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="precreate_directory" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Boolean indicating whether to precreate output directory. (Default is ``false``.)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="hidden" type="xs:boolean" default="false">
@@ -6346,7 +6516,7 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
 ``<data>`` and ``<collection>`` tags can contain one or more ``<filter>`` tags. Each ``<filter>`` tag contains a Python code
 block to be executed to test whether to include this output in the outputs the
 tool ultimately creates. If the code of each of these filters, when executed, returns ``True``,
-the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``. 
+the output dataset is retained, i.e. the output is excluded if at least one evaluates to ``False``.
 In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
@@ -7210,8 +7380,10 @@ paths for data or collection inputs set the ``data_style`` attribute to ``paths`
 To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
 
-Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
-and the other elements the identifiers of the collections containing the dataset.
+Note that the ``element_identifier`` field matches the type of input, which means for simple data inputs ``element_identifier`` is a string,
+for multiple="true" data inputs ``element_identifier`` is a list of strings corresponding to the element identifiers of each dataset passed to the input.
+For dataset collections the element identifier is a list of strings with as many items in the list as the nesting level of the collection (i.e. 1 for list, 2 for list:list, 3 for list:list:list etc),
+where the first item represents the outermost element identifier and the innermost item represents the innermost element identifier of the collection.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>

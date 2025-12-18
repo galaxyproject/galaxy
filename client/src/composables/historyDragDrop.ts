@@ -44,14 +44,14 @@ export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, creat
             (destinationHistoryId.value && fromHistoryId.value === destinationHistoryId.value) ||
             (!createNew && !destinationHistoryId.value) ||
             !getDragItems().length ||
-            processingDrop.value
+            processingDrop.value,
     );
 
     function getDragItems() {
         const storeItems = eventStore.getDragItems();
         // Filter out any non-history or `DatasetCollectionElement` items
         return storeItems?.filter(
-            (item) => isHistoryItem(item) || isDatasetElement(item as DCESummary)
+            (item) => isHistoryItem(item) || isDatasetElement(item as DCESummary),
         ) as DraggableHistoryItem[];
     }
 
@@ -151,14 +151,14 @@ export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, creat
 
             if (multiple && datasetCount > 0) {
                 Toast.info(
-                    `${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to ${createNew ? "new" : ""} history`
+                    `${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to ${createNew ? "new" : ""} history`,
                 );
             }
             if (multiple && collectionCount > 0) {
                 Toast.info(
                     `${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to ${
                         createNew ? "new" : ""
-                    } history`
+                    } history`,
                 );
             }
 

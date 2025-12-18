@@ -126,7 +126,7 @@ export function getWorkflowFilters(activeList = "my") {
             },
             undefined,
             false,
-            false
+            false,
         );
     } else if (activeList === "shared_with_me") {
         return new Filtering(
@@ -149,7 +149,7 @@ export function getWorkflowFilters(activeList = "my") {
             },
             undefined,
             false,
-            false
+            false,
         );
     } else {
         return new Filtering(
@@ -172,7 +172,7 @@ export function getWorkflowFilters(activeList = "my") {
             },
             undefined,
             false,
-            false
+            false,
         );
     }
 }

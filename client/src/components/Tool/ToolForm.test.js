@@ -1,12 +1,13 @@
-import "tests/jest/mockHelpPopovers";
+import "@tests/vitest/mockHelpPopovers";
 
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
@@ -14,17 +15,11 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolForm from "./ToolForm.vue";
-import GButton from "@/components/BaseComponents/GButton.vue";
 
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 const pinia = createPinia();
-
-// the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
-// better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
-// stub out the Popover piece I think.
-suppressBootstrapVueWarnings();
 
 describe("ToolForm", () => {
     let wrapper;
@@ -41,10 +36,15 @@ describe("ToolForm", () => {
                     HttpResponse.json({
                         enable_tool_source_display: false,
                         object_store_allows_id_selection: false,
-                    })
+                    }),
                 );
-            })
+            }),
         );
+
+        // the PersonViewer component uses a BPopover that doesn't work in the test environment. It would be
+        // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
+        // stub out the Popover piece.
+        suppressBootstrapVueWarnings();
 
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, {
@@ -86,7 +86,7 @@ describe("ToolForm", () => {
 
     it("shows props", async () => {
         await flushPromises();
-        const button = wrapper.findComponent(GButton);
+        const button = wrapper.find("[data-description='run tool button']");
         expect(button.attributes("data-title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);

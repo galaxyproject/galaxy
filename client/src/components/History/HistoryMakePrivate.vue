@@ -31,9 +31,9 @@ async function makeHistoryPrivate() {
         Toast.success(
             localize(
                 "Existing data in this history is now private, as well as any new data created in this history. \
-                Your sharing preferences have also been reset."
+                Your sharing preferences have also been reset.",
             ),
-            localize("Successfully made history private.")
+            localize("Successfully made history private."),
         );
         emit("history-made-private", sharingStatusChanged);
     } catch (error) {
@@ -56,7 +56,12 @@ async function makeHistoryPrivate() {
             re-shared or published. Are you sure you want to do this?
         </p>
 
-        <AsyncButton :icon="faLock" :disabled="!history" variant="primary" :action="makeHistoryPrivate">
+        <AsyncButton
+            data-description="history make private"
+            :icon="faLock"
+            :disabled="!history"
+            variant="primary"
+            :action="makeHistoryPrivate">
             {{ localize("Make History Private") }}
         </AsyncButton>
     </PortletSection>

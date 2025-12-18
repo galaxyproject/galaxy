@@ -11,9 +11,9 @@ import tempfile
 from typing import (
     IO,
     Optional,
-    Tuple,
 )
 
+import ijson
 import yaml
 
 from galaxy.datatypes.data import (
@@ -197,7 +197,7 @@ class Ipynb(Json):
             try:
                 with open(file_prefix.filename) as f:
                     ipynb = json.load(f)
-                if ipynb.get("nbformat", False) is not False and ipynb.get("metadata", False):
+                if ipynb.get("nbformat", False) is not False and "metadata" in ipynb:
                     return True
                 else:
                     return False
@@ -229,7 +229,7 @@ class Ipynb(Json):
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
         **kwd,
-    ) -> Tuple[IO, Headers]:
+    ) -> tuple[IO, Headers]:
         headers = kwd.pop("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:
@@ -434,50 +434,93 @@ class Biom1(Json):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
-        Store metadata information from the BIOM file.
+        Store metadata information from the BIOM file using streaming JSON parsing.
         """
-        if dataset.has_data():
-            with open(dataset.get_file_name()) as fh:
+        if not dataset.has_data():
+            return
+
+        # Mapping of metadata names to BIOM field names
+        field_mapping = [
+            ("table_rows", "rows"),
+            ("table_matrix_element_type", "matrix_element_type"),
+            ("table_format", "format"),
+            ("table_generated_by", "generated_by"),
+            ("table_matrix_type", "matrix_type"),
+            ("table_shape", "shape"),
+            ("table_format_url", "format_url"),
+            ("table_date", "date"),
+            ("table_type", "type"),
+            ("table_id", "id"),
+            ("table_columns", "columns"),
+        ]
+
+        # Fields we're looking for
+        target_fields = {b_name for _, b_name in field_mapping}
+        found_fields = {}
+        column_metadata_headers = set()
+
+        try:
+            with open(dataset.get_file_name(), "rb") as fh:
+                log.debug("Loading metadata from json file %s", dataset.get_file_name())
+                log.debug("File size is %d bytes", os.path.getsize(dataset.get_file_name()))
+                parser = ijson.parse(fh)
+
+                for prefix, event, value in parser:
+                    # Handle top-level fields
+                    if "." not in prefix and prefix in target_fields:
+                        if event in ("string", "number", "boolean", "null"):
+                            found_fields[prefix] = value
+                        elif event == "start_array":
+                            # For arrays, we need to collect the items
+                            if prefix in ("rows", "columns", "shape"):
+                                found_fields[prefix] = []
+
+                    # Handle array items for rows and columns (collect ids)
+                    elif prefix.startswith("rows.item.id") and event == "string":
+                        if "rows" not in found_fields:
+                            found_fields["rows"] = []
+                        found_fields["rows"].append(value)
+
+                    elif prefix.startswith("columns.item.id") and event == "string":
+                        if "columns" not in found_fields:
+                            found_fields["columns"] = []
+                        found_fields["columns"].append(value)
+
+                    # Handle shape array items
+                    elif prefix.startswith("shape.item") and event == "number":
+                        if "shape" not in found_fields:
+                            found_fields["shape"] = []
+                        found_fields["shape"].append(value)
+
+                    # Collect column metadata headers
+                    elif prefix.startswith("columns.item.metadata.") and event in ("string", "number", "boolean"):
+                        if value is not None:
+                            # Extract the metadata key name
+                            key_parts = prefix.split(".")
+                            if len(key_parts) >= 4:
+                                metadata_key = key_parts[3]
+                                column_metadata_headers.add(metadata_key)
+
+                    # Early exit if we've found all top-level fields
+                    if len(found_fields) >= len(target_fields):
+                        # Still need to scan for column metadata headers
+                        continue
+
+            # Set metadata values
+            for m_name, b_name in field_mapping:
                 try:
-                    json_dict = json.load(fh)
-                except Exception:
-                    return
-
-                def _transform_dict_list_ids(dict_list):
-                    if dict_list:
-                        return [x.get("id", None) for x in dict_list]
-                    return []
-
-                b_transform = {"rows": _transform_dict_list_ids, "columns": _transform_dict_list_ids}
-                for m_name, b_name in [
-                    ("table_rows", "rows"),
-                    ("table_matrix_element_type", "matrix_element_type"),
-                    ("table_format", "format"),
-                    ("table_generated_by", "generated_by"),
-                    ("table_matrix_type", "matrix_type"),
-                    ("table_shape", "shape"),
-                    ("table_format_url", "format_url"),
-                    ("table_date", "date"),
-                    ("table_type", "type"),
-                    ("table_id", "id"),
-                    ("table_columns", "columns"),
-                ]:
-                    try:
-                        metadata_value = json_dict.get(b_name, None)
-                        if b_name == "columns" and metadata_value:
-                            keep_columns = set()
-                            for column in metadata_value:
-                                if column["metadata"] is not None:
-                                    for k, v in column["metadata"].items():
-                                        if v is not None:
-                                            keep_columns.add(k)
-                            final_list = sorted(keep_columns)
-                            dataset.metadata.table_column_metadata_headers = final_list
-                        if b_name in b_transform:
-                            metadata_value = b_transform[b_name](metadata_value)
+                    metadata_value = found_fields.get(b_name)
+                    if metadata_value is not None:
                         setattr(dataset.metadata, m_name, metadata_value)
-                    except Exception:
-                        log.exception("Something in the metadata detection for biom1 went wrong.")
+                except Exception:
+                    log.exception(f"Error setting metadata {m_name} from field {b_name}")
+
+            # Set column metadata headers
+            if column_metadata_headers:
+                dataset.metadata.table_column_metadata_headers = sorted(column_metadata_headers)
+
+        except Exception:
+            log.exception("Error in streaming BIOM metadata detection. Metadata may not be complete or even present.")
 
 
 @build_sniff_from_prefix
@@ -662,12 +705,7 @@ class VitessceJson(Json):
     https://www.npmjs.com/package/@vitessce/json-schema
     """
 
-    file_ext = "vitesscejson"
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        super().set_peek(dataset)
-        if not dataset.dataset.purged:
-            dataset.blurb = "VitessceJSON"
+    file_ext = "vitessce.json"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -677,7 +715,7 @@ class VitessceJson(Json):
         >>> fname = get_test_fname( '1.json' )
         >>> VitessceJson().sniff( fname )
         False
-        >>> fname = get_test_fname( '1.vitesscejson' )
+        >>> fname = get_test_fname( '1.vitessce.json' )
         >>> VitessceJson().sniff( fname )
         True
         """
@@ -694,6 +732,57 @@ class VitessceJson(Json):
             with open(file_prefix.filename) as fh:
                 segment_str = fh.read(load_size)
                 if all(x in segment_str for x in ["version", "datasets", "layout", "coordinationSpace"]):
+                    return True
+        except Exception:
+            pass
+        return False
+
+
+@build_sniff_from_prefix
+class AuspiceJson(Json):
+    """
+    Auspice is a visualization tool for phylogenetic trees and associated data.
+    It uses JSON format to represent the tree structure and metadata.
+    """
+
+    file_ext = "auspice.json"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "AuspiceJSON"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in Auspice v2 JSON by looking for keys
+        like "version", "meta" and "updated" that are both required by the
+        https://docs.nextstrain.org/projects/auspice/en/stable/releases/v2.html format
+        and also will be in the first part of the file
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.json' )
+        >>> AuspiceJson().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.auspicejson' )
+        >>> AuspiceJson().sniff( fname )
+        True
+        """
+        is_auspicejson = False
+        if self._looks_like_json(file_prefix):
+            is_auspicejson = self._looks_like_is_auspicejson(file_prefix)
+        return is_auspicejson
+
+    def _looks_like_is_auspicejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
+        """
+        Expects JSON to start with { and 'meta', 'tree', 'updated' and 'nodes' to be present as keys in the JSON structure.
+        """
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+
+                if segment_str.startswith("{") and all(
+                    x in segment_str for x in ["version", "meta", "updated", "panels"]
+                ):
                     return True
         except Exception:
             pass
@@ -1537,3 +1626,46 @@ class Prm(Text):
         False
         """
         return file_prefix.startswith("RBT_PARAMETER_FILE_V1.00")
+
+
+@build_sniff_from_prefix
+class SourmashSignature(Json):
+    """Sourmash signature format for MinHash sketches"""
+
+    file_ext = "sig"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Sourmash signature file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is a sourmash signature
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.sig')
+        >>> SourmashSignature().sniff(fname)
+        True
+        """
+        if self._looks_like_json(file_prefix):
+            return self._looks_like_sourmash(file_prefix)
+        return False
+
+    def _looks_like_sourmash(self, file_prefix: FilePrefix, load_size: int = 5000) -> bool:
+        """Check for sourmash-specific JSON structure"""
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+                # Sourmash signatures contain specific keys such as sourmash_signature
+                if '"sourmash_signature"' in segment_str or '"class": "sourmash_signature"' in segment_str:
+                    return True
+                # Also check for signature-specific fields
+                if '"signatures"' in segment_str and '"ksize"' in segment_str:
+                    return True
+        except Exception:
+            pass
+        return False

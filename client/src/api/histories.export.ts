@@ -46,7 +46,7 @@ export async function exportHistoryToFileSource(
     historyId: string,
     exportDirectory: string,
     fileName: string,
-    exportParams = DEFAULT_EXPORT_PARAMS
+    exportParams = DEFAULT_EXPORT_PARAMS,
 ) {
     const exportDirectoryUri = `${exportDirectory}/${fileName}.${exportParams.modelStoreFormat}`;
 

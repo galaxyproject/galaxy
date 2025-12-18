@@ -1,11 +1,9 @@
 import logging
+from collections.abc import AsyncGenerator
 from json import JSONDecodeError
 from typing import (
-    AsyncGenerator,
     cast,
-    List,
     Optional,
-    Type,
     TypeVar,
 )
 
@@ -80,7 +78,7 @@ api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 api_key_cookie = APIKeyCookie(name=AUTH_COOKIE_NAME, auto_error=False)
 
 
-def depends(dep_type: Type[T]) -> T:
+def depends(dep_type: type[T]) -> T:
     return framework_depends(dep_type, app=get_app_with_request_session)
 
 
@@ -166,7 +164,7 @@ B = TypeVar("B", bound=BaseModel)
 #    return Depends(get_body)
 
 
-def depend_on_either_json_or_form_data(model: Type[B]) -> B:
+def depend_on_either_json_or_form_data(model: type[B]) -> B:
     async def get_body(request: Request):
         content_type = request.headers.get("Content-Type")
         if content_type is None:
@@ -289,7 +287,7 @@ RepositoryIndexNameQueryParam: Optional[str] = Query(None, title="Name")
 
 RepositoryIndexCategoryQueryParam: Optional[str] = Query(None, title="Category ID")
 
-RepositoryIndexToolIdsQueryParam: Optional[List[str]] = Query(
+RepositoryIndexToolIdsQueryParam: Optional[list[str]] = Query(
     None, title="Tool IDs", description="List of tool GUIDs to find the repository for"
 )
 

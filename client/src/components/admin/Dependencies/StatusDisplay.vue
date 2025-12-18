@@ -11,7 +11,7 @@
     </span>
 </template>
 <script>
-import DisplayRaw from "./DisplayRaw";
+import DisplayRaw from "./DisplayRaw.vue";
 
 const DESCRIPTIONS = {
     conda: "The Conda package manager will be used for resolution. ",

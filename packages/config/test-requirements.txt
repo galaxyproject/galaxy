@@ -1,2 +1,0 @@
-gravity>=1.0
-pytest

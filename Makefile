@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (darker, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=25.1
+RELEASE_CURR:=26.0
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -17,7 +17,7 @@ YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
 GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR?=0
 # Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
 # compatibility with smaller machines.
-NODE_OPTIONS ?= --max-old-space-size=3072
+NODE_OPTIONS ?= --max-old-space-size=4096
 NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR)
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
@@ -30,10 +30,10 @@ SPACE := $() $()
 NEVER_PYUPGRADE_PATHS := .venv/ .tox/ lib/galaxy/schema/bco/ \
 	lib/galaxy/schema/drs/ lib/tool_shed_client/schema/trs \
 	scripts/check_python.py tools/ test/functional/tools/cwl_tools/
-PY37_PYUPGRADE_PATHS := lib/galaxy/exceptions/ lib/galaxy/job_metrics/ \
-	lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ \
-	test/unit/job_metrics/ test/unit/objectstore/ test/unit/tool_util/ \
-	test/unit/util/
+PY38_PYUPGRADE_PATHS := lib/galaxy/exceptions/ lib/galaxy/job_metrics/ \
+	lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/tool_util_models/ \
+	lib/galaxy/util/ test/unit/job_metrics/ test/unit/objectstore/ \
+	test/unit/tool_util/ test/unit/tool_util_models/ test/unit/util/
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -62,10 +62,10 @@ format:  ## Format Python code base
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
 
-pyupgrade:  ## Convert older code patterns to Python 3.7/3.9 idiomatic ones
-	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY37_PYUPGRADE_PATHS))' | xargs pyupgrade --py39-plus
-	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY37_PYUPGRADE_PATHS))' | xargs auto-walrus
-	ack --type=python -f $(PY37_PYUPGRADE_PATHS) | xargs pyupgrade --py37-plus
+pyupgrade:  ## Convert older code patterns to Python 3.8/3.9 idiomatic ones
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY38_PYUPGRADE_PATHS))' | xargs pyupgrade --py39-plus
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY38_PYUPGRADE_PATHS))' | xargs auto-walrus
+	ack --type=python -f $(PY38_PYUPGRADE_PATHS) | xargs pyupgrade --py38-plus
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
@@ -180,19 +180,15 @@ skip-client: ## Run only the server, skipping the client build.
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
-	@echo $(NO_YARN_MSG)
-	false;
-else
-	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
+	corepack enable yarn;
 endif
+	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
 
 client-node-deps: ## Install NodeJS dependencies for the client.
 ifndef YARN
-	@echo $(NO_YARN_MSG)
-	false;
-else
-	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
+	corepack enable yarn;
 endif
+	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
 
 format-xsd:
 	xmllint --format --output galaxy-tmp.xsd lib/galaxy/tool_util/xsd/galaxy.xsd
@@ -207,8 +203,8 @@ remove-api-schema:
 	rm _shed_schema.yaml
 
 update-client-api-schema: client-node-deps build-api-schema ## Update client API schema
-	$(IN_VENV) cd client && npx openapi-typescript ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
-	$(IN_VENV) cd client && npx openapi-typescript ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
+	$(IN_VENV) cd client && yarn openapi-typescript ../_schema.yaml -o src/api/schema/schema.ts && yarn prettier --write src/api/schema/schema.ts
+	$(IN_VENV) cd client && yarn openapi-typescript ../_shed_schema.yaml -o ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && yarn prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
 lint-api-schema: build-api-schema
@@ -239,7 +235,7 @@ client-lint-autofix: client-node-deps ## Automatically fix linting errors in cli
 client-format: client-node-deps client-lint-autofix ## Reformat client code, ensures autofixes are applied first
 	$(IN_VENV) cd client && yarn run format
 
-client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
+client-dev-server: client-node-deps ## Starts a Vite dev server for client development (HMR enabled)
 	$(IN_VENV) cd client && $(NODE_ENV) yarn run develop
 
 client-test: client-node-deps  ## Run JS unit tests
@@ -261,6 +257,12 @@ client-test-watch: client ## Watch and run all client unit tests on changes
 
 serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
 	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter
+
+files-sources-lint: ## Validate file sources configuration
+	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python galaxy/files/validate/script.py
+
+files-sources-lint-verbose: ## Validate file sources configuration (verbose)
+	$(IN_VENV) cd lib && PYTHONPATH=`pwd` python galaxy/files/validate/script.py --verbose
 
 # Release Targets
 release-create-rc: ## Create a release-candidate branch or new release-candidate version

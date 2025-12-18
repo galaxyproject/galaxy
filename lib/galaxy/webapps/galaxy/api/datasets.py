@@ -9,8 +9,8 @@ from io import (
     StringIO,
 )
 from typing import (
+    Annotated,
     cast,
-    List,
     Optional,
 )
 
@@ -25,7 +25,6 @@ from starlette.responses import (
     Response,
     StreamingResponse,
 )
-from typing_extensions import Annotated
 
 from galaxy.datatypes.dataproviders.base import MAX_LIMIT
 from galaxy.schema import (
@@ -153,7 +152,7 @@ class FastAPIDatasets:
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-    ) -> List[AnyHistoryContentItem]:
+    ) -> list[AnyHistoryContentItem]:
         entries, total_matches = self.service.index(trans, history_id, serialization_params, filter_query_params)
         response.headers["total_matches"] = str(total_matches)
         return entries
@@ -269,6 +268,29 @@ class FastAPIDatasets:
         trans=DependsOnTrans,
     ) -> DatasetExtraFiles:
         return self.service.extra_files(trans, dataset_id)
+
+    @router.get(
+        "/api/datasets/{dataset_id}/extra_files/raw/{filename:path}",
+        summary="Downloads a raw extra file associated with a dataset.",
+    )
+    def extra_file_raw(
+        self,
+        dataset_id: DatasetIDPathParam,
+        request: Request,
+        filename: str = Path(..., description="The name of the extra file to retrieve."),
+        trans=DependsOnTrans,
+    ) -> GalaxyFileResponse:
+        display_data, headers = self.service.display(
+            trans,
+            dataset_id,
+            preview=False,
+            filename=filename,
+            raw=True,
+        )
+        assert isinstance(display_data, IOBase)
+        file_name = getattr(display_data, "name", None)
+        assert file_name
+        return GalaxyFileResponse(file_name, headers=headers, method=request.method)
 
     @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/display",

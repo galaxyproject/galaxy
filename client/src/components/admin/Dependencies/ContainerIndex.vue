@@ -96,10 +96,10 @@ import _ from "underscore";
 import Vue from "vue";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
-import ContainerResolutionDetails from "./ContainerResolutionDetails";
-import { DESCRIPTION } from "./ContainerResolver";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 
+import ContainerResolutionDetails from "./ContainerResolutionDetails.vue";
+import { DESCRIPTION } from "./ContainerResolver.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
 Vue.use(BootstrapVue);

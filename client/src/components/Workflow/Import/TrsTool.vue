@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 
-import type { TrsTool, TrsToolVersion } from "./types";
+import { useMarkdown } from "@/composables/markdown";
 
-library.add(faUpload);
+import type { TrsTool, TrsToolVersion } from "./types";
 
 interface Props {
     trsTool: TrsTool;
@@ -17,6 +16,8 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "onImport", versionId: string): void;
 }>();
+
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 function importVersion(version: TrsToolVersion) {
     const version_id = version.id.includes(`:${version.name}`) ? version.name : version.id;
@@ -34,7 +35,7 @@ function importVersion(version: TrsToolVersion) {
         <div>
             <b>Description:</b>
 
-            <span>{{ props.trsTool.description }}</span>
+            <span v-html="renderMarkdown(props.trsTool.description)" />
         </div>
         <div>
             <b>Organization</b>

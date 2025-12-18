@@ -106,20 +106,14 @@
                     </form>
                 </div>
             </div>
-            %if tool.help:
-                <div class="toolHelp">
-                    <div class="toolHelpBody">
-                        <%
-                            tool_help = tool.help
-                            # Help is Mako template, so render using current static path.
-                            tool_help = tool_help.render( static_path=h.url_for( '/static' ) )
-                            # Convert to unicode to display non-ascii characters.
-                            tool_help = util.unicodify( tool_help, 'utf-8')
-                        %>
-                        ${tool_help}
-                    </div>
+            <div class="toolHelp">
+                <div class="toolHelpBody">
+                    <%
+                        tool_help = tool.render_help( host_url=h.url_for( '/' ), static_path=h.url_for( '/static' ) )
+                    %>
+                    ${tool_help}
                 </div>
-            %endif
+            </div>
         %else:
             Tool not properly loaded.
         %endif

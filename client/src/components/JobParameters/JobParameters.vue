@@ -1,7 +1,9 @@
 <template>
     <div>
         <div v-if="!isSingleParam" class="tool-parameters">
-            <h2 v-if="includeTitle" class="h-md">Tool Parameters</h2>
+            <Heading v-if="includeTitle" id="tool-parameters-heading" h1 separator inline size="md">
+                Tool Parameters
+            </Heading>
             <table id="tool-parameters" class="tabletip info_data_table">
                 <thead>
                     <tr>
@@ -17,6 +19,9 @@
                         </td>
                         <td v-if="Array.isArray(parameter.value)">
                             <JobParametersArrayValue :parameter_value="parameter.value" />
+                        </td>
+                        <td v-else-if="isRequestJson(parameter)" class="tool-parameter-value">
+                            <DataFetchRequestParameter :parameter-value="parameter.value" />
                         </td>
                         <td v-else class="tool-parameter-value">
                             {{ parameter.value }}
@@ -47,16 +52,21 @@
 <script>
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
-import JobOutputs from "../JobInformation/JobOutputs";
-import JobParametersArrayValue from "./JobParametersArrayValue";
+import { getAppRoot } from "@/onload/loadConfig";
+
+import Heading from "../Common/Heading.vue";
+import JobOutputs from "../JobInformation/JobOutputs.vue";
+import DataFetchRequestParameter from "./DataFetchRequestParameter.vue";
+import JobParametersArrayValue from "./JobParametersArrayValue.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        DataFetchRequestParameter,
+        Heading,
         JobOutputs,
         JobParametersArrayValue,
     },
@@ -117,6 +127,9 @@ export default {
         this.initJob();
     },
     methods: {
+        isRequestJson(parameter) {
+            return parameter.text == "request_json" && typeof parameter.value == "string";
+        },
         initJob() {
             let url;
             if (this.jobId) {

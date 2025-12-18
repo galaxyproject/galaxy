@@ -4,7 +4,10 @@ from typing import (
 )
 from uuid import uuid4
 
-from pydantic import UUID4
+from pydantic import (
+    UUID4,
+    ValidationError,
+)
 from sqlalchemy import select
 
 from galaxy.exceptions import (
@@ -29,9 +32,22 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
+from galaxy.tool_util.parameters import (
+    landing_decode,
+    LandingRequestInternalToolState,
+    LandingRequestToolState,
+)
+from galaxy.tool_util_models.parameters import DataOrCollectionRequestAdapter
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
+from .tools import (
+    get_tool_from_toolbox,
+    ToolRunReference,
+)
 
 LandingRequestModel = Union[ToolLandingRequestModel, WorkflowLandingRequestModel]
 
@@ -43,19 +59,41 @@ class LandingRequestManager:
         sa_session: galaxy_scoped_session,
         security: IdEncodingHelper,
         workflow_contents_manager: WorkflowContentsManager,
+        app: MinimalManagerApp,
     ):
         self.sa_session = sa_session
         self.security = security
         self.workflow_contents_manager = workflow_contents_manager
+        self.app = app
 
     def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload, user_id=None) -> ToolLandingRequest:
+        tool_id = payload.tool_id
+        tool_version = payload.tool_version
+        request_state = payload.request_state
+
+        ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        tool = get_tool_from_toolbox(self.app.toolbox, ref, user=None)
+        landing_request_state = LandingRequestToolState(request_state or {})
+        # Okay this is a hack until tool request API commit is merged, tools don't yet have a parameter
+        # schema - so we can't do this properly.
+        if hasattr(tool, "parameters"):
+            internal_landing_request_state = landing_decode(landing_request_state, tool, self.security.decode_id)
+        else:
+            assert tool.id == "__DATA_FETCH__"
+            # we have validated the payload as part of the API request
+            # nothing else to decode ideally so just swap to internal model state object
+            internal_landing_request_state = LandingRequestInternalToolState(
+                input_state=landing_request_state.input_state
+            )
+
         model = ToolLandingRequestModel()
-        model.tool_id = payload.tool_id
-        model.tool_version = payload.tool_version
-        model.request_state = payload.request_state
+        model.tool_id = tool_id
+        model.tool_version = tool_version
+        model.request_state = internal_landing_request_state.input_state
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.public = payload.public
+        model.origin = str(payload.origin) if payload.origin else None
         if user_id:
             model.user_id = user_id
         self._save(model)
@@ -73,10 +111,24 @@ class LandingRequestManager:
             model.workflow_source = payload.workflow_id
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
-        model.request_state = payload.request_state
+        model.request_state = self.validate_workflow_request_state(payload.request_state)
         model.public = payload.public
         self._save(model)
         return self._workflow_response(model)
+
+    def validate_workflow_request_state(self, request_state: Optional[dict]) -> Optional[dict]:
+        # This would ideally be run in the context of a workflow input definition
+        if isinstance(request_state, dict):
+            for key, value in request_state.items():
+                if isinstance(value, dict):
+                    try:
+                        # persist values after model validators and aliases have been applied
+                        request_state[key] = DataOrCollectionRequestAdapter.validate_python(value).model_dump(
+                            by_alias=True, exclude_unset=True, mode="json"
+                        )
+                    except ValidationError:
+                        pass
+        return request_state
 
     def claim_tool_landing_request(
         self, trans: ProvidesUserContext, uuid: UUID4, claim: Optional[ClaimLandingPayload]
@@ -161,6 +213,7 @@ class LandingRequestManager:
             request_state=model.request_state,
             uuid=model.uuid,
             state=self._state(model),
+            origin=model.origin,
         )
         return response_model
 
@@ -183,6 +236,7 @@ class LandingRequestManager:
             request_state=model.request_state,
             uuid=model.uuid,
             state=self._state(model),
+            origin=model.origin,
         )
         return response_model
 

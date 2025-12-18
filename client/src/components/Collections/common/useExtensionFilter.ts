@@ -53,7 +53,7 @@ export function useExtensionFiltering(props: PropsWithOptionalExtensions) {
                 await datatypesMapperStore.createMapper();
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     return {

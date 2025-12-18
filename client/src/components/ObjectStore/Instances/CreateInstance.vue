@@ -30,14 +30,14 @@ const template = computed(() => objectStoreTemplatesStore.getLatestTemplate(prop
 
 const breadcrumbItems = computed(() => [
     { title: "User Preferences", to: "/user" },
-    { title: "Storage Locations", to: "/object_store_instances/index" },
+    { title: "Galaxy Storage", to: "/object_store_instances/index" },
     { title: "Create New", to: "/object_store_instances/create" },
     { title: template.value?.name || "Option" },
 ]);
 
 async function onCreated(objectStore: UserConcreteObjectStore) {
     addOrUpdateObjectStore(objectStore);
-    const message = `Created storage location ${objectStore.name}`;
+    const message = `Created Galaxy storage ${objectStore.name}`;
     goToIndex({ message });
 }
 </script>
@@ -49,7 +49,7 @@ async function onCreated(objectStore: UserConcreteObjectStore) {
         </div>
 
         <BAlert v-if="!template" variant="info" show>
-            <LoadingSpan :message="localize('Loading storage location options')" />
+            <LoadingSpan :message="localize('Loading Galaxy storage options')" />
         </BAlert>
         <CreateForm v-else :template="template" @created="onCreated"></CreateForm>
     </div>

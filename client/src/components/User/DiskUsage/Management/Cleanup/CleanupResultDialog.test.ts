@@ -1,6 +1,7 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { type CleanableItem, CleanupResult } from "./model";
 
@@ -24,7 +25,7 @@ const FAILED_RESULT = () => {
             total_free_bytes: 0,
         },
         [],
-        "The operation failed"
+        "The operation failed",
     );
 };
 const TEST_ITEMS: CleanableItem[] = [
@@ -43,13 +44,13 @@ const PARTIAL_SUCCESS_RESULT = () => {
                 { item_id: "2", error: "Failed because of Y" },
             ],
         },
-        TEST_ITEMS
+        TEST_ITEMS,
     );
 };
 const SUCCESS_RESULT = () => {
     return new CleanupResult(
         { total_item_count: 3, success_item_count: 3, total_free_bytes: 512 * 3, errors: [] },
-        TEST_ITEMS
+        TEST_ITEMS,
     );
 };
 async function mountCleanupResultDialogWith(result?: CleanupResult) {

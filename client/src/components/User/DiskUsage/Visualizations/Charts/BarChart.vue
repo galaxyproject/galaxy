@@ -47,7 +47,7 @@ const legendEntries = ref<d3.Selection<SVGGElement | d3.BaseType, DataValuePoint
 
 const showTooltip = computed(() => props.enableTooltips && tooltipDataPoint.value !== null);
 const hasData = computed(
-    () => props.data.length > 0 && props.data.reduce((total, dataPoint) => total + dataPoint.value, 0) > 0
+    () => props.data.length > 0 && props.data.reduce((total, dataPoint) => total + dataPoint.value, 0) > 0,
 );
 
 onMounted(() => {
@@ -73,7 +73,7 @@ watch(
             clearChart();
             renderBarChart();
         });
-    }
+    },
 );
 
 function renderBarChart() {
@@ -108,7 +108,7 @@ function drawChart() {
         .domain(
             data.map(function (d) {
                 return d.id;
-            })
+            }),
         )
         .padding(0.1);
 
@@ -151,7 +151,8 @@ function drawChart() {
         .attr("y", (d) => yScale(d.value) - xAxisHeight)
         .attr("width", xScale.bandwidth())
         .attr("height", (d) => chartHeight - yScale(d.value))
-        .attr("fill", (d) => entryColor(d));
+        .attr("fill", (d) => entryColor(d))
+        .attr("data-label", (d) => d.label);
 
     return bars;
 }

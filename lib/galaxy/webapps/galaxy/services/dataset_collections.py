@@ -1,13 +1,13 @@
+from io import BytesIO
 from logging import getLogger
 from typing import (
-    List,
     Optional,
-    Set,
     TYPE_CHECKING,
     Union,
 )
 
 from pydantic import (
+    BaseModel,
     ConfigDict,
     Field,
     RootModel,
@@ -28,6 +28,26 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import DatasetCollectionElement
+from galaxy.model.dataset_collections.types.sample_sheet_util import (
+    SampleSheetColumnDefinitionModel,
+)
+from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
+    ColumnDefinitionsField,
+    CreateWorkbookRequest,
+    CreateWorkbookRequestForCollection,
+    DEFAULT_TITLE,
+    generate_workbook_from_request,
+    generate_workbook_from_request_for_collection,
+    parse_workbook,
+    parse_workbook_for_collection,
+    ParsedWorkbook,
+    ParseWorkbook,
+    ParseWorkbookForCollection,
+    PrefixRowsField,
+    PrefixRowValuesT,
+    WorkbookContentField,
+)
+from galaxy.model.dataset_collections.workbook_util import workbook_to_bytes
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     ModelClassField,
@@ -68,8 +88,8 @@ class DatasetCollectionAttributesResult(Model):
     # Are the following fields really used/needed?
     extension: str = Field(..., description="The dataset file extension.", examples=["txt"])
     model_class: Literal["HistoryDatasetCollectionAssociation"] = ModelClassField("HistoryDatasetCollectionAssociation")
-    dbkeys: Optional[Set[str]]
-    extensions: Optional[Set[str]]
+    dbkeys: Optional[set[str]]
+    extensions: Optional[set[str]]
     tags: TagCollection
 
 
@@ -83,13 +103,52 @@ class SuitableConverter(Model):
 class SuitableConverters(RootModel):
     """Collection of converters that can be used on a particular dataset collection."""
 
-    root: List[SuitableConverter]
+    root: list[SuitableConverter]
 
 
 class DatasetCollectionContentElements(RootModel):
     """Represents a collection of elements contained in the dataset collection."""
 
-    root: List[DCESummary]
+    root: list[DCESummary]
+
+
+class CreateWorkbookForCollectionApi(BaseModel):
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    prefix_values: Optional[PrefixRowValuesT] = PrefixRowsField
+
+
+class ParseWorkbookForCollectionApi(BaseModel):
+    column_definitions: list[SampleSheetColumnDefinitionModel] = ColumnDefinitionsField
+    content: str = WorkbookContentField
+
+    model_config = ConfigDict(extra="forbid")
+
+
+# for next two methods - align vaguely with output of dictify_element_reference in managers/collections_util
+# TODO: replace id: str with EncodedIdField maybe
+class ParsedWorkbookHda(BaseModel):
+    id: str
+    model_class: Literal["HistoryDatasetAssociation"] = "HistoryDatasetAssociation"
+
+
+class ParsedWorkbookCollection(BaseModel):
+    id: str
+    model_class: Literal["DatasetCollection"] = "DatasetCollection"
+
+
+ParsedWorkbookElementObject = Union[ParsedWorkbookHda, ParsedWorkbookCollection]
+
+
+class ParsedWorkbookElement(BaseModel):
+    # align with DCESummary in schema - should we just reuse that?
+    element_index: int
+    element_identifier: str
+    element_type: Literal["hda", "child_collection"]
+    object: ParsedWorkbookElementObject
+
+
+class ParsedWorkbookForCollection(ParsedWorkbook):
+    elements: list[ParsedWorkbookElement]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -295,3 +354,71 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
                 f"Serializing DatasetCollectionContentsElements failed. Collection is populated: {hdca.collection.populated}"
             )
             raise
+
+    def create_workbook(self, payload: CreateWorkbookRequest) -> BytesIO:
+        workbook = generate_workbook_from_request(payload)
+        return workbook_to_bytes(workbook)
+
+    def create_workbook_for_collection(
+        self,
+        trans: ProvidesHistoryContext,
+        hdca_id: int,
+        payload: CreateWorkbookForCollectionApi,
+    ) -> BytesIO:
+        dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
+        create_object = CreateWorkbookRequestForCollection(
+            title=DEFAULT_TITLE,
+            dataset_collection=dataset_collection_instance.collection,
+            column_definitions=payload.column_definitions,
+        )
+        workbook = generate_workbook_from_request_for_collection(create_object)
+        return workbook_to_bytes(workbook)
+
+    def parse_workbook(self, payload: ParseWorkbook) -> ParsedWorkbook:
+        return parse_workbook(payload)
+
+    def parse_workbook_for_collection(
+        self, trans: ProvidesHistoryContext, hdca_id: int, payload: ParseWorkbookForCollectionApi
+    ) -> ParsedWorkbookForCollection:
+        dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
+        dataset_collection = dataset_collection_instance.collection
+        request = ParseWorkbookForCollection(
+            dataset_collection=dataset_collection,
+            column_definitions=payload.column_definitions,
+            content=payload.content,
+        )
+        parsed_workbook: ParsedWorkbook = parse_workbook_for_collection(request)
+        return _attach_elements_to_parsed_workbook(trans, dataset_collection_instance, parsed_workbook)
+
+
+def _attach_elements_to_parsed_workbook(
+    trans: ProvidesHistoryContext,
+    dataset_collection_instance: "HistoryDatasetCollectionAssociation",
+    workbook: ParsedWorkbook,
+) -> ParsedWorkbookForCollection:
+    elements: list[ParsedWorkbookElement] = []
+    for element in dataset_collection_instance.collection.elements:
+        object: ParsedWorkbookElementObject
+        if element.is_collection:
+            child_collection = element.child_collection
+            assert child_collection
+            object = ParsedWorkbookHda(id=trans.security.encode_id(child_collection.id))
+        else:
+            hda = element.hda
+            assert hda
+            object = ParsedWorkbookHda(id=trans.security.encode_id(hda.id))
+
+        elements.append(
+            ParsedWorkbookElement(
+                element_index=element.element_index,
+                element_identifier=element.element_identifier,
+                element_type=element.element_type,
+                object=object,
+            )
+        )
+    return ParsedWorkbookForCollection(
+        rows=workbook.rows,
+        extra_columns=[],
+        elements=elements,
+        parse_log=[],
+    )

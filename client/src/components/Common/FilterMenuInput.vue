@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
@@ -15,8 +14,6 @@ import { capitalize } from "lodash";
 import { computed, ref, watch } from "vue";
 
 import type { ValidFilter } from "@/utils/filtering";
-
-library.add(faQuestion);
 
 type FilterType = string | boolean | undefined;
 
@@ -59,14 +56,14 @@ watch(
     (newFilter) => {
         emit("change", props.name, newFilter);
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
     () => propValue.value,
     (newFilter) => {
         localValue.value = newFilter;
-    }
+    },
 );
 </script>
 

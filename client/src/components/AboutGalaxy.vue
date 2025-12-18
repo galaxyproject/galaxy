@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /* global __buildTimestamp__, __license__  */
-/* (injected by webpack) */
+/* (injected at build time) */
 
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
+import { galaxyLogo } from "@/components/icons/galaxyIcons";
 import { useConfig } from "@/composables/config";
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -29,7 +30,7 @@ const versionUserDocumentationUrl = computed(() => {
 
 <template>
     <div v-if="isConfigLoaded" class="about-galaxy">
-        <Heading h1 :icon="['gxd', 'galaxyLogo']" size="lg">Help and Support</Heading>
+        <Heading h1 :icon="galaxyLogo" size="lg">Help and Support</Heading>
         <div class="p-2">
             <Heading h2 separator size="md">Support</Heading>
             <div v-if="config.wiki_url">
@@ -116,7 +117,7 @@ const versionUserDocumentationUrl = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .about-galaxy h1 {
     --fa-primary-color: #{$brand-primary};

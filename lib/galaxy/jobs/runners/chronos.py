@@ -1,6 +1,10 @@
 import functools
 import logging
 import os
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -8,6 +12,9 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
 )
 from galaxy.util import unicodify
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
 
 CHRONOS_IMPORT_MSG = (
     "The Python 'chronos' package is required to use "
@@ -81,7 +88,7 @@ def _add_galaxy_environment_variables(cpus, memory):
     return [{"name": "GALAXY_SLOTS", "value": cpus}, {"name": "GALAXY_MEMORY_MB", "value": memory}]
 
 
-class ChronosJobRunner(AsynchronousJobRunner):
+class ChronosJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     runner_name = "ChronosRunner"
     RUNNER_PARAM_SPEC_KEY = "runner_param_specs"
     JOB_NAME_PREFIX = "galaxy-chronos-"
@@ -147,7 +154,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         )
 
     @handle_exception_call
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         LOGGER.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
         if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
             LOGGER.debug(f"Not ready {job_wrapper.get_id_tag()}")
@@ -157,10 +164,10 @@ class ChronosJobRunner(AsynchronousJobRunner):
         job_name = chronos_job_spec["name"]
         self._chronos_client.add(chronos_job_spec)
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
-            job_id=job_name,
             job_destination=job_destination,
+            files_dir=job_wrapper.working_directory,
+            job_id=job_name,
         )
         self.monitor_queue.put(ajs)
 
@@ -177,16 +184,15 @@ class ChronosJobRunner(AsynchronousJobRunner):
             msg = "Job {name!r} not found. It cannot be terminated."
             LOGGER.error(msg.format(name=job_name))
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         msg = "(name!r/runner!r) is still in {state!s} state, adding to the runner monitor queue"
         job_id = job.get_job_runner_external_id()
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
-            job_id=self.JOB_NAME_PREFIX + str(job_id),
             job_destination=job_wrapper.job_destination,
+            files_dir=job_wrapper.working_directory,
+            job_id=self.JOB_NAME_PREFIX + str(job_id),
         )
-        ajs.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_external_id, state=job.state))
             ajs.old_state = model.Job.states.RUNNING
@@ -199,14 +205,15 @@ class ChronosJobRunner(AsynchronousJobRunner):
             self.monitor_queue.put(ajs)
 
     @handle_exception_call
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         job_name = job_state.job_id
         # TODO: how can stopped GxIT jobs be handled here?
         if job := self._retrieve_job(job_name):
             succeeded = job["successCount"]
             errors = job["errorCount"]
             if succeeded > 0:
-                return self._mark_as_successful(job_state)
+                self._mark_as_successful(job_state)
+                return None
             elif not succeeded and not errors:
                 return self._mark_as_active(job_state)
             elif errors:
@@ -216,11 +223,13 @@ class ChronosJobRunner(AsynchronousJobRunner):
                 else:
                     msg = "Job {name!r} failed more than {retries!s} times."
                 reason = msg.format(name=job_name, retries=str(max_retries))
-                return self._mark_as_failed(job_state, reason)
+                self._mark_as_failed(job_state, reason)
+                return None
         reason = f"Job {job_name!r} not found"
-        return self._mark_as_failed(job_state, reason)
+        self._mark_as_failed(job_state, reason)
+        return None
 
-    def _mark_as_successful(self, job_state):
+    def _mark_as_successful(self, job_state: AsynchronousJobState) -> None:
         msg = "Job {name!r} finished successfully"
         _write_logfile(job_state.output_file, msg.format(name=job_state.job_id))
         _write_logfile(job_state.error_file, "")
@@ -229,22 +238,22 @@ class ChronosJobRunner(AsynchronousJobRunner):
         self.mark_as_finished(job_state)
         return None
 
-    def _mark_as_active(self, job_state):
+    def _mark_as_active(self, job_state: AsynchronousJobState) -> AsynchronousJobState:
         job_state.running = True
         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
         return job_state
 
-    def _mark_as_failed(self, job_state, reason):
+    def _mark_as_failed(self, job_state: AsynchronousJobState, reason: str) -> None:
         _write_logfile(job_state.error_file, reason)
         job_state.running = False
-        job_state.stop_job = True
+        job_state.stop_job = False
         job_state.job_wrapper.change_state(model.Job.states.ERROR)
         job_state.fail_message = reason
         self.mark_as_failed(job_state)
         return None
 
     @handle_exception_call
-    def finish_job(self, job_state):
+    def finish_job(self, job_state: AsynchronousJobState) -> None:
         super().finish_job(job_state)
         self._chronos_client.delete(job_state.job_id)
 

@@ -11,11 +11,11 @@ from galaxy.security.passwords import check_password
 from galaxy.util.unittest import TestCase
 from galaxy.webapps.galaxy.controllers.user import User
 
-admin_email = "admin@admin.admin"
+admin_email = "admin@example.org"
 admin_users = admin_email
 default_password = "123456"
 changed_password = "654321"
-user2_data = dict(email="user2@user2.user2", username="user2", password=default_password)
+user2_data = dict(email="User2@example.org", username="user2", password=default_password)
 
 
 class TestLoginController(TestCase):
@@ -84,3 +84,14 @@ class TestLoginController(TestCase):
             controller.login(self.trans, payload={"login": user2.username, "password": default_password})
         )
         assert response["message"] == "Success."
+
+    def test_get_reset_token(self):
+        def _check_reset_token(email):
+            reset_user, prt = self.user_manager.get_reset_token(self.trans, email)
+            assert user2 == reset_user
+            assert prt.user == user2
+
+        user2 = self.user_manager.create(**user2_data)
+        _check_reset_token(user2_data["email"])
+        _check_reset_token(user2_data["email"].lower())
+        _check_reset_token(user2_data["email"].upper())

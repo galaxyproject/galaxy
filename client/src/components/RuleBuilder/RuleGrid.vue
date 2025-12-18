@@ -101,6 +101,7 @@ watch(() => props.colHeaders, resizeOnNextTick);
             :row-data="data"
             :column-defs="agColumnHeaders"
             :default-col-def="defaultColDef"
+            :always-show-horizontal-scroll="true"
             :style="style"
             :row-height="20"
             :header-height="30"

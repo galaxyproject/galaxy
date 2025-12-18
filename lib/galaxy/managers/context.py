@@ -42,11 +42,8 @@ from typing import (
     Any,
     Callable,
     cast,
-    Dict,
-    List,
     Literal,
     Optional,
-    Tuple,
 )
 
 from sqlalchemy import select
@@ -207,12 +204,12 @@ class ProvidesUserContext(ProvidesAppContext):
     workflow_building_mode: Literal[1, True, False] = False
     galaxy_session: Optional[GalaxySession] = None
     _tag_handler: Optional[GalaxyTagHandlerSession] = None
-    _short_term_cache: Dict[Tuple[str, ...], Any]
+    _short_term_cache: dict[tuple[str, ...], Any]
 
-    def set_cache_value(self, args: Tuple[str, ...], value: Any):
+    def set_cache_value(self, args: tuple[str, ...], value: Any):
         self._short_term_cache[args] = value
 
-    def get_cache_value(self, args: Tuple[str, ...], default: Any = None) -> Any:
+    def get_cache_value(self, args: tuple[str, ...], default: Any = None) -> Any:
         return self._short_term_cache.get(args, default)
 
     @property
@@ -245,7 +242,7 @@ class ProvidesUserContext(ProvidesAppContext):
     def anonymous(self) -> bool:
         return self.user is None
 
-    def get_current_user_roles(self) -> List[Role]:
+    def get_current_user_roles(self) -> list[Role]:
         if user := self.user:
             roles = user.all_roles()
         else:

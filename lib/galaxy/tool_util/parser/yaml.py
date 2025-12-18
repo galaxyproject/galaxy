@@ -21,6 +21,7 @@ from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.tool_source import (
     HelpContent,
     XrefDict,
+    YamlTemplateConfigFile,
 )
 from galaxy.util import listify
 from .interface import (
@@ -56,6 +57,9 @@ class YamlToolSource(ToolSource):
     @property
     def source_path(self):
         return self._source_path
+
+    def parse_class(self):
+        return self.root_dict.get("class")
 
     def parse_tool_type(self):
         return self.root_dict.get("tool_type")
@@ -117,6 +121,9 @@ class YamlToolSource(ToolSource):
     def parse_environment_variables(self):
         return []
 
+    def parse_template_configfiles(self):
+        return [YamlTemplateConfigFile(**config) for config in self.root_dict.get("configfiles") or []]
+
     def parse_interpreter(self):
         return self.root_dict.get("interpreter")
 
@@ -126,7 +133,7 @@ class YamlToolSource(ToolSource):
     def parse_version_command_interpreter(self):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
-    def parse_requirements_and_containers(self):
+    def parse_requirements(self):
         mixed_requirements = self.root_dict.get("requirements", [])
         container = self.root_dict.get("container")
         containers = self.root_dict.get("containers")
@@ -143,6 +150,7 @@ class YamlToolSource(ToolSource):
             containers=containers,
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
             javascript_requirements=[r for r in mixed_requirements if r.get("type") == "javascript"],
+            credentials=self.root_dict.get("credentials", []),
         )
 
     def parse_input_pages(self) -> PagesSource:
@@ -324,6 +332,8 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
 
 
 def to_test_assert_list(assertions) -> AssertionList:
+    assertions = assertions or []
+
     def expand_dict_form(item):
         key, value = item
         new_value = value.copy()
@@ -393,6 +403,12 @@ class YamlInputSource(InputSource):
             return "conditional"
         else:
             return "param"
+
+    def parse_extensions(self):
+        extensions = self.input_dict.get("extensions")
+        if not extensions:
+            extensions = self.get("format", "data").split(",")
+        return [ext.strip().lower() for ext in extensions]
 
     def parse_nested_inputs_source(self):
         assert self.parse_input_type() == "repeat"

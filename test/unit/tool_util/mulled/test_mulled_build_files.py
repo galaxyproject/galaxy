@@ -5,8 +5,8 @@ import yaml
 
 from galaxy.tool_util.deps.mulled.mulled_build import target_str_to_targets
 from galaxy.tool_util.deps.mulled.mulled_build_files import (
-    FALLBACK_LINE_TUPLE,
     generate_targets,
+    Target,
 )
 
 TESTCASES = yaml.safe_load(
@@ -63,7 +63,7 @@ TEST_IDS = [next(iter(k.keys())) for k in TESTCASES]
 )
 def test_generate_targets(content, equals):
     equals["targets"] = target_str_to_targets(equals["targets"])
-    equals = FALLBACK_LINE_TUPLE(**equals)
+    equals = Target(**equals)
     with tempfile.NamedTemporaryFile(mode="w") as tmpfile:
         tmpfile.write(content)
         tmpfile.flush()

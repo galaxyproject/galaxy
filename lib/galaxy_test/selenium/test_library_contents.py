@@ -6,6 +6,7 @@ from galaxy_test.base.decorators import (
 )
 from .framework import (
     retry_during_transitions,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesLibraryAssertions,
@@ -29,7 +30,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         description = self._get_random_name(prefix="new_sub_folder_description")
         long_description = self._get_random_name(prefix="new_sub_folder_description", len=45)
 
-        # create mew folder
+        # create new folder
         self.admin_login()
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
@@ -57,6 +58,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         shrinked_description = long_description[0:40]
         assert shrinked_description == self.components.libraries.folder.description_field_shrinked.wait_for_text()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     @requires_new_library
@@ -99,6 +101,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         expected_filename = "selected_dataset_files.zip"
         assert expected_filename in folder_files
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     @requires_new_library
@@ -122,6 +125,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
     # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     @requires_new_library

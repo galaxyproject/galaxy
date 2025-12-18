@@ -21,11 +21,31 @@
                 <ButtonSpinner
                     id="run-workflow"
                     title="Run Workflow"
-                    :disabled="!canRunOnHistory"
+                    :tooltip="runButtonTooltip"
+                    :disabled="!canRunOnHistory || hasCredentialErrors"
                     :wait="showExecuting"
                     @onClick="onExecute" />
             </div>
         </div>
+
+        <BAlert v-if="disableSimpleFormReason" show variant="warning">
+            This is the legacy workflow run form.
+            <span v-if="disableSimpleFormReason === 'hasReplacementParameters'">
+                This workflow contains parameters in tool steps that require advanced handling. The simplified form does
+                not support these parameters.
+            </span>
+            <span v-else-if="disableSimpleFormReason === 'hasDisconnectedInputs'">
+                One or more tools in this workflow have required inputs that are not connected to other steps. The
+                simplified form cannot handle disconnected runtime inputs.
+            </span>
+            <span v-else-if="disableSimpleFormReason === 'hasWorkflowResourceParameters'">
+                This workflow is configured with resource request parameters. The simplified form does not support
+                workflows with resource options.
+            </span>
+        </BAlert>
+
+        <WorkflowCredentials v-if="credentialTools.length" :tool-identifiers="credentialTools" />
+
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
                 <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
@@ -71,19 +91,23 @@
 
 <script>
 import { BAlert } from "bootstrap-vue";
-import ButtonSpinner from "components/Common/ButtonSpinner";
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import FormElement from "components/Form/FormElement";
 import { mapState } from "pinia";
 
+import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
 import { getReplacements } from "./model";
 import { invokeWorkflow } from "./services";
-import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
-import WorkflowRunInputStep from "./WorkflowRunInputStep";
+
+import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep.vue";
+import WorkflowRunInputStep from "./WorkflowRunInputStep.vue";
+import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 export default {
     components: {
@@ -92,6 +116,7 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
+        WorkflowCredentials,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
     },
@@ -107,6 +132,10 @@ export default {
         disableSimpleForm: {
             type: Boolean,
             default: false,
+        },
+        disableSimpleFormReason: {
+            type: String,
+            default: undefined,
         },
     },
     data() {
@@ -154,6 +183,19 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId"]),
+        credentialTools() {
+            return this.model.steps
+                .filter((step) => step.step_type === "tool" && step.credentials?.length)
+                .map((step) => {
+                    const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+                    setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
+
+                    return {
+                        toolId: step.id,
+                        toolVersion: step.version,
+                    };
+                });
+        },
         resourceInputsAvailable() {
             return this.resourceInputs.length > 0;
         },
@@ -171,6 +213,21 @@ export default {
         },
         canRunOnHistory() {
             return this.shouldRunOnNewHistory || this.canMutateCurrentHistory;
+        },
+        hasCredentialErrors() {
+            if (this.credentialTools.length) {
+                const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+                    this.credentialTools,
+                );
+                return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+            }
+            return false;
+        },
+        runButtonTooltip() {
+            if (this.hasCredentialErrors) {
+                return "Please provide all required credentials before running the workflow.";
+            }
+            return "Run workflow";
         },
     },
     methods: {
@@ -268,7 +325,7 @@ export default {
                                 errorFormatting,
                                 "WorkflowRunForm::onExecute()",
                                 "Invalid server error response format.",
-                                errorData
+                                errorData,
                             );
                             this.$emit("submissionError", e);
                         }

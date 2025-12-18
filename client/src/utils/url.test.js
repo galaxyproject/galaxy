@@ -1,3 +1,5 @@
+import { describe, expect, it, test } from "vitest";
+
 import { addSearchParams, isUrl } from "./url";
 
 describe("test url utilities", () => {

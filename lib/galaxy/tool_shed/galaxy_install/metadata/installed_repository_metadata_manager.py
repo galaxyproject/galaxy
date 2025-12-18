@@ -2,7 +2,6 @@ import logging
 import os
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -37,13 +36,13 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
         repository: Optional[ToolShedRepository] = None,
         changeset_revision: Optional[str] = None,
         repository_clone_url: Optional[str] = None,
-        shed_config_dict: Optional[Dict[str, Any]] = None,
+        shed_config_dict: Optional[dict[str, Any]] = None,
         relative_install_dir: Optional[str] = None,
         repository_files_dir: Optional[str] = None,
         resetting_all_metadata_on_repository: bool = False,
         updating_installed_repository: bool = False,
         persist: bool = False,
-        metadata_dict: Optional[Dict[str, Any]] = None,
+        metadata_dict: Optional[dict[str, Any]] = None,
     ):
         super().__init__(
             app,

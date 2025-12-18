@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy_test.base.populators import (
@@ -130,7 +129,7 @@ class TestItemTagsApi(ApiTestCase):
 
     def _create_valid_tag(self, prefix: str):
         url = f"{prefix}/tags/awesometagname"
-        tag_data: Dict[str, Any] = {}  # Can also be dict(value="awesometagvalue")
+        tag_data: dict[str, Any] = {}  # Can also be dict(value="awesometagvalue")
         response = self._post(url, data=tag_data, json=True)
         return response
 

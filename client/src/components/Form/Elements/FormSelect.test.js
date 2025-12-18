@@ -1,13 +1,16 @@
+import "@/composables/__mocks__/filter";
+
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import MountTarget from "./FormSelection.vue";
 
 const localVue = getLocalVue(true);
 
 function createTarget(propsData) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
 
     return mount(MountTarget, {
         localVue,

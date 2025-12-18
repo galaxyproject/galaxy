@@ -8,7 +8,6 @@ import logging
 from typing import (
     cast,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -53,7 +52,7 @@ class QuotaManager:
     def quota_agent(self) -> DatabaseQuotaAgent:
         return cast(DatabaseQuotaAgent, self.app.quota_agent)
 
-    def create_quota(self, payload: dict, decode_id=None) -> Tuple[model.Quota, str]:
+    def create_quota(self, payload: dict, decode_id=None) -> tuple[model.Quota, str]:
         params = CreateQuotaParams.parse_obj(payload)
         create_amount = self._parse_amount(params.amount)
         stmt = select(Quota).where(Quota.name == params.name).limit(1)

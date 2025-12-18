@@ -25,7 +25,7 @@ const { ActionSummary, error, inputs, InstanceForm, onSubmit, submitTitle, loadi
         toRef(props, "uuid"),
         createTestUrl,
         createUrl,
-        (fileSource: UserFileSourceModel) => emit("created", fileSource)
+        (fileSource: UserFileSourceModel) => emit("created", fileSource),
     );
 </script>
 <template>

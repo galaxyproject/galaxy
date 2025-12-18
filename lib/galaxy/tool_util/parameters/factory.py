@@ -119,12 +119,15 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             )
         elif param_type == "text":
             optional, optionality_inferred = text_input_is_optional(input_source)
+            implicit_default = None if optional else ""
+            default_value = input_source.get("value", implicit_default)
             text_validators: List[TextCompatiableValidators] = _text_validators(input_source)
             return TextParameterModel(
                 type="text",
                 name=input_source.parse_name(),
                 optional=optional,
                 validators=text_validators,
+                value=default_value,
             )
         elif param_type == "float":
             optional = input_source.parse_optional()
@@ -215,7 +218,10 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             select_validators: List[SelectCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "no_options":
-                    select_validators.append(static_validator)
+                    # test case test_tool_execute::test_select_optional_null_by_default verifies
+                    # these validators don't get applied effectively if the select is optional.
+                    if not optional:
+                        select_validators.append(static_validator)
             return SelectParameterModel(
                 type="select",
                 name=input_source.parse_name(),

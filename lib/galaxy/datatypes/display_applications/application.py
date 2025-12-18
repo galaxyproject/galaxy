@@ -254,7 +254,8 @@ class PopulatedDisplayApplicationLink:
             if datasets_only and not isinstance(param, DisplayApplicationDataParameter):
                 continue
             value = self.parameters.get(name, None)
-            rval.append({"name": name, "value": value, "param": param, "ready": param.ready(self.parameters)})
+            state = value.state if value is not None else None
+            rval.append({"name": name, "state": state, "ready": param.ready(self.parameters)})
         return rval
 
     def display_url(self):

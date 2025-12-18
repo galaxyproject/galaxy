@@ -5,7 +5,6 @@ import logging
 import types
 from typing import (
     Optional,
-    Tuple,
 )
 
 log = logging.getLogger(__name__)
@@ -118,8 +117,8 @@ class ApplicationStackMessage(dict):
 
 class ParamMessage(ApplicationStackMessage):
     _validate_kwargs = ("params",)
-    _validate_params: Tuple[str, ...] = ()
-    _exclude_params: Tuple[str, ...] = ()
+    _validate_params: tuple[str, ...] = ()
+    _exclude_params: tuple[str, ...] = ()
 
     def __init__(self, target=None, params=None, **kwargs):
         super().__init__(target=target)

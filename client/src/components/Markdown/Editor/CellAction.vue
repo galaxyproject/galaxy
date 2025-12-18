@@ -75,7 +75,7 @@ const props = withDefaults(
     {
         configurable: false,
         show: true,
-    }
+    },
 );
 
 defineEmits<{

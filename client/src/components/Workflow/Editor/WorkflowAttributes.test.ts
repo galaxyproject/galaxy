@@ -1,8 +1,9 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { useUserTagsStore } from "@/stores/userTagsStore";
 
@@ -10,7 +11,7 @@ import { UntypedParameters } from "./modules/parameters";
 
 import WorkflowAttributes from "./WorkflowAttributes.vue";
 
-jest.mock("app");
+vi.mock("app", () => ({}));
 
 const TEST_ANNOTATION = "my cool annotation";
 const TEST_NAME = "workflow_name";
@@ -22,6 +23,8 @@ const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
 describe("WorkflowAttributes", () => {
     it("test attributes", async () => {
+        suppressBootstrapVueWarnings();
+
         const pinia = createPinia();
         const localVue = getLocalVue(true);
 
@@ -52,10 +55,10 @@ describe("WorkflowAttributes", () => {
         await flushPromises();
 
         const userTagsStore = useUserTagsStore();
-        jest.spyOn(userTagsStore, "userTags", "get").mockReturnValue(autocompleteTags);
-        userTagsStore.onNewTagSeen = jest.fn();
-        userTagsStore.onTagUsed = jest.fn();
-        userTagsStore.onMultipleNewTagsSeen = jest.fn();
+        vi.spyOn(userTagsStore, "userTags", "get").mockReturnValue(autocompleteTags);
+        userTagsStore.onNewTagSeen = vi.fn();
+        userTagsStore.onTagUsed = vi.fn();
+        userTagsStore.onMultipleNewTagsSeen = vi.fn();
 
         expect(wrapper.find(`[itemprop='description']`).attributes("content")).toBe(TEST_ANNOTATION);
         expect(wrapper.find(`[itemprop='name']`).attributes("content")).toBe(TEST_NAME);

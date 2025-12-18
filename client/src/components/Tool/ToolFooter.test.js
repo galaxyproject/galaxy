@@ -1,25 +1,53 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import ToolFooter from "./ToolFooter";
+import ToolFooter from "./ToolFooter.vue";
 
 const localVue = getLocalVue(true);
 
-const citationsA = [{ format: "bibtex", content: "@misc{entry_a, year = {1111}}" }];
-const citationsB = [{ format: "bibtex", content: "@misc{entry_b, year = {2222}}" }];
+const citationsA = [
+    {
+        raw: "@misc{entry_a, year = {1111}}",
+        cite: {
+            format: vi.fn(
+                () =>
+                    '<div class="csl-bib-body"><div data-csl-entry-id="entry_a" class="csl-entry">Entry A (1111)</div></div>',
+            ),
+            data: [{ URL: "https://example.com/a" }],
+        },
+    },
+];
+
+const citationsB = [
+    {
+        raw: "@misc{entry_b, year = {2222}}",
+        cite: {
+            format: vi.fn(
+                () =>
+                    '<div class="csl-bib-body"><div data-csl-entry-id="entry_b" class="csl-entry">Entry B (2222)</div></div>',
+            ),
+            data: [{ URL: "https://example.com/b" }],
+        },
+    },
+];
+
+vi.mock("@/components/Citation/services", () => ({
+    getCitations: vi.fn((source, id) => {
+        if (id === "tool_a") {
+            return Promise.resolve(citationsA);
+        } else if (id === "tool_b") {
+            return Promise.resolve(citationsB);
+        }
+        return Promise.resolve([]);
+    }),
+}));
 
 describe("ToolFooter", () => {
     let wrapper;
-    let axiosMock;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/tools/tool_a/citations`).reply(200, citationsA);
-        axiosMock.onGet(`/api/tools/tool_b/citations`).reply(200, citationsB);
-
         wrapper = mount(ToolFooter, {
             propsData: {
                 id: "tool_a",
@@ -31,17 +59,12 @@ describe("ToolFooter", () => {
             },
             localVue,
             stubs: {
-                Citation: false,
+                CitationItem: false,
                 License: true,
                 Creators: true,
                 FontAwesomeIcon: true,
             },
         });
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-        axiosMock.reset();
     });
 
     it("check props", async () => {

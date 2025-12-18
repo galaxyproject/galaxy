@@ -42,15 +42,8 @@
             :hide-panel="reportActive"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
-                <ToolPanel
-                    v-if="isActiveSideBar('workflow-editor-tools')"
-                    workflow
-                    :module-sections="moduleSections"
-                    :data-managers="dataManagers"
-                    @onInsertTool="onInsertTool"
-                    @onInsertModule="onInsertModule"
-                    @onInsertWorkflow="onInsertWorkflow"
-                    @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
+                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
@@ -108,6 +101,7 @@
                 <UserToolPanel
                     v-if="isActiveSideBar('workflow-editor-user-defined-tools')"
                     :in-workflow-editor="true"
+                    in-panel
                     @onInsertTool="onInsertTool" />
             </template>
         </ActivityBar>
@@ -146,17 +140,47 @@
                     </span>
 
                     <b-button-group>
+                        <BDropdown
+                            v-if="credentialSteps.length > 0"
+                            no-caret
+                            right
+                            variant="link"
+                            style="z-index: 60000"
+                            title="Workflow contains steps that require credentials"
+                            @show="() => (showDropdown = true)"
+                            @hide="() => (showDropdown = false)">
+                            <template v-slot:button-content>
+                                <FontAwesomeIcon :icon="faKey" fixed-width />
+                            </template>
+
+                            <BDropdownText style="min-width: 25rem">
+                                This workflow contains the following steps that require credentials:
+                            </BDropdownText>
+
+                            <BDropdownDivider />
+
+                            <BDropdownItem
+                                v-for="cs in credentialSteps"
+                                :key="cs.id"
+                                title="Click to go to step"
+                                class="mr-0"
+                                @click="onToolClick(cs.id)">
+                                <FontAwesomeIcon :icon="faWrench" fixed-width />
+                                {{ cs.id + 1 }}: {{ cs.label ?? cs.name }}
+                            </BDropdownItem>
+                        </BDropdown>
+
                         <b-button
                             :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
                             :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
                             @click="undoRedoStore.undo()">
-                            <FontAwesomeIcon icon="fa-arrow-left" />
+                            <FontAwesomeIcon :icon="faArrowLeft" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
                             :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
                             @click="undoRedoStore.redo()">
-                            <FontAwesomeIcon icon="fa-arrow-right" />
+                            <FontAwesomeIcon :icon="faArrowRight" />
                         </b-button>
                         <b-button
                             id="workflow-save-button"
@@ -214,22 +238,22 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight, faCog, faHistory, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faCog, faKey, faSave, faTimes, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
-import { Toast } from "composables/toast";
+import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { Toast } from "@/composables/toast";
 import { useMagicKeys } from "@/composables/useMagicKeys";
 import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
-import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
@@ -245,7 +269,7 @@ import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivitie
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
-import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
+import { getModule, getVersions, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
@@ -261,12 +285,11 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
+import SearchPanel from "@/components/Panels/SearchPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
-
-library.add(faArrowLeft, faArrowRight, faHistory);
 
 export default {
     components: {
@@ -287,6 +310,11 @@ export default {
         NodeInspector,
         InputPanel,
         UserToolPanel,
+        SearchPanel,
+        BDropdownItem,
+        BDropdown,
+        BDropdownText,
+        BDropdownDivider,
     },
     props: {
         workflowId: {
@@ -300,14 +328,6 @@ export default {
         workflowTags: {
             type: Array,
             default: () => [],
-        },
-        moduleSections: {
-            type: Array,
-            required: true,
-        },
-        dataManagers: {
-            type: Array,
-            required: true,
         },
     },
     setup(props, { emit }) {
@@ -351,7 +371,7 @@ export default {
             undoRedoStore,
             (value) => (name.value = value),
             showAttributes,
-            "set workflow name"
+            "set workflow name",
         );
         /** user set name. queues an undo/redo action */
         function setName(newName) {
@@ -367,7 +387,8 @@ export default {
             undoRedoStore,
             (value) => (license.value = value),
             showAttributes,
-            "set license"
+            "set license",
+            "license",
         );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
@@ -381,7 +402,8 @@ export default {
             undoRedoStore,
             (value) => (creator.value = value),
             showAttributes,
-            "set creator"
+            "set creator",
+            "creator",
         );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
@@ -393,7 +415,7 @@ export default {
             undoRedoStore,
             (value) => (doi.value = value),
             showAttributes,
-            "set DOI"
+            "set DOI",
         );
         function setDoi(newDoi) {
             setDoiHandler.set(doi.value, newDoi);
@@ -404,7 +426,8 @@ export default {
             undoRedoStore,
             (value) => (annotation.value = value),
             showAttributes,
-            "modify short description"
+            "modify short description",
+            "annotation",
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
@@ -422,7 +445,7 @@ export default {
                 readmeActive.value = true;
                 showAttributes(args);
             },
-            "modify readme"
+            "modify readme",
         );
         function setReadme(newReadme) {
             if (readme.value !== newReadme) {
@@ -437,7 +460,7 @@ export default {
                 if (newReportActive) {
                     readmeActive.value = false;
                 }
-            }
+            },
         );
 
         const help = ref(null);
@@ -445,7 +468,7 @@ export default {
             undoRedoStore,
             (value) => (help.value = value),
             showAttributes,
-            "modify help"
+            "modify help",
         );
         function setHelp(newHelp) {
             if (help.value !== newHelp) {
@@ -458,7 +481,7 @@ export default {
             undoRedoStore,
             (value) => (logoUrl.value = value),
             showAttributes,
-            "modify logo url"
+            "modify logo url",
         );
         function setLogoUrl(newLogoUrl) {
             if (logoUrl.value !== newLogoUrl) {
@@ -468,30 +491,23 @@ export default {
 
         const tags = ref([]);
 
-        watch(
-            () => props.workflowTags,
-            (newTags) => {
-                tags.value = [...newTags];
-            },
-            { immediate: true }
-        );
-
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
             showAttributes,
-            "change tags"
+            "change tags",
         );
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
             setTagsHandler.set(tags.value, newTags);
+            hasChanges.value = true;
         }
 
         watch(
             () => stateStore.activeNodeId,
             () => {
                 scrollToTop();
-            }
+            },
         );
 
         const rightPanelElement = ref(null);
@@ -573,38 +589,56 @@ export default {
         const { specialWorkflowActivities } = useSpecialWorkflowActivities(
             computed(() => ({
                 hasInvalidConnections: hasInvalidConnections.value,
-            }))
+            })),
         );
 
         const getLabels = computed(() => fromSteps(steps.value));
 
         const saveWorkflowTitle = computed(() =>
-            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow"
+            hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow",
         );
 
         useActivityLogic(
             computed(() => ({
                 activityBarId: "workflow-editor",
                 isNewTempWorkflow: isNewTempWorkflow.value,
-            }))
+            })),
         );
 
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
+        const credentialSteps = computed(() => {
+            return Object.values(steps.value).filter(
+                (step) => step.type === "tool" && step.config_form?.credentials?.length > 0,
+            );
+        });
+
         const unprivilegedToolStore = useUnprivilegedToolStore();
         const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
         const workflowActivities = computed(() =>
             workflowEditorActivities.filter(
-                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value
-            )
+                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value,
+            ),
         );
+
+        function onSearchResultClicked(searchData) {
+            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        }
+
+        function onToolClick(toolId) {
+            stateStore.activeNodeId = toolId;
+            this.onScrollTo(toolId);
+        }
 
         return {
             id,
+            onToolClick,
             name,
             parameters,
+            credentialSteps,
             workflowGraph,
+            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,
@@ -624,6 +658,8 @@ export default {
             help,
             setHelp,
             logoUrl,
+            // make component look like an API workflow with logo_url alias for logoUrl
+            logo_url: logoUrl,
             setLogoUrl,
             tags,
             setTags,
@@ -659,6 +695,9 @@ export default {
             confirm,
             inputs,
             workflowActivities,
+            faKey,
+            faWrench,
+            showDropdown: false,
         };
     },
     data() {
@@ -684,6 +723,8 @@ export default {
             debounceTimer: null,
             showSaveChangesModal: false,
             navUrl: "",
+            faArrowLeft,
+            faArrowRight,
             faTimes,
             faCog,
             faSave,
@@ -741,7 +782,6 @@ export default {
         this.services = new Services();
         this.lastQueue = new LastQueue();
         await this._loadCurrent(this.id, this.version);
-        hide_modal();
         this.initialLoading = false;
     },
     methods: {
@@ -757,7 +797,7 @@ export default {
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
-                    "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
+                    "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?",
                 );
                 if (r == false) {
                     return;
@@ -794,7 +834,6 @@ export default {
             this.messageTitle = null;
             this.messageBody = null;
             this.messageIsError = false;
-            hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
             await this.resetStores();
@@ -836,12 +875,12 @@ export default {
         copyIntoWorkflow(id) {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
-            loadWorkflow({ id }).then((data) => {
+            getWorkflowFull(id).then((data) => {
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
                     defaultPosition(this.graphOffset, this.transform),
-                    true
+                    true,
                 );
                 this.undoRedoStore.applyAction(action);
                 // Determine if any parameters were 'upgraded' and provide message
@@ -854,7 +893,7 @@ export default {
                 this.copyIntoWorkflow(workflowId);
             } else {
                 const confirmed = await ConfirmDialog.confirm(
-                    `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
+                    `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`,
                 );
                 if (confirmed) {
                     this.copyIntoWorkflow(workflowId);
@@ -901,7 +940,7 @@ export default {
                     {
                         id: "save-workflow-confirmation",
                         okTitle: "Save Workflow",
-                    }
+                    },
                 );
 
                 if (!confirmed) {
@@ -981,7 +1020,7 @@ export default {
                         Ok: () => {
                             this.hideModal();
                         },
-                    }
+                    },
                 );
             }
         },
@@ -1076,7 +1115,7 @@ export default {
             if (version != this.version) {
                 if (this.hasChanges) {
                     const r = window.confirm(
-                        "There are unsaved changes to your workflow which will be lost. Continue ?"
+                        "There are unsaved changes to your workflow which will be lost. Continue ?",
                     );
                     if (r == false) {
                         return;
@@ -1100,7 +1139,7 @@ export default {
             const response = await getModule(
                 { name, type, content_id: contentId, tool_state: state, tool_uuid: toolUuid },
                 stepData.id,
-                this.stateStore.setLoadingState
+                this.stateStore.setLoadingState,
             );
 
             const updatedStep = {
@@ -1143,6 +1182,7 @@ export default {
             this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;
+            this.tags = data.tags;
             this.license = data.license;
             this.creator = data.creator;
             this.doi = data.doi;
@@ -1158,7 +1198,7 @@ export default {
                 this.onWorkflowMessage("Loading workflow...", "progress");
 
                 try {
-                    const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
+                    const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
                     await fromSimple(id, data);
                     await this._loadEditorData(data);
                 } catch (e) {
@@ -1203,7 +1243,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .editor-top-bar {
     background: $brand-light;

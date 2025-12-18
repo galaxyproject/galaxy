@@ -33,7 +33,7 @@ const props = withDefaults(
         active: false,
         show: true,
         tooltipPlacement: "right",
-    }
+    },
 );
 
 defineEmits<{

@@ -1,10 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import MountTarget from "./WorkflowDisplay";
+import MountTarget from "./WorkflowDisplay.vue";
 
 const localVue = getLocalVue(true);
 
@@ -47,7 +48,7 @@ describe("WorkflowDisplay", () => {
         const wrapper = mountDefault();
         await flushPromises();
         const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Workflow: workflow_name");
+        expect(cardHeader.text()).toBe("Workflow:workflow_name");
         const downloadUrl = wrapper.find("[data-description='workflow download']");
         expect(downloadUrl.attributes("href")).toBe("/api/workflows/workflow_id/download?format=json-download");
         const importUrl = wrapper.find("[data-description='workflow import']");

@@ -16,8 +16,6 @@ import time
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 from urllib.parse import urlparse
@@ -199,7 +197,7 @@ def setup_galaxy_config(
         admin_users="test@bx.psu.edu",
         allow_library_path_paste=True,
         allow_path_paste=allow_path_paste,
-        allow_user_creation=True,
+        allow_local_account_creation=True,
         allow_user_deletion=True,
         api_allow_run_as="test@bx.psu.edu",
         auto_configure_logging=logging_config_file is None,
@@ -212,6 +210,7 @@ def setup_galaxy_config(
         data_dir=tmpdir,
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
+        enable_tool_generated_tours=True,
         expose_dataset_path=True,
         ftp_upload_purge=False,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
@@ -798,8 +797,8 @@ class TestDriver:
 
     def __init__(self):
         """Setup tracked resources."""
-        self.server_wrappers: List[ServerWrapper] = []
-        self.temp_directories: List[str] = []
+        self.server_wrappers: list[ServerWrapper] = []
+        self.temp_directories: list[str] = []
 
     def setup(self) -> None:
         """Called before tests are built."""
@@ -951,7 +950,7 @@ class GalaxyTestDriver(TestDriver):
         return config_object
 
     def run_tool_test(
-        self, tool_id: str, index: int = 0, resource_parameters: Optional[Dict[str, Any]] = None, **kwd
+        self, tool_id: str, index: int = 0, resource_parameters: Optional[dict[str, Any]] = None, **kwd
     ) -> None:
         if resource_parameters is None:
             resource_parameters = {}

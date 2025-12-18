@@ -43,12 +43,14 @@ class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin, metaclass=A
         internal_markdown = self._generate_internal_markdown(
             trans, invocation, runtime_report_config_json=runtime_report_config_json
         )
-        export_markdown, extra_rendering_data = ready_galaxy_markdown_for_export(trans, internal_markdown)
+        export_markdown, export_markdown_embed_expanded, extra_rendering_data = ready_galaxy_markdown_for_export(
+            trans, internal_markdown
+        )
         # Invocations can only be run on history, and user must exist, so this should always work
         username = invocation.history and invocation.history.user and invocation.history.user.username
         rval = {
             "render_format": "markdown",  # Presumably the frontend could render things other ways.
-            "markdown": export_markdown,
+            "markdown": export_markdown_embed_expanded,
             "invocation_markdown": export_markdown,
             "model_class": "Report",
             "id": trans.app.security.encode_id(invocation.workflow_id),

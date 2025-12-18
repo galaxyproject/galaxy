@@ -1,5 +1,3 @@
-from typing import List
-
 from galaxy_test.base.populators import skip_without_tool
 from .test_scripts import BaseScriptsIntegrationTestCase
 
@@ -227,7 +225,7 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
             )
         return details_response["purged"]
 
-    def _pgcleanup_check_output(self, extra_args: List[str]) -> str:
+    def _pgcleanup_check_output(self, extra_args: list[str]) -> str:
         config_file = self.write_config_file()
         output = self._scripts_check_output(SCRIPT, ["-c", config_file] + extra_args)
         print(output)

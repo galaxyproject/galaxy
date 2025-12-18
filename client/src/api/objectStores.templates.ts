@@ -4,7 +4,7 @@ import { faCloud, faHdd, faNetworkWired, type IconDefinition } from "font-awesom
 import type { components } from "@/api/schema";
 import { contains } from "@/utils/filtering";
 
-const typeMessage = (type: string) => `This template produces storage locations of type ${type}.`;
+const typeMessage = (type: string) => `This template produces a new Galaxy Storage of type ${type}.`;
 
 export type ObjectStoreTemplateSummary = components["schemas"]["ObjectStoreTemplateSummary"];
 export type ObjectStoreTemplateSummaries = ObjectStoreTemplateSummary[];

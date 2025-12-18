@@ -9,7 +9,6 @@ from tempfile import (
 )
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -83,10 +82,7 @@ class TestToolShedApp(ToolShedApp):
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         self.repository_registry = tool_shed.repository_registry.Registry(self)
         self.model_cache = ModelCache(os.path.join(temp_directory, "model_cache"))
-
-    @property
-    def security_agent(self):
-        return self.model.security_agent
+        self.security_agent = self.model.security_agent
 
 
 def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: Optional[str] = None) -> User:
@@ -191,7 +187,7 @@ def random_name(len: int = 10) -> str:
     return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len))
 
 
-def create_category(provides_repositories: ProvidesRepositoriesContext, create: Dict[str, Any]) -> Category:
+def create_category(provides_repositories: ProvidesRepositoriesContext, create: dict[str, Any]) -> Category:
     from tool_shed.managers.categories import CategoryManager
 
     request = CreateCategoryRequest(**create)

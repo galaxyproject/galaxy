@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue"
-import { useRoute } from "vue-router"
+import { ref, computed, onMounted, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { QTableColumn, type QTableProps } from "quasar"
 
 import { type Query, RepositoryGridItem, type OnRequest } from "./RepositoriesGridInterface"
 
 const route = useRoute()
+const router = useRouter()
 
 const DEFAULT_ROWS_PER_PAGE = 25
 
@@ -28,6 +29,7 @@ interface RepositoriesGridProps {
     noDataLabel?: string
     debug?: boolean
     allowSearch?: boolean
+    syncPageToUrl?: boolean
 }
 
 const compProps = withDefaults(defineProps<RepositoriesGridProps>(), {
@@ -37,13 +39,21 @@ const compProps = withDefaults(defineProps<RepositoriesGridProps>(), {
     onRequest: undefined as OnRequest | undefined,
     noDataLabel: "No repositories found",
     allowSearch: false,
-    rowsNumber: undefined,
+    syncPageToUrl: false,
+})
+
+const initialPage = computed(() => {
+    const pageQuery = route.query.page
+    if (typeof pageQuery == "string") {
+        return Number.parseInt(pageQuery)
+    }
+    return 1
 })
 
 const pagination = ref({
-    page: 1,
+    page: initialPage.value,
     rowsNumber: undefined as number | undefined,
-    rowsPerPage: rowsPerPage,
+    rowsPerPage: rowsPerPage.value,
 })
 
 const INDEX_COLUMN: QTableColumn = {
@@ -98,6 +108,17 @@ const onRequest: QTableProps["onRequest"] = async ({ pagination: queryPagination
         pagination.value.rowsNumber = results.rowsNumber
         pagination.value.page = queryPagination.page
         tableLoading.value = false
+
+        // Sync page to URL if enabled
+        if (compProps.syncPageToUrl) {
+            const newQuery = { ...route.query }
+            if (queryPagination.page > 1) {
+                newQuery.page = String(queryPagination.page)
+            } else {
+                delete newQuery.page
+            }
+            router.replace({ query: newQuery })
+        }
     }
 }
 
@@ -110,6 +131,24 @@ function makeRequest() {
 }
 
 defineExpose({ makeRequest })
+
+// Handle browser back/forward navigation for page
+watch(
+    () => route.query.page,
+    (newPage) => {
+        if (!compProps.syncPageToUrl) return
+        const pageNum = typeof newPage === "string" ? Number.parseInt(newPage) : 1
+        if (pageNum !== pagination.value.page) {
+            pagination.value.page = pageNum
+            makeRequest()
+        }
+    }
+)
+
+// Sync rowsPerPage when route query changes
+watch(rowsPerPage, (newVal) => {
+    pagination.value.rowsPerPage = newVal
+})
 
 onMounted(() => {
     makeRequest()
@@ -129,6 +168,7 @@ onMounted(() => {
             :rows-per-page-options="[rowsPerPage]"
             :no-data-label="noDataLabel"
             hide-header
+            :aria-label="title"
             @request="onRequest"
         >
             <template #top>
@@ -147,7 +187,7 @@ onMounted(() => {
                         <span class="text-weight-bold">
                             <repository-link :id="props.row.id" :name="props.row.name" :owner="props.row.owner" />
                         </span>
-                        <repository-explore :repository="props.row" :dense="true" />
+                        <repository-explore :repository="props.row" :dense="true" :show-details-link="true" />
                     </q-td>
                 </q-tr>
                 <q-tr
@@ -157,7 +197,7 @@ onMounted(() => {
                     class="disable-hover-hack"
                 >
                     <q-td colspan="100%">
-                        <span class="text-weight-regular q-ml-md text-grey">
+                        <span class="text-weight-regular q-ml-md text-grey description-truncate">
                             {{ props.row.description }}
                         </span>
                     </q-td>
@@ -170,6 +210,14 @@ onMounted(() => {
 <style>
 .disable-hover-hack > td::before {
     background: rgba(0, 0, 0, 0) !important;
+}
+
+.description-truncate {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 </style>
 <!-- https://codepen.io/smolinari/pen/bGVxKPE -->

@@ -1,7 +1,6 @@
 """Utility functions used to adapt galaxy.util.search to Galaxy model index queries."""
 
 from typing import (
-    List,
     Union,
 )
 
@@ -33,7 +32,7 @@ def text_column_filter(column, term: FilteredTerm):
 RawTextSearchableT = Union[BinaryExpression, InstrumentedAttribute]
 
 
-def raw_text_column_filter(columns: List[RawTextSearchableT], term: RawTextTerm):
+def raw_text_column_filter(columns: list[RawTextSearchableT], term: RawTextTerm):
     like_text = f"%{term.text}%"
     return or_(*[c.ilike(like_text) if isinstance(c, InstrumentedAttribute) else c for c in columns])
 

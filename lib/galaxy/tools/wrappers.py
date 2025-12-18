@@ -3,18 +3,17 @@ import logging
 import os
 import shlex
 import tempfile
+from collections.abc import (
+    Iterable,
+    Iterator,
+    KeysView,
+    Sequence,
+)
 from functools import total_ordering
 from typing import (
     Any,
     cast,
-    Dict,
-    Iterable,
-    Iterator,
-    KeysView,
-    List,
     Optional,
-    Sequence,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -34,6 +33,7 @@ from galaxy.model import (
 )
 from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
+from galaxy.schema.schema import SampleSheetRow
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
@@ -73,7 +73,7 @@ class ToolParameterValueWrapper:
     Base class for object that Wraps a Tool Parameter and Value.
     """
 
-    value: Optional[Union[str, List[str]]]
+    value: Optional[Union[str, list[str]]]
     input: "ToolParameter"
 
     def __bool__(self) -> bool:
@@ -128,7 +128,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         self,
         input: "ToolParameter",
         value: Optional[str],
-        other_values: Optional[Dict[str, str]] = None,
+        other_values: Optional[dict[str, str]] = None,
         profile: Optional[float] = None,
     ) -> None:
         self.input = input
@@ -136,9 +136,9 @@ class InputValueWrapper(ToolParameterValueWrapper):
             # Tools with old profile versions may treat an optional text parameter as `""`
             value = cast(TextToolParameter, input).wrapper_default
         self.value = value
-        self._other_values: Dict[str, str] = other_values or {}
+        self._other_values: dict[str, str] = other_values or {}
 
-    def _get_cast_values(self, other: Any) -> Tuple[Union[str, int, float, bool, None], Any]:
+    def _get_cast_values(self, other: Any) -> tuple[Union[str, int, float, bool, None], Any]:
         if isinstance(self.input, BooleanToolParameter) and isinstance(other, str):
             if other in (self.input.truevalue, self.input.falsevalue):
                 return str(self), other
@@ -210,14 +210,14 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         def __init__(
             self,
             input: "SelectToolParameter",
-            value: Union[str, List[str]],
-            other_values: Optional[Dict[str, str]],
+            value: Union[str, list[str]],
+            other_values: Optional[dict[str, str]],
             compute_environment: Optional["ComputeEnvironment"],
         ) -> None:
             self._input = input
             self._value = value
             self._other_values = other_values
-            self._fields: Dict[str, List[str]] = {}
+            self._fields: dict[str, list[str]] = {}
             self._compute_environment = compute_environment
 
         def __getattr__(self, name: str) -> Any:
@@ -245,12 +245,12 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
     def __init__(
         self,
         input: "SelectToolParameter",
-        value: Union[str, List[str]],
-        other_values: Optional[Dict[str, str]] = None,
+        value: Union[str, list[str]],
+        other_values: Optional[dict[str, str]] = None,
         compute_environment: Optional["ComputeEnvironment"] = None,
     ):
         self.input = input
-        self.value: Union[str, List[str]] = value
+        self.value: Union[str, list[str]] = value
         self.input.value_label = input.value_to_display_text(value)
         self._other_values = other_values or {}
         self.compute_environment = compute_environment
@@ -347,7 +347,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             except Exception:
                 return default
 
-        def items(self) -> Iterator[Tuple[str, Any]]:
+        def items(self) -> Iterator[tuple[str, Any]]:
             return iter((k, self.get(k)) for k, v in self.metadata.items())
 
     def __init__(
@@ -359,7 +359,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         compute_environment: Optional["ComputeEnvironment"] = None,
         identifier: Optional[str] = None,
         io_type: str = "input",
-        formats: Optional[List[str]] = None,
+        formats: Optional[list[str]] = None,
         tool_evaluator: Optional["ToolEvaluator"] = None,
     ) -> None:
         dataset_instance: Optional[DatasetInstance] = None
@@ -452,10 +452,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         return f"{safe_element_identifier}.{self.file_ext}"
 
     @property
-    def all_metadata_files(self) -> List[Tuple[str, str]]:
+    def all_metadata_files(self) -> list[tuple[str, str]]:
         return self.unsanitized.get_metadata_file_paths_and_extensions() if self else []
 
-    def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> Dict[str, Any]:
+    def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> dict[str, Any]:
         return data_input_to_staging_path_and_source_path(self, invalid_chars=invalid_chars) if self else {}
 
     @property
@@ -549,7 +549,7 @@ class HasDatasets:
         return filepath
 
 
-class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper, HasDatasets):
+class DatasetListWrapper(list[DatasetFilenameWrapper], ToolParameterValueWrapper, HasDatasets):
     """ """
 
     def __init__(
@@ -568,7 +568,7 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
         ],
         **kwargs: Any,
     ) -> None:
-        self._dataset_elements_cache: Dict[str, List[DatasetFilenameWrapper]] = {}
+        self._dataset_elements_cache: dict[str, list[DatasetFilenameWrapper]] = {}
         if not isinstance(datasets, Sequence):
             datasets = [datasets]
 
@@ -593,8 +593,8 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
     @staticmethod
     def to_dataset_instances(
         dataset_instance_sources: Any,
-    ) -> List[Union[None, DatasetInstance]]:
-        dataset_instances: List[Optional[DatasetInstance]] = []
+    ) -> list[Union[None, DatasetInstance]]:
+        dataset_instances: list[Optional[DatasetInstance]] = []
         if not isinstance(dataset_instance_sources, list):
             dataset_instance_sources = [dataset_instance_sources]
         for dataset_instance_source in dataset_instance_sources:
@@ -610,7 +610,7 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
                 dataset_instances.extend(dataset_instance_source.collection.dataset_elements)
         return dataset_instances
 
-    def get_datasets_for_group(self, group: str) -> List[DatasetFilenameWrapper]:
+    def get_datasets_for_group(self, group: str) -> list[DatasetFilenameWrapper]:
         group = str(group).lower()
         if not self._dataset_elements_cache.get(group):
             wrappers = []
@@ -620,7 +620,7 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
             self._dataset_elements_cache[group] = wrappers
         return self._dataset_elements_cache[group]
 
-    def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> List[Dict[str, Any]]:
+    def serialize(self, invalid_chars: Sequence[str] = ("/",)) -> list[dict[str, Any]]:
         return [v.serialize(invalid_chars) for v in self]
 
     def __str__(self) -> str:
@@ -650,8 +650,8 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     ) -> None:
         super().__init__()
         self.job_working_directory = job_working_directory
-        self._dataset_elements_cache: Dict[str, List[DatasetFilenameWrapper]] = {}
-        self._element_identifiers_extensions_paths_and_metadata_files: Optional[List[List[Any]]] = None
+        self._dataset_elements_cache: dict[str, list[DatasetFilenameWrapper]] = {}
+        self._element_identifiers_extensions_paths_and_metadata_files: Optional[list[list[Any]]] = None
         self.datatypes_registry = datatypes_registry
         kwargs["datatypes_registry"] = datatypes_registry
         self.tool_evaluator = tool_evaluator
@@ -676,13 +676,16 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances: Dict[str, DatasetCollectionElementWrapper] = {}
+        element_instances: dict[str, DatasetCollectionElementWrapper] = {}
 
-        element_instance_list: List[DatasetCollectionElementWrapper] = []
+        element_instance_list: list[DatasetCollectionElementWrapper] = []
+        rows: dict[str, Optional[SampleSheetRow]] = {}
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
             element_identifier = dataset_collection_element.element_identifier
             assert element_identifier is not None
+            row = dataset_collection_element.columns
+            rows[element_identifier] = row
 
             if isinstance(element_object, DatasetCollection):
                 element_wrapper: DatasetCollectionElementWrapper = DatasetCollectionWrapper(
@@ -696,10 +699,14 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append(element_wrapper)
 
+        self.__rows = rows
         self.__element_instances = element_instances
         self.__element_instance_list = element_instance_list
 
-    def get_datasets_for_group(self, group: str) -> List[DatasetFilenameWrapper]:
+    def sample_sheet_row(self, element_identifier: str) -> Optional[SampleSheetRow]:
+        return self.__rows[element_identifier]
+
+    def get_datasets_for_group(self, group: str) -> list[DatasetFilenameWrapper]:
         group = str(group).lower()
         if not self._dataset_elements_cache.get(group):
             wrappers = []
@@ -717,7 +724,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
             self._dataset_elements_cache[group] = wrappers
         return self._dataset_elements_cache[group]
 
-    def keys(self) -> Union[List[str], KeysView[Any]]:
+    def keys(self) -> Union[list[str], KeysView[Any]]:
         if not self.__input_supplied:
             return []
         return self.__element_instances.keys()
@@ -731,11 +738,11 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         return self.name
 
     @property
-    def all_paths(self) -> List[str]:
+    def all_paths(self) -> list[str]:
         return [path for _, _, path, _ in self.element_identifiers_extensions_paths_and_metadata_files]
 
     @property
-    def all_metadata_files(self) -> List[List[str]]:
+    def all_metadata_files(self) -> list[list[str]]:
         return [
             metadata_files for _, _, _, metadata_files in self.element_identifiers_extensions_paths_and_metadata_files
         ]
@@ -743,7 +750,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     @property
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
-    ) -> List[List[Any]]:
+    ) -> list[list[Any]]:
         if self._element_identifiers_extensions_paths_and_metadata_files is None:
             if self.collection:
                 result = self.collection.element_identifiers_extensions_paths_and_metadata_files
@@ -757,7 +764,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self,
         invalid_chars: Sequence[str] = ("/",),
         include_collection_name: bool = False,
-    ) -> List[str]:
+    ) -> list[str]:
         safe_element_identifiers = []
         for element_identifiers, extension, *_ in self.element_identifiers_extensions_paths_and_metadata_files:
             datatype = self.datatypes_registry.get_datatype_by_extension(extension)
@@ -783,7 +790,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self,
         invalid_chars: Sequence[str] = ("/",),
         include_collection_name: bool = False,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return data_collection_input_to_staging_path_and_source_path(
             self,
             invalid_chars=invalid_chars,
@@ -836,13 +843,13 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 class ElementIdentifierMapper:
     """Track mapping of dataset collection elements datasets to element identifiers."""
 
-    def __init__(self, input_datasets: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, input_datasets: Optional[dict[str, Any]] = None) -> None:
         if input_datasets is not None:
             self.identifier_key_dict = {v: f"{k}|__identifier__" for k, v in input_datasets.items()}
         else:
             self.identifier_key_dict = {}
 
-    def identifier(self, dataset_value: str, input_values: Dict[str, str]) -> Optional[str]:
+    def identifier(self, dataset_value: str, input_values: dict[str, str]) -> Optional[str]:
         if isinstance(dataset_value, list):
             raise TypeError(f"Expected {dataset_value} to be hashable")
         element_identifier = None

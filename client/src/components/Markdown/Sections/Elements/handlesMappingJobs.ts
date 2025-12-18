@@ -16,7 +16,7 @@ interface Job {
 
 export function useMappingJobs(
     singleJobId: Ref<string | undefined>,
-    implicitCollectionJobsId: Ref<string | undefined>
+    implicitCollectionJobsId: Ref<string | undefined>,
 ) {
     const selectJobOptions = ref<SelectOption[]>([]);
     const selectedJob = ref<string | undefined>(undefined);
@@ -54,7 +54,7 @@ export function useMappingJobs(
                 }
             }
         },
-        { immediate: true }
+        { immediate: true },
     );
     return { selectJobOptions, selectedJob, targetJobId };
 }

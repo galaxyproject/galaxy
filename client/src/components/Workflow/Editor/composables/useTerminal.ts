@@ -8,7 +8,7 @@ import type { Step, TerminalSource } from "@/stores/workflowStepStore";
 export function useTerminal(
     stepId: Ref<Step["id"]>,
     terminalSource: Ref<TerminalSource>,
-    datatypesMapper: Ref<DatatypesMapperModel>
+    datatypesMapper: Ref<DatatypesMapperModel>,
 ) {
     const terminal: Ref<ReturnType<typeof terminalFactory> | null> = ref(null);
     const stores = useWorkflowStores();
@@ -25,7 +25,7 @@ export function useTerminal(
         },
         {
             immediate: true,
-        }
+        },
     );
     return { terminal: terminal as Ref<ReturnType<typeof terminalFactory>>, isMappedOver };
 }

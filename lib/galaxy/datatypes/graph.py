@@ -3,7 +3,6 @@ Graph content classes.
 """
 
 import logging
-from typing import List
 
 from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -47,7 +46,7 @@ class Xgmml(xml.GenericXml):
         return False
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
@@ -95,7 +94,7 @@ class Sif(tabular.Tabular):
         return False
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", ColumnarDataProvider.settings)

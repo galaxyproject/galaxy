@@ -1,11 +1,16 @@
 import os
 from typing import (
-    List,
+    cast,
+    get_args,
     NamedTuple,
 )
 
 import pytest
 
+from galaxy.tool_util.verify.interactor import (
+    DEFAULT_USE_LEGACY_API,
+    UseLegacyApiT,
+)
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 
@@ -24,7 +29,7 @@ def get_skiplist():
         return skiplist
 
 
-def get_cases() -> List[ToolTest]:
+def get_cases() -> list[ToolTest]:
     atc = ApiTestCase()
     atc._test_driver = GalaxyTestDriver()
     atc._test_driver.setup()
@@ -61,4 +66,9 @@ class TestFrameworkTools(ApiTestCase):
 
     @pytest.mark.parametrize("testcase", cases(), ids=idfn)
     def test_tool(self, testcase: ToolTest):
-        self._test_driver.run_tool_test(testcase.tool_id, testcase.test_index, tool_version=testcase.tool_version)
+        use_legacy_api = os.environ.get("GALAXY_TEST_USE_LEGACY_TOOL_API", DEFAULT_USE_LEGACY_API)
+        assert use_legacy_api in get_args(UseLegacyApiT)
+        cast(UseLegacyApiT, use_legacy_api)  # https://github.com/python/mypy/issues/15106
+        self._test_driver.run_tool_test(
+            testcase.tool_id, testcase.test_index, tool_version=testcase.tool_version, use_legacy_api=use_legacy_api
+        )

@@ -3,21 +3,21 @@ API operations on annotations.
 """
 
 import logging
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from typing import Optional
 
 from fastapi import Body
 
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.display_applications import (
+    CreateLinkFeedback,
+    CreateLinkIncoming,
     DisplayApplication,
     DisplayApplicationsManager,
     ReloadFeedback,
 )
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
+    DependsOnTrans,
     Router,
 )
 
@@ -27,7 +27,7 @@ router = Router(tags=["display_applications"])
 
 
 @router.cbv
-class FastAPIDisplay:
+class FastAPIDisplayApplications:
     manager: DisplayApplicationsManager = depends(DisplayApplicationsManager)
 
     @router.get(
@@ -38,11 +38,37 @@ class FastAPIDisplay:
     )
     def index(
         self,
-    ) -> List[DisplayApplication]:
+    ) -> list[DisplayApplication]:
         """
         Returns the list of display applications.
         """
         return self.manager.index()
+
+    @router.post(
+        "/api/display_applications/create_link",
+        summary="Creates a link for display applications.",
+        name="display_applications_create_link",
+    )
+    def create_link(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateLinkIncoming = Body(...),
+    ) -> CreateLinkFeedback:
+        """
+        Creates a link for display applications.
+        """
+        app_name = payload.app_name
+        dataset_id = payload.dataset_id
+        link_name = payload.link_name
+        kwd = payload.kwd or {}
+        result = self.manager.create_link(
+            trans,
+            app_name=app_name,
+            dataset_id=dataset_id,
+            link_name=link_name,
+            **kwd,
+        )
+        return result
 
     @router.post(
         "/api/display_applications/reload",
@@ -52,7 +78,7 @@ class FastAPIDisplay:
     )
     def reload(
         self,
-        payload: Optional[Dict[str, List[str]]] = Body(default=None),
+        payload: Optional[dict[str, list[str]]] = Body(default=None),
     ) -> ReloadFeedback:
         """
         Reloads the list of display applications.

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
@@ -12,7 +11,6 @@ import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, R
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
-import GridDatasets from "./GridElements/GridDatasets.vue";
 import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
@@ -27,8 +25,6 @@ import UtcDate from "@/components/UtcDate.vue";
 
 const eventBus = useEventBus<string>("grid-router-push");
 const router = useRouter();
-
-library.add(faCaretDown, faCaretUp, faShieldAlt);
 
 interface Props {
     // provide a grid configuration
@@ -95,13 +91,13 @@ const filterText = ref("");
 const showAdvanced = ref(false);
 const filterClass = props.gridConfig.filtering;
 const rawFilters = computed(() =>
-    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || [])
+    Object.fromEntries(filterClass?.getFiltersForText(filterText.value, true, false) || []),
 );
 const validFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => filterClass?.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(
-    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0
+    () => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value || {}).length > 0,
 );
 
 // hide message helper
@@ -175,7 +171,7 @@ async function getGridData() {
                 validatedFilterText(),
                 sortBy.value,
                 sortDesc.value,
-                props.extraProps
+                props.extraProps,
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;
@@ -343,7 +339,7 @@ watch(operationMessage, () => {
                         outline
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
-                        <Icon :icon="action.icon" class="mr-1" />
+                        <FontAwesomeIcon :icon="action.icon" class="mr-1" />
                         <span v-localize>{{ action.title }}</span>
                     </GButton>
                 </div>
@@ -415,9 +411,9 @@ watch(operationMessage, () => {
                                 <span v-if="sortBy === fieldEntry.key">
                                     <FontAwesomeIcon
                                         v-if="sortDesc"
-                                        icon="caret-down"
+                                        :icon="faCaretDown"
                                         data-description="grid sort desc" />
-                                    <FontAwesomeIcon v-else icon="caret-up" data-description="grid sort asc" />
+                                    <FontAwesomeIcon v-else :icon="faCaretUp" data-description="grid sort asc" />
                                 </span>
                             </BButton>
                         </span>
@@ -454,9 +450,6 @@ watch(operationMessage, () => {
                                 <GridBoolean
                                     v-else-if="fieldEntry.type == 'boolean'"
                                     :value="rowData[fieldEntry.key]" />
-                                <GridDatasets
-                                    v-else-if="fieldEntry.type == 'datasets'"
-                                    :history-id="rowData[fieldEntry.key]" />
                                 <GridText
                                     v-else-if="fieldEntry.type == 'text'"
                                     :text="fieldText(fieldEntry, rowData)" />
@@ -497,7 +490,7 @@ watch(operationMessage, () => {
                                     @tag-click="applyFilter('tag', $event, true)" />
                                 <span v-else v-localize> Not available. </span>
                             </div>
-                            <FontAwesomeIcon v-else icon="fa-shield-alt" />
+                            <FontAwesomeIcon v-else :icon="faShieldAlt" />
                         </td>
                     </tr>
                     <tr v-if="expanded.has(rowData)" data-description="grid expanded row">
@@ -525,7 +518,7 @@ watch(operationMessage, () => {
                             color="blue"
                             :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
                             @click="onBatchOperation(batchOperation, Array.from(selected))">
-                            <Icon :icon="batchOperation.icon" class="mr-1" />
+                            <FontAwesomeIcon :icon="batchOperation.icon" class="mr-1" />
                             <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
                         </GButton>
                     </div>
@@ -548,7 +541,7 @@ watch(operationMessage, () => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .grid-footer {
     @extend .grid-sticky;

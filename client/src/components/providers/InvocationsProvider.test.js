@@ -1,6 +1,8 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import mockInvocationData from "components/Workflow/test/json/invocation.json";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import mockInvocationData from "@/components/Workflow/test/json/invocation.json";
 
 import { invocationsProvider } from "./InvocationsProvider";
 

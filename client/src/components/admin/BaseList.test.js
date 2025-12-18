@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, test } from "vitest";
 
-import BaseList from "./BaseList";
+import BaseList from "./BaseList.vue";
 
 const localVue = getLocalVue();
 

@@ -1,8 +1,9 @@
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -232,7 +233,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response(200).json(BULK_SUCCESS_RESPONSE);
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:show-selection");
@@ -246,7 +247,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response(200).json(BULK_SUCCESS_RESPONSE);
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
@@ -265,7 +266,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("update:operation-running");
@@ -288,7 +289,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response("4XX").json({ err_msg: "Error", err_code: 400 }, { status: 400 });
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");
@@ -305,7 +306,7 @@ describe("History Selection Operations", () => {
                 server.use(
                     http.put("/api/histories/{history_id}/contents/bulk", ({ response }) => {
                         return response(200).json(BULK_ERROR_RESPONSE);
-                    })
+                    }),
                 );
 
                 expect(wrapper.emitted()).not.toHaveProperty("operation-error");

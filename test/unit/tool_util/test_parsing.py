@@ -53,6 +53,11 @@ TOOL_XML_1 = """
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
         <resource type="shm_size">67108864</resource>
+        <credentials name="Apollo" version="gmod.org/apollo" label="Apollo credential set" description="Please provide credentials for Apollo">
+            <variable name="server" inject_as_env="apollo_url" optional="true" label="Your Apollo server" description="URL of your Apollo server" />
+            <secret name="username" inject_as_env="apollo_user" optional="true" label="Your Apollo username" description="Username for Apollo" />
+            <secret name="password" inject_as_env="apollo_pass" optional="true" label="Your Apollo password" description="Password for Apollo" />
+        </credentials>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -162,6 +167,26 @@ requirements:
 containers:
   - type: docker
     identifier: "awesome/bowtie"
+credentials:
+  - name: Apollo
+    version: gmod.org/apollo
+    secrets:
+      - name: username
+        label: Your Apollo username
+        description: Username for Apollo
+        inject_as_env: apollo_user
+        optional: true
+      - name: password
+        label: Your Apollo password
+        description: Password for Apollo
+        inject_as_env: apollo_pass
+        optional: true
+    variables:
+      - name: server
+        label: Your Apollo server
+        description: URL of your Apollo server
+        inject_as_env: apollo_url
+        optional: true
 outputs:
   out1:
     format: bam
@@ -350,7 +375,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements, *_ = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, _, credentials = self._tool_source.parse_requirements()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
@@ -361,6 +386,10 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
         assert resource_requirements[6].resource_type == "shm_size"
         assert not resource_requirements[0].runtime_required
+        assert credentials[0].name == "Apollo"
+        assert credentials[0].version == "gmod.org/apollo"
+        assert len(credentials[0].secrets) == 2
+        assert len(credentials[0].variables) == 1
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
@@ -536,8 +565,8 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        software_requirements, containers, resource_requirements, *_ = (
-            self._tool_source.parse_requirements_and_containers()
+        software_requirements, containers, resource_requirements, _, credentials = (
+            self._tool_source.parse_requirements()
         )
         assert software_requirements.to_dict() == [{"name": "bwa", "type": "package", "version": "1.0.1", "specs": []}]
         assert len(containers) == 1
@@ -567,6 +596,9 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resource_type": "shm_size",
             "value_or_expression": 67108864,
         }
+        assert len(credentials) == 1
+        assert len(credentials[0].secrets) == 2
+        assert len(credentials[0].variables) == 1
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())

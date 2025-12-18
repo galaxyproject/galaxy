@@ -10,6 +10,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -66,6 +67,7 @@ class ModelOperationToolAction(DefaultToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -90,7 +92,7 @@ class ModelOperationToolAction(DefaultToolAction):
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
         # Build name for output datasets based on tool name and input names
-        on_text = self._get_on_text(inp_data)
+        on_text = self._get_on_text(inp_data, inp_dataset_collections)
 
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming)
@@ -178,7 +180,6 @@ class ModelOperationToolAction(DefaultToolAction):
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for hdca in output_collections.out_collection_instances.values():
                 hdca.visible = False
-                # Would we also need to replace the datasets with skipped datasets?
                 for data in hdca.dataset_instances:
-                    data.set_skipped(object_store_populator)
+                    data.set_skipped(object_store_populator, replace_dataset=True)
         trans.sa_session.add_all(out_data.values())

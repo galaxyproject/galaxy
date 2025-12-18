@@ -1,11 +1,12 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
-import InstallationSettings from "./InstallationSettings";
+import InstallationSettings from "./InstallationSettings.vue";
 
-jest.mock("app");
+vi.mock("app");
 // Mock the useConfig composable
-jest.mock("@/composables/config", () => ({
+vi.mock("@/composables/config", () => ({
     useConfig: () => ({
         config: {
             install_tool_dependencies: true,

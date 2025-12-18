@@ -22,10 +22,12 @@
 </template>
 
 <script>
+import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import Vue from "vue";
 
-import FormInputs from "./FormInputs";
 import { matchInputs, validateInputs, visitInputs } from "./utilities";
+
+import FormInputs from "./FormInputs.vue";
 
 export default {
     components: {
@@ -69,12 +71,12 @@ export default {
             default: "Disable",
         },
         collapsedEnableIcon: {
-            type: String,
-            default: "far fa-caret-square-down",
+            type: Object,
+            default: () => faCaretSquareDown,
         },
         collapsedDisableIcon: {
-            type: String,
-            default: "far fa-caret-square-up",
+            type: Object,
+            default: () => faCaretSquareUp,
         },
         validationScrollTo: {
             type: Array,

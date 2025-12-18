@@ -23,7 +23,10 @@
         <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
         <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
             <b-card>
-                <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
+                <b-form-group
+                    v-if="toolConfigs.length > 1"
+                    label="Tool Configuration:"
+                    description="Choose a tool configuration.">
                     <b-form-radio
                         v-for="filename in toolConfigs"
                         :key="filename"
@@ -46,6 +49,7 @@
     </b-modal>
 </template>
 <script>
+import { GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 
 export default {
@@ -70,10 +74,6 @@ export default {
             type: Object,
             default: null,
         },
-        toolDynamicConfigs: {
-            type: Array,
-            default: null,
-        },
         modalStatic: {
             type: Boolean,
             default: false,
@@ -91,6 +91,7 @@ export default {
             installRepositoryDependencies: this.config.install_repository_dependencies,
             installResolverDependencies: this.config.install_resolver_dependencies,
             toolConfig: null,
+            toolConfigs: [],
             toolSection: null,
         };
     },
@@ -101,9 +102,6 @@ export default {
         modalTitle() {
             return `Installing '${this.repo.name}'`;
         },
-        showConfig() {
-            return this.toolConfigs.length > 1;
-        },
         toolSections() {
             const panel = Object.values(this.currentPanel);
             if (panel) {
@@ -112,12 +110,13 @@ export default {
                 return [];
             }
         },
-        toolConfigs() {
-            return this.toolDynamicConfigs || [];
-        },
     },
-    created() {
-        if (this.toolConfigs.length > 0) {
+    async created() {
+        const { data, error } = await GalaxyApi().GET("/api/configuration/dynamic_tool_confs");
+        if (error) {
+            console.error("Failed to collect dynamic tool confs", error.err_msg);
+        } else if (data.length > 0) {
+            this.toolConfigs = data.map((x) => x.config_filename);
             this.toolConfig = this.toolConfigs[0];
         }
     },

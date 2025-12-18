@@ -1,7 +1,14 @@
-<tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.2">
+<tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.2" profile="24.2">
   <description>using simple expressions</description>
+  <requirements>
+    <requirement type="package" version="3.13">python</requirement>
+  </requirements>
+  <required_files>
+    <include path="gff_filter_by_attribute.py"/>
+  </required_files>
   <command>
-python '$__tool_directory__/gff_filter_by_attribute.py' '$input' '$out_file1' '$cond' '${input.metadata.attribute_types}'
+    python '$__tool_directory__/gff_filter_by_attribute.py'
+      '$input' '$out_file1' '$cond' '${input.metadata.attribute_types}'
   </command>
   <inputs>
     <param name="input" type="data" format="gff" label="Filter" help="Dataset missing? See TIP below." />
@@ -10,7 +17,7 @@ python '$__tool_directory__/gff_filter_by_attribute.py' '$input' '$out_file1' '$
     </param>
   </inputs>
   <outputs>
-    <data name="out_file1" format="input" metadata_source="input"/>
+    <data name="out_file1" format_source="input" metadata_source="input"/>
   </outputs>
   <tests>
     <test>

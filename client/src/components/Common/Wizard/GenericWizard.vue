@@ -146,7 +146,7 @@ function isStepDone(currentIndex: number): boolean {
  */
 const stepsGridColumnsTemplate = computed(() => {
     const numVisibleSteps = Array.from(Object.values(props.use.steps.value)).filter(
-        (step) => !(step as WizardStep).isSkippable()
+        (step) => !(step as WizardStep).isSkippable(),
     ).length;
     return (
         Array(numVisibleSteps - 1)
@@ -233,7 +233,7 @@ const bodyStyle = computed(() => {
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .wizard {
     padding: 0;
@@ -343,6 +343,11 @@ const bodyStyle = computed(() => {
 
         .card-header {
             border-radius: 0;
+        }
+
+        &:hover {
+            border-color: lighten($brand-primary, 20%);
+            cursor: pointer;
         }
     }
 }

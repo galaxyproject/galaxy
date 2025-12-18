@@ -11,7 +11,6 @@ from tempfile import (
 )
 from typing import (
     Any,
-    Dict,
     NamedTuple,
     Optional,
 )
@@ -741,12 +740,12 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
     workflow_invocation = _setup_invocation(app)
 
     crate_zip = tmp_path / "crate.zip"
+    crate_directory = tmp_path / "crate"
     with store.ROCrateArchiveModelExportStore(crate_zip, app=app, export_files="symlink") as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
     with CompressedFile(crate_zip) as compressed_file:
         assert compressed_file.file_type == "zip"
-        compressed_file.extract(tmp_path)
-    crate_directory = tmp_path / "crate"
+        compressed_file.extract(crate_directory)
     validate_invocation_crate_directory(crate_directory)
 
 
@@ -1377,7 +1376,7 @@ def setup_fixture_context_with_history(
 
 def perform_import_from_store_dict(
     fixture_context: StoreFixtureContextWithHistory,
-    import_dict: Dict[str, Any],
+    import_dict: dict[str, Any],
     import_options: Optional[store.ImportOptions] = None,
 ) -> None:
     import_options = import_options or store.ImportOptions()

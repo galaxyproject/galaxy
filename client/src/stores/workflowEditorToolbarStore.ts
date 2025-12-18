@@ -83,7 +83,7 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
             if (!inputCatcherActive.value) {
                 inputCatcherPressed.value = false;
             }
-        }
+        },
     );
 
     const { shift, space, alt, ctrl } = useMagicKeys();

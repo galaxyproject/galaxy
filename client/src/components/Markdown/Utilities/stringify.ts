@@ -5,10 +5,13 @@ export function stringify<T extends Record<string, unknown>>(contentObject: T): 
         }
         return Object.keys(obj)
             .sort()
-            .reduce((acc, key) => {
-                acc[key] = deepSortObject((obj as Record<string, unknown>)[key]);
-                return acc;
-            }, {} as Record<string, unknown>);
+            .reduce(
+                (acc, key) => {
+                    acc[key] = deepSortObject((obj as Record<string, unknown>)[key]);
+                    return acc;
+                },
+                {} as Record<string, unknown>,
+            );
     }
     const sortedObject = deepSortObject(contentObject);
     return JSON.stringify(sortedObject, null, 4);

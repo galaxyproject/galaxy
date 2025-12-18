@@ -1,22 +1,19 @@
-from typing import (
-    List,
-    Type,
-)
-
 from galaxy import model
 from .types import (
     BaseDatasetCollectionType,
-    list,
     paired,
     paired_or_unpaired,
     record,
+    sample_sheet,
 )
+from .types.list import ListDatasetCollectionType
 
-PLUGIN_CLASSES: List[Type[BaseDatasetCollectionType]] = [
-    list.ListDatasetCollectionType,
+PLUGIN_CLASSES: list[type[BaseDatasetCollectionType]] = [
+    ListDatasetCollectionType,
     paired.PairedDatasetCollectionType,
     record.RecordDatasetCollectionType,
     paired_or_unpaired.PairedOrUnpairedDatasetCollectionType,
+    sample_sheet.SampleSheetDatasetCollectionType,
 ]
 
 

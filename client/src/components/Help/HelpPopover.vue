@@ -11,13 +11,14 @@ defineProps<Props>();
 </script>
 
 <template>
-    <Popper v-if="target" :reference-el="target" mode="light">
+    <!-- setting font-size:0 so this span doesn't affect the spacing in the parent component -->
+    <Popper v-if="target" style="font-size: 0" :reference-el="target" mode="light">
         <HelpTerm :term="term" class="p-2 help-popover-content" />
     </Popper>
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .help-popover-content {
     font-size: $font-size-base;

@@ -18,6 +18,7 @@ from galaxy.tool_util_models.parameters import (
     create_job_internal_model,
     create_landing_request_internal_model,
     create_landing_request_model,
+    create_relaxed_request_model,
     create_request_internal_dereferenced_model,
     create_request_internal_model,
     create_request_model,
@@ -71,6 +72,14 @@ class ToolState(ABC):
     @abstractmethod
     def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
         """Return a model type for this tool state kind."""
+
+
+class RelaxedRequestToolState(ToolState):
+    state_representation: Literal["relaxed_request"] = "relaxed_request"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+        return create_relaxed_request_model(parameters, name)
 
 
 class RequestToolState(ToolState):

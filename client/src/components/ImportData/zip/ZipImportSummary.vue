@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { faFile, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
+import { BPagination } from "bootstrap-vue";
 import { computed } from "vue";
 
+import type { CardBadge } from "@/components/Common/GCard.types";
+import { usePagination } from "@/composables/pagination";
 import type { ImportableFile } from "@/composables/zipExplorer";
 import { bytesToString } from "@/utils/utils";
 
@@ -26,28 +29,32 @@ const totalFileSize = computed(() => {
     return regularFiles.value.reduce((total, file) => total + file.size, 0);
 });
 
-const workflowBadges = [
+const allItems = computed(() => [...workflowFiles.value, ...regularFiles.value]);
+
+const { currentPage, itemsPerPage, paginatedItems, totalItems, showPagination, onPageChange } = usePagination(allItems);
+
+const paginatedWorkflows = computed(() => paginatedItems.value.filter((item) => item.type === "workflow"));
+const paginatedFiles = computed(() => paginatedItems.value.filter((item) => item.type === "file"));
+
+const workflowBadges: CardBadge[] = [
     {
         id: "workflow-count",
         label: `${workflowFiles.value.length} workflow${workflowFiles.value.length > 1 ? "s" : ""}`,
         title: "Number of Workflows to import",
-        visible: true,
     },
 ];
 
-const fileBadges = [
+const fileBadges: CardBadge[] = [
     {
         id: "file-count",
         label: `${regularFiles.value.length} file${regularFiles.value.length > 1 ? "s" : ""}`,
         title: "Number of Files to import",
-        visible: true,
     },
     {
         id: "total-size",
         label: bytesToString(totalFileSize.value, true, undefined),
         title: "Total Size of Files to import",
         variant: "info",
-        visible: true,
     },
 ];
 </script>
@@ -56,7 +63,7 @@ const fileBadges = [
     <div class="w-100">
         <div class="d-flex flex-grow-1">
             <GCard
-                v-if="workflowFiles.length > 0"
+                v-if="paginatedWorkflows.length > 0"
                 id="zip-workflows-summary"
                 title="Workflows to Import"
                 title-size="md"
@@ -65,13 +72,13 @@ const fileBadges = [
                 <template v-slot:description>
                     <p v-localize>The following workflows will be imported from the archive into your account.</p>
                     <div class="d-flex flex-wrap">
-                        <ZipFileEntrySummaryCard v-for="file in workflowFiles" :key="file.path" :file="file" />
+                        <ZipFileEntrySummaryCard v-for="file in paginatedWorkflows" :key="file.path" :file="file" />
                     </div>
                 </template>
             </GCard>
 
             <GCard
-                v-if="regularFiles.length > 0"
+                v-if="paginatedFiles.length > 0"
                 id="zip-files-summary"
                 title="Files to Import"
                 title-size="md"
@@ -83,10 +90,22 @@ const fileBadges = [
                         <b>currently active Galaxy history</b>.
                     </p>
                     <div class="d-flex flex-wrap">
-                        <ZipFileEntrySummaryCard v-for="file in regularFiles" :key="file.path" :file="file" />
+                        <ZipFileEntrySummaryCard v-for="file in paginatedFiles" :key="file.path" :file="file" />
                     </div>
                 </template>
             </GCard>
+        </div>
+
+        <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
+            <BPagination
+                :value="currentPage"
+                :total-rows="totalItems"
+                :per-page="itemsPerPage"
+                align="center"
+                size="sm"
+                first-number
+                last-number
+                @change="onPageChange" />
         </div>
     </div>
 </template>

@@ -31,14 +31,14 @@ watch(
     () => localValue.value,
     (newFilter) => {
         emit("change", props.name, newFilter);
-    }
+    },
 );
 
 watch(
     () => propValue.value,
     (newFilter) => {
         localValue.value = newFilter;
-    }
+    },
 );
 </script>
 

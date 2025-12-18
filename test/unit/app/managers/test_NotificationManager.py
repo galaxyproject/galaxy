@@ -4,10 +4,7 @@ from datetime import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Set,
 )
 from unittest.mock import patch
 
@@ -48,7 +45,7 @@ class NotificationsBaseTestCase(BaseTestCase):
         user = self.user_manager.create(**user_data)
         return user
 
-    def _create_test_users(self, num_users: int = 1) -> List[User]:
+    def _create_test_users(self, num_users: int = 1) -> list[User]:
         users = [self._create_test_user(f"username{num:02}") for num in range(num_users)]
         return users
 
@@ -71,7 +68,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
             },
         }
 
-    def _send_message_notification_to_users(self, users: List[User], notification: Optional[Dict[str, Any]] = None):
+    def _send_message_notification_to_users(self, users: list[User], notification: Optional[dict[str, Any]] = None):
         data = self._default_test_notification_data()
         if notification:
             data.update(notification)
@@ -90,7 +87,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
     def _has_expired(self, expiration_time: Optional[datetime]) -> bool:
         return expiration_time < datetime.utcnow() if expiration_time else False
 
-    def _assert_notification_expected(self, actual_notification: Any, expected_notification: Dict[str, Any]):
+    def _assert_notification_expected(self, actual_notification: Any, expected_notification: dict[str, Any]):
         assert actual_notification
         assert actual_notification.id
         assert actual_notification.source == expected_notification["source"]
@@ -236,7 +233,7 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
             },
         }
 
-    def _send_broadcast_notification(self, broadcast_notification_data: Dict[str, Any]):
+    def _send_broadcast_notification(self, broadcast_notification_data: dict[str, Any]):
         request = BroadcastNotificationCreateRequest(**broadcast_notification_data)
         created_notification = self.notification_manager.create_broadcast_notification(request)
         return created_notification
@@ -500,7 +497,7 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             role_ids=[role3.id],
         )
 
-        expected_user_ids: Set[int] = {
+        expected_user_ids: set[int] = {
             users[9].id,  # From direct recipients.user_ids
             users[5].id,  # From group3.user_ids
             users[4].id,  # -From role2.user_ids
@@ -515,12 +512,12 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
 
         return recipients, expected_user_ids
 
-    def _assert_resolved_match_expected_users(self, resolved_users: List[User], expected_user_ids: Set[int]):
+    def _assert_resolved_match_expected_users(self, resolved_users: list[User], expected_user_ids: set[int]):
         assert len(resolved_users) == len(expected_user_ids)
         for user in resolved_users:
             assert user.id in expected_user_ids
 
-    def _create_test_group(self, name: str, users: List[User], roles: List[Role]):
+    def _create_test_group(self, name: str, users: list[User], roles: list[Role]):
         sa_session = self.trans.sa_session
         group = Group(name=name)
         sa_session.add(group)
@@ -529,7 +526,7 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
         self.trans.app.security_agent.set_group_user_and_role_associations(group, user_ids=user_ids, role_ids=role_ids)
         return group
 
-    def _create_test_role(self, name: str, users: List[User], groups: List[Group]):
+    def _create_test_role(self, name: str, users: list[User], groups: list[Group]):
         sa_session = self.trans.sa_session
         role = Role(name=name)
         sa_session.add(role)

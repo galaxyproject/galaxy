@@ -4,7 +4,7 @@ API operations on remote files.
 
 import logging
 from typing import (
-    List,
+    Annotated,
     Optional,
 )
 
@@ -13,7 +13,6 @@ from fastapi import (
     Response,
 )
 from fastapi.param_functions import Query
-from typing_extensions import Annotated
 
 from galaxy.files.sources import PluginKind
 from galaxy.managers.context import ProvidesUserContext
@@ -67,8 +66,8 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
     ),
 )
 
-WriteableQueryParam: Optional[bool] = Query(
-    title="Writeable",
+WriteIntentQueryParam: Optional[bool] = Query(
+    title="Write Intent",
     description=(
         "Whether the query is made with the intention of writing to the source."
         " If set to True, only entries that can be written to will be returned."
@@ -136,7 +135,10 @@ class FastAPIRemoteFiles:
         format: Annotated[Optional[RemoteFilesFormat], FormatQueryParam] = RemoteFilesFormat.uri,
         recursive: Annotated[Optional[bool], RecursiveQueryParam] = None,
         disable: Annotated[Optional[RemoteFilesDisableMode], DisableModeQueryParam] = None,
-        writeable: Annotated[Optional[bool], WriteableQueryParam] = None,
+        writeable: Annotated[
+            Optional[bool], Query(description="Deprecated, please use `write_intent` instead.", deprecated=True)
+        ] = None,
+        write_intent: Annotated[Optional[bool], WriteIntentQueryParam] = None,
         limit: Annotated[Optional[int], LimitQueryParam] = None,
         offset: Annotated[Optional[int], OffsetQueryParam] = None,
         query: Annotated[Optional[str], SearchQueryParam] = None,
@@ -147,7 +149,7 @@ class FastAPIRemoteFiles:
         The total count of files and directories is returned in the 'total_matches' header.
         """
         result, count = self.manager.index(
-            user_ctx, target, format, recursive, disable, writeable, limit, offset, query, sort_by
+            user_ctx, target, format, recursive, disable, write_intent or writeable, limit, offset, query, sort_by
         )
         response.headers["total_matches"] = str(count)
         return result
@@ -161,8 +163,8 @@ class FastAPIRemoteFiles:
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         browsable_only: Annotated[Optional[bool], BrowsableQueryParam] = True,
-        include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
-        exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
+        include_kind: Annotated[Optional[list[PluginKind]], IncludeKindQueryParam] = None,
+        exclude_kind: Annotated[Optional[list[PluginKind]], ExcludeKindQueryParam] = None,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         return self.manager.get_files_source_plugins(

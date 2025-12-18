@@ -4,21 +4,27 @@ import logging
 from collections import namedtuple
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
+    Union,
 )
 
 from galaxy import (
     exceptions,
     util,
 )
-from galaxy.model import HistoryDatasetCollectionAssociation
+from galaxy.model import (
+    DatasetCollectionElement,
+    DatasetInstance,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
+)
 from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
+from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
+from galaxy.tool_util.parameters import RequestInternalDereferencedToolState
 from galaxy.util.permutations import (
     build_combos,
     input_classification,
@@ -28,11 +34,13 @@ from galaxy.util.permutations import (
     state_remove_value,
     state_set_value,
 )
+from galaxy.work.context import WorkRequestContext
 from . import visit_input_values
 from .wrapped import process_key
 from .._types import (
     InputFormatT,
     ToolRequestT,
+    ToolStateDumpedToJsonInternalT,
     ToolStateJobInstanceT,
 )
 
@@ -167,18 +175,20 @@ def expand_workflow_inputs(param_inputs, inputs=None):
     return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
 
 
-ExpandedT = Tuple[List[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
+ExpandedT = tuple[list[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
 
 
-def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> Dict[str, Any]:
-    nested_dict: Dict[str, Any] = {}
+def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> dict[str, Any]:
+    nested_dict: dict[str, Any] = {}
     for incoming_key, incoming_value in incoming_copy.items():
         if not incoming_key.startswith("__"):
             process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
     return nested_dict
 
 
-def expand_meta_parameters(trans, tool, incoming: ToolRequestT, input_format: InputFormatT) -> ExpandedT:
+def expand_meta_parameters(
+    trans: WorkRequestContext, tool, incoming: ToolRequestT, input_format: InputFormatT
+) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool
@@ -284,10 +294,10 @@ def reorder_parameters(tool, incoming, nested_dict, nested):
     return reordered_incoming
 
 
-def split_inputs_flat(inputs: Dict[str, Any], classifier):
-    single_inputs: Dict[str, Any] = {}
-    matched_multi_inputs: Dict[str, Any] = {}
-    multiplied_multi_inputs: Dict[str, Any] = {}
+def split_inputs_flat(inputs: dict[str, Any], classifier):
+    single_inputs: dict[str, Any] = {}
+    matched_multi_inputs: dict[str, Any] = {}
+    multiplied_multi_inputs: dict[str, Any] = {}
 
     for input_key in inputs:
         input_type, expanded_val = classifier(input_key)
@@ -302,9 +312,9 @@ def split_inputs_flat(inputs: Dict[str, Any], classifier):
 
 
 def split_inputs_nested(inputs, nested_dict, classifier):
-    single_inputs: Dict[str, Any] = {}
-    matched_multi_inputs: Dict[str, Any] = {}
-    multiplied_multi_inputs: Dict[str, Any] = {}
+    single_inputs: dict[str, Any] = {}
+    matched_multi_inputs: dict[str, Any] = {}
+    multiplied_multi_inputs: dict[str, Any] = {}
     unset_value = object()
 
     def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
@@ -327,7 +337,92 @@ def split_inputs_nested(inputs, nested_dict, classifier):
     return (single_inputs_nested, matched_multi_inputs, multiplied_multi_inputs)
 
 
-def __expand_collection_parameter(trans, input_key, incoming_val, collections_to_match, linked=False):
+ExpandedAsyncT = tuple[
+    list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], Optional[matching.MatchingCollections]
+]
+
+
+def expand_meta_parameters_async(app, tool, incoming: RequestInternalDereferencedToolState) -> ExpandedAsyncT:
+    collections_to_match = matching.CollectionsToMatch()
+
+    def classifier_from_value(value, input_key):
+        if isinstance(value, dict) and "values" in value:
+            # Explicit meta wrapper for inputs...
+            is_batch = value.get("__class__", "Batch") == "Batch"
+            is_linked = value.get("linked", True)
+            if is_batch and is_linked:
+                classification = input_classification.MATCHED
+            elif is_batch:
+                classification = input_classification.MULTIPLIED
+            else:
+                classification = input_classification.SINGLE
+            if __collection_multirun_parameter(value):
+                collection_value = value["values"][0]
+                values = __expand_collection_parameter_async(
+                    app, input_key, collection_value, collections_to_match, linked=is_linked
+                )
+            else:
+                values = value["values"]
+        else:
+            classification = input_classification.SINGLE
+            values = value
+        return classification, values
+
+    # is there a way to make Pydantic ensure reordering isn't needed - model and serialize out the parameters maybe?
+    reordered_incoming = reorder_parameters(tool, incoming.input_state, incoming.input_state, True)
+    incoming_template = reordered_incoming
+
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = split_inputs_nested(
+        tool.inputs, incoming_template, classifier_from_value
+    )
+    expanded_incomings = build_combos(single_inputs, matched_multi_inputs, multiplied_multi_inputs, nested=True)
+    # those all have sa model objects from expansion to be used within for additional logic (maybe?)
+    # but we want to record just src and IDS in the job state object - so undo that
+    expanded_job_states = build_combos(
+        to_decoded_json(single_inputs),
+        to_decoded_json(matched_multi_inputs),
+        to_decoded_json(multiplied_multi_inputs),
+        nested=True,
+    )
+    if collections_to_match.has_collections():
+        collection_info = app.dataset_collection_manager.match_collections(collections_to_match)
+    else:
+        collection_info = None
+    return expanded_incomings, expanded_job_states, collection_info
+
+
+def to_decoded_json(has_objects):
+    if isinstance(has_objects, dict):
+        decoded_json = {}
+        for key, value in has_objects.items():
+            decoded_json[key] = to_decoded_json(value)
+        return decoded_json
+    elif isinstance(has_objects, list):
+        return [to_decoded_json(o) for o in has_objects]
+    elif isinstance(has_objects, DatasetCollectionElement):
+        return {"src": "dce", "id": has_objects.id}
+    elif isinstance(has_objects, HistoryDatasetAssociation):
+        return {"src": "hda", "id": has_objects.id}
+    elif isinstance(has_objects, HistoryDatasetCollectionAssociation):
+        return {"src": "hdca", "id": has_objects.id}
+    elif isinstance(has_objects, LibraryDatasetDatasetAssociation):
+        return {"src": "ldda", "id": has_objects.id}
+    else:
+        return has_objects
+
+
+CollectionExpansionListT = Union[
+    list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]], list[DatasetInstance]
+]
+
+
+def __expand_collection_parameter(
+    trans: WorkRequestContext,
+    input_key,
+    incoming_val,
+    collections_to_match: "matching.CollectionsToMatch",
+    linked=False,
+) -> CollectionExpansionListT:
     # If subcollectin multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
@@ -335,23 +430,59 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
     else:
         try:
             src = incoming_val["src"]
-            if src != "hdca":
+            if src not in ("hdca", "dce"):
                 raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
-            encoded_hdc_id = incoming_val["id"]
+            encoded_id = incoming_val["id"]
             subcollection_type = incoming_val.get("map_over_type", None)
         except TypeError:
-            encoded_hdc_id = incoming_val
+            encoded_id = incoming_val
             subcollection_type = None
-    hdc_id = trans.app.security.decode_id(encoded_hdc_id)
-    hdc = trans.sa_session.get(HistoryDatasetCollectionAssociation, hdc_id)
-    if not hdc.collection.populated_optimized:
+    decoded_id = trans.app.security.decode_id(encoded_id)
+    if src == "dce":
+        item = trans.sa_session.get_one(DatasetCollectionElement, decoded_id)
+        collection = item.child_collection
+    else:
+        item = trans.sa_session.get_one(HistoryDatasetCollectionAssociation, decoded_id)
+        collection = item.collection
+    assert collection
+    if not collection.populated_optimized:
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
+    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
+    if subcollection_type is not None:
+        subcollection_elements: list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]] = (
+            subcollections._split_dataset_collection(collection, subcollection_type)
+        )
+        return subcollection_elements
+    else:
+        hdas: list[DatasetInstance] = []
+        for element in collection.dataset_elements:
+            hda = element.dataset_instance
+            hda.element_identifier = element.element_identifier
+            hdas.append(hda)
+        return hdas
+
+
+def __expand_collection_parameter_async(
+    app, input_key, incoming_val, collections_to_match: "matching.CollectionsToMatch", linked=False
+) -> CollectionExpansionListT:
+    # If subcollection multirun of data_collection param - value will
+    # be "hdca_id|subcollection_type" else it will just be hdca_id
+    try:
+        src = incoming_val["src"]
+        if src != "hdca":
+            raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
+        hdc_id = incoming_val["id"]
+        subcollection_type = incoming_val.get("map_over_type", None)
+    except TypeError:
+        hdc_id = incoming_val
+        subcollection_type = None
+    hdc = app.model.context.get(HistoryDatasetCollectionAssociation, hdc_id)
     collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
         subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
         return subcollection_elements
     else:
-        hdas = []
+        hdas: list[DatasetInstance] = []
         for element in hdc.collection.dataset_elements:
             hda = element.dataset_instance
             hda.element_identifier = element.element_identifier
@@ -359,8 +490,8 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
         return hdas
 
 
-def __collection_multirun_parameter(value):
-    is_batch = value.get("batch", False)
+def __collection_multirun_parameter(value: dict[str, Any]) -> bool:
+    is_batch = value.get("batch", False) or value.get("__class__", None) == "Batch"
     if not is_batch:
         return False
 

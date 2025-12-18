@@ -50,7 +50,7 @@ const handleDrop = (event: DragEvent) => {
 </template>
 
 <style scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .paste-data {
     min-width: 576px;

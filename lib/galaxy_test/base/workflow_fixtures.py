@@ -1280,3 +1280,35 @@ WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
     "uuid": "03a95ebe-af1e-4628-ac2f-e7553babfb2f",
     "version": 3
 }"""
+
+WORKFLOW_KEEP_SUCCESSFUL_DATASETS = """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+
+steps:
+  mixed_collection:
+    tool_id: exit_code_from_file
+    in:
+       input: input_c
+
+  filtered_collection:
+    tool_id: "__KEEP_SUCCESS_DATASETS__"
+    in:
+      input: mixed_collection/out_file1
+
+  cat:
+    tool_id: cat
+    in:
+      input1: filtered_collection/output
+"""
+
+WORKFLOW_KEEP_SUCCESSFUL_DATASETS_TEST_DATA = """
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
+"""

@@ -3,6 +3,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import raw from "@/components/providers/test/json/Dataset.json";
 
@@ -56,7 +57,7 @@ describe("JobParameters/JobParameters.vue", () => {
             element: Wrapper<any>,
             expectedTitle: string,
             expectedValue: string | { hid: number; name: string },
-            link?: string
+            link?: string,
         ) => {
             const tds = element.findAll("td");
             expect(tds.at(0).text()).toBe(expectedTitle);

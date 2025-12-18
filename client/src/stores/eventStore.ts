@@ -29,17 +29,24 @@ export const useEventStore = defineStore("eventStore", () => {
         return multipleDragData.value ? (Object.values(dragData.value) as EventData[]) : [dragData.value];
     }
 
+    function isCtrlKey(event: KeyboardEvent | MouseEvent): boolean {
+        return isMac.value ? event.metaKey : event.ctrlKey;
+    }
+
     function setDragData(data: EventData, multiple = false) {
         dragData.value = data;
         multipleDragData.value = multiple;
     }
 
     return {
-        isMac,
         multipleDragData,
         clearDragData,
         getDragData,
         getDragItems,
+        /** Based on the user's keyboard platform, checks if it is the
+         * typical key for selection (ctrl for windows/linux, cmd for mac).
+         */
+        isCtrlKey,
         setDragData,
     };
 });

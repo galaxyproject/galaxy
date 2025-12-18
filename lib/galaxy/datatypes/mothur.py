@@ -5,7 +5,6 @@ Mothur Metagenomics Datatypes
 import logging
 import re
 from typing import (
-    List,
     Optional,
 )
 
@@ -1073,7 +1072,7 @@ class SffFlow(Tabular):
         except Exception as e:
             log.warning(f"SffFlow set_meta {e}")
 
-    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[List] = None, **kwargs) -> str:
+    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[list] = None, **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:

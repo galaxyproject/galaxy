@@ -185,6 +185,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/data_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Data Landing */
+        post: operations["create_data_landing_api_data_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dataset_collection_element/{dce_id}": {
         parameters: {
             query?: never;
@@ -334,6 +351,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dataset_collections/{hdca_id}/sample_sheet_workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an XLSX workbook for a sample sheet definition targeting an existing collection. */
+        post: operations["dataset_collections__workbook_download_for_collection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dataset_collections/{hdca_id}/sample_sheet_workbook/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse an XLSX workbook for a sample sheet definition and supplied file contents. */
+        post: operations["dataset_collections__workbook_parse_for_collection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dataset_collections/{hdca_id}/suitable_converters": {
         parameters: {
             query?: never;
@@ -476,6 +527,23 @@ export interface paths {
         };
         /** Get the list of extra files/directories associated with a dataset. */
         get: operations["extra_files_api_datasets__dataset_id__extra_files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/datasets/{dataset_id}/extra_files/raw/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Downloads a raw extra file associated with a dataset. */
+        get: operations["extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -943,6 +1011,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/display_applications/create_link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a link for display applications.
+         * @description Creates a link for display applications.
+         */
+        post: operations["display_applications_create_link_api_display_applications_create_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/display_applications/reload": {
         parameters: {
             query?: never;
@@ -1017,6 +1105,23 @@ export interface paths {
          *     be loaded into the toolbox.
          */
         delete: operations["delete_api_dynamic_tools__dynamic_tool_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/file_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create File Landing */
+        post: operations["create_file_landing_api_file_landings_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2316,6 +2421,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/copy_contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy datasets or dataset collections to other histories. */
+        post: operations["history_contents__copy_contents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/custom_builds_metadata": {
         parameters: {
             query?: never;
@@ -2613,6 +2735,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/tool_requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return all the tool requests for the tools submitted to this history. */
+        get: operations["tool_requests_api_histories__history_id__tool_requests_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/unpublish": {
         parameters: {
             query?: never;
@@ -2717,6 +2856,23 @@ export interface paths {
         post?: never;
         /** Cancel the specified workflow invocation. */
         delete: operations["cancel_invocation_api_invocations__invocation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invocations/{invocation_id}/error": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submits a bug report for a workflow run via the API. */
+        post: operations["report_error_api_invocations__invocation_id__error_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2925,7 +3081,8 @@ export interface paths {
         /** Index */
         get: operations["index_api_jobs_get"];
         put?: never;
-        post?: never;
+        /** Create */
+        post: operations["create_api_jobs_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4199,6 +4356,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sample_sheet_workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an XLSX workbook for a sample sheet definition. */
+        post: operations["dataset_collections__workbook_download"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sample_sheet_workbook/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse an XLSX workbook for a sample sheet definition and supplied file contents. */
+        post: operations["dataset_collections__workbook_parse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/short_term_storage/{storage_request_id}": {
         parameters: {
             query?: never;
@@ -4465,7 +4656,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get details of a given data table
+         * Get details of a data table. For non-administrators, base directories in the path column are stripped, leaving only the basename.
          * @description Get details of a given tool data table.
          */
         get: operations["show_api_tool_data__table_name__get"];
@@ -4490,7 +4681,7 @@ export interface paths {
         };
         /**
          * Get information about a particular field in a tool data table
-         * @description Reloads a data table and return its details.
+         * @description Displays information about a data table field.
          */
         get: operations["show_field_api_tool_data__table_name__fields__field_name__get"];
         put?: never;
@@ -4509,7 +4700,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get information about a particular field in a tool data table
+         * Get files associated with a particular field in a tool data table
          * @description Download a file associated with the data table field.
          */
         get: operations["download_field_file_api_tool_data__table_name__fields__field_name__files__file_name__get"];
@@ -4533,6 +4724,91 @@ export interface paths {
          * @description Reloads a data table and return its details.
          */
         get: operations["reload_api_tool_data__table_name__reload_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_landings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Landing */
+        post: operations["create_landing_api_tool_landings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_landings/{uuid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Landing */
+        get: operations["get_landing_api_tool_landings__uuid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_landings/{uuid}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Landing */
+        post: operations["claim_landing_api_tool_landings__uuid__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tool request state. */
+        get: operations["get_tool_request_api_tool_requests__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tool_requests/{id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tool request state. */
+        get: operations["tool_request_state_api_tool_requests__id__state_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4609,6 +4885,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/fetch/workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Generate a template workbook to use with the activity builder UI */
+        get: operations["tools__fetch_workbook_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/fetch/workbook/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a template workbook to use with the activity builder UI */
+        post: operations["tools__fetch_workbook_parse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tools/{tool_id}/icon": {
         parameters: {
             query?: never;
@@ -4632,6 +4942,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/{tool_id}/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tool inputs. */
+        get: operations["tool_inputs_api_tools__tool_id__inputs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/parameter_landing_request_schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return a JSON schema description of the tool's inputs for the tool landing request API. */
+        get: operations["tools__parameter_landing_request_schema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/parameter_request_schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
+         * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
+         */
+        get: operations["tools__parameter_request_schema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tools/{tool_id}/parameter_test_case_xml_schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return a JSON schema description of the tool's inputs for test case construction. */
+        get: operations["tools__parameter_test_case_xml_schema"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tours": {
         parameters: {
             query?: never;
@@ -4644,6 +5025,26 @@ export interface paths {
          * @description Return list of available tours.
          */
         get: operations["index_api_tours_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tours/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Generate Tour
+         * @description Generate a tour designed for the given tool.
+         */
+        get: operations["generate_tour_api_tours_generate_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4951,6 +5352,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{user_id}/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists all credentials the user has provided */
+        get: operations["list_user_credentials_api_users__user_id__credentials_get"];
+        /** Updates the current credentials group */
+        put: operations["update_user_credentials_group_api_users__user_id__credentials_put"];
+        /** Allows users to provide credentials for a secret/variable */
+        post: operations["provide_credential_api_users__user_id__credentials_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{user_credentials_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deletes all credentials for a specific service */
+        delete: operations["delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{user_id}/credentials/{user_credentials_id}/groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Updates user credentials */
+        put: operations["update_user_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__put"];
+        post?: never;
+        /** Deletes a specific credential group */
+        delete: operations["delete_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{user_id}/custom_builds": {
         parameters: {
             query?: never;
@@ -4958,7 +5413,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**  Returns collection of custom builds. */
+        /** Returns collection of custom builds. */
         get: operations["get_custom_builds_api_users__user_id__custom_builds_get"];
         put?: never;
         post?: never;
@@ -6022,6 +6477,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return bootstrapped client context */
+        get: operations["index_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ga4gh/drs/v1/objects/{object_id}": {
         parameters: {
             query?: never;
@@ -6127,6 +6599,7 @@ export interface components {
             /**
              * Region
              * @description Name of the region in the cloud service provider that the object belongs to.
+             * @example us-east-1
              */
             region?: string | null;
             /** @description Type of the access method. */
@@ -6142,6 +6615,7 @@ export interface components {
             /**
              * Headers
              * @description An optional list of headers to include in the HTTP request to `url`. These headers can be used to provide auth tokens required to fetch the object bytes.
+             * @example Authorization: Basic Z2E0Z2g6ZHJz
              */
             headers?: string[] | null;
             /**
@@ -6227,37 +6701,38 @@ export interface components {
         };
         /** AdminToolSource */
         AdminToolSource: {
-            /** Citations */
+            /** citations */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             class: "GalaxyTool";
-            /** Command */
+            /** command */
             command: string;
-            /** Container */
+            /** container */
             container?: string | null;
-            /** Description */
+            /** description */
             description?: string | null;
-            /** Edam Operations */
+            /** edam_operations */
             edam_operations?: string[] | null;
-            /** Edam Topics */
+            /** edam_topics */
             edam_topics?: string[] | null;
+            /** help */
             help?: components["schemas"]["HelpContent"] | null;
-            /** Id */
+            /** id */
             id?: string | null;
             /**
-             * Inputs
+             * inputs
              * @default []
              */
             inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
-            /** License */
+            /** license */
             license?: string | null;
-            /** Name */
+            /** name */
             name?: string | null;
             /**
-             * Outputs
+             * outputs
              * @default []
              */
             outputs: (
@@ -6268,10 +6743,10 @@ export interface components {
                 | components["schemas"]["ToolOutputFloat"]
                 | components["schemas"]["ToolOutputBoolean"]
             )[];
-            /** Profile */
+            /** profile */
             profile?: number | null;
             /**
-             * Requirements
+             * requirements
              * @default []
              */
             requirements:
@@ -6282,11 +6757,11 @@ export interface components {
                   )[]
                 | null;
             /**
-             * Version
+             * version
              * @default 1.0
              */
             version: string | null;
-            /** Xrefs */
+            /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /** AnonUserModel */
@@ -6430,7 +6905,14 @@ export interface components {
             state_ids: {
                 [key: string]: string[];
             };
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -6517,7 +6999,14 @@ export interface components {
              * @description Whether this item has been permanently removed.
              */
             purged: boolean;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -6601,35 +7090,44 @@ export interface components {
         };
         /** BaseUrlParameterModel */
         BaseUrlParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_baseurl
              * @constant
              */
@@ -6752,47 +7250,58 @@ export interface components {
             files?: string[] | null;
             /** History Id */
             history_id: unknown;
+            /** Landing Uuid */
+            landing_uuid?: unknown;
             /** Targets */
             targets: unknown;
         };
         /** BooleanParameterModel */
         BooleanParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Falsevalue */
+            /** falsevalue */
             falsevalue?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_boolean
              * @constant
              */
             parameter_type: "gx_boolean";
-            /** Truevalue */
+            /** truevalue */
             truevalue?: string | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -6800,7 +7309,7 @@ export interface components {
              */
             type: "boolean";
             /**
-             * Value
+             * value
              * @default false
              */
             value: boolean | null;
@@ -6932,16 +7441,19 @@ export interface components {
             /**
              * Documentation
              * @description Documentation or extended description for this plugin.
+             * @example Galaxy's library import directory
              */
             doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
+             * @example _import
              */
             id: string;
             /**
              * Label
              * @description The display label for this plugin.
+             * @example Library Import Directory
              */
             label: string;
             /**
@@ -6966,11 +7478,13 @@ export interface components {
             /**
              * Type
              * @description The type of the plugin.
+             * @example gximport
              */
             type: string;
             /**
              * URI root
              * @description The URI root used by this type of plugin.
+             * @example gximport://
              */
             uri_root: string;
             /**
@@ -6981,6 +7495,7 @@ export interface components {
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
+             * @example false
              */
             writable: boolean;
         };
@@ -7068,14 +7583,15 @@ export interface components {
              * @description The digest method used to create the checksum.
              *     The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
              *     GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.
+             * @example sha-256
              */
             type: string;
         };
         /** Citation */
         Citation: {
-            /** Content */
+            /** content */
             content: string;
-            /** Type */
+            /** type */
             type: string;
         };
         /** ClaimLandingPayload */
@@ -7100,6 +7616,75 @@ export interface components {
         CleanupStorageItemsRequest: {
             /** Item Ids */
             item_ids: string[];
+        };
+        /** CollectionElementCollectionRequestUri */
+        CollectionElementCollectionRequestUri: {
+            /**
+             * Class
+             * @constant
+             */
+            class: "Collection";
+            /** Collection Type */
+            collection_type: string;
+            /** Elements */
+            elements: (
+                | components["schemas"]["CollectionElementCollectionRequestUri"]
+                | components["schemas"]["CollectionElementDataRequestUri"]
+            )[];
+            /**
+             * Identifier
+             * @description A unique identifier for this element within the collection.
+             */
+            identifier: string;
+        };
+        /** CollectionElementDataRequestUri */
+        CollectionElementDataRequestUri: {
+            /**
+             * Class
+             * @constant
+             */
+            class: "File";
+            /** Created From Basename */
+            created_from_basename?: string | null;
+            /**
+             * Dbkey
+             * @default ?
+             */
+            dbkey: string;
+            /**
+             * Deferred
+             * @default false
+             */
+            deferred: boolean;
+            /** Ext */
+            ext: string;
+            /** Hashes */
+            hashes?: components["schemas"]["FileHash"][] | null;
+            /**
+             * Identifier
+             * @description A unique identifier for this element within the collection.
+             */
+            identifier: string;
+            /** Info */
+            info?: string | null;
+            /** Location */
+            location: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Space To Tab
+             * @default false
+             */
+            space_to_tab: boolean;
+            /** Src */
+            src?: null;
+            /** Tags */
+            tags?: string[] | null;
+            /**
+             * To Posix Lines
+             * @default false
+             */
+            to_posix_lines: boolean;
         };
         /** CollectionElementIdentifier */
         CollectionElementIdentifier: {
@@ -7127,7 +7712,7 @@ export interface components {
              * Source
              * @description The source of the element.
              */
-            src: components["schemas"]["ColletionSourceType"];
+            src: components["schemas"]["CollectionSourceType"];
             /**
              * Tags
              * @description The list of tags associated with the element.
@@ -7135,41 +7720,50 @@ export interface components {
             tags?: string[] | null;
         };
         /**
-         * ColletionSourceType
+         * CollectionSourceType
          * @enum {string}
          */
-        ColletionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
+        CollectionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
         /** ColorParameterModel */
         ColorParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_color
              * @constant
              */
@@ -7179,22 +7773,40 @@ export interface components {
              * @enum {string}
              */
             type: "color";
-            /** Value */
+            /** value */
             value?: string | null;
         };
         /** CompositeDataElement */
         CompositeDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -7205,35 +7817,56 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
             } | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
@@ -7242,10 +7875,19 @@ export interface components {
              * @enum {string}
              */
             src: "composite";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -7316,6 +7958,8 @@ export interface components {
             device?: string | null;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
@@ -7337,40 +7981,49 @@ export interface components {
         };
         /** ConditionalParameterModel */
         "ConditionalParameterModel-Input": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_conditional
              * @constant
              */
             parameter_type: "gx_conditional";
-            /** Test Parameter */
+            /** test_parameter */
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"];
@@ -7379,45 +8032,54 @@ export interface components {
              * @enum {string}
              */
             type: "conditional";
-            /** Whens */
+            /** whens */
             whens: components["schemas"]["ConditionalWhen-Input"][];
         };
         /** ConditionalParameterModel */
         "ConditionalParameterModel-Output": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_conditional
              * @constant
              */
             parameter_type: "gx_conditional";
-            /** Test Parameter */
+            /** test_parameter */
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"];
@@ -7426,7 +8088,7 @@ export interface components {
              * @enum {string}
              */
             type: "conditional";
-            /** Whens */
+            /** whens */
             whens: components["schemas"]["ConditionalWhen-Output"][];
         };
         /** ConditionalWhen */
@@ -7519,22 +8181,30 @@ export interface components {
         };
         /** Container */
         Container: {
-            /** Container Id */
+            /** container_id */
             container_id: string;
             /**
-             * Type
+             * type
              * @enum {string}
              */
             type: "docker" | "singularity";
         };
         /** ContainerRequirement */
         ContainerRequirement: {
+            /** container */
             container: components["schemas"]["Container"];
             /**
-             * Type
+             * type
              * @constant
              */
             type: "container";
+        };
+        /** ContentTypeMessage */
+        ContentTypeMessage: {
+            /** Content Type */
+            content_type: string;
+            /** Message */
+            message: string;
         };
         /** ContentsObject */
         ContentsObject: {
@@ -7546,6 +8216,7 @@ export interface components {
             /**
              * Drs Uri
              * @description A list of full DRS identifier URI paths that may be used to obtain the object. These URIs may be external to this DRS instance.
+             * @example drs://drs.example.org/314159
              */
             drs_uri?: string[] | null;
             /**
@@ -7559,6 +8230,19 @@ export interface components {
              */
             name: string;
         };
+        /** ContextResponse */
+        ContextResponse: {
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Session Csrf Token */
+            session_csrf_token?: string | null;
+            /** User */
+            user: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * ConvertedDatasetsMap
          * @description Map of `file extension` -> `converted dataset encoded id`
@@ -7569,11 +8253,46 @@ export interface components {
         ConvertedDatasetsMap: {
             [key: string]: string;
         };
+        /** CopyDatasetsPayload */
+        CopyDatasetsPayload: {
+            /** Source Content */
+            source_content: components["schemas"]["CopyDatasetsPayloadSourceEntry"][];
+            /** Target History Ids */
+            target_history_ids?: string[] | null;
+            /** Target History Name */
+            target_history_name?: string | null;
+        };
+        /** CopyDatasetsPayloadSourceEntry */
+        CopyDatasetsPayloadSourceEntry: {
+            /** Id */
+            id: string;
+            /** Type */
+            type: string;
+        };
+        /** CopyDatasetsResponse */
+        CopyDatasetsResponse: {
+            /** History Ids */
+            history_ids: string[];
+        };
+        /** CreateDataLandingPayload */
+        CreateDataLandingPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /** Origin */
+            origin?: string | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            request_state: components["schemas"]["DataLandingRequestState"];
+        };
         /** CreateEntryPayload */
         CreateEntryPayload: {
             /**
              * Name
              * @description The name of the entry to create.
+             * @example my_new_entry
              */
             name: string;
             /**
@@ -7581,6 +8300,23 @@ export interface components {
              * @description The target file source to create the entry in.
              */
             target: string;
+        };
+        /** CreateFileLandingPayload */
+        CreateFileLandingPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /** Origin */
+            origin?: string | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            /** Request State */
+            request_state: (
+                | components["schemas"]["FileRequestUri"]
+                | components["schemas"]["DataRequestCollectionUri"]
+            )[];
         };
         /** CreateHistoryContentFromStore */
         CreateHistoryContentFromStore: {
@@ -7600,13 +8336,17 @@ export interface components {
              */
             collection_type?: string | null;
             /**
+             * Column Definitions
+             * @description Specify definitions for row data if collection_type is sample_sheet
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Content
              * @description Depending on the `source` it can be:
              *     - The encoded id from the library dataset
              *     - The encoded id from the library folder
              *     - The encoded id from the HDA
              *     - The encoded id from the HDCA
-             *
              */
             content?: string | null;
             /**
@@ -7658,6 +8398,13 @@ export interface components {
              * @description The name of the new collection.
              */
             name?: string | null;
+            /**
+             * Row data
+             * @description Specify rows of metadata data corresponding to an identifier if collection_type is sample_sheet
+             */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
@@ -7737,6 +8484,7 @@ export interface components {
             /**
              * View
              * @description The name of the view used to serialize this item. This will return a predefined set of attributes of the item.
+             * @example element
              */
             view?: components["schemas"]["InvocationSerializationView"] | null;
         };
@@ -7803,11 +8551,56 @@ export interface components {
              */
             synopsis: string | null;
         };
+        /** CreateLinkFeedback */
+        CreateLinkFeedback: {
+            /** Messages */
+            messages?: [string, string][] | null;
+            /** Preparable Steps */
+            preparable_steps?: components["schemas"]["CreateLinkStep"][] | null;
+            /**
+             * Refresh
+             * @default false
+             */
+            refresh: boolean | null;
+            /** Resource */
+            resource?: string | null;
+        };
+        /** CreateLinkIncoming */
+        CreateLinkIncoming: {
+            /** App Name */
+            app_name: string;
+            /** Dataset Id */
+            dataset_id: string;
+            /** Kwd */
+            kwd?: {
+                [key: string]: string;
+            } | null;
+            /** Link Name */
+            link_name: string;
+        };
+        /** CreateLinkStep */
+        CreateLinkStep: {
+            /** Name */
+            name: string;
+            /**
+             * Ready
+             * @default false
+             */
+            ready: boolean | null;
+            /** State */
+            state?: string | null;
+        };
         /** CreateMetricsPayload */
         CreateMetricsPayload: {
             /**
              * List of metrics to be recorded.
              * @default []
+             * @example {
+             *       "args": "{\"test\":\"value\"}",
+             *       "level": 0,
+             *       "namespace": "test-source",
+             *       "time": "2021-01-23T18:25:43.511Z"
+             *     }
              */
             metrics: components["schemas"]["Metric"][];
         };
@@ -7818,6 +8611,11 @@ export interface components {
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
             collection_type?: string | null;
+            /**
+             * Column Definitions
+             * @description Specify definitions for row data if collection_type is sample_sheet
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Copy Elements
              * @description Whether to create a copy of the source HDAs for the new collection.
@@ -7862,6 +8660,13 @@ export interface components {
              * @description The name of the new collection.
              */
             name?: string | null;
+            /**
+             * Row data
+             * @description Specify rows of metadata data corresponding to an identifier if collection_type is sample_sheet
+             */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
         };
         /** CreatePagePayload */
         CreatePagePayload: {
@@ -7872,7 +8677,7 @@ export interface components {
             annotation?: string | null;
             /**
              * Content
-             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @description Text contents of the last page revision with embedded directives expanded (type dependent on content_format).
              * @default
              */
             content: string | null;
@@ -7983,15 +8788,108 @@ export interface components {
              */
             url: string;
         };
+        /** CreateSourceCredentialsPayload */
+        CreateSourceCredentialsPayload: {
+            /** @description The service credential details including group and credentials. */
+            service_credential: components["schemas"]["ServiceCredentialPayload"];
+            /**
+             * Source Id
+             * @description The ID of the source (e.g., tool ID).
+             */
+            source_id: string;
+            /**
+             * Source Type
+             * @description The type of source requiring credentials.
+             * @constant
+             */
+            source_type: "tool";
+            /**
+             * Source Version
+             * @description The version of the source.
+             */
+            source_version: string;
+        };
+        /** CreateToolLandingRequestPayload */
+        CreateToolLandingRequestPayload: {
+            /** Client Secret */
+            client_secret?: string | null;
+            /**
+             * Origin
+             * @description The origin of the landing request.
+             */
+            origin?: string | null;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
+            /** Request State */
+            request_state?: {
+                [key: string]: unknown;
+            } | null;
+            /** Tool Id */
+            tool_id: string;
+            /** Tool Version */
+            tool_version?: string | null;
+        };
         /**
          * CreateType
          * @enum {string}
          */
         CreateType: "file" | "folder" | "collection";
+        /** CreateWorkbookForCollectionApi */
+        CreateWorkbookForCollectionApi: {
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Prefix sample sheet values
+             * @description An area to pre-populate URIs, etc...
+             */
+            prefix_values?: (number | boolean | string | null)[][] | null;
+        };
+        /** CreateWorkbookRequest */
+        CreateWorkbookRequest: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type:
+                | "sample_sheet"
+                | "sample_sheet:paired"
+                | "sample_sheet:paired_or_unpaired"
+                | "sample_sheet:record";
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Prefix Columns Type
+             * @default URI
+             * @constant
+             */
+            prefix_columns_type: "URI";
+            /** Prefix Values */
+            prefix_values?: (number | boolean | string | null)[][] | null;
+            /**
+             * Title of the workbook to generate
+             * @description A short title to give the workbook.
+             * @default Sample Sheet for Galaxy
+             */
+            title: string;
+        };
         /** CreateWorkflowLandingRequestPayload */
         CreateWorkflowLandingRequestPayload: {
             /** Client Secret */
             client_secret?: string | null;
+            /**
+             * Origin
+             * @description The origin of the landing request.
+             */
+            origin?: string | null;
             /**
              * Public
              * @description If workflow landing request is public anyone with the uuid can use the landing request. If not public the request must be claimed before use and additional verification might occur.
@@ -8020,11 +8918,13 @@ export interface components {
             /**
              * Name
              * @description The name of the created entry.
+             * @example my_new_entry
              */
             name: string;
             /**
              * URI
              * @description The URI of the created entry.
+             * @example gxfiles://my_new_entry
              */
             uri: string;
         };
@@ -8037,7 +8937,7 @@ export interface components {
             active: boolean;
             /**
              * Deleted
-             * @description  User is deleted
+             * @description User is deleted
              */
             deleted: boolean;
             /**
@@ -8080,7 +8980,47 @@ export interface components {
              */
             username: string;
         };
-        /** CustomArchivedHistoryView */
+        /** CredentialPayload */
+        CredentialPayload: {
+            /**
+             * Credential Name
+             * @description The name of the credential (variable or secret).
+             */
+            name: string;
+            /**
+             * Value
+             * @description The value of the credential.
+             */
+            value?: string | null;
+        };
+        /** CsvDialect */
+        CsvDialect: {
+            /** Delimiter */
+            delimiter: string;
+            /** Double Quote */
+            double_quote: boolean;
+            /** Escape Character */
+            escape_character: string | null;
+            /** Line Terminator */
+            line_terminator: string;
+            /** Quote Character */
+            quote_character: string | null;
+            /** Skip Initial Space */
+            skip_initial_space: boolean;
+        };
+        /** CsvDialectInferenceMessage */
+        CsvDialectInferenceMessage: {
+            dialect: components["schemas"]["CsvDialect"];
+            /** Message */
+            message: string;
+        };
+        /**
+         * CustomArchivedHistoryView
+         * @description Archived History Response with all optional fields.
+         *
+         *     It is used for serializing only specific attributes using the "keys"
+         *     query parameter.
+         */
         CustomArchivedHistoryView: {
             /**
              * Annotation
@@ -8132,8 +9072,9 @@ export interface components {
             /**
              * Genome Build
              * @description TODO
+             * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -8204,7 +9145,14 @@ export interface components {
             state_ids?: {
                 [key: string]: string[];
             } | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags?: string[] | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -8301,7 +9249,6 @@ export interface components {
              * @description A list of label/value pairs with all the datasets of type `FASTA` contained in the History.
              *      - `label` is item position followed by the name of the dataset.
              *      - `value` is the encoded database ID of the dataset.
-             *
              */
             fasta_hdas: components["schemas"]["LabelValuePair"][];
             /**
@@ -8310,7 +9257,14 @@ export interface components {
              */
             installed_builds: components["schemas"]["LabelValuePair"][];
         };
-        /** CustomHistoryView */
+        /**
+         * CustomHistoryView
+         * @description History Response with all optional fields.
+         *
+         *     It is used for serializing only specific attributes using the "keys"
+         *     query parameter. Unfortunately, we cannot know the exact fields that
+         *     will be requested, so we have to allow all fields to be optional.
+         */
         CustomHistoryView: {
             /**
              * Annotation
@@ -8357,8 +9311,9 @@ export interface components {
             /**
              * Genome Build
              * @description TODO
+             * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -8429,7 +9384,14 @@ export interface components {
             state_ids?: {
                 [key: string]: string[];
             } | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags?: string[] | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -8460,12 +9422,12 @@ export interface components {
         /** CwlBooleanParameterModel */
         CwlBooleanParameterModel: {
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_boolean
              * @constant
              */
@@ -8473,35 +9435,44 @@ export interface components {
         };
         /** CwlDirectoryParameterModel */
         CwlDirectoryParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_directory
              * @constant
              */
@@ -8509,35 +9480,44 @@ export interface components {
         };
         /** CwlFileParameterModel */
         CwlFileParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_file
              * @constant
              */
@@ -8546,12 +9526,12 @@ export interface components {
         /** CwlFloatParameterModel */
         CwlFloatParameterModel: {
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_float
              * @constant
              */
@@ -8560,12 +9540,12 @@ export interface components {
         /** CwlIntegerParameterModel */
         CwlIntegerParameterModel: {
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_integer
              * @constant
              */
@@ -8574,12 +9554,12 @@ export interface components {
         /** CwlNullParameterModel */
         CwlNullParameterModel: {
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_null
              * @constant
              */
@@ -8588,12 +9568,12 @@ export interface components {
         /** CwlStringParameterModel */
         CwlStringParameterModel: {
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_string
              * @constant
              */
@@ -8602,17 +9582,17 @@ export interface components {
         /** CwlUnionParameterModel */
         "CwlUnionParameterModel-Input": {
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_union
              * @constant
              */
             parameter_type: "cwl_union";
-            /** Parameters */
+            /** parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -8627,17 +9607,17 @@ export interface components {
         /** CwlUnionParameterModel */
         "CwlUnionParameterModel-Output": {
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Parameter Type
+             * parameter_type
              * @default cwl_union
              * @constant
              */
             parameter_type: "cwl_union";
-            /** Parameters */
+            /** parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -8654,6 +9634,11 @@ export interface components {
          * @description Dataset Collection Element summary information.
          */
         DCESummary: {
+            /**
+             * Columns
+             * @description A row (or list of columns) of data associated with this element
+             */
+            columns?: (number | boolean | string | null)[] | null;
             /**
              * Element Identifier
              * @description The actual name of this element.
@@ -8720,6 +9705,18 @@ export interface components {
              */
             elements: components["schemas"]["DCESummary"][];
             /**
+             * Elements Datatypes
+             * @description A set containing all the different element datatypes in the collection.
+             */
+            elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
+            /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
              */
@@ -8738,44 +9735,53 @@ export interface components {
         };
         /** DataCollectionParameterModel */
         DataCollectionParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Collection Type */
+            /** collection_type */
             collection_type?: string | null;
             /**
-             * Extensions
+             * extensions
              * @default [
              *       "data"
              *     ]
              */
             extensions: string[];
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_data_collection
              * @constant
              */
@@ -8785,44 +9791,53 @@ export interface components {
              * @enum {string}
              */
             type: "data_collection";
-            /** Value */
+            /** value */
             value: {
                 [key: string]: unknown;
             } | null;
         };
         /** DataColumnParameterModel */
         DataColumnParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Multiple */
+            /** multiple */
             multiple: boolean;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_data_column
              * @constant
              */
@@ -8832,14 +9847,16 @@ export interface components {
              * @enum {string}
              */
             type: "data_column";
-            /** Value */
+            /** value */
             value?: number | number[] | null;
         };
         /** DataElementsFromTarget */
         DataElementsFromTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -8863,7 +9880,9 @@ export interface components {
         DataElementsTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -8891,55 +9910,78 @@ export interface components {
          * @enum {string}
          */
         DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
+        /** DataLandingRequestState */
+        DataLandingRequestState: {
+            /** Targets */
+            targets: (
+                | components["schemas"]["DataElementsTarget"]
+                | components["schemas"]["HdcaDataItemsTarget"]
+                | components["schemas"]["DataElementsFromTarget"]
+                | components["schemas"]["HdcaDataItemsFromTarget"]
+                | components["schemas"]["FtpImportTarget"]
+            )[];
+        };
         /** DataParameterModel */
         DataParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
             /**
-             * Extensions
+             * extensions
              * @description Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.
              * @default [
              *       "data"
              *     ]
+             * @example txt
+             * @example tabular
+             * @example tiff
              */
             extensions: string[];
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Max */
+            /** max */
             max?: number | null;
-            /** Min */
+            /** min */
             min?: number | null;
             /**
-             * Multiple
+             * multiple
              * @description Allow multiple values to be selected.
              * @default false
              */
             multiple: boolean;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_data
              * @constant
              */
@@ -8949,6 +9991,30 @@ export interface components {
              * @enum {string}
              */
             type: "data";
+        };
+        /** DataRequestCollectionUri */
+        DataRequestCollectionUri: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            class: "Collection";
+            /** Collection Type */
+            collection_type: string;
+            /**
+             * Deferred
+             * @default false
+             */
+            deferred: boolean;
+            /** Elements */
+            elements: (
+                | components["schemas"]["CollectionElementCollectionRequestUri"]
+                | components["schemas"]["CollectionElementDataRequestUri"]
+            )[];
+            /** Name */
+            name?: string | null;
+            /** Src */
+            src?: null;
         };
         /** DatasetAssociationRoles */
         DatasetAssociationRoles: {
@@ -8983,6 +10049,7 @@ export interface components {
             /**
              * Extension
              * @description The dataset file extension.
+             * @example txt
              */
             extension: string;
             /** Extensions */
@@ -8993,7 +10060,14 @@ export interface components {
              * @constant
              */
             model_class: "HistoryDatasetCollectionAssociation";
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
         };
         /**
          * DatasetCollectionContentElements
@@ -9069,10 +10143,22 @@ export interface components {
              */
             dep: string;
             /**
+             * Id
+             * @description ID of the referenced dataset
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
              * Name
              * @description Name of the referenced dataset
              */
             name: string;
+            /**
+             * User Id
+             * @description ID of the user who owns the referenced dataset.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
         };
         /**
          * DatasetPermissionAction
@@ -9266,16 +10352,19 @@ export interface components {
             /**
              * Source
              * @description Source type for conversion
+             * @example bam
              */
             source: string;
             /**
              * Target
              * @description Target type for conversion
+             * @example bai
              */
             target: string;
             /**
              * Tool identifier
              * @description The converter tool identifier
+             * @example CONVERTER_Bam_Bai_0
              */
             tool_id: string;
         };
@@ -9299,8 +10388,14 @@ export interface components {
             /**
              * Description URL
              * @description The URL to a detailed description for this datatype
+             * @example https://wiki.galaxyproject.org/Learn/Datatypes#Bed
              */
             description_url: string | null;
+            /**
+             * Display behavior
+             * @description How this datatype behaves when displayed with preview=True: 'inline' (can be displayed in browser) or 'download' (triggers download)
+             */
+            display_behavior?: string | null;
             /**
              * Display in upload
              * @description If True, the associated file extension will be displayed in the `File Format` select list in the `Upload File from your computer` tool in the `Get Data` tool section of the tool panel
@@ -9310,6 +10405,7 @@ export interface components {
             /**
              * Extension
              * @description The data type’s Dataset file extension
+             * @example bed
              */
             extension: string;
             /**
@@ -9323,16 +10419,19 @@ export interface components {
             /**
              * Definition
              * @description The EDAM definition
+             * @example Entry (gene) format of the NCBI database.
              */
             definition: string | null;
             /**
              * Label
              * @description The EDAM label
+             * @example NCBI gene report format
              */
             label: string | null;
             /**
              * Prefix IRI
              * @description The EDAM prefixed Resource Identifier
+             * @example format_1782
              */
             prefix_IRI: string;
         };
@@ -9341,11 +10440,16 @@ export interface components {
             /**
              * Datatype
              * @description The datatype extension this visualization applies to
+             * @example bam
+             * @example h5
+             * @example vcf
              */
             datatype: string;
             /**
              * Visualization
              * @description The visualization plugin to use
+             * @example igv
+             * @example vitessce
              */
             visualization: string;
         };
@@ -9406,7 +10510,6 @@ export interface components {
              * @description The type of the default quota. Either one of:
              *      - `registered`: the associated quota will affect registered users.
              *      - `unregistered`: the associated quota will affect unregistered users.
-             *
              */
             type: components["schemas"]["DefaultQuotaTypes"];
         };
@@ -9482,30 +10585,6 @@ export interface components {
              */
             stop_job: boolean;
         };
-        /**
-         * DeleteHistoryContentResult
-         * @description Contains minimum information about the deletion state of a history item.
-         *
-         *     Can also contain any other properties of the item.
-         */
-        DeleteHistoryContentResult: {
-            /**
-             * Deleted
-             * @description True if the item was successfully deleted.
-             */
-            deleted: boolean;
-            /**
-             * ID
-             * @description The encoded ID of the history item.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Purged
-             * @description True if the item was successfully removed from disk.
-             */
-            purged?: boolean | null;
-        };
         /** DeleteHistoryPayload */
         DeleteHistoryPayload: {
             /**
@@ -9552,7 +10631,7 @@ export interface components {
         DetailedUserModel: {
             /**
              * Deleted
-             * @description  User is deleted
+             * @description User is deleted
              */
             deleted: boolean;
             /**
@@ -9621,35 +10700,44 @@ export interface components {
         };
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_directory_uri
              * @constant
              */
@@ -9660,7 +10748,7 @@ export interface components {
              */
             type: "directory";
             /**
-             * Validators
+             * validators
              * @default []
              */
             validators: (
@@ -9715,66 +10803,75 @@ export interface components {
         };
         /** DrillDownOptionsDict */
         "DrillDownOptionsDict-Input": {
-            /** Name */
+            /** name */
             name: string | null;
-            /** Options */
+            /** options */
             options: components["schemas"]["DrillDownOptionsDict-Input"][];
-            /** Selected */
+            /** selected */
             selected: boolean;
-            /** Value */
+            /** value */
             value: string;
         };
         /** DrillDownOptionsDict */
         "DrillDownOptionsDict-Output": {
-            /** Name */
+            /** name */
             name: string | null;
-            /** Options */
+            /** options */
             options: components["schemas"]["DrillDownOptionsDict-Output"][];
-            /** Selected */
+            /** selected */
             selected: boolean;
-            /** Value */
+            /** value */
             value: string;
         };
         /** DrillDownParameterModel */
         "DrillDownParameterModel-Input": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Hierarchy
+             * hierarchy
              * @enum {string}
              */
             hierarchy: "recurse" | "exact";
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Multiple */
+            /** multiple */
             multiple: boolean;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
-            /** Options */
+            /** options */
             options?: components["schemas"]["DrillDownOptionsDict-Input"][] | null;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_drill_down
              * @constant
              */
@@ -9787,44 +10884,53 @@ export interface components {
         };
         /** DrillDownParameterModel */
         "DrillDownParameterModel-Output": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Hierarchy
+             * hierarchy
              * @enum {string}
              */
             hierarchy: "recurse" | "exact";
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Multiple */
+            /** multiple */
             multiple: boolean;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
-            /** Options */
+            /** options */
             options?: components["schemas"]["DrillDownOptionsDict-Output"][] | null;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_drill_down
              * @constant
              */
@@ -9890,6 +10996,7 @@ export interface components {
             /**
              * Mime Type
              * @description A string providing the mime-type of the `DrsObject`.
+             * @example application/json
              */
             mime_type?: string | null;
             /**
@@ -9902,6 +11009,7 @@ export interface components {
              * Self Uri
              * @description A drs:// hostname-based URI, as defined in the DRS documentation, that tells clients how to access this object.
              *     The intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.
+             * @example drs://drs.example.org/314159
              */
             self_uri: string;
             /**
@@ -9930,11 +11038,6 @@ export interface components {
              */
             active: boolean | null;
             /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean | null;
-            /**
              * Hidden
              * @default false
              */
@@ -9947,8 +11050,6 @@ export interface components {
              * @constant
              */
             src: "representation";
-            /** Uuid */
-            uuid?: string | null;
         };
         /** DynamicUnprivilegedToolCreatePayload */
         DynamicUnprivilegedToolCreatePayload: {
@@ -9957,11 +11058,6 @@ export interface components {
              * @default true
              */
             active: boolean | null;
-            /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean | null;
             /**
              * Hidden
              * @default false
@@ -9974,14 +11070,39 @@ export interface components {
              * @constant
              */
             src: "representation";
-            /** Uuid */
-            uuid?: string | null;
         };
         /**
          * ElementsFromType
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /** ElementsStatesDict */
+        ElementsStatesDict: {
+            /** Deferred */
+            deferred?: number;
+            /** Discarded */
+            discarded?: number;
+            /** Empty */
+            empty?: number;
+            /** Error */
+            error?: number;
+            /** Failed Metadata */
+            failed_metadata?: number;
+            /** New */
+            new?: number;
+            /** Ok */
+            ok?: number;
+            /** Paused */
+            paused?: number;
+            /** Queued */
+            queued?: number;
+            /** Running */
+            running?: number;
+            /** Setting Metadata */
+            setting_metadata?: number;
+            /** Upload */
+            upload?: number;
+        };
         /** EmptyFieldParameterValidatorModel */
         EmptyFieldParameterValidatorModel: {
             /**
@@ -10111,6 +11232,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -10362,6 +11484,8 @@ export interface components {
              */
             type: "expression";
         };
+        /** ExtendedUserCredentialsListResponse */
+        ExtendedUserCredentialsListResponse: components["schemas"]["UserServiceCredentialsWithDefinitionResponse"][];
         /** ExtraFileEntry */
         ExtraFileEntry: {
             /** @description The class of this entry, either File or Directory. */
@@ -10443,6 +11567,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             history_id: string;
+            /** Landing Uuid */
+            landing_uuid?: string | null;
             /** Targets */
             targets: (
                 | components["schemas"]["DataElementsTarget"]
@@ -10477,17 +11603,35 @@ export interface components {
         };
         /** FileDataElement */
         FileDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -10497,31 +11641,52 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
@@ -10530,10 +11695,19 @@ export interface components {
              * @enum {string}
              */
             src: "files";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -10545,6 +11719,16 @@ export interface components {
              * @enum {string}
              */
             action_type: "fill_defaults";
+        };
+        /** FileHash */
+        FileHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
         };
         /** FileLibraryFolderItem */
         FileLibraryFolderItem: {
@@ -10592,7 +11776,14 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -10607,35 +11798,84 @@ export interface components {
         };
         /** FilePatternDatasetCollectionDescription */
         FilePatternDatasetCollectionDescription: {
-            /** Assign Primary Output */
+            /** assign_primary_output */
             assign_primary_output: boolean;
-            /** Directory */
+            /** directory */
             directory: string | null;
             /**
-             * Discover Via
+             * discover_via
              * @constant
              */
             discover_via: "pattern";
-            /** Format */
+            /** format */
             format: string | null;
-            /** Match Relative Path */
+            /** match_relative_path */
             match_relative_path: boolean;
-            /** Pattern */
+            /** pattern */
             pattern: string;
-            /** Recurse */
+            /** recurse */
             recurse: boolean;
             /**
-             * Sort Comp
+             * sort_comp
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric";
             /**
-             * Sort Key
+             * sort_key
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey";
-            /** Visible */
+            /**
+             * sort_reverse
+             * @default false
+             */
+            sort_reverse: boolean;
+            /** visible */
             visible: boolean;
+        };
+        /** FileRequestUri */
+        FileRequestUri: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            class: "File";
+            /** Created From Basename */
+            created_from_basename?: string | null;
+            /**
+             * Dbkey
+             * @default ?
+             */
+            dbkey: string;
+            /**
+             * Deferred
+             * @default false
+             */
+            deferred: boolean;
+            /** Ext */
+            ext: string;
+            /** Hashes */
+            hashes?: components["schemas"]["FileHash"][] | null;
+            /** Info */
+            info?: string | null;
+            /** Location */
+            location: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Space To Tab
+             * @default false
+             */
+            space_to_tab: boolean;
+            /** Src */
+            src?: null;
+            /** Tags */
+            tags?: string[] | null;
+            /**
+             * To Posix Lines
+             * @default false
+             */
+            to_posix_lines: boolean;
         };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
@@ -10663,6 +11903,7 @@ export interface components {
                 | "posix"
                 | "s3fs"
                 | "azure"
+                | "azureflat"
                 | "onedata"
                 | "webdav"
                 | "dropbox"
@@ -10670,7 +11911,10 @@ export interface components {
                 | "elabftw"
                 | "inveniordm"
                 | "zenodo"
-                | "rspace";
+                | "rspace"
+                | "dataverse"
+                | "huggingface"
+                | "omero";
             /** Variables */
             variables?:
                 | (
@@ -10696,16 +11940,19 @@ export interface components {
             /**
              * Documentation
              * @description Documentation or extended description for this plugin.
+             * @example Galaxy's library import directory
              */
             doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
+             * @example _import
              */
             id: string;
             /**
              * Label
              * @description The display label for this plugin.
+             * @example Library Import Directory
              */
             label: string;
             /**
@@ -10730,6 +11977,7 @@ export interface components {
             /**
              * Type
              * @description The type of the plugin.
+             * @example gximport
              */
             type: string;
             /**
@@ -10740,6 +11988,7 @@ export interface components {
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
+             * @example false
              */
             writable: boolean;
         };
@@ -10772,6 +12021,24 @@ export interface components {
              */
             sorting: boolean;
         };
+        /** FillIdentifiers */
+        FillIdentifiers: {
+            /**
+             * Deduplication Index From
+             * @default 1
+             */
+            deduplication_index_from: number;
+            /**
+             * Deduplication Pattern
+             * @default _{#}
+             */
+            deduplication_pattern: string;
+            /**
+             * Fill Inner List Identifiers
+             * @default false
+             */
+            fill_inner_list_identifiers: boolean;
+        };
         /** FillStepDefaultsAction */
         FillStepDefaultsAction: {
             /**
@@ -10784,39 +12051,48 @@ export interface components {
         };
         /** FloatParameterModel */
         FloatParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Max */
+            /** max */
             max?: number | null;
-            /** Min */
+            /** min */
             min?: number | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_float
              * @constant
              */
@@ -10827,11 +12103,11 @@ export interface components {
              */
             type: "float";
             /**
-             * Validators
+             * validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** Value */
+            /** value */
             value?: number | null;
         };
         /** FolderLibraryFolderItem */
@@ -10875,17 +12151,35 @@ export interface components {
         };
         /** FtpImportElement */
         FtpImportElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -10895,19 +12189,29 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
@@ -10916,12 +12220,23 @@ export interface components {
             ftp_path: string;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
@@ -10930,10 +12245,19 @@ export interface components {
              * @enum {string}
              */
             src: "ftp_import";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -10942,16 +12266,20 @@ export interface components {
         FtpImportTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
+            /** Column Definitions */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /** Ftp Path */
             ftp_path: string;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | null;
             /**
@@ -11004,39 +12332,66 @@ export interface components {
             | components["schemas"]["ConditionalParameterModel-Output"]
             | components["schemas"]["RepeatParameterModel-Output"]
             | components["schemas"]["SectionParameterModel-Output"];
+        /** GenerateTourResponse */
+        GenerateTourResponse: {
+            /**
+             * Tour
+             * @description The actual Tour being generated.
+             */
+            tour: components["schemas"]["TourDetails"];
+            /**
+             * Uploaded HIDs to wait for
+             * @description List of hids for the datasets uploaded for the tour.
+             */
+            uploaded_hids: number[];
+            /**
+             * Use Datasets
+             * @description Indicates whether the tour should use (and wait for) datasets.
+             */
+            use_datasets: boolean;
+        };
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Multiple */
+            /** multiple */
             multiple: boolean;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_genomebuild
              * @constant
              */
@@ -11156,37 +12511,46 @@ export interface components {
         };
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Multiple */
+            /** multiple */
             multiple: boolean;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_group_tag
              * @constant
              */
@@ -11197,7 +12561,10 @@ export interface components {
              */
             type: "group_tag";
         };
-        /** GroupUpdatePayload */
+        /**
+         * GroupUpdatePayload
+         * @description Payload schema for updating a group.
+         */
         GroupUpdatePayload: {
             /** name of the group */
             name?: string | null;
@@ -11237,7 +12604,13 @@ export interface components {
             /** Name */
             name: string;
         };
-        /** HDACustom */
+        /**
+         * HDACustom
+         * @description Can contain any serializable property of an HDA.
+         *
+         *     Allows arbitrary custom keys to be specified in the serialization
+         *     parameters without a particular view (predefined set of keys).
+         */
         HDACustom: {
             /**
              * Accessible
@@ -11253,8 +12626,10 @@ export interface components {
              * API Type
              * @deprecated
              * @description TODO
+             * @default file
+             * @constant
              */
-            api_type?: "file" | null;
+            api_type: "file";
             /**
              * Copied From History Dataset Association Id
              * @description ID of HDA this HDA was copied from.
@@ -11262,6 +12637,11 @@ export interface components {
             copied_from_history_dataset_association_id?: string | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
+            /**
+             * Copied From Library Dataset Dataset Association Id
+             * @description ID of LDDA this HDA was copied from.
+             */
+            copied_from_library_dataset_dataset_association_id?: string | null;
             /**
              * Create Time
              * @description The time and date this item was created.
@@ -11280,6 +12660,7 @@ export interface components {
             /**
              * Data Type
              * @description The fully qualified name of the class implementing the data type of this dataset.
+             * @example galaxy.datatypes.data.Text
              */
             data_type?: string | null;
             /**
@@ -11316,6 +12697,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension?: string | null;
             /**
@@ -11336,8 +12718,9 @@ export interface components {
             /**
              * Genome Build
              * @description TODO
+             * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * Hashes
              * @description The list of hashes associated with this dataset.
@@ -11346,8 +12729,9 @@ export interface components {
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             * @default hda
              */
-            hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
+            hda_ldda: components["schemas"]["DatasetSourceType"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -11400,6 +12784,11 @@ export interface components {
              */
             name?: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Peek
              * @description A few lines of contents from the start of the file.
              */
@@ -11434,15 +12823,25 @@ export interface components {
              * @description The current state of this dataset.
              */
             state?: components["schemas"]["DatasetState"] | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags?: string[] | null;
             /**
              * Type
              * @description This is always `file` for datasets.
+             * @default file
+             * @constant
              */
-            type?: "file" | null;
+            type: "file";
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -11512,10 +12911,16 @@ export interface components {
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
+             * Copied From Library Dataset Dataset Association Id
+             * @description ID of LDDA this HDA was copied from.
+             */
+            copied_from_library_dataset_dataset_association_id?: string | null;
+            /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Created from basename
              * @description The basename of the output that produced this dataset.
@@ -11529,6 +12934,7 @@ export interface components {
             /**
              * Data Type
              * @description The fully qualified name of the class implementing the data type of this dataset.
+             * @example galaxy.datatypes.data.Text
              */
             data_type: string;
             /**
@@ -11565,6 +12971,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension: string | null;
             /**
@@ -11652,6 +13059,11 @@ export interface components {
              */
             name: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Peek
              * @description A few lines of contents from the start of the file.
              */
@@ -11686,7 +13098,14 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `file` for datasets.
@@ -11697,6 +13116,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -11746,9 +13166,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -11785,7 +13206,14 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Type
              * @description The type of this item.
@@ -11794,6 +13222,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -11865,9 +13294,10 @@ export interface components {
             copied_from_ldda_id?: string | null;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Dataset ID
              * @description The encoded ID of the dataset associated with this item.
@@ -11882,6 +13312,7 @@ export interface components {
             /**
              * Extension
              * @description The extension of the dataset.
+             * @example txt
              */
             extension: string | null;
             /**
@@ -11917,6 +13348,11 @@ export interface components {
              */
             name: string | null;
             /**
+             * Object Store ID
+             * @description The ID of the object store that this dataset is stored in.
+             */
+            object_store_id?: string | null;
+            /**
              * Purged
              * @description Whether this dataset has been removed from disk.
              */
@@ -11926,7 +13362,14 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Type
              * @description The type of this item.
@@ -11935,6 +13378,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -11954,7 +13398,13 @@ export interface components {
              */
             visible: boolean;
         };
-        /** HDCACustom */
+        /**
+         * HDCACustom
+         * @description Can contain any serializable property of an HDCA.
+         *
+         *     Allows arbitrary custom keys to be specified in the serialization
+         *     parameters without a particular view (predefined set of keys).
+         */
         HDCACustom: {
             /**
              * Dataset Collection ID
@@ -11966,6 +13416,11 @@ export interface components {
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
             collection_type?: string | null;
+            /**
+             * Column Definitions
+             * @description Column data associated with each element of this collection.
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -11989,13 +13444,21 @@ export interface components {
             /**
              * Elements
              * @description The summary information of each of the elements inside the dataset collection.
+             * @default []
              */
-            elements?: components["schemas"]["DCESummary"][] | null;
+            elements: components["schemas"]["DCESummary"][];
             /**
              * Elements Datatypes
              * @description A set containing all the different element datatypes in the collection.
              */
             elements_datatypes?: string[] | null;
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted?: number | null;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states?: components["schemas"]["ElementsStatesDict"] | null;
             /**
              * HID
              * @description The index position of this item in the History.
@@ -12051,7 +13514,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean | null;
+            populated?: boolean;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
@@ -12062,15 +13525,30 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags?: string[] | null;
             /**
              * Type
              * @description This is always `collection` for dataset collections.
+             * @default collection
+             * @constant
              */
-            type?: "collection" | null;
+            type: "collection";
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12106,15 +13584,21 @@ export interface components {
              */
             collection_type: string;
             /**
+             * Column Definitions
+             * @description Column data associated with each element of this collection.
+             */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
+            /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
              */
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -12136,6 +13620,13 @@ export interface components {
              * @description A set containing all the different element datatypes in the collection.
              */
             elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -12203,7 +13694,19 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `collection` for dataset collections.
@@ -12214,6 +13717,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12255,9 +13759,10 @@ export interface components {
             contents_url: string;
             /**
              * Create Time
+             * Format: date-time
              * @description The time and date this item was created.
              */
-            create_time: string | null;
+            create_time: string;
             /**
              * Deleted
              * @description Whether this item is marked as deleted.
@@ -12273,6 +13778,13 @@ export interface components {
              * @description A set containing all the different element datatypes in the collection.
              */
             elements_datatypes: string[];
+            /**
+             * Datasets deleted
+             * @description The number of elements in the collection that are marked as deleted.
+             */
+            elements_deleted: number;
+            /** @description A dictionary containing counts for each dataset state in the collection. */
+            elements_states: components["schemas"]["ElementsStatesDict"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -12330,7 +13842,19 @@ export interface components {
              * @description Optional message with further information in case the population of the dataset collection failed.
              */
             populated_state_message?: string | null;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Store Times Summary
+             * @description A list of objects containing the object store ID and the oldest creation time of the datasets stored in that object store for this collection.This is used to determine the age of the datasets in the collection when the object store is short-lived.
+             */
+            store_times_summary?: components["schemas"]["OldestCreateTimeByObjectStoreId"][] | null;
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Type
              * @description This is always `collection` for dataset collections.
@@ -12341,6 +13865,7 @@ export interface components {
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
+             * @example dataset-616e371b2cc6c62e
              */
             type_id?: string | null;
             /**
@@ -12468,16 +13993,20 @@ export interface components {
         HdcaDataItemsFromTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
+            /** Column Definitions */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
-            elements_from: components["schemas"]["ElementsFromType"];
             /** Ftp Path */
             ftp_path?: string | null;
+            items_from: components["schemas"]["ElementsFromType"];
             /** Name */
             name?: string | null;
             /** Path */
@@ -12494,12 +14023,16 @@ export interface components {
         HdcaDataItemsTarget: {
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
+            /** Column Definitions */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             destination: components["schemas"]["HdcaDestination"];
             /** Elements */
             elements: (
@@ -12529,10 +14062,10 @@ export interface components {
         };
         /** HelpContent */
         HelpContent: {
-            /** Content */
+            /** content */
             content: string;
             /**
-             * Format
+             * format
              * @enum {string}
              */
             format: "restructuredtext" | "plain_text" | "markdown";
@@ -12793,35 +14326,44 @@ export interface components {
         };
         /** HiddenParameterModel */
         HiddenParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_hidden
              * @constant
              */
@@ -12832,7 +14374,7 @@ export interface components {
              */
             type: "hidden";
             /**
-             * Validators
+             * validators
              * @default []
              */
             validators: (
@@ -12841,7 +14383,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[];
-            /** Value */
+            /** value */
             value: string | null;
         };
         /**
@@ -13075,7 +14617,14 @@ export interface components {
             state_ids: {
                 [key: string]: string[];
             };
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -13160,7 +14709,14 @@ export interface components {
              * @description Whether this item has been permanently removed.
              */
             purged: boolean;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -13187,6 +14743,7 @@ export interface components {
             /**
              * Target
              * @description Specifies where to open the linked document.
+             * @example _blank
              */
             target: string;
             /**
@@ -13283,26 +14840,29 @@ export interface components {
              */
             negate: boolean;
             /**
-             * Type
-             * @default in_range
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "in_range";
         };
         /** IncomingToolOutputCollection */
         "IncomingToolOutputCollection-Input": {
             /**
-             * Hidden
+             * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden?: boolean | null;
-            /** Label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name?: string | null;
+            /** structure */
             structure: components["schemas"]["ToolOutputCollectionStructure"];
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -13313,17 +14873,21 @@ export interface components {
         /** IncomingToolOutputCollection */
         "IncomingToolOutputCollection-Output": {
             /**
-             * Hidden
+             * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden?: boolean | null;
-            /** Label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name?: string | null;
+            /** structure */
             structure: components["schemas"]["ToolOutputCollectionStructure"];
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -13333,7 +14897,7 @@ export interface components {
         };
         /** IncomingToolOutputDataset */
         IncomingToolOutputDataset: {
-            /** Discover Datasets */
+            /** discover_datasets */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -13341,33 +14905,65 @@ export interface components {
                   )[]
                 | null;
             /**
-             * Format
+             * format
              * @description The short name for the output datatype.
              */
             format?: string | null;
-            /** Format Source */
+            /**
+             * format_source
+             * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
+             */
             format_source?: string | null;
-            /** From Work Dir */
+            /**
+             * from_work_dir
+             * @description Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.
+             */
             from_work_dir?: string | null;
             /**
-             * Hidden
+             * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden?: boolean | null;
-            /** Label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null;
-            /** Metadata Source */
+            /**
+             * metadata_source
+             * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
+             */
             metadata_source?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name?: string | null;
+            /**
+             * precreate_directory
+             * @default false
+             */
+            precreate_directory: boolean | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "data";
+        };
+        /** InferredCollectionTypeLogEntry */
+        InferredCollectionTypeLogEntry: {
+            /** From Columns */
+            from_columns: components["schemas"]["ParsedColumn"][];
+            /** Message */
+            message: string;
+        };
+        /** InferredColumnMapping */
+        InferredColumnMapping: {
+            /** Column Index */
+            column_index: number;
+            /** Column Title */
+            column_title: string;
+            parsed_column: components["schemas"]["ParsedColumn"];
         };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
@@ -13398,6 +14994,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -13441,6 +15042,11 @@ export interface components {
              */
             tool_inputs?: unknown;
             /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
+            /**
              * Tool Version
              * @description The version of the tool associated with this step.
              */
@@ -13482,6 +15088,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -13540,12 +15151,12 @@ export interface components {
              * Latest installed revision
              * @description Most recent version available on the tool shed
              */
-            latest_installable_revision: string | null;
+            latest_installable_revision?: string | null;
             /**
              * Repository deprecated
              * @description Repository has been depreciated on the tool shed
              */
-            repository_deprecated: string | null;
+            repository_deprecated?: string | null;
             /** Revision Update */
             revision_update: string;
             /** Revision Upgrade */
@@ -13607,41 +15218,53 @@ export interface components {
              */
             tool_shed: string;
             /** Latest updated status from the tool shed */
-            tool_shed_status: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
+            tool_shed_status?: components["schemas"]["InstalledRepositoryToolShedStatus"] | null;
             /** Uninstalled */
             uninstalled: boolean;
         };
         /** IntegerParameterModel */
         IntegerParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Max */
+            /** max */
             max?: number | null;
-            /** Min */
+            /** min */
             min?: number | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
-            /** Optional */
+            /**
+             * optional
+             * @default false
+             */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_integer
              * @constant
              */
@@ -13652,11 +15275,11 @@ export interface components {
              */
             type: "integer";
             /**
-             * Validators
+             * validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** Value */
+            /** value */
             value?: number | null;
         };
         /** InvocationCancellationHistoryDeletedResponse */
@@ -14120,8 +15743,11 @@ export interface components {
              * @description The implicit collection job ID associated with the workflow invocation step.
              */
             implicit_collection_jobs_id?: string | null;
-            /** Job Id */
-            job_id: string | null;
+            /**
+             * Job ID
+             * @description The encoded ID of the job associated with this workflow invocation step.
+             */
+            job_id?: string | null;
             /**
              * Jobs
              * @description Jobs associated with the workflow invocation step.
@@ -14160,8 +15786,11 @@ export interface components {
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
             state?: components["schemas"]["InvocationStepState"] | components["schemas"]["JobState"] | null;
-            /** Subworkflow Invocation Id */
-            subworkflow_invocation_id: string | null;
+            /**
+             * Subworkflow invocation ID
+             * @description The encoded ID of the subworkflow invocation.
+             */
+            subworkflow_invocation_id?: string | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -14389,6 +16018,11 @@ export interface components {
              */
             instance: boolean | null;
             /**
+             * Landing UUID
+             * @description The UUID of the workflow landing request associated with this invocation.
+             */
+            landing_uuid?: string | null;
+            /**
              * Legacy
              * @description Indicating if to use legacy workflow invocation.
              * @default false
@@ -14501,7 +16135,7 @@ export interface components {
              * Item tags
              * @description The list of tags that will replace the current tags associated with the item.
              */
-            item_tags?: components["schemas"]["TagCollection"] | null;
+            item_tags?: string[] | null;
         };
         /**
          * ItemTagsResponse
@@ -14527,10 +16161,10 @@ export interface components {
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
         /** JavascriptRequirement */
         JavascriptRequirement: {
-            /** Expression Lib */
+            /** expression_lib */
             expression_lib: string[] | null;
             /**
-             * Type
+             * type
              * @constant
              */
             type: "javascript";
@@ -14551,6 +16185,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -14603,6 +16238,15 @@ export interface components {
              * @description Tool STDOUT from job.
              */
             stdout?: string | null;
+        };
+        /** JobCreateResponse */
+        JobCreateResponse: {
+            task_result: components["schemas"]["AsyncTaskResultSummary"];
+            /**
+             * Tool Request Id
+             * @example 0123456789ABCDEF
+             */
+            tool_request_id: string;
         };
         /** JobDestinationParams */
         JobDestinationParams: {
@@ -14728,6 +16372,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -14881,6 +16526,19 @@ export interface components {
              */
             name: string;
         };
+        /** JobOutputCollectionAssociation */
+        JobOutputCollectionAssociation: {
+            /**
+             * dataset_collection_instance
+             * @description Reference to the associated item.
+             */
+            dataset_collection_instance: components["schemas"]["EncodedDataItemSourceId"];
+            /**
+             * name
+             * @description Name of the job parameter.
+             */
+            name: string;
+        };
         /** JobParameter */
         JobParameter: {
             /**
@@ -14908,6 +16566,55 @@ export interface components {
                 | boolean
                 | string
                 | null;
+        };
+        /** JobRequest */
+        JobRequest: {
+            /**
+             * history_id
+             * @description TODO
+             */
+            history_id?: string | null;
+            /**
+             * Inputs
+             * @description TODO
+             */
+            inputs?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * rerun_remap_job_id
+             * @description TODO
+             */
+            rerun_remap_job_id?: string | null;
+            /**
+             * Send Email Notification
+             * @description TODO
+             * @default false
+             */
+            send_email_notification: boolean;
+            /**
+             * Strict
+             * @description Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.
+             * @default true
+             */
+            strict: boolean;
+            /**
+             * tool_id
+             * @description TODO
+             */
+            tool_id?: string | null;
+            /**
+             * tool_uuid
+             * @description TODO
+             */
+            tool_uuid?: string | null;
+            /**
+             * tool_version
+             * @description TODO
+             */
+            tool_version?: string | null;
+            /** use_cached_jobs */
+            use_cached_jobs?: boolean | null;
         };
         /**
          * JobSourceType
@@ -14990,6 +16697,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -15121,9 +16829,8 @@ export interface components {
              */
             negate: boolean;
             /**
-             * Type
-             * @default length
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "length";
         };
@@ -15558,7 +17265,14 @@ export interface components {
             peek: string | null;
             /** State */
             state: string;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /** Update Time */
             update_time: string;
             /** Uploaded By */
@@ -15921,6 +17635,7 @@ export interface components {
             /**
              * Create Time Pretty
              * @description Nice time representation of the creation date.
+             * @example 2 months ago
              */
             create_time_pretty: string;
             /**
@@ -15979,26 +17694,31 @@ export interface components {
              * Details URL
              * Format: uri
              * @description URL to the SPDX json details for this license
+             * @example http://spdx.org/licenses/Apache-2.0.json
              */
             detailsUrl: string;
             /**
              * Deprecated License
              * @description True if the entire license is deprecated
+             * @example false
              */
             isDeprecatedLicenseId: boolean;
             /**
              * OSI approved
              * @description Indicates if the [OSI](https://opensource.org/) has approved the license
+             * @example true
              */
             isOsiApproved: boolean;
             /**
              * Identifier
              * @description SPDX Identifier
+             * @example Apache-2.0
              */
             licenseId: string;
             /**
              * Name
              * @description Full name of the license
+             * @example Apache License 2.0
              */
             name: string;
             /**
@@ -16009,6 +17729,7 @@ export interface components {
             /**
              * Reference
              * @description Reference to the HTML format for the license file
+             * @example ./Apache-2.0.html
              */
             reference: string;
             /**
@@ -16024,12 +17745,14 @@ export interface components {
             /**
              * SPDX URL
              * Format: uri
+             * @example https://spdx.org/licenses/Apache-2.0.html
              */
             spdxUrl: string;
             /**
              * URL
              * Format: uri
              * @description License URL
+             * @example http://www.apache.org/licenses/LICENSE-2.0
              */
             url: string;
         };
@@ -16087,7 +17810,6 @@ export interface components {
              * @description Depending on the `source` it can be:
              *     - The encoded id of the source library dataset
              *     - The encoded id of the HDA
-             *
              * @example 0123456789ABCDEF
              */
             content: string;
@@ -16172,6 +17894,7 @@ export interface components {
             /**
              * Timestamp
              * @description The timestamp in ISO format.
+             * @example 2021-01-23T18:25:43.511Z
              */
             time: string;
         };
@@ -16183,17 +17906,35 @@ export interface components {
         ModelStoreFormat: "tgz" | "tar" | "tar.gz" | "bag.zip" | "bag.tar" | "bag.tgz" | "rocrate.zip" | "bco.json";
         /** NestedElement */
         NestedElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -16203,11 +17944,19 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
@@ -16226,28 +17975,50 @@ export interface components {
                   )
                 | components["schemas"]["NestedElement"]
             )[];
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -16647,6 +18418,23 @@ export interface components {
              */
             version: number;
         };
+        /**
+         * OldestCreateTimeByObjectStoreId
+         * @description Represents the oldest creation time of a set of datasets stored in a specific object store.
+         */
+        OldestCreateTimeByObjectStoreId: {
+            /**
+             * Object Store ID
+             * @description The ID of the object store.
+             */
+            object_store_id: string;
+            /**
+             * Oldest Create Time
+             * Format: date-time
+             * @description The oldest creation time of a set of datasets stored in this object store.
+             */
+            oldest_create_time: string;
+        };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -16694,10 +18482,16 @@ export interface components {
             author_deleted: boolean;
             /**
              * Content
-             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @description Text contents of the last page revision with embedded directives expanded (type dependent on content_format).
              * @default
              */
             content: string | null;
+            /**
+             * Content for Editor
+             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @default
+             */
+            content_editor: string | null;
             /**
              * Content format
              * @description Either `markdown` or `html`.
@@ -16768,7 +18562,14 @@ export interface components {
              * @description The identifying slug for the page URL, must be unique.
              */
             slug: string;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Title
              * @description The name of the page.
@@ -16849,7 +18650,14 @@ export interface components {
              * @description The identifying slug for the page URL, must be unique.
              */
             slug: string;
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Title
              * @description The name of the page.
@@ -16872,19 +18680,240 @@ export interface components {
          * @default []
          */
         PageSummaryList: components["schemas"]["PageSummary"][];
+        /** ParseFetchWorkbook */
+        ParseFetchWorkbook: {
+            /**
+             * Workbook Content (Base 64 encoded)
+             * @description The workbook content (the contents of the xlsx file) that have been base64 encoded.
+             */
+            content: string;
+            fill_identifiers?: components["schemas"]["FillIdentifiers"] | null;
+        };
+        /** ParseWorkbook */
+        ParseWorkbook: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type:
+                | "sample_sheet"
+                | "sample_sheet:paired"
+                | "sample_sheet:paired_or_unpaired"
+                | "sample_sheet:record";
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Workbook Content (Base 64 encoded)
+             * @description The workbook content (the contents of the xlsx file) that have been base64 encoded.
+             */
+            content: string;
+            /**
+             * Prefix Columns Type
+             * @default URI
+             * @enum {string}
+             */
+            prefix_columns_type: "URI" | "ModelObjects";
+        };
+        /** ParseWorkbookForCollectionApi */
+        ParseWorkbookForCollectionApi: {
+            /**
+             * Column Descriptions
+             * @description A description of the columns expected in the workbook after the first columns described by 'prefix_columns_type'
+             */
+            column_definitions: components["schemas"]["SampleSheetColumnDefinitionModel"][];
+            /**
+             * Workbook Content (Base 64 encoded)
+             * @description The workbook content (the contents of the xlsx file) that have been base64 encoded.
+             */
+            content: string;
+        };
+        /** ParsedColumn */
+        ParsedColumn: {
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type:
+                | "list_identifiers"
+                | "paired_identifier"
+                | "paired_or_unpaired_identifier"
+                | "collection_name"
+                | "name_tag"
+                | "tags"
+                | "group_tags"
+                | "name"
+                | "dbkey"
+                | "hash_sha1"
+                | "hash_md5"
+                | "hash_sha256"
+                | "hash_sha512"
+                | "file_type"
+                | "url"
+                | "url_deferred"
+                | "info"
+                | "ftp_path"
+                | "deferred"
+                | "to_posix_lines"
+                | "space_to_tab"
+                | "auto_decompress";
+            /** Type Index */
+            type_index: number;
+        };
+        /** ParsedFetchWorkbookForCollections */
+        ParsedFetchWorkbookForCollections: {
+            /**
+             * Collection Type
+             * @enum {string}
+             */
+            collection_type: "list" | "list:paired" | "list:list" | "list:list:paired" | "list:paired_or_unpaired";
+            /** Columns */
+            columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["SplitUpPairedDataLogEntry"]
+                | components["schemas"]["InferredCollectionTypeLogEntry"]
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: string | null;
+            }[];
+            /**
+             * Workbook Type
+             * @default collection
+             * @enum {string}
+             */
+            workbook_type: "datasets" | "collection" | "collections";
+        };
+        /** ParsedFetchWorkbookForDatasets */
+        ParsedFetchWorkbookForDatasets: {
+            /** Columns */
+            columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["SplitUpPairedDataLogEntry"]
+                | components["schemas"]["InferredCollectionTypeLogEntry"]
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: string | null;
+            }[];
+            /**
+             * Workbook Type
+             * @default datasets
+             * @enum {string}
+             */
+            workbook_type: "datasets" | "collection" | "collections";
+        };
+        /** ParsedWorkbook */
+        ParsedWorkbook: {
+            /** Extra Columns */
+            extra_columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: number | boolean | string | null;
+            }[];
+        };
+        /** ParsedWorkbookCollection */
+        ParsedWorkbookCollection: {
+            /** Id */
+            id: string;
+            /**
+             * Model Class
+             * @default DatasetCollection
+             * @constant
+             */
+            model_class: "DatasetCollection";
+        };
+        /** ParsedWorkbookElement */
+        ParsedWorkbookElement: {
+            /** Element Identifier */
+            element_identifier: string;
+            /** Element Index */
+            element_index: number;
+            /**
+             * Element Type
+             * @enum {string}
+             */
+            element_type: "hda" | "child_collection";
+            /** Object */
+            object: components["schemas"]["ParsedWorkbookHda"] | components["schemas"]["ParsedWorkbookCollection"];
+        };
+        /** ParsedWorkbookForCollection */
+        ParsedWorkbookForCollection: {
+            /** Elements */
+            elements: components["schemas"]["ParsedWorkbookElement"][];
+            /** Extra Columns */
+            extra_columns: components["schemas"]["ParsedColumn"][];
+            /** Parse Log */
+            parse_log: (
+                | components["schemas"]["InferredColumnMapping"]
+                | components["schemas"]["ContentTypeMessage"]
+                | components["schemas"]["CsvDialectInferenceMessage"]
+            )[];
+            /** Rows */
+            rows: {
+                [key: string]: number | boolean | string | null;
+            }[];
+        };
+        /** ParsedWorkbookHda */
+        ParsedWorkbookHda: {
+            /** Id */
+            id: string;
+            /**
+             * Model Class
+             * @default HistoryDatasetAssociation
+             * @constant
+             */
+            model_class: "HistoryDatasetAssociation";
+        };
         /** PastedDataElement */
         PastedDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -16894,36 +18923,57 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
             /**
              * Paste Content
-             * @description Content to upload
+             * @description This is the text of the content to import if the 'src' of the item is 'pasted'.
              */
             paste_content: string | number | boolean;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
@@ -16932,10 +18982,19 @@ export interface components {
              * @enum {string}
              */
             src: "pasted";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -16944,11 +19003,6 @@ export interface components {
         PathBasedDynamicToolCreatePayload: {
             /** Active */
             active?: boolean | null;
-            /**
-             * Allow Load
-             * @default true
-             */
-            allow_load: boolean;
             /** Hidden */
             hidden?: boolean | null;
             /** Path */
@@ -16960,22 +19014,38 @@ export interface components {
             src: "from_path";
             /** Tool Directory */
             tool_directory?: string | null;
-            /** Uuid */
-            uuid?: string | null;
         };
         /** PathDataElement */
         PathDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -16985,35 +19055,56 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Link Data Only */
             link_data_only?: boolean | null;
             /** Name */
             name?: string | number | boolean | null;
             /** Path */
             path: string;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
@@ -17022,10 +19113,19 @@ export interface components {
              * @enum {string}
              */
             src: "path";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -17059,6 +19159,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -17390,7 +19495,6 @@ export interface components {
              *     the result of applying the action may change one or both of these.
              *     If connections are dropped this step reference will refer to the
              *     step with the previously connected input.
-             *
              */
             order_index?: number | null;
             /**
@@ -17402,7 +19506,6 @@ export interface components {
              * Output Name
              * @description If this message is about an output to a step,
              *     this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
-             *
              */
             output_name?: string | null;
             /**
@@ -17415,7 +19518,6 @@ export interface components {
              *     the result of applying the action may change one or both of these.
              *     If connections are dropped this step reference will refer to the
              *     step with the previously connected input.
-             *
              */
             step_label?: string | null;
         };
@@ -17515,9 +19617,8 @@ export interface components {
              */
             negate: boolean;
             /**
-             * Type
-             * @default regex
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "regex";
         };
@@ -17566,6 +19667,11 @@ export interface components {
              */
             ctime: string;
             /**
+             * Hashes
+             * @description List of precomputed hashes for the file, if available.
+             */
+            hashes?: components["schemas"]["RemoteFileHash"][] | null;
+            /**
              * Name
              * @description The name of the entry.
              */
@@ -17585,6 +19691,16 @@ export interface components {
              * @description The URI of the entry.
              */
             uri: string;
+        };
+        /** RemoteFileHash */
+        RemoteFileHash: {
+            /**
+             * Hash Function
+             * @enum {string}
+             */
+            hash_function: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+            /** Hash Value */
+            hash_value: string;
         };
         /**
          * RemoteFilesDisableMode
@@ -17614,44 +19730,53 @@ export interface components {
         };
         /** RepeatParameterModel */
         "RepeatParameterModel-Input": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Max */
+            /** max */
             max?: number | null;
-            /** Min */
+            /** min */
             min?: number | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_repeat
              * @constant
              */
             parameter_type: "gx_repeat";
-            /** Parameters */
+            /** parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -17689,44 +19814,53 @@ export interface components {
         };
         /** RepeatParameterModel */
         "RepeatParameterModel-Output": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
-            /** Max */
+            /** max */
             max?: number | null;
-            /** Min */
+            /** min */
             min?: number | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_repeat
              * @constant
              */
             parameter_type: "gx_repeat";
-            /** Parameters */
+            /** parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -17766,6 +19900,25 @@ export interface components {
         Report: {
             /** Markdown */
             markdown: string;
+        };
+        /** ReportInvocationErrorPayload */
+        ReportInvocationErrorPayload: {
+            /**
+             * Email
+             * @description Email address for communication with the user. Only required for anonymous users.
+             */
+            email?: string | null;
+            /**
+             * Invocation ID
+             * @description The ID of the invocation related to the error.
+             * @example 0123456789ABCDEF
+             */
+            invocation_id: string;
+            /**
+             * Message
+             * @description The optional message sent with the error report.
+             */
+            message?: string | null;
         };
         /** ReportJobErrorPayload */
         ReportJobErrorPayload: {
@@ -17808,32 +19961,52 @@ export interface components {
         Requirement: "logged_in" | "new_history" | "admin";
         /** ResourceRequirement */
         ResourceRequirement: {
-            /** Cores Max */
-            cores_max: number | null;
-            /** Cores Min */
-            cores_min: number | null;
-            /** Cuda Compute Capability */
-            cuda_compute_capability: number | null;
-            /** Cuda Device Count Max */
-            cuda_device_count_max: number | null;
-            /** Cuda Device Count Min */
-            cuda_device_count_min: number | null;
-            /** Cuda Version Min */
-            cuda_version_min: number | null;
-            /** Gpu Memory Min */
-            gpu_memory_min: number | null;
-            /** Ram Max */
-            ram_max: number | null;
-            /** Ram Min */
-            ram_min: number | null;
-            /** Shm Size */
-            shm_size: number | null;
-            /** Tmpdir Max */
-            tmpdir_max: number | null;
-            /** Tmpdir Min */
-            tmpdir_min: number | null;
             /**
-             * Type
+             * cores_max
+             * @description Maximum reserved number of CPU cores.
+             *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
+             *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
+             */
+            cores_max?: number | null;
+            /**
+             * cores_min
+             * @description Minimum reserved number of CPU cores.
+             *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
+             *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
+             * @default 1
+             */
+            cores_min: number | null;
+            /** cuda_compute_capability */
+            cuda_compute_capability?: number | null;
+            /** cuda_device_count_max */
+            cuda_device_count_max?: number | null;
+            /** cuda_device_count_min */
+            cuda_device_count_min?: number | null;
+            /** cuda_version_min */
+            cuda_version_min?: number | null;
+            /** gpu_memory_min */
+            gpu_memory_min?: number | null;
+            /**
+             * ram_max
+             * @description Maximum reserved RAM in mebibytes (2**20).
+             *     May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer.
+             */
+            ram_max?: number | null;
+            /**
+             * ram_min
+             * @description Minimum reserved RAM in mebibytes (2**20).
+             *     May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer.
+             * @default 256
+             */
+            ram_min: number | null;
+            /** shm_size */
+            shm_size?: number | null;
+            /** tmpdir_max */
+            tmpdir_max?: number | null;
+            /** tmpdir_min */
+            tmpdir_min?: number | null;
+            /**
+             * type
              * @constant
              */
             type: "resource";
@@ -17902,41 +20075,50 @@ export interface components {
              */
             url: string;
         };
-        /** RootModel[Dict[str, int]] */
-        RootModel_Dict_str__int__: {
+        /** RootModel[dict[str, int]] */
+        RootModel_dict_str__int__: {
             [key: string]: number;
         };
         /** RulesParameterModel */
         RulesParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_rules
              * @constant
              */
@@ -17947,8 +20129,67 @@ export interface components {
              */
             type: "rules";
         };
+        /** SampleSheetColumnDefinition */
+        SampleSheetColumnDefinition: {
+            /** Default Value */
+            default_value?: number | boolean | string | null;
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+            /** Restrictions */
+            restrictions?: (number | boolean | string | null)[] | null;
+            /** Suggestions */
+            suggestions?: (number | boolean | string | null)[] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "int" | "float" | "boolean" | "element_identifier";
+            /** Validators */
+            validators?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+        };
+        /** SampleSheetColumnDefinitionModel */
+        SampleSheetColumnDefinitionModel: {
+            /** Default Value */
+            default_value?: number | boolean | string | null;
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /** Optional */
+            optional: boolean;
+            /** Restrictions */
+            restrictions?: (number | boolean | string | null)[] | null;
+            /** Suggestions */
+            suggestions?: (number | boolean | string | null)[] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "int" | "float" | "boolean" | "element_identifier";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
+        };
         /** SearchJobsPayload */
         SearchJobsPayload: {
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with this job.
+             */
+            history_id?: string | null;
             /**
              * Inputs
              * @description The inputs of the job.
@@ -17969,42 +20210,64 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** SecretResponse */
+        SecretResponse: {
+            /**
+             * Is Set
+             * @description Whether the secret has been set (value is not exposed).
+             */
+            is_set: boolean;
+            /**
+             * Name
+             * @description The name of the credential.
+             */
+            name: string;
+        };
         /** SectionParameterModel */
         "SectionParameterModel-Input": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_section
              * @constant
              */
             parameter_type: "gx_section";
-            /** Parameters */
+            /** parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -18042,40 +20305,49 @@ export interface components {
         };
         /** SectionParameterModel */
         "SectionParameterModel-Output": {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_section
              * @constant
              */
             parameter_type: "gx_section";
-            /** Parameters */
+            /** parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -18111,44 +20383,67 @@ export interface components {
              */
             type: "section";
         };
+        /** SelectCurrentGroupPayload */
+        SelectCurrentGroupPayload: {
+            /**
+             * Current Group Id
+             * @description The ID of the group to set as current (None to unset).
+             */
+            current_group_id?: string | null;
+            /**
+             * User Credentials Id
+             * @description The ID of the user credentials to update.
+             * @example 0123456789ABCDEF
+             */
+            user_credentials_id: string;
+        };
         /** SelectParameterModel */
         SelectParameterModel: {
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Multiple
+             * multiple
              * @default false
              */
             multiple: boolean;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
-            /** Options */
+            /** options */
             options?: components["schemas"]["LabelValue"][] | null;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_select
              * @constant
              */
@@ -18159,24 +20454,66 @@ export interface components {
              */
             type: "select";
             /**
-             * Validators
+             * validators
              * @default []
              */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
         };
+        /** SelectServiceCredentialPayload */
+        SelectServiceCredentialPayload: {
+            /**
+             * Service Credentials
+             * @description List of user credentials to update with current group selections.
+             */
+            service_credentials: components["schemas"]["SelectCurrentGroupPayload"][];
+            /**
+             * Source Id
+             * @description The ID of the source (e.g., tool ID).
+             */
+            source_id: string;
+            /**
+             * Source Type
+             * @description The type of source requiring credentials.
+             * @constant
+             */
+            source_type: "tool";
+            /**
+             * Source Version
+             * @description The version of the source.
+             */
+            source_version: string;
+        };
         /** ServerDirElement */
         ServerDirElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -18186,35 +20523,56 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Link Data Only */
             link_data_only?: boolean | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /** Server Dir */
             server_dir: string;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
@@ -18223,10 +20581,19 @@ export interface components {
              * @enum {string}
              */
             src: "server_dir";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -18236,36 +20603,43 @@ export interface components {
             /**
              * Contacturl
              * @description URL of the contact for the provider of this service, e.g. a link to a contact form (RFC 3986 format), or an email (RFC 2368 format).
+             * @example mailto:support@example.com
              */
             contactUrl?: string | null;
             /**
              * Createdat
              * @description Timestamp describing when the service was first deployed and available (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             createdAt?: string | null;
             /**
              * Description
              * @description Description of the service. Should be human readable and provide information about the service.
+             * @example This service provides...
              */
             description?: string | null;
             /**
              * Documentationurl
              * @description URL of the documentation of this service (RFC 3986 format). This should help someone learn how to use your service, including any specifics required to access data, e.g. authentication.
+             * @example https://docs.myservice.example.com
              */
             documentationUrl?: string | null;
             /**
              * Environment
              * @description Environment the service is running in. Use this to distinguish between production, development and testing/staging deployments. Suggested values are prod, test, dev, staging. However this is advised and not enforced.
+             * @example test
              */
             environment?: string | null;
             /**
              * Id
              * @description Unique ID of this service. Reverse domain name notation is recommended, though not required. The identifier should attempt to be globally unique so it can be used in downstream aggregator services e.g. Service Registry.
+             * @example org.ga4gh.myservice
              */
             id: string;
             /**
              * Name
              * @description Name of this service. Should be human readable.
+             * @example My project
              */
             name: string;
             /** @description Organization providing the service */
@@ -18274,29 +20648,146 @@ export interface components {
             /**
              * Updatedat
              * @description Timestamp describing when the service was last updated (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             updatedAt?: string | null;
             /**
              * Version
              * @description Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.
+             * @example 1.0.0
              */
             version: string;
+        };
+        /** ServiceCredentialGroupPayload */
+        ServiceCredentialGroupPayload: {
+            /**
+             * Name
+             * @description The name of the credential group (minimum 3 characters).
+             */
+            name: string;
+            /**
+             * Secrets
+             * @description List of secrets for this credential group.
+             */
+            secrets: components["schemas"]["CredentialPayload"][];
+            /**
+             * Variables
+             * @description List of variables for this credential group.
+             */
+            variables: components["schemas"]["CredentialPayload"][];
+        };
+        /** ServiceCredentialGroupResponse */
+        ServiceCredentialGroupResponse: {
+            /**
+             * Id
+             * @description Encoded ID of the credential group.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the credential group.
+             */
+            name: string;
+            /** Secrets */
+            secrets: components["schemas"]["SecretResponse"][];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time the credential group was updated.
+             */
+            update_time: string;
+            /** Variables */
+            variables: components["schemas"]["VariableResponse"][];
+        };
+        /** ServiceCredentialPayload */
+        ServiceCredentialPayload: {
+            /** @description The credential group containing variables and secrets. */
+            group: components["schemas"]["ServiceCredentialGroupPayload"];
+            /**
+             * Name
+             * @description The name of the service requiring credentials.
+             */
+            name: string;
+            /**
+             * Version
+             * @description The version of the service.
+             */
+            version: string;
+        };
+        /** ServiceCredentialsDefinition */
+        ServiceCredentialsDefinition: {
+            /**
+             * Description
+             * @description A description of the service.
+             */
+            description: string;
+            /**
+             * Label
+             * @description A human-readable label for the service.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description The name of the service.
+             */
+            name: string;
+            /**
+             * Optional
+             * @description If true, tools can run without credentials; if false, credentials must be provided before execution.
+             */
+            optional: boolean;
+            /** Secrets */
+            secrets: components["schemas"]["ServiceParameterDefinition"][];
+            /** Variables */
+            variables: components["schemas"]["ServiceParameterDefinition"][];
+            /**
+             * Version
+             * @description The version of the service.
+             */
+            version: string;
+        };
+        /** ServiceParameterDefinition */
+        ServiceParameterDefinition: {
+            /**
+             * Description
+             * @description A description of what this credential is used for.
+             */
+            description: string;
+            /**
+             * Label
+             * @description The human-readable label for the credential.
+             */
+            label: string;
+            /**
+             * Name
+             * @description The name of the credential definition.
+             */
+            name: string;
+            /**
+             * Optional
+             * @description Whether this credential is optional or required.
+             */
+            optional: boolean;
         };
         /** ServiceType */
         ServiceType: {
             /**
              * Artifact
              * @description Name of the API or GA4GH specification implemented. Official GA4GH types should be assigned as part of standards approval process. Custom artifacts are supported.
+             * @example beacon
              */
             artifact: string;
             /**
              * Group
              * @description Namespace in reverse domain name format. Use `org.ga4gh` for implementations compliant with official GA4GH specifications. For services with custom APIs not standardized by GA4GH, or implementations diverging from official GA4GH specifications, use a different namespace (e.g. your organization's reverse domain name).
+             * @example org.ga4gh
              */
             group: string;
             /**
              * Version
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
+             * @example 1.0.0
              */
             version: string;
         };
@@ -18409,7 +20900,6 @@ export interface components {
              *      - make_public: The contents of the resource will be made publicly accessible.
              *      - make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.
              *      - no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.
-             *
              */
             share_option?: components["schemas"]["SharingOptions"] | null;
             /**
@@ -18599,6 +21089,7 @@ export interface components {
             /**
              * Galaxy Version
              * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
              */
             galaxy_version?: string | null;
             /**
@@ -18727,6 +21218,15 @@ export interface components {
              * @description User ID of user that ran this job
              */
             user_id?: string | null;
+        };
+        /** SplitUpPairedDataLogEntry */
+        SplitUpPairedDataLogEntry: {
+            /** Message */
+            message: string;
+            /** New Paired Status Column */
+            new_paired_status_column: number;
+            old_forward_column: components["schemas"]["ParsedColumn"];
+            old_reverse_column: components["schemas"]["ParsedColumn"];
         };
         /**
          * Src
@@ -18967,7 +21467,14 @@ export interface components {
                     | components["schemas"]["ToolStep"]
                     | components["schemas"]["SubworkflowStep"];
             };
-            tags: components["schemas"]["TagCollection"];
+            /**
+             * Tags
+             * @description The collection of tags associated with an item.
+             * @example COVID-19
+             * @example #myFancyTag
+             * @example covid19.galaxyproject.org
+             */
+            tags: string[];
             /**
              * Update Time
              * Format: date-time
@@ -19015,6 +21522,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -19067,11 +21579,6 @@ export interface components {
          * @enum {string}
          */
         SupportedType: "None" | "BasicAuth" | "BearerAuth" | "PassportAuth";
-        /**
-         * TagCollection
-         * @description Represents the collection of tags associated with an item.
-         */
-        TagCollection: string[];
         /** TagOperationParams */
         TagOperationParams: {
             /** Tags */
@@ -19140,6 +21647,14 @@ export interface components {
              * @constant
              */
             type: "boolean";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariableInteger */
         TemplateVariableInteger: {
@@ -19159,6 +21674,14 @@ export interface components {
              * @constant
              */
             type: "integer";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariablePathComponent */
         TemplateVariablePathComponent: {
@@ -19175,6 +21698,14 @@ export interface components {
              * @constant
              */
             type: "path_component";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TemplateVariableString */
         TemplateVariableString: {
@@ -19194,6 +21725,14 @@ export interface components {
              * @constant
              */
             type: "string";
+            /** Validators */
+            validators?:
+                | (
+                      | components["schemas"]["RegexParameterValidatorModel"]
+                      | components["schemas"]["InRangeParameterValidatorModel"]
+                      | components["schemas"]["LengthParameterValidatorModel"]
+                  )[]
+                | null;
         };
         /** TestUpdateInstancePayload */
         TestUpdateInstancePayload: {
@@ -19218,44 +21757,53 @@ export interface components {
         /** TextParameterModel */
         TextParameterModel: {
             /**
-             * Area
+             * area
              * @default false
              */
             area: boolean;
-            /** Argument */
+            /**
+             * argument
+             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
+             */
             argument?: string | null;
             /**
-             * Default Options
+             * default_options
              * @default []
              */
             default_options: components["schemas"]["LabelValue"][];
-            /** Help */
+            /**
+             * help
+             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
+             */
             help?: string | null;
             /**
-             * Hidden
+             * hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * Is Dynamic
+             * is_dynamic
              * @default false
              */
             is_dynamic: boolean;
-            /** Label */
+            /**
+             * label
+             * @description Will be displayed on the tool page as the label of the parameter.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * Optional
+             * optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * Parameter Type
+             * parameter_type
              * @default gx_text
              * @constant
              */
@@ -19266,7 +21814,7 @@ export interface components {
              */
             type: "text";
             /**
-             * Validators
+             * validators
              * @default []
              */
             validators: (
@@ -19275,7 +21823,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[];
-            /** Value */
+            /** default_value */
             value?: string | null;
         };
         /** ToolDataDetails */
@@ -19283,6 +21831,10 @@ export interface components {
             /**
              * Columns
              * @description A list of column names
+             * @example value
+             * @example dbkey
+             * @example name
+             * @example path
              */
             columns: string[];
             /**
@@ -19293,11 +21845,13 @@ export interface components {
             /**
              * Model class
              * @description The name of class modelling this tool data
+             * @example TabularToolDataTable
              */
             model_class: string;
             /**
              * Name
              * @description The name of this tool data entry
+             * @example all_fasta
              */
             name: string;
         };
@@ -19306,11 +21860,13 @@ export interface components {
             /**
              * Model class
              * @description The name of class modelling this tool data
+             * @example TabularToolDataTable
              */
             model_class: string;
             /**
              * Name
              * @description The name of this tool data entry
+             * @example all_fasta
              */
             name: string;
         };
@@ -19330,6 +21886,9 @@ export interface components {
             /**
              * Files
              * @description A dictionary of file names and their size in bytes
+             * @example {
+             *       "file.txt": 136
+             *     }
              */
             files: {
                 [key: string]: number;
@@ -19337,11 +21896,13 @@ export interface components {
             /**
              * Fingerprint
              * @description SHA1 Hash
+             * @example 22b45237a85c2b3f474bf66888c534387ffe0ced
              */
             fingerprint: string;
             /**
              * Model class
              * @description The name of class modelling this tool data field
+             * @example TabularToolDataField
              */
             model_class: string;
             /**
@@ -19355,20 +21916,44 @@ export interface components {
             /**
              * Values
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
+             * @example value	dbkey	name	path
              */
             values: string;
+        };
+        /** ToolLandingRequest */
+        ToolLandingRequest: {
+            /** Origin */
+            origin?: string | null;
+            /** Request State */
+            request_state?: {
+                [key: string]: unknown;
+            } | null;
+            state: components["schemas"]["LandingRequestState"];
+            /** Tool Id */
+            tool_id: string;
+            /** Tool Version */
+            tool_version?: string | null;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
         };
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /**
-             * Hidden
+             * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
-            /** Label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -19380,33 +21965,36 @@ export interface components {
         };
         /** ToolOutputCollectionStructure */
         ToolOutputCollectionStructure: {
-            /** Collection Type */
+            /** collection_type */
             collection_type?: string | null;
-            /** Collection Type From Rules */
+            /** collection_type_from_rules */
             collection_type_from_rules?: string | null;
-            /** Collection Type Source */
+            /** collection_type_source */
             collection_type_source?: string | null;
-            /** Discover Datasets */
+            /** discover_datasets */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null;
-            /** Structured Like */
+            /** structured_like */
             structured_like?: string | null;
         };
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /**
-             * Hidden
+             * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
-            /** Label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -19419,14 +22007,17 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /**
-             * Hidden
+             * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
-            /** Label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -19439,14 +22030,17 @@ export interface components {
         /** ToolOutputText */
         ToolOutputText: {
             /**
-             * Hidden
+             * hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
-            /** Label */
+            /**
+             * label
+             * @description Output label. Will be used as dataset name in history.
+             */
             label?: string | null;
             /**
-             * Name
+             * name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -19458,29 +22052,29 @@ export interface components {
         };
         /** ToolProvidedMetadataDatasetCollection */
         ToolProvidedMetadataDatasetCollection: {
-            /** Assign Primary Output */
+            /** assign_primary_output */
             assign_primary_output: boolean;
-            /** Directory */
+            /** directory */
             directory: string | null;
             /**
-             * Discover Via
+             * discover_via
              * @constant
              */
             discover_via: "tool_provided_metadata";
-            /** Format */
+            /** format */
             format: string | null;
-            /** Match Relative Path */
+            /** match_relative_path */
             match_relative_path: boolean;
-            /** Recurse */
+            /** recurse */
             recurse: boolean;
-            /** Visible */
+            /** visible */
             visible: boolean;
         };
         /** ToolReportForDataset */
         ToolReportForDataset: {
             /**
              * Content
-             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @description Text contents of the last page revision with embedded directives expanded (type dependent on content_format).
              * @default
              */
             content: string | null;
@@ -19497,6 +22091,81 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ToolRequestDetailedModel */
+        ToolRequestDetailedModel: {
+            /**
+             * ID
+             * @description Encoded ID of the role
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Implicit Collections
+             * @default []
+             */
+            implicit_collections: components["schemas"]["ToolRequestImplicitCollectionReference"][];
+            /**
+             * Jobs
+             * @default []
+             */
+            jobs: components["schemas"]["ToolRequestJobReference"][];
+            /** Request */
+            request: {
+                [key: string]: unknown;
+            };
+            state: components["schemas"]["ToolRequestState"];
+            /** State Message */
+            state_message: string | null;
+        };
+        /** ToolRequestImplicitCollectionReference */
+        ToolRequestImplicitCollectionReference: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Output Name */
+            output_name: string;
+            /**
+             * Src
+             * @constant
+             */
+            src: "hdca";
+        };
+        /** ToolRequestJobReference */
+        ToolRequestJobReference: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Src
+             * @constant
+             */
+            src: "job";
+        };
+        /** ToolRequestModel */
+        ToolRequestModel: {
+            /**
+             * ID
+             * @description Encoded ID of the role
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Request */
+            request: {
+                [key: string]: unknown;
+            };
+            state: components["schemas"]["ToolRequestState"];
+            /** State Message */
+            state_message: string | null;
+        };
+        /**
+         * ToolRequestState
+         * @enum {string}
+         */
+        ToolRequestState: "new" | "submitted" | "failed";
         /** ToolStep */
         ToolStep: {
             /**
@@ -19526,6 +22195,11 @@ export interface components {
              * @description TODO
              */
             tool_inputs?: unknown;
+            /**
+             * Tool UUID
+             * @description The universal unique identifier of the tool associated with this step. Takes precedence over tool_id if set.
+             */
+            tool_uuid?: string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -19617,6 +22291,11 @@ export interface components {
              * @description CSS selector for the element to be described/clicked
              */
             element?: string | null;
+            /**
+             * Orphan
+             * @description If true, the step is an orphan step
+             */
+            orphan?: boolean | null;
             /**
              * Placement
              * @description Placement of the text box relative to the selected element
@@ -19837,7 +22516,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags?: components["schemas"]["TagCollection"] | null;
+            tags?: string[] | null;
             /**
              * Visible
              * @description Whether this item is visible in the history.
@@ -19864,7 +22543,8 @@ export interface components {
             published?: boolean | null;
             /** Purged */
             purged?: boolean | null;
-            tags?: components["schemas"]["TagCollection"] | null;
+            /** Tags */
+            tags?: string[] | null;
         };
         /** UpdateInstancePayload */
         UpdateInstancePayload: {
@@ -20062,6 +22742,24 @@ export interface components {
         /**
          * UpdateUserNotificationPreferencesRequest
          * @description Contains the new notification preferences of a user.
+         * @example {
+         *       "preferences": {
+         *         "message": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "new_shared_item": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         }
+         *       }
+         *     }
          */
         UpdateUserNotificationPreferencesRequest: {
             /**
@@ -20130,17 +22828,35 @@ export interface components {
         UploadOption: "upload_file" | "upload_paths" | "upload_directory";
         /** UrlDataElement */
         UrlDataElement: {
-            /** Md5 */
+            /**
+             * Md5
+             * @description The MD5 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on MD5 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/MD5).
+             */
             MD5?: string | null;
-            /** Sha-1 */
+            /**
+             * Sha-1
+             * @description The SHA1 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA1 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-1).
+             */
             "SHA-1"?: string | null;
-            /** Sha-256 */
+            /**
+             * Sha-256
+             * @description The SHA-256 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-256 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-256"?: string | null;
-            /** Sha-512 */
+            /**
+             * Sha-512
+             * @description The SHA-512 checksum of the dataset. This is a hash of the dataset contents that can be used to verify the
+             *     integrity of the dataset. More information on SHA-512 checksums can be found on [Wikipedia](https://en.wikipedia.org/wiki/SHA-2).
+             */
             "SHA-512"?: string | null;
             /**
              * Auto Decompress
-             * @description Decompress compressed data before sniffing?
+             * @description This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+             *     compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+             *     explicitly set to a compressed datatype.
              * @default false
              */
             auto_decompress: boolean;
@@ -20150,31 +22866,52 @@ export interface components {
             created_from_basename?: string | null;
             /**
              * Dbkey
+             * @description This identifier is used to associate datasets with specific reference genomes. If set, the dbkey
+             *     is a string that represents the genome assembly, such as "hg19" for human genome version 19 or "mm10"
+             *     for mouse genome version 10. In other parts of of the API this is referred to as the "genome_build".
+             *     The Galaxy user interface also refers to this as "build" or "custom build". The value "?" is used to
+             *     indicate that the dataset does not have a dbkey set.
              * @default ?
              */
             dbkey: string;
             /**
              * Deferred
+             * @description This is a boolean value that indicates whether the dataset is deferred. Deferred datasets are not
+             *     immediately ingested into Galaxy on data import and may lack some metadata. Given open bugs with deferred
+             *     datasets, most datasets should not be deferred unless you are sure you want to use this feature.
              * @default false
              */
             deferred: boolean;
             /** Description */
             description?: string | null;
-            elements_from?: components["schemas"]["ElementsFromType"] | null;
             /**
              * Ext
+             * @description The file extension of the dataset. This is shorthand description of the datatype corresponding to this dataset.
+             *     The default "auto" is used to indicate that the datatype should be automatically determined by Galaxy based on
+             *     the contents of the file.
              * @default auto
              */
             ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Hashes */
             hashes?: components["schemas"]["FetchDatasetHash"][] | null;
-            /** Info */
+            /**
+             * Info
+             * @description Free text field that can be used to store arbitrary information about the dataset. This used to be prominently
+             *     displayed in the Galaxy user interface, but now is largely unused.
+             */
             info?: string | null;
+            items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | number | boolean | null;
+            /** Row */
+            row?: (number | boolean | string | null)[] | null;
             /**
              * Space To Tab
+             * @description This is a boolean value that indicates whether the spaces in the dataset contents should be converted to tabs.
+             *     This should typically be set to false for most applications, but sometimes when pasting data into the Galaxy
+             *     user interface, it is useful to set this to true to ensure that the data is converted to a tabular format
+             *     correctly.
              * @default false
              */
             space_to_tab: boolean;
@@ -20183,10 +22920,19 @@ export interface components {
              * @enum {string}
              */
             src: "url";
-            /** Tags */
+            /**
+             * Tags
+             * @description Tags are a way to categorize datasets in Galaxy. They are free-form text strings that can be used to
+             *     group datasets together. Tags can be used to filter datasets in the Galaxy user interface and can be
+             *     used to search for datasets in the Galaxy API.
+             */
             tags?: string[] | null;
             /**
              * To Posix Lines
+             * @description This is a boolean value that indicates whether the line endings in the dataset should be converted to POSIX
+             *     line endings (LF). The Galaxy user interface will typically set this to true so that all datasets default
+             *     to having POSIX line endings as most tools and workflows expect. The actual upload API will default this to false
+             *     though assuming the API user is more likely to be want to be precise about file handling details.
              * @default false
              */
             to_posix_lines: boolean;
@@ -20218,6 +22964,8 @@ export interface components {
             hidden: boolean;
             /** Name */
             name?: string | null;
+            /** Object Expires After Days */
+            object_expires_after_days?: number | null;
             /** Object Store Id */
             object_store_id?: string | null;
             /** Private */
@@ -20315,6 +23063,7 @@ export interface components {
                 | "posix"
                 | "s3fs"
                 | "azure"
+                | "azureflat"
                 | "onedata"
                 | "webdav"
                 | "dropbox"
@@ -20322,7 +23071,10 @@ export interface components {
                 | "elabftw"
                 | "inveniordm"
                 | "zenodo"
-                | "rspace";
+                | "rspace"
+                | "dataverse"
+                | "huggingface"
+                | "omero";
             /** Uri Root */
             uri_root: string;
             /**
@@ -20347,7 +23099,7 @@ export interface components {
             active: boolean;
             /**
              * Deleted
-             * @description  User is deleted
+             * @description User is deleted
              */
             deleted: boolean;
             /**
@@ -20383,6 +23135,24 @@ export interface components {
         /**
          * UserNotificationPreferences
          * @description Contains the full notification preferences of a user.
+         * @example {
+         *       "preferences": {
+         *         "message": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         },
+         *         "new_shared_item": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
+         *         }
+         *       }
+         *     }
          */
         UserNotificationPreferences: {
             /**
@@ -20526,9 +23296,108 @@ export interface components {
             /** Total Disk Usage */
             total_disk_usage: number;
         };
+        /** UserServiceCredentialsListResponse */
+        UserServiceCredentialsListResponse: components["schemas"]["UserServiceCredentialsResponse"][];
+        /** UserServiceCredentialsResponse */
+        UserServiceCredentialsResponse: {
+            /**
+             * Current Group Id
+             * @description The ID of the currently active credential group.
+             */
+            current_group_id?: string | null;
+            /** Groups */
+            groups: components["schemas"]["ServiceCredentialGroupResponse"][];
+            /**
+             * Id
+             * @description The encoded ID of the user credentials.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the service requiring credentials.
+             */
+            name: string;
+            /**
+             * Source Id
+             * @description The ID of the source (e.g., tool ID).
+             */
+            source_id: string;
+            /**
+             * Source Type
+             * @description The type of source (e.g., 'tool').
+             * @constant
+             */
+            source_type: "tool";
+            /**
+             * Source Version
+             * @description The version of the source.
+             */
+            source_version: string;
+            /**
+             * User Id
+             * @description The ID of the user who owns these credentials.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Version
+             * @description The version of the service.
+             */
+            version: string;
+        };
+        /** UserServiceCredentialsWithDefinitionResponse */
+        UserServiceCredentialsWithDefinitionResponse: {
+            /**
+             * Current Group Id
+             * @description The ID of the currently active credential group.
+             */
+            current_group_id?: string | null;
+            definition: components["schemas"]["ServiceCredentialsDefinition"];
+            /** Groups */
+            groups: components["schemas"]["ServiceCredentialGroupResponse"][];
+            /**
+             * Id
+             * @description The encoded ID of the user credentials.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the service requiring credentials.
+             */
+            name: string;
+            /**
+             * Source Id
+             * @description The ID of the source (e.g., tool ID).
+             */
+            source_id: string;
+            /**
+             * Source Type
+             * @description The type of source (e.g., 'tool').
+             * @constant
+             */
+            source_type: "tool";
+            /**
+             * Source Version
+             * @description The version of the source.
+             */
+            source_version: string;
+            /**
+             * User Id
+             * @description The ID of the user who owns these credentials.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Version
+             * @description The version of the service.
+             */
+            version: string;
+        };
         /** UserToolSource */
         "UserToolSource-Input": {
-            /** Citations */
+            /** citations */
             citations?: components["schemas"]["Citation"][] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -20536,43 +23405,54 @@ export interface components {
              */
             class: "GalaxyUserTool";
             /**
-             * Container
+             * configfiles
+             * @description A list of config files for this tool.
+             */
+            configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
+            /**
+             * container
              * @description Container image to use for this tool.
+             * @example quay.io/biocontainers/python:3.13
              */
             container: string;
             /**
-             * Description
+             * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** Edam Operations */
+            /** edam_operations */
             edam_operations?: string[] | null;
-            /** Edam Topics */
+            /** edam_topics */
             edam_topics?: string[] | null;
-            /** @description Help text shown below the tool interface. */
+            /**
+             * help
+             * @description Help text shown below the tool interface.
+             */
             help?: components["schemas"]["HelpContent"] | null;
             /**
-             * Id
+             * id
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             * @example my-cool-tool
              */
             id: string;
             /**
-             * Inputs
+             * inputs
              * @default []
              */
             inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
             /**
-             * License
+             * license
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             * @example MIT
              */
             license?: string | null;
             /**
-             * Name
+             * name
              * @description The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool.
              */
             name: string;
             /**
-             * Outputs
+             * outputs
              * @default []
              */
             outputs: (
@@ -20584,7 +23464,7 @@ export interface components {
                 | components["schemas"]["ToolOutputBoolean"]
             )[];
             /**
-             * Requirements
+             * requirements
              * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
              * @default []
              */
@@ -20598,63 +23478,76 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
             /**
-             * Version
+             * version
              * @description Version for the tool.
+             * @example 0.1.0
              */
             version: string;
-            /** Xrefs */
+            /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /** UserToolSource */
         "UserToolSource-Output": {
-            /** Citations */
+            /** citations */
             citations?: components["schemas"]["Citation"][] | null;
             /**
-             * Class
+             * class_
              * @constant
              */
             class: "GalaxyUserTool";
             /**
-             * Container
+             * configfiles
+             * @description A list of config files for this tool.
+             */
+            configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
+            /**
+             * container
              * @description Container image to use for this tool.
+             * @example quay.io/biocontainers/python:3.13
              */
             container: string;
             /**
-             * Description
+             * description
              * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
              */
             description?: string | null;
-            /** Edam Operations */
+            /** edam_operations */
             edam_operations?: string[] | null;
-            /** Edam Topics */
+            /** edam_topics */
             edam_topics?: string[] | null;
-            /** @description Help text shown below the tool interface. */
+            /**
+             * help
+             * @description Help text shown below the tool interface.
+             */
             help?: components["schemas"]["HelpContent"] | null;
             /**
-             * Id
+             * id
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             * @example my-cool-tool
              */
             id: string;
             /**
-             * Inputs
+             * inputs
              * @default []
              */
             inputs: components["schemas"]["GalaxyToolParameterModel-Output"][];
             /**
-             * License
+             * license
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             * @example MIT
              */
             license?: string | null;
             /**
-             * Name
+             * name
              * @description The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool.
              */
             name: string;
             /**
-             * Outputs
+             * outputs
              * @default []
              */
             outputs: (
@@ -20666,7 +23559,7 @@ export interface components {
                 | components["schemas"]["ToolOutputBoolean"]
             )[];
             /**
-             * Requirements
+             * requirements
              * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
              * @default []
              */
@@ -20680,14 +23573,16 @@ export interface components {
             /**
              * shell_command
              * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
             /**
-             * Version
+             * version
              * @description Version for the tool.
+             * @example 0.1.0
              */
             version: string;
-            /** Xrefs */
+            /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
         /** UserUpdatePayload */
@@ -20707,6 +23602,19 @@ export interface components {
              * @description The name of the user.
              */
             username?: string | null;
+        };
+        /** VariableResponse */
+        VariableResponse: {
+            /**
+             * Name
+             * @description The name of the credential.
+             */
+            name: string;
+            /**
+             * Value
+             * @description The value of the variable (for variables, not secrets).
+             */
+            value?: string | null;
         };
         /** Visualization */
         Visualization: Record<string, never>;
@@ -20776,15 +23684,6 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * Groups
-             * @description The groups of the plugin.
-             */
-            groups?:
-                | {
-                      [key: string]: unknown;
-                  }[]
-                | null;
-            /**
              * Href
              * @description The href of the plugin.
              */
@@ -20808,9 +23707,11 @@ export interface components {
              * Settings
              * @description The settings of the plugin.
              */
-            settings: {
-                [key: string]: unknown;
-            }[];
+            settings?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Specs
              * @description The specs of the plugin.
@@ -20819,15 +23720,19 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
-             * Target
-             * @description The target of the plugin.
-             */
-            target: string;
-            /**
              * Title
              * @description The title of the plugin.
              */
             title?: string | null;
+            /**
+             * Tracks
+             * @description The tracks of the plugin.
+             */
+            tracks?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
         };
         /** VisualizationRevisionResponse */
         VisualizationRevisionResponse: {
@@ -20920,7 +23825,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags?: components["schemas"]["TagCollection"] | null;
+            tags?: string[] | null;
             /**
              * Title
              * @description The name of the visualization.
@@ -20990,7 +23895,7 @@ export interface components {
              * Tags
              * @description A list of tags to add to this item.
              */
-            tags: components["schemas"]["TagCollection"] | null;
+            tags: string[] | null;
             /**
              * Title
              * @description The name of the visualization.
@@ -21103,6 +24008,11 @@ export interface components {
              */
             id: string;
             /**
+             * Landing UUID
+             * @description The UUID of the workflow landing request associated with this invocation.
+             */
+            landing_uuid?: string | null;
+            /**
              * Model class
              * @description The name of the database model class.
              * @constant
@@ -21165,6 +24075,11 @@ export interface components {
             inputs: {
                 [key: string]: components["schemas"]["InvocationInput"];
             };
+            /**
+             * Landing UUID
+             * @description The UUID of the workflow landing request associated with this invocation.
+             */
+            landing_uuid?: string | null;
             /**
              * Messages
              * @description A list of messages about why the invocation did not succeed.
@@ -21386,6 +24301,8 @@ export interface components {
         };
         /** WorkflowLandingRequest */
         WorkflowLandingRequest: {
+            /** Origin */
+            origin?: string | null;
             /** Request State */
             request_state: {
                 [key: string]: unknown;
@@ -21501,9 +24418,9 @@ export interface components {
         };
         /** XrefDict */
         XrefDict: {
-            /** Type */
+            /** type */
             type: string;
-            /** Value */
+            /** value */
             value: string;
         };
         /** XrefItem */
@@ -21522,25 +24439,44 @@ export interface components {
             /**
              * Name
              * @description Name of external reference
+             * @example PubChem-compound
              */
             name: string;
             /**
              * Namespace
              * @description External resource vendor prefix
+             * @example pubchem.compound
              */
             namespace: string;
+        };
+        /** YamlTemplateConfigFile */
+        YamlTemplateConfigFile: {
+            /** content */
+            content: string;
+            /**
+             * eval_engine
+             * @default ecmascript
+             * @constant
+             */
+            eval_engine: "ecmascript";
+            /** filename */
+            filename?: string | null;
+            /** name */
+            name?: string | null;
         };
         /** Organization */
         galaxy__schema__drs__Organization: {
             /**
              * Name
              * @description Name of the organization responsible for the service
+             * @example My organization
              */
             name: string;
             /**
              * Url
              * Format: uri
              * @description URL of the website of the organization (RFC 3986 format)
+             * @example https://example.com
              */
             url: string;
         };
@@ -21680,7 +24616,8 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                job_id: string | null;
+                /** @description The Job ID the chat exchange is linked to. */
+                job_id: string;
             };
             cookie?: never;
         };
@@ -21962,6 +24899,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_data_landing_api_data_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDataLandingPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
                 };
             };
             /** @description Request Error */
@@ -22424,6 +25406,103 @@ export interface operations {
             };
         };
     };
+    dataset_collections__workbook_download_for_collection: {
+        parameters: {
+            query?: {
+                /** @description Filename of the workbook download to generate */
+                filename?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the `HDCA`. */
+                hdca_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkbookForCollectionApi"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    dataset_collections__workbook_parse_for_collection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the `HDCA`. */
+                hdca_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseWorkbookForCollectionApi"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsedWorkbookForCollection"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     suitable_converters_api_dataset_collections__hdca_id__suitable_converters_get: {
         parameters: {
             query?: {
@@ -22717,10 +25796,6 @@ export interface operations {
                  * @description Whether to stop the creating job if all outputs of the job have been deleted.
                  */
                 stop_job?: boolean | null;
-                /** @description View to be passed to the serializer */
-                view?: string | null;
-                /** @description Comma-separated list of keys to be passed to the serializer */
-                keys?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -22738,13 +25813,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Request has been executed. */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Request accepted, processing will finish later. */
@@ -22752,9 +25827,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                content?: never;
+            };
+            /** @description Request has been executed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -22942,6 +26022,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extra_file_raw_api_datasets__dataset_id__extra_files_raw__filename__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the dataset. */
+                dataset_id: string;
+                /** @description The name of the extra file to retrieve. */
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Request Error */
@@ -23406,7 +26532,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -23461,7 +26587,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -24073,6 +27199,51 @@ export interface operations {
             };
         };
     };
+    display_applications_create_link_api_display_applications_create_link_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLinkIncoming"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateLinkFeedback"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     display_applications_reload_api_display_applications_reload_post: {
         parameters: {
             query?: never;
@@ -24307,7 +27478,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_file_landing_api_file_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFileLandingPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
                 };
             };
             /** @description Request Error */
@@ -25324,8 +28542,13 @@ export interface operations {
                 recursive?: boolean | null;
                 /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
-                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                /**
+                 * @deprecated
+                 * @description Deprecated, please use `write_intent` instead.
+                 */
                 writeable?: boolean | null;
+                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                write_intent?: boolean | null;
                 /** @description Maximum number of entries to return. */
                 limit?: number | null;
                 /** @description Number of entries to skip. */
@@ -26452,7 +29675,8 @@ export interface operations {
                 sort_by?: "create_time" | "name" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -26483,8 +29707,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Historys: `title`, `description`, `slug`, `tag`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
                 all?: boolean | null;
@@ -28048,7 +31271,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -28104,7 +31327,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
             header?: {
@@ -28620,10 +31843,6 @@ export interface operations {
                  * @description Whether to stop the creating job if all outputs of the job have been deleted.
                  */
                 stop_job?: boolean | null;
-                /** @description View to be passed to the serializer */
-                view?: string | null;
-                /** @description Comma-separated list of keys to be passed to the serializer */
-                keys?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -28643,13 +31862,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Request has been executed. */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Request accepted, processing will finish later. */
@@ -28657,9 +31876,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                content?: never;
+            };
+            /** @description Request has been executed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -29037,10 +32261,6 @@ export interface operations {
                  * @description Whether to stop the creating job if all outputs of the job have been deleted.
                  */
                 stop_job?: boolean | null;
-                /** @description View to be passed to the serializer */
-                view?: string | null;
-                /** @description Comma-separated list of keys to be passed to the serializer */
-                keys?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -29062,13 +32282,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Request has been executed. */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Request accepted, processing will finish later. */
@@ -29076,9 +32296,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                content?: never;
+            };
+            /** @description Request has been executed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -29294,6 +32519,54 @@ export interface operations {
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_contents__copy_contents: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyDatasetsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyDatasetsResponse"];
                 };
             };
             /** @description Request Error */
@@ -30159,6 +33432,50 @@ export interface operations {
             };
         };
     };
+    tool_requests_api_histories__history_id__tool_requests_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolRequestModel"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     unpublish_api_histories__history_id__unpublish_put: {
         parameters: {
             query?: never;
@@ -30412,10 +33729,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -30464,10 +33783,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -30490,6 +33811,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    report_error_api_invocations__invocation_id__error_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Invocation. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportInvocationErrorPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -31076,9 +34443,12 @@ export interface operations {
                 invocation_id?: string | null;
                 /** @description Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned. */
                 implicit_collection_jobs_id?: string | null;
+                /** @description Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned. */
+                tool_request_id?: string | null;
                 /** @description Sort results by specified field. */
                 order_by?: components["schemas"]["JobIndexSortByEnum"];
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -31112,8 +34482,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Jobs: `user`, `tool`, `handler`, `runner`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 /** @description Maximum number of jobs to return. */
                 limit?: number;
@@ -31146,6 +34515,51 @@ export interface operations {
                         | components["schemas"]["EncodedJobDetails"]
                         | components["schemas"]["JobSummary"]
                     )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_api_jobs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobCreateResponse"];
                 };
             };
             /** @description Request Error */
@@ -31658,7 +35072,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobOutputAssociation"][];
+                    "application/json": (
+                        | components["schemas"]["JobOutputAssociation"]
+                        | components["schemas"]["JobOutputCollectionAssociation"]
+                    )[];
                 };
             };
             /** @description Request Error */
@@ -33689,7 +37106,8 @@ export interface operations {
                 deleted?: boolean;
                 limit?: number;
                 offset?: number;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -33723,8 +37141,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Pages: `title`, `slug`, `tag`, `user`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 show_own?: boolean;
                 show_published?: boolean;
@@ -34908,8 +38325,13 @@ export interface operations {
                 recursive?: boolean | null;
                 /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
-                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                /**
+                 * @deprecated
+                 * @description Deprecated, please use `write_intent` instead.
+                 */
                 writeable?: boolean | null;
+                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+                write_intent?: boolean | null;
                 /** @description Maximum number of entries to return. */
                 limit?: number | null;
                 /** @description Number of entries to skip. */
@@ -35292,6 +38714,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    dataset_collections__workbook_download: {
+        parameters: {
+            query?: {
+                /** @description Filename of the workbook download to generate */
+                filename?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkbookRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    dataset_collections__workbook_parse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseWorkbook"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParsedWorkbook"];
                 };
             };
             /** @description Request Error */
@@ -35979,7 +39492,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A description of the given data table and its content */
+            /** @description A description of the given data table and its content. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -36121,7 +39634,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Information about a data table field */
+            /** @description Request file associated with tool data table entry */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -36170,6 +39683,229 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolDataDetails"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_landing_api_tool_landings_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateToolLandingRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_landing_api_tool_landings__uuid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    claim_landing_api_tool_landings__uuid__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The UUID used to identify a persisted landing request. */
+                uuid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimLandingPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolLandingRequest"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_tool_request_api_tool_requests__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolRequestDetailedModel"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tool_request_state_api_tool_requests__id__state_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
             /** @description Request Error */
@@ -36370,6 +40106,99 @@ export interface operations {
             };
         };
     };
+    tools__fetch_workbook_download: {
+        parameters: {
+            query?: {
+                /** @description Generate a workbook for simple datasets or a collection. */
+                type?: "datasets" | "collection" | "collections";
+                /** @description Generate workbook for specified collection type (not all collection types are supported) */
+                collection_type?: "list" | "list:paired" | "list:list" | "list:list:paired" | "list:paired_or_unpaired";
+                /** @description Filename of the workbook download to generate */
+                filename?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__fetch_workbook_parse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseFetchWorkbook"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["ParsedFetchWorkbookForDatasets"]
+                        | components["schemas"]["ParsedFetchWorkbookForCollections"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     get_icon_api_tools__tool_id__icon_get: {
         parameters: {
             query?: never;
@@ -36427,6 +40256,218 @@ export interface operations {
             };
         };
     };
+    tool_inputs_api_tools__tool_id__inputs_get: {
+        parameters: {
+            query?: {
+                tool_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": (
+                        | components["schemas"]["CwlIntegerParameterModel"]
+                        | components["schemas"]["CwlFloatParameterModel"]
+                        | components["schemas"]["CwlStringParameterModel"]
+                        | components["schemas"]["CwlBooleanParameterModel"]
+                        | components["schemas"]["CwlNullParameterModel"]
+                        | components["schemas"]["CwlFileParameterModel"]
+                        | components["schemas"]["CwlDirectoryParameterModel"]
+                        | components["schemas"]["CwlUnionParameterModel-Output"]
+                        | components["schemas"]["TextParameterModel"]
+                        | components["schemas"]["IntegerParameterModel"]
+                        | components["schemas"]["FloatParameterModel"]
+                        | components["schemas"]["BooleanParameterModel"]
+                        | components["schemas"]["HiddenParameterModel"]
+                        | components["schemas"]["SelectParameterModel"]
+                        | components["schemas"]["DataParameterModel"]
+                        | components["schemas"]["DataCollectionParameterModel"]
+                        | components["schemas"]["DataColumnParameterModel"]
+                        | components["schemas"]["DirectoryUriParameterModel"]
+                        | components["schemas"]["RulesParameterModel"]
+                        | components["schemas"]["DrillDownParameterModel-Output"]
+                        | components["schemas"]["GroupTagParameterModel"]
+                        | components["schemas"]["BaseUrlParameterModel"]
+                        | components["schemas"]["GenomeBuildParameterModel"]
+                        | components["schemas"]["ColorParameterModel"]
+                        | components["schemas"]["ConditionalParameterModel-Output"]
+                        | components["schemas"]["RepeatParameterModel-Output"]
+                        | components["schemas"]["SectionParameterModel-Output"]
+                    )[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__parameter_landing_request_schema: {
+        parameters: {
+            query?: {
+                tool_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__parameter_request_schema: {
+        parameters: {
+            query?: {
+                tool_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    tools__parameter_test_case_xml_schema: {
+        parameters: {
+            query?: {
+                tool_version?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The tool ID for the lineage stored in Galaxy's toolbox. */
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     index_api_tours_get: {
         parameters: {
             query?: never;
@@ -36443,6 +40484,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TourList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    generate_tour_api_tours_generate_get: {
+        parameters: {
+            query: {
+                tool_id: string;
+                tool_version: string;
+                performs_upload?: boolean;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateTourResponse"];
                 };
             };
             /** @description Request Error */
@@ -37575,6 +41661,286 @@ export interface operations {
             };
         };
     };
+    list_user_credentials_api_users__user_id__credentials_get: {
+        parameters: {
+            query?: {
+                /** @description The type of source to filter by. */
+                source_type?: "tool" | null;
+                /** @description The ID of the source to filter by. */
+                source_id?: string | null;
+                /** @description The version of the source to filter by. By default it is the latest version. */
+                source_version?: string | null;
+                /** @description Whether to include extended credential definition information. */
+                include_definition?: boolean;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["UserServiceCredentialsListResponse"]
+                        | components["schemas"]["ExtendedUserCredentialsListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_user_credentials_group_api_users__user_id__credentials_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectServiceCredentialPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    provide_credential_api_users__user_id__credentials_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSourceCredentialsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCredentialGroupResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_service_credentials_api_users__user_id__credentials__user_credentials_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+                user_credentials_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    update_user_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+                user_credentials_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceCredentialGroupPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCredentialGroupResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_credentials_api_users__user_id__credentials__user_credentials_id__groups__group_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                user_id: string | "current";
+                user_credentials_id: string;
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     get_custom_builds_api_users__user_id__custom_builds_get: {
         parameters: {
             query?: never;
@@ -38189,7 +42555,8 @@ export interface operations {
                 sort_by?: "create_time" | "title" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -38223,8 +42590,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Visualizations: `title`, `slug`, `tag`, `type`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
             };
             header?: {
@@ -38914,7 +43280,8 @@ export interface operations {
                 sort_desc?: boolean | null;
                 limit?: number | null;
                 offset?: number | null;
-                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
                  *     ## Query Structure
                  *
@@ -38960,8 +43327,7 @@ export interface operations {
                  *
                  *     Free text search terms will be searched against the following attributes of the
                  *     Stored Workflows: `name`, `tag`, `user`.
-                 *
-                 *      */
+                 */
                 search?: string | null;
                 /** @description Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts. */
                 skip_step_counts?: boolean;
@@ -39174,7 +43540,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RootModel_Dict_str__int__"];
+                    "application/json": components["schemas"]["RootModel_dict_str__int__"];
                 };
             };
             /** @description Request Error */
@@ -39407,10 +43773,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -39461,10 +43829,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -40465,10 +44835,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -40519,10 +44891,12 @@ export interface operations {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
                  *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
                  *             Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *             are not the mapped over step outputs but the individual job outputs. */
+                 *             are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -40878,6 +45252,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_context_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextResponse"];
                 };
             };
             /** @description Request Error */

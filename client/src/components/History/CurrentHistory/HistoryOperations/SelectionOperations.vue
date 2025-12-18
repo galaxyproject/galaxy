@@ -137,6 +137,7 @@
             v-if="collectionModalType"
             :history-id="history.id"
             :collection-type="collectionModalType"
+            :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
             :show.sync="collectionModalShow"
@@ -147,7 +148,7 @@
 </template>
 
 <script>
-import { HistoryFilters } from "components/History/HistoryFilters";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 import {
     addTagsToSelectedContent,
     changeDatatypeOfSelectedContent,
@@ -158,15 +159,14 @@ import {
     removeTagsFromSelectedContent,
     undeleteSelectedContent,
     unhideSelectedContent,
-} from "components/History/model/crud";
-import { DatatypesProvider, DbKeyProvider } from "components/providers";
-import SingleItemSelector from "components/SingleItemSelector";
-import { StatelessTags } from "components/Tags";
-
+} from "@/components/History/model/crud";
+import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
+import { StatelessTags } from "@/components/Tags";
 import { useConfig } from "@/composables/config";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 export default {
     components: {
@@ -302,7 +302,14 @@ export default {
             const { setSelectedItems } = useCollectionBuilderItemSelection();
             const selection = Array.from(this.contentSelection.values());
             setSelectedItems(selection);
-            this.$router.push({ path: `/collection/new_list?advanced=${advanced}` });
+
+            if (this.$route.path === "/collection/new_list") {
+                // vue-router 4 supports a native force push with clean URLs, but we're using a __vkey__
+                // bit as a workaround to allow the builder to be invoked consecutively
+                this.$router.push({ path: `/collection/new_list?advanced=${advanced}` }, { force: true });
+            } else {
+                this.$router.push(`/collection/new_list?advanced=${advanced}`);
+            }
         },
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {

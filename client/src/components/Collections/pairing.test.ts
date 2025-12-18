@@ -1,3 +1,6 @@
+import { describe, expect, test } from "vitest";
+
+import AUTO_PAIRING_SPECIFICATION from "./auto_pairing_spec.yml";
 import {
     autoDetectPairs,
     autoPairWithCommonFilters,
@@ -46,13 +49,13 @@ describe("guessInitialFilterType", () => {
 describe("guessNameForPair", () => {
     test("it should use the LCS and work with _1/_2 filters", () => {
         expect(guessNameForPair(mockDataset("moo_1.fastq"), mockDataset("moo_2.fastq"), "_1", "_2", true)).toEqual(
-            "moo"
+            "moo",
         );
     });
 
     test("it should use the LCS as a name and work with .1.fastq/.2.fastq filters", () => {
         expect(
-            guessNameForPair(mockDataset("moo.1.fastq"), mockDataset("moo.2.fastq"), ".1.fastq", ".2.fastq", true)
+            guessNameForPair(mockDataset("moo.1.fastq"), mockDataset("moo.2.fastq"), ".1.fastq", ".2.fastq", true),
         ).toEqual("moo");
     });
 
@@ -63,8 +66,8 @@ describe("guessNameForPair", () => {
                 mockDataset("moo_yuck_endssame.2.fastq"),
                 ".1.fastq",
                 ".2.fastq",
-                true
-            )
+                true,
+            ),
         ).toEqual("moo__endssame");
     });
 
@@ -115,5 +118,34 @@ describe("splitIntoPairedAndUnpaired", () => {
         // we cannot deduce forward from reverse
         const summary = splitIntoPairedAndUnpaired([B1, M1, F1, F2, B2, L1, L2, E1, E2], "", "", true);
         expect(summary.pairs).toHaveLength(0);
+    });
+});
+
+interface ExpectedPair {
+    name: string;
+    forward: string;
+    reverse: string;
+}
+
+interface AutoPairingTest {
+    doc?: string;
+    inputs: string[];
+    paired: Record<string, ExpectedPair>;
+}
+
+describe("fulfills auto pairing specification ", () => {
+    test("the specification", () => {
+        const tests = AUTO_PAIRING_SPECIFICATION;
+        tests.forEach((test: AutoPairingTest) => {
+            const inputs = test.inputs.map((name) => mockDataset(name));
+            const summary = autoPairWithCommonFilters(inputs, true);
+            for (const name in test.paired) {
+                const expectedPair = test.paired[name] as ExpectedPair;
+                const pair = summary.pairs?.find((p) => p.name === name);
+                expect(pair).toBeDefined();
+                expect(pair?.forward.name).toEqual(expectedPair.forward);
+                expect(pair?.reverse.name).toEqual(expectedPair.reverse);
+            }
+        });
     });
 });

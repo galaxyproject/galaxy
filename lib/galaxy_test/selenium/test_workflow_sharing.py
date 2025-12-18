@@ -1,5 +1,6 @@
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesWorkflowAssertions,
@@ -9,6 +10,7 @@ from .framework import (
 class TestWorkflowSharingRedirect(SeleniumTestCase):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_share_workflow_with_login_redirect(self):
         user_email = self.get_user_email()
@@ -22,6 +24,7 @@ class TestWorkflowSharingRedirect(SeleniumTestCase):
         self.wait_for_logged_in()
         self.wait_for_selector(".make-accessible")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_export_workflow_with_login_redirect(self):
         user_email = self.get_user_email()

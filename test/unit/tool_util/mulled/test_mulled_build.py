@@ -18,7 +18,7 @@ from ..util import external_dependency_management
 @pytest.mark.parametrize(
     "target,version,base_image",
     [
-        ("maker", None, DEFAULT_EXTENDED_BASE_IMAGE),
+        ("mzmine", None, DEFAULT_EXTENDED_BASE_IMAGE),
         ("qiime", "1.9.1", DEFAULT_EXTENDED_BASE_IMAGE),
         ("samtools", None, DEFAULT_BASE_IMAGE),
     ],

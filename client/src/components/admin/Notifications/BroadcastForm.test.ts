@@ -1,10 +1,11 @@
 import "@/composables/__mocks__/filter";
 
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
@@ -21,11 +22,11 @@ const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 const localVue = getLocalVue(true);
 
 async function mountBroadcastForm(props?: object) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const mockRouter = {
-        push: jest.fn(),
+        push: vi.fn(),
     };
 
     const wrapper = mount(BroadcastForm as object, {
@@ -36,6 +37,10 @@ async function mountBroadcastForm(props?: object) {
         pinia,
         stubs: {
             FontAwesomeIcon: true,
+            FormElement: true,
+            GDateTime: true,
+            LoadingSpan: true,
+            BroadcastContainer: true,
         },
         mocks: {
             $router: mockRouter,
@@ -54,16 +59,20 @@ describe("BroadcastForm.vue", () => {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("aria-disabled")).toBe(enabled ? undefined : "true");
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).attributes("data-title")).toBe(
-            enabled ? "" : "Please fill all required fields"
+            enabled ? "" : "Please fill all required fields",
         );
     }
 
-    async function createBroadcast(wrapper: Wrapper<Vue>, mockRouter: { push: jest.Mock }, actionsLink = false) {
+    async function createBroadcast(
+        wrapper: Wrapper<Vue>,
+        mockRouter: { push: ReturnType<typeof vi.fn> },
+        actionsLink = false,
+    ) {
         server.use(
             http.post("/api/notifications/broadcast", ({ response }) => {
                 // We use untyped here because we don't care about the response
                 return response.untyped(HttpResponse.json({}, { status: 200 }));
-            })
+            }),
         );
 
         expectSubmitButton(wrapper, false);
@@ -113,7 +122,7 @@ describe("BroadcastForm.vue", () => {
         server.use(
             http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
                 return response(200).json(FAKE_BROADCAST);
-            })
+            }),
         );
 
         const { wrapper } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
@@ -121,10 +130,10 @@ describe("BroadcastForm.vue", () => {
         await flushPromises();
 
         expect((wrapper.find(SUBJECT_INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
-            FAKE_BROADCAST.content.subject
+            FAKE_BROADCAST.content.subject,
         );
         expect((wrapper.find(MESSAGE_INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
-            FAKE_BROADCAST.content.message
+            FAKE_BROADCAST.content.message,
         );
         expect(wrapper.find("#broadcast-action-link-name-0").exists()).toBeTruthy();
         expect(wrapper.find("#broadcast-action-link-link-0").exists()).toBeTruthy();
@@ -139,7 +148,7 @@ describe("BroadcastForm.vue", () => {
 
             http.put("/api/notifications/broadcast/{notification_id}", ({ response }) => {
                 return response(204).empty();
-            })
+            }),
         );
 
         const { wrapper, mockRouter } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
@@ -162,7 +171,7 @@ describe("BroadcastForm.vue", () => {
         server.use(
             http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
                 return response(200).json(FAKE_BROADCAST);
-            })
+            }),
         );
 
         const { wrapper } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
@@ -175,7 +184,7 @@ describe("BroadcastForm.vue", () => {
         server.use(
             http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
                 return response(200).json(FAKE_BROADCAST);
-            })
+            }),
         );
 
         const { wrapper } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });

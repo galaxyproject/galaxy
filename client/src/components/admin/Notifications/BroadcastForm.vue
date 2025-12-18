@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
@@ -115,7 +116,7 @@ async function loadBroadcastData() {
                 params: {
                     path: { notification_id: props.id },
                 },
-            }
+            },
         );
 
         if (error) {
@@ -220,10 +221,10 @@ if (props.id) {
                             @click="
                                 broadcastData.content.action_links?.splice(
                                     broadcastData.content.action_links.indexOf(actionLink),
-                                    1
+                                    1,
                                 )
                             ">
-                            <FontAwesomeIcon icon="times" />
+                            <FontAwesomeIcon :icon="faTimes" />
                         </GButton>
                     </BCol>
                 </BRow>
@@ -234,7 +235,7 @@ if (props.id) {
                     outline
                     color="blue"
                     @click="addActionLink">
-                    <FontAwesomeIcon icon="plus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     Add action link
                 </GButton>
             </BFormGroup>
@@ -269,7 +270,7 @@ if (props.id) {
             <BRow class="m-2" align-h="center">
                 <AsyncButton
                     id="broadcast-submit"
-                    icon="save"
+                    :icon="faSave"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
                     color="blue"
                     size="medium"

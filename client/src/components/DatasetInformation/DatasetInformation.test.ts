@@ -1,13 +1,18 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import DatasetInformation from "./DatasetInformation.vue";
 
 const HDA_ID = "FOO_HDA_ID";
+
+const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 
 interface DatasetResponse {
     id: string;
@@ -38,8 +43,6 @@ const datasetResponse: DatasetResponse = {
     file_name: "/home/oleg/galaxy/database/objects/5/e/8/dataset_5e89abe4-e8f7-468a-9ef1-d4e322183fa5.dat",
 };
 
-const localVue = getLocalVue();
-
 describe("DatasetInformation/DatasetInformation", () => {
     let wrapper: Wrapper<Vue>;
     let axiosMock: MockAdapter;
@@ -53,11 +56,15 @@ describe("DatasetInformation/DatasetInformation", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
+        const pinia = createTestingPinia({ createSpy: vi.fn });
+
         wrapper = mount(DatasetInformation as object, {
             propsData: {
                 dataset: datasetResponse,
             },
             localVue,
+            pinia,
+            router,
         });
 
         datasetInfoTable = wrapper.find("#dataset-details");

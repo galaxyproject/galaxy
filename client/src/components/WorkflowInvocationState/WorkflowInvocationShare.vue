@@ -49,7 +49,7 @@ const workflowAlreadyShareable = computed(() => Boolean(workflow.value && workfl
 
 /** If both the workflow and history are already shareable. */
 const historyAndWorkflowAlreadyShareable = computed(
-    () => historyAlreadyShareable.value && workflowAlreadyShareable.value
+    () => historyAlreadyShareable.value && workflowAlreadyShareable.value,
 );
 
 async function makeInvocationShareable() {

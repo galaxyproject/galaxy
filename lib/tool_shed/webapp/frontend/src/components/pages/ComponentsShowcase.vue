@@ -7,7 +7,8 @@ import ComponentShowcaseExample from "@/components/ComponentShowcaseExample.vue"
 import RecentlyCreatedRepositories from "@/components/RecentlyCreatedRepositories.vue"
 import RepositoryLink from "@/components/RepositoryLink.vue"
 import RepositoryActions from "@/components/RepositoryActions.vue"
-import LandingCarousel from "@/components/LandingCarousel.vue"
+import LandingSearchBox from "@/components/LandingSearchBox.vue"
+import LandingInfoSections from "@/components/LandingInfoSections.vue"
 </script>
 
 <template>
@@ -51,9 +52,15 @@ import LandingCarousel from "@/components/LandingCarousel.vue"
             </component-showcase-example>
         </component-showcase>
 
-        <component-showcase title="LandingCarousel">
+        <component-showcase title="LandingSearchBox">
             <component-showcase-example title="defaults">
-                <landing-carousel />
+                <landing-search-box />
+            </component-showcase-example>
+        </component-showcase>
+
+        <component-showcase title="LandingInfoSections">
+            <component-showcase-example title="defaults">
+                <landing-info-sections />
             </component-showcase-example>
         </component-showcase>
     </page-container>

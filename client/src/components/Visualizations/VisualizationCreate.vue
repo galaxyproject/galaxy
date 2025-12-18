@@ -3,12 +3,12 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type Dataset, fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
+import { fetchPlugin, fetchPluginHistoryItems, type Plugin } from "@/api/plugins";
 import type { OptionType } from "@/components/SelectionField/types";
 import { useMarkdown } from "@/composables/markdown";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import { getTestExtensions, getTestUrls } from "./utilities";
+import { getRequiresDataset, getTestExtensions, getTestUrls } from "./utilities";
 
 import VisualizationExamples from "./VisualizationExamples.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -27,20 +27,20 @@ const props = defineProps<{
 }>();
 
 const errorMessage = ref("");
+const formatsVisible = ref(false);
 const plugin: Ref<Plugin | undefined> = ref();
 
-const urlData = computed(() => getTestUrls(plugin.value));
 const extensions = computed(() => getTestExtensions(plugin.value));
-const formatsVisible = ref(false);
-
-function addHidToName(hdas: Array<Dataset>) {
-    return hdas.map((entry) => ({ id: entry.id, name: `${entry.hid}: ${entry.name}` }));
-}
+const requiresDataset = computed(() => getRequiresDataset(plugin.value));
+const testUrls = computed(() => getTestUrls(plugin.value));
 
 async function doQuery() {
     if (currentHistoryId.value && plugin.value) {
         const data = await fetchPluginHistoryItems(plugin.value.name, currentHistoryId.value);
-        return addHidToName(data.hdas);
+        return [
+            ...(!requiresDataset.value ? [{ id: "", name: `Open visualization...` }] : []),
+            ...data.hdas.map((hda) => ({ id: hda.id, name: `${hda.hid}: ${hda.name}` })),
+        ];
     } else {
         return [];
     }
@@ -51,7 +51,8 @@ async function getPlugin() {
 }
 
 function onSelect(dataset: OptionType) {
-    router.push(`/visualizations/display?visualization=${plugin.value?.name}&dataset_id=${dataset.id}`, {
+    const query = dataset.id ? `&dataset_id=${dataset.id}` : "";
+    router.push(`/visualizations/display?visualization=${plugin.value?.name}${query}`, {
         // @ts-ignore
         title: dataset.name,
     });
@@ -73,11 +74,11 @@ defineExpose({ doQuery });
         :logo="plugin?.logo"
         :name="plugin?.html">
         <template v-slot:buttons>
-            <VisualizationExamples :url-data="urlData" />
+            <VisualizationExamples :url-data="testUrls" />
         </template>
         <div class="my-3">
             <SelectionField
-                object-name="Select a dataset..."
+                object-name="Make a selection..."
                 object-title="Select to Visualize"
                 object-type="history_dataset_id"
                 :object-query="doQuery"

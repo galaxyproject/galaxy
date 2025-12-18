@@ -21,7 +21,7 @@ function isData(value: unknown): value is InvocationInput | InvocationOutput | I
     return typeof value === "object" && value !== null && "src" in value;
 }
 function hasValidId(
-    value: InvocationInput | InvocationOutput | InvocationOutputCollection
+    value: InvocationInput | InvocationOutput | InvocationOutputCollection,
 ): value is typeof value & { id: string } {
     return value.id !== null && value.id !== undefined && typeof value.id === "string";
 }

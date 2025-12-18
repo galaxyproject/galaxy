@@ -1,0 +1,43 @@
+- id: dataverse
+  version: 0
+  name: Dataverse
+  description: |
+      [The Dataverse Project](https://dataverse.org) is an open-source web application for sharing, preserving, citing, exploring, and analyzing research data. 
+      It enables institutions and researchers to host and manage datasets with rich metadata and persistent identifiers. 
+      This configuration allows you to connect Galaxy to a Dataverse instance of your choice.
+
+      **Note:** Your **registered email address** will be used to create datasets in Dataverse.
+  variables:
+      url:
+          label: Dataverse instance endpoint (e.g. https://demo.dataverse.org)
+          type: string
+          help: |
+              The endpoint of the Dataverse server you are connecting to. This should be the full URL including the protocol
+              (http or https) and the domain name.
+      writable:
+          label: Allow Galaxy to export data to Dataverse?
+          type: boolean
+          default: true
+          help: |
+              Allow Galaxy to write data to this Dataverse instance. Set it to "Yes" if you want to export data from Galaxy to
+              Dataverse, set it to "No" if you only need to import data from Dataverse to Galaxy.
+      public_name:
+          label: Publication Name
+          type: string
+          help: |
+              The name of the person or organization creating the datasets. This will be used in the dataset metadata as the
+              creator. You can update this information later by editing the dataset in Dataverse. If left blank, an anonymous user will be used as the creator.
+              **Note:** Your **registered email address** will be used to create datasets in Dataverse.
+  secrets:
+      token:
+          label: API Token
+          help: |
+              The personal API token used to authenticate with the Dataverse server. You can generate this token in your
+              Dataverse account settings under "API Token". It is required to access private data or upload datasets from Galaxy.
+
+  configuration:
+      type: dataverse
+      url: "{{ variables.url }}"
+      token: "{{ secrets.token }}"
+      writable: "{{ variables.writable }}"
+      public_name: "{{ variables.public_name }}"

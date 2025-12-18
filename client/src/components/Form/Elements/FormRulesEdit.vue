@@ -1,19 +1,16 @@
 <script setup>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder";
-import RulesDisplay from "components/RulesDisplay/RulesDisplay";
 import { computed, ref } from "vue";
 
 import { fetchCollectionDetails } from "@/api/datasetCollections";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-
-library.add(faEdit);
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
+import RulesDisplay from "@/components/RulesDisplay/RulesDisplay.vue";
 
 const props = defineProps({
     value: {
@@ -73,7 +70,7 @@ function onCancel() {
     <div class="form-rules-edit">
         <RulesDisplay :input-rules="displayRules" />
         <GButton title="Edit Rules" @click="onEdit">
-            <FontAwesomeIcon icon="fa-edit" />
+            <FontAwesomeIcon :icon="faEdit" />
             <span>Edit</span>
         </GButton>
         <LoadingSpan v-if="loading" message="Loading collection details"> </LoadingSpan>

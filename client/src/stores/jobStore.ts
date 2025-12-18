@@ -7,7 +7,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type { ResponseVal, ShowFullJobResponse } from "@/api/jobs";
+import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -36,6 +36,25 @@ export const useJobStore = defineStore("jobStore", () => {
         isLoadingItem: isLoadingJob,
     } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
 
+    function pollJobUntilTerminal(params: FetchParams) {
+        function poll() {
+            fetchJob(params);
+            setTimeout(pollJobUntilTerminal, 1000, params);
+        }
+
+        const job = getJob.value(params.id);
+        if (job) {
+            const jobState = job.state;
+            if (TERMINAL_STATES.indexOf(jobState) !== -1) {
+                return;
+            } else {
+                poll();
+            }
+        } else {
+            poll();
+        }
+    }
+
     return {
         fetchJob,
         saveLatestResponse,
@@ -43,5 +62,6 @@ export const useJobStore = defineStore("jobStore", () => {
         getJobLoadError,
         isLoadingJob,
         latestResponse,
+        pollJobUntilTerminal,
     };
 });

@@ -13,7 +13,7 @@ interface Props {
     oneLineSummary?: boolean;
     /** If `true`, doesn't show expand/collapse buttons */
     noExpand?: boolean;
-    /** The component to use for the summary, default = `<p>` */
+    /** The component to use for the summary, default = `<span>` */
     component?: string;
     /** If `true`, shows the full text */
     showExpandText?: boolean;
@@ -54,7 +54,7 @@ const textTooLong = computed(() => {
             role="button"
             tabindex="0"
             @keyup.enter="showDetails = !showDetails"
-            @click="showDetails = !showDetails">
+            @click.prevent.stop="showDetails = !showDetails">
             <template v-if="showExpandText">
                 <template v-if="showDetails">Show less</template>
                 <template v-else>Show more</template>
@@ -66,7 +66,7 @@ const textTooLong = computed(() => {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .text-summary {
     &.text-summary-short {

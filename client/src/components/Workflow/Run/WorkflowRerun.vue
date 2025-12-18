@@ -32,7 +32,7 @@ watch(
             ready.value = true;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

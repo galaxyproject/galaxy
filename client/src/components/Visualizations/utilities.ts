@@ -1,5 +1,9 @@
 import type { Plugin } from "@/api/plugins";
 
+export function getRequiresDataset(plugin?: Plugin): boolean {
+    return plugin?.params?.dataset_id?.required || false;
+}
+
 export function getTestExtensions(plugin?: Plugin): string[] {
     const results: string[] = [];
     if (plugin?.data_sources) {

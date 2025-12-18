@@ -5,7 +5,6 @@ Tool Parameter specific sanitizing.
 import logging
 import string
 from typing import (
-    List,
     overload,
 )
 
@@ -161,7 +160,7 @@ class ToolParameterSanitizer:
     def sanitize_param(self, value: str) -> str: ...
 
     @overload
-    def sanitize_param(self, value: List[str]) -> List[str]: ...
+    def sanitize_param(self, value: list[str]) -> list[str]: ...
 
     def sanitize_param(self, value):
         """Clean incoming parameters (strings or lists)"""

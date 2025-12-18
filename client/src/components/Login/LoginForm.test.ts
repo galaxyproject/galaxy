@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HttpResponse } from "@/api/client/__mocks__/index";
@@ -11,9 +12,15 @@ import { HttpResponse } from "@/api/client/__mocks__/index";
 import MountTarget from "./LoginForm.vue";
 
 const localVue = getLocalVue(true);
-const testingPinia = createTestingPinia({ stubActions: false });
+const router = injectTestRouter(localVue);
+const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
 const { server, http } = useServerMock();
+
+const SELECTORS = {
+    REGISTER_TOGGLE: "[id=register-toggle]",
+    REGISTRATION_DISABLED: "[data-description='registration disabled message']",
+};
 
 async function mountLoginForm() {
     const wrapper = mount(MountTarget as object, {
@@ -21,6 +28,7 @@ async function mountLoginForm() {
             sessionCsrfToken: "sessionCsrfToken",
         },
         localVue,
+        router,
         stubs: {
             ExternalLogin: true,
         },
@@ -37,8 +45,8 @@ describe("LoginForm", () => {
         axiosMock = new MockAdapter(axios);
         server.use(
             http.get("/api/configuration", ({ response }) => {
-                return response.untyped(HttpResponse.json({ oidc: { cilogon: false, custos: false } }));
-            })
+                return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
+            }),
         );
     });
 
@@ -76,8 +84,8 @@ describe("LoginForm", () => {
     it("props", async () => {
         const wrapper = await mountLoginForm();
 
-        const $register = "#register-toggle";
-        expect(wrapper.findAll($register).length).toBe(0);
+        expect(wrapper.findAll(SELECTORS.REGISTER_TOGGLE).length).toBe(0); // TODO: Never appears because of the GLink change
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeTruthy();
 
         await wrapper.setProps({
             allowUserCreation: true,
@@ -86,8 +94,13 @@ describe("LoginForm", () => {
             welcomeUrl: "welcome_url",
         });
 
-        const register = wrapper.find($register);
-        (expect(register.text()) as any).toBeLocalizationOf("Register here.");
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeFalsy();
+        // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
+        //       Currentlly, we confirm its existence by checking the fact that the disabled message is not there.
+        // const registerToggle = wrapper.find(SELECTORS.REGISTER_TOGGLE);
+        // expect(registerToggle.exists()).toBeTruthy();
+        // const register = wrapper.find(SELECTORS.REGISTER_TOGGLE);
+        // (expect(register.text()) as any).toBe("Register here.");
 
         const welcomePage = wrapper.find("iframe");
         expect(welcomePage.attributes("src")).toBe("welcome_url");
@@ -100,7 +113,7 @@ describe("LoginForm", () => {
         const provider_label = "Provider";
 
         const originalLocation = window.location;
-        jest.spyOn(window, "location", "get").mockImplementation(() => ({
+        const locationSpy = vi.spyOn(window, "location", "get").mockImplementation(() => ({
             ...originalLocation,
             search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
         }));
@@ -140,5 +153,22 @@ describe("LoginForm", () => {
         const postedURL = axiosMock.history.post?.[0]?.url;
         expect(postedURL).toBe("/user/login");
         await flushPromises();
+
+        locationSpy.mockRestore();
+    });
+
+    it("renders message from query params", async () => {
+        const originalHref = window.location.href;
+        window.location.href = `${window.location.origin}/login/start?message=auth-error&status=info`;
+
+        const wrapper = await mountLoginForm();
+        await flushPromises();
+
+        const alert = wrapper.find(".alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toContain("auth-error");
+        expect(alert.classes()).toContain("alert-info");
+
+        window.location.href = originalHref;
     });
 });

@@ -1,5 +1,6 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DCESummary, HDCASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -7,10 +8,11 @@ import { type DCEEntry, useCollectionElementsStore } from "@/stores/collectionEl
 
 const { server, http } = useServerMock();
 
-const fetchCollectionElementsSpy = jest.fn();
+const fetchCollectionElementsSpy = vi.fn();
 describe("useCollectionElementsStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
+        fetchCollectionElementsSpy.mockClear();
         server.use(
             http.get("/api/dataset_collections/{hdca_id}/contents/{parent_id}", ({ response, params, query }) => {
                 const elements: DCESummary[] = [];
@@ -21,7 +23,7 @@ describe("useCollectionElementsStore", () => {
                 }
                 fetchCollectionElementsSpy();
                 return response(200).json(elements);
-            })
+            }),
         );
     });
 
@@ -87,7 +89,7 @@ describe("useCollectionElementsStore", () => {
     });
 
     it("should fetch only missing elements if the requested range is not already stored", async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
 
         const totalElements = 10;
         const collection: HDCASummary = mockCollection("1", totalElements);
@@ -107,7 +109,7 @@ describe("useCollectionElementsStore", () => {
         const limit = 5;
         // Fetching collection elements should trigger a fetch in this case
         store.fetchMissingElements(collection, offset, limit);
-        jest.runAllTimers();
+        vi.runAllTimers();
         await flushPromises();
         expect(fetchCollectionElementsSpy).toHaveBeenCalled();
 
@@ -125,6 +127,8 @@ function mockCollection(id: string, numElements = 10): HDCASummary {
         id: id,
         element_count: numElements,
         elements_datatypes: ["txt"],
+        elements_deleted: 0,
+        elements_states: {},
         collection_type: "list",
         populated_state: "ok",
         populated_state_message: "",
@@ -143,6 +147,7 @@ function mockCollection(id: string, numElements = 10): HDCASummary {
         type_id: "dataset_collection",
         url: "",
         type: "collection",
+        store_times_summary: null,
     };
 }
 

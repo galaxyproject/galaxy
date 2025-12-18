@@ -5,8 +5,6 @@ API operations allowing clients to determine datatype supported by Galaxy.
 import logging
 from typing import (
     cast,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -18,6 +16,7 @@ from fastapi import (
 )
 
 from galaxy.datatypes.registry import Registry
+from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.datatypes import (
     DatatypeConverterList,
     DatatypeDetails,
@@ -25,6 +24,7 @@ from galaxy.managers.datatypes import (
     DatatypesEDAMDetailsDict,
     DatatypesMap,
     DatatypeVisualizationMappingsList,
+    get_preferred_visualization,
     view_converters,
     view_edam_data,
     view_edam_formats,
@@ -33,8 +33,10 @@ from galaxy.managers.datatypes import (
     view_sniffers,
     view_visualization_mappings,
 )
+from galaxy.structured_app import StructuredApp
 from . import (
     depends,
+    DependsOnApp,
     Router,
 )
 
@@ -64,6 +66,7 @@ IdentifierOnly: Optional[bool] = Query(
 @router.cbv
 class FastAPIDatatypes:
     datatypes_registry: Registry = depends(Registry)
+    app: StructuredApp = DependsOnApp
 
     @router.get(
         "/api/datatypes",
@@ -75,7 +78,7 @@ class FastAPIDatatypes:
         self,
         extension_only: Optional[bool] = ExtensionOnlyQueryParam,
         upload_only: Optional[bool] = UploadOnlyQueryParam,
-    ) -> Union[List[DatatypeDetails], List[str]]:
+    ) -> Union[list[DatatypeDetails], list[str]]:
         """Gets the list of all available data types."""
         return view_index(self.datatypes_registry, extension_only, upload_only)
 
@@ -114,7 +117,7 @@ class FastAPIDatatypes:
         summary="Returns the list of all installed sniffers",
         response_description="List of datatype sniffers",
     )
-    async def sniffers(self) -> List[str]:
+    async def sniffers(self) -> list[str]:
         """Gets the list of all installed data type sniffers."""
         return view_sniffers(self.datatypes_registry)
 
@@ -134,9 +137,9 @@ class FastAPIDatatypes:
         summary="Returns a dictionary/map of datatypes and EDAM formats",
         response_description="Dictionary/map of datatypes and EDAM formats",
     )
-    async def edam_formats(self) -> Dict[str, str]:
+    async def edam_formats(self) -> dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM formats."""
-        return cast(Dict[str, str], view_edam_formats(self.datatypes_registry))
+        return cast(dict[str, str], view_edam_formats(self.datatypes_registry))
 
     @router.get(
         "/api/datatypes/edam_formats/detailed",
@@ -156,9 +159,9 @@ class FastAPIDatatypes:
         summary="Returns a dictionary/map of datatypes and EDAM data",
         response_description="Dictionary/map of datatypes and EDAM data",
     )
-    async def edam_data(self) -> Dict[str, str]:
+    async def edam_data(self) -> dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM data."""
-        return cast(Dict[str, str], view_edam_data(self.datatypes_registry))
+        return cast(dict[str, str], view_edam_data(self.datatypes_registry))
 
     @router.get(
         "/api/datatypes/edam_data/detailed",
@@ -229,6 +232,9 @@ class FastAPIDatatypes:
             "display_in_upload": datatype in self.datatypes_registry.upload_file_formats,
             "mimetype": self.datatypes_registry.get_mimetype_by_extension(datatype),
             "is_binary": getattr(dt_object, "is_binary", False),
+            "display_behavior": (
+                dt_object.get_display_behavior() if hasattr(dt_object, "get_display_behavior") else None
+            ),
         }
 
         # Add composite files if applicable
@@ -250,11 +256,24 @@ class FastAPIDatatypes:
         if converters:
             result["converters"] = list(converters.keys())
 
-        # Add preferred visualization if any
-        preferred_viz = self.datatypes_registry.get_preferred_visualization(datatype)
+        # Add preferred visualization if any and if the plugin is available
+        preferred_viz = get_preferred_visualization(self.datatypes_registry, datatype)
         if preferred_viz:
-            result["preferred_visualization"] = {
-                "visualization": preferred_viz["visualization"],
-            }
+            plugin_name = preferred_viz["visualization"]
+
+            # Check if the visualization plugin is actually available
+            try:
+                if self.app.visualizations_registry:
+                    self.app.visualizations_registry.get_plugin(plugin_name)
+                    result["preferred_visualization"] = {
+                        "visualization": plugin_name,
+                    }
+                else:
+                    log.warning(
+                        f"Visualizations registry not available, skipping preferred visualization for '{datatype}'"
+                    )
+            except ObjectNotFound:
+                # Plugin not available, don't include preferred_visualization
+                log.warning(f"Preferred visualization '{plugin_name}' for datatype '{datatype}' is not available")
 
         return result

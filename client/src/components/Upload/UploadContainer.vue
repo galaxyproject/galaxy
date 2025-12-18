@@ -1,25 +1,25 @@
 <script setup>
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
-import { getDatatypesMapper } from "components/Datatypes";
-import LoadingSpan from "components/LoadingSpan";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref } from "vue";
+
+import { canMutateHistory } from "@/api";
+import { getDatatypesMapper } from "@/components/Datatypes";
 import {
     AUTO_EXTENSION,
     DEFAULT_DBKEY,
     DEFAULT_EXTENSION,
     getUploadDatatypes,
     getUploadDbKeys,
-} from "components/Upload/utils";
-import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
-
-import { canMutateHistory } from "@/api";
+} from "@/components/Upload/utils";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
 
-import CompositeBox from "./CompositeBox";
-import DefaultBox from "./DefaultBox";
-import RulesInput from "./RulesInput";
+import CompositeBox from "./CompositeBox.vue";
+import DefaultBox from "./DefaultBox.vue";
+import RulesInput from "./RulesInput.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps({
     auto: {
@@ -105,12 +105,12 @@ const effectiveExtensions = computed(() => {
 });
 
 const hasCompositeExtension = computed(() =>
-    effectiveExtensions.value.some((extension) => !!extension.composite_files)
+    effectiveExtensions.value.some((extension) => !!extension.composite_files),
 );
 const hasRegularExtension = computed(() => effectiveExtensions.value.some((extension) => !extension.composite_files));
 const historyAvailable = computed(() => Boolean(props.currentHistoryId));
 const ready = computed(
-    () => dbKeysSet.value && extensionsSet.value && historyAvailable.value && datatypesMapperReady.value
+    () => dbKeysSet.value && extensionsSet.value && historyAvailable.value && datatypesMapperReady.value,
 );
 const canUploadToHistory = computed(() => currentHistory.value && canMutateHistory(currentHistory.value));
 const showCollection = computed(() => !props.formats && props.multiple);

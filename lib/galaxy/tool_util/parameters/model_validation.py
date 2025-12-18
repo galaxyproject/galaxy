@@ -47,6 +47,7 @@ def validate_model_type_factory(state_representation: StateRepresentationT) -> V
     return validate_request
 
 
+validate_relaxed_request = validate_model_type_factory("relaxed_request")
 validate_request = validate_model_type_factory("request")
 validate_internal_request = validate_model_type_factory("request_internal")
 validate_internal_request_dereferenced = validate_model_type_factory("request_internal_dereferenced")

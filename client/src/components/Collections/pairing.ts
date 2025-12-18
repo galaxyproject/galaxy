@@ -1,4 +1,4 @@
-import type { GenericPair } from "@/components/History/adapters/buildCollectionModal";
+import type { GenericPair } from "@/components/Collections/common/buildCollectionModal";
 
 export const COMMON_FILTERS = {
     illumina: ["_1", "_2"] as [string, string],
@@ -50,7 +50,7 @@ export function _guessNameForPair(
     rev: HasName,
     forwardFilter: RegExp,
     reverseFilter: RegExp,
-    willRemoveExtensions: boolean
+    willRemoveExtensions: boolean,
 ) {
     let fwdName = fwd.name;
     let revName = rev.name;
@@ -70,7 +70,13 @@ export function _guessNameForPair(
     if (willRemoveExtensions) {
         const lastDotIndex = lcs.lastIndexOf(".");
         if (lastDotIndex > 0) {
-            const extension = lcs.slice(lastDotIndex, lcs.length);
+            let extension = lcs.slice(lastDotIndex, lcs.length);
+            if ([".gz", ".bz", ".bzip", ".bz2"].indexOf(extension) !== -1) {
+                const secondLastDotIndex = lcs.lastIndexOf(".", lastDotIndex - 1);
+                if (secondLastDotIndex > 0) {
+                    extension = lcs.slice(secondLastDotIndex, lcs.length);
+                }
+            }
             lcs = lcs.replace(extension, "");
             fwdName = fwdName.replace(extension, "");
             revName = revName.replace(extension, "");
@@ -87,14 +93,14 @@ export function guessNameForPair(
     rev: HasName,
     forwardFilter: string,
     reverseFilter: string,
-    willRemoveExtensions: boolean
+    willRemoveExtensions: boolean,
 ) {
     return _guessNameForPair(
         fwd,
         rev,
         new RegExp(forwardFilter || ""),
         new RegExp(reverseFilter || ""),
-        willRemoveExtensions
+        willRemoveExtensions,
     );
 }
 
@@ -180,7 +186,7 @@ export function statelessAutoPairFnBuilder<T extends HasName>(
     scoreThreshold: number,
     forwardFilter: string,
     reverseFilter: string,
-    willRemoveExtensions: boolean
+    willRemoveExtensions: boolean,
 ) {
     function splicePairOutOfSuppliedLists(params: {
         listA: T[];
@@ -252,7 +258,7 @@ export function statelessAutoPairFnBuilder<T extends HasName>(
                             possible: possible,
                             index: indexB,
                             bestMatch: bestMatch,
-                        })
+                        }),
                     );
                     if (bestMatch.score === 1.0) {
                         break;
@@ -298,7 +304,7 @@ export function autoDetectPairs<T extends HasName>(
     listB: T[],
     forwardFilter: string,
     reverseFilter: string,
-    willRemoveExtensions: boolean
+    willRemoveExtensions: boolean,
 ) {
     function autoPairSimple(params: { listA: T[]; listB: T[] }) {
         return statelessAutoPairFnBuilder<T>(
@@ -306,7 +312,7 @@ export function autoDetectPairs<T extends HasName>(
             0.6,
             forwardFilter,
             reverseFilter,
-            willRemoveExtensions
+            willRemoveExtensions,
         )(params);
     }
 
@@ -316,7 +322,7 @@ export function autoDetectPairs<T extends HasName>(
             0.99,
             forwardFilter,
             reverseFilter,
-            willRemoveExtensions
+            willRemoveExtensions,
         )(params);
     }
 
@@ -359,7 +365,7 @@ export function splitIntoPairedAndUnpaired<T extends HasName>(
     elements: T[],
     forwardFilter: string,
     reverseFilter: string,
-    willRemoveExtensions: boolean
+    willRemoveExtensions: boolean,
 ): AutoPairingResult<T> {
     if (forwardFilter === "" || reverseFilter === "") {
         return { pairs: [], unpaired: elements.slice(), forwardFilter, reverseFilter };
@@ -388,7 +394,7 @@ export function autoPairWithCommonFilters<T extends HasName>(elements: T[], will
             elements,
             forwardFilter,
             reverseFilter,
-            willRemoveExtensions
+            willRemoveExtensions,
         );
         return { filterType, forwardFilter, reverseFilter, pairs, unpaired };
     } else {

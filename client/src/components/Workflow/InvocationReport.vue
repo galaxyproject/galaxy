@@ -5,18 +5,20 @@
         :enable_beta_markdown_export="config.enable_beta_markdown_export"
         :export-link="exportUrl"
         :download-endpoint="stsUrl(config)"
+        direct-download-link
         @onEdit="onEdit" />
 </template>
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import Markdown from "components/Markdown/Markdown";
-import { Toast } from "composables/toast";
-import { withPrefix } from "utils/redirect";
-import { urlData } from "utils/url";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { Toast } from "@/composables/toast";
+import { withPrefix } from "@/utils/redirect";
+import { urlData } from "@/utils/url";
+
+import Markdown from "@/components/Markdown/Markdown.vue";
 
 Vue.use(BootstrapVue);
 
@@ -64,7 +66,7 @@ export default {
             window.location = withPrefix(`/pages/create?invocation_id=${this.invocationId}`);
         },
         stsUrl(config) {
-            return `${this.dataUrl}/prepare_download`;
+            return `${this.dataUrl}.pdf`;
         },
     },
 };

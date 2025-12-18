@@ -1,5 +1,3 @@
-from typing import Dict
-
 from sqlalchemy import (
     and_,
     false,
@@ -55,7 +53,7 @@ def get_displayable_roles(session, trans_user, user_is_admin, security_agent):
     return roles
 
 
-def get_private_role_user_emails_dict(session) -> Dict[int, str]:
+def get_private_role_user_emails_dict(session) -> dict[int, str]:
     """Return a mapping of private role ids to user emails."""
     stmt = select(UserRoleAssociation.role_id, User.email).join(Role).join(User).where(Role.type == Role.types.PRIVATE)
     roleid_email_tuples = session.execute(stmt).all()

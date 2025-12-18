@@ -7,7 +7,7 @@ export function useNodePosition(
     nodeRef: Ref<HTMLElement | null>,
     stepId: number,
     workflowStateStore: ReturnType<typeof useWorkflowStateStore>,
-    scale: ComputedRef<number> | Ref<number>
+    scale: ComputedRef<number> | Ref<number>,
 ) {
     const position = useElementBounding(nodeRef, { windowResize: false });
 
@@ -26,7 +26,7 @@ export function useNodePosition(
                 update: position.update,
             });
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     onUnmounted(() => {

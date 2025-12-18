@@ -8,8 +8,6 @@ user inputs - so these methods do not need to be escaped.
 import logging
 import re
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -85,6 +83,7 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     Validates the email format.
     Checks whether the domain is blocklisted in the disposable domains configuration.
     Checks whether the email address is banned.
+    Optionally checks if email exists.
     """
     if (user and user.email == email) or (email == "" and allow_empty):
         return ""
@@ -181,7 +180,7 @@ def validate_preferred_object_store_id(
     return object_store.validate_selected_object_store_id(trans.user, preferred_object_store_id) or ""
 
 
-def is_email_banned(email: str, filepath: Optional[str], canonical_email_rules: Optional[Dict]) -> bool:
+def is_email_banned(email: str, filepath: Optional[str], canonical_email_rules: Optional[dict]) -> bool:
     if not filepath:
         return False
     normalizer = EmailAddressNormalizer(canonical_email_rules)
@@ -193,7 +192,7 @@ def is_email_banned(email: str, filepath: Optional[str], canonical_email_rules: 
     return False
 
 
-def _read_email_ban_list(filepath: str) -> List[str]:
+def _read_email_ban_list(filepath: str) -> list[str]:
     with open(filepath) as f:
         return [line.strip() for line in f if not line.startswith("#")]
 
@@ -206,7 +205,7 @@ class EmailAddressNormalizer:
     SUB_ADDRESSING_DELIM_DEFAULT = "+"
     ALL = "all"
 
-    def __init__(self, canonical_email_rules: Optional[Dict]) -> None:
+    def __init__(self, canonical_email_rules: Optional[dict]) -> None:
         self.config = canonical_email_rules
 
     def normalize(self, email: str) -> str:

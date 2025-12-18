@@ -1,5 +1,6 @@
 import { createLocalVue, mount } from "@vue/test-utils";
 import { BTable } from "bootstrap-vue";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import DataDialogSearch from "./DataDialogSearch.vue";
 import SelectionDialog from "./SelectionDialog.vue";

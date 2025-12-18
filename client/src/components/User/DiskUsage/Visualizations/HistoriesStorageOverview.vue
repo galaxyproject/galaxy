@@ -126,7 +126,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             okTitle: localize("Permanently delete"),
             cancelTitle: localize("Cancel"),
             cancelVariant: "outline-primary",
-        }
+        },
     );
     if (!confirmed) {
         return;
@@ -159,7 +159,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 v-if="topTenHistoriesBySizeData"
                 :description="
                     localize(
-                        `These are the ${numberOfHistoriesToDisplay} histories that take the most space on your storage. Click on a bar to see more information about the history.`
+                        `These are the ${numberOfHistoriesToDisplay} histories that take the most space on your storage. Click on a bar to see more information about the history.`,
                     )
                 "
                 :data="topTenHistoriesBySizeData"
@@ -201,7 +201,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 :title="localize('Active vs Archived vs Deleted Total Size')"
                 :description="
                     localize(
-                        'This graph shows the total size taken by your histories, split between active, archived and deleted histories.'
+                        'This graph shows the total size taken by your histories, split between active, archived and deleted histories.',
                     )
                 "
                 :data="activeVsArchivedVsDeletedTotalSizeData"

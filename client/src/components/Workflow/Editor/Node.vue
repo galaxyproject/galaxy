@@ -24,6 +24,16 @@
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
+                <BButton
+                    v-if="credentials.length > 0"
+                    v-b-tooltip.hover
+                    class="node-credentials py-0 inline-icon-button"
+                    variant="primary"
+                    size="sm"
+                    aria-label="tool has credentials"
+                    title="Tool requires credentials">
+                    <FontAwesomeIcon :icon="faKey" />
+                </BButton>
                 <b-button
                     v-if="!readonly"
                     v-b-tooltip.hover
@@ -72,7 +82,7 @@
             </b-button-group>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
-                <FontAwesomeIcon icon="fa-code-branch" />
+                <FontAwesomeIcon :icon="faCodeBranch" />
             </span>
             <span
                 v-b-tooltip.hover
@@ -148,8 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
+import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
@@ -179,8 +188,6 @@ import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
-
-library.add(faCodeBranch);
 
 const props = defineProps({
     id: { type: Number, required: true },
@@ -236,8 +243,10 @@ useNodePosition(
     elHtml,
     props.id,
     stateStore,
-    computed(() => props.scale)
+    computed(() => props.scale),
 );
+
+const credentials = computed(() => props.step.config_form?.credentials || []);
 
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
@@ -252,7 +261,7 @@ const isPopulatedInput = computed(
         props.populatedInputs &&
         isWorkflowInput(props.step.type) &&
         "nodeText" in props.step &&
-        props.step.nodeText !== undefined
+        props.step.nodeText !== undefined,
 );
 
 const classes = computed(() => {
@@ -310,7 +319,7 @@ const invalidOutputs = computed(() => {
     const invalidConnections = connections.filter(
         (connection) =>
             connection.output.stepId == props.id &&
-            !props.step.outputs.find((output) => output.name === connection.output.name)
+            !props.step.outputs.find((output) => output.name === connection.output.name),
     );
     const invalidOutputNames = [...new Set(invalidConnections.map((connection) => connection.output.name))];
     return invalidOutputNames.map((name) => {
@@ -420,7 +429,7 @@ function toggleSelected() {
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-node {
     --dblclick: prevent;
@@ -433,7 +442,9 @@ function toggleSelected() {
     $multi-selected: lighten($brand-info, 20%);
 
     &.node-multi-selected {
-        box-shadow: 0 0 0 2px $white, 0 0 0 4px $multi-selected;
+        box-shadow:
+            0 0 0 2px $white,
+            0 0 0 4px $multi-selected;
     }
 
     &.node-highlight {
@@ -442,7 +453,9 @@ function toggleSelected() {
         box-shadow: 0 0 0 2px $brand-primary;
 
         &.node-multi-selected {
-            box-shadow: 0 0 0 2px $brand-primary, 0 0 0 4px $multi-selected;
+            box-shadow:
+                0 0 0 2px $brand-primary,
+                0 0 0 4px $multi-selected;
         }
     }
 
@@ -459,7 +472,9 @@ function toggleSelected() {
         box-shadow: 0 0 0 3px $brand-primary;
 
         &.node-multi-selected {
-            box-shadow: 0 0 0 3px $brand-primary, 0 0 0 5px $multi-selected;
+            box-shadow:
+                0 0 0 3px $brand-primary,
+                0 0 0 5px $multi-selected;
         }
     }
 

@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Sequence,
     Tuple,
     TYPE_CHECKING,
 )
@@ -32,8 +33,12 @@ from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.tool_source import (
     Citation,
     DrillDownOptionsDict,
+    FileSourceConfigFile,
     HelpContent,
+    InputConfigFile,
     OutputCompareType,
+    TemplateConfigFile,
+    XmlTemplateConfigFile,
     XrefDict,
 )
 from galaxy.util import (
@@ -90,6 +95,7 @@ from .stdio import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.util.path import StrPath
     from .output_objects import ToolOutputBase
 
 log = logging.getLogger(__name__)
@@ -158,7 +164,9 @@ class XmlToolSource(ToolSource):
 
     language = "xml"
 
-    def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
+    def __init__(
+        self, xml_tree: ElementTree, source_path: Optional["StrPath"] = None, macro_paths: Optional[List[str]] = None
+    ) -> None:
         self.xml_tree = xml_tree
         self.root = self.xml_tree.getroot()
         self._source_path = source_path
@@ -424,8 +432,8 @@ class XmlToolSource(ToolSource):
         as_dict["excludes"] = parse_include_exclude_list("exclude")
         return RequiredFiles.from_dict(as_dict)
 
-    def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_xml(self.root, parse_resources=True)
+    def parse_requirements(self):
+        return requirements.parse_requirements_from_xml(self.root, parse_resources_and_credentials=True)
 
     def parse_input_pages(self) -> "XmlPagesSource":
         return XmlPagesSource(self.root)
@@ -581,6 +589,7 @@ class XmlToolSource(ToolSource):
         output.count = int(data_elem.get("count", 1))
         output.filters = data_elem.findall("filter")
         output.from_work_dir = data_elem.get("from_work_dir", None)
+        output.precreate_directory = data_elem.get("precreate_directory") or False
         profile_version = Version(self.parse_profile())
         if output.from_work_dir and profile_version < Version("21.09"):
             # We started quoting from_work_dir outputs in 21.09.
@@ -683,7 +692,7 @@ class XmlToolSource(ToolSource):
         return HelpContent(format=help_format, content=content)
 
     @property
-    def macro_paths(self):
+    def macro_paths(self) -> List[str]:
         return self._macro_paths
 
     @property
@@ -740,6 +749,39 @@ class XmlToolSource(ToolSource):
         if python_template_version is not None:
             python_template_version = Version(python_template_version)
         return python_template_version
+
+    def parse_template_configfiles(self) -> Sequence[TemplateConfigFile]:
+        configfiles: List[XmlTemplateConfigFile] = []
+        if (conf_parent_elem := self.root.find("configfiles")) is not None:
+            for conf_elem in conf_parent_elem.findall("configfile"):
+                name = conf_elem.get("name")
+                filename = conf_elem.get("filename", None)
+                content = conf_elem.text
+                configfiles.append(XmlTemplateConfigFile(name=name, filename=filename, content=content))
+        return configfiles
+
+    def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
+        config_files: list[InputConfigFile] = []
+        if (conf_parent_elem := self.root.find("configfiles")) is not None:
+            inputs_elem = conf_parent_elem.find("inputs")
+            if inputs_elem is not None:
+                name = inputs_elem.get("name")
+                filename = inputs_elem.get("filename")
+                format = inputs_elem.get("format", "json")
+                data_style = inputs_elem.get("data_style")
+                content = {"format": format, "handle_files": data_style, "type": "inputs"}
+                config_files.append(InputConfigFile(name=name, filename=filename, content=content))
+        return config_files
+
+    def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
+        config_files: list[FileSourceConfigFile] = []
+        if (conf_parent_elem := self.root.find("configfiles")) is not None:
+            file_sources_elem = conf_parent_elem.find("file_sources")
+            if file_sources_elem is not None:
+                name = file_sources_elem.get("name")
+                filename = file_sources_elem.get("filename", None)
+                config_files.append(FileSourceConfigFile(name=name, filename=filename, content={"type": "files"}))
+        return config_files
 
     def parse_creator(self):
         creators_el = self.root.find("creator")
@@ -1352,6 +1394,9 @@ class XmlInputSource(InputSource):
 
     def parse_input_type(self):
         return self.input_type
+
+    def parse_extensions(self):
+        return [extension.strip().lower() for extension in self.get("format", "data").split(",")]
 
     def elem(self):
         return self.input_elem

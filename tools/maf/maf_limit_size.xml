@@ -1,9 +1,13 @@
-<tool id="maf_limit_size1" name="Filter MAF blocks" version="1.0.1">
+<tool id="maf_limit_size1" name="Filter MAF blocks" version="1.0.1" profile="24.2">
   <description>by Size</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
-  <command>python '$__tool_directory__/maf_limit_size.py' '$input1' '$out_file1' $min_size $max_size</command>
+  <expand macro="requirements" />
+  <required_files>
+    <include path="maf_limit_size.py"/>
+  </required_files>
+  <command>python '$__tool_directory__/maf_limit_size.py' '$input1' '$out_file1' '$min_size' '$max_size'</command>
   <inputs>
         <param format="maf" name="input1" label="MAF File" type="data"/>
         <param name="min_size" label="Minimum Size" value="0" type="integer"/>

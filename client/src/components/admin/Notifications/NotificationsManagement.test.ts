@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -18,13 +19,13 @@ const selectors = {
 const { server, http } = useServerMock();
 
 async function mountNotificationsManagement(config: any = {}) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json(config);
-        })
+        }),
     );
 
     const wrapper = shallowMount(NotificationsManagement as object, {

@@ -25,7 +25,7 @@ const DIRECTIVE_METADATA = RAW_DIRECTIVE_DATA as DirectivesMetadata;
 export function directiveEntry(
     directiveId: string,
     mode: DirectiveMode,
-    baseEntry: SidePanelEntry = {}
+    baseEntry: SidePanelEntry = {},
 ): SidePanelEntry {
     const directiveMetadataData: DirectiveMetadata | undefined = DIRECTIVE_METADATA[directiveId];
     if (directiveMetadataData == undefined) {

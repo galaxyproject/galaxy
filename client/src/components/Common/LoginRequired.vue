@@ -1,20 +1,33 @@
 <script setup lang="ts">
-import { BPopover } from "bootstrap-vue";
+import { onMounted, ref } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
-import { withPrefix } from "@/utils/redirect";
 
-defineProps<{
+import Popper from "@/components/Popper/Popper.vue";
+
+const props = defineProps<{
     title: string;
     target: string;
 }>();
 
 const userStore = useUserStore();
+const referenceEl = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+    referenceEl.value = document.querySelector(`#${props.target}`) as HTMLElement | null;
+});
 </script>
 
 <template>
-    <BPopover v-if="userStore.isAnonymous" :target="target" triggers="hover focus" placement="bottom">
-        <template v-slot:title> {{ title }} </template>
-        Please <a :href="withPrefix('/login')">log in or register</a> to use this feature.
-    </BPopover>
+    <Popper
+        v-if="userStore.isAnonymous && referenceEl"
+        placement="bottom"
+        mode="light"
+        :interactive="true"
+        :reference-el="referenceEl">
+        <div class="py-1 px-2 bg-primary rounded-top text-white">{{ title }}</div>
+        <div class="p-2">
+            Please <router-link to="/login/start">log in or register</router-link> to use this feature.
+        </div>
+    </Popper>
 </template>

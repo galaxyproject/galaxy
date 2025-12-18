@@ -47,6 +47,11 @@ class TestUsersApi(ApiTestCase):
         all_deleted_users = all_deleted_users_response_2.json()
         assert len([u for u in all_deleted_users if u["email"] == TEST_USER_EMAIL_INDEX_DELETED]) == 1
 
+    def test_index_anon(self):
+        with self._different_user(anon=True):
+            all_users_response = self._get("users")
+            self._assert_status_code_is(all_users_response, 403)
+
     @requires_new_user
     def test_index_only_self_for_nonadmins(self):
         self._setup_user(TEST_USER_EMAIL)
@@ -211,10 +216,10 @@ class TestUsersApi(ApiTestCase):
             assert api_key["key"] == user_api_key
             # Delete user API key
             response = self._delete(f"users/{user_id}/api_key")
-            self._assert_status_code_is(response, 204)
+            self._assert_status_code_is_ok(response)
             # No API key anymore, so the detailed request returns no content 204 with admin key
             response = self._get(f"users/{user_id}/api_key/detailed", admin=True)
-            self._assert_status_code_is(response, 204)
+            self._assert_status_code_is_ok(response)
             # No API key anymore, so the detailed request returns unauthorized 401 with user key
             response = self._get(f"users/{user_id}/api_key/detailed")
             self._assert_status_code_is(response, 401)

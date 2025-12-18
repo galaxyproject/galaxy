@@ -4,10 +4,9 @@ API operations on the contents of a history.
 
 import logging
 from typing import (
-    List,
+    Annotated,
     Literal,
     Optional,
-    Set,
     Union,
 )
 
@@ -24,7 +23,6 @@ from starlette.responses import (
     Response,
     StreamingResponse,
 )
-from typing_extensions import Annotated
 
 from galaxy import util
 from galaxy.exceptions.utils import validation_error_to_message_exception
@@ -46,7 +44,6 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DatasetSourceType,
     DeleteHistoryContentPayload,
-    DeleteHistoryContentResult,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
@@ -59,6 +56,10 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsBatchPayload,
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
+)
+from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -148,13 +149,11 @@ StopJobQueryParam = Query(
 
 
 CONTENT_DELETE_RESPONSES = {
-    200: {
-        "description": "Request has been executed.",
-        "model": DeleteHistoryContentResult,
-    },
     202: {
         "description": "Request accepted, processing will finish later.",
-        "model": DeleteHistoryContentResult,
+    },
+    204: {
+        "description": "Request has been executed.",
     },
 }
 
@@ -270,7 +269,7 @@ DryRunQueryParam = Query(
 
 def get_legacy_index_query_params(
     ids: Optional[str] = LegacyIdsQueryParam,
-    types: Optional[List[str]] = LegacyTypesQueryParam,
+    types: Optional[list[str]] = LegacyTypesQueryParam,
     details: Optional[str] = LegacyDetailsQueryParam,
     deleted: Optional[bool] = LegacyDeletedQueryParam,
     visible: Optional[bool] = LegacyVisibleQueryParam,
@@ -290,7 +289,7 @@ def get_legacy_index_query_params(
 
 def parse_legacy_index_query_params(
     ids: Optional[str] = None,
-    types: Optional[Union[List[str], str]] = None,
+    types: Optional[Union[list[str], str]] = None,
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
@@ -325,7 +324,7 @@ def parse_legacy_index_query_params(
         raise validation_error_to_message_exception(e)
 
 
-def parse_content_types(types: Union[List[str], str]) -> List[HistoryContentType]:
+def parse_content_types(types: Union[list[str], str]) -> list[HistoryContentType]:
     if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
         content_types = util.listify(types[0])
     else:  # Support ?types=dataset&types=dataset_collection
@@ -337,7 +336,7 @@ def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
     if details is not None and details != "all":
-        dataset_details: Union[None, Set[str], str] = set(util.listify(details))
+        dataset_details: Union[None, set[str], str] = set(util.listify(details))
     else:  # either None or 'all'
         dataset_details = details
     return dataset_details
@@ -604,6 +603,23 @@ class FastAPIHistoryContents:
             payload=payload,
         )
 
+    @router.post(
+        "/api/histories/{history_id}/copy_contents",
+        summary="Copy datasets or dataset collections to other histories.",
+        operation_id="history_contents__copy_contents",
+    )
+    def copy_contents(
+        self,
+        history_id: HistoryIDPathParam,
+        trans=DependsOnTrans,
+        payload: CopyDatasetsPayload = Body(...),
+    ) -> CopyDatasetsResponse:
+        return self.service.copy_contents(
+            trans=trans,
+            history_id=history_id,
+            payload=payload,
+        )
+
     @router.get(
         "/api/histories/{history_id}/jobs_summary",
         summary="Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.",
@@ -613,7 +629,7 @@ class FastAPIHistoryContents:
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
-    ) -> List[AnyJobStateSummary]:
+    ) -> list[AnyJobStateSummary]:
         """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
 
         **Warning**: We allow anyone to fetch job state information about any object they
@@ -699,7 +715,7 @@ class FastAPIHistoryContents:
         type: HistoryContentType = ContentTypePathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -717,7 +733,7 @@ class FastAPIHistoryContents:
         type: Optional[HistoryContentType] = ContentTypeQueryParam(default=None),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         return self._create(trans, history_id, type, serialization_params, payload)
 
@@ -728,7 +744,7 @@ class FastAPIHistoryContents:
         type: Optional[HistoryContentType],
         serialization_params: SerializationParams,
         payload: CreateHistoryContentPayload,
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    ) -> Union[AnyHistoryContentItem, list[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
@@ -896,7 +912,6 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypePathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = PurgeQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         stop_job: Optional[bool] = StopJobQueryParam,
@@ -912,7 +927,6 @@ class FastAPIHistoryContents:
             trans,
             id,
             type,
-            serialization_params,
             purge,
             recursive,
             stop_job,
@@ -932,7 +946,6 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = PurgeQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         stop_job: Optional[bool] = StopJobQueryParam,
@@ -948,7 +961,6 @@ class FastAPIHistoryContents:
             trans,
             id,
             type,
-            serialization_params,
             purge,
             recursive,
             stop_job,
@@ -966,7 +978,6 @@ class FastAPIHistoryContents:
         response: Response,
         dataset_id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = PurgeQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         stop_job: Optional[bool] = StopJobQueryParam,
@@ -982,7 +993,6 @@ class FastAPIHistoryContents:
             trans,
             dataset_id,
             HistoryContentType.dataset,
-            serialization_params,
             purge,
             recursive,
             stop_job,
@@ -995,7 +1005,6 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         type: HistoryContentType,
-        serialization_params: SerializationParams,
         purge: Optional[bool],
         recursive: Optional[bool],
         stop_job: Optional[bool],
@@ -1007,17 +1016,14 @@ class FastAPIHistoryContents:
         payload.purge = payload.purge or purge is True
         payload.recursive = payload.recursive or recursive is True
         payload.stop_job = payload.stop_job or stop_job is True
-        rval = self.service.delete(
+        if self.service.delete(
             trans,
             id=id,
-            serialization_params=serialization_params,
             contents_type=type,
             payload=payload,
-        )
-        async_result = rval.pop("async_result", None)
-        if async_result:
-            response.status_code = status.HTTP_202_ACCEPTED
-        return rval
+        ):
+            return Response(status_code=status.HTTP_202_ACCEPTED)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         "/api/histories/{history_id}/contents/archive/{filename}.{format}",
@@ -1076,7 +1082,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         create_payload: CreateHistoryContentFromStore = Body(...),
-    ) -> List[AnyHistoryContentItem]:
+    ) -> list[AnyHistoryContentItem]:
         """
         Create history contents from model store.
         Input can be a tarfile created with build_objects script distributed

@@ -1,41 +1,63 @@
 try:
-    from fs.dropboxfs import DropboxFS
+    from fs.dropboxfs.dropboxfs import DropboxFS
 except ImportError:
     DropboxFS = None
 
+
 from typing import (
-    Optional,
+    Annotated,
     Union,
+)
+
+from pydantic import (
+    AliasChoices,
+    Field,
 )
 
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
 )
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
+from galaxy.files.models import (
+    BaseFileSourceConfiguration,
+    BaseFileSourceTemplateConfiguration,
+    FilesSourceRuntimeContext,
 )
+from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
+AccessTokenField = Field(
+    ...,
+    title="Access Token",
+    description="The access token for Dropbox. You can generate one from your Dropbox app settings.",
+    validation_alias=AliasChoices("oauth2_access_token", "accessToken", "access_token"),
+)
 
-class DropboxFilesSource(PyFilesystem2FilesSource):
+
+class DropboxFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
+
+
+class DropboxFilesSourceConfiguration(BaseFileSourceConfiguration):
+    access_token: Annotated[str, AccessTokenField]
+
+
+class DropboxFilesSource(
+    PyFilesystem2FilesSource[DropboxFileSourceTemplateConfiguration, DropboxFilesSourceConfiguration]
+):
     plugin_type = "dropbox"
     required_module = DropboxFS
     required_package = "fs.dropboxfs"
 
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        props = self._serialization_props(user_context)
-        extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
-        # accessToken has been renamed to access_token in fs.dropboxfs 1.0
-        if "accessToken" in props:
-            props["access_token"] = props.pop("accessToken")
-        if "oauth2_access_token" in props:
-            props["access_token"] = props.pop("oauth2_access_token")
+    template_config_class = DropboxFileSourceTemplateConfiguration
+    resolved_config_class = DropboxFilesSourceConfiguration
+
+    def _open_fs(self, context: FilesSourceRuntimeContext[DropboxFilesSourceConfiguration]):
+        if DropboxFS is None:
+            raise self.required_package_exception
 
         try:
-            handle = DropboxFS(**{**props, **extra_props})
-            return handle
+            return DropboxFS(access_token=context.config.access_token)
         except Exception as e:
             # This plugin might raise dropbox.dropbox_client.BadInputException
             # which is not a subclass of fs.errors.FSError

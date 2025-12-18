@@ -30,7 +30,7 @@ const props = withDefaults(
         objectId: "",
         objectName: "...",
         objectTitle: undefined,
-    }
+    },
 );
 
 defineEmits<{
@@ -49,7 +49,7 @@ const mappedLabels = computed(() =>
                 invocation_id: "",
                 [workflowLabel.type]: workflowLabel.label,
             },
-        }))
+        })),
 );
 
 async function doQuery(): Promise<Array<OptionType>> {

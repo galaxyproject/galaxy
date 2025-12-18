@@ -1,11 +1,14 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import VueRouter from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
+import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "@/stores/services/history.services";
 import { useUserStore } from "@/stores/userStore";
@@ -14,14 +17,16 @@ import ContentItem from "./Content/ContentItem.vue";
 import HistoryView from "./HistoryView.vue";
 
 const localVue = getLocalVue();
-jest.mock("stores/services/history.services");
+localVue.use(VueRouter);
+
+vi.mock("@/stores/services/history.services", () => ({
+    getHistoryByIdFromServer: vi.fn(),
+    setCurrentHistoryOnServer: vi.fn(),
+}));
+
+setupSelectableMock();
 
 const { server, http } = useServerMock();
-
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({})),
-    useRouter: jest.fn(() => ({})),
-}));
 
 function create_history(historyId, userId, purged = false, archived = false) {
     const historyName = `${userId}'s History ${historyId}`;
@@ -75,19 +80,23 @@ async function createWrapper(localVue, currentUserId, history) {
     server.use(
         http.get("/api/histories/{history_id}/contents", ({ response }) => {
             return response(200).json(history_contents_result);
-        })
+        }),
     );
+
+    const router = new VueRouter();
+    router.push(`/history/${history.id}`);
 
     const wrapper = mount(HistoryView, {
         propsData: { id: history.id },
         localVue,
         provide: {
             store: {
-                dispatch: jest.fn,
+                dispatch: vi.fn,
                 getters: {},
             },
         },
         pinia,
+        router,
     });
     const userStore = useUserStore();
     userStore.currentUser = getFakeRegisteredUser({ id: currentUserId });
@@ -96,6 +105,10 @@ async function createWrapper(localVue, currentUserId, history) {
 }
 
 describe("History center panel View", () => {
+    beforeEach(() => {
+        suppressLucideVue2Deprecation();
+    });
+
     function expectCorrectLayout(wrapper) {
         // HistoryFilters should exist in HistoryView
         expect(wrapper.find("[data-description='filter text input']").exists()).toBe(true);
@@ -124,9 +137,9 @@ describe("History center panel View", () => {
         await historyStore.setCurrentHistory(history.id);
 
         // switch/import buttons: current history, should be a disabled switch
-        const switchButton = wrapper.find("[data-description='switch to history button']");
+        const switchButton = wrapper.find("[data-description='switch to history button']").classes();
         const importButton = wrapper.find("[data-description='import history button']");
-        expect(switchButton.attributes("disabled")).toBeTruthy();
+        expect(switchButton.includes("g-disabled")).toBeTruthy();
         expect(importButton.exists()).toBe(false);
 
         // parts of the layout that should be similar for all cases
@@ -169,9 +182,9 @@ describe("History center panel View", () => {
         expect(wrapper.vm.history).toEqual(history);
 
         // switch/import buttons: not current history, switchable
-        const switchButton = wrapper.find("[data-description='switch to history button']");
+        const switchButton = wrapper.find("[data-description='switch to history button']").classes();
         const importButton = wrapper.find("[data-description='import history button']");
-        expect(switchButton.attributes("disabled")).toBeFalsy();
+        expect(switchButton.includes("g-disabled")).toBeFalsy();
         expect(importButton.exists()).toBe(false);
 
         // storage dashboard button should be enabled
@@ -187,9 +200,9 @@ describe("History center panel View", () => {
         expect(wrapper.vm.history).toEqual(history);
 
         // history purged, is switchable but not importable
-        const switchButton = wrapper.find("[data-description='switch to history button']");
+        const switchButton = wrapper.find("[data-description='switch to history button']").classes();
         const importButton = wrapper.find("[data-description='import history button']");
-        expect(switchButton.attributes("disabled")).toBeFalsy();
+        expect(switchButton.includes("g-disabled")).toBeFalsy();
         expect(importButton.exists()).toBe(false);
 
         // storage dashboard button can be accessed
@@ -197,7 +210,7 @@ describe("History center panel View", () => {
 
         // instead we have an alert
         expect(wrapper.find("[data-description='history messages']").text()).toBe(
-            "History has been permanently deleted"
+            "History has been permanently deleted",
         );
     });
 

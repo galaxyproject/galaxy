@@ -32,6 +32,11 @@ class CollectionsToMatch:
         return self.collections.items()
 
 
+def get_child_collection(item):
+    # item could be HDCA or DCE
+    return getattr(item, "child_collection", item.collection)
+
+
 class MatchingCollections:
     """Structure holding the result of matching a list of collections
     together. This class being different than the class above and being
@@ -85,7 +90,7 @@ class MatchingCollections:
     def map_over_action_tuples(self, input_name):
         if input_name not in self.action_tuples:
             collection_instance = self.collections[input_name]
-            self.action_tuples[input_name] = collection_instance.collection.dataset_action_tuples
+            self.action_tuples[input_name] = get_child_collection(collection_instance).dataset_action_tuples
         return self.action_tuples[input_name]
 
     def is_mapped_over(self, input_name):
@@ -100,7 +105,7 @@ class MatchingCollections:
         for input_key, to_match in sorted(collections_to_match.items()):
             hdca = to_match.hdca
             collection_type_description = collection_type_descriptions.for_collection_type(
-                hdca.collection.collection_type
+                get_child_collection(hdca).collection_type
             )
             subcollection_type = to_match.subcollection_type
 

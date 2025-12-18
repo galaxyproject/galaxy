@@ -29,7 +29,7 @@ watch(
             loadZip();
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

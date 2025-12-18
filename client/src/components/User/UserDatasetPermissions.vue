@@ -1,10 +1,12 @@
 <script lang="ts" setup>
+import { faUsers } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { computed, ref } from "vue";
 
 import { initRefs, updateRefs, useCallbacks } from "@/composables/datasetPermissions";
 import { withPrefix } from "@/utils/redirect";
 
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DatasetPermissionsForm from "@/components/Dataset/DatasetPermissionsForm.vue";
 
 interface UserDatasetPermissionsProps {
@@ -35,6 +37,8 @@ async function init() {
 
 const title = "Set Dataset Permissions for New Histories";
 
+const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: title }];
+
 const formConfig = computed(() => {
     return {
         title: title,
@@ -42,7 +46,7 @@ const formConfig = computed(() => {
         description:
             "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.",
         url: inputsUrl.value,
-        icon: "fa-users",
+        icon: faUsers,
         submitTitle: "Save Permissions",
         redirect: "/user",
     };
@@ -65,11 +69,15 @@ const { onSuccess, onError } = useCallbacks(init);
 </script>
 
 <template>
-    <DatasetPermissionsForm
-        :loading="loading"
-        :simple-permissions="simplePermissions"
-        :title="title"
-        :form-config="formConfig"
-        :checked="checked"
-        @change="change" />
+    <div>
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <DatasetPermissionsForm
+            :loading="loading"
+            :simple-permissions="simplePermissions"
+            :title="title"
+            :form-config="formConfig"
+            :checked="checked"
+            @change="change" />
+    </div>
 </template>

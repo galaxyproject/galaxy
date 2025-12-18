@@ -5,7 +5,7 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { NON_TERMINAL_STATES } from "@/components/WorkflowInvocationState/util";
+import { NON_TERMINAL_STATES } from "@/api/jobs";
 import _l from "@/utils/localization";
 
 export function stateIsTerminal(result: Record<string, any>) {
@@ -23,7 +23,7 @@ export type AnyObject = Record<string | number | symbol, any>;
  */
 export function deepEach<O extends AnyObject, V extends O[keyof O] extends AnyObject ? O[keyof O] : never>(
     object: Readonly<O>,
-    callback: (object: V | AnyObject) => void
+    callback: (object: V | AnyObject) => void,
 ): void {
     Object.values(object).forEach((value) => {
         if (Boolean(value) && typeof value === "object") {
@@ -76,7 +76,7 @@ export function isJSON(text: string): boolean {
         text
             .replace(/\\["\\/bfnrtu]/g, "@")
             .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?/g, "]")
-            .replace(/(?:^|:|,)(?:\s*\[)+/g, "")
+            .replace(/(?:^|:|,)(?:\s*\[)+/g, ""),
     );
 }
 
@@ -344,7 +344,7 @@ export function mergeObjectListsById<T extends { id: string; [key: string]: any 
     oldList: T[],
     newList: T[],
     sortKey: string | null = null,
-    sortDirection: "asc" | "desc" = "desc"
+    sortDirection: "asc" | "desc" = "desc",
 ): T[] {
     const idToObjMap: { [key: string]: T } = oldList.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {});
 

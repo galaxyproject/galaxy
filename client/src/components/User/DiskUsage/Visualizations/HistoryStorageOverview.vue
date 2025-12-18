@@ -67,7 +67,7 @@ async function reloadDataFromServer() {
     const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(
         props.historyId,
         numberOfDatasetsLimit,
-        objectStore.value
+        objectStore.value,
     );
     datasetsSizeSummaryMap.clear();
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
@@ -81,7 +81,7 @@ function buildGraphsData() {
     const allDatasetsInHistorySizeSummary = Array.from(datasetsSizeSummaryMap.values());
     topNDatasetsBySizeData.value = buildTopNDatasetsBySizeData(
         allDatasetsInHistorySizeSummary,
-        numberOfDatasetsToDisplay.value
+        numberOfDatasetsToDisplay.value,
     );
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allDatasetsInHistorySizeSummary);
 }
@@ -142,9 +142,10 @@ function onUndelete(datasetId: string) {
         <div v-else>
             <BarChart
                 v-if="topNDatasetsBySizeData"
+                data-description="chart history top datasets by size"
                 :description="
                     localize(
-                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`
+                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`,
                     )
                 "
                 :data="topNDatasetsBySizeData"
@@ -192,9 +193,9 @@ function onUndelete(datasetId: string) {
                             <BFormGroup
                                 v-if="selectableObjectStores && hasSelectableObjectStores"
                                 id="input-group-object-store"
-                                label="Storage location:"
+                                label="Galaxy Storage:"
                                 label-for="input-object-store"
-                                description="This will constrain history size calculations to a particular storage location.">
+                                description="This will constrain history size calculations to a particular Galaxy storage.">
                                 <FilterObjectStoreLink
                                     :object-stores="selectableObjectStores"
                                     :value="objectStore"
@@ -223,10 +224,11 @@ function onUndelete(datasetId: string) {
 
             <BarChart
                 v-if="activeVsDeletedTotalSizeData"
+                data-description="chart history datasets by active"
                 :title="localize('Active vs Deleted Total Size')"
                 :description="
                     localize(
-                        'This graph shows the total size of your datasets in this history, split between active and deleted datasets.'
+                        'This graph shows the total size of your datasets in this history, split between active and deleted datasets.',
                     )
                 "
                 :data="activeVsDeletedTotalSizeData"

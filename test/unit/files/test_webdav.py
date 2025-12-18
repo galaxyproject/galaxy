@@ -5,6 +5,8 @@ import os
 import pytest
 
 from galaxy.files.plugins import FileSourcePluginsConfig
+from galaxy.files.sources import BaseFilesSource
+from galaxy.files.sources.webdav import WebDavFilesSource
 from ._util import (
     configured_file_sources,
     find,
@@ -34,26 +36,27 @@ def test_file_source():
     res, _ = file_source.list("/", recursive=True)
     a_file = find_file_a(res)
     assert a_file
-    assert a_file["uri"] == "gxfiles://test1/a", a_file
+    assert a_file.uri == "gxfiles://test1/a", a_file
 
     res, _ = file_source.list("/", recursive=False)
     file_a = find_file_a(res)
     assert file_a
-    assert file_a["uri"] == "gxfiles://test1/a"
-    assert file_a["name"] == "a"
+    assert file_a.uri == "gxfiles://test1/a"
+    assert file_a.name == "a"
 
     subdir1 = find(res, name="subdir1")
-    assert subdir1["class"] == "Directory"
-    assert subdir1["uri"] == "gxfiles://test1/subdir1"
+    assert subdir1
+    assert subdir1.class_ == "Directory"
+    assert subdir1.uri == "gxfiles://test1/subdir1"
 
     res = list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
     subdir2 = find(res, name="subdir2")
     assert subdir2, res
-    assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
+    assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
 
     file_c = find(res, name="c")
     assert file_c, res
-    assert file_c["uri"] == "gxfiles://test1/subdir1/c"
+    assert file_c.uri == "gxfiles://test1/subdir1/c"
 
 
 @skip_if_no_webdav
@@ -82,22 +85,28 @@ def test_serialization():
 @skip_if_no_webdav
 def test_config_options():
     file_sources = configured_file_sources(FILE_SOURCES_CONF)
-    fs = file_sources._file_sources[0]
-    user_context = user_context_fixture()
-    assert fs._open_fs(user_context).use_temp_files
+    fs = file_source_as_webdav(file_sources._file_sources[0])
+    assert fs.template_config.use_temp_files
+    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
 
     file_sources = configured_file_sources(FILE_SOURCES_CONF_NO_USE_TEMP_FILES)
-    fs = file_sources._file_sources[0]
-    user_context = user_context_fixture()
-    assert not fs._open_fs(user_context).use_temp_files
+    fs = file_source_as_webdav(file_sources._file_sources[0])
+    assert not fs.template_config.use_temp_files
+    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
 
     disable_default_use_temp = FileSourcePluginsConfig(
         webdav_use_temp_files=False,
     )
     file_sources = configured_file_sources(FILE_SOURCES_CONF, disable_default_use_temp)
-    fs = file_sources._file_sources[0]
-    user_context = user_context_fixture()
-    assert not fs._open_fs(user_context).use_temp_files
+    fs = file_source_as_webdav(file_sources._file_sources[0])
+    assert not fs.template_config.use_temp_files
+    assert fs._get_runtime_context().config.use_temp_files == fs.template_config.use_temp_files
+
+
+def file_source_as_webdav(file_source: BaseFilesSource) -> WebDavFilesSource:
+    if not isinstance(file_source, WebDavFilesSource):
+        raise TypeError(f"Expected WebDavFilesSource, got {type(file_source)}")
+    return file_source
 
 
 @skip_if_no_webdav

@@ -41,7 +41,7 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
                     qv: ["false"],
                 },
             },
-        }
+        },
     );
 
     if (nonPurgedArchivedHistoriesError) {
@@ -58,7 +58,7 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
 export async function fetchHistoryContentsSizeSummary(
     historyId: string,
     limit = 5000,
-    objectStoreId: string | null = null
+    objectStoreId: string | null = null,
 ) {
     const q = ["purged", "history_content_type"];
     const qv = ["false", "dataset"];

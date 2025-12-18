@@ -1,8 +1,9 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import FormNumber from "./FormNumber";
+import FormNumber from "./FormNumber.vue";
 
 const localVue = getLocalVue();
 

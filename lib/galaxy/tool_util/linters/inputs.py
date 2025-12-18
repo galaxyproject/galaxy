@@ -588,6 +588,7 @@ FILTER_ALLOWED_ATTRIBUTES["attribute_value_splitter"].extend(["pair_separator", 
 FILTER_ALLOWED_ATTRIBUTES["add_value"].extend(["name", "index"])
 FILTER_ALLOWED_ATTRIBUTES["remove_value"].extend(["value", "ref", "meta_ref", "key"])
 FILTER_ALLOWED_ATTRIBUTES["data_table"].append("keep")
+FILTER_ALLOWED_ATTRIBUTES["sort_by"].append("reverse_sort_order")
 
 
 class InputsOptionsFiltersAllowedAttributes(Linter):

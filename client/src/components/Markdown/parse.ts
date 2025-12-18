@@ -89,7 +89,7 @@ export function replaceLabel(
     markdown: string,
     labelType: WorkflowLabelKind,
     fromLabel: string | null | undefined,
-    toLabel: string | null | undefined
+    toLabel: string | null | undefined,
 ): string {
     const { sections } = splitMarkdown(markdown, true);
 

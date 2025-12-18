@@ -147,6 +147,6 @@ function onChange(values: any) {
 const { formKey } = storeToRefs(useRefreshFromStore());
 watch(
     () => formKey.value,
-    () => (initialChange.value = true)
+    () => (initialChange.value = true),
 );
 </script>

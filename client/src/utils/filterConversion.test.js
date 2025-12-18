@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 
@@ -54,11 +56,11 @@ describe("test filtering helpers to convert filters to filter text", () => {
 
         // backend filter text adjusts name tag by replacing `#` with `name:`
         expect(MyWorkflowFilters.getFilterText(filters, true)).toBe(
-            "name:name tag:tag1 tag:'tag2' tag:'name:tag3' is:published"
+            "name:name tag:tag1 tag:'tag2' tag:'name:tag3' is:published",
         );
 
         expect(PublishedWorkflowFilters.getFilterText(filters, true)).toBe(
-            "name:name tag:tag1 tag:'tag2' tag:'name:tag3'"
+            "name:name tag:tag1 tag:'tag2' tag:'name:tag3'",
         );
         delete filters["published"];
         expect(MyWorkflowFilters.getFilterText(filters, true)).toBe("name:name tag:tag1 tag:'tag2' tag:'name:tag3'");

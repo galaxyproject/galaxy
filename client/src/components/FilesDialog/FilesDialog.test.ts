@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
@@ -46,10 +47,10 @@ import {
 import FilesDialog from "./FilesDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-jest.mock("app");
+vi.mock("app");
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: { ftp_upload_site: "Test ftp upload site" },
         isConfigLoaded: true,
     })),
@@ -61,8 +62,12 @@ interface RowElement extends SelectionItem, Element {
     _rowVariant: SelectionState;
 }
 
-function paramsToKey(query: { target?: string | null; recursive?: string | null; writeable?: string | null }): string {
-    return `${query.target}?recursive=${query.recursive}&writeable=${query.writeable ?? "false"}`;
+function paramsToKey(query: {
+    target?: string | null;
+    recursive?: string | null;
+    write_intent?: string | null;
+}): string {
+    return `${query.target}?recursive=${query.recursive}&write_intent=${query.write_intent ?? "false"}`;
 }
 
 const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
@@ -93,7 +98,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
             const responseKey = paramsToKey({
                 target: query.get("target"),
                 recursive: query.get("recursive"),
-                writeable: query.get("writeable"),
+                write_intent: query.get("write_intent"),
             });
             if (mockedErrorApiRoutesMap.has(responseKey)) {
                 return response("4XX").json({ err_msg: someErrorText, err_code: 400 }, { status: 400 });
@@ -109,10 +114,10 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
         http.get("/api/file_source_templates", ({ response }) => {
             const fileSourceTemplates = hasTemplates ? [{ id: "test_template" } as FileSourceTemplateSummary] : [];
             return response(200).json(fileSourceTemplates);
-        })
+        }),
     );
 
-    const testingPinia = createTestingPinia({ stubActions: false });
+    const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const wrapper = mount(FilesDialog as object, {
         localVue,
         propsData: { ...props, modalStatic: true },
@@ -256,8 +261,32 @@ describe("FilesDialog, file mode", () => {
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
     });
+});
 
+describe("FilesDialog, create new file source button", () => {
+    let wrapper: Wrapper<any>;
+    let utils: Utils;
+
+    beforeEach(async () => {
+        const hasTemplates = true;
+        wrapper = await initComponent({ multiple: false }, hasTemplates);
+        utils = new Utils(wrapper);
+    });
     it("should not render create new button since file source templates are not defined", async () => {
+        const hasTemplates = false;
+        wrapper = await initComponent({ multiple: true }, hasTemplates);
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(false);
+    });
+
+    it("should render create new button since file source templates are defined and is at root", async () => {
+        await utils.openRoot();
+        const createNewButton = wrapper.find("[data-description='create new file source button']");
+        expect(createNewButton.exists()).toBe(true);
+    });
+
+    it("should not render create new button inside folders", async () => {
+        await utils.openRootDirectory();
         const createNewButton = wrapper.find("[data-description='create new file source button']");
         expect(createNewButton.exists()).toBe(false);
     });

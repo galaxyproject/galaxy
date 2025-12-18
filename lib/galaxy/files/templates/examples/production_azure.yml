@@ -2,7 +2,7 @@
   version: 0
   name: Azure Blob Storage
   description: |
-    This template allows connecting to [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction).
+    Setup access to your [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction).
   configuration:
     type: azure
     container_name: "{{ variables.container_name }}"

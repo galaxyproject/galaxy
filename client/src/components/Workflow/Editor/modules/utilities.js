@@ -1,5 +1,6 @@
-import WorkflowIcons from "components/Workflow/icons";
 import _ from "underscore";
+
+import WorkflowIcons from "@/components/Workflow/icons";
 
 export function getStateUpgradeMessages(data) {
     // Determine if any parameters were 'upgraded' and provide message

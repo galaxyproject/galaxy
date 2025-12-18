@@ -4,7 +4,6 @@ import os
 import string
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -145,7 +144,7 @@ text_input1: |
 """
 
 
-def assert_storage_name_is(storage_dict: Dict[str, Any], name: str):
+def assert_storage_name_is(storage_dict: dict[str, Any], name: str):
     storage_name = storage_dict["name"]
     assert name == storage_name, f"Found incorrect storage name {storage_name}, expected {name} in {storage_dict}"
 
@@ -369,7 +368,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             assert_storage_name_is(output_info, "Static Storage")
             assert_storage_name_is(intermediate_dict, "Dynamic EBS")
 
-    def _run_workflow_with_collections_1(self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None):
+    def _run_workflow_with_collections_1(self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_WITH_COLLECTIONS_1,
             test_data=WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA,
@@ -388,7 +387,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         output_info = self._storage_info(objects[0])
         return intermediate_info, output_info
 
-    def _run_workflow_with_collections_2(self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None):
+    def _run_workflow_with_collections_2(self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_WITH_COLLECTIONS_2,
             test_data=WORKFLOW_WITH_COLLECTIONS_1_TEST_DATA,
@@ -408,7 +407,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return intermediate_info, output_info
 
     def _run_simple_nested_workflow_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None
+        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None
     ):
         wf_run = self.workflow_populator.run_workflow(
             WORKFLOW_NESTED_SIMPLE,
@@ -428,7 +427,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return output_info, intermediate_info
 
     def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None, twice_nested=False
+        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None, twice_nested=False
     ):
         workflow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
         wf_run = self.workflow_populator.run_workflow(
@@ -448,7 +447,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         return output_info, intermediate_info
 
     def _run_workflow_get_output_storage_info_dicts(
-        self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None
+        self, history_id: str, extra_invocation_kwds: Optional[dict[str, Any]] = None
     ):
         wf_run = self.workflow_populator.run_workflow(
             TEST_WORKFLOW,
@@ -462,11 +461,11 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
         intermediate_info = self._storage_info_for_job_id(jobs[1]["id"])
         return output_info, intermediate_info, wf_run
 
-    def _storage_info_for_job_id(self, job_id: str) -> Dict[str, Any]:
+    def _storage_info_for_job_id(self, job_id: str) -> dict[str, Any]:
         job_dict = self.dataset_populator.get_job_details(job_id, full=True).json()
         return self._storage_info_for_job_output(job_dict)
 
-    def _storage_info_for_job_output(self, job_dict) -> Dict[str, Any]:
+    def _storage_info_for_job_output(self, job_dict) -> dict[str, Any]:
         outputs = job_dict["outputs"]  # could be a list or dictionary depending on source
         try:
             output = outputs[0]

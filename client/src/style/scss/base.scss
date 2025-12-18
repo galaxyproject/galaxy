@@ -1,8 +1,8 @@
 // Bootstrap variables and core framework
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
-@import "~bootstrap/scss/bootstrap.scss";
-@import "~bootstrap-vue/src/index.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
+@import "bootstrap/scss/bootstrap.scss";
+@import "bootstrap-vue/src/index.scss";
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
@@ -13,15 +13,14 @@
 //@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/brands";
-@import "~@fortawesome/fontawesome-free/scss/regular";
-@import "~@fortawesome/fontawesome-free/scss/solid";
-@import "~@fortawesome/fontawesome-free/scss/v4-shims";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "@fortawesome/fontawesome-free/scss/fontawesome";
+@import "@fortawesome/fontawesome-free/scss/brands";
+@import "@fortawesome/fontawesome-free/scss/regular";
+@import "@fortawesome/fontawesome-free/scss/solid";
+@import "@fortawesome/fontawesome-free/scss/v4-shims";
+@import "@fortawesome/fontawesome-free/scss/_variables";
 
 @import "select2.scss";
-@import "jquery.rating.scss";
 
 // galaxy sub-components
 @import "reports";
@@ -29,7 +28,6 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "upload.scss";
 @import "ui.scss";
 @import "library.scss";
-@import "trackster.scss";
 @import "toastr.scss";
 @import "tour.scss";
 @import "flex.scss";
@@ -60,6 +58,11 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 }
 
 // ==== Basic styles ====
+html,
+body {
+    overscroll-behavior: none;
+}
+
 body {
     @extend .m-2;
 }
@@ -201,6 +204,32 @@ $galaxy-state-bg: (
     }
     &.header-skipped {
         background-color: map-get($galaxy-state-bg, "hidden") !important;
+    }
+}
+
+// EDAM Ontology Badges (in ToolList)
+.edam-ontology-badge {
+    border: 1px solid;
+    &.operation {
+        color: var(--color-blue-600);
+        background-color: var(--color-blue-100);
+        border-color: var(--color-blue-600);
+
+        &:hover {
+            color: var(--color-blue-500);
+            background-color: var(--color-blue-200);
+        }
+    }
+
+    &.topic {
+        color: var(--color-green-600);
+        background-color: var(--color-green-100);
+        border-color: var(--color-green-600);
+
+        &:hover {
+            color: var(--color-green-500);
+            background-color: var(--color-green-200);
+        }
     }
 }
 

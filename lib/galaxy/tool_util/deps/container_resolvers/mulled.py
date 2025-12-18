@@ -1,5 +1,6 @@
 """This module describes the :class:`MulledContainerResolver` ContainerResolver plugin."""
 
+import json
 import logging
 import os
 import subprocess
@@ -8,6 +9,7 @@ from abc import (
     abstractmethod,
 )
 from typing import (
+    Any,
     Callable,
     Container as TypingContainer,
     Dict,
@@ -187,13 +189,27 @@ def list_docker_cached_mulled_images(
     if resolution_cache is not None and cache_key in resolution_cache:
         images_and_versions = resolution_cache.get(cache_key)
     else:
-        command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
+        command = build_docker_images_command(truncate=True, format="json", sudo=False, to_str=False)
         try:
-            images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
+            output = unicodify(subprocess.check_output(command)).strip()
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [":".join(line.split()[0:2]) for line in images_and_versions[1:]]
+
+        # Parse JSON output from docker images
+        images_and_versions = []
+        for line in output.splitlines():
+            if line.strip():
+                try:
+                    image_info = json.loads(line)
+                    repository = image_info.get("Repository", "")
+                    tag = image_info.get("Tag", "")
+                    if repository and tag:
+                        images_and_versions.append(f"{repository}:{tag}")
+                except json.JSONDecodeError:
+                    log.warning(f"Failed to parse docker image JSON: {line}")
+                    continue
+
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 
@@ -734,7 +750,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
-        self._mulled_kwds = {
+        self._mulled_kwds: Dict[str, Any] = {
             "namespace": namespace,
             "hash_func": self.hash_func,
             "command": "build-and-test",

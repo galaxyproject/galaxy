@@ -14,16 +14,22 @@ class GalaxySeleniumContext(NavigatesGalaxy):
     target_url_from_selenium: str
     configured_driver: ConfiguredDriver
 
+    @property
+    def _driver_impl(self):
+        """Provide driver implementation from configured_driver.
+
+        This property bridges the HasDriverProxy mixin to the ConfiguredDriver
+        used in the test framework. It allows NavigatesGalaxy methods to work
+        without requiring constructor changes in the test infrastructure.
+        """
+        return self.configured_driver.driver_impl
+
     def build_url(self, url: str, for_selenium: bool = True) -> str:
         if for_selenium:
             base = self.target_url_from_selenium
         else:
             base = self.url
         return urljoin(base, url)
-
-    @property
-    def driver(self):
-        return self.configured_driver.driver
 
     def screenshot(self, label: str):
         """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
@@ -37,7 +43,7 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         if target is None:
             return
 
-        self.driver.save_screenshot(target)
+        self.save_screenshot(target)
         return target
 
     @abstractmethod

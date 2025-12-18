@@ -170,7 +170,7 @@ class CwlToolSource(ToolSource):
             output.actions = ToolOutputActionGroup(app, None)
         return output
 
-    def parse_requirements_and_containers(self):
+    def parse_requirements(self):
         containers = []
         docker_identifier = self.tool_proxy.docker_identifier()
         if docker_identifier:
@@ -178,11 +178,13 @@ class CwlToolSource(ToolSource):
 
         software_requirements = self.tool_proxy.software_requirements()
         resource_requirements = self.tool_proxy.resource_requirements()
+        credentials = self.tool_proxy.credentials_requirements()
         return requirements.parse_requirements_from_lists(
             software_requirements=[{"name": r[0], "version": r[1], "type": "package"} for r in software_requirements],
             containers=containers,
             resource_requirements=resource_requirements,
             javascript_requirements=[],  # TODO, implement in tool proxy?
+            credentials=credentials,
         )
 
     def parse_profile(self):

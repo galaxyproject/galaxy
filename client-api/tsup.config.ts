@@ -8,7 +8,7 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   minify: false,
-  target: 'es2020',
+  target: 'es2022',
   esbuildOptions(options) {
     options.external = [
       ...options.external || [],

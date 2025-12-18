@@ -1,8 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     overload,
     TYPE_CHECKING,
@@ -139,6 +137,8 @@ class DatasetCollectionManager:
             collection_type_description = structure.collection_type_description
             dataset_collection = DatasetCollection(populated=False)
             dataset_collection.collection_type = collection_type_description.collection_type
+            # Preserve column_definitions from input structure for sample sheets
+            dataset_collection.column_definitions = structure.column_definitions
             elements = []
             for index, (identifier, substructure) in enumerate(structure.children):
                 # TODO: Open question - populate these now or later?
@@ -160,11 +160,17 @@ class DatasetCollectionManager:
                             substructure, allow_uninitialized_element=allow_uninitialized_element
                         )
 
+                # Preserve columns metadata from input structure for sample sheets
+                columns = None
+                if structure.columns_metadata and identifier in structure.columns_metadata:
+                    columns = structure.columns_metadata[identifier]
+
                 element = model.DatasetCollectionElement(
                     collection=dataset_collection,
                     element=element,
                     element_identifier=identifier,
                     element_index=index,
+                    columns=columns,
                 )
                 elements.append(element)
             dataset_collection.element_count = len(elements)
@@ -189,7 +195,9 @@ class DatasetCollectionManager:
         flush=True,
         completed_job=None,
         output_name=None,
-        fields: Optional[Union[str, List["FieldDict"]]] = None,
+        fields: Optional[Union[str, list["FieldDict"]]] = None,
+        column_definitions=None,
+        rows=None,
     ) -> "DatasetCollectionInstance":
         """
         PRECONDITION: security checks on ability to add to parent
@@ -215,6 +223,8 @@ class DatasetCollectionManager:
                 copy_elements=copy_elements,
                 history=history,
                 fields=fields,
+                column_definitions=column_definitions,
+                rows=rows,
             )
 
         implicit_inputs = []
@@ -260,7 +270,11 @@ class DatasetCollectionManager:
             assert isinstance(dataset_collection_instance, model.HistoryDatasetCollectionAssociation)
             if implicit_inputs:
                 for input_name, input_collection in implicit_inputs:
-                    dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
+                    if isinstance(input_collection, model.HistoryDatasetCollectionAssociation):
+                        # Can also get dragged DatasetCollectionElement's here.
+                        # We only use this for extracting workflows currently,
+                        # but obviously it would be better to track that somehow.
+                        dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
 
             if implicit_output_name:
                 dataset_collection_instance.implicit_output_name = implicit_output_name
@@ -301,7 +315,9 @@ class DatasetCollectionManager:
         hide_source_items: bool = False,
         copy_elements: bool = False,
         history=None,
-        fields: Optional[Union[str, List["FieldDict"]]] = None,
+        fields: Optional[Union[str, list["FieldDict"]]] = None,
+        column_definitions=None,
+        rows=None,
     ) -> DatasetCollection:
         # Make sure at least one of these is None.
         assert element_identifiers is None or elements is None
@@ -338,9 +354,12 @@ class DatasetCollectionManager:
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
-            dataset_collection = builder.build_collection(type_plugin, elements, fields=fields)
+            dataset_collection = builder.build_collection(
+                type_plugin, elements, fields=fields, column_definitions=column_definitions, rows=rows
+            )
         else:
             # TODO: Pass fields here - need test case first.
+            # TODO: same with column definitions I think.
             dataset_collection = DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
@@ -389,7 +408,7 @@ class DatasetCollectionManager:
         hide_source_items: bool = False,
         copy_elements: bool = False,
         history=None,
-    ) -> Dict[str, HDCAElementObjectType]:
+    ) -> dict[str, HDCAElementObjectType]:
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
             self.__recursively_create_collections_for_identifiers(
@@ -476,7 +495,7 @@ class DatasetCollectionManager:
         source: Literal[HistoryContentSource.hdca],
         encoded_source_id,
         copy_elements: bool = False,
-        dataset_instance_attributes: Optional[Dict[str, Any]] = None,
+        dataset_instance_attributes: Optional[dict[str, Any]] = None,
     ):
         """
         PRECONDITION: security checks on ability to add to parent occurred
@@ -614,8 +633,8 @@ class DatasetCollectionManager:
 
     def __load_elements(
         self, trans, element_identifiers, hide_source_items: bool = False, copy_elements: bool = False, history=None
-    ) -> Dict[str, HDCAElementObjectType]:
-        elements: Dict[str, HDCAElementObjectType] = {}
+    ) -> dict[str, HDCAElementObjectType]:
+        elements: dict[str, HDCAElementObjectType] = {}
         for element_identifier in element_identifiers:
             elements[element_identifier["name"]] = self.__load_element(
                 trans,
@@ -733,7 +752,7 @@ class DatasetCollectionManager:
     def _build_elements_from_rule_data(self, collection_type_description, rule_set, data, sources, handle_dataset):
         identifier_columns = rule_set.identifier_columns
         mapping_as_dict = rule_set.mapping_as_dict
-        elements: Dict[str, Any] = {}
+        elements: dict[str, Any] = {}
         for data_index, row_data in enumerate(data):
             # For each row, find place in depth for this element.
             collection_type_at_depth = collection_type_description
@@ -744,14 +763,19 @@ class DatasetCollectionManager:
 
                 if i + 1 == len(identifier_columns):
                     # At correct final position in nested structure for this dataset.
-                    if collection_type_at_depth.collection_type == "paired":
+                    if collection_type_at_depth.collection_type in ["paired", "paired_or_unpaired"]:
                         if identifier.lower() in ["f", "1", "r1", "forward"]:
                             identifier = "forward"
                         elif identifier.lower() in ["r", "2", "r2", "reverse"]:
                             identifier = "reverse"
+                        elif identifier.lower() in ["u", "unpaired"]:
+                            identifier = "unpaired"
                         else:
-                            raise Exception(
-                                "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed."
+                            allow_identifiers = ["F", "R", "1", "2", "R1", "R2", "forward", "reverse"]
+                            if collection_type_at_depth == "paired_or_unpaired":
+                                allow_identifiers.extend(["unpaired", "u"])
+                            raise RequestParameterInvalidException(
+                                f"Unknown indicator of paired status encountered ({identifier}) - only values from ({allow_identifiers}) are allowed."
                             )
 
                     tags = []
@@ -769,7 +793,6 @@ class DatasetCollectionManager:
 
                     effective_dataset = handle_dataset(sources[data_index]["dataset"], tags)
                     elements_at_depth[identifier] = effective_dataset
-                    # log.info("Handling dataset [%s] with sources [%s], need to add tags [%s]" % (effective_dataset, sources, tags))
                 else:
                     collection_type_at_depth = collection_type_at_depth.child_collection_type_description()
                     found = False
@@ -779,7 +802,7 @@ class DatasetCollectionManager:
 
                     if not found:
                         # Create a new collection whose elements are defined in the next loop
-                        sub_collection: Dict[str, Any] = {}
+                        sub_collection: dict[str, Any] = {}
                         sub_collection["src"] = "new_collection"
                         sub_collection["collection_type"] = collection_type_at_depth.collection_type
                         sub_collection["elements"] = {}
@@ -788,16 +811,38 @@ class DatasetCollectionManager:
                         # Subsequent loop fills elements of newly created collection
                         elements_at_depth = sub_collection["elements"]
 
+        # Recursively descend elements to handle "paired_or_unpaired" collections
+        def update_unpaired_identifiers(elements):
+            for value in elements.values():
+                if not isinstance(value, dict):
+                    continue
+                if value.get("src") == "new_collection" and value.get("collection_type") == "paired_or_unpaired":
+                    sub_elements = value["elements"]
+                    if "forward" in sub_elements and "reverse" not in sub_elements:
+                        sub_elements["unpaired"] = sub_elements.pop("forward")
+                if "elements" in value:
+                    update_unpaired_identifiers(value["elements"])
+
+        if collection_type_description.collection_type.endswith("paired_or_unpaired"):
+            update_unpaired_identifiers(elements)
+
         return elements
 
-    def __init_rule_data(self, elements, collection_type_description, parent_identifiers=None, parent_indices=None):
+    def __init_rule_data(
+        self, elements, collection_type_description, parent_identifiers=None, parent_indices=None, parent_columns=None
+    ):
         parent_identifiers = parent_identifiers or []
         parent_indices = parent_indices or []
-        data: List[List[str]] = []
-        sources: List[Dict[str, str]] = []
+        data: list[list[str]] = []
+        sources: list[dict[str, str]] = []
         for i, element in enumerate(elements):
             indices = parent_indices.copy()
             indices.append(i)
+            columns = parent_columns
+            collection_type_str = collection_type_description.collection_type
+            if columns is None and collection_type_str.startswith("sample_sheet"):
+                columns = element.columns
+                assert isinstance(columns, list)
 
             element_object = element.element_object
             identifiers = parent_identifiers + [element.element_identifier]
@@ -808,6 +853,7 @@ class DatasetCollectionManager:
                     "dataset": element_object,
                     "tags": element_object.make_tag_string_list(),
                     "indices": indices,
+                    "columns": columns,
                 }
                 sources.append(source)
             else:
@@ -817,6 +863,7 @@ class DatasetCollectionManager:
                     child_collection_type_description,
                     identifiers,
                     parent_indices=indices,
+                    parent_columns=columns,
                 )
                 data.extend(element_data)
                 sources.extend(element_sources)

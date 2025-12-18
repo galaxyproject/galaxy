@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faDownload, faInfoCircle, faRedo, faTable } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -13,12 +15,20 @@ const props = defineProps<{
 
 const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.dsc.id}/download`);
 const rerunUrl = computed(() =>
-    props.dsc.job_source_type == "Job" ? `/root?job_id=${props.dsc.job_source_id}` : null
+    props.dsc.job_source_type == "Job" ? `/root?job_id=${props.dsc.job_source_id}` : null,
 );
 const showCollectionDetailsUrl = computed(() =>
-    props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null
+    props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null,
 );
 const disableDownload = props.dsc.populated_state !== "ok";
+
+const hasSampleSheet = computed(() => {
+    return props.dsc.collection_type && props.dsc.collection_type.startsWith("sample_sheet");
+});
+
+const sheetUrl = computed(() => {
+    return `${getAppRoot()}collection/${props.dsc.id}/sheet`;
+});
 
 function onDownload() {
     window.location.href = downloadUrl.value;
@@ -36,7 +46,7 @@ function onDownload() {
                     variant="link"
                     :href="downloadUrl"
                     @click="onDownload">
-                    <Icon class="mr-1" icon="download" />
+                    <FontAwesomeIcon class="mr-1" :icon="faDownload" />
                     <span>Download</span>
                 </b-button>
                 <b-button
@@ -47,7 +57,7 @@ function onDownload() {
                     variant="link"
                     :href="showCollectionDetailsUrl"
                     @click.prevent.stop="router.push(showCollectionDetailsUrl)">
-                    <icon icon="info-circle" />
+                    <FontAwesomeIcon class="mr-1" :icon="faInfoCircle" />
                     <span>Show Details</span>
                 </b-button>
                 <b-button
@@ -58,8 +68,18 @@ function onDownload() {
                     variant="link"
                     :href="rerunUrl"
                     @click.prevent.stop="router.push(rerunUrl)">
-                    <Icon class="mr-1" icon="redo" />
+                    <FontAwesomeIcon class="mr-1" :icon="faRedo" />
                     <span>Run Job Again</span>
+                </b-button>
+                <b-button
+                    v-if="hasSampleSheet && sheetUrl"
+                    class="rounded-0 text-decoration-none"
+                    size="sm"
+                    variant="link"
+                    :href="sheetUrl"
+                    @click.prevent.stop="router.push(sheetUrl)">
+                    <FontAwesomeIcon class="mr-1" :icon="faTable" />
+                    <span>View Sheet</span>
                 </b-button>
             </b-button-group>
         </nav>

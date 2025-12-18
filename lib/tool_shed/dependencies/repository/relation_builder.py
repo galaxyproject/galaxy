@@ -1,10 +1,7 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -29,17 +26,17 @@ log = logging.getLogger(__name__)
 
 class RelationBuilder:
     def __init__(self, app: "ToolShedApp", repository, repository_metadata, tool_shed_url, trans=None):
-        self.all_repository_dependencies: Dict[str, Any] = {}
+        self.all_repository_dependencies: dict[str, Any] = {}
         self.app = app
-        self.circular_repository_dependencies: List[Tuple] = []
+        self.circular_repository_dependencies: list[tuple] = []
         self.repository = repository
         self.repository_metadata = repository_metadata
-        self.handled_key_rd_dicts: List[Dict[str, List[str]]] = []
-        self.key_rd_dicts_to_be_processed: List[Dict[str, List[str]]] = []
+        self.handled_key_rd_dicts: list[dict[str, list[str]]] = []
+        self.key_rd_dicts_to_be_processed: list[dict[str, list[str]]] = []
         self.tool_shed_url = tool_shed_url
         self.trans = trans
 
-    def can_add_to_key_rd_dicts(self, key_rd_dict, key_rd_dicts: List[Dict[str, List[str]]]):
+    def can_add_to_key_rd_dicts(self, key_rd_dict, key_rd_dicts: list[dict[str, list[str]]]):
         """Handle the case where an update to the changeset revision was done."""
         k = next(iter(key_rd_dict))
         rd = key_rd_dict[k]
@@ -52,13 +49,13 @@ class RelationBuilder:
                     return False
         return True
 
-    def filter_only_if_compiling_contained_td(self, key_rd_dict: Dict[str, Any]):
+    def filter_only_if_compiling_contained_td(self, key_rd_dict: dict[str, Any]):
         """
         Return a copy of the received key_rd_dict with repository dependencies that are needed
         only_if_compiling_contained_td filtered out of the list of repository dependencies for
         each rd_key.
         """
-        filtered_key_rd_dict: Dict[str, Any] = {}
+        filtered_key_rd_dict: dict[str, Any] = {}
         for rd_key, required_rd_tup in key_rd_dict.items():
             (
                 tool_shed,
@@ -211,8 +208,8 @@ class RelationBuilder:
             tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
         )
 
-    def get_updated_changeset_revisions_for_repository_dependencies(self, key_rd_dicts: List[Dict[str, Any]]):
-        updated_key_rd_dicts: List[Dict[str, Any]] = []
+    def get_updated_changeset_revisions_for_repository_dependencies(self, key_rd_dicts: list[dict[str, Any]]):
+        updated_key_rd_dicts: list[dict[str, Any]] = []
         for key_rd_dict in key_rd_dicts:
             key = next(iter(key_rd_dict))
             repository_dependency = key_rd_dict[key]
@@ -318,7 +315,7 @@ class RelationBuilder:
             return self.get_repository_dependencies_for_changeset_revision()
 
     def handle_key_rd_dicts_for_repository(
-        self, current_repository_key, repository_key_rd_dicts: List[Dict[str, List[str]]]
+        self, current_repository_key, repository_key_rd_dicts: list[dict[str, list[str]]]
     ):
         key_rd_dict = repository_key_rd_dicts.pop(0)
         repository_dependency = key_rd_dict[current_repository_key]
@@ -395,7 +392,7 @@ class RelationBuilder:
                 return True
         return False
 
-    def in_key_rd_dicts(self, key_rd_dict: Dict[str, List[str]], key_rd_dicts: List[Dict[str, List[str]]]):
+    def in_key_rd_dicts(self, key_rd_dict: dict[str, list[str]], key_rd_dicts: list[dict[str, list[str]]]):
         """Return True if key_rd_dict is contained in the list of key_rd_dicts."""
         k = next(iter(key_rd_dict))
         v = key_rd_dict[k]
@@ -439,7 +436,7 @@ class RelationBuilder:
         more repository dependencies, so this method is repeatedly called until all repository
         dependencies have been discovered.
         """
-        current_repository_key_rd_dicts: List[Dict[str, Any]] = []
+        current_repository_key_rd_dicts: list[dict[str, Any]] = []
         filtered_current_repository_key_rd_dicts = []
         for rd_tup in repository_dependencies_dict["repository_dependencies"]:
             new_key_rd_dict = {current_repository_key: rd_tup}
@@ -506,11 +503,11 @@ class RelationBuilder:
             valid_repository_dependencies["root_key"] = root_key
         return valid_repository_dependencies
 
-    def remove_from_key_rd_dicts(self, key_rd_dict: Dict[str, List[str]], key_rd_dicts: List[Dict[str, List[str]]]):
+    def remove_from_key_rd_dicts(self, key_rd_dict: dict[str, list[str]], key_rd_dicts: list[dict[str, list[str]]]):
         """Eliminate the key_rd_dict from the list of key_rd_dicts if it is contained in the list."""
         k = next(iter(key_rd_dict))
         v = key_rd_dict[k]
-        clean_key_rd_dicts: List[Dict[str, List[str]]] = []
+        clean_key_rd_dicts: list[dict[str, list[str]]] = []
         for krd_dict in key_rd_dicts:
             key = next(iter(krd_dict))
             val = krd_dict[key]
@@ -519,9 +516,9 @@ class RelationBuilder:
             clean_key_rd_dicts.append(krd_dict)
         return clean_key_rd_dicts
 
-    def remove_repository_dependency_reference_to_self(self, key_rd_dicts: List[Dict[str, Any]]):
+    def remove_repository_dependency_reference_to_self(self, key_rd_dicts: list[dict[str, Any]]):
         """Remove all repository dependencies that point to a revision within its own repository."""
-        clean_key_rd_dicts: List[Dict[str, Any]] = []
+        clean_key_rd_dicts: list[dict[str, Any]] = []
         key = next(iter(key_rd_dicts[0]))
         repository_tup = key.split(container_util.STRSEP)
         (

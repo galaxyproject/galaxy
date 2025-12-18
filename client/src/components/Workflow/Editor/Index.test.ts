@@ -1,14 +1,16 @@
-import { expect, jest } from "@jest/globals";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
-import { getVersions, loadWorkflow } from "./modules/services";
+import { getVersions } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
@@ -16,24 +18,26 @@ import Index from "./Index.vue";
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
-jest.mock("components/Datatypes/factory");
-jest.mock("./modules/services");
-jest.mock("layout/modal");
-jest.mock("onload/loadConfig");
-jest.mock("./modules/utilities");
+vi.mock("components/Datatypes/factory", () => ({}));
+vi.mock("./modules/services");
+vi.mock("@/onload/loadConfig");
+vi.mock("./modules/utilities");
+vi.mock("@/components/Workflow/workflows.services");
 
-jest.mock("app");
+vi.mock("app", () => ({}));
 
-const mockGetAppRoot = getAppRoot as jest.Mocked<typeof getAppRoot>;
-const mockGetStateUpgradeMessages = getStateUpgradeMessages as jest.Mock<typeof getStateUpgradeMessages>;
-const mockLoadWorkflow = loadWorkflow as jest.Mocked<typeof loadWorkflow>;
-const MockGetVersions = getVersions as jest.Mocked<typeof getVersions>;
+const { server, http } = useServerMock();
+
+const mockGetAppRoot = vi.mocked(getAppRoot);
+const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
+const mockLoadWorkflow = vi.mocked(getWorkflowFull);
+const MockGetVersions = vi.mocked(getVersions);
 
 describe("Index", () => {
     let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255
 
     beforeEach(() => {
-        const testingPinia = createTestingPinia();
+        const testingPinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(testingPinia);
         const datatypesStore = useDatatypesMapperStore();
         datatypesStore.datatypesMapper = testDatatypesMapper;
@@ -45,18 +49,36 @@ describe("Index", () => {
             value: null,
             writable: true,
         });
+        mockUnprivilegedToolsRequest(server, http);
         wrapper = shallowMount(Index as object, {
             propsData: {
                 workflowId: "workflow_id",
                 initialVersion: 1,
                 workflowTags: ["moo", "cow"],
-                moduleSections: [],
-                dataManagers: [],
                 workflows: [],
                 toolbox: [],
             },
             localVue,
             pinia: testingPinia,
+            // mock out components that have exposed methods used by Index.vue.
+            stubs: {
+                ActivityBar: {
+                    template: "<div />",
+                    methods: {
+                        isActiveSideBar(name: string) {
+                            return name === "workflow-editor-tools";
+                        },
+                    },
+                    expose: ["isActiveSideBar"],
+                },
+                WorkflowGraph: {
+                    template: "<div />",
+                    methods: {
+                        fitWorkflow() {},
+                    },
+                    expose: ["fitWorkflow"],
+                },
+            },
         });
     });
 

@@ -30,33 +30,25 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - name: Read Node.js version
-        id: node-version
-        run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Clone galaxyproject/galaxy-test-data
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: galaxyproject/galaxy-test-data
           path: galaxy-test-data
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: 'galaxy root/requirements.txt'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Move test data
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo
-        run: pip install planemo
+        run: uv tool install planemo
       - name: Determine converters to check
         run: |
           ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -v -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
@@ -72,7 +64,7 @@ jobs:
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
           planemo test --biocontainers --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Converter test results (${{ matrix.python-version }})

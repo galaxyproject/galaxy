@@ -1,47 +1,49 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import { fetchPluginHistoryItems } from "@/api/plugins";
+import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
 
 import VisualizationCreate from "./VisualizationCreate.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
 
-jest.mock("vue-router/composables", () => ({
+const PLUGIN = {
+    name: "scatterplot",
+    description: "A great scatterplot plugin.",
+    html: "Scatterplot Plugin",
+    logo: "/logo.png",
+    help: "Some help text",
+    tags: ["tag1", "tag2"],
+};
+
+vi.mock("vue-router/composables", () => ({
     useRouter: () => ({
-        push: jest.fn(),
+        push: vi.fn(),
     }),
 }));
 
-jest.mock("@/api/plugins", () => ({
-    fetchPlugin: jest.fn(() =>
+vi.mock("@/api/plugins", () => ({
+    fetchPlugin: vi.fn(() =>
         Promise.resolve({
-            name: "scatterplot",
-            description: "A great scatterplot plugin.",
-            html: "Scatterplot Plugin",
-            logo: "/logo.png",
-            help: "Some help text",
-            tags: ["tag1", "tag2"],
-        })
+            params: { dataset_id: { required: true } },
+            ...PLUGIN,
+        }),
     ),
-    fetchPluginHistoryItems: jest.fn(() => Promise.resolve({ hdas: [] })),
-}));
-
-jest.mock("./utilities", () => ({
-    getTestExtensions: jest.fn(() => ["txt"]),
-    getTestUrls: jest.fn(() => [{ name: "Example", url: "https://example.com/data.txt" }]),
+    fetchPluginHistoryItems: vi.fn(() => Promise.resolve({ hdas: [] })),
 }));
 
 let mockedStore;
-jest.mock("@/stores/historyStore", () => ({
+vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => mockedStore,
 }));
 
 const localVue = getLocalVue();
 
 beforeEach(() => {
+    vi.clearAllMocks();
     setActivePinia(createPinia());
     const useFakeHistoryStore = defineStore("history", {
         state: () => ({
@@ -54,6 +56,13 @@ beforeEach(() => {
     const el = document.createElement("div");
     el.id = "vis-create-ext";
     document.body.appendChild(el);
+
+    // Reset default mock implementations
+    vi.mocked(fetchPlugin).mockResolvedValue({
+        params: { dataset_id: { required: true } },
+        ...PLUGIN,
+    });
+    vi.mocked(fetchPluginHistoryItems).mockResolvedValue({ hdas: [] });
 });
 
 it("renders plugin info after load", async () => {
@@ -76,7 +85,7 @@ it("renders plugin info after load", async () => {
 });
 
 it("adds hid to dataset names when fetching history items", async () => {
-    fetchPluginHistoryItems.mockResolvedValueOnce({
+    vi.mocked(fetchPluginHistoryItems).mockResolvedValueOnce({
         hdas: [
             { id: "dataset1", hid: 101, name: "First Dataset" },
             { id: "dataset2", hid: 102, name: "Second Dataset" },
@@ -88,10 +97,23 @@ it("adds hid to dataset names when fetching history items", async () => {
             visualization: "scatterplot",
         },
     });
-    await wrapper.vm.$nextTick();
+    await flushPromises();
     const results = await wrapper.vm.doQuery();
     expect(results).toEqual([
         { id: "dataset1", name: "101: First Dataset" },
         { id: "dataset2", name: "102: Second Dataset" },
     ]);
+});
+
+it("displays create new visualization option if dataset is not required", async () => {
+    vi.mocked(fetchPlugin).mockResolvedValueOnce(PLUGIN);
+    const wrapper = mount(VisualizationCreate, {
+        localVue,
+        propsData: {
+            visualization: "scatterplot",
+        },
+    });
+    await flushPromises();
+    const results = await wrapper.vm.doQuery();
+    expect(results).toEqual([{ id: "", name: "Open visualization..." }]);
 });

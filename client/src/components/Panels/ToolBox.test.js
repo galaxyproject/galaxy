@@ -1,17 +1,17 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import toolsList from "components/ToolsView/testData/toolsList";
-import toolsListInPanel from "components/ToolsView/testData/toolsListInPanel";
-import { useConfig } from "composables/config";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createSortedResultObject, filterTools } from "./utilities";
+import toolsList from "@/components/ToolsView/testData/toolsList";
+import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel";
+import { setMockConfig } from "@/composables/__mocks__/config";
 
-jest.mock("composables/config");
-useConfig.mockReturnValue({
-    config: {
-        toolbox_auto_sort: true,
-    },
-    isConfigLoaded: true,
+import { createSortedResultPanel, filterTools } from "./utilities";
+
+vi.mock("@/composables/config");
+
+setMockConfig({
+    toolbox_auto_sort: true,
 });
 
 describe("ToolBox", () => {
@@ -41,7 +41,7 @@ describe("ToolBox", () => {
         const matchedTools = resultIds.map((id) => {
             return { id: id, sections: [], order: 0 };
         });
-        const toolsResultsSection = createSortedResultObject(matchedTools, toolPanelMock);
+        const toolsResultsSection = createSortedResultPanel(matchedTools, toolPanelMock);
         expect(toolsResultsSection.idResults).toEqual(resultIds);
         const resultSectionIds = Object.keys(toolsResultsSection.resultPanel);
         expect(resultSectionIds.length).toBe(2);

@@ -4,18 +4,22 @@ import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeMount, ref, watch } from "vue";
 
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
+import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
+import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
+import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -31,6 +35,7 @@ import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 interface Props {
     model: Record<string, any>;
@@ -39,6 +44,7 @@ interface Props {
     canMutateCurrentHistory: boolean;
     requestState?: WorkflowInvocationRequestInputs;
     isRerun?: boolean;
+    landingUuid?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,6 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
     useJobCache: false,
     requestState: undefined,
     isRerun: false,
+    landingUuid: undefined,
 });
 
 const emit = defineEmits<{
@@ -53,6 +60,9 @@ const emit = defineEmits<{
     (e: "submissionSuccess", invocations: any): void;
     (e: "submissionError", error: string): void;
 }>();
+
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId, changingCurrentHistory } = storeToRefs(useHistoryStore());
 
 const { stateStore } = provideScopedWorkflowStores(props.model.workflowId);
 const { activeNodeId } = storeToRefs(stateStore);
@@ -78,8 +88,6 @@ const showHelp = computed(() => showRightPanel.value === "help");
 const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
     usePersistentToggle("workflow-run-settings-panel");
 
-const { changingCurrentHistory } = storeToRefs(useHistoryStore());
-
 // Workflow REAME/help panel setup
 const { workflow, loading: workflowLoading } = useWorkflowInstance(props.model.runData.workflow_id);
 watch(
@@ -90,7 +98,7 @@ watch(
             showRightPanel.value = !showPanels.value && workflow.readme ? "help" : null;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 watch(
@@ -99,7 +107,7 @@ watch(
         if (!show) {
             activeNodeId.value = null;
         }
-    }
+    },
 );
 const computedActiveNodeId = computed<number | undefined>(() => {
     if (showGraph.value) {
@@ -245,7 +253,7 @@ const stepsNotMatchingRequest = computed<string[]>(() => {
 });
 
 const isValidRerun = computed(
-    () => Boolean(props.isRerun) && checkInputMatching.value && stepsNotMatchingRequest.value.length === 0
+    () => Boolean(props.isRerun) && checkInputMatching.value && stepsNotMatchingRequest.value.length === 0,
 );
 
 const hasValidationErrors = computed(() => stepValidation.value !== null);
@@ -272,6 +280,10 @@ function onStorageUpdate(objectStoreId: string, intermediate: boolean) {
     }
 }
 
+function updateActiveNodeId(nodeId: number | null) {
+    activeNodeId.value = nodeId;
+}
+
 async function onExecute() {
     waitingForRequest.value = true;
 
@@ -295,6 +307,9 @@ async function onExecute() {
         require_exact_tool_versions: false,
         version: props.model.runData.version,
     };
+    if (props.landingUuid) {
+        data.landing_uuid = props.landingUuid;
+    }
     if (sendToNewHistory.value) {
         data.new_history_name = props.model.name;
     } else {
@@ -322,10 +337,55 @@ async function onExecute() {
         waitingForRequest.value = false;
     }
 }
+
+const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+
+const credentialTools = computed<ToolIdentifier[]>(() => {
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
+    );
+
+    const toolIdentifiers: ToolIdentifier[] = [];
+
+    credentialSteps.forEach((step: any) => {
+        setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
+        toolIdentifiers.push({
+            toolId: step.id,
+            toolVersion: step.version,
+        });
+    });
+
+    return toolIdentifiers;
+});
+
+const hasCredentialErrors = computed(() => {
+    if (credentialTools.value.length) {
+        const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+            credentialTools.value,
+        );
+        return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+    }
+    return false;
+});
+
+onBeforeMount(() => {
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
+    );
+    if (credentialSteps.length) {
+        const promises = credentialSteps.map((step: any) =>
+            setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials),
+        );
+        return Promise.all(promises);
+    }
+});
 </script>
 
 <template>
-    <div class="d-flex flex-column h-100 workflow-run-form-simple" data-galaxy-file-drop-target>
+    <div
+        v-if="currentUser && currentHistoryId"
+        class="d-flex flex-column h-100 workflow-run-form-simple"
+        data-galaxy-file-drop-target>
         <div v-if="!showRightPanel" class="ui-form-header-underlay sticky-top" />
         <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showRightPanel }">
             <BAlert v-if="!canRunOnHistory" variant="warning" show>
@@ -337,7 +397,7 @@ async function onExecute() {
             <div class="mb-2">
                 <WorkflowNavigationTitle
                     :workflow-id="model.runData.workflow_id"
-                    :run-disabled="hasValidationErrors || !canRunOnHistory"
+                    :run-disabled="hasValidationErrors || !canRunOnHistory || hasCredentialErrors"
                     :run-waiting="waitingForRequest"
                     :valid-rerun="isValidRerun"
                     @on-execute="onExecute">
@@ -404,7 +464,7 @@ async function onExecute() {
                                 <BFormCheckbox v-model="splitObjectStore">
                                     <HelpText
                                         uri="galaxy.workflows.runtimeSettings.splitObjectStore"
-                                        text="Send outputs and intermediate to different storage locations?" />
+                                        text="Send outputs and intermediate to different Galaxy storage?" />
                                 </BFormCheckbox>
                             </div>
                             <div class="mr-4">
@@ -442,6 +502,8 @@ async function onExecute() {
             show-details
             :hide-hr="Boolean(showRightPanel)" />
 
+        <WorkflowCredentials v-if="credentialTools?.length" :tool-identifiers="credentialTools" />
+
         <div class="overflow-auto h-100">
             <div class="d-flex h-100">
                 <div
@@ -463,7 +525,7 @@ async function onExecute() {
                             @onChange="onChange"
                             @onValidation="onValidation"
                             @stop-flagging="checkInputMatching = false"
-                            @update:active-node-id="($event) => (activeNodeId = $event)" />
+                            @update:active-node-id="updateActiveNodeId" />
                     </BOverlay>
                 </div>
                 <div v-if="showRightPanel" class="h-100 w-50 d-flex flex-shrink-0">
@@ -486,7 +548,7 @@ async function onExecute() {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-runtime-settings-panel {
     background-color: $brand-light;

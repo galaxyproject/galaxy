@@ -1,6 +1,4 @@
-import * as monaco from "monaco-editor";
-import { editor } from "monaco-editor";
-import type { IPosition, MonacoEditor } from "monaco-types";
+import type { IDisposable, IPosition, MonacoEditor } from "monaco-types";
 import { configureMonacoYaml } from "monaco-yaml";
 
 import { extractEmbeddedJs } from "./extractEmbeddedJs";
@@ -11,16 +9,33 @@ import { buildProviderFunctions } from "./yaml";
 
 const LANG = "yaml-with-js";
 
-const embeddedModelUri = monaco.Uri.parse("file://embedded-model.js");
-const defModelUri = monaco.Uri.parse("file://runtime-defs.ts");
+// Lazy-initialized monaco reference - set when setupMonaco is called
+let monacoInstance: MonacoEditor | null = null;
+
+function getEmbeddedModelUri() {
+    if (!monacoInstance) {
+        throw new Error("Monaco not initialized - call setupMonaco first");
+    }
+    return monacoInstance.Uri.parse("file://embedded-model.js");
+}
+
+function getDefModelUri() {
+    if (!monacoInstance) {
+        throw new Error("Monaco not initialized - call setupMonaco first");
+    }
+    return monacoInstance.Uri.parse("file://runtime-defs.ts");
+}
 
 export async function setupMonaco(monaco: MonacoEditor) {
+    // Store the monaco instance for use by other functions in this module
+    monacoInstance = monaco;
+
     // Define the custom YAML language with embedded JavaScript
     monaco.languages.register({ id: LANG });
     monaco.languages.register({ id: "typescript" });
     monaco.languages.register({ id: "javascript" });
     monaco.languages.register({ id: "yaml" });
-    const disposables: monaco.IDisposable[] = [];
+    const disposables: IDisposable[] = [];
 
     disposables.push(monaco.languages.setMonarchTokensProvider(LANG, monarchConfig));
     disposables.push(
@@ -47,7 +62,7 @@ export async function setupMonaco(monaco: MonacoEditor) {
                 { open: '"', close: '"' },
                 { open: "'", close: "'" },
             ],
-        })
+        }),
     );
 
     // Set TypeScript/JavaScript configuration
@@ -102,24 +117,27 @@ export async function setupMonaco(monaco: MonacoEditor) {
 export async function setupEditor(providerFunctions: any) {
     const disposables = [];
     // Virtual model for JavaScript
-    const yamlModel = editor.getModels().find((item) => item.getLanguageId() == LANG)!;
-    const embeddedModel = editor.getModel(embeddedModelUri) || editor.createModel("", "typescript", embeddedModelUri);
+    const embeddedModelUri = getEmbeddedModelUri();
+    const yamlModel = monacoInstance!.editor.getModels().find((item) => item.getLanguageId() == LANG)!;
+    const embeddedModel =
+        monacoInstance!.editor.getModel(embeddedModelUri) ||
+        monacoInstance!.editor.createModel("", "typescript", embeddedModelUri);
     mixJsYamlProviders(providerFunctions);
-    disposables.push(monaco.languages.registerHoverProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerHoverProvider(LANG, providerFunctions));
     disposables.push(
-        monaco.languages.registerCompletionItemProvider(LANG, {
+        monacoInstance!.languages.registerCompletionItemProvider(LANG, {
             triggerCharacters: ["."],
             provideCompletionItems: providerFunctions.provideCompletionItems,
-        })
+        }),
     );
-    disposables.push(monaco.languages.registerDefinitionProvider(LANG, providerFunctions));
-    disposables.push(monaco.languages.registerDocumentSymbolProvider(LANG, providerFunctions));
-    disposables.push(monaco.languages.registerDocumentFormattingEditProvider(LANG, providerFunctions));
-    disposables.push(monaco.languages.registerLinkProvider(LANG, providerFunctions));
-    disposables.push(monaco.languages.registerCodeActionProvider(LANG, providerFunctions));
-    disposables.push(monaco.languages.registerFoldingRangeProvider(LANG, providerFunctions));
-    disposables.push(monaco.languages.registerOnTypeFormattingEditProvider(LANG, providerFunctions));
-    disposables.push(monaco.languages.registerSelectionRangeProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerDefinitionProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerDocumentSymbolProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerDocumentFormattingEditProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerLinkProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerCodeActionProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerFoldingRangeProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerOnTypeFormattingEditProvider(LANG, providerFunctions));
+    disposables.push(monacoInstance!.languages.registerSelectionRangeProvider(LANG, providerFunctions));
 
     attachDiagnosticsProvider(yamlModel, embeddedModel, providerFunctions.provideMarkerData);
     return disposables;
@@ -151,7 +169,10 @@ async function addExtraLibs(yamlContent?: string) {
             console.error(error);
         } else {
             const runtimeFragment = `${schemaInterface}\n${fragment}`;
-            const runtimeModel = editor.getModel(defModelUri) || editor.createModel("", "typescript", defModelUri);
+            const defModelUri = getDefModelUri();
+            const runtimeModel =
+                monacoInstance!.editor.getModel(defModelUri) ||
+                monacoInstance!.editor.createModel("", "typescript", defModelUri);
             if (runtimeModel.getValue() != runtimeFragment) {
                 runtimeModel.setValue(runtimeFragment);
             }
@@ -159,7 +180,7 @@ async function addExtraLibs(yamlContent?: string) {
     }
 }
 
-export async function contentSync(yamlContent: string, scriptContent: string, embeddedModel: editor.ITextModel) {
+export async function contentSync(yamlContent: string, scriptContent: string, embeddedModel: any) {
     // Keep the embedded JavaScript model in sync with the YAML editor
     if (yamlContent) {
         await addExtraLibs(yamlContent);
@@ -172,7 +193,7 @@ async function mixJsYamlProviders(yamlProviderFunctions: any) {
     // so execute JS provider, then yaml as fallback
     const yamlProvideCompletionItems = yamlProviderFunctions.provideCompletionItems;
     const yamlProvideHover = yamlProviderFunctions.provideHover;
-    yamlProviderFunctions.provideCompletionItems = async (model: editor.ITextModel, position: IPosition) => {
+    yamlProviderFunctions.provideCompletionItems = async (model: any, position: IPosition) => {
         const jsCompletions = await provideCompletionItems(model, position);
         if (jsCompletions?.suggestions?.length > 0) {
             return jsCompletions;
@@ -180,19 +201,19 @@ async function mixJsYamlProviders(yamlProviderFunctions: any) {
             return await yamlProvideCompletionItems(model, position);
         }
     };
-    yamlProviderFunctions.provideHover = async (model: editor.ITextModel, position: IPosition) =>
+    yamlProviderFunctions.provideHover = async (model: any, position: IPosition) =>
         (await provideHover(model, position)) || (await yamlProvideHover(model, position));
 }
 
-async function languageServiceForModel(model: editor.ITextModel) {
-    const worker = await monaco.languages.typescript.getTypeScriptWorker();
+async function languageServiceForModel(model: any) {
+    const worker = await monacoInstance!.languages.typescript.getTypeScriptWorker();
     const languageService = await worker(model.uri);
     return languageService;
 }
 
-async function allModels(model: editor.ITextModel) {
+async function allModels(model: any) {
     const yamlContent = model.getValue();
-    const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
+    const embeddedModel = monacoInstance!.editor.getModel(getEmbeddedModelUri())!;
     const embeddedStart = yamlContent.indexOf(embeddedModel.getValue());
     const models = [{ start: embeddedStart, model: embeddedModel }];
     const embeddedContents = extractEmbeddedJs(yamlContent);
@@ -207,18 +228,19 @@ async function allModels(model: editor.ITextModel) {
 }
 
 function getOrCreateFragmentModel(index: number, value: string) {
-    const modelUri = monaco.Uri.parse(`file://temp-fragment-${index}`);
-    const fragmentModel = monaco.editor.getModel(modelUri) || monaco.editor.createModel(value, "typescript", modelUri);
+    const modelUri = monacoInstance!.Uri.parse(`file://temp-fragment-${index}`);
+    const fragmentModel =
+        monacoInstance!.editor.getModel(modelUri) || monacoInstance!.editor.createModel(value, "typescript", modelUri);
     fragmentModel.setValue(value);
     return fragmentModel;
 }
 
-async function modelForCurrentPosition(model: editor.ITextModel, position: IPosition) {
+async function modelForCurrentPosition(model: any, position: IPosition) {
     const yamlContent = model.getValue();
     const embeddedContents = extractEmbeddedJs(yamlContent);
     const offsetForPosition = model.getOffsetAt(position);
     const fragmentIndex = embeddedContents.findIndex(
-        (content) => content.start <= offsetForPosition && content.start + content.fragment.length >= offsetForPosition
+        (content) => content.start <= offsetForPosition && content.start + content.fragment.length >= offsetForPosition,
     );
     if (fragmentIndex >= 0) {
         const fragment = embeddedContents[fragmentIndex]!;
@@ -232,7 +254,7 @@ async function modelForCurrentPosition(model: editor.ITextModel, position: IPosi
         if (offsetWithinFragment < 0 || offsetWithinFragment > embeddedContent.length) {
             return undefined;
         }
-        const embeddedModel = monaco.editor.getModel(embeddedModelUri)!;
+        const embeddedModel = monacoInstance!.editor.getModel(getEmbeddedModelUri())!;
         embeddedModel.setValue(embeddedContent);
         return { offset: offsetWithinFragment, model: embeddedModel };
     }
@@ -240,7 +262,7 @@ async function modelForCurrentPosition(model: editor.ITextModel, position: IPosi
 }
 
 // Add IntelliSense for the embedded JavaScript
-async function provideCompletionItems(model: editor.ITextModel, position: IPosition) {
+async function provideCompletionItems(model: any, position: IPosition) {
     let completionInfo: any;
     const currentData = await modelForCurrentPosition(model, position);
     if (currentData) {
@@ -254,7 +276,9 @@ async function provideCompletionItems(model: editor.ITextModel, position: IPosit
             return {
                 suggestions: completionInfo.entries.map((entry: any) => ({
                     label: entry.name,
-                    kind: monaco.languages.CompletionItemKind[entry.kind[0].toUpperCase() + entry.kind.slice(1)],
+                    kind: monacoInstance!.languages.CompletionItemKind[
+                        entry.kind[0].toUpperCase() + entry.kind.slice(1)
+                    ],
                     insertText: entry.name,
                     range: {
                         startLineNumber: position.lineNumber,
@@ -270,12 +294,8 @@ async function provideCompletionItems(model: editor.ITextModel, position: IPosit
     return { suggestions: [] };
 }
 
-function attachDiagnosticsProvider(
-    yamlModel: editor.ITextModel,
-    embeddedModel: editor.ITextModel,
-    provideMarkerData: any
-) {
-    monaco.editor.setModelMarkers(yamlModel, "owner", []); // Clear existing markers.
+function attachDiagnosticsProvider(yamlModel: any, embeddedModel: any, provideMarkerData: any) {
+    monacoInstance!.editor.setModelMarkers(yamlModel, "owner", []); // Clear existing markers.
 
     yamlModel.onDidChangeContent(async () => {
         const yamlContent = yamlModel.getValue();
@@ -285,7 +305,7 @@ function attachDiagnosticsProvider(
         await contentSync(yamlContent, embeddedJavaScript, embeddedModel);
         const yamlMarkers = await provideMarkerData(yamlModel);
         const models = await allModels(yamlModel);
-        const worker = await monaco.languages.typescript.getTypeScriptWorker();
+        const worker = await monacoInstance!.languages.typescript.getTypeScriptWorker();
         const markers = [...yamlMarkers];
         const promises = models.map(async (modelData) => {
             const languageService = await worker(modelData.model.uri);
@@ -294,7 +314,7 @@ function attachDiagnosticsProvider(
                 const startPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start!);
                 const endPosition = yamlModel.getPositionAt(modelData.start + diagnostic.start! + diagnostic.length!);
                 markers.push({
-                    severity: monaco.MarkerSeverity.Error, // Severity: Error, Warning, or Info
+                    severity: monacoInstance!.MarkerSeverity.Error, // Severity: Error, Warning, or Info
                     message:
                         typeof diagnostic.messageText === "string"
                             ? diagnostic.messageText
@@ -307,7 +327,7 @@ function attachDiagnosticsProvider(
             });
         });
         await Promise.all(promises);
-        monaco.editor.setModelMarkers(yamlModel, "owner", markers);
+        monacoInstance!.editor.setModelMarkers(yamlModel, "owner", markers);
     });
 }
 
@@ -349,13 +369,13 @@ function quickInfoToMarkdown(quickInfo: any, position: IPosition) {
     };
 }
 
-async function provideHover(model: editor.ITextModel, position: IPosition) {
+async function provideHover(model: any, position: IPosition) {
     const currentData = await modelForCurrentPosition(model, position);
     if (currentData) {
         const languageService = await languageServiceForModel(currentData.model);
         const quickInfo = await languageService.getQuickInfoAtPosition(
             currentData.model.uri.toString(),
-            currentData.offset
+            currentData.offset,
         );
         if (quickInfo) {
             return quickInfoToMarkdown(quickInfo, position);

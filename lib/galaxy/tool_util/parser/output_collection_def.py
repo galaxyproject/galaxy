@@ -159,6 +159,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
     discover_via = "pattern"
     sort_key: SortKeyT
     sort_comp: SortCompT
+    sort_reverse: bool
     pattern: str
 
     def __init__(self, **kwargs):
@@ -169,20 +170,25 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         if pattern in NAMED_PATTERNS:
             pattern = NAMED_PATTERNS[pattern]
         self.pattern = pattern
-        self.sort_by = sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
-        if sort_by.startswith("reverse_"):
-            self.sort_reverse = True
-            sort_by = sort_by[len("reverse_") :]
+        if "sort_by" not in kwargs and "sort_key" in kwargs and "sort_comp" in kwargs and "sort_reverse" in kwargs:
+            self.sort_reverse = kwargs["sort_reverse"]
+            self.sort_comp = kwargs["sort_comp"]
+            self.sort_key = kwargs["sort_key"]
         else:
-            self.sort_reverse = False
-        if "_" in sort_by:
-            sort_comp, sort_by = sort_by.split("_", 1)
-            assert sort_comp in ["lexical", "numeric"]
-        else:
-            sort_comp = DEFAULT_SORT_COMP
-        assert sort_by in ["filename", "name", "designation", "dbkey"]
-        self.sort_key = sort_by
-        self.sort_comp = sort_comp
+            self.sort_by = sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
+            if sort_by.startswith("reverse_"):
+                self.sort_reverse = True
+                sort_by = sort_by[len("reverse_") :]
+            else:
+                self.sort_reverse = False
+            if "_" in sort_by:
+                sort_comp, sort_by = sort_by.split("_", 1)
+                assert sort_comp in ["lexical", "numeric"]
+            else:
+                sort_comp = DEFAULT_SORT_COMP
+            assert sort_by in ["filename", "name", "designation", "dbkey"]
+            self.sort_key = sort_by
+            self.sort_comp = sort_comp
 
     def to_model(self) -> FilePatternDatasetCollectionDescriptionModel:
         return FilePatternDatasetCollectionDescriptionModel(
@@ -198,6 +204,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
             sort_comp=self.sort_comp,
             pattern=self.pattern,
             sort_by=self.sort_by,
+            sort_reverse=self.sort_reverse,
         )
 
     @property

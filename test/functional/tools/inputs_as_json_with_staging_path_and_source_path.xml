@@ -12,14 +12,14 @@ input_json_path = sys.argv[1]
 as_dict = json.load(open(input_json_path, "r"))
 
 data_input_with_staging_details = as_dict["data_input"]
-assert data_input_with_staging_details['element_identifier'] == ["1.tabular"]
+assert data_input_with_staging_details['element_identifier'] == "1.tabular"
 assert data_input_with_staging_details['ext'] == "tabular"
 assert data_input_with_staging_details['staging_path'] == "1.tabular.tabular"
 assert len(data_input_with_staging_details['metadata_files']) == 0
 
 multiple_data_input_with_staging_details = as_dict["multiple_data_input"]
 assert len(multiple_data_input_with_staging_details) == 2
-assert multiple_data_input_with_staging_details[0]['element_identifier'] == ["simple_line.txt"]
+assert multiple_data_input_with_staging_details[0]['element_identifier'] == "simple_line.txt"
 assert multiple_data_input_with_staging_details[0]['ext'] == "txt"
 assert multiple_data_input_with_staging_details[0]['staging_path'] == "simple_line.txt.txt"
 assert len(multiple_data_input_with_staging_details[0]['metadata_files']) == 0

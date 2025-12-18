@@ -1,5 +1,5 @@
+from collections.abc import Iterable
 from typing import (
-    Iterable,
     TYPE_CHECKING,
 )
 

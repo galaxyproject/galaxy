@@ -28,7 +28,10 @@ TEST_TOOL_IDS = [
 
 
 class TestOnedataObjectStoreIntegration(BaseOnedataObjectStoreIntegrationTestCase):
-    pass
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["enable_celery_tasks"] = False
 
 
 instance = integration_util.integration_module_instance(TestOnedataObjectStoreIntegration)

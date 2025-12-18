@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBroadcastTower,
     faClock,
@@ -20,8 +19,6 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-library.add(faBroadcastTower, faClock, faEdit, faHourglassHalf, faInfoCircle, faTrash);
 
 const { confirm } = useConfirmDialog();
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
@@ -81,7 +78,7 @@ function onEditClick() {
 async function onForceExpirationClick() {
     const confirmed = await confirm(
         "Are you sure you want to expire this broadcast? It will be automatically deleted on the next cleanup cycle.",
-        "Expire broadcast"
+        "Expire broadcast",
     );
     if (confirmed) {
         emit("expire", notification.value);
@@ -181,7 +178,7 @@ function onActionClick(link: string) {
 </template>
 
 <style scoped lang="scss">
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .broadcast-card {
     border-radius: 0.25rem;
     border: 1px solid $gray-300;

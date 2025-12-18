@@ -28,7 +28,7 @@ const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
 
 const optionalActivities = computed(() => {
     return activityStore.activities.filter(
-        (a) => (a.optional && a.id !== "user-defined-tools") || canUseUnprivilegedTools.value
+        (a) => (a.optional && a.id !== "user-defined-tools") || canUseUnprivilegedTools.value,
     );
 });
 
@@ -147,7 +147,7 @@ function executeActivity(activity: Activity) {
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-settings-item {
     background: none;

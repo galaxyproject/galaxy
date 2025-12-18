@@ -2,7 +2,7 @@ import { faFileImport, faGlobe, faShieldAlt } from "@fortawesome/free-solid-svg-
 import { computed, type Ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
-import type { CardAttributes } from "@/components/Common/GCard.types";
+import type { CardIndicator } from "@/components/Common/GCard.types";
 import { useToast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
@@ -11,7 +11,7 @@ export function useWorkflowCardIndicators(
     workflow: Ref<WorkflowSummary>,
     publishedView: boolean,
     filterable: boolean,
-    updateFilter: (key: string, value: boolean) => void
+    updateFilter: (key: string, value: boolean) => void,
 ) {
     const userStore = useUserStore();
 
@@ -62,7 +62,7 @@ export function useWorkflowCardIndicators(
         }
     }
 
-    const workflowCardIndicators: CardAttributes[] = [
+    const workflowCardIndicators: CardIndicator[] = [
         {
             id: "workflow-invocations",
             label: "",

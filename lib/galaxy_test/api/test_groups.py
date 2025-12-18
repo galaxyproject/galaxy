@@ -1,5 +1,4 @@
 from typing import (
-    List,
     Optional,
 )
 
@@ -210,7 +209,7 @@ class TestGroupsApi(ApiTestCase):
         if assert_id is not None:
             assert group["id"] == assert_id
 
-    def _assert_group_has_expected_values(self, group_id: str, name: str, user_ids: List[str], role_ids: List[str]):
+    def _assert_group_has_expected_values(self, group_id: str, name: str, user_ids: list[str], role_ids: list[str]):
         group = self._get(f"groups/{group_id}", admin=True).json()
         assert group["name"] == name
         users = self._get(f"groups/{group_id}/users", admin=True).json()

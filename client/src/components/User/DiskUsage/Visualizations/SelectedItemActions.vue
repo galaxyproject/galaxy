@@ -2,6 +2,7 @@
 import { faArchive, faDatabase, faInfoCircle, faTrash, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
+import type { CardAction } from "@/components/Common/GCard.types";
 import { useHistoryStore } from "@/stores/historyStore";
 import { bytesToString } from "@/utils/utils";
 
@@ -82,7 +83,7 @@ const description = computed(() => {
     return ds;
 });
 
-const primaryActions = computed(() => {
+const primaryActions = computed<CardAction[]>(() => {
     return [
         {
             id: "undelete",

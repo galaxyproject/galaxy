@@ -1,6 +1,7 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 
@@ -35,7 +36,7 @@ const CLEANUP_OPERATION: CleanupOperation = {
                 total_free_bytes: 1024,
                 errors: [],
             },
-            EXPECTED_ITEMS
+            EXPECTED_ITEMS,
         ),
 };
 /** Operation without items to clean*/
@@ -70,18 +71,23 @@ const ERROR_CLEANUP_OPERATION: CleanupOperation = {
 async function mountCleanupOperationSummaryWith(
     operation: CleanupOperation,
     refreshOperationId = null,
-    refreshDelay = 0
+    refreshDelay = 0,
 ) {
     const wrapper = mount(CleanupOperationSummary as object, {
         propsData: { operation, refreshOperationId, refreshDelay },
         localVue,
     });
     await flushPromises();
+    vi.runAllTimers();
     await flushPromises();
     return wrapper;
 }
 
 describe("CleanupOperationSummary.vue", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
     it("should display the operation information", async () => {
         const wrapper = await mountCleanupOperationSummaryWith(CLEANUP_OPERATION);
 

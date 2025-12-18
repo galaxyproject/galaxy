@@ -1,17 +1,15 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getAppRoot } from "onload/loadConfig";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
-import { Services } from "../services";
-import Monitor from "./Monitor";
+import Monitor from "./Monitor.vue";
 
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
-
-Services.mockImplementation(() => {
-    return {
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
+vi.mock("../services", () => ({
+    Services: class Services {
         async getInstalledRepositories() {
             return [
                 {
@@ -27,9 +25,9 @@ Services.mockImplementation(() => {
                     description: "description_1",
                 },
             ];
-        },
-    };
-});
+        }
+    },
+}));
 
 describe("Monitor", () => {
     it("test monitor", async () => {

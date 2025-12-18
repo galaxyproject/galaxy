@@ -13,12 +13,12 @@ export function useInstanceAndTemplate(instanceIdRef: Ref<string>) {
     objectStoreTemplatesStore.fetchTemplates();
 
     const instance = computed<UserConcreteObjectStore | null>(
-        () => objectStoreInstancesStore.getInstance(instanceIdRef.value) || null
+        () => objectStoreInstancesStore.getInstance(instanceIdRef.value) || null,
     );
     const template = computed<ObjectStoreTemplateSummary | null>(() =>
         instance.value
             ? objectStoreTemplatesStore.getTemplate(instance.value?.template_id, instance.value?.template_version)
-            : null
+            : null,
     );
 
     return { instance, template };

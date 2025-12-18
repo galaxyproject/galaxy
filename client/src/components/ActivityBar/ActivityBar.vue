@@ -56,7 +56,7 @@ const props = withDefaults(
         optionsTooltip: "View additional activities",
         initialActivity: undefined,
         hidePanel: false,
-    }
+    },
 );
 
 // require user to long click before dragging
@@ -85,7 +85,7 @@ watchImmediate(
         } else {
             activityStore.resetDefaultActivities();
         }
-    }
+    },
 );
 
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
@@ -98,9 +98,20 @@ const emit = defineEmits<{
 // activities from store
 const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
 
-const activities = computed(() =>
-    storeActivities.value.filter((activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value)
-);
+const activities = computed({
+    get() {
+        return storeActivities.value.filter(
+            (activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value,
+        );
+    },
+    set(newActivities: Activity[]) {
+        // Find any filtered-out activities and add them back
+        const filteredOut = storeActivities.value.filter(
+            (activity) => activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value,
+        );
+        storeActivities.value = [...newActivities, ...filteredOut];
+    },
+});
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -219,7 +230,7 @@ defineExpose({
             @dragleave.prevent="onDragLeave">
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
-                    :list="activities"
+                    v-model="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :disabled="!canDrag"
                     :force-fallback="true"
@@ -248,13 +259,13 @@ defineExpose({
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
-                                :is-active="isActiveRoute(activity.to)"
+                                :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
-                                @click="toggleSidebar('interactivetools')" />
+                                @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
-                                v-else-if="activity.id === 'admin' || activity.panel"
+                                v-else-if="activity.panel"
                                 :id="`${activity.id}`"
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
@@ -345,7 +356,7 @@ defineExpose({
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
-            <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" />
+            <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
             <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />
             <SettingsPanel
                 v-else-if="isActiveSideBar('settings')"
@@ -360,7 +371,7 @@ defineExpose({
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-bar {
     background: $panel-bg-color;

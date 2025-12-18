@@ -16,7 +16,15 @@ execution:
     pulsar_embed:
       runner: pulsar_embed
       remote_metadata: true
+    user_defined:
+      runner: pulsar_embed
+      remote_metadata: true
+      docker_enabled: true
+      require_container: true
+      docker_net: "none"
 
 tools:
 - class: local
   environment: local
+- class: user_defined
+  environment: user_defined

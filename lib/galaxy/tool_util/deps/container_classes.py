@@ -52,23 +52,28 @@ python << EOF
 from __future__ import print_function
 
 import json
-import re
 import subprocess
 import tarfile
 
 t = tarfile.TarFile("${cached_image_file}")
 meta_str = t.extractfile('repositories').read()
 meta = json.loads(meta_str)
-tag, tag_value = next(iter(meta.items()))
-rev, rev_value = next(iter(tag_value.items()))
+repository, tag_value = next(iter(meta.items()))
+tag, id = next(iter(tag_value.items()))
 cmd = "${images_cmd}"
-proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, text=True)
 stdo, stde = proc.communicate()
 found = False
 for line in stdo.split("\n"):
-    tmp = re.split(r'\s+', line)
-    if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
-        found = True
+    line = line.strip()
+    if line:
+        try:
+            img = json.loads(line)
+            if img.get("Repository") == repository and img.get("Tag") == tag and img.get("ID") == id:
+                found = True
+                break
+        except (json.JSONDecodeError, ValueError):
+            pass
 if not found:
     print("Loading image")
     cmd = "cat ${cached_image_file} | ${load_cmd}"
@@ -298,7 +303,8 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     if not volumes_raw_str:
         return []
 
-    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",")]
+    # filter out empty strings, this happens for tools without tool directories.
+    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",") if v]
     rw_paths = [v.target for v in volumes if v.mode == "rw"]
     for volume in volumes:
         mode = volume.mode
@@ -480,6 +486,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
             run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
+            host_port_cmd=self.prop("host_port_cmd", None),
             container_name=self.container_name,
             **docker_host_props,
         )
@@ -501,7 +508,7 @@ _on_exit() {{
 {run_command}"""
 
     def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
-        images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
+        images_cmd = docker_util.build_docker_images_command(truncate=False, format="json", **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
         return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
@@ -590,6 +597,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             cleanenv=asbool(self.prop("cleanenv", singularity_util.DEFAULT_CLEANENV)),
             ipc=asbool(self.prop("ipc", singularity_util.DEFAULT_IPC)),
             pid=asbool(self.prop("pid", singularity_util.DEFAULT_PID)),
+            contain=asbool(self.prop("contain", singularity_util.DEFAULT_CONTAIN)),
             no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )

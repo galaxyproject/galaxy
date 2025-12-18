@@ -145,6 +145,6 @@ function parseContent() {
 watch(
     () => props.content,
     () => parseContent(),
-    { immediate: true }
+    { immediate: true },
 );
 </script>

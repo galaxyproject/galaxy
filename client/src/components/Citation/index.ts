@@ -10,7 +10,7 @@ export interface Citation {
                 format: string;
                 template: string;
                 lang: string;
-            }
+            },
         ) => string;
     };
 }

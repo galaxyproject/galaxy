@@ -15,7 +15,7 @@ interface StepOutput {
 interface Step {
     label?: string;
     type: string;
-    workflow_outputs: StepOutput[];
+    workflow_outputs?: StepOutput[];
 }
 
 export type WorkflowLabels = WorkflowLabel[];
@@ -33,11 +33,13 @@ export function fromSteps(steps?: Step[]): WorkflowLabels {
                     labels.push({ type: "step", label: step.label });
                 }
             }
-            step.workflow_outputs.forEach((workflowOutput) => {
-                if (workflowOutput.label) {
-                    labels.push({ type: "output", label: workflowOutput.label });
-                }
-            });
+            if (step.workflow_outputs) {
+                step.workflow_outputs.forEach((workflowOutput) => {
+                    if (workflowOutput.label) {
+                        labels.push({ type: "output", label: workflowOutput.label });
+                    }
+                });
+            }
         });
     }
     return labels;

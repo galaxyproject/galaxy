@@ -1,7 +1,16 @@
 <template>
     <div :step-label="model.step_label">
         <FormCard :title="model.fixed_title" :icon="icon" :collapsible="true" :expanded.sync="expanded">
+            <template v-slot:title>
+                <span v-if="credentialInfo?.toolId" v-b-tooltip.hover title="Uses credentials">
+                    <FontAwesomeIcon :icon="faKey" fixed-width />
+                </span>
+            </template>
             <template v-slot:body>
+                <ToolCredentials
+                    v-if="credentialInfo?.toolId"
+                    :tool-id="credentialInfo.toolId"
+                    :tool-version="credentialInfo.toolVersion" />
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
                     :inputs="modelInputs"
@@ -21,23 +30,25 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faUndo } from "@fortawesome/free-solid-svg-icons";
-import { getGalaxyInstance } from "app";
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import FormMessage from "components/Form/FormMessage";
-import { visitInputs } from "components/Form/utilities";
-import WorkflowIcons from "components/Workflow/icons";
+import { faKey } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
+
+import { visitInputs } from "@/components/Form/utilities";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 
 import { getTool } from "./services";
 
-library.add(faEdit, faUndo);
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormMessage from "@/components/Form/FormMessage.vue";
+import ToolCredentials from "@/components/Tool/ToolCredentials.vue";
 
 export default {
     components: {
+        FontAwesomeIcon,
+        ToolCredentials,
         FormDisplay,
         FormCard,
         FormMessage,
@@ -62,6 +73,7 @@ export default {
     },
     data() {
         return {
+            faKey,
             expanded: this.model.expanded,
             errorText: null,
             modelData: {},
@@ -71,6 +83,17 @@ export default {
     },
     computed: {
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
+        credentialInfo() {
+            if (!this.model.credentials?.length) {
+                return null;
+            }
+
+            return {
+                toolId: this.model.id,
+                toolVersion: this.model.version,
+                toolCredentials: this.model.credentials,
+            };
+        },
         icon() {
             return WorkflowIcons[this.model.step_type];
         },
@@ -96,10 +119,7 @@ export default {
             });
         },
         onHistoryChange() {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
-                this.onUpdate();
-            }
+            this.onUpdate();
         },
         onChange(data, refreshRequest) {
             this.modelData = data;
@@ -121,7 +141,7 @@ export default {
                 },
                 (errorText) => {
                     this.errorText = errorText;
-                }
+                },
             );
         },
         onValidation(validation) {

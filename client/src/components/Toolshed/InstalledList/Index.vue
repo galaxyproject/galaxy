@@ -53,13 +53,15 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { getAppRoot } from "@/onload/loadConfig";
+
 import { Services } from "../services";
-import RepositoryDetails from "./Details";
-import Monitor from "./Monitor";
+
+import RepositoryDetails from "./Details.vue";
+import Monitor from "./Monitor.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 Vue.use(BootstrapVue);
 

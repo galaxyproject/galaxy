@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -20,20 +21,20 @@ const selectors = {
 };
 
 // Mock the workflow store to return a workflow for `getStoredWorkflowByInstanceId`
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule: any = await vi.importActual("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
             ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation(() => {
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation(() => {
                 return {
                     id: "workflow-id",
                     name: "Test Workflow",
                     version: 0,
                 };
             }),
-            getFullWorkflowCached: jest.fn().mockImplementation(() => {
+            getFullWorkflowCached: vi.fn().mockImplementation(() => {
                 /** The actual outputs of the workflow invocation */
                 const testDatasetOutputLabels = Object.keys(invocationData.outputs);
                 const testCollectionOutputsLabels = Object.keys(invocationData.output_collections);
@@ -69,7 +70,11 @@ jest.mock("@/stores/workflowStore", () => {
  * @param terminal Whether the invocation is terminal
  * @returns The mounted wrapper
  */
-async function mountWorkflowInvocationInputOutputTabs(invocation: WorkflowInvocationElementView, terminal = true) {
+async function mountWorkflowInvocationInputOutputTabs(
+    invocation: WorkflowInvocationElementView,
+    tab: "inputs" | "outputs" = "inputs",
+    terminal = true,
+) {
     server.use(
         http.get("/api/datasets/{dataset_id}", ({ response, params }) => {
             // We need to use untyped here because this endpoint is not
@@ -77,7 +82,7 @@ async function mountWorkflowInvocationInputOutputTabs(invocation: WorkflowInvoca
             return response.untyped(
                 HttpResponse.json({
                     id: params.dataset_id,
-                })
+                }),
             );
         }),
         http.get("/api/dataset_collections/{hdca_id}", ({ response, params }) => {
@@ -86,21 +91,22 @@ async function mountWorkflowInvocationInputOutputTabs(invocation: WorkflowInvoca
             return response.untyped(
                 HttpResponse.json({
                     id: params.hdca_id,
-                })
+                }),
             );
-        })
+        }),
     );
 
     const wrapper = mount(WorkflowInvocationInputOutputTabs as object, {
         propsData: {
             invocation,
             terminal,
+            tab,
         },
         stubs: {
             ContentItem: true,
             ParameterStep: true,
         },
-        pinia: createTestingPinia(),
+        pinia: createTestingPinia({ createSpy: vi.fn }),
     });
     await flushPromises();
     return wrapper;
@@ -142,7 +148,10 @@ describe("WorkflowInvocationInputOutputTabs", () => {
     });
 
     it("shows invocation outputs when invocation is terminal", async () => {
-        const wrapper = await mountWorkflowInvocationInputOutputTabs(invocationData as WorkflowInvocationElementView);
+        const wrapper = await mountWorkflowInvocationInputOutputTabs(
+            invocationData as WorkflowInvocationElementView,
+            "outputs",
+        );
 
         testOutputsDisplayed(wrapper);
     });
@@ -153,7 +162,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
             outputs: {},
             output_collections: {},
         } as WorkflowInvocationElementView;
-        const wrapper = await mountWorkflowInvocationInputOutputTabs(nonTerminalInvocation, false);
+        const wrapper = await mountWorkflowInvocationInputOutputTabs(nonTerminalInvocation, "outputs", false);
 
         testOutputsDisplayed(wrapper, false);
     });
@@ -166,7 +175,7 @@ describe("WorkflowInvocationInputOutputTabs", () => {
 
         // Test that the invocation outputs are displayed
         const invocationOutputs = wrapper.findAll(
-            terminal ? selectors.terminalInvocationOutput : selectors.nonTerminalInvocationOutput
+            terminal ? selectors.terminalInvocationOutput : selectors.nonTerminalInvocationOutput,
         );
         expect(invocationOutputs.length).toEqual(expectedLabels.length);
 

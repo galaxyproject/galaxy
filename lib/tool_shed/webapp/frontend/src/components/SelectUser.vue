@@ -24,11 +24,13 @@ const allOptions = computed(() => users?.value.map((u) => u.username))
 const options = ref(allOptions.value)
 const selected = ref(null)
 
-const emit = defineEmits(["selectedUser"])
+const emit = defineEmits(["selectedUser", "cleared"])
 
 watch(selected, (user) => {
     if (user) {
         emit("selectedUser", user)
+    } else if (props.persistSelection) {
+        emit("cleared")
     }
     if (!props.persistSelection) {
         selected.value = null
@@ -52,11 +54,13 @@ const hideSelected = computed(() => !props.persistSelection)
         :dense="dense"
         filled
         use-input
+        clearable
         :hide-selected="hideSelected"
         :label="label"
         v-model="selected"
         input-debounce="0"
         @filter="filterFn"
+        @keyup.delete="selected = null"
         :options="options"
     />
 </template>

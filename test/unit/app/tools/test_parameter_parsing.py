@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.tools.parameters.wrapped import (
@@ -27,7 +26,7 @@ def test_nested_key_to_path():
 
 class TestProcessKey:
     def test_process_key(self):
-        nested_dict: Dict[str, Any] = {}
+        nested_dict: dict[str, Any] = {}
         d = {
             "repeat_1|inner_repeat_1|data_table_column_value": "bla4",
             "repeat_0|inner_repeat_1|data_table_column_value": "bla2",
@@ -45,7 +44,7 @@ class TestProcessKey:
         assert nested_dict == expected_dict
 
     def test_process_key_2(self):
-        nested_dict: Dict[str, Any] = {}
+        nested_dict: dict[str, Any] = {}
         d = {
             "data_tables_0|columns_0|data_table_column_value": "Amel_HAv3.1",
             "data_tables": [],

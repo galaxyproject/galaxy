@@ -1,5 +1,4 @@
 from typing import (
-    List,
     Optional,
 )
 
@@ -125,7 +124,7 @@ class TestGroupUsersApi(ApiTestCase):
         delete_response = self._delete(f"groups/{encoded_group_id}/users/{encoded_user_id}", admin=True)
         self._assert_status_code_is(delete_response, 400)
 
-    def _create_group(self, group_name: str, encoded_user_ids: Optional[List[str]] = None):
+    def _create_group(self, group_name: str, encoded_user_ids: Optional[list[str]] = None):
         if encoded_user_ids is None:
             encoded_user_ids = [self.dataset_populator.user_id()]
         user_ids = encoded_user_ids

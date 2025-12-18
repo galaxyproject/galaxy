@@ -3,6 +3,8 @@ from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
 
+import pytest
+
 from galaxy.dependencies import ConditionalDependencies
 
 AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
@@ -27,9 +29,6 @@ JOB_CONF_YAML = """
 runners:
   runner1:
     load: job_runner_A
-"""
-VAULT_CONF_CUSTOS = """
-type: custos
 """
 VAULT_CONF_HASHICORP = """
 type: hashicorp
@@ -100,17 +99,6 @@ def test_yaml_jobconf_runners():
         assert "job_runner_A" in cds.job_runners
 
 
-def test_vault_custos_configured():
-    with _config_context() as cc:
-        vault_conf = cc.write_config("vault_conf.yml", VAULT_CONF_CUSTOS)
-        config = {
-            "vault_config_file": vault_conf,
-        }
-        cds = cc.get_cond_deps(config=config)
-        assert cds.check_custos_sdk()
-        assert not cds.check_hvac()
-
-
 def test_vault_hashicorp_configured():
     with _config_context() as cc:
         vault_conf = cc.write_config("vault_conf.yml", VAULT_CONF_HASHICORP)
@@ -119,7 +107,44 @@ def test_vault_hashicorp_configured():
         }
         cds = cc.get_cond_deps(config=config)
         assert cds.check_hvac()
-        assert not cds.check_custos_sdk()
+
+
+@pytest.mark.parametrize(
+    "config,expected",
+    [
+        (
+            {
+                "enable_celery_tasks": True,
+            },
+            False,
+        ),
+        (
+            {
+                "enable_celery_tasks": True,
+                "celery_conf": {"result_backend": None},
+            },
+            False,
+        ),
+        (
+            {
+                "enable_celery_tasks": True,
+                "celery_conf": {"broker_url": "redis://localhost:6379/0"},
+            },
+            True,
+        ),
+        (
+            {
+                "enable_celery_tasks": True,
+                "celery_conf": {"result_backend": "redis://localhost:6379/0"},
+            },
+            True,
+        ),
+    ],
+)
+def test_conditional_redis(config, expected):
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config=config)
+        assert cds.check_redis() is expected
 
 
 @contextmanager

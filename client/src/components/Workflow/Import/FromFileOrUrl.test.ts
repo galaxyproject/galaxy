@@ -1,15 +1,18 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
 import FromFileOrUrl from "./FromFileOrUrl.vue";
 
 let lastPostRequest: Map<string, string>;
 
-jest.mock("axios", () => ({
-    post: jest.fn((_url, request) => {
-        lastPostRequest = request;
-    }),
-    isAxiosError: jest.fn(() => true),
+vi.mock("axios", () => ({
+    default: {
+        post: vi.fn((_url, request) => {
+            lastPostRequest = request;
+        }),
+        isAxiosError: vi.fn(() => true),
+    },
 }));
 
 const localVue = getLocalVue(true);
@@ -21,7 +24,7 @@ const invalidUrl = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow/additional-
 
 describe("FromFileOrUrl", () => {
     it("converts shared urls to json urls", async () => {
-        const wrapper = mount(FromFileOrUrl, { localVue });
+        const wrapper = mount(FromFileOrUrl as object, { localVue });
 
         {
             const input = wrapper.find("#workflow-import-url-input");

@@ -2,6 +2,7 @@
 import { faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, watch } from "vue";
 
+import type { CardAction } from "@/components/Common/GCard.types";
 import { type ArchiveSource, isValidUrl, useZipExplorer, validateLocalZipFile } from "@/composables/zipExplorer";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -76,17 +77,16 @@ watch(
         } else if (newVal !== oldVal) {
             onUrlChange();
         }
-    }
+    },
 );
 
-const localFileActions = [
+const localFileActions: CardAction[] = [
     {
         id: "btn-browse-local",
         title: "Select a compressed archive from your computer",
         label: "Browse local archive",
         icon: faLaptop,
         handler: browseZipFile,
-        visible: true,
     },
 ];
 </script>

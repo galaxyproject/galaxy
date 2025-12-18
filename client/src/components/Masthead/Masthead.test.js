@@ -1,23 +1,24 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { WindowManager } from "layout/window-manager";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { WindowManager } from "@/entry/analysis/window-manager";
 import { useUserStore } from "@/stores/userStore";
 
-import { loadWebhookMenuItems } from "./_webhooks";
+import { loadMastheadWebhooks } from "./_webhooks";
 
 import Masthead from "./Masthead.vue";
 
-jest.mock("app");
-jest.mock("./_webhooks");
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({ name: "Home" })),
-    useRouter: jest.fn(),
+vi.mock("app");
+vi.mock("./_webhooks");
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({ name: "Home" })),
+    useRouter: vi.fn(),
 }));
 
 const currentUser = getFakeRegisteredUser();
@@ -38,12 +39,12 @@ describe("Masthead.vue", () => {
         });
     }
 
-    loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
+    loadMastheadWebhooks.mockImplementation(stubLoadWebhooks);
 
     beforeEach(async () => {
         localVue = getLocalVue();
         localVue.use(PiniaVuePlugin);
-        testPinia = createTestingPinia();
+        testPinia = createTestingPinia({ createSpy: vi.fn });
 
         windowManager = new WindowManager({});
         const windowTab = windowManager.getTab();
@@ -57,9 +58,6 @@ describe("Masthead.vue", () => {
             },
             localVue,
             pinia: testPinia,
-            stubs: {
-                Icon: true,
-            },
         });
         await flushPromises();
     });
@@ -72,7 +70,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should display window manager button", async () => {
-        expect(wrapper.find("#enable-window-manager a span.fa-th").exists()).toBe(true);
+        expect(wrapper.find("#enable-window-manager a svg").exists()).toBe(true);
         expect(windowManager.active).toBe(false);
         await wrapper.find("#enable-window-manager a").trigger("click");
         expect(windowManager.active).toBe(true);

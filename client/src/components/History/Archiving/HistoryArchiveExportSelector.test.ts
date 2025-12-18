@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import type { HistorySummary, ObjectExportTaskResponse } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -52,9 +53,9 @@ function mockGetExportsApiResponse(taskExportResponse: ObjectExportTaskResponse[
                 HttpResponse.json(taskExportResponse, {
                     status: 200,
                     headers: { "Content-Type": "application/vnd.galaxy.task.export+json" },
-                })
+                }),
             );
-        })
+        }),
     );
 }
 
@@ -100,7 +101,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
         server.use(
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
                 return response(200).json("PENDING");
-            })
+            }),
         );
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);

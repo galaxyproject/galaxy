@@ -7,8 +7,8 @@ import { parseInput, parseOutput } from "@/components/Markdown/Utilities/parseIn
 import { getAppRoot } from "@/onload";
 import { useInvocationStore } from "@/stores/invocationStore";
 
+import VisualizationWrapper from "./VisualizationWrapper.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import VisualizationWrapper from "@/components/Visualizations/VisualizationWrapper.vue";
 
 const DEFAULT_HEIGHT = 400;
 
@@ -102,7 +102,7 @@ function getDatasetId(invocation: Invocation, datasetLabel: DatasetLabel) {
 watch(
     () => props.content,
     () => processContent(),
-    { immediate: true }
+    { immediate: true },
 );
 
 defineExpose({ visualizationConfig });

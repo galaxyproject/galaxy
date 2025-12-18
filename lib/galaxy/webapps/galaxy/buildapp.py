@@ -8,10 +8,8 @@ import sys
 import threading
 import traceback
 from typing import Optional
-from urllib.parse import urljoin
 
 from paste import httpexceptions
-from tuswsgi import TusMiddleware
 
 import galaxy.app
 import galaxy.datatypes.registry
@@ -195,7 +193,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # The following are routes that are handled completely on the clientside.
     # The following routes don't bootstrap any information, simply provide the
     # base analysis interface at which point the application takes over.
-
+    webapp.add_client_route("/")
+    webapp.add_client_route("/index")
     webapp.add_client_route("/about")
     webapp.add_client_route("/admin")
     webapp.add_client_route("/admin/data_tables")
@@ -225,7 +224,9 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/help/terms/{term_id}")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
+    webapp.add_client_route("/register/start")
     webapp.add_client_route("/tools/list")
+    webapp.add_client_route("/tools/list/ontologies")
     webapp.add_client_route("/tools/json")
     webapp.add_client_route("/tools/editor")
     webapp.add_client_route("/tools/editor/{uuid}")
@@ -279,16 +280,20 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/permissions")
     webapp.add_client_route("/histories/view")
     webapp.add_client_route("/histories/view_multiple")
+    webapp.add_client_route("/datasets/copy")
     webapp.add_client_route("/datasets/list")
     webapp.add_client_route("/datasets/{dataset_id}/edit")
     webapp.add_client_route("/datasets/{dataset_id}/error")
     webapp.add_client_route("/datasets/{dataset_id}/details")
     webapp.add_client_route("/datasets/{dataset_id}/preview")
+    webapp.add_client_route("/datasets/{dataset_id}/raw")
     webapp.add_client_route("/datasets/{dataset_id}/report")
     webapp.add_client_route("/datasets/{dataset_id}/show_params")
     webapp.add_client_route("/datasets/{dataset_id}/visualize")
     webapp.add_client_route("/datasets/{dataset_id}")
+    webapp.add_client_route("/display_applications/{path:.*?}")
     webapp.add_client_route("/collection/{collection_id}/edit")
+    webapp.add_client_route("/collection/{collection_id}/sheet")
     webapp.add_client_route("/collection/new_list")
     webapp.add_client_route("/jobs/submission/success")
     webapp.add_client_route("/jobs/{job_id}/view")
@@ -306,6 +311,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflows/trs_search")
     webapp.add_client_route("/workflows/invocations")
     webapp.add_client_route("/workflows/invocations/{invocation_id}")
+    webapp.add_client_route("/workflows/invocations/{invocation_id}/{tab:.*?}")
     webapp.add_client_route("/workflows/invocations/import")
     webapp.add_client_route("/workflows/sharing")
     webapp.add_client_route("/workflows/{stored_workflow_id}/invocations")
@@ -316,6 +322,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/libraries{path:.*?}")
     webapp.add_client_route("/storage{path:.*?}")
     webapp.add_client_route("/import/zip")
+    webapp.add_client_route("/downloads")
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -608,27 +615,6 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
 
-    # ---- visualizations registry ---- generic template renderer
-    # @deprecated: this route should be considered deprecated
-    webapp.add_route(
-        "/visualization/show/{visualization_name}", controller="visualization", action="render", visualization_name=None
-    )
-
-    # provide an alternate route to visualization plugins that's closer to their static assets
-    # (/plugins/visualizations/{visualization_name}/static) and allow them to use relative urls to those
-    webapp.mapper.connect(
-        "visualization_plugin",
-        "/plugins/visualizations/{visualization_name}/show",
-        controller="visualization",
-        action="render",
-    )
-    webapp.mapper.connect(
-        "saved_visualization",
-        "/plugins/visualizations/{visualization_name}/saved",
-        controller="visualization",
-        action="saved",
-        conditions={"method": ["GET"]},
-    )
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect(
         "import_workflow_deprecated",
@@ -1079,30 +1065,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.web.framework.middleware.translogger import TransLogger
 
         app = wrap_if_allowed(app, stack, TransLogger)
-    # TUS upload middleware
-    app = wrap_if_allowed(
-        app,
-        stack,
-        TusMiddleware,
-        kwargs={
-            "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/upload/resumable_upload"),
-            "tmp_dir": application_stack.config.tus_upload_store or application_stack.config.new_file_path,
-            "max_size": application_stack.config.maximum_upload_file_size,
-        },
-    )
-    # TUS upload middleware for job files....
-    app = wrap_if_allowed(
-        app,
-        stack,
-        TusMiddleware,
-        kwargs={
-            "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/job_files/resumable_upload"),
-            "tmp_dir": application_stack.config.tus_upload_store_job_files
-            or application_stack.config.tus_upload_store
-            or application_stack.config.new_file_path,
-            "max_size": application_stack.config.maximum_upload_file_size,
-        },
-    )
     # X-Forwarded-Host handling
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     # Request ID middleware

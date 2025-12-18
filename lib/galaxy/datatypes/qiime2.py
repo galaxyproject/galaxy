@@ -4,8 +4,6 @@ import io
 import uuid as _uuid
 import zipfile
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -63,7 +61,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         return "".join(table)
 
-    def _peek(self, dataset: HasMetadata, simple: bool = False) -> List:
+    def _peek(self, dataset: HasMetadata, simple: bool = False) -> list:
         peek = [("Type", dataset.metadata.semantic_type), ("UUID", dataset.metadata.uuid)]
         if not simple:
             if dataset.metadata.semantic_type != "Visualization":
@@ -71,7 +69,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
             peek.append(("Version", dataset.metadata.version))
         return peek
 
-    def _sniff(self, filename: str) -> Optional[Dict]:
+    def _sniff(self, filename: str) -> Optional[dict]:
         """Helper method for use in inherited datatypes"""
         try:
             if not zipfile.is_zipfile(filename):
@@ -116,7 +114,7 @@ class QIIME2Metadata(Tabular):
     _TYPES_DIRECTIVE = "#q2:types"
     _search_lines = 2
 
-    def get_column_names(self, first_line: str) -> Optional[List[str]]:
+    def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return first_line.strip().split("\t")
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:

@@ -65,7 +65,7 @@ const filteredTemplates = computed(() => {
             (template) =>
                 categoryName.toLowerCase().includes(query.value.toLowerCase()) ||
                 template.title.toLowerCase().includes(query.value.toLowerCase()) ||
-                template.description.toLowerCase().includes(query.value.toLowerCase())
+                template.description.toLowerCase().includes(query.value.toLowerCase()),
         );
         if (matchedTemplates.length > 0) {
             filteredCategories[categoryName] = matchedTemplates;

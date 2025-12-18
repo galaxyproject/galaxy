@@ -1,9 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 import VueRouter from "vue-router";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
-import CarbonEmissions from "./CarbonEmissions";
+
+import CarbonEmissions from "./CarbonEmissions.vue";
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);
@@ -129,7 +131,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
         });
         const locationText = wrapper.find("#location-explanation").element;
         expect(locationText).toHaveTextContent(
-            `1. Based off of the global carbon intensity value of ${carbonIntensity}.`
+            `1. Based off of the global carbon intensity value of ${carbonIntensity}.`,
         );
     });
 
@@ -152,7 +154,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
 
         const locationElement = wrapper.find("#location-explanation").element;
         expect(locationElement).toHaveTextContent(
-            `1. based off of this galaxy instance's configured location of ${locationName}, which has a carbon intensity value of ${carbonIntensity} gCO2/kWh.`
+            `1. based off of this galaxy instance's configured location of ${locationName}, which has a carbon intensity value of ${carbonIntensity} gCO2/kWh.`,
         );
     });
 
@@ -174,7 +176,7 @@ describe("CarbonEmissions/CarbonEmissions.vue", () => {
 
         const locationElement = wrapper.find("#pue").element;
         expect(locationElement).toHaveTextContent(
-            `2. Using the global default power usage effectiveness value of ${powerUsageEffectiveness}.`
+            `2. Using the global default power usage effectiveness value of ${powerUsageEffectiveness}.`,
         );
     });
 });

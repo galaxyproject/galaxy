@@ -7,9 +7,13 @@ import logging
 import math
 import os
 import re
-import time
 from dataclasses import dataclass
 from datetime import datetime
+from typing import (
+    Any,
+    TYPE_CHECKING,
+    Union,
+)
 
 import yaml
 
@@ -49,8 +53,10 @@ from galaxy.jobs.runners.util.pykube_util import (
     Service,
     service_object_dict,
 )
-from galaxy.util import unicodify
 from galaxy.util.bytesize import ByteSize
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +75,7 @@ class RetryableDeleteJobState(JobState):
         self.attempts: int = attempts
 
 
-class KubernetesJobRunner(AsynchronousJobRunner):
+class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -162,7 +168,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self.runner_params["k8s_volumes"].extend(get_volume_mounts_for("k8s_data_volume_claim")[0])
         self.runner_params["k8s_volumes"].extend(get_volume_mounts_for("k8s_working_volume_claim")[0])
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Create a Galaxy job script and submit it to Kubernetes cluster"""
         # prepare the Galaxy job
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
@@ -170,16 +176,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         log.debug(f"Starting queue_job for Galaxy job {job_wrapper.get_id_tag()}")
 
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
             job_destination=job_wrapper.job_destination,
+            files_dir=job_wrapper.working_directory,
         )
-        # Kubernetes doesn't really produce meaningful "job stdout", but file needs to be present
-        with open(ajs.output_file, "w"):
-            pass
-        with open(ajs.error_file, "w"):
-            pass
-
+        # Kubernetes doesn't really produce a "job script", but job stream files needs to be present
+        ajs.init_job_stream_files()
         if not self.prepare_job(
             job_wrapper,
             include_metadata=False,
@@ -242,7 +244,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         )
         return bool(job_wrapper.guest_ports) or bool(job_wrapper.get_job().interactivetool_entry_points)
 
-    def __configure_port_routing(self, ajs):
+    def __configure_port_routing(self, ajs: AsynchronousJobState) -> None:
         # Configure interactive tool entry points first
         guest_ports = ajs.job_wrapper.guest_ports
         ports_dict = {}
@@ -679,26 +681,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         return ByteSize(mem_value).value
 
-    def __assemble_k8s_container_image_name(self, job_wrapper):
-        """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
-        job_destination = job_wrapper.job_destination
-
-        # Determine the job's Kubernetes destination (context, namespace) and options from the job destination
-        # definition
-        repo = ""
-        owner = ""
-        if "repo" in job_destination.params:
-            repo = f"{job_destination.params['repo']}/"
-        if "owner" in job_destination.params:
-            owner = f"{job_destination.params['owner']}/"
-
-        k8s_cont_image = repo + owner + job_destination.params["image"]
-
-        if "tag" in job_destination.params:
-            k8s_cont_image += f":{job_destination.params['tag']}"
-
-        return k8s_cont_image
-
     def __get_k8s_container_name(self, job_wrapper):
         # These must follow a specific regex for Kubernetes.
         raw_id = job_wrapper.job_destination.id
@@ -712,7 +694,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_job_name(self, prefix, job_wrapper):
         return f"{prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
 
-    def check_watched_item(self, job_state):
+    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
         """Checks the state of a job already submitted on k8s. Job state is an AsynchronousJobState"""
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
 
@@ -754,7 +736,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_persisted_state = job_state.job_wrapper.get_state()
 
             # This assumes jobs dependent on a single pod, single container
-            if succeeded > 0 or job_state == model.Job.states.STOPPED:
+            if succeeded > 0 or job_persisted_state == model.Job.states.STOPPED:
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 log.debug(f"Job id: {job_state.job_id} with k8s id: {k8s_job.name} succeeded")
@@ -1068,7 +1050,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 e,
             )
 
-    def recover(self, gxy_job, job_wrapper):
+    def recover(self, gxy_job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = gxy_job.get_job_runner_external_id()
         log.debug(f"k8s trying to recover job: {job_id}")
@@ -1076,12 +1058,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self.put(job_wrapper)
             return
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
-            job_id=job_id,
             job_destination=job_wrapper.job_destination,
+            files_dir=job_wrapper.working_directory,
+            job_id=job_id,
         )
-        ajs.command_line = gxy_job.command_line
         if gxy_job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 "(%s/%s) is still in %s state, adding to the runner monitor queue",
@@ -1103,7 +1084,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self.monitor_queue.put(ajs)
 
     # added to make sure that stdout and stderr is captured for Kubernetes
-    def fail_job(self, job_state: "JobState", exception=False, message="Job failed", full_status=None):
+    def fail_job(
+        self,
+        job_state: "JobState",
+        exception: bool = False,
+        message: str = "Job failed",
+        full_status: Union[dict[str, Any], None] = None,
+    ) -> None:
         log.debug("PP Getting into fail_job in k8s runner")
         gxy_job = job_state.job_wrapper.get_job()
 
@@ -1114,22 +1101,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # To ensure that files below are readable, ownership must be reclaimed first
         job_state.job_wrapper.reclaim_ownership()
 
-        # wait for the files to appear
-        which_try = 0
-        while which_try < self.app.config.retry_job_output_collection + 1:
-            try:
-                with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, "rb") as stderr_file:
-                    job_stdout = self._job_io_for_db(stdout_file)
-                    job_stderr = self._job_io_for_db(stderr_file)
-                break
-            except Exception as e:
-                if which_try == self.app.config.retry_job_output_collection:
-                    job_stdout = ""
-                    job_stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error(f"{gxy_job.id}/{gxy_job.job_runner_external_id} {job_stderr}: {unicodify(e)}")
-                else:
-                    time.sleep(1)
-                which_try += 1
+        _, job_stdout, job_stderr = self._collect_job_output(gxy_job.id, gxy_job.job_runner_external_id, job_state)
 
         # get stderr and stdout to database
         outputs_directory = os.path.join(job_state.job_wrapper.working_directory, "outputs")
@@ -1169,7 +1141,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # run super method
         super().fail_job(job_state, exception, message, full_status)
 
-    def finish_job(self, job_state):
+    def finish_job(self, job_state: AsynchronousJobState) -> None:
         self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
         super().finish_job(job_state)
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])

@@ -1,114 +1,89 @@
-<template>
-    <b-row class="ml-3 mb-1">
-        <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
-        <div class="pref-content pr-1">
-            <a id="delete-account" href="javascript:void(0)"
-                ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
-            >
-            <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
-            <b-modal
-                id="modal-prevent-closing"
-                ref="modal"
-                centered
-                title="Account Deletion"
-                title-tag="h2"
-                @show="resetModal"
-                @hidden="resetModal"
-                @ok="handleOk">
-                <p>
-                    <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
-                    <b>
-                        This action cannot be undone. Your account will be permanently deleted, along with the data
-                        contained in it.
-                    </b>
-                </p>
-                <b-form ref="form" @submit.prevent="handleSubmit">
-                    <b-form-group
-                        :state="nameState"
-                        label="Enter your user email for this account as confirmation."
-                        label-for="Email"
-                        invalid-feedback="Incorrect email">
-                        <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                    </b-form-group>
-                </b-form>
-            </b-modal>
-        </div>
-    </b-row>
-</template>
+<script setup lang="ts">
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BFormGroup, BFormInput, BModal } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 
-<script>
-import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import { userLogoutClient } from "utils/logout";
-import { withPrefix } from "utils/redirect";
-import Vue from "vue";
+import { GalaxyApi, isRegisteredUser } from "@/api";
+import { useUserStore } from "@/stores/userStore";
+import { userLogoutClient } from "@/utils/logout";
 
-Vue.use(BootstrapVue);
+const emit = defineEmits<{
+    (e: "reset"): void;
+}>();
 
-export default {
-    props: {
-        userId: {
-            type: String,
-            required: true,
-        },
-        email: {
-            type: String,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            name: "",
-            nameState: null,
-            deleteError: "",
-        };
-    },
-    computed: {
-        showDeleteError() {
-            return this.deleteError !== "";
-        },
-    },
-    methods: {
-        checkFormValidity() {
-            const valid = this.$refs.form.checkValidity();
-            this.nameState = valid;
-            return valid;
-        },
-        resetModal() {
-            this.name = "";
-            this.nameState = null;
-        },
-        handleOk(bvModalEvt) {
-            // Prevent modal from closing
-            bvModalEvt.preventDefault();
-            // Trigger submit handler
-            this.handleSubmit();
-        },
-        async handleSubmit() {
-            if (!this.checkFormValidity()) {
-                return false;
-            }
-            if (this.email === this.name) {
-                this.nameState = true;
-                try {
-                    await axios.delete(withPrefix(`/api/users/${this.userId}`));
-                } catch (e) {
-                    if (e.response.status === 403) {
-                        this.deleteError =
-                            "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
-                        return false;
-                    }
-                }
-                userLogoutClient();
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
+
+const touched = ref(false);
+const userInput = ref("");
+const deleteError = ref("");
+
+const userId = computed(() => (isRegisteredUser(currentUser.value) && currentUser.value?.id) || "");
+const userEmail = computed(() => isRegisteredUser(currentUser.value) && currentUser.value?.email);
+const inputState = computed(() => (touched.value ? nameState.value : null));
+const nameState = computed(() => userInput.value === userEmail.value);
+const showDeleteError = computed(() => {
+    return deleteError.value !== "";
+});
+
+function resetModal() {
+    userInput.value = "";
+    emit("reset");
+}
+
+async function handleSubmit() {
+    if (nameState.value) {
+        const { error } = await GalaxyApi().DELETE("/api/users/{user_id}", {
+            params: {
+                path: {
+                    user_id: userId.value,
+                },
+            },
+        });
+
+        if (error) {
+            if (error.err_code === 403) {
+                ("User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.");
             } else {
-                this.nameState = false;
-                return false;
+                deleteError.value = "An error occurred while deleting the user.";
             }
-        },
-    },
-};
+        } else {
+            userLogoutClient();
+        }
+    }
+}
 </script>
 
-<style scoped>
-@import "user-styles.scss";
-</style>
+<template>
+    <BModal
+        id="modal-user-deletion"
+        centered
+        title="Account Deletion"
+        title-tag="h2"
+        visible
+        static
+        ok-variant="danger"
+        ok-title="Delete Account Permanently"
+        cancel-variant="outline-primary"
+        :ok-disabled="!nameState"
+        @hidden="resetModal"
+        @ok="handleSubmit">
+        <BAlert variant="danger" :show="showDeleteError">{{ deleteError }}</BAlert>
+        <BAlert variant="warning" show>
+            <b>
+                <FontAwesomeIcon :icon="faExclamationTriangle" />
+                This action cannot be undone. Your account will be PERMANENTLY deleted, along with the data contained in
+                it.
+            </b>
+        </BAlert>
+
+        <BFormGroup
+            :state="inputState"
+            label="Enter your email address to confirm deletion"
+            invalid-feedback="Email does not match the current user email.">
+            <BFormInput id="name-input" v-model="userInput" :state="inputState" required @blur="touched = true" />
+        </BFormGroup>
+    </BModal>
+</template>

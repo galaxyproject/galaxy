@@ -61,7 +61,7 @@ def parse_tool_version_with_defaults(
             # For backward compatibility, some tools may not have versions yet.
             version = "1.0.0"
         else:
-            raise Exception(f"Missing tool 'version' for tool with id '{id}' at '{tool_source}'")
+            raise ValueError(f"Missing tool 'version' for tool with id '{id}' at '{tool_source}'")
     return version
 
 

@@ -9,7 +9,7 @@ withDefaults(
     {
         condition: true,
         required: false,
-    }
+    },
 );
 </script>
 

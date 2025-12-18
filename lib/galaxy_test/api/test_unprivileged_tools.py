@@ -3,12 +3,10 @@ from galaxy.tool_util_models import UserToolSource
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
-)
-from ._framework import ApiTestCase
-from .test_tools import (
-    TestsTools,
     TOOL_WITH_SHELL_COMMAND,
 )
+from ._framework import ApiTestCase
+from .test_tools import TestsTools
 
 
 class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):

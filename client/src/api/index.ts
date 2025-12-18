@@ -176,6 +176,7 @@ export type HDAObject = components["schemas"]["HDAObject"];
 export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
 
 export type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];
+export type UserConcreteObjectStoreModel = components["schemas"]["UserConcreteObjectStoreModel"];
 
 export interface SelectableObjectStore extends ConcreteObjectStoreModel {
     object_store_id: string;
@@ -326,6 +327,10 @@ export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskRe
 export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
 
+export type SampleSheetColumnDefinition = components["schemas"]["SampleSheetColumnDefinitionModel"];
+export type SampleSheetColumnDefinitionType = SampleSheetColumnDefinition["type"];
+export type SampleSheetColumnDefinitions = SampleSheetColumnDefinition[] | null;
+
 export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
 
 export type CollectionElementIdentifiers = components["schemas"]["CollectionElementIdentifier"][];
@@ -333,3 +338,12 @@ export type CreateNewCollectionPayload = components["schemas"]["CreateNewCollect
 export type UnprivilegedToolResponse = components["schemas"]["UnprivilegedToolResponse"];
 export type UserToolSource = components["schemas"]["UserToolSource-Input"];
 export type DynamicUnprivilegedToolCreatePayload = components["schemas"]["DynamicUnprivilegedToolCreatePayload"];
+
+export type ShareableItemWithStatus = components["schemas"]["ShareWithStatus"];
+export type ShareableHistoryWithStatus = components["schemas"]["ShareHistoryWithStatus"];
+export type AnyShareableItemWithStatus = ShareableItemWithStatus | ShareableHistoryWithStatus;
+export type ShareOption = components["schemas"]["SharingOptions"];
+
+export function isShareableHistoryWithStatus(item: AnyShareableItemWithStatus): item is ShareableHistoryWithStatus {
+    return item.extra != null && "accessible_count" in item.extra;
+}

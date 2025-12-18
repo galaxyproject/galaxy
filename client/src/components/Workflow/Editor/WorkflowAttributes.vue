@@ -289,7 +289,7 @@ Acceptable format:
                 if (current_wf.update_time) {
                     update_time = `${format(
                         parseISO(current_wf.update_time, "yyyy-MM-dd", new Date()),
-                        "MMM do yyyy"
+                        "MMM do yyyy",
                     )}`;
                 } else {
                     update_time = "";

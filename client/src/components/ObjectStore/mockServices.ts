@@ -1,11 +1,15 @@
 import { createTestingPinia } from "@pinia/testing";
+import { vi } from "vitest";
 
+// IMPORTANT: This import MUST come after the mock calls above for proper module hoisting
+// eslint-disable-next-line import/order
 import { getSelectableObjectStores } from "@/api/objectStores";
 
-jest.mock("@/api/objectStores");
+vi.mock("@/api/objectStores");
 
 const OBJECT_STORES = [
     {
+        id: "object_store_1",
         object_store_id: "object_store_1",
         badges: [],
         quota: { enabled: false },
@@ -13,6 +17,7 @@ const OBJECT_STORES = [
         name: "Object Store 1",
     },
     {
+        id: "object_store_2",
         object_store_id: "object_store_2",
         badges: [],
         quota: { enabled: false },
@@ -22,7 +27,7 @@ const OBJECT_STORES = [
 ];
 
 export function setupSelectableMock() {
-    createTestingPinia();
-    const mockGetObjectStores = getSelectableObjectStores as jest.MockedFunction<typeof getSelectableObjectStores>;
+    createTestingPinia({ createSpy: vi.fn });
+    const mockGetObjectStores = getSelectableObjectStores as any;
     mockGetObjectStores.mockResolvedValue(OBJECT_STORES);
 }

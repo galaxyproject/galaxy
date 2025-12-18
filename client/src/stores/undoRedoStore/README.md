@@ -16,20 +16,20 @@ An example for this may be a tab, or pop-up having it's own separate undo-redo s
 How undo-redo operations are handled is determined by Undo-Redo actions.
 There are two ways of defining actions:
 
--   extending the `UndoRedoAction`/`LazyUndoRedoAction` class
--   using the `undoRedoStore.action` factory
+- extending the `UndoRedoAction`/`LazyUndoRedoAction` class
+- using the `undoRedoStore.action` factory
 
 The base `UndoRedoAction` class provides 5 methods which can be overridden, all of them optional:
 
--   run / onRun: ran as soon as the action is committed to the undo stack
--   undo / onUndo: ran when an action is rolled back
--   redo / onRedo: ran when an action is re-applied. If not defined, `run` will be ran instead
--   destroy / onDestroy: ran when an action is discarded, either by the undo stack reaching it's max size, or if a new action is applied when this action is in the redo stack
--   get name / setName: determines the actions name in the user interface
+- run / onRun: ran as soon as the action is committed to the undo stack
+- undo / onUndo: ran when an action is rolled back
+- redo / onRedo: ran when an action is re-applied. If not defined, `run` will be ran instead
+- destroy / onDestroy: ran when an action is discarded, either by the undo stack reaching it's max size, or if a new action is applied when this action is in the redo stack
+- get name / setName: determines the actions name in the user interface
 
 Additionally, lazy actions provide the following method:
 
--   queued: ran when `applyLazyAction` is called on the store
+- queued: ran when `applyLazyAction` is called on the store
 
 Example: extending the `UndoRedoAction` class:
 

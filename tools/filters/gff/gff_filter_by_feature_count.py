@@ -48,6 +48,8 @@ AST_NODE_TYPE_WHITELIST = [
     "UnaryOp",
     "Invert",
     "Not",
+    "UAdd",
+    "USub",
     "NotIn",
     "In",
     "Is",
@@ -55,6 +57,7 @@ AST_NODE_TYPE_WHITELIST = [
     "List",
     "Index",
     "Subscript",
+    "Constant",
     "Name",
 ]
 

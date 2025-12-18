@@ -7,9 +7,8 @@ import json
 import logging
 import re
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -22,7 +21,6 @@ from fastapi import (
     status,
 )
 from markupsafe import escape
-from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -39,7 +37,6 @@ from galaxy.model import (
     FormDefinition,
     FormValues,
     HistoryDatasetAssociation,
-    Job,
     Role,
     User,
     UserAddress,
@@ -94,6 +91,7 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import UserIdPathParam
 from galaxy.webapps.galaxy.services.users import UsersService
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -170,7 +168,7 @@ class FastAPIUsers:
     )
     def recalculate_disk_usage(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ):
         """This route will be removed in a future version.
 
@@ -192,7 +190,7 @@ class FastAPIUsers:
     def recalculate_disk_usage_by_user_id(
         self,
         user_id: UserIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ):
         result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
@@ -208,7 +206,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[MaybeLimitedUserModel]:
+    ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.post(
@@ -303,7 +301,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-    ) -> List[UserQuotaUsage]:
+    ) -> list[UserQuotaUsage]:
         if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
@@ -319,7 +317,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-    ) -> List[UserObjectstoreUsage]:
+    ) -> list[UserObjectstoreUsage]:
         if user := self.service.get_user_full(trans, user_id, False):
             return user.dictify_objectstore_usage()
         else:
@@ -482,14 +480,14 @@ class FastAPIUsers:
             )
         else:
             # Have everything needed; create new build.
-            build_dict: Dict[str, Any] = {"name": name}
+            build_dict: dict[str, Any] = {"name": name}
             if len_type in ["text", "file"]:
                 # Create new len file
                 new_len = HistoryDatasetAssociation(extension="len", create_dataset=True, sa_session=trans.sa_session)
                 trans.sa_session.add(new_len)
                 new_len.name = name
                 new_len.visible = False
-                new_len.state = Job.states.OK
+                new_len.state = Dataset.states.OK
                 new_len.info = "custom build .len file"
                 try:
                     trans.app.object_store.create(new_len.dataset)
@@ -595,6 +593,7 @@ class FastAPIUsers:
         "/api/users",
         name="create_user",
         summary="Create a new Galaxy user. Only admins can create users for now.",
+        require_admin=True,
     )
     def create(
         self,
@@ -609,7 +608,7 @@ class FastAPIUsers:
             email = payload.remote_user_email
             username = ""
             password = ""
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+        if not trans.app.config.allow_local_account_creation and not trans.user_is_admin:
             raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
         if trans.app.config.use_remote_user and trans.user_is_admin:
             user = self.service.user_manager.get_or_create_remote_user(remote_user_email=email)
@@ -643,7 +642,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[MaybeLimitedUserModel]:
+    ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(
@@ -821,7 +820,12 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "username": username,
         }
         is_galaxy_app = trans.webapp.name == "galaxy"
-        if (trans.app.config.enable_account_interface and not trans.app.config.use_remote_user) or not is_galaxy_app:
+        allow_profile_edit = (
+            trans.app.config.enable_account_interface
+            and not trans.app.config.use_remote_user
+            and not trans.app.config.disable_local_accounts
+        )
+        if allow_profile_edit or not is_galaxy_app:
             inputs.append(
                 {
                     "id": "email_input",
@@ -837,7 +841,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 }
             )
         if is_galaxy_app:
-            if trans.app.config.enable_account_interface and not trans.app.config.use_remote_user:
+            if allow_profile_edit:
                 inputs.append(
                     {
                         "id": "name_input",

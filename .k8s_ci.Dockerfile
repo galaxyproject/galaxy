@@ -51,14 +51,14 @@ RUN set -xe; \
         libc-dev \
         bzip2 \
         gcc \
-    && pip install --no-cache virtualenv ansible \
+    && pip install --no-cache virtualenv ansible==11.11.0 \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Remove context from previous build; copy current context; run playbook
 WORKDIR /tmp/ansible
 RUN rm -rf *
-ENV LC_ALL en_US.UTF-8
+
 RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO galaxy-docker
 WORKDIR /tmp/ansible/galaxy-docker
 RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
@@ -150,12 +150,14 @@ RUN set -xe; \
         locales \
         vim-tiny \
         nano-tiny \
+        netcat-openbsd \
         curl \
         procps \
         less \
         bzip2 \
         tini \
         nodejs \
+        wget \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
     && echo "set nocompatible\nset backspace=indent,eol,start" >> /usr/share/vim/vimrc.tiny \
@@ -193,4 +195,4 @@ ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
 ENTRYPOINT ["tini", "--"]
 
 # [optional] to run:
-CMD galaxy
+CMD ["galaxy"]

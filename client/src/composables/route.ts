@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router/composables";
 /** use a route query parameter as a boolean computed */
 export function useRouteQueryBool(
     parameter: MaybeRefOrGetter<string>,
-    defaultValue: MaybeRefOrGetter<boolean> = false
+    defaultValue: MaybeRefOrGetter<boolean> = false,
 ) {
     const route = useRoute();
     return computed(() => {

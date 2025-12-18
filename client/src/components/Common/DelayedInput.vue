@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
-import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
 
-library.add(faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes);
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
+import GButton from "../BaseComponents/GButton.vue";
 
 interface Props {
     value?: string;
@@ -64,12 +64,14 @@ function setQuery(queryNew: string) {
 
 watch(
     () => queryInput.value,
-    () => delayQuery(queryInput.value ?? "")
+    () => delayQuery(queryInput.value ?? ""),
 );
 
-function clearBox() {
-    queryInput.value = "";
-    toolInput.value?.focus();
+function clearBox(event?: KeyboardEvent) {
+    if (!event || event.key === "Escape") {
+        queryInput.value = "";
+        toolInput.value?.focus();
+    }
 }
 
 function onToggle() {
@@ -80,48 +82,47 @@ watchImmediate(
     () => props.value,
     (newQuery) => {
         queryInput.value = newQuery;
-    }
+    },
 );
 </script>
 
 <template>
     <BInputGroup>
-        <BFormInput
+        <GFormInput
             ref="toolInput"
             v-model="queryInput"
-            class="search-query"
-            size="sm"
+            class="search-query form-control"
             autocomplete="off"
             :placeholder="placeholder"
             data-description="filter text input"
-            @keydown.esc="clearBox" />
+            @keydown="clearBox" />
 
         <BInputGroupAppend>
-            <BButton
+            <GButton
                 v-if="enableAdvanced"
-                v-b-tooltip.hover.bottom.noninteractive
+                tooltip
                 aria-haspopup="true"
-                size="sm"
+                size="small"
                 :pressed="showAdvanced"
-                :variant="showAdvanced ? 'info' : 'secondary'"
+                :color="showAdvanced ? 'blue' : 'grey'"
                 :title="localize(titleAdvanced)"
                 data-description="toggle advanced search"
                 @click="onToggle">
                 <FontAwesomeIcon v-if="showAdvanced" fixed-width :icon="faAngleDoubleUp" />
                 <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleDown" />
-            </BButton>
+            </GButton>
 
-            <BButton
-                v-b-tooltip.hover.bottom.noninteractive
+            <GButton
+                tooltip
                 aria-haspopup="true"
                 class="search-clear"
-                size="sm"
+                size="small"
                 :title="localize(titleClear)"
                 data-description="reset query"
-                @click="clearBox">
+                @click="clearBox(undefined)">
                 <FontAwesomeIcon v-if="loading" fixed-width :icon="faSpinner" spin />
                 <FontAwesomeIcon v-else fixed-width :icon="faTimes" />
-            </BButton>
+            </GButton>
         </BInputGroupAppend>
     </BInputGroup>
 </template>

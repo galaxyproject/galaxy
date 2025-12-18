@@ -35,35 +35,30 @@ jobs:
         galaxy_python_version: ['3.9']
     steps:
       - name: Checkout Galaxy
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
           path: galaxy
           persist-credentials: false
       - name: Checkout Bioblend
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: galaxyproject/bioblend
           path: bioblend
           persist-credentials: false
-      - name: Cache pip dir
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-cache-${{ matrix.tox_env }}
       - name: Calculate Python version for BioBlend from tox_env
         id: get_bioblend_python_version
         run: echo "bioblend_python_version=$(echo "${{ matrix.tox_env }}" | sed -e 's/^py\([3-9]\)\([0-9]\+\)/\1.\2/')" >> $GITHUB_OUTPUT
       - name: Set up Python for BioBlend
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ steps.get_bioblend_python_version.outputs.bioblend_python_version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Install tox
-        run: |
-          python3 -m pip install --upgrade pip setuptools
-          python3 -m pip install 'tox>=1.8.0'
+        run: uv tool install tox --with tox-uv
       - name: Set up Python for Galaxy
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.galaxy_python_version }}
       - name: Run tests

@@ -45,15 +45,16 @@ masthead:
     help: '#help'
     home: '#analysis'
     login: '#user'
-    logout: '.dropdown-menu > li > a > .fa-sign-out-alt'
+    logout: '#user .dropdown-menu [data-description="user sign out"]'
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
-    preferences: '.dropdown-menu > li > a > .fa-gear'
-    register_or_login: '#user.loggedout-only > .nav-link'
+    preferences: '#user .dropdown-menu [data-description="user preferences"]'
+    login_masthead_button: '[data-description="login masthead button"]'
+    register_masthead_button: '[data-description="register masthead button"]'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
-    user: '#user.loggedin-only > a.nav-link > .fa'
+    user: '#user.loggedin-only > a.nav-link'
     username:
       type: xpath
       selector: '//a[contains(text(), "Signed in as")]'
@@ -64,34 +65,37 @@ preferences:
   selectors:
     activity: "#activity-settings"
     activity_expand: ".activity-panel-footer"
-    sign_out: "#edit-preferences-sign-out"
-    change_password: "#edit-preferences-password"
-    manage_information: '#edit-preferences-information'
-    toolbox_filters: '#edit-preferences-toolbox-filters'
-    manage_api_key: '#edit-preferences-api-key'
-    custom_builds: '#edit-preferences-custom-builds'
+    sign_out: "#g-card-edit-preferences-sign-out"
+    change_password: "#g-card-edit-preferences-password"
+    manage_information: '#g-card-edit-preferences-information'
+    toolbox_filters: '#g-card-edit-preferences-toolbox-filters'
+    manage_api_key: '#g-card-edit-preferences-api-key'
+    custom_builds: '#g-card-edit-preferences-custom-builds'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
     object_store: '#select-preferred-object-store'
-    delete_account: '#delete-account'
+    delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
-    delete_account_ok_btn: '.modal-footer .btn-primary'
+    delete_account_ok_btn: '.modal-footer .btn-danger'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
-    preferred_storage: '.preferred-storage'
-    manage_object_stores: '#manage-object-stores'
-    manage_file_sources: '#manage-file-sources'
+    preferred_storage: '#g-card-manage-preferred-object-store'
+    manage_object_stores: '#g-card-manage-object-stores'
+    manage_file_sources: '#g-card-manage-file-sources'
 
   object_store_selection:
     selectors:
-      option_buttons: '.preferred-object-store-select-button'
-      option_button: '.preferred-object-store-select-button[data-object-store-id="${object_store_id}"]'
+      modal: '#modal-select-preferred-object-store'
+      option_cards: '[id^="g-card-"][data-source-option-card-id]'
+      option_card: '#g-card-${object_store_id}'
+      option_card_select: '#g-card-action-select-${object_store_id}'
+      confirm_button: '#modal-select-preferred-object-store .btn-primary'
 
 object_store_instances:
   index:
     selectors:
-      create_button: '#create-button-storage-locations'
+      create_button: '#create-button-galaxy-storage'
       _: '#user-object-stores-index'
 
   create:
@@ -103,7 +107,7 @@ object_store_instances:
 file_source_instances:
   index:
     selectors:
-      create_button: '#create-button-remote-file-sources'
+      create_button: '#create-button-my-repositories'
       _: '#user-file-sources-index'
 
   create:
@@ -135,8 +139,8 @@ change_user_address:
 
 sign_out:
   selectors:
-    cancel_button: '.modal-footer .btn-secondary'
-    sign_out_button: '.modal-footer .btn-primary'
+    cancel_button: '.sign-out-modal .modal-footer .btn-outline-primary'
+    sign_out_button: '.sign-out-modal .modal-footer .btn-danger'
 
 dataset_details:
   selectors:
@@ -157,9 +161,14 @@ object_store_details:
 dataset_view:
   selectors:
     _: .dataset-view
-    edit_tab: ".nav-item[title='Edit'] > a.nav-link"
-    details_tab: ".nav-item[title='Details'] > a.nav-link"
-    visualize_tab: ".nav-item[title='Visualize'] > a.nav-link"
+    edit_tab: ".nav-item[title='Edit dataset attributes and metadata'] > a.nav-link"
+    details_tab: ".nav-item[title='View detailed information about this dataset'] > a.nav-link"
+    visualize_tab: ".nav-item[title='Explore available visualizations for this dataset'] > a.nav-link"
+
+dataset_display:
+  selectors:
+    container: .dataset-display
+    content: body
 
 history_panel:
   menu:
@@ -231,6 +240,8 @@ history_panel:
 
       dataset_operations: '${_} .dataset-actions'
 
+      expiration_indicator_badge: '${_} .expiration-indicator .badge'
+
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
     selectors:
@@ -280,6 +291,14 @@ history_panel:
       tag_area_input: '.details .stateless-tags .headless-multiselect input'
       list_items: '.dataset-collection-panel .listing-layout .content-item'
       back_to_history: svg[data-description="back to history"]
+
+  object_store_selection:
+    selectors:
+      modal: '#modal-select-history-storage-location'
+      option_cards: '[id^="g-card-"][data-source-option-card-id]'
+      option_card: '#g-card-${object_store_id}'
+      option_card_select: '#g-card-action-select-${object_store_id}'
+      confirm_button: '#modal-select-history-storage-location .btn-primary'
 
   selectors:
     _: '#current-history-panel'
@@ -333,6 +352,7 @@ history_panel:
     pagination_previous: '.list-pagination button.prev'
 
     storage_overview: '.history-storage-overview-button'
+    storage_location_button: '.storage-location-indicator button'
 
   text:
     tooltip_name: 'Rename history...'
@@ -341,6 +361,10 @@ history_panel:
 history_storage:
   selectors:
     _: '.history-storage-overview'
+    top_datasets_by_size: "[data-description='chart history top datasets by size']"
+    dataset_by_size: "[data-description='chart history top datasets by size'] rect[data-label='${name}']"
+    dataset_by_size_delete: '#g-card-action-delete-selected-item-actions-dataset'
+    confirm_delete: '.confirm-delete-dataset-dialog .btn-danger'
 
 storage_dashboard:
   selectors:
@@ -384,8 +408,8 @@ tool_panel:
   selectors:
     edam_link: 'a[href^="https://edamontology.github.io/edam-browser"]'
     tool_box: '[data-description="panel toolbox"]'
-    tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
-    outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
+    tool_link: 'a[href$$="/?tool_id=${tool_id}&version=latest"]'
+    outer_tool_link: '.toolTitle a[href$$="/?tool_id=${tool_id}&version=latest"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
     search: '.search-query'
     toolbox: '[data-description="panel toolbox"]'
@@ -393,7 +417,18 @@ tool_panel:
     views_button: '.tool-panel-dropdown'
     views_menu_item: '[data-panel-id="${panel_id}"]'
     panel_labels: '.tool-panel-label'
+    discover_tools_link: '[data-description="toolbox discover tools"]'
 
+tools_list:
+  selectors:
+    _: '.tools-list'
+    search_input: '.tools-list [data-description="filter text input"]'
+    tool_card: '#g-card-content-${tool_id}'
+    version_button: '#tools-list-${tool_id}'
+    favorite_tool_button: '#g-card-action-favorite-tool-${tool_id}'
+    toggle_help: '#g-card-description-${tool_id} .g-link.g-unselectable'
+    tool_help: '#g-card-content-${tool_id} [data-description="tools list tool help"]'
+    open_tool_button: '#g-card-action-open-tool-${tool_id}'
 
 multi_history_panel:
   selectors:
@@ -419,30 +454,31 @@ multi_history_panel:
 
 published_histories:
   selectors:
-    histories: '#grid-histories-published tbody tr'
-    advanced_search_name_input: '#histories-advanced-filter-name'
-    advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
-    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
-    advanced_search_toggle: '#histories-published-grid [data-description="toggle advanced search"]'
-    search_input: '#histories-published-grid input.search-query[data-description="filter text input"]'
+    history_cards: '.history-card-list .g-card'
+    advanced_search_name_input: '#history-list-filter-advanced-filter-name'
+    advanced_search_tag_area: '#history-list-filter-advanced-filter-tag .stateless-tags button'
+    advanced_search_tag_input: '#history-list-filter-advanced-filter-tag .stateless-tags input'
+    advanced_search_toggle: '#history-list [data-description="toggle advanced search"]'
+    search_input: '#history-list input.search-query[data-description="filter text input"]'
     tab: '#histories-published-tab'
 
 shared_histories:
   selectors:
-    _: '#histories-shared-grid'
-    histories: '.grid-table tr'
-    tab: '#histories-shared-tab'
+    shared_list: '.history-card-list'
+    history_cards: '.history-card-list .g-card'
+    shared_tab: '#histories-shared-tab'
 
 history_copy_elements:
   selectors:
-    # Following two don't really work as CSS would only work as jQuery/sizzle I think
-    # since the page is dynamically generated.
-    # https://stackoverflow.com/questions/10645552/is-it-possible-to-use-an-input-value-attribute-as-a-css-selector
-    dataset_checkbox: "input[id='dataset|${id}']"
-    collection_checkbox: 'input[id="dataset_collection|${id}"]'
-    new_history_name: '#new_history_name'
-    copy_button: "input[type='submit']"
-    done_link: '.donemessage a'
+    dataset_checkbox: '[data-description="copy dataset|${id}"] + label'
+    collection_checkbox: '[data-description="copy dataset_collection|${id}"] + label'
+    new_history_name: '[data-description="copy history name"]'
+    new_history_link: '[data-description="copy switch history"]'
+    copy_button: '[data-description="copy button"]'
+
+history_view:
+  selectors:
+    switch_to_history: '[data-description="switch to history button"]'
 
 collection_builders:
   selectors:
@@ -473,14 +509,23 @@ collection_builders:
 histories:
   selectors:
     activity: '#activity-histories'
-    advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
-    advanced_search_name_input: '#histories-advanced-filter-name'
-    advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
-    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
-    histories: '.grid-table tr'
-    import_button: '[data-description="grid action import new history"]'
-    reset_input: '#histories-grid [data-description="reset query"]'
-    search_input: '#histories-grid input.search-query[data-description="filter text input"]'
+    advanced_search_toggle: '#history-list [data-description="toggle advanced search"]'
+    advanced_search_name_input: '#history-list-filter-advanced-filter-name'
+    advanced_search_tag_area: '#history-list-filter-advanced-filter-tag .stateless-tags button'
+    advanced_search_tag_input: '#history-list-filter-advanced-filter-tag .stateless-tags input'
+    history_cards: '.history-card-list .g-card'
+    history_card_title: '[id^="g-card-title-link-history-"]'
+    history_card_select: 'input[id^="g-card-select-history-"]'
+    import_button: '[data-description="header action import new history"]'
+    reset_input: '#history-list-filter [data-description="reset query"]'
+    search_input: '#history-list-filter input.search-query[data-description="filter text input"]'
+    delete_history_confirm: '#delete-history .btn.btn-danger'
+    bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
+    bulk_delete_confirm: '#bulk-delete-histories .btn.btn-danger'
+    bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
+    bulk_restore_confirm: '#bulk-restore-histories .btn.btn-primary'
+    bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
+    bulk_open_multiview_limit_confirm_button: '#bulk-open-multiview-histories .btn.btn-primary'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
@@ -491,6 +536,12 @@ histories:
       share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible label'
       make_publishable: '.make-publishable label'
+      tab_make_private: '[aria-controls="history-make-private-tab"]'
+      make_private: '[data-description="history make private"]'
+      permissions_change_required: '[data-description="sharing permissions change required"]'
+      permissions_change_required_how: '[data-description="sharing permissions change required how"]'
+      permissions_change_required_ok: '[data-description="sharing permissions change required"] .btn-primary'
+
     labels:
       unshare: 'Unshare'
 
@@ -518,25 +569,25 @@ history_export:
 
 history_export_tasks:
   selectors:
-    direct_download: '.gen-direct-download-btn'
-    file_source_tab: '.tab-export-to-file'
-    remote_file_name_input: '#file-source-tab #name'
-    toggle_options_link: '#toggle-options-link'
-    export_format_selector: '#format-selector'
-    select_format:
-        type: xpath
-        selector: '//select[@id="format-selector"]/option[@value="${format}"]'
+    history_export_wizard: '.history-export-wizard'
+    next_button: '.go-next-btn'
+    back_button: '.go-back-btn'
+    export_button: '.go-next-btn.btn-primary'
+    select_format: '[data-history-export-format="${format}"]'
+    select_destination: '[data-history-export-destination="${destination}"]'
+    exported_file_name: '#exported-file-name'
 
 last_export_record:
   selectors:
     details: '.export-record-details'
-    preparing_export: '.export-record-details .loading-icon'
     export_format: '.record-archive-format'
     up_to_date_icon: '.record-up-to-date-icon'
     outdated_icon: '.record-outdated-icon'
-    expiration_warning_icon: '.record-expiration-warning-icon'
-    download_btn: '.record-download-btn'
-    reimport_btn: '.record-reimport-btn'
+    preparing_export_badge: '#g-card-badge-in-progress-latest-export-record'
+    download_ready_badge: '#g-card-badge-ready-to-download-latest-export-record'
+    expiration_warning_badge: '#g-card-badge-expires-soon-latest-export-record'
+    download_btn: '#g-card-action-download-latest-export-record'
+    reimport_btn: '#g-card-action-reimport-latest-export-record'
 
 history_import:
   selectors:
@@ -590,6 +641,7 @@ registration:
 
 tool_form:
   selectors:
+    tool_version: '[data-description="galaxy tool version"]'
     options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
@@ -674,13 +726,23 @@ visualization:
   selectors:
     activity: '#activity-visualizations'
     matched_plugin: '#center [data-plugin-name*="${id}"]'
+    show_all_button: '[data-description="visualizations show list"]'
+
+igv:
+  selectors:
+    _: ".igv-container"
+    shadow_host: '#viewport'
+    current_genome: '.igv-current-genome'
+    settings_button: button.n-button
+    save_button: '[data-description="sidepanel save button"]'
+    name_input: '.n-input__input input'
 
 trs_search:
   selectors:
     search: "#trs-search-query"
     search_result:
       type: xpath
-      selector: "//td[contains(text(), '${workflow_name}')]"
+      selector: "//td[contains(., '${workflow_name}')]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
     import_version: '[data-version-name*="${version}"]'
@@ -710,9 +772,9 @@ upload_mixin:
     paste_content: '${_} #upload-row-${n} .upload-text-content'
     title: '${_} #upload-row-${n} .upload-title'
     row: '${_} #upload-row-${n}'
-    status: '${_} [data-description="upload state alert"]'
     embedded_start_button: '${_} #btn-start'
     use_button: '${_} #btn-emit'
+    use_button_disabled: '${_} #btn-emit.g-disabled'
 
 workflow_run:
   input:
@@ -729,8 +791,30 @@ workflow_run:
         _: '[data-label="${label}"] .tabs'
         create: '${_} .create-collection'
         select_all: "${_} [data-description='select many select all']"
-        element_by_hid: "${_} .collection-element[data-hid='${hid}']"
+        element_by_hid: "${_} [data-description='list dataset collection element'][data-hid='${hid}'] [data-description='dataset hid']"
         <<: *upload_mixin
+
+    sample_sheet:
+      selectors:
+        _: '.sample-sheet-collection-creator'
+        data_import_source_from: '[data-import-source-from="${source}"]'
+        paste_table_textarea: '.paste-data textarea'
+        wizard_next_button: '.wizard-actions .go-next-btn'
+        grid_cell: '[row-index="${row_index}"] .ag-cell-value[col-id="${column_name}"]'
+        grid_cell_input: '[row-index="${row_index}"] .ag-cell-value[col-id="${column_name}"] input'
+        collection_created_message: '[data-description="collection created"]'
+        select_picker: '.ag-picker-field-icon'
+        select_popup:
+          type: xpath
+          selector: '//div[contains(@class, "ag-popup-child")]'
+        select_listitem:
+          type: xpath
+          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]'
+        select_item:
+          type: xpath
+          selector: '//div[contains(@class, "ag-popup-child")]//div[contains(@class, "ag-list-item")]//span[contains(text(), "${item}")]'
+        select_collection: '[data-description="selection collection card"]'
+        collection_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
 
   form_element:
     selectors:
@@ -781,6 +865,14 @@ workflow_editor:
       connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
       workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
+  changes:
+    selectors:
+      action_insert_data_input: ".action[data-type='step-insert'][data-step-type='data_input']"
+      action_insert_data_collection_input: ".action[data-type='step-insert'][data-step-type='data_collection_input']"
+      action_insert_parameter: ".action[data-type='step-insert'][data-step-type='parameter_input']"
+      action_set_license: ".action[data-type='set-license']"
+      action_set_annotation: ".action[data-type='set-annotation']"
+
   tool_bar:
     selectors:
       _: ".workflow-editor-toolbar"
@@ -801,6 +893,16 @@ workflow_editor:
       duplicate_selection: "[title='duplicate selected']"
       delete_selection: "[title='delete selected']"
       auto_layout: "#auto-layout-button"
+      attributes: "#activity-workflow-editor-attributes"
+      changes: "#activity-workflow-undo-redo"
+      upgrade_all: "#activity-workflow-upgrade"
+      best_practices: "#activity-workflow-best-practices"
+
+  best_practices:
+    selectors:
+      section_input_metadata: '[data-description="linting input metadata"]'
+      item_input_metadata: '[data-description="linting input metadata"] [data-item-index="${index}"]'
+
   comment:
     selectors:
       _: ".workflow-editor-comment"
@@ -855,6 +957,10 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__annotation']//textarea
+    collection_type_input:
+      type: xpath
+      selector: >
+        //div[@id='form-element-collection_type']//input
     step_when:
       type: xpath
       selector: >
@@ -910,6 +1016,13 @@ workflow_editor:
     modal_button_continue: '.modal-footer .btn'
     workflow_activity: '#activity-workflow-editor-workflows'
     save_as_activity: "#activity-save-workflow-as"
+    column_definitions: '[data-description="edit column definitions"]'
+    add_column_definition: '[data-description="edit column definitions add"]'
+    column_definition_name_by_index: '#form-element-column_definition_${index}_name input'
+    column_definition_description_by_index: '#form-element-column_definition_${index}_description textarea'
+    column_definition_type_by_index: '#form-element-column_definition_${index}_type .multiselect'
+    column_definition_optional_by_index: 'input#column_definition_${index}_optional'
+    column_definition_default_value_by_index: '#form-element-column_definition_${index}_default_value input'
 
 workflow_show:
   selectors:
@@ -937,9 +1050,7 @@ invocations:
     progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
     workflow_rerun_button: '[data-button-rerun][data-title="Rerun Workflow with same inputs"]'
     change_history_rerun_confirm: '#change-history-rerun-workflow .btn-primary'
-    invocation_tab:
-      type: xpath
-      selector: '//a[text()="${label}"]'
+    invocation_tab: '.nav-item[title="${label}"] > a.nav-link'
     invocation_details_tab:
       type: xpath
       selector: '//a[text()="${label}"]'
@@ -947,6 +1058,7 @@ invocations:
     input_details_name: '[data-label="${label}"] .name'
     step_title: '[data-step="${order_index}"] .step-title'
     step_details: '[data-step="${order_index}"] .portlet-operations'
+    step_outputs_tab_link: '.invocation-step-outputs-tab > a.nav-link'
     step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
     step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .content-title'
     step_output_collection_element_identifier:
@@ -954,6 +1066,7 @@ invocations:
       selector: '//span[contains(@class, "content-title name")][text()="${element_identifier}"]'
     step_output_collection_element_datatype: '[data-step="${order_index}"] .invocation-step-output-collection-details .not-loading .datatype .value'
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
+    step_job_details_state_counter: '[data-description="invocation step state counter"][data-step-state="${state}"]'
     step_job_information: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table'
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
     export_tab: '.invocation-export-tab'
@@ -984,6 +1097,17 @@ tools:
     search: '#toolbox-panel .search-query'
     clear_search: '#toolbox-panel .search-clear'
     title: '.toolSectionTitle'
+
+custom_tools:
+  selectors:
+    activity: '#activity-user-defined-tools'
+    create_button:
+      selector: 'create new custom tool'
+      type: data-description
+    save_button:
+      selector: 'save custom tool'
+      type: data-description
+    tool_link: "#g-card-custom-tool-${tool_uuid}"
 
 admin:
   allowlist:
@@ -1254,7 +1378,7 @@ rule_builder:
     rule_editor_ok: '.rule-editor-ok'
     add_mapping_menu: '.rule-add-mapping'
     add_mapping_button: '.rule-add-mapping-${mapping_type}'
-    mapping_edit: '.rule-map-${mapping_type} .select2-container'
+    mapping_edit: '.rule-map-${mapping_type} .select-basic'
     mapping_remove_column: '.rule-map-${mapping_type} .rule-column-selector-target-remove'
     mapping_add_column: '.rule-map-${mapping_type} .rule-column-selector-target-add'
     mapping_ok: '.rule-mapping-ok'
@@ -1287,6 +1411,8 @@ zip_import_wizard:
     selected_workflows_to_import_count_badge: '#g-card-badge-workflow-count-zip-workflows-summary'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_import_button: '.wizard-actions .go-next-btn.btn-primary'
+    search_input: '.zip-file-selector-search input'
+    select_all_checkbox: '.list-header-select-all'
     select_file:
       type: xpath
       selector: "//div[@role='button' and contains(@id, 'g-card-${file_path}')]"

@@ -10,8 +10,11 @@ import {
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
+import type { UpdateHistoryPayload } from "@/api/histories";
 import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
+import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
     createAndSelectNewHistory,
@@ -24,6 +27,11 @@ import {
 } from "@/stores/services/history.services";
 import { rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
+import {
+    ACTIVE_POLLING_INTERVAL,
+    INACTIVE_POLLING_INTERVAL,
+    watchHistory as watchHistorySuppliedApp,
+} from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set();
@@ -167,6 +175,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         pinnedHistories.value = pinnedHistories.value.filter((h) => !historyIds.includes(h.id));
     }
 
+    function clearPinnedHistories() {
+        pinnedHistories.value = [];
+    }
+
     function selectHistory(history: HistorySummary) {
         setHistory(history);
         setCurrentHistoryId(history.id);
@@ -297,6 +309,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
+    async function loadCurrentHistoryId(): Promise<string | null> {
+        if (!currentHistoryId.value) {
+            await loadCurrentHistory();
+        }
+        return currentHistoryId.value;
+    }
+
     /**
      * This function handles the cases where a history has been created
      * or removed (to set pagination offset and fetch updated history count)
@@ -305,7 +324,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
      * @param reduction Whether it is a reduction or addition (default)
      */
     async function handleTotalCountChange(count = 0, reduction = false) {
-        historiesOffset.value += !reduction ? count : -count;
+        const adjustment = !reduction ? count : -count;
+        historiesOffset.value = Math.max(0, historiesOffset.value + adjustment);
         await loadTotalHistoryCount();
     }
 
@@ -353,6 +373,19 @@ export const useHistoryStore = defineStore("historyStore", () => {
             }
         }
     }
+
+    function watchHistory() {
+        const app = getGalaxyInstance();
+        return watchHistorySuppliedApp(app);
+    }
+
+    const { startWatchingResource: startWatchingHistory, isWatchingResource: isWatchingHistory } = useResourceWatcher(
+        watchHistory,
+        {
+            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+            longPollingInterval: INACTIVE_POLLING_INTERVAL,
+        },
+    );
 
     async function loadHistoryById(historyId: string): Promise<HistorySummaryExtended | undefined> {
         if (!isLoadingHistory.has(historyId)) {
@@ -425,7 +458,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return history;
     }
 
-    async function updateHistory({ id, ...update }: HistorySummary) {
+    async function updateHistory(id: string, update: UpdateHistoryPayload) {
         const savedHistory = (await updateHistoryFields(id, update)) as HistorySummaryExtended;
         setHistory(savedHistory);
     }
@@ -464,6 +497,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setHistories,
         pinHistory,
         unpinHistories,
+        clearPinnedHistories,
         selectHistory,
         applyFilters,
         copyHistory,
@@ -473,7 +507,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         restoreHistory,
         restoreHistories,
         handleTotalCountChange,
+        startWatchingHistory,
+        isWatchingHistory,
         loadCurrentHistory,
+        loadCurrentHistoryId,
         loadHistories,
         loadHistoryById,
         secureHistory,

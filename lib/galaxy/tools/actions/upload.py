@@ -4,12 +4,14 @@ import os
 from typing import Optional
 
 from galaxy.exceptions import RequestParameterMissingException
+from galaxy.job_execution.output_collect import copy_collection_metadata_from_target_dict
 from galaxy.model import (
     History,
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import upload_common
 from galaxy.tools.execute import (
@@ -49,6 +51,7 @@ class BaseUploadToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -185,6 +188,7 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     hdca = collections_manager.precreate_dataset_collection_instance(
         trans, history, name, structure=structure, tags=tags
     )
+    copy_collection_metadata_from_target_dict(hdca, target)
     outputs.append(hdca)
     # Following flushed needed for an ID.
     trans.sa_session.commit()

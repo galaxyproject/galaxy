@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -9,15 +10,15 @@ import RoleForm from "./RoleForm.vue";
 
 const { server, http } = useServerMock();
 const localVue = getLocalVue();
-const mockPush = jest.fn();
+const mockPush = vi.fn();
 
-jest.mock("vue-router/composables", () => ({
+vi.mock("vue-router/composables", () => ({
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
 }));
 
-jest.mock("@/composables/filter/filter.js", () => {
+vi.mock("@/composables/filter/filter.js", () => {
     const { ref } = require("vue");
     return {
         useFilterObjectArray: () => ref([]),
@@ -90,7 +91,7 @@ describe("RoleForm.vue", () => {
                 expect(body.group_ids).toEqual(["g1"]);
                 expect(body.user_ids).toEqual(["u1"]);
                 return response(200).json({ id: "new-role" });
-            })
+            }),
         );
         const wrapper = mountTarget();
         await flushPromises();

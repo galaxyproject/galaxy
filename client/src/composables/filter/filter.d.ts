@@ -11,5 +11,5 @@ import type { Ref } from "vue";
 export declare function useFilterObjectArray<O extends object, K extends keyof O>(
     array: MaybeRefOrGetter<Array<O>>,
     filter: MaybeRefOrGetter<string>,
-    objectFields: MaybeRefOrGetter<Array<K | string[]>>
+    objectFields: MaybeRefOrGetter<Array<K | string[]>>,
 ): Ref<O[]>;

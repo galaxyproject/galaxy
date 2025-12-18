@@ -1,4 +1,7 @@
-def remove_version_from_guid(guid):
+from typing import Union
+
+
+def remove_version_from_guid(guid: str) -> Union[str, None]:
     """
     Removes version from toolshed-derived tool_id(=guid).
     """

@@ -11,7 +11,7 @@ import SourceOptionsList from "@/components/ConfigTemplates/SourceOptionsList.vu
 
 const breadcrumbItems = [
     { title: "User Preferences", to: "/user" },
-    { title: "Remote File Sources", to: "/file_source_instances/index" },
+    { title: "My Repositories", to: "/file_source_instances/index" },
     { title: "Create New" },
 ];
 

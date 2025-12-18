@@ -159,7 +159,7 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 pre {
     font-weight: bold;

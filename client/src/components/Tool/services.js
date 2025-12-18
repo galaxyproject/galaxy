@@ -1,6 +1,7 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export async function updateToolFormData(tool_id, tool_uuid, tool_version, history_id, inputs) {
     const current_state = {
@@ -10,7 +11,7 @@ export async function updateToolFormData(tool_id, tool_uuid, tool_version, histo
         inputs: inputs,
         history_id: history_id,
     };
-    const url = `${getAppRoot()}api/tools/${tool_id}/build`;
+    const url = `${getAppRoot()}api/tools/${tool_uuid || tool_id}/build`;
     try {
         const { data } = await axios.post(url, current_state);
         return data;

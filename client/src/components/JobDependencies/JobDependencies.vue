@@ -1,7 +1,7 @@
 <template>
     <div v-if="dependencies && dependencies.length > 0">
         <div>
-            <h2 class="h-md">Job Dependencies</h2>
+            <Heading id="job-dependencies-heading" h1 separator inline size="md"> Job Dependencies </Heading>
             <table class="tabletip">
                 <thead>
                     <tr>
@@ -33,7 +33,10 @@ import { mapState } from "pinia";
 
 import { useUserStore } from "@/stores/userStore";
 
+import Heading from "../Common/Heading.vue";
+
 export default {
+    components: { Heading },
     props: {
         dependencies: {
             type: Array,

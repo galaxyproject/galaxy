@@ -1,11 +1,11 @@
 <template>
-    <div class="mb-2">
+    <div class="mb-2" :data-lint-status="isOkay ? 'ok' : 'warning'">
         <div v-if="isOkay">
-            <FontAwesomeIcon icon="check" class="text-success" />
+            <FontAwesomeIcon :icon="faCheck" class="text-success" />
             <span>{{ successMessage }}</span>
         </div>
         <div v-else>
-            <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
             <span>{{ warningMessage | localize }}</span>
             <div v-if="hasWarningItems" class="mt-2">
                 <div
@@ -16,34 +16,36 @@
                     @mouseover="onMouseOver(item)"
                     @focusout="onMouseLeave(item)"
                     @mouseleave="onMouseLeave(item)">
-                    <a href="#" class="scrolls" @click="onClick(item)">
-                        <FontAwesomeIcon v-if="item.autofix" icon="magic" class="mr-1" />
-                        <FontAwesomeIcon v-else icon="search" class="mr-1" />
+                    <a
+                        href="#"
+                        class="scrolls"
+                        :data-item-index="idx"
+                        v-bind="dataAttributes(item)"
+                        @click="onClick(item)">
+                        <FontAwesomeIcon v-if="item.autofix" :icon="faMagic" class="mr-1" />
+                        <FontAwesomeIcon v-else :icon="faSearch" class="mr-1" />
                         {{ item.stepLabel }}: {{ item.warningLabel }}
                     </a>
                 </div>
             </div>
             <p v-else class="mt-2 ml-2">
-                <a href="#" @click="onClick"> <FontAwesomeIcon icon="pencil-alt" class="mr-1" />{{ attributeLink }} </a>
+                <a href="#" @click="onClick">
+                    <FontAwesomeIcon :icon="faPencilAlt" class="mr-1" />{{ attributeLink }}
+                </a>
             </p>
         </div>
     </div>
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faExclamationTriangle, faMagic, faPencilAlt, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { dataAttributes } from "./modules/linting";
 
-library.add(faMagic);
-library.add(faSearch);
-library.add(faPencilAlt);
-library.add(faCheck);
-library.add(faExclamationTriangle);
+Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -71,6 +73,15 @@ export default {
             default: null,
         },
     },
+    data() {
+        return {
+            faCheck,
+            faExclamationTriangle,
+            faMagic,
+            faPencilAlt,
+            faSearch,
+        };
+    },
     computed: {
         isOkay() {
             return this.okay && !this.hasWarningItems;
@@ -80,6 +91,7 @@ export default {
         },
     },
     methods: {
+        dataAttributes: dataAttributes,
         onMouseOver(id) {
             this.$emit("onMouseOver", id);
         },

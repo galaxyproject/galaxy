@@ -1,4 +1,4 @@
-from galaxy.model.triggers.utils import execute_statements
+from sqlalchemy import DDL
 
 # function name prefix
 fn_prefix = "fn_audit_history_by"
@@ -56,7 +56,7 @@ def _postgres_install(engine):
             AS $BODY$
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
-                    SELECT DISTINCT {id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    SELECT DISTINCT {id_field}, clock_timestamp() AT TIME ZONE 'UTC'
                     FROM new_table
                     WHERE {id_field} IS NOT NULL
                     ON CONFLICT DO NOTHING;
@@ -75,7 +75,7 @@ def _postgres_install(engine):
             AS $BODY$
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
-                    VALUES (NEW.{id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+                    VALUES (NEW.{id_field}, clock_timestamp() AT TIME ZONE 'UTC')
                     ON CONFLICT DO NOTHING;
                     RETURN NULL;
                 END;
@@ -174,3 +174,11 @@ def get_trigger_name(label, operation, when, statement=False):
     when_initial = when.lower()[0]
     rs = "s" if statement else "r"
     return f"trigger_{label}_{when_initial}{op_initial}{rs}"
+
+
+def execute_statements(engine, raw_sql):
+    statements = raw_sql if isinstance(raw_sql, list) else [raw_sql]
+    with engine.begin() as connection:
+        for sql in statements:
+            cmd = DDL(sql)
+            connection.execute(cmd)

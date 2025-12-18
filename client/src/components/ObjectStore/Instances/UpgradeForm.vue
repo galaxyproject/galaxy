@@ -37,7 +37,7 @@ const {
     toRef(props, "latestTemplate"),
     editTestUrl,
     editUrl,
-    useInstanceRouting
+    useInstanceRouting,
 );
 </script>
 <template>

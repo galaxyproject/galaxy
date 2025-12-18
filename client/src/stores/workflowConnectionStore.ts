@@ -78,15 +78,15 @@ export const useConnectionStore = defineScopedStore("workflowConnectionStore", (
     }
 
     const getOutputTerminalsForInputTerminal = computed(
-        () => (terminalId: string) => inputTerminalToOutputTerminals.value[terminalId] || ([] as OutputTerminal[])
+        () => (terminalId: string) => inputTerminalToOutputTerminals.value[terminalId] || ([] as OutputTerminal[]),
     );
 
     const getConnectionsForTerminal = computed(
-        () => (terminalId: string) => terminalToConnection.value[terminalId] || ([] as Connection[])
+        () => (terminalId: string) => terminalToConnection.value[terminalId] || ([] as Connection[]),
     );
 
     const getConnectionsForStep = computed(
-        () => (stepId: number) => stepToConnections.value[stepId] || ([] as Connection[])
+        () => (stepId: number) => stepToConnections.value[stepId] || ([] as Connection[]),
     );
 
     const stepStore = useWorkflowStepStore(workflowId);

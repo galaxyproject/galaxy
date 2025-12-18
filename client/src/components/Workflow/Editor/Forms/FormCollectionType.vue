@@ -16,7 +16,13 @@ const warning = ref<string | null>(null);
 const error = ref<string | null>(null);
 
 function onInput(newCollectionType: string | undefined) {
-    emit("onChange", newCollectionType);
+    if (newCollectionType && !isValidCollectionTypeStr(newCollectionType)) {
+        error.value = "Invalid collection type";
+        // don't emit an invalid collection type
+        return;
+    } else {
+        emit("onChange", newCollectionType);
+    }
 }
 
 const collectionTypeOptions = [
@@ -26,6 +32,10 @@ const collectionTypeOptions = [
     { value: "list:record", label: "List of Records" },
     { value: "list:paired", label: "List of Dataset Pairs" },
     { value: "list:paired_or_unpaired", label: "Mixed List of Paired and Unpaired Datasets" },
+    { value: "sample_sheet", label: "Sample Sheet of Datasets" },
+    { value: "sample_sheet:paired", label: "Sample Sheet of Dataset Pairs" },
+    { value: "sample_sheet:paired_or_unpaired", label: "Sample Sheet of Paired and Unpaired Datasets" },
+    { value: "sample_sheet:record", label: "Sample Sheet of Dataset Records" },
 ];
 
 function updateValue(newValue: string | undefined) {
@@ -47,11 +57,11 @@ const emit = defineEmits(["onChange"]);
     <FormElement
         id="collection_type"
         :value="currentValue"
-        :attributes="{ data: collectionTypeOptions, display: 'simple' }"
+        :attributes="{ datalist: collectionTypeOptions }"
         :warning="warning ?? undefined"
         :error="error ?? undefined"
         title="Collection type"
         :optional="true"
-        type="select"
+        type="text"
         @input="onInput" />
 </template>

@@ -1,7 +1,6 @@
 """Tool Shed Security"""
 
 import logging
-from typing import List
 
 from sqlalchemy import (
     false,
@@ -229,7 +228,7 @@ class CommunityRBACAgent(RBACAgent):
             for group in groups:
                 self.associate_components(user=user, group=group)
 
-    def usernames_that_can_push(self, repository) -> List[str]:
+    def usernames_that_can_push(self, repository) -> list[str]:
         return listify(repository.allow_push())
 
     def can_push(self, app, user, repository):

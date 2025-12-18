@@ -36,6 +36,7 @@ interface Props {
     requestState?: WorkflowInvocationRequestInputs;
     instance?: boolean;
     isRerun?: boolean;
+    landingUuid?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,6 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
     requestState: undefined,
     instance: false,
     isRerun: false,
+    landingUuid: undefined,
 });
 
 const loading = ref(true);
@@ -54,6 +56,9 @@ const hasStepVersionChanges = ref(false);
 const invocations = ref([]);
 const simpleForm = ref(false);
 const disableSimpleForm = ref(false);
+const disableSimpleFormReason = ref<
+    "hasReplacementParameters" | "hasDisconnectedInputs" | "hasWorkflowResourceParameters" | undefined
+>(undefined);
 const submissionError = ref("");
 const workflowError = ref("");
 const workflowName = ref("");
@@ -61,9 +66,13 @@ const workflowModel: any = ref(null);
 const owner = ref<string>();
 
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
-const editorLink = computed(
-    () => `/workflows/edit?id=${props.workflowId}${props.version ? `&version=${props.version}` : ""}`
-);
+const editorLink = computed(() => {
+    const queryArgs = {
+        [props.instance ? "workflow_id" : "id"]: props.workflowId,
+        ...(props.version && { version: props.version }),
+    };
+    return router.resolve({ path: "/workflows/edit", query: queryArgs }).href;
+});
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
 const isOwner = computed(() => userStore.matchesCurrentUsername(owner.value));
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
@@ -115,24 +124,24 @@ async function loadRun() {
             // on the frontend. If these are implemented on the backend at some
             // point this restriction can be lifted.
             if (incomingModel.hasReplacementParametersInToolForm) {
-                console.log("cannot render simple workflow form - has ${} values in tool steps");
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
+                disableSimpleFormReason.value = "hasReplacementParameters";
             }
             // If there are required parameters in a tool form (a disconnected runtime
             // input), we have to render the tool form steps and cannot use the
             // simplified tool form.
             if (incomingModel.hasOpenToolSteps) {
-                console.log("cannot render simple workflow form - one or more tools have disconnected runtime inputs");
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
+                disableSimpleFormReason.value = "hasDisconnectedInputs";
             }
             // Just render the whole form for resource request parameters (kind of
             // niche - I'm not sure anyone is using these currently anyway).
             if (incomingModel.hasWorkflowResourceParameters) {
-                console.log(`Cannot render simple workflow form - workflow resource parameters are configured`);
                 simpleForm.value = false;
                 disableSimpleForm.value = true;
+                disableSimpleFormReason.value = "hasWorkflowResourceParameters";
             }
         }
 
@@ -193,7 +202,7 @@ watch(
         if (invocations.value.length === 0) {
             loadRun();
         }
-    }
+    },
 );
 
 defineExpose({
@@ -252,6 +261,7 @@ defineExpose({
                         :can-mutate-current-history="canRunOnHistory"
                         :request-state="requestState"
                         :is-rerun="props.isRerun"
+                        :landing-uuid="props.landingUuid"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showAdvanced="showAdvanced" />
@@ -260,6 +270,7 @@ defineExpose({
                         :model="workflowModel"
                         :can-mutate-current-history="canRunOnHistory"
                         :disable-simple-form="disableSimpleForm"
+                        :disable-simple-form-reason="disableSimpleFormReason"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showSimple="advancedForm = false" />

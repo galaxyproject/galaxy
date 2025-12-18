@@ -9,9 +9,7 @@ from tempfile import (
 )
 from typing import (
     cast,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -70,6 +68,7 @@ from galaxy.schema.schema import (
     ShareHistoryWithStatus,
     ShareWithPayload,
     StoreExportPayload,
+    ToolRequestModel,
     WriteStoreToPayload,
 )
 from galaxy.schema.tasks import (
@@ -87,6 +86,7 @@ from galaxy.webapps.galaxy.services.base import (
     model_store_storage_target,
     ServesExportStores,
     ServiceBase,
+    tool_request_to_model,
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -188,7 +188,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         ]
         return rval
 
-    def _get_deleted_filter(self, deleted: Optional[bool], filter_params: List[Tuple[str, str, str]]):
+    def _get_deleted_filter(self, deleted: Optional[bool], filter_params: list[tuple[str, str, str]]):
         # TODO: this should all be removed (along with the default) in v2
         # support the old default of not-returning/filtering-out deleted histories
         try:
@@ -218,7 +218,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         payload: HistoryIndexQueryPayload,
         serialization_params: SerializationParams,
         include_total_count: bool = False,
-    ) -> Tuple[List[AnyHistoryView], Union[int, None]]:
+    ) -> tuple[list[AnyHistoryView], Union[int, None]]:
         """Return a list of History accessible by the user
 
         :rtype:     list
@@ -263,7 +263,15 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             if archive_type == HistoryImportArchiveSourceType.url:
                 assert archive_source
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
-            job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            target_history = None
+            if payload.name:
+                # A name for a new history was supplied, so we will create a new history and do the import
+                # into that - only useful for non-history imports - e.g. workflow invocations.
+                target_history = self.manager.create(user=trans.user, name=hist_name)
+            log.info(f"target history for import: {target_history}")
+            job = self.manager.queue_history_import(
+                trans, archive_type=archive_type, archive_source=archive_source, target_history=target_history
+            )
             job_dict = job.to_dict()
             job_dict["message"] = (
                 f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
@@ -530,6 +538,13 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         ]
         return rval
 
+    def tool_requests(
+        self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField
+    ) -> list[ToolRequestModel]:
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        tool_requests = history.tool_requests
+        return [tool_request_to_model(tr) for tr in tool_requests]
+
     def citations(self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField):
         """
         Return all the references for the tools used to produce the datasets in
@@ -564,7 +579,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans,
         history_id: DecodedDatabaseIdField,
         payload: Optional[ExportHistoryArchivePayload] = None,
-    ) -> Tuple[HistoryArchiveExportResult, bool]:
+    ) -> tuple[HistoryArchiveExportResult, bool]:
         """
         start job (if needed) to create history export for corresponding
         history.
@@ -775,7 +790,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
         include_total_matches: bool = False,
-    ) -> Tuple[List[AnyArchivedHistoryView], Optional[int]]:
+    ) -> tuple[list[AnyArchivedHistoryView], Optional[int]]:
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("Only registered users can have or access archived histories.")
 

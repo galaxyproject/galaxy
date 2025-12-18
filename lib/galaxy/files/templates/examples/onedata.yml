@@ -1,11 +1,9 @@
 - id: onedata
   version: 0
-  name: Onedata Storage
+  name: Onedata
   description: |
-    If you have an account in Onedata, you can use such a file source to upload
-    your data directly from Onedata to Galaxy. You can also perform
-    an "Export datasets to remote files source" of a dataset from Galaxy to
-    Onedata.
+    If you have an [Onedata](https://onedata.org/) account, you can use this repository to import and export
+    your data directly from and to Onedata.
 
     The minimal supported Onezone version is 21.02.4.
     More information on Onedata can be found on [Onedata's website](https://onedata.org/#/home).
@@ -25,7 +23,7 @@
       label: Writable?
       type: boolean
       help: |
-        Allow Galaxy to write data to this Onedata storage.
+        Allow Galaxy to write data to this Onedata repository.
         Requires an access token with write data access.
       default: False
   secrets:
@@ -34,8 +32,7 @@
       help: |
         Your [access token](https://onedata.org/#/home/documentation/topic/stable/tokens),
         suitable for REST API access in a Oneprovider service. May be confined
-        to read-only data access, unless you wish to use the
-        "Export datasets to remote files source" tool (write permissions are needed then).
+        to read-only data access, unless you wish to export data to your repository (write permissions are needed then).
   configuration:
     type: onedata
     access_token: "{{ secrets.access_token }}"

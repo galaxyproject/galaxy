@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBars, faCog, faDatabase, faSave, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faCog, faDatabase, faSave, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BAlert, BSpinner, BTab, BTabs } from "bootstrap-vue";
@@ -11,8 +10,8 @@ import { GalaxyApi } from "@/api";
 import { updateContentFields } from "@/components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "@/components/providers";
 import { useConfig } from "@/composables/config";
+import { useDetailedCollection } from "@/composables/datasetCollections";
 import { useCollectionAttributesStore } from "@/stores/collectionAttributesStore";
-import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
@@ -26,8 +25,6 @@ import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faBars, faCog, faDatabase, faSave, faTable, faUser);
-
 interface Props {
     collectionId: string;
 }
@@ -40,7 +37,7 @@ const collectionAttributesStore = useCollectionAttributesStore();
 const historyStore = useHistoryStore();
 const { currentHistoryId } = storeToRefs(historyStore);
 
-const collectionStore = useCollectionElementsStore();
+const { collection, collectionLoadError } = useDetailedCollection(props);
 
 const jobError = ref(null);
 const errorMessage = ref("");
@@ -63,18 +60,6 @@ const attributesLoadError = computed(() => {
     return undefined;
 });
 
-const collection = computed(() => {
-    return collectionStore.getCollectionById(props.collectionId);
-});
-const collectionLoadError = computed(() => {
-    if (collection.value) {
-        const collectionElementLoadError = collectionStore.getLoadingCollectionElementsError(collection.value);
-        if (collectionElementLoadError) {
-            return errorMessageAsString(collectionElementLoadError);
-        }
-    }
-    return undefined;
-});
 watch([attributesLoadError, collectionLoadError], () => {
     if (attributesLoadError.value) {
         errorMessage.value = attributesLoadError.value;
@@ -104,7 +89,7 @@ watch(
             ];
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function updateInfoMessage(strMessage: string) {
@@ -199,10 +184,13 @@ function onAttribute(data: Record<string, any>) {
 
 async function saveAttrs() {
     if (collection.value && attributesInputs.value) {
-        const updatedAttrs = attributesInputs.value.reduce((acc, input) => {
-            acc[input.name] = input.value;
-            return acc;
-        }, {} as Record<string, any>);
+        const updatedAttrs = attributesInputs.value.reduce(
+            (acc, input) => {
+                acc[input.name] = input.value;
+                return acc;
+            },
+            {} as Record<string, any>,
+        );
         try {
             await updateContentFields(collection.value, updatedAttrs);
 
@@ -255,7 +243,7 @@ async function saveAttrs() {
                 title-link-class="collection-edit-change-genome-nav"
                 @click="
                     updateInfoMessage(
-                        'This will create a new collection in your History. Your quota will not increase.'
+                        'This will create a new collection in your History. Your quota will not increase.',
                     )
                 ">
                 <template v-slot:title>
@@ -296,7 +284,7 @@ async function saveAttrs() {
                 title-link-class="collection-edit-change-datatype-nav"
                 @click="
                     updateInfoMessage(
-                        'This operation might take a short while, depending on the size of your collection.'
+                        'This operation might take a short while, depending on the size of your collection.',
                     )
                 ">
                 <template v-slot:title>

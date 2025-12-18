@@ -14,8 +14,8 @@ There are definitely use-cases where the Backbone models update over time and we
 value inside Vue. Instead of importing backbone models directly into Vue components, try building a
 backbone event listener that updates some relevant Vuex store.
 
--   [Keeping Vuex in Sync with
-    Galaxy](https://github.com/galaxyproject/galaxy/blob/dev/client/src/store/syncVuexToGalaxy.js)
+- [Keeping Vuex in Sync with
+  Galaxy](https://github.com/galaxyproject/galaxy/blob/dev/client/src/store/syncVuexToGalaxy.js)
 
 These issues should disappear over time as the all of the old client is rebuilt in the new
 ecosystem.

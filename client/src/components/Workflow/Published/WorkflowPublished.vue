@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
-import type { AxiosError } from "axios";
 import { BAlert, BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
@@ -14,6 +12,7 @@ import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -21,10 +20,9 @@ import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
 import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 
-library.add(faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser);
-
 interface Props {
     id: string;
+    version?: number;
     zoom?: number;
     embed?: boolean;
     initialX?: number;
@@ -38,6 +36,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    version: undefined,
     zoom: 0.75,
     embed: false,
     initialX: -20,
@@ -74,8 +73,8 @@ async function load() {
 
     try {
         const [workflowInfoData, fullWorkflow] = await Promise.all([
-            getWorkflowInfo(props.id),
-            getWorkflowFull(props.id),
+            getWorkflowInfo(props.id, props.version),
+            getWorkflowFull(props.id, props.version),
         ]);
 
         assertDefined(workflowInfoData.name);
@@ -85,11 +84,7 @@ async function load() {
 
         fromSimple(props.id, fullWorkflow);
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
-
-        if (error.response?.data.err_msg) {
-            errorMessage.value = error.response.data.err_msg ?? "Unknown Error";
-        }
+        errorMessage.value = errorMessageAsString(e);
     } finally {
         loading.value = false;
     }
@@ -98,7 +93,7 @@ async function load() {
 watch(
     () => props.zoom,
     () => (stateStore.scale = props.zoom),
-    { immediate: true }
+    { immediate: true },
 );
 
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
@@ -108,7 +103,7 @@ onMounted(async () => {
     await until(workflow).toBeTruthy();
     await nextTick();
 
-    // @ts-ignore: TS2339 webpack dev issue. hopefully we can remove this with vite
+    // @ts-ignore: TS2339 component method not exposed in template ref type
     workflowGraph.value?.fitWorkflow(0.25, 1.5, 20.0);
 });
 
@@ -173,7 +168,7 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-published {
     display: flex;

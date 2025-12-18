@@ -1,6 +1,5 @@
 import os
 from typing import (
-    List,
     Optional,
 )
 
@@ -17,7 +16,7 @@ CONFIG_DIR_NAME = "config"
 TOOLSHED_CONFIG_PREFIX = "TOOL_SHED_CONFIG_"
 
 
-def get_dburl(argv: List[str], cwd: str) -> str:
+def get_dburl(argv: list[str], cwd: str) -> str:
     """Return db url."""
     config_file = pop_arg_from_args(argv, CONFIG_FILE_ARG)
     return get_dburl_from_file(cwd, config_file)

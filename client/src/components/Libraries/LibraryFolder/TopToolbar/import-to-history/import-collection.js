@@ -1,11 +1,16 @@
-import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Backbone from "backbone";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 
+import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useHistoryStore } from "@/stores/historyStore";
+import Modal from "@/utils/modal";
+
 import mod_library_model from "../library-model";
+
+var modal = new Modal();
 
 var ImportCollectionModal = Backbone.View.extend({
     options: null,
@@ -29,11 +34,11 @@ var ImportCollectionModal = Backbone.View.extend({
     },
     async createNewHistory(new_history_name) {
         const { data } = await axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
-        getGalaxyInstance().currHistoryPanel.switchToHistory(data.id);
+        const { setCurrentHistory } = useHistoryStore();
+        await setCurrentHistory(data.id);
         return data;
     },
     showCollectionSelect: function (e) {
-        const Galaxy = getGalaxyInstance();
         var checked_items = this.findCheckedItems();
         if (checked_items.length === 0) {
             Toast.info("You must select some datasets first.");
@@ -43,8 +48,7 @@ var ImportCollectionModal = Backbone.View.extend({
             var promise = this.fetchUserHistories();
             promise
                 .done(() => {
-                    this.modal = Galaxy.modal;
-                    this.modal.show({
+                    modal.show({
                         closing_events: true,
                         title: "Create History Collection from Datasets",
                         body: template({
@@ -53,11 +57,11 @@ var ImportCollectionModal = Backbone.View.extend({
                         }),
                         buttons: {
                             Continue: () => {
+                                modal.hide();
                                 this.showCollectionBuilder(checked_items.dataset_ids);
-                                Galaxy.modal.hide();
                             },
                             Close: () => {
-                                Galaxy.modal.hide();
+                                modal.hide();
                             },
                         },
                     });
@@ -88,7 +92,7 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_item.src = "ldda";
             collection_elements.push(collection_item);
         }
-        const new_history_name = this.modal.$("input[name=history_name]").val();
+        const new_history_name = modal.el.querySelector('input[name="history_name"]').value;
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .then((new_history) => {
@@ -100,13 +104,13 @@ var ImportCollectionModal = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 });
         } else {
-            this.select_collection_history = this.modal.$el.find("#library-collection-history-select");
-            const selected_history_id = this.select_collection_history.val();
+            this.select_collection_history = modal.el.querySelector("#library-collection-history-select");
+            const selected_history_id = this.select_collection_history.value;
             this.collectionImport(collection_elements, selected_history_id);
         }
     },
     collectionImport: function (collectionElements, historyId) {
-        const collectionType = this.modal.$el.find("#library-collection-type-select").val();
+        const collectionType = modal.el.querySelector("#library-collection-type-select").value;
         let selection = {};
         if (collectionType == "rules") {
             selection.selectionType = "library_datasets";
@@ -115,8 +119,7 @@ var ImportCollectionModal = Backbone.View.extend({
             models: collectionElements,
         };
         if (collectionType === "rules") {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.buildCollectionFromRules(selection, historyId);
+            buildCollectionFromRules(selection, historyId);
         } else if (this.options.onCollectionImport) {
             this.options.onCollectionImport(collectionType, selection, historyId);
         }
@@ -124,6 +127,21 @@ var ImportCollectionModal = Backbone.View.extend({
     templateCollectionSelectModal: function () {
         return _.template(
             `<div> <!-- elements selection -->
+                <!-- history selection/creation -->
+                <div class="library-modal-item">
+                    <h4>Select history</h4>
+                    <div class="form-group">
+                        <select id="library-collection-history-select" name="library-collection-history-select" class="form-control">
+                            <% _.each(histories, function(history) { %> <!-- history select box -->
+                                <option value="<%= _.escape(history.get("id")) %>">
+                                    <%= _.escape(history.get("name")) %>
+                                </option>
+                            <% }); %>
+                        </select>
+                        <label>or create new:</label>
+                        <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
+                    </div>
+                </div>
                 <!-- type selection -->
                 <div class="library-modal-item">
                     <h4>Collection type</h4>
@@ -150,22 +168,7 @@ var ImportCollectionModal = Backbone.View.extend({
                         <dd class="col-sm-9">Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.</dd>
                     </dl>
                 </div>
-                <!-- history selection/creation -->
-                <div class="library-modal-item">
-                    <h4>Select history</h4>
-                    <div class="form-group">
-                        <select id="library-collection-history-select" name="library-collection-history-select" class="form-control">
-                            <% _.each(histories, function(history) { %> <!-- history select box -->
-                                <option value="<%= _.escape(history.get("id")) %>">
-                                    <%= _.escape(history.get("name")) %>
-                                </option>
-                            <% }); %>
-                        </select>
-                        <label>or create new:</label>
-                        <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
-                    </div>
-                </div>
-            </div>`
+            </div>`,
         );
     },
 });

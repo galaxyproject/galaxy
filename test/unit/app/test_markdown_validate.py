@@ -304,3 +304,45 @@ visualization(foo|bar=hello)
 ```
 """
     )
+
+
+def test_markdown_validation_embed():
+    assert_markdown_valid(
+        """
+| moo | cow |
+| 1 | 2 |
+"""
+    )
+    assert_markdown_valid(
+        """
+| moo | cow |
+| 1 | ${galaxy generate_galaxy_version()} |
+"""
+    )
+    assert_markdown_valid(
+        """
+| moo | cow |
+| 1 | ${galaxy history_dataset_name(input=foobar)} |
+"""
+    )
+    assert_markdown_invalid(
+        """
+| moo | cow |
+| 1 | ${galaxy history_dataset_name(foo=bar)} |
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+| moo | cow |
+| 1 | ${galaxy generate_galaxy_version(moo=cow)} |
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+| moo | cow |
+| 1 | ${galaxy invalid()} |
+""",
+        at_line=2,
+    )

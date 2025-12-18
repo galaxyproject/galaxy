@@ -52,6 +52,7 @@ class ToolOutputBase(Dictifiable):
     name: str
     label: Optional[str]
     hidden: bool
+    precreate_directory: bool
 
     def __init__(
         self,
@@ -70,6 +71,7 @@ class ToolOutputBase(Dictifiable):
         self.hidden = hidden
         self.collection = False
         self.from_expression = from_expression
+        self.precreate_directory = False
 
     def to_dict(self, view="collection", value_mapper=None, app=None):
         return super().to_dict(view=view, value_mapper=value_mapper)
@@ -131,6 +133,7 @@ class ToolOutput(ToolOutputBase):
         self.change_format: List[ChangeFormatModel] = []
         self.implicit = implicit
         self.from_work_dir: Optional[str] = None
+        self.precreate_directory: bool = False
         self.dataset_collector_descriptions: List[DatasetCollectionDescription] = []
         self.default_identifier_source: Optional[str] = None
         self.count: Optional[int] = None
@@ -178,6 +181,7 @@ class ToolOutput(ToolOutputBase):
             metadata_source=self.metadata_source,
             discover_datasets=[d.to_model() for d in self.dataset_collector_descriptions],
             from_work_dir=self.from_work_dir,
+            precreate_directory=self.precreate_directory,
         )
 
     @staticmethod
@@ -193,6 +197,7 @@ class ToolOutput(ToolOutputBase):
         output.count = output_dict.get("count", 1)
         output.filters = []
         output.from_work_dir = output_dict.get("from_work_dir")
+        output.precreate_directory = output_dict.get("precreate_directory") or False
         output.hidden = output_dict.get("hidden") or False
         # TODO: implement tool output action group fixes
         if app is not None:
@@ -223,6 +228,7 @@ class ToolExpressionOutput(ToolOutputBase):
         self.change_format = []
         self.implicit = False
         self.from_work_dir = None
+        self.precreate_directory = False
 
         self.dataset_collector_descriptions = []
 

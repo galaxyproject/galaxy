@@ -20,27 +20,19 @@ jobs:
       matrix:
         python-version: ['3.9', '3.13']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - name: Read Node.js version
-        id: node-version
-        run: echo "version=$(cat 'galaxy root/client/.node_version')" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: 'galaxy root/requirements.txt'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Install tox
-        run: pip install tox
+        run: uv tool install tox --with tox-uv
       - name: Run tests
         run: tox -e test_galaxy_packages
         working-directory: 'galaxy root'

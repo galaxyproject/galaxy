@@ -29,7 +29,7 @@ const props = defineProps<Props>();
 
 const breadcrumbItems = computed(() => [
     { title: "User Preferences", to: "/user" },
-    { title: "Remote File Sources", to: "/file_source_instances/index" },
+    { title: "My Repositories", to: "/file_source_instances/index" },
     { title: "Create New", to: "/file_source_instances/create" },
     { title: template.value?.name || "Option" },
 ]);
@@ -40,7 +40,7 @@ const errorMessage = ref("");
 const template = computed(() => fileSourceTemplatesStore.getLatestTemplate(props.templateId));
 const redirectMessage = computed(
     () =>
-        `You will redirected to ${template.value?.name} to authorize Galaxy to access this resource remotely. Please wait`
+        `You will redirected to ${template.value?.name} to authorize Galaxy to access this resource remotely. Please wait`,
 );
 const requiresOAuth2AuthorizeRedirect = computed(() => {
     const templateValue = template.value;
@@ -70,7 +70,7 @@ watch(
                             template_version: templateValue.version || 0,
                         },
                     },
-                }
+                },
             );
 
             if (testRequestError) {
@@ -82,7 +82,7 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

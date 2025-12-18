@@ -1,8 +1,9 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -23,7 +24,7 @@ async function mountJobDestinationParams() {
     server.use(
         http.get("/api/jobs/{job_id}/destination_params", ({ response }) => {
             return response(200).json(jobDestinationResponse);
-        })
+        }),
     );
 
     const pinia = createPinia();
@@ -63,7 +64,7 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
             expect(responseKeys.includes(parameterTitle)).toBeTruthy();
             // since we render null as an empty string, rendered empty string should always equal null in test data
             expect(
-                jobDestinationResponse[parameterTitle] === (parameterValue === "" ? null : parameterValue)
+                jobDestinationResponse[parameterTitle] === (parameterValue === "" ? null : parameterValue),
             ).toBeTruthy();
         }
     });

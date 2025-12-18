@@ -1,12 +1,11 @@
-import "jest-location-mock";
-
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -36,15 +35,10 @@ const TEST_PANELS_URI = "/api/tool_panels";
 const DEFAULT_VIEW_ID = "default";
 const PANEL_VIEW_ERR_MSG = "Error loading panel view";
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
-        config: {},
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
 
-jest.mock("@/composables/userLocalStorage", () => ({
-    useUserLocalStorage: jest.fn(() => ref(DEFAULT_VIEW_ID)),
+vi.mock("@/composables/userLocalStorage", () => ({
+    useUserLocalStorage: vi.fn(() => ref(DEFAULT_VIEW_ID)),
 }));
 
 describe("ToolPanel", () => {
@@ -62,7 +56,7 @@ describe("ToolPanel", () => {
             throw new Error(`View with key ${viewKey} not found in viewsList`);
         }
         // ref and useUserLocalStorage are already imported at the top
-        (useUserLocalStorage as jest.Mock).mockImplementation(() => ref(viewKey));
+        vi.mocked(useUserLocalStorage).mockImplementation(() => ref(viewKey));
         return { viewKey, view };
     }
 
@@ -96,7 +90,7 @@ describe("ToolPanel", () => {
         server.use(
             http.get("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser());
-            })
+            }),
         );
 
         // setting this because for the default view, we just show "Tools" as the name
@@ -108,13 +102,10 @@ describe("ToolPanel", () => {
             propsData: {
                 workflow: false,
                 editorWorkflows: null,
-                dataManagers: null,
-                moduleSections: null,
                 useSearchWorker: false,
             },
             localVue,
             stubs: {
-                icon: { template: "<div></div>" },
                 ToolBox: true,
             },
             pinia,
@@ -156,17 +147,20 @@ describe("ToolPanel", () => {
                 await flushPromises();
 
                 // Test: check if the current panel view is selected now
-                expect(currItem.find(".fa-check").exists()).toBe(true);
+                expect(currItem.find("[data-description='panel view item icon']").attributes("data-icon")).toEqual(
+                    "check",
+                );
 
                 // Test: check if the panel header now has an icon and a changed name
+                const currentViewType = value.view_type as keyof typeof types_to_icons;
                 const panelViewIcon = wrapper.find("[data-description='panel view header icon']");
-                expect(panelViewIcon.classes()).toContain(
-                    `fa-${types_to_icons[value.view_type as keyof typeof types_to_icons]}`
-                );
+                expect(panelViewIcon.attributes("data-icon")).toEqual(types_to_icons[currentViewType].iconName);
                 expect(wrapper.find("#toolbox-heading").text()).toBe(value!.name);
             } else {
                 // Test: check if the default panel view is already selected, and no icon
-                expect(currItem.find(".fa-check").exists()).toBe(true);
+                expect(currItem.find("[data-description='panel view item icon']").attributes("data-icon")).toEqual(
+                    "check",
+                );
                 expect(wrapper.find("[data-description='panel view header icon']").exists()).toBe(false);
             }
         }

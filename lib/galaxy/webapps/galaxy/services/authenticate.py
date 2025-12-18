@@ -1,9 +1,7 @@
 from base64 import b64decode
 from typing import (
     Any,
-    Dict,
     Optional,
-    Tuple,
     Union,
 )
 from urllib.parse import unquote
@@ -34,7 +32,7 @@ class AuthenticationService:
         self._auth_manager = auth_manager
         self._api_keys_manager = api_keys_manager
 
-    def get_api_key(self, environ: Dict[str, Any], request: Request) -> APIKeyResponse:
+    def get_api_key(self, environ: dict[str, Any], request: Request) -> APIKeyResponse:
         auth_header = environ.get("HTTP_AUTHORIZATION")
         identity, password = self._decode_baseauth(auth_header)
         # check if this is an email address or username
@@ -48,7 +46,7 @@ class AuthenticationService:
         else:
             raise exceptions.AuthenticationFailed("Invalid password.")
 
-    def _decode_baseauth(self, encoded_str: Optional[Any]) -> Tuple[str, str]:
+    def _decode_baseauth(self, encoded_str: Optional[Any]) -> tuple[str, str]:
         """
         Decode an encrypted HTTP basic authentication string. Returns a tuple of
         the form (email, password), and raises a HTTPBadRequest exception if

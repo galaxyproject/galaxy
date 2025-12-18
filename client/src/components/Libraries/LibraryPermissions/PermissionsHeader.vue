@@ -11,8 +11,9 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
-import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning";
+import { getGalaxyInstance } from "@/app";
+
+import LibraryPermissionsWarning from "@/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
 
 export default {
     components: {

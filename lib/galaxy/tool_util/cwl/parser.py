@@ -70,6 +70,7 @@ if TYPE_CHECKING:
     from .cwltool_deps import (
         CWLObjectType,
         JobsType,
+        Process,
         workflow,
     )
     from .schema import RawProcessReference
@@ -92,6 +93,7 @@ SUPPORTED_TOOL_REQUIREMENTS = [
     "SubworkflowFeatureRequirement",
     "StepInputExpressionRequirement",
     "MultipleInputFeatureRequirement",
+    "CredentialsRequirement",
 ]
 
 
@@ -124,7 +126,7 @@ class ToolProxy(metaclass=ABCMeta):
 
     def __init__(
         self,
-        tool: process.Process,
+        tool: "Process",
         uuid: Union[UUID, str],
         raw_process_reference: Optional["RawProcessReference"] = None,
         tool_path: Optional[str] = None,
@@ -241,6 +243,9 @@ class ToolProxy(metaclass=ABCMeta):
 
     def resource_requirements(self) -> List:
         return self.hints_or_requirements_of_class("ResourceRequirement")
+
+    def credentials_requirements(self) -> List:
+        return self.hints_or_requirements_of_class("CredentialsRequirement")
 
 
 class CommandLineToolProxy(ToolProxy):
@@ -828,7 +833,7 @@ def _to_cwl_tool_object(
 
 
 def _cwl_tool_object_to_proxy(
-    cwl_tool: process.Process,
+    cwl_tool: "Process",
     uuid: Union[UUID, str],
     raw_process_reference: Optional["RawProcessReference"] = None,
     tool_path: Optional[str] = None,

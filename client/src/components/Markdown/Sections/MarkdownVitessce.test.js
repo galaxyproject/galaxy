@@ -1,13 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 import Vue from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import MarkdownVitessce from "./MarkdownVitessce.vue";
 
-jest.mock("@/onload", () => ({
+vi.mock("@/onload", () => ({
     getAppRoot: () => "/",
 }));
 
@@ -21,7 +22,7 @@ describe("MarkdownVitessce.vue", () => {
             propsData: {
                 content: "{invalid",
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         expect(wrapper.text()).toContain("SyntaxError");
     });
@@ -85,8 +86,8 @@ describe("MarkdownVitessce.vue", () => {
                             id: "label_id",
                         },
                     ],
-                })
-            )
+                }),
+            ),
         );
         const content = {
             datasets: [
@@ -108,7 +109,7 @@ describe("MarkdownVitessce.vue", () => {
         localVue.component("VisualizationWrapper", {
             template: "<div class='viz-wrapper-stub' />",
         });
-        const pinia = createTestingPinia({ stubActions: false });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         const wrapper = mount(MarkdownVitessce, {
             propsData: {
                 content: JSON.stringify(content),

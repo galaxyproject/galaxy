@@ -1,10 +1,9 @@
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Annotated,
     Any,
-    Dict,
     Generic,
-    List,
     Optional,
     Union,
 )
@@ -15,7 +14,6 @@ from pydantic import (
     RootModel,
 )
 from typing_extensions import (
-    Annotated,
     Literal,
 )
 
@@ -92,7 +90,7 @@ class ActionLink(Model):
 
 class BroadcastNotificationContent(MessageNotificationContentBase):
     category: Literal[MandatoryNotificationCategory.broadcast] = MandatoryNotificationCategory.broadcast
-    action_links: Optional[List[ActionLink]] = Field(
+    action_links: Optional[list[ActionLink]] = Field(
         None,
         title="Action links",
         description="The optional action links (buttons) to be displayed in the notification.",
@@ -234,13 +232,13 @@ class BroadcastNotificationResponse(NotificationResponse):
 class UserNotificationListResponse(RootModel):
     """A list of user notifications."""
 
-    root: List[UserNotificationResponse]
+    root: list[UserNotificationResponse]
 
 
 class BroadcastNotificationListResponse(RootModel):
     """A list of broadcast notifications."""
 
-    root: List[BroadcastNotificationResponse]
+    root: list[BroadcastNotificationResponse]
 
 
 class NotificationStatusSummary(Model):
@@ -249,10 +247,10 @@ class NotificationStatusSummary(Model):
     total_unread_count: int = Field(
         ..., title="Total unread count", description="The total number of unread notifications for the user."
     )
-    notifications: List[UserNotificationResponse] = Field(
+    notifications: list[UserNotificationResponse] = Field(
         ..., title="Notifications", description="The list of updated notifications for the user."
     )
-    broadcasts: List[BroadcastNotificationResponse] = Field(
+    broadcasts: list[BroadcastNotificationResponse] = Field(
         ..., title="Broadcasts", description="The list of updated broadcasts."
     )
 
@@ -279,17 +277,17 @@ class NotificationCreateData(Model):
 class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT], PatchGenericPickle):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
 
-    user_ids: List[DatabaseIdT] = Field(
+    user_ids: list[DatabaseIdT] = Field(
         default=[],
         title="User IDs",
         description="The list of encoded user IDs of the users that should receive the notification.",
     )
-    group_ids: List[DatabaseIdT] = Field(
+    group_ids: list[DatabaseIdT] = Field(
         default=[],
         title="Group IDs",
         description="The list of encoded group IDs of the groups that should receive the notification.",
     )
-    role_ids: List[DatabaseIdT] = Field(
+    role_ids: list[DatabaseIdT] = Field(
         default=[],
         title="Role IDs",
         description="The list of encoded role IDs of the roles that should receive the notification.",
@@ -401,7 +399,7 @@ class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
 
 
 class NotificationsBatchRequest(Model):
-    notification_ids: List[DecodedDatabaseIdField] = Field(
+    notification_ids: list[DecodedDatabaseIdField] = Field(
         ...,
         title="Notification IDs",
         description="The list of encoded notification IDs of the notifications that should be updated.",
@@ -461,7 +459,7 @@ class NotificationCategorySettings(Model):
     )
 
 
-PersonalNotificationPreferences = Dict[PersonalNotificationCategory, NotificationCategorySettings]
+PersonalNotificationPreferences = dict[PersonalNotificationCategory, NotificationCategorySettings]
 
 
 def get_default_personal_notification_preferences() -> PersonalNotificationPreferences:
@@ -469,7 +467,7 @@ def get_default_personal_notification_preferences() -> PersonalNotificationPrefe
     return {category: NotificationCategorySettings() for category in PersonalNotificationCategory.__members__.values()}
 
 
-def get_default_personal_notification_preferences_example() -> Dict[str, Any]:
+def get_default_personal_notification_preferences_example() -> dict[str, Any]:
     return {
         category: NotificationCategorySettings().model_dump()
         for category in PersonalNotificationCategory.__members__.values()

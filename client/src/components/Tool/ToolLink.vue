@@ -30,7 +30,7 @@ watch(
             toolStore.fetchToolForId(props.toolId);
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

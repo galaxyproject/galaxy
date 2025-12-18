@@ -1,8 +1,9 @@
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { rootResponse } from "@/components/FilesDialog/testingData";
@@ -11,7 +12,7 @@ import FormDirectory from "./FormDirectory.vue";
 import FilesDialog from "@/components/FilesDialog/FilesDialog.vue";
 
 const localVue = getLocalVue();
-jest.mock("app");
+vi.mock("app");
 
 const { server, http } = useServerMock();
 setupMockConfig({});
@@ -21,7 +22,7 @@ async function init(wrapper, data) {
     const filesDialogComponent = wrapper.findComponent(FilesDialog);
     expect(filesDialogComponent.exists()).toBe(true);
     filesDialogComponent.vm.callback({ url: data.url });
-    // HACK to avoid https://github.com/facebook/jest/issues/2549 (URL implementation is not the same as global node)
+    // HACK: URL implementation in test environment is not the same as global node
     wrapper.vm.pathChunks = data.pathChunks;
     await flushPromises();
     await validateLatestEmittedPath(wrapper, data.url);
@@ -35,7 +36,7 @@ async function validateLatestEmittedPath(wrapper, expectedPath) {
     // also manually change prop value to be able to test the value being displayed
     await wrapper.setProps({ value: latestPath });
     const fullPathDisplayed = wrapper.find("[data-description='directory full path']");
-    expect(fullPathDisplayed.text()).toBe(`Directory Path: ${expectedPath}`);
+    expect(fullPathDisplayed.text()).toBe(`Directory Path:${expectedPath}`);
 }
 
 describe("DirectoryPathEditableBreadcrumb", () => {
@@ -69,14 +70,14 @@ describe("DirectoryPathEditableBreadcrumb", () => {
     };
 
     beforeEach(async () => {
-        spyOnUrlSet = jest.spyOn(FormDirectory.methods, "setUrl");
-        spyOnAddPath = jest.spyOn(FormDirectory.methods, "addPath");
-        spyOnUpdateURL = jest.spyOn(FormDirectory.methods, "updateURL");
+        spyOnUrlSet = vi.spyOn(FormDirectory.methods, "setUrl");
+        spyOnAddPath = vi.spyOn(FormDirectory.methods, "addPath");
+        spyOnUpdateURL = vi.spyOn(FormDirectory.methods, "updateURL");
 
         server.use(
             http.get("/api/remote_files/plugins", ({ response }) => {
                 return response(200).json(rootResponse);
-            })
+            }),
         );
 
         const pinia = createPinia();

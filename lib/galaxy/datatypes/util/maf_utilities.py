@@ -12,7 +12,6 @@ import sys
 import tempfile
 from copy import deepcopy
 from errno import EMFILE
-from typing import Dict
 
 import bx.align.maf
 import bx.interval_index_file
@@ -147,7 +146,7 @@ class RegionAlignment:
         if not temp_file_handler:
             temp_file_handler = TempFileHandler()
         self.temp_file_handler = temp_file_handler
-        self.sequences: Dict[str, int] = {}
+        self.sequences: dict[str, int] = {}
         if not isinstance(species, list):
             species = [species]
         for spec in species:

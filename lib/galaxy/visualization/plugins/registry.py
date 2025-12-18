@@ -8,18 +8,20 @@ Lower level of visualization framework which does three main things:
 import logging
 import os
 import weakref
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 import galaxy.model
 from galaxy.exceptions import ObjectNotFound
-from galaxy.util import (
-    config_directories_from_setting,
-    parse_xml,
-)
-from galaxy.visualization.plugins import (
-    config_parser,
-    plugin as vis_plugins,
-)
+from galaxy.util import config_directories_from_setting
+from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins.datasource_testing import is_object_applicable
+from galaxy.visualization.plugins.plugin import VisualizationPlugin
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -35,71 +37,31 @@ class VisualizationsRegistry:
             used in the visualization template
     """
 
+    #: base directory of visualizations
+    BASE_DIR = "static/plugins/visualizations"
     #: base url to controller endpoint
     BASE_URL = "visualizations"
-    #: name of files to search for additional template lookup directories
-    TEMPLATE_PATHS_CONFIG = "additional_template_paths.xml"
-    #: built-in visualizations
-    BUILT_IN_VISUALIZATIONS = ["trackster", "circster", "sweepster", "phyloviz"]
 
     def __str__(self):
         return self.__class__.__name__
 
-    def __init__(self, app, template_cache_dir=None, directories_setting=None, skip_bad_plugins=True, **kwargs):
+    def __init__(
+        self, app: "StructuredApp", directories_setting: Union[str, None] = None, skip_bad_plugins: bool = True
+    ) -> None:
         """
         Set up the manager and load all visualization plugins.
 
         :type   app:        galaxy.app.UniverseApplication
         :param  app:        the application (and its configuration) using this manager
-        :type   base_url:   string
-        :param  base_url:   url to prefix all plugin urls with
-        :type   template_cache_dir: string
-        :param  template_cache_dir: filesytem path to the directory where cached
-            templates are kept
         """
         self.app = weakref.ref(app)
         self.config_parser = config_parser.VisualizationsConfigParser()
         self.base_url = self.BASE_URL
-        self.template_cache_dir = template_cache_dir
-        self.additional_template_paths = []
-        self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
-        self.plugins = {}
+        self.plugins: dict[str, VisualizationPlugin] = {}
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
-        self._load_configuration()
+        self.directories.append(os.path.join(app.config.root, self.BASE_DIR))
         self._load_plugins()
-
-    def _load_configuration(self):
-        """
-        Load framework wide configuration, including:
-            additional template lookup directories
-        """
-        for directory in self.directories:
-            possible_path = os.path.join(directory, self.TEMPLATE_PATHS_CONFIG)
-            if os.path.exists(possible_path):
-                added_paths = self._parse_additional_template_paths(possible_path, directory)
-                self.additional_template_paths.extend(added_paths)
-
-    def _parse_additional_template_paths(self, config_filepath, base_directory):
-        """
-        Parse an XML config file at `config_filepath` for template paths
-        (relative to `base_directory`) to add to each plugin's template lookup.
-
-        Allows having a set of common templates for import/inheritance in
-        plugin templates.
-
-        :type   config_filepath:    string
-        :param  config_filepath:    filesystem path to the config file
-        :type   base_directory:     string
-        :param  base_directory:     path prefixed to new, relative template paths
-        """
-        additional_paths = []
-        xml_tree = parse_xml(config_filepath)
-        paths_list = xml_tree.getroot()
-        for rel_path_elem in paths_list.findall("path"):
-            if rel_path_elem.text is not None:
-                additional_paths.append(os.path.join(base_directory, rel_path_elem.text))
-        return additional_paths
 
     def _load_plugins(self):
         """
@@ -131,6 +93,8 @@ class VisualizationsRegistry:
         # due to the ordering of listdir, there is an implicit plugin loading order here
         # could instead explicitly list on/off in master config file
         for directory in self.directories:
+            if not os.path.isdir(directory):
+                continue
             for plugin_dir in sorted(os.listdir(directory)):
                 plugin_path = os.path.join(directory, plugin_dir)
                 if self._is_plugin(plugin_path):
@@ -141,9 +105,6 @@ class VisualizationsRegistry:
                         if self._is_plugin(plugin_subpath):
                             yield plugin_subpath
 
-    # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
-    # TODO: add template helpers specific to the plugins
-    # TODO: some sort of url_for for these plugins
     def _is_plugin(self, plugin_path):
         """
         Determines whether the given filesystem path contains a plugin.
@@ -161,10 +122,7 @@ class VisualizationsRegistry:
             # super won't work here - different criteria
             return False
         expected_config_filename = f"{os.path.basename(plugin_path)}.xml"
-        return any(
-            os.path.isfile(os.path.join(plugin_path, subdir, expected_config_filename))
-            for subdir in ("config", "static")
-        )
+        return os.path.isfile(os.path.join(plugin_path, "static", expected_config_filename))
 
     def _load_plugin(self, plugin_path):
         """
@@ -177,42 +135,12 @@ class VisualizationsRegistry:
         :returns:               the loaded plugin
         """
         plugin_name = os.path.split(plugin_path)[1]
-        config_paths = [
-            os.path.join(plugin_path, "config", f"{plugin_name}.xml"),
-            os.path.join(plugin_path, "static", f"{plugin_name}.xml"),
-        ]
-
-        for config_file in config_paths:
-            if os.path.exists(config_file):
-                config = self.config_parser.parse_file(config_file)
-                if config is not None:
-                    plugin = self._build_plugin(plugin_name, plugin_path, config)
-                    return plugin
-
+        config_file = os.path.join(plugin_path, "static", f"{plugin_name}.xml")
+        if os.path.exists(config_file):
+            config = self.config_parser.parse_file(config_file)
+            if config is not None:
+                return VisualizationPlugin(plugin_path, plugin_name, config)
         raise ObjectNotFound(f"Visualization XML not found in config or static paths for: {plugin_name}.")
-
-    def _build_plugin(self, plugin_name, plugin_path, config):
-        # TODO: as builder not factory
-
-        # default class
-        plugin_class = vis_plugins.VisualizationPlugin
-        # js only
-        if config["entry_point"]["type"] == "script":
-            plugin_class = vis_plugins.ScriptVisualizationPlugin
-        # from a static file (html, etc)
-        elif config["entry_point"]["type"] == "html":
-            plugin_class = vis_plugins.StaticFileVisualizationPlugin
-        return plugin_class(
-            self.app(),
-            plugin_path,
-            plugin_name,
-            config,
-            context=dict(
-                base_url=self.base_url,
-                template_cache_dir=self.template_cache_dir,
-                additional_template_paths=self.additional_template_paths,
-            ),
-        )
 
     def get_plugin(self, key):
         """
@@ -250,7 +178,7 @@ class VisualizationsRegistry:
             for data_source in data_sources:
                 model_class = data_source["model_class"]
                 model_class = getattr(galaxy.model, model_class, None)
-                if isinstance(target_object, model_class):
+                if model_class and isinstance(target_object, model_class):
                     tests = data_source["tests"]
                     if tests is None or is_object_applicable(trans, target_object, tests):
                         return visualization.to_dict()

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type Ref, ref } from "vue";
@@ -18,8 +17,6 @@ import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
 
-library.add(faCheckSquare, faPlus);
-
 const historyStore = useHistoryStore();
 
 const props = withDefaults(
@@ -29,7 +26,7 @@ const props = withDefaults(
     }>(),
     {
         filter: "",
-    }
+    },
 );
 
 // defineEmits below
@@ -129,7 +126,7 @@ async function onKeyDown(evt: KeyboardEvent) {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .list-container {
     .history-picker {
         min-width: 15rem;

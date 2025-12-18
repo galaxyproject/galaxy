@@ -1,21 +1,26 @@
 import { createPopper } from "@popperjs/core";
 import { mount } from "@vue/test-utils";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import PopperComponent from "./Popper.vue";
 
-jest.mock("@popperjs/core", () => ({
-    createPopper: jest.fn(() => ({
-        destroy: jest.fn(),
-        update: jest.fn(),
+// value from usePopper.ts
+const DELAY_CLOSE = 50;
+
+vi.mock("@popperjs/core", () => ({
+    createPopper: vi.fn(() => ({
+        destroy: vi.fn(),
+        update: vi.fn(),
     })),
 }));
 
-function mountTarget(trigger = "click") {
+function mountTarget(trigger = "click", interactive = false) {
     return mount(PopperComponent, {
         propsData: {
             title: "Test Title",
             placement: "bottom",
-            trigger: trigger,
+            interactive,
+            trigger,
         },
         slots: {
             reference: "<button>Reference</button>",
@@ -26,7 +31,7 @@ function mountTarget(trigger = "click") {
 
 describe("PopperComponent.vue", () => {
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     test("renders component with default props", async () => {
@@ -81,7 +86,7 @@ describe("PopperComponent.vue", () => {
         expect(createPopper).toHaveBeenCalledWith(
             expect.anything(),
             expect.anything(),
-            expect.objectContaining({ placement: "bottom" })
+            expect.objectContaining({ placement: "bottom" }),
         );
     });
 
@@ -95,7 +100,7 @@ describe("PopperComponent.vue", () => {
         expect(wrapper.find(".popper-element").isVisible()).toBe(false);
     });
 
-    test("shows and hides popper on hover trigger", async () => {
+    test("shows and hides popper on hover trigger over reference", async () => {
         const wrapper = mountTarget("hover");
         const reference = wrapper.find("button");
         const popperElement = wrapper.find(".popper-element");
@@ -103,6 +108,24 @@ describe("PopperComponent.vue", () => {
         await reference.trigger("mouseover");
         expect(popperElement.isVisible()).toBe(true);
         await reference.trigger("mouseout");
+        await new Promise((r) => setTimeout(r, 0));
+        expect(popperElement.isVisible()).toBe(false);
+    });
+
+    test("popper remains visible when hovering over popper", async () => {
+        const wrapper = mountTarget("hover", true);
+        const reference = wrapper.find("button");
+        const popperElement = wrapper.find(".popper-element");
+        expect(popperElement.isVisible()).toBe(false);
+        await reference.trigger("mouseover");
+        expect(popperElement.isVisible()).toBe(true);
+        await reference.trigger("mouseout");
+        await new Promise((r) => setTimeout(r, DELAY_CLOSE / 2));
+        expect(popperElement.isVisible()).toBe(true);
+        await popperElement.trigger("mouseover");
+        await new Promise((r) => setTimeout(r, DELAY_CLOSE * 2));
+        await popperElement.trigger("mouseout");
+        await new Promise((r) => setTimeout(r, DELAY_CLOSE * 2));
         expect(popperElement.isVisible()).toBe(false);
     });
 

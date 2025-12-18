@@ -247,6 +247,7 @@ class MockCollection:
         self.collection_type = collection_type
         self.elements = elements
         self.populated = True
+        self.column_definitions = None
 
 
 class MockCollectionElement:
@@ -254,6 +255,7 @@ class MockCollectionElement:
         self.element_identifier = element_identifier
         self.child_collection = collection
         self.hda = None
+        self.columns = None
 
 
 class MockHDAElement:
@@ -261,6 +263,7 @@ class MockHDAElement:
         self.element_identifier = element_identifier
         self.child_collection = False
         self.hda = object()
+        self.columns = None
 
 
 collection_instance = MockCollectionInstance

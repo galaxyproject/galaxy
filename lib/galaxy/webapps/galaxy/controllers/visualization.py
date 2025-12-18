@@ -1,10 +1,6 @@
 import logging
 
 from markupsafe import escape
-from paste.httpexceptions import (
-    HTTPBadRequest,
-    HTTPNotFound,
-)
 
 from galaxy import (
     model,
@@ -19,7 +15,6 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.genomes import GenomeRegion
 from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
@@ -215,115 +210,3 @@ class VisualizationController(
                 trans.sa_session.add(v)
                 trans.sa_session.commit()
             return {"message": f"Attributes of '{v.title}' successfully saved.", "status": "success"}
-
-    # ------------------------- registry.
-    @web.expose
-    def render(self, trans, visualization_name, embedded=None, **kwargs):
-        """
-        Render the appropriate visualization template, parsing the `kwargs`
-        into appropriate variables and resources (such as ORM models)
-        based on this visualizations `param` data in visualizations_conf.xml.
-
-        URL: /visualization/show/{visualization_name}
-        """
-        plugin = self._get_plugin_from_registry(trans, visualization_name)
-        try:
-            return plugin.render(trans=trans, embedded=embedded, **kwargs)
-        except Exception as exception:
-            return self._handle_plugin_error(trans, visualization_name, exception)
-
-    def _get_plugin_from_registry(self, trans, visualization_name):
-        """
-        Get the named plugin from the registry.
-        :raises HTTPNotFound: if registry has been turned off in config.
-        :raises HTTPNotFound: if visualization_name isn't a registered plugin.
-        """
-        if not trans.app.visualizations_registry:
-            raise HTTPNotFound("No visualization registry (possibly disabled in galaxy.ini)")
-        return trans.app.visualizations_registry.get_plugin(visualization_name)
-
-    def _handle_plugin_error(self, trans, visualization_name, exception):
-        """
-        Log, raise if debugging; log and show html message if not.
-        """
-        if isinstance(exception, MessageException):
-            log.debug("error rendering visualization (%s): %s", visualization_name, exception)
-        else:
-            log.exception("error rendering visualization (%s)", visualization_name)
-        if trans.debug:
-            raise exception
-        return trans.show_error_message(
-            "There was an error rendering the visualization. "
-            "Contact your Galaxy administrator if the problem persists."
-            f"<br/>Details: {exception}",
-            use_panels=False,
-        )
-
-    @web.expose
-    def saved(self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs):
-        """
-        Load a visualization and render it.
-        """
-        # check the id and load the saved visualization
-        if id is None:
-            return HTTPBadRequest("A valid visualization id is required to load a visualization")
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-
-        # re-add title to kwargs for passing to render
-        if title:
-            kwargs["title"] = title
-        plugin = self._get_plugin_from_registry(trans, visualization.type)
-        try:
-            return plugin.render_saved(visualization, trans=trans, **kwargs)
-        except Exception as exception:
-            self._handle_plugin_error(trans, visualization.type, exception)
-
-    @web.expose
-    @web.require_login()
-    def trackster(self, trans, **kwargs):
-        """
-        Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
-        """
-
-        # define app configuration
-        app = {"jscript": "trackster"}
-
-        # get dataset to add
-        id = kwargs.get("id", None)
-
-        # get dataset to add
-        new_dataset_id = kwargs.get("dataset_id", None)
-
-        # set up new browser if no id provided
-        if not id:
-            # use dbkey from dataset to be added or from incoming parameter
-            dbkey = None
-            if new_dataset_id:
-                decoded_id = self.decode_id(new_dataset_id)
-                hda = self.hda_manager.get_owned(decoded_id, trans.user, current_history=trans.user)
-                dbkey = hda.dbkey
-                if dbkey == "?":
-                    dbkey = kwargs.get("dbkey", None)
-
-            # save database key
-            app["default_dbkey"] = dbkey
-        else:
-            # load saved visualization
-            vis = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-            app["viz_config"] = self.get_visualization_config(trans, vis)
-
-        # backup id
-        app["id"] = id
-
-        # add dataset id
-        app["add_dataset"] = new_dataset_id
-
-        # check for gene region
-        gene_region = GenomeRegion.from_str(kwargs.get("gene_region", ""))
-
-        # update gene region of saved visualization if user parses a new gene region in the url
-        if gene_region.chrom is not None:
-            app["gene_region"] = {"chrom": gene_region.chrom, "start": gene_region.start, "end": gene_region.end}
-
-        # fill template
-        return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})

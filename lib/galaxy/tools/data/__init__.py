@@ -7,9 +7,6 @@ client currently).
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
-    Type,
 )
 
 import refgenconf
@@ -27,7 +24,7 @@ from galaxy.util.template import fill_template
 log = logging.getLogger(__name__)
 
 
-def table_from_dict(d: Dict[str, Any]) -> ToolDataTable:
+def table_from_dict(d: dict[str, Any]) -> ToolDataTable:
     data_table_class = globals()[d["model_class"]]
     data_table = data_table_class.__new__(data_table_class)
     for attr, val in d.items():
@@ -37,7 +34,7 @@ def table_from_dict(d: Dict[str, Any]) -> ToolDataTable:
     return data_table
 
 
-def from_dict(d: Dict[str, Any]) -> "ToolDataTableManager":
+def from_dict(d: dict[str, Any]) -> "ToolDataTableManager":
     tdtm = ToolDataTableManager.__new__(ToolDataTableManager)
     tdtm.data_tables = {name: table_from_dict(data) for name, data in d.items()}
     return tdtm
@@ -82,7 +79,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
             other_config_dict=other_config_dict,
         )
         self.config_element = config_element
-        self.data: List[List[str]] = []
+        self.data: list[list[str]] = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
 
     def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10):
@@ -182,7 +179,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
 
 
 # Registry of tool data types by type_key
-tool_data_table_types_list: List[Type[ToolDataTable]] = tool_util_tool_data_table_types_list + [RefgenieToolDataTable]
+tool_data_table_types_list: list[type[ToolDataTable]] = tool_util_tool_data_table_types_list + [RefgenieToolDataTable]
 tool_data_table_types = {cls.type_key: cls for cls in tool_data_table_types_list}
 
 

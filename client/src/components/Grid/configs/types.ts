@@ -22,7 +22,7 @@ export interface GridConfig {
         search: string,
         sort_by: string,
         sort_desc: boolean,
-        extraProps?: Record<string, unknown>
+        extraProps?: Record<string, unknown>,
     ) => Promise<any>;
     batch?: BatchOperationArray;
     plural: string;

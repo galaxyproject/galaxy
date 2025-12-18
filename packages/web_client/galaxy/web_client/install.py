@@ -24,7 +24,24 @@ The --mode option specifies how the web client is installed:
         Copy the Galaxy web client to DEST
 """
 
-CLIENT = os.path.join(os.path.dirname(__file__))
+TARGETS = {
+    "dist": os.path.join(os.path.dirname(__file__), "dist"),
+}
+
+try:
+    import galaxy.webapps.base
+
+    STATIC = os.path.join(os.path.dirname(galaxy.webapps.base.__file__), "static")
+    TARGETS.update({
+        "style": os.path.join(STATIC, "style"),
+        "favicon.ico": os.path.join(STATIC, "favicon.ico"),
+        "favicon.svg": os.path.join(STATIC, "favicon.svg"),
+        "robots.txt": os.path.join(STATIC, "robots.txt"),
+        "welcome.sample.html": os.path.join(STATIC, "welcome.sample.html"),
+    })
+except ImportError:
+    # Consider this a soft fail, this package depends on nothing but is probably installed with galaxy-web-apps
+    pass
 
 
 def main(argv=None):
@@ -32,12 +49,15 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = _arg_parser().parse_args(argv)
 
-    dist = os.path.join(CLIENT, "dist")
-    assert os.path.exists(dist), f"ERROR: Cannot find web client at expected path: {dist}"
-    if args.mode in ("absolute", "relative"):
-        _symlink(args.dest, args.mode == "absolute", args.force_overwrite)
-    elif args.mode == "copy":
-        _copy(args.dest, args.force_overwrite)
+    assert os.path.exists(TARGETS["dist"]), f"ERROR: Cannot find web client at expected path: {TARGETS['dist']}"
+
+    _try(functools.partial(os.makedirs, args.dest), args.dest, args.force_overwrite, dir_ok=True)
+    for dest, target in TARGETS.items():
+        dest = os.path.join(args.dest, dest)
+        if args.mode in ("absolute", "relative"):
+            _symlink(dest, target, args.mode == "absolute", args.force_overwrite)
+        elif args.mode == "copy":
+            _copy(dest, target, args.force_overwrite)
 
 
 def _arg_parser():
@@ -51,30 +71,47 @@ def _arg_parser():
     return parser
 
 
-def _symlink(dest, absolute, force):
+def _symlink(dest, target, absolute, force):
     if absolute:
-        target = os.path.abspath(CLIENT)
+        target = os.path.abspath(target)
     else:
-        target = os.path.relpath(CLIENT, start=dest)
-    _try(functools.partial(os.symlink, target, dest), dest, force)
+        target = os.path.relpath(target, start=os.path.dirname(dest))
+    if _try(functools.partial(os.symlink, target, dest), dest, force, target=target):
+        print(f"link: {dest} -> {target}")
 
 
-def _copy(dest, force):
-    _try(functools.partial(shutil.copytree, CLIENT, dest, dirs_exist_ok=False), dest, force)
+def _copy(dest, target, force):
+    if os.path.isdir(target):
+        f = functools.partial(shutil.copytree, target, dest, dirs_exist_ok=False)
+    else:
+        f = functools.partial(_copy2, target, dest)
+    if _try(f, dest, force):
+        print(f"copy: {target} -> {dest}")
 
 
-def _try(f, dest, force):
+def _copy2(target, dest):
+    if os.path.exists(dest):
+        raise FileExistsError(dest)
+    shutil.copy2(target, dest)
+
+
+def _try(f, dest, force, target=None, dir_ok=False):
     try:
         f()
-    except FileExistsError:
+    except (FileExistsError, shutil.SameFileError):
+        if dir_ok and os.path.isdir(dest) and not os.path.islink(dest):
+            return True
+        if target and os.path.islink(dest) and os.readlink(dest) == target:
+            return True
         if not force:
             print(f"ERROR: File exists, use --force-overwrite to overwrite: {dest}")
-            sys.exit(1)
+            return False
         if os.path.isdir(dest) and not os.path.islink(dest):
             shutil.rmtree(dest)
         else:
             os.unlink(dest)
         f()
+    return True
 
 
 if __name__ == "__main__":

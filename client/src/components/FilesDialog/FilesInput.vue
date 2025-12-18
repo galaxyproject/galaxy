@@ -15,10 +15,6 @@ interface Props {
     selectedItem?: SelectionItem;
 }
 
-interface SelectableFile {
-    url: string;
-}
-
 const props = withDefaults(defineProps<Props>(), {
     mode: "file",
     requireWritable: false,
@@ -46,8 +42,8 @@ const selectFile = () => {
         filterOptions: props.filterOptions,
         selectedItem: props.selectedItem,
     };
-    filesDialog((selected: SelectableFile) => {
-        currentValue.value = selected?.url;
+    filesDialog((selected: SelectionItem) => {
+        currentValue.value = selected.url;
     }, dialogProps);
 };
 

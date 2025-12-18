@@ -2,7 +2,9 @@
 import MarkdownIt from "markdown-it";
 //@ts-ignore
 import markdownItRegexp from "markdown-it-regexp";
-import { computed } from "vue";
+import { computed, ref } from "vue";
+
+import { useGxUris } from "@/components/Markdown/gxuris";
 
 //@ts-ignore
 import markdownItKatex from "./Plugins/markdown-it-katex";
@@ -20,8 +22,14 @@ const props = defineProps<{
 }>();
 
 const renderedContent = computed(() => md.render(props.content));
+
+const renderedMarkdownDiv = ref<HTMLDivElement>();
+const { internalHelpReferences, MarkdownHelpPopovers } = useGxUris(renderedMarkdownDiv);
 </script>
 
 <template>
-    <div class="text-justify" v-html="renderedContent" />
+    <span>
+        <div ref="renderedMarkdownDiv" class="text-justify" v-html="renderedContent" />
+        <MarkdownHelpPopovers :elements="internalHelpReferences" />
+    </span>
 </template>

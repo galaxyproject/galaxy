@@ -37,18 +37,19 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
-    "fastapi-slim>=0.111.0",
+    "fastapi>=0.124.0",  # https://github.com/fastapi/fastapi/pull/14453
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "gravity>=1.0.4",
+    "gravity>=1.1.1",
     "gunicorn",
-    "gxformat2",
+    "gxformat2>=0.21.0",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
     "httpx",
+    "ijson",
     "importlib-resources ; python_version<'3.12'",  # for importlib.{abc.Traversable,resources.{files, Package}}
-    "isa-rwval @ git+https://github.com/nsoranzo/isa-rwval.git@master",  # https://github.com/ISA-tools/isa-rwval/pull/17
+    "isa-rwval>=0.10.11",  # https://github.com/ISA-tools/isa-rwval/pull/17
     "isal>=1.7.0",  # Python 3.13 support
     "jinja2",
     "kombu>=5.5.0",  # prefer not downgrading this to upgrading typing-extensions
@@ -58,10 +59,12 @@ dependencies = [
     "MarkupSafe",
     "mercurial>=6.8.2",  # Python 3.13 support
     "mrcfile",
+    "more-itertools",
     "msal",
-    "nodeenv",
+    "nodejs-wheel>=22,<23",
     "numpy>=1.26.0",  # Python 3.12 support
     "numpy>=2.1.0 ; python_version>='3.10'",  # Python 3.13 support
+    "openpyxl>=3.1.5",  # Minimum version ever tested with
     "packaging",
     "paramiko!=2.9.0,!=2.9.1",  # https://github.com/paramiko/paramiko/issues/1961
     "Parsley",
@@ -69,7 +72,7 @@ dependencies = [
     "pebble",
     "pillow",
     "psutil",
-    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pulsar-galaxy-lib>=0.15.10",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "PyJWT",
@@ -94,19 +97,19 @@ dependencies = [
     "social-auth-core>=4.5.0",  # to drop dependency on abandoned python-jose
     "sortedcontainers",
     "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
-    "sqlitedict",
     "sqlparse",
     "starlette",
     "starlette-context",
     "svgwrite",
     "tifffile",
-    "tuswsgi",
     "typing-extensions",
+    "tuspyserver",
     "uvicorn!=0.28.0",  # https://github.com/galaxyproject/galaxy/issues/17669
     "uvloop>=0.21.0",  # Python 3.13 support
     "WebOb>=1.8.9",  # Python 3.13 support
     "Whoosh",
     "zipstream-new",
+    "fsspec>=2025.7.0",
 ]
 
 [project.urls]
@@ -116,24 +119,17 @@ Repository = "https://github.com/galaxyproject/galaxy"
 "Bug Tracker" = "https://github.com/galaxyproject/galaxy/issues"
 
 [dependency-groups]
-dev = [
+test = [
     "ase>=3.18.1",
     "axe-selenium-python",
-    "black",
     "boto3",
-    "codespell",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
-    "darker",
     "fluent-logger",
-    "galaxy-release-util",
-    "isort",
     "lxml!=4.2.2",
-    "markdown-it-reporter",
-    "myst-parser",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
-    "pytest<8",  # https://github.com/galaxyproject/galaxy/issues/17561
+    "pytest",
     "pytest-asyncio",
     "pytest-cov",
     "pytest-html",
@@ -145,18 +141,29 @@ dev = [
     "pytest-postgresql!=3.0.0",  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
     "pytest-shard",
     "responses",
-    "roc-validator",
+    "roc-validator!=0.7.2",  # https://github.com/crs4/rocrate-validator/pull/97
     "rucio-clients>=37.2.0",  # https://github.com/rucio/rucio/pull/7665
     "selenium",
     "seletools",
-    "Sphinx>=4.0",  # support docutils 0.17
-    "sphinx-rtd-theme",
     "statsd",
     "testfixtures",
+    "total-perspective-vortex>=3.1.1,<4",  # https://github.com/galaxyproject/total-perspective-vortex/pull/173
     "tuspy",
     "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
+]
+dev = [
+    {include-group = "test"},
+    "black",
+    "codespell",
+    "darker",
+    "galaxy-release-util",
+    "isort",
+    "markdown-it-reporter",
+    "myst-parser",
+    "Sphinx>=4.0",  # support docutils 0.17
+    "sphinx-rtd-theme",
 ]
 typecheck = [
     "boto3-stubs[s3]",
@@ -249,6 +256,7 @@ keep-runtime-typing = true
 [tool.uv]
 constraint-dependencies = [
     "limits>=2.5.0",  # prefer not downgrading this to upgrading packaging
+    "mirakuru!=3.0.0",  # https://github.com/dbfixtures/mirakuru/pull/949
     "scipy>=1.14.1; python_version>='3.10'",  # Python 3.13 support
 ]
 default-groups = []

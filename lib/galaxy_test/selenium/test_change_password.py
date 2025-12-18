@@ -1,10 +1,14 @@
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestChangePassword(SeleniumTestCase):
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - playwright._impl._errors.Error: Page.goto: net::ERR_ABORTED at http://localhost:8081/"
+    )
     @selenium_test
     def test_change_password(self):
         self.home()

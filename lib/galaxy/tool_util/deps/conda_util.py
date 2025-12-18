@@ -54,13 +54,14 @@ USE_LOCAL_DEFAULT = False
 
 
 def conda_link() -> str:
+    arch = platform.machine()
     if IS_OS_X:
-        if "arm64" in platform.platform():
+        if "arm64" in arch:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh"
         else:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh"
     else:
-        if "arm64" in platform.platform():
+        if "arm64" in arch or "aarch64" in arch:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh"
         else:
             url = "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"

@@ -12,7 +12,7 @@ import { useAgGrid } from "@/composables/useAgGrid";
 import { usePairingDatasetTargetsStore } from "@/stores/collectionBuilderItemsStore";
 import localize from "@/utils/localization";
 
-import type { GenericPair } from "../History/adapters/buildCollectionModal";
+import type { GenericPair } from "../Collections/common/buildCollectionModal";
 import { stripExtension, useUpdateIdentifiersForRemoveExtensions } from "./common/stripExtension";
 import {
     type SupportedPairedOrPairedBuilderCollectionTypes,
@@ -26,7 +26,7 @@ import PairedOrUnpairedListCreatorHelp from "./PairedOrUnpairedListCreatorHelp.v
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
 type CollectionElementIdentifier = components["schemas"]["CollectionElementIdentifier"];
-type CollectionSourceType = components["schemas"]["ColletionSourceType"];
+type CollectionSourceType = components["schemas"]["CollectionSourceType"];
 const NOT_VALID_ELEMENT_MSG: string = localize("is not a valid element for this collection");
 
 const { confirm } = useConfirmDialog();
@@ -42,8 +42,6 @@ interface Props {
     suggestedName?: string;
     fromSelection?: boolean;
     extensions?: string[];
-    height?: string;
-    width?: string;
     forwardFilter?: string;
     reverseFilter?: string;
     collectionType: SupportedPairedOrPairedBuilderCollectionTypes;
@@ -93,7 +91,7 @@ const {
 pairingTargetsStore.setShowElementExtension(showElementExtension);
 
 const style = computed(() => {
-    return { width: props.width || "100%", height: props.height || "500px" };
+    return { width: "100%", height: "500px" };
 });
 
 const flatLists = computed(() => props.collectionType.indexOf("paired") == -1);
@@ -296,7 +294,7 @@ function initialize() {
             activeElements.value,
             currentForwardFilter.value,
             currentReverseFilter.value || "",
-            removeExtensions.value
+            removeExtensions.value,
         );
     }
     syncRowDataToRowPairing();
@@ -333,7 +331,7 @@ function addUploadedFiles(files: HDASummary[]) {
             files,
             currentForwardFilter.value || "",
             currentReverseFilter.value || "",
-            removeExtensions.value
+            removeExtensions.value,
         );
         syncPairingToRowData(summary, rowData.value);
     }
@@ -349,7 +347,7 @@ function updatePairNames() {
                 v.datasets.reverse,
                 currentForwardFilter.value || "",
                 currentReverseFilter.value || "",
-                previousRemoveExtensions
+                previousRemoveExtensions,
             );
             if (v.identifier == previousUnchangedIdentifier) {
                 v.identifier = guessNameForPair(
@@ -357,7 +355,7 @@ function updatePairNames() {
                     v.datasets.reverse,
                     currentForwardFilter.value || "",
                     currentReverseFilter.value || "",
-                    removeExtensions.value
+                    removeExtensions.value,
                 );
             }
         } else {
@@ -416,7 +414,7 @@ function pairedListIdentifiers(): CollectionElementIdentifier[] {
         const isPaired = "forward" in v.datasets;
         function toElementIdentifierObject(
             collectionType: "paired" | "paired_or_unpaired",
-            identifiers: CollectionElementIdentifier[]
+            identifiers: CollectionElementIdentifier[],
         ) {
             return {
                 collection_type: collectionType,
@@ -441,7 +439,7 @@ function pairedListIdentifiers(): CollectionElementIdentifier[] {
             ];
             return toElementIdentifierObject(
                 props.collectionType == "list:paired" ? "paired" : "paired_or_unpaired",
-                identifiers
+                identifiers,
             );
         } else {
             const unpaired = unpairedDataset(v);
@@ -554,7 +552,7 @@ function onPair(firstId: string, secondId: string, pairBy: PairBy) {
             reverse,
             currentForwardFilter.value || "",
             currentReverseFilter.value || "",
-            removeExtensions.value
+            removeExtensions.value,
         );
         const pair = { forward, reverse, name: nameForPair };
         const insertPairAt = insertPairAtIndexType[pairBy];

@@ -1,57 +1,71 @@
+from typing import TYPE_CHECKING
+
 import pytest
 
 from tool_shed.util import hg_util
 
-
-def test_init_repository(tmpdir):
-    hg_util.init_repository(str(tmpdir))
-    assert (tmpdir / ".hg").exists()
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
-def test_init_repository_fails(tmpdir):
-    test_init_repository(tmpdir)
-    with pytest.raises(Exception) as exc_info:
-        test_init_repository(tmpdir)
-    assert "Error initializing repository" in str(exc_info.value)
+def test_init_repository(tmp_path):
+    hg_util.init_repository(tmp_path)
+    assert (tmp_path / ".hg").exists()
 
 
-def test_add_file_and_commmit_changeset(tmpdir):
-    test_init_repository(tmpdir)
-    path_to_add = tmpdir / "test.txt"
-    path_to_add.write("test")
-    hg_util.add_changeset(str(tmpdir), str(path_to_add))
-    hg_util.commit_changeset(str(tmpdir), str(path_to_add), "testuser", "testcommit")
+def test_init_repository_fails(tmp_path):
+    hg_util.init_repository(tmp_path)
+    with pytest.raises(Exception, match="Error initializing repository"):
+        test_init_repository(tmp_path)
+
+
+def _add_file_and_commmit_changeset(tmp_path: "Path"):
+    path_to_add = tmp_path / "test.txt"
+    path_to_add.write_text("test")
+    hg_util.add_changeset(tmp_path, path_to_add)
+    hg_util.commit_changeset(tmp_path, path_to_add, "testuser", "testcommit")
     return path_to_add
 
 
-def test_add_dir_and_commit_changeset(tmpdir):
-    test_init_repository(tmpdir)
-    path_to_add = tmpdir.mkdir("abc")
-    (path_to_add / "test.txt").write("bla")
-    hg_util.add_changeset(str(tmpdir), str(path_to_add))
-    hg_util.commit_changeset(str(tmpdir), str(path_to_add), "testuser", "testcommit")
-    return path_to_add
+def test_add_file_and_commmit_changeset(tmp_path):
+    hg_util.init_repository(tmp_path)
+    _add_file_and_commmit_changeset(tmp_path)
 
 
-def test_remove_tracked_file(tmpdir):
-    path_to_remove = test_add_file_and_commmit_changeset(tmpdir)
-    hg_util.remove_path(str(tmpdir), path_to_remove)
+def _add_dir_and_commit_changeset(tmp_path: "Path"):
+    dir_to_add = tmp_path / "abc"
+    dir_to_add.mkdir()
+    (dir_to_add / "test.txt").write_text("bla")
+    hg_util.add_changeset(tmp_path, dir_to_add)
+    hg_util.commit_changeset(tmp_path, dir_to_add, "testuser", "testcommit")
+    return dir_to_add
 
 
-def test_remove_untracked_file(tmpdir):
-    test_init_repository(tmpdir)
-    untracked_path = tmpdir / "untracked.txt"
-    untracked_path.write("bla")
-    hg_util.remove_path(str(tmpdir), str(untracked_path))
+def test_add_dir_and_commit_changeset(tmp_path):
+    hg_util.init_repository(tmp_path)
+    _add_dir_and_commit_changeset(tmp_path)
 
 
-def test_remove_tracked_dir(tmpdir):
-    path_to_remove = test_add_dir_and_commit_changeset(tmpdir)
-    hg_util.remove_path(str(tmpdir), path_to_remove)
+def test_remove_tracked_file(tmp_path):
+    hg_util.init_repository(tmp_path)
+    path_to_remove = _add_file_and_commmit_changeset(tmp_path)
+    hg_util.remove_path(tmp_path, path_to_remove)
 
 
-def test_remove_nonexistant_file_fails(tmpdir):
-    test_init_repository(tmpdir)
-    with pytest.raises(Exception) as exc_info:
-        hg_util.remove_path(str(tmpdir), str(tmpdir / "some path"))
-    assert "Error removing path" in str(exc_info.value)
+def test_remove_untracked_file(tmp_path):
+    hg_util.init_repository(tmp_path)
+    untracked_path = tmp_path / "untracked.txt"
+    untracked_path.write_text("bla")
+    hg_util.remove_path(tmp_path, untracked_path)
+
+
+def test_remove_tracked_dir(tmp_path):
+    hg_util.init_repository(tmp_path)
+    dir_to_remove = _add_dir_and_commit_changeset(tmp_path)
+    hg_util.remove_path(tmp_path, dir_to_remove)
+
+
+def test_remove_nonexistant_file_fails(tmp_path):
+    hg_util.init_repository(tmp_path)
+    with pytest.raises(Exception, match="Error removing path"):
+        hg_util.remove_path(tmp_path, tmp_path / "some path")

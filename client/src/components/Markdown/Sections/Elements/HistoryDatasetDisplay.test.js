@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -14,7 +15,7 @@ const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
 function setUpDatatypesStore() {
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const datatypesStore = useDatatypesMapperStore();
     datatypesStore.datatypesMapper = testDatatypesMapper;
     return pinia;
@@ -30,13 +31,14 @@ describe("History Tabular Dataset Display", () => {
         extension: "tabular",
         name: "someName",
         state: "ok",
+        peek: "needs a peek",
     };
     const tabularTableDataCounts = tabularMetaData.metadata_columns * tabularMetaData.metadata_data_lines;
 
     async function mountTarget() {
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(tabularMetaData)),
-            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(tabular))
+            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(tabular)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,
@@ -58,13 +60,13 @@ describe("History Text Dataset Display", () => {
     let wrapper;
     const datasetId = "otherId";
     const text = { item_data: "some text" };
-    const textMetaData = { extension: "txt", name: "someName", state: "ok" };
+    const textMetaData = { extension: "txt", name: "someName", state: "ok", peek: "needs a peek" };
 
     async function mountTarget() {
         server.resetHandlers();
         server.use(
             http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(textMetaData)),
-            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text))
+            http.get("/api/datasets/{dataset_id}/get_content_as_text", ({ response }) => response(200).json(text)),
         );
         wrapper = mount(HistoryDatasetDisplay, {
             localVue,

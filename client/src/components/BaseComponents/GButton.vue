@@ -99,7 +99,7 @@ const buttonElementRef = useResolveElement(buttonRef);
         :data-title="currentTitle"
         :class="{ ...variantClasses, ...styleClasses }"
         :to="!props.disabled ? props.to : ''"
-        :href="!props.disabled ? props.to ?? props.href : ''"
+        :href="!props.disabled ? (props.to ?? props.href) : ''"
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
@@ -127,7 +127,10 @@ const buttonElementRef = useResolveElement(buttonRef);
     vertical-align: middle;
     cursor: pointer;
 
-    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+    transition:
+        color 0.15s ease-in-out,
+        background-color 0.15s ease-in-out,
+        border-color 0.15s ease-in-out,
         box-shadow 0.15s ease-in-out;
 
     @media (prefers-reduced-motion) {
@@ -312,5 +315,15 @@ const buttonElementRef = useResolveElement(buttonRef);
             }
         }
     }
+}
+</style>
+
+<style lang="scss">
+// Fix for GButton inside Bootstrap input-group-append
+// Prevents horizontal scrolling issues caused by flex layout conflicts
+// This must be unscoped to target Bootstrap's input-group-append
+.input-group-append .g-button {
+    flex-shrink: 0;
+    overflow: hidden;
 }
 </style>

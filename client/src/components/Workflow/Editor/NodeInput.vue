@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronCircleRight, faMinusSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounce, type UseElementBoundingReturn } from "@vueuse/core";
@@ -30,8 +29,6 @@ import type { InputTerminalSource } from "@/stores/workflowStepStore";
 
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
-
-library.add(faChevronCircleRight, faMinusSquare);
 
 const props = defineProps({
     input: {
@@ -91,7 +88,7 @@ const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, dataty
 const dropTarget = ref<HTMLDivElement | null>(null);
 const position = useRelativePosition(
     dropTarget,
-    computed(() => props.parentNode)
+    computed(() => props.parentNode),
 );
 
 const stores = useWorkflowStores();
@@ -108,7 +105,7 @@ const connections = computed(() => {
 const invalidConnectionReasons = computed(() =>
     connections.value
         .map((connection) => connectionStore.invalidConnections[getConnectionId(connection)])
-        .filter((reason) => reason)
+        .filter((reason) => reason),
 );
 
 const { draggingTerminal } = storeToRefs(stateStore);
@@ -133,10 +130,10 @@ const acceptsInput = computed(() => {
 });
 
 const endX = computed(
-    () => position.value.offsetLeft + props.stepPosition.left + (dropTarget.value?.offsetWidth ?? 2) / 2
+    () => position.value.offsetLeft + props.stepPosition.left + (dropTarget.value?.offsetWidth ?? 2) / 2,
 );
 const endY = computed(
-    () => position.value.offsetTop + props.stepPosition.top + (dropTarget.value?.offsetHeight ?? 2) / 2
+    () => position.value.offsetTop + props.stepPosition.top + (dropTarget.value?.offsetHeight ?? 2) / 2,
 );
 
 watch([endX, endY], ([x, y]) => {
@@ -183,7 +180,7 @@ function onDrop(event: DragEvent) {
         stepOut.stepId,
         stepOut.output,
         props.datatypesMapper,
-        stores
+        stores,
     ) as OutputCollectionTerminal;
 
     showTooltip.value = false;
@@ -210,7 +207,7 @@ watch(
         if (!draggingTerminal.value) {
             draggedOver.value = false;
         }
-    }
+    },
 );
 </script>
 
@@ -236,7 +233,7 @@ watch(
             <b-tooltip v-if="reason" :target="id" :show="showTooltip">
                 {{ reason }}
             </b-tooltip>
-            <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
+            <FontAwesomeIcon class="terminal-icon" :icon="faChevronCircleRight" />
         </div>
         <button
             v-if="hasConnections && !readonly"
@@ -244,7 +241,7 @@ watch(
             :title="reason"
             class="delete-terminal-button"
             @click="onRemove">
-            <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
+            <FontAwesomeIcon class="delete-button-icon" :icon="faMinusSquare" />
         </button>
         <span v-if="!blank">{{ label }}</span>
         <span
@@ -258,7 +255,7 @@ watch(
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "nodeTerminalStyle.scss";
 
 .node-input {

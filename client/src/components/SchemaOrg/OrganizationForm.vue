@@ -4,13 +4,16 @@
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <span v-b-tooltip.hover title="Hide Attribute"
-                ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
+                ><FontAwesomeIcon :icon="faEyeSlash" @click="onHide(attribute.key)"
             /></span>
+            <div v-if="currentErrors[attribute.key]" class="error">{{ currentErrors[attribute.key] }}</div>
             <b-form-input
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
                 :placeholder="'Enter ' + attribute.placeholder + '.'"
-                :type="attribute.type">
+                :type="attribute.type"
+                :state="currentErrors[attribute.key] ? false : null"
+                @focus="removeErrorMessage(attribute.key)">
             </b-form-input>
         </div>
         <div role="group" class="form-group">
@@ -22,8 +25,7 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
+import { faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import ThingFormMixin from "./ThingFormMixin";
@@ -41,8 +43,6 @@ const ATTRIBUTES_INFO = [
 ];
 const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
 
-library.add(faEyeSlash, faLink);
-
 export default {
     components: {
         FontAwesomeIcon,
@@ -55,6 +55,7 @@ export default {
     },
     data() {
         const currentValues = {};
+        const currentErrors = {};
         const show = {};
         for (const attribute of ATTRIBUTES) {
             const showAttribute = attribute in this.organization;
@@ -70,12 +71,20 @@ export default {
             show[attribute] = showAttribute;
         }
         return {
+            faEyeSlash,
             attributeInfo: ATTRIBUTES_INFO,
             show: show,
             currentValues: currentValues,
+            currentErrors: currentErrors,
             addAttribute: null,
             schemaOrgClass: "Organization",
         };
     },
 };
 </script>
+
+<style lang="scss" scoped>
+.error {
+    color: var(--color-red-500);
+}
+</style>

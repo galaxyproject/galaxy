@@ -1,10 +1,15 @@
 <script setup>
-import { getGalaxyInstance } from "app";
-import LoadingSpan from "components/LoadingSpan";
+import { faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
-import APIKeyItem from "./APIKeyItem";
+import { getGalaxyInstance } from "@/app";
+
 import svc from "./model/service";
+
+import APIKeyItem from "./APIKeyItem.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const apiKey = ref(null);
 const loading = ref(false);
@@ -29,11 +34,13 @@ const createNewAPIKey = () => {
 };
 
 getAPIKey();
+
+const breadcrumbItems = [{ title: "User Preferences", to: "/user" }, { title: "Manage API Key" }];
 </script>
 
 <template>
-    <section class="api-key d-flex flex-column">
-        <h1 v-localize class="h-lg">Manage API Key</h1>
+    <section>
+        <BreadcrumbHeading :items="breadcrumbItems" />
 
         <span v-localize class="mb-2">
             An API key will allow you to access via web API. Please note that this key acts as an alternate means to
@@ -54,8 +61,8 @@ getAPIKey();
             class="create-button"
             variant="primary"
             @click.prevent="createNewAPIKey">
-            <icon v-if="!createLoading" icon="plus" />
-            <icon v-else icon="spinner" spin />
+            <FontAwesomeIcon v-if="!createLoading" :icon="faPlus" />
+            <FontAwesomeIcon v-else :icon="faSpinner" spin />
             <span v-localize>Create a new key</span>
         </b-button>
 

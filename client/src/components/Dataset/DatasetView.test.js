@@ -1,16 +1,22 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
+
+import { useServerMock } from "@/api/client/__mocks__";
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 
 import DatasetView from "./DatasetView.vue";
 
+const { server, http } = useServerMock();
+
 // Mock the datatypeVisualizationsStore
-jest.mock("@/stores/datatypeVisualizationsStore", () => ({
-    useDatatypeVisualizationsStore: jest.fn(() => ({
-        getPreferredVisualizationForDatatype: jest.fn().mockImplementation((datatype) => {
+vi.mock("@/stores/datatypeVisualizationsStore", () => ({
+    useDatatypeVisualizationsStore: vi.fn(() => ({
+        getPreferredVisualizationForDatatype: vi.fn().mockImplementation((datatype) => {
             // Only return a preferred visualization for a specific test datatype
             if (datatype === "h5") {
                 return Promise.resolve({
@@ -36,6 +42,7 @@ const mockDataset = {
     genome_build: "hg38",
     misc_blurb: "100 lines",
     misc_info: "Additional info",
+    peek: "Needs a peek",
 };
 
 const errorDataset = { ...mockDataset, state: "error" };
@@ -47,27 +54,44 @@ const pausedDataset = { ...mockDataset, state: "paused" };
 // Dataset with preferred visualization
 const h5Dataset = { ...mockDataset, file_ext: "h5" };
 
+function setupPinia(datasetStore) {
+    const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        initialState: {
+            datasetStore: datasetStore,
+            datatypeStore: {
+                datatypeDetails: {
+                    txt: {
+                        id: "txt",
+                        name: "Text",
+                        display_type: "txt",
+                    },
+                },
+            },
+            datatypesMapperStore: {
+                datatypesMapper: testDatatypesMapper,
+            },
+        },
+        stubActions: false,
+    });
+    setActivePinia(pinia);
+    return pinia;
+}
+
 /**
  * Mount the DatasetView component with the specified tab and dataset options
  */
 async function mountDatasetView(tab = "preview", options = {}) {
-    const pinia = createTestingPinia({
-        initialState: {
-            datasetStore: {
-                storedDatasets: {
-                    [DATASET_ID]: options.dataset || mockDataset,
-                },
-                loadingDatasets: {},
-            },
+    const datasetStore = {
+        storedDatasets: {
+            [DATASET_ID]: options.dataset || mockDataset,
         },
-        stubActions: false,
-        createSpy: jest.fn,
-    });
-    setActivePinia(pinia);
+    };
+    const pinia = setupPinia(datasetStore);
 
     const router = new VueRouter();
-    router.push = jest.fn();
-    router.replace = jest.fn();
+    router.push = vi.fn();
+    router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
         propsData: {
@@ -80,7 +104,7 @@ async function mountDatasetView(tab = "preview", options = {}) {
         attachTo: document.createElement("div"),
         stubs: {
             // Only shallow stub certain components
-            "font-awesome-icon": true,
+            FontAwesomeIcon: true,
             Heading: {
                 template: "<div><slot></slot></div>",
                 props: ["h1", "separator"],
@@ -124,23 +148,14 @@ async function mountDatasetView(tab = "preview", options = {}) {
  * Mount the DatasetView component in loading state
  */
 async function mountLoadingDatasetView() {
-    const pinia = createTestingPinia({
-        initialState: {
-            datasetStore: {
-                storedDatasets: {},
-                loadingDatasets: {
-                    [DATASET_ID]: true,
-                },
-            },
-        },
-        stubActions: false,
-        createSpy: jest.fn,
-    });
-    setActivePinia(pinia);
+    const datasetStore = {
+        storedDatasets: {},
+    };
+    const pinia = setupPinia(datasetStore);
 
     const router = new VueRouter();
-    router.push = jest.fn();
-    router.replace = jest.fn();
+    router.push = vi.fn();
+    router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
         propsData: {
@@ -169,6 +184,24 @@ async function mountLoadingDatasetView() {
 }
 
 describe("DatasetView", () => {
+    beforeEach(() => {
+        class IO {
+            constructor() {}
+            observe() {}
+            unobserve() {}
+            disconnect() {}
+        }
+        global.IntersectionObserver = IO;
+        global.MutationObserver = IO;
+        server.use(
+            http.get("/api/datasets/:dataset_id", ({ response }) => {
+                return response(200).json(mockDataset);
+            }),
+            http.get("/api/configuration", ({ response }) => response(200).json({})),
+            http.get("/api/plugins", ({ response }) => response(200).json([])),
+        );
+    });
+
     describe("Component mounting and basic functionality", () => {
         it("mounts with correct props", async () => {
             const wrapper = await mountDatasetView();
@@ -180,8 +213,8 @@ describe("DatasetView", () => {
         it("shows loading message when dataset is loading", async () => {
             const wrapper = await mountLoadingDatasetView();
             expect(wrapper.find(".loading-message").exists()).toBe(true);
-            expect(wrapper.find(".loading-message").text()).toBe("Loading dataset details...");
-            expect(wrapper.find(".dataset-view").exists()).toBe(false);
+            expect(wrapper.find(".loading-message").text()).toBe("Loading...");
+            expect(wrapper.find(".dataset-view").exists()).toBe(true);
         });
 
         it("renders dataset information", async () => {

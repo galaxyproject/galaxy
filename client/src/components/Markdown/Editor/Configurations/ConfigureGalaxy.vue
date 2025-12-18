@@ -48,7 +48,7 @@ const requirementFulfilled = computed(
     () =>
         hasLabels.value &&
         requiredObject.value &&
-        ["history_id", "invocation_id", "workflow_id"].includes(requiredObject.value)
+        ["history_id", "invocation_id", "workflow_id"].includes(requiredObject.value),
 );
 
 function onChange(option: OptionType) {
@@ -78,6 +78,6 @@ function parseContent() {
 watch(
     () => props.content,
     () => parseContent(),
-    { immediate: true }
+    { immediate: true },
 );
 </script>

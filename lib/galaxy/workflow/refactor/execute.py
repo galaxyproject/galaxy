@@ -1,7 +1,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -136,7 +135,7 @@ class WorkflowRefactorExecutor:
         input_type = action.type
         module_type = None
 
-        tool_state: Dict[str, Any] = {}
+        tool_state: dict[str, Any] = {}
         if input_type in ["data", "dataset"]:
             module_type = "data_input"
         elif input_type in ["data_collection", "dataset_collection"]:

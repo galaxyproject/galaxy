@@ -20,17 +20,16 @@
             <LoadingSpan :message="`Waiting on ${identifierText} import job, this may take a while.`" />
         </div>
         <div v-else-if="complete">
-            <b-alert :show="complete" variant="success" dismissible @dismissed="complete = false">
-                <span class="mb-1 h-sm">Done!</span>
-                <p>
-                    {{ identifierTextCapitalized }} imported, check out
-                    <router-link :to="linkToList">your {{ identifierTextPlural }}</router-link>
-                </p>
-            </b-alert>
+            <ImportSuccess
+                v-if="jobId"
+                :job-id="jobId"
+                :link-to-list="linkToList"
+                :identifier-text-plural="identifierTextPlural"
+                :identifier-text-capitalized="identifierTextCapitalized" />
         </div>
         <div v-else>
             <b-form @submit.prevent="submit">
-                <b-form-group v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
+                <b-form-group v-slot="{ ariaDescribedby }" :label="howLabel">
                     <b-form-radio-group
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
@@ -38,20 +37,31 @@
                         stacked>
                         <b-form-radio value="externalUrl">
                             Export URL from another Galaxy instance
-                            <FontAwesomeIcon icon="external-link-alt" />
+                            <FontAwesomeIcon :icon="faExternalLinkAlt" />
                         </b-form-radio>
                         <b-form-radio value="upload">
                             Upload local file from your computer
-                            <FontAwesomeIcon icon="upload" />
+                            <FontAwesomeIcon :icon="faUpload" />
                         </b-form-radio>
                         <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
-                            Select a remote file (e.g. Galaxy's FTP)
-                            <FontAwesomeIcon icon="folder-open" />
+                            Select a repository (e.g. Galaxy's FTP)
+                            <FontAwesomeIcon :icon="faFolderOpen" />
                         </b-form-radio>
                     </b-form-radio-group>
                 </b-form-group>
 
-                <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
+                <b-form-group v-if="invocationImport" v-slot="{ ariaDescribedby }" :label="whereLabel">
+                    <b-form-radio-group
+                        v-model="importTarget"
+                        :aria-describedby="ariaDescribedby"
+                        name="import-target"
+                        stacked>
+                        <b-form-radio value="newHistory"> Import into a new history. </b-form-radio>
+                        <b-form-radio value="currentHistory"> Import into the current history. </b-form-radio>
+                    </b-form-radio-group>
+                </b-form-group>
+
+                <b-form-group v-if="importType === 'externalUrl'" :label="urlLabel">
                     <b-alert v-if="showImportUrlWarning" variant="warning" show>
                         It looks like you are trying to import a published history from another galaxy instance. You can
                         only import histories via an archive URL.
@@ -63,10 +73,10 @@
 
                     <b-form-input v-model="sourceURL" type="url" />
                 </b-form-group>
-                <b-form-group v-else-if="importType === 'upload'" label="Archived History File">
+                <b-form-group v-else-if="importType === 'upload'" :label="fileLabel">
                     <b-form-file v-model="sourceFile" />
                 </b-form-group>
-                <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
+                <b-form-group v-show="importType === 'remoteFilesUri'" label="Repository">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
                     <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>
@@ -80,34 +90,30 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import JobError from "components/JobInformation/JobError";
-import { waitOnJob } from "components/JobStates/wait";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
-import { errorMessageAsString } from "utils/simple-error";
-import { capitalizeFirstLetter } from "utils/strings";
 import Vue, { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
-
-import ExternalLink from "./ExternalLink";
+import { waitOnJob } from "@/components/JobStates/wait";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GButton from "./BaseComponents/GButton.vue";
-import FilesInput from "components/FilesDialog/FilesInput.vue";
+import ExternalLink from "./ExternalLink.vue";
+import FilesInput from "@/components/FilesDialog/FilesInput.vue";
+import ImportSuccess from "@/components/ImportSuccess.vue";
+import JobError from "@/components/JobInformation/JobError.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faFolderOpen);
-library.add(faUpload);
-library.add(faExternalLinkAlt);
 Vue.use(BootstrapVue);
 
 export default {
-    components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan, ExternalLink, GButton },
+    components: { FilesInput, FontAwesomeIcon, ImportSuccess, JobError, LoadingSpan, ExternalLink, GButton },
     props: {
         invocationImport: {
             type: Boolean,
@@ -126,7 +132,7 @@ export default {
             (val) => {
                 const url = val ?? "";
                 showImportUrlWarning.value = Boolean(url.match(mayBeHistoryUrlRegEx));
-            }
+            },
         );
 
         return {
@@ -138,16 +144,33 @@ export default {
         return {
             initializing: true,
             importType: "externalUrl",
+            importTarget: "newHistory", // "newHistory" or "currentHistory" - where to do import (if invocation)
             sourceFile: null,
             sourceRemoteFilesUri: "",
             errorMessage: null,
             waitingOnJob: false,
             complete: false,
             jobError: null,
+            jobId: null,
             hasFileSources: false,
+            faExternalLinkAlt,
+            faFolderOpen,
+            faUpload,
         };
     },
     computed: {
+        howLabel() {
+            return `How would you like to specify the ${this.identifierText} archive?`;
+        },
+        whereLabel() {
+            return `Where would you like to import the ${this.identifierText} archive?`;
+        },
+        urlLabel() {
+            return `Archived ${this.identifierTextCapitalized} URL`;
+        },
+        fileLabel() {
+            return `Archived ${this.identifierTextCapitalized} File`;
+        },
         importReady() {
             const importType = this.importType;
             if (importType == "externalUrl") {
@@ -200,10 +223,14 @@ export default {
             } else if (importType == "remoteFilesUri") {
                 formData.append("archive_source", this.sourceRemoteFilesUri);
             }
+            if (this.importTarget == "newHistory") {
+                formData.append("name", "History for Workflow Import");
+            }
             axios
                 .post(`${getAppRoot()}api/histories`, formData)
                 .then((response) => {
                     this.waitingOnJob = true;
+                    this.jobId = response.data.id;
                     waitOnJob(response.data.id)
                         .then((jobResponse) => {
                             this.waitingOnJob = false;

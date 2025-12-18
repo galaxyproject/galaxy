@@ -44,7 +44,7 @@ export interface LoadWorkflowOptions {
 export async function fromSimple(
     id: string,
     data: Pick<Workflow, "steps" | "comments" | "report">,
-    options?: LoadWorkflowOptions
+    options?: LoadWorkflowOptions,
 ) {
     const appendData = options?.appendData ?? false;
     const defaultPosition = options?.defaultPosition ?? { top: 0, left: 0 };

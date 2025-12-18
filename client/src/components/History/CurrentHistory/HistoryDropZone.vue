@@ -3,7 +3,7 @@
 </template>
 
 <style scoped lang="scss">
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 .drop-zone {
     pointer-events: none;
     z-index: 100;

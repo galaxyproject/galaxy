@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
@@ -14,8 +15,8 @@ import { filterLatestToolVersions } from "@/utils/tool-version";
 import InteractiveToolsPanel from "./InteractiveToolsPanel.vue";
 
 // Mock the tool-version utility module
-jest.mock("@/utils/tool-version", () => ({
-    filterLatestToolVersions: jest.fn((tools: Tool[]) => tools),
+vi.mock("@/utils/tool-version", () => ({
+    filterLatestToolVersions: vi.fn((tools: Tool[]) => tools),
 }));
 
 const localVue = getLocalVue();
@@ -31,26 +32,24 @@ const mockTools: Partial<Tool>[] = [
 describe("InteractiveToolsPanel component", () => {
     beforeEach(() => {
         // Reset mocks
-        jest.clearAllMocks();
-        (filterLatestToolVersions as jest.MockedFunction<typeof filterLatestToolVersions>).mockImplementation(
-            (tools) => tools
-        );
+        vi.clearAllMocks();
+        (filterLatestToolVersions as ReturnType<typeof vi.fn>).mockImplementation((tools) => tools);
     });
 
     const mountComponent = async (toolsList: Partial<Tool>[] = mockTools) => {
         const pinia = createTestingPinia({
-            createSpy: () => jest.fn(),
+            createSpy: vi.fn,
             stubActions: false,
         });
         setActivePinia(pinia);
 
         // Mock the stores before mounting
         const toolStore = useToolStore();
-        jest.spyOn(toolStore, "fetchTools").mockImplementation(jest.fn());
-        jest.spyOn(toolStore, "getInteractiveTools").mockReturnValue(toolsList as Tool[]);
+        vi.spyOn(toolStore, "fetchTools").mockImplementation(vi.fn());
+        vi.spyOn(toolStore, "getInteractiveTools").mockReturnValue(toolsList as Tool[]);
 
         const interactiveToolsStore = useInteractiveToolsStore();
-        jest.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(jest.fn());
+        vi.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(vi.fn());
 
         const entryPointStore = useEntryPointStore();
         entryPointStore.$patch({ entryPoints: [] });
@@ -66,7 +65,7 @@ describe("InteractiveToolsPanel component", () => {
             },
             mocks: {
                 $router: {
-                    push: jest.fn(),
+                    push: vi.fn(),
                 },
             },
         });
@@ -88,9 +87,7 @@ describe("InteractiveToolsPanel component", () => {
             { id: "rstudio/1.2.0", version: "1.2.0", name: "RStudio", model_class: "InteractiveTool" },
             { id: "jupyter/2.0", version: "2.0", name: "Jupyter", model_class: "InteractiveTool" },
         ];
-        (filterLatestToolVersions as jest.MockedFunction<typeof filterLatestToolVersions>).mockReturnValue(
-            filteredTools as Tool[]
-        );
+        (filterLatestToolVersions as ReturnType<typeof vi.fn>).mockReturnValue(filteredTools as Tool[]);
 
         await mountComponent();
 
@@ -113,9 +110,7 @@ describe("InteractiveToolsPanel component", () => {
                 description: "Code editor",
             },
         ];
-        (filterLatestToolVersions as jest.MockedFunction<typeof filterLatestToolVersions>).mockReturnValue(
-            searchableTools as Tool[]
-        );
+        (filterLatestToolVersions as ReturnType<typeof vi.fn>).mockReturnValue(searchableTools as Tool[]);
 
         await mountComponent();
 
@@ -124,7 +119,7 @@ describe("InteractiveToolsPanel component", () => {
     });
 
     it("should handle empty tool list", async () => {
-        (filterLatestToolVersions as jest.MockedFunction<typeof filterLatestToolVersions>).mockReturnValue([]);
+        (filterLatestToolVersions as ReturnType<typeof vi.fn>).mockReturnValue([]);
 
         await mountComponent([]);
 
@@ -159,7 +154,7 @@ describe("InteractiveToolsPanel component", () => {
         ];
 
         const pinia = createTestingPinia({
-            createSpy: () => jest.fn(),
+            createSpy: vi.fn,
             stubActions: false,
         });
         setActivePinia(pinia);
@@ -170,11 +165,11 @@ describe("InteractiveToolsPanel component", () => {
 
         // Mock the stores
         const toolStore = useToolStore();
-        jest.spyOn(toolStore, "fetchTools").mockImplementation(jest.fn());
-        jest.spyOn(toolStore, "getInteractiveTools").mockReturnValue(mockTools as Tool[]);
+        vi.spyOn(toolStore, "fetchTools").mockImplementation(vi.fn());
+        vi.spyOn(toolStore, "getInteractiveTools").mockReturnValue(mockTools as Tool[]);
 
         const interactiveToolsStore = useInteractiveToolsStore();
-        jest.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(jest.fn());
+        vi.spyOn(interactiveToolsStore, "getActiveTools").mockImplementation(vi.fn());
 
         const wrapper = mount(InteractiveToolsPanel as any, {
             localVue,
@@ -189,7 +184,7 @@ describe("InteractiveToolsPanel component", () => {
             },
             mocks: {
                 $router: {
-                    push: jest.fn(),
+                    push: vi.fn(),
                 },
             },
         });

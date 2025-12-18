@@ -3,10 +3,7 @@ import os
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -60,8 +57,8 @@ from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
-SuppliedVariables = Dict[str, TemplateVariableValueType]
-SuppliedSecrets = Dict[str, str]
+SuppliedVariables = dict[str, TemplateVariableValueType]
+SuppliedSecrets = dict[str, str]
 
 
 class CreateInstancePayload(BaseModel):
@@ -123,9 +120,9 @@ class UpdateTestTarget:
 
 class CreateTestTarget:
     payload: CreateInstancePayload
-    instance_class: Type[HasConfigSecrets]
+    instance_class: type[HasConfigSecrets]
 
-    def __init__(self, payload: CreateInstancePayload, instance_class: Type[HasConfigSecrets]):
+    def __init__(self, payload: CreateInstancePayload, instance_class: type[HasConfigSecrets]):
         self.payload = payload
         self.instance_class = instance_class
 
@@ -161,7 +158,7 @@ class TemplateParameters(TypedDict):
     secrets: SuppliedSecrets
     variables: SuppliedVariables
     environment: EnvironmentDict
-    user_details: Dict[str, Any]
+    user_details: dict[str, Any]
     implicit: Optional[ImplicitConfigurationParameters]
 
 
@@ -269,7 +266,7 @@ def prepare_environment(
 
 
 def prepare_environment_from_root(
-    root: Optional[List[TemplateEnvironmentEntry]], vault: Vault, app_config: UsesTemplatesAppConfig
+    root: Optional[list[TemplateEnvironmentEntry]], vault: Vault, app_config: UsesTemplatesAppConfig
 ) -> EnvironmentDict:
     environment: EnvironmentDict = {}
     for environment_entry in root or []:
@@ -363,8 +360,7 @@ def update_instance_secret(
     app_config: UsesTemplatesAppConfig,
 ):
     template_secrets = secrets_as_dict(template.secrets or [])
-    secret_name = payload.secret_name
-    if secret_name not in template_secrets:
+    if (secret_name := payload.secret_name) not in template_secrets:
         raise RequestParameterInvalidException(f"Configuration template does not specify a secret named {secret_name}")
 
     user_vault = trans.user_vault
@@ -401,7 +397,7 @@ def upgrade_secrets(
         if secret_name not in recorded_secrets:
             recorded_secrets.append(secret_name)
 
-    secrets_to_delete: List[str] = []
+    secrets_to_delete: list[str] = []
     for recorded_secret in recorded_secrets:
         if recorded_secret not in upgraded_template_secrets:
             key = template_instance.vault_key(recorded_secret, app_config)
@@ -424,7 +420,7 @@ def save_template_instance(sa_session: galaxy_scoped_session, template_instance:
 T = TypeVar("T", bound=Template, covariant=True)
 
 
-def sort_templates(config, catalog: List[T], instance: HasConfigTemplate) -> List[T]:
+def sort_templates(config, catalog: list[T], instance: HasConfigTemplate) -> list[T]:
     configured_template: Optional[T] = None
     try:
         configured_template = find_template_by(

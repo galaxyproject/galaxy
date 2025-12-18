@@ -82,8 +82,8 @@ How to use this tool
 
 Running input lists through this tool produces new dataset lists (described in detail below) that when using
 the same natural element-wise matching "map over" semantics described above produce every combination of the
-elements of the two lists compared against each other. Running a tool with these two outputs instead of the inital
-two input produces a list of the comparison of each combination of pairs from the respective inputs.
+elements of the two lists compared against each other. Running a tool with these two outputs instead of the initial
+two inputs produces a list of the comparison of each combination of pairs from the respective inputs.
 
 .. image:: ${static_path}/images/tools/collection_ops/flat_crossproduct_output.png
   :alt: The Flat Cartesian Product of Two Collections

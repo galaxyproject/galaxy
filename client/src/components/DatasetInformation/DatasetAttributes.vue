@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { AxiosError } from "axios";
@@ -15,8 +14,6 @@ import Heading from "../Common/Heading.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
 
 interface Props {
     datasetId: string;
@@ -91,7 +88,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div aria-labelledby="dataset-attributes-heading">
+    <div class="dataset-attributes" aria-labelledby="dataset-attributes-heading">
         <Heading id="dataset-attributes-heading" h1 separator inline size="md">
             {{ localize("Edit Dataset Attributes") }}
         </Heading>
@@ -230,3 +227,10 @@ onMounted(async () => {
         </div>
     </div>
 </template>
+
+<style>
+.dataset-attributes {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+</style>

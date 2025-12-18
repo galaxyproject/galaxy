@@ -36,7 +36,7 @@ async function fetchLicense(workflowId: string) {
 watch(
     () => props.workflowId,
     () => fetchLicense(props.workflowId),
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 

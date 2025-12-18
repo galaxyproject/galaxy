@@ -3,11 +3,12 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { BAlert, BTable } from "bootstrap-vue";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";
 
-jest.mock("app");
+vi.mock("app");
 
 const mockOptions = {
     callback: () => {},
@@ -31,7 +32,7 @@ describe("DatasetCollectionDialog.vue", () => {
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
         // Initially in loading state.
-        const collectionsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesome Collection" }];
+        const collectionsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesome Collection", hid: 1 }];
         axiosMock
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(200, collectionsResponse);

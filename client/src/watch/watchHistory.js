@@ -6,14 +6,13 @@
  */
 
 import { storeToRefs } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
-import { useHistoryStore } from "stores/historyStore";
-import { loadSet } from "utils/setCache";
-import { urlData } from "utils/url";
 
-import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { useDatasetStore } from "@/stores/datasetStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { loadSet } from "@/utils/setCache";
+import { urlData } from "@/utils/url";
 
 const limit = 1000;
 
@@ -25,13 +24,6 @@ let lastUpdateTime = null;
 
 // last time changed history items have been requested
 let lastRequestDate = new Date();
-
-const { startWatchingResource: startWatchingHistory } = useResourceWatcher(watchHistory, {
-    shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-    longPollingInterval: INACTIVE_POLLING_INTERVAL,
-});
-
-export { startWatchingHistory };
 
 export async function watchHistory(app) {
     // GalaxyApp
@@ -92,9 +84,7 @@ export async function watchHistoryOnce(app) {
         collectionElementsStore.saveCollections(payload);
         // trigger changes in legacy handler
         if (app) {
-            app.user.fetch({
-                url: `${app.user.urlRoot()}/${app.user.id || "current"}`,
-            });
+            app.user.loadFromApi(app.user.id || "current");
         }
     }
 }

@@ -10,8 +10,6 @@ from typing import (
     Any,
     Callable,
     cast,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -155,7 +153,7 @@ class UpdatesRequest(BaseModel):
     hexlify: bool = True
 
 
-def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, Dict[str, Any]]:
+def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, dict[str, Any]]:
     name = request.name
     owner = request.owner
     changeset_revision = request.changeset_revision
@@ -217,7 +215,7 @@ def guid_to_repository(app: ToolShedApp, tool_id: str) -> Repository:
     return _get_repository_by_name_and_owner(app.model.context, name, owner)
 
 
-def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
+def index_tool_ids(app: ToolShedApp, tool_ids: list[str]) -> dict[str, Any]:
     repository_found = []
     all_metadata = {}
     for tool_id in tool_ids:
@@ -231,7 +229,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
             continue
         for changeset, changehash in repository.installable_revisions(app):
             metadata = get_current_repository_metadata_for_changeset_revision(app, repository, changehash)
-            tools: Optional[List[Dict[str, Any]]] = metadata.metadata.get("tools")
+            tools: Optional[list[dict[str, Any]]] = metadata.metadata.get("tools")
             if not tools:
                 log.warning(f"Repository {owner}/{name}/{changehash} does not contain valid tools, skipping")
                 continue
@@ -281,7 +279,7 @@ class PaginatedIndexRequest(IndexRequest):
     page_size: int
 
 
-def index_repositories(app: ToolShedApp, index_request: IndexRequest) -> List[Repository]:
+def index_repositories(app: ToolShedApp, index_request: IndexRequest) -> list[Repository]:
     session = app.model.context
     return list(session.scalars(_get_repositories_by_name_and_owner_and_deleted(app.security, index_request)))
 
@@ -390,7 +388,7 @@ def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_
         return {}, {}, {}
 
 
-def get_value_mapper(app: ToolShedApp) -> Dict[str, Callable]:
+def get_value_mapper(app: ToolShedApp) -> dict[str, Callable]:
     value_mapper = {
         "id": app.security.encode_id,
         "repository_id": app.security.encode_id,
@@ -401,7 +399,7 @@ def get_value_mapper(app: ToolShedApp) -> Dict[str, Callable]:
 
 def get_ordered_installable_revisions(
     app: ToolShedApp, name: Optional[str], owner: Optional[str], tsr_id: Optional[str]
-) -> List[str]:
+) -> list[str]:
     eagerload_columns = [Repository.downloadable_revisions]
     if None not in [name, owner]:
         # Get the repository information.
@@ -420,7 +418,7 @@ def get_ordered_installable_revisions(
     return [revision[1] for revision in repository.installable_revisions(app, sort_revisions=True)]
 
 
-def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, downloadable_only: bool) -> Dict[str, Any]:
+def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, downloadable_only: bool) -> dict[str, Any]:
     all_metadata = {}
     repository = get_repository_in_tool_shed(app, id, eagerload_columns=[Repository.downloadable_revisions])
     for changeset, changehash in get_metadata_revisions(
@@ -551,7 +549,7 @@ def reset_metadata_on_repositories(
 
     start_time = strftime("%Y-%m-%d %H:%M:%S")
     results = dict(start_time=start_time, repository_status=[], successful_count=0, unsuccessful_count=0)
-    handled_repository_ids: List[str] = []
+    handled_repository_ids: list[str] = []
     encoded_ids_to_skip = request.encoded_ids_to_skip or []
     if trans.user_is_admin:
         my_writable = request.my_writable
@@ -613,7 +611,7 @@ def create_repository(trans: ProvidesUserContext, request: CreateRepositoryReque
     return repo
 
 
-def to_element_dict(app, repository: Repository, include_categories: bool = False) -> Dict[str, Any]:
+def to_element_dict(app, repository: Repository, include_categories: bool = False) -> dict[str, Any]:
     value_mapper = get_value_mapper(app)
     repository_dict = repository.to_dict(view="element", value_mapper=value_mapper)
     if include_categories:
@@ -630,7 +628,7 @@ def repositories_by_category(
     installable: bool = True,
 ):
     category = get_category(app, category_id)
-    category_dict: Dict[str, Any]
+    category_dict: dict[str, Any]
     if category is None:
         category_dict = dict(message=f"Unable to locate category record for id {str(id)}.", status="error")
         return category_dict

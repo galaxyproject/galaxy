@@ -41,26 +41,27 @@
             title="Roles that can manage this library"
             @input="setUserPermissionsPreferences" />
         <button title="Save modifications" class="toolbtn_save_permissions" @click="postPermissions">
-            <FontAwesomeIcon :icon="['far', 'save']" />
+            <FontAwesomeIcon :icon="faSave" />
             Save
         </button>
     </div>
 </template>
 
 <script>
+import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { initPermissionsIcons } from "components/Libraries/icons";
-import { extractRoles } from "components/Libraries/library-utils";
-import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
-import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
-import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { extractRoles } from "@/components/Libraries/library-utils";
+import { Services } from "@/components/Libraries/LibraryPermissions/services";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+
+import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
+import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
+
 Vue.use(BootstrapVue);
-initPermissionsIcons();
 
 export default {
     components: {
@@ -76,6 +77,7 @@ export default {
     },
     data() {
         return {
+            faSave,
             permissions: undefined,
             library: undefined,
             add_library_item_role_list: undefined,
@@ -125,7 +127,7 @@ export default {
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
                     console.error(error);
-                }
+                },
             );
         },
         onGoBack() {

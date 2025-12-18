@@ -34,7 +34,7 @@ const errorMessage: Ref<string | null> = ref(null);
 const toolId = ref(props.queryTrsId);
 const { isAnonymous } = storeToRefs(useUserStore());
 const isAutoImport = ref(
-    Boolean((props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId) || props.queryTrsUrl)
+    Boolean((props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId) || props.queryTrsUrl),
 );
 
 const toolIdTrimmed = computed(() => {

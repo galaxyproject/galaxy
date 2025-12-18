@@ -3,7 +3,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
 )
 
 from sqlalchemy import select
@@ -57,7 +56,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         ld = self.secure(trans, ld, check_accessible)
         return ld
 
-    def update(self, item: LibraryDataset, new_values: Dict[str, Any], flush: bool = True, **kwargs) -> LibraryDataset:
+    def update(self, item: LibraryDataset, new_values: dict[str, Any], flush: bool = True, **kwargs) -> LibraryDataset:
         """
         Update the given library dataset - the latest linked ldda.
         Updating older lddas (versions) is not allowed.
@@ -93,7 +92,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         self,
         trans: ProvidesUserContext,
         ldda: LibraryDatasetDatasetAssociation,
-        new_data: Dict[str, Any],
+        new_data: dict[str, Any],
         flush: bool = True,
     ) -> None:
         changed = False
@@ -226,7 +225,7 @@ class LibraryDatasetsManager(ModelManager[LibraryDataset]):
         else:
             return ld
 
-    def serialize(self, trans, ld: LibraryDataset) -> Dict[str, Any]:
+    def serialize(self, trans, ld: LibraryDataset) -> dict[str, Any]:
         """Serialize the library dataset into a dictionary."""
         current_user_roles = trans.get_current_user_roles()
 

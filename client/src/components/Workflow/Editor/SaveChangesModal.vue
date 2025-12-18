@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
 import localize from "@/utils/localization";
-
-library.add(faSave, faTimes, faTrash);
 
 interface Props {
     /** Show the save changes modal */
@@ -33,7 +30,7 @@ const emit = defineEmits<{
 
 const title = localize("You have unsaved changes. Do you want to save them before proceeding?");
 const body = localize(
-    "Click 'Save' to save your changes and proceed, 'Don't Save' to discard them and proceed, or 'Cancel' to return to the editor."
+    "Click 'Save' to save your changes and proceed, 'Don't Save' to discard them and proceed, or 'Cancel' to return to the editor.",
 );
 
 const buttonTitles = {

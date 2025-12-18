@@ -8,14 +8,26 @@ set -e
 
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
+if command -v uv >/dev/null; then
+    VENV_CMD="$(command -v uv) venv --python python3.9"
+    PIP_CMD="$(command -v uv) pip"
+    FREEZE_OPTIONS=''
+else
+    VENV_CMD='python3.9 -m venv'
+    PIP_CMD='python -m pip'
+    FREEZE_OPTIONS='-l'
+fi
+
 update_pinned_reqs() {
     VENV=$(mktemp -d "${TMPDIR:-/tmp}/$1_venv.XXXXXXXXXX")
-    python3.9 -m venv "${VENV}"
+    ${VENV_CMD} "${VENV}"
     . "${VENV}/bin/activate"
-    pip install --upgrade pip setuptools
-    pip install -r "${THIS_DIRECTORY}/$1-requirements.txt"
+    if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        ${PIP_CMD} install --upgrade pip setuptools
+    fi
+    ${PIP_CMD} install -r "${THIS_DIRECTORY}/$1-requirements.txt"
     # The grep below is needed to workaround https://github.com/pypa/pip/issues/8331
-    pip freeze -l | grep -v 'pkg_resources==0.0.0' > "${THIS_DIRECTORY}/pinned-$1-requirements.txt"
+    ${PIP_CMD} freeze ${FREEZE_OPTIONS} | grep -v 'pkg_resources==0.0.0' > "${THIS_DIRECTORY}/pinned-$1-requirements.txt"
     rm -rf "${VENV}"
 }
 

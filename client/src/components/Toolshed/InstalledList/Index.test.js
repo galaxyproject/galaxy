@@ -1,19 +1,15 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getAppRoot } from "onload/loadConfig";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
-import { Services } from "../services";
-import Index from "./Index";
+import Index from "./Index.vue";
 
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
-
-const localVue = getLocalVue();
-
-Services.mockImplementation(() => {
-    return {
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
+vi.mock("../services", () => ({
+    Services: class Services {
         async getInstalledRepositories() {
             return [
                 {
@@ -33,12 +29,13 @@ Services.mockImplementation(() => {
                     },
                 },
             ];
-        },
-    };
-});
+        }
+    },
+}));
 
 describe("InstalledList", () => {
     it("test installed list", async () => {
+        const localVue = getLocalVue();
         const wrapper = mount(Index, {
             propsData: {
                 filter: "",

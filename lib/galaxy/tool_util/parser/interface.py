@@ -12,6 +12,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     TYPE_CHECKING,
     Union,
@@ -24,15 +25,15 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.tool_util_models.parameter_validators import (
-    AnyValidatorModel,
-)
+from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
 from galaxy.tool_util_models.tool_source import (
     BaseJsonTestCollectionDefCollectionElementDict,
     Citation,
     DrillDownOptionsDict,
     FieldDict,
+    FileSourceConfigFile,
     HelpContent,
+    InputConfigFile,
     JavascriptRequirement,
     JsonTestCollectionDefCollectionElementDict,
     JsonTestCollectionDefDatasetElementDict,
@@ -40,6 +41,7 @@ from galaxy.tool_util_models.tool_source import (
     JsonTestCollectionDefElementDict,
     JsonTestDatasetDefDict,
     OutputCompareType,
+    TemplateConfigFile,
     XrefDict,
 )
 from galaxy.util import Element
@@ -49,6 +51,7 @@ from .util import _parse_name
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.requirements import (
         ContainerDescription,
+        CredentialsRequirement,
         ResourceRequirement as ToolResourceRequirement,
         ToolRequirements,
     )
@@ -152,6 +155,10 @@ class ToolSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_version(self) -> Optional[str]:
         """Parse a version describing the abstract tool."""
+
+    def parse_class(self) -> Optional[str]:
+        """Parse the class of the tool."""
+        return None
 
     def parse_tool_module(self) -> Optional[Tuple[str, str]]:
         """Load Tool class from a custom module. (Optional).
@@ -318,12 +325,16 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_requirements_and_containers(
+    def parse_requirements(
         self,
     ) -> Tuple[
-        "ToolRequirements", List["ContainerDescription"], List["ToolResourceRequirement"], List["JavascriptRequirement"]
+        "ToolRequirements",
+        List["ContainerDescription"],
+        List["ToolResourceRequirement"],
+        List["JavascriptRequirement"],
+        List["CredentialsRequirement"],
     ]:
-        """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
+        """Return triple of ToolRequirement, ContainerDescription, ResourceRequirement, JavascriptRequirement, and CredentialsRequirement objects."""
 
     @abstractmethod
     def parse_input_pages(self) -> "PagesSource":
@@ -399,8 +410,17 @@ class ToolSource(metaclass=ABCMeta):
         """
         return []
 
+    def parse_template_configfiles(self) -> Sequence[TemplateConfigFile]:
+        return []
+
+    def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
+        return []
+
+    def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
+        return []
+
     @property
-    def macro_paths(self):
+    def macro_paths(self) -> List[str]:
         return []
 
     @property
@@ -513,6 +533,10 @@ class InputSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_input_type(self) -> str:
         """Return the type of this input."""
+
+    @abstractmethod
+    def parse_extensions(self) -> List[str]:
+        """Return list of extensions"""
 
     def parse_help(self):
         return self.get("help")
@@ -675,9 +699,7 @@ class TestCollectionDef:
                     identifier=identifier, **element_object._test_format_to_dict()
                 )
             else:
-                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(
-                    cast(ToolSourceTestInput, element_object)
-                )
+                input_as_dict: Optional[JsonTestDatasetDefDict] = xml_data_input_to_json(element_object)
                 if input_as_dict is not None:
                     as_dict = JsonTestCollectionDefDatasetElementDict(
                         identifier=identifier,
@@ -700,6 +722,8 @@ class TestCollectionDef:
         test_format_dict = JsonTestCollectionDefDict(**self._test_format_to_dict())
         if self.name:
             test_format_dict["name"] = self.name
+        if self.fields is not None:
+            test_format_dict["fields"] = self.fields
         return test_format_dict
 
     def to_dict(self) -> XmlTestCollectionDefDict:
@@ -769,6 +793,7 @@ class TestCollectionDef:
                 name=json_as_dict.get("name") or "Unnamed Collection",
                 elements=elements,
                 collection_type=json_as_dict["collection_type"],
+                fields=json_as_dict.get("fields", None),
             )
 
     def collect_inputs(self):

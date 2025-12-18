@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { BPagination } from "bootstrap-vue";
 import { computed } from "vue";
 
+import type { CardBadge } from "@/components/Common/GCard.types";
+import { usePagination } from "@/composables/pagination";
 import { getImportableFiles, type IZipExplorer } from "@/composables/zipExplorer";
 
 import GCard from "@/components/Common/GCard.vue";
@@ -12,24 +15,49 @@ const props = defineProps<{
 
 const files = computed(() => getImportableFiles(props.explorer));
 
-const zipFileBadges = [
+const {
+    currentPage,
+    itemsPerPage,
+    paginatedItems: paginatedFiles,
+    showPagination,
+    onPageChange,
+} = usePagination(files);
+
+const zipFileBadges: CardBadge[] = [
     {
         id: "file-count",
         label: `${files.value.length} file${files.value.length > 1 ? "s" : ""} available`,
         title: "Number of Files available to import",
-        visible: true,
     },
 ];
 </script>
 
 <template>
-    <GCard
-        id="regular-zip-summary-card"
-        title="List of files contained in the archive"
-        title-size="md"
-        :badges="zipFileBadges">
-        <template v-slot:description>
-            <ZipFileEntrySummaryCard v-for="file in files" :key="file.path" :file="file" :selectable="false" />
-        </template>
-    </GCard>
+    <div>
+        <GCard
+            id="regular-zip-summary-card"
+            title="List of files contained in the archive"
+            title-size="md"
+            :badges="zipFileBadges">
+            <template v-slot:description>
+                <ZipFileEntrySummaryCard
+                    v-for="file in paginatedFiles"
+                    :key="file.path"
+                    :file="file"
+                    :selectable="false" />
+            </template>
+        </GCard>
+
+        <div v-if="showPagination" class="d-flex justify-content-center py-3 mt-3">
+            <BPagination
+                :value="currentPage"
+                :total-rows="files.length"
+                :per-page="itemsPerPage"
+                align="center"
+                size="sm"
+                first-number
+                last-number
+                @change="onPageChange" />
+        </div>
+    </div>
 </template>

@@ -2,8 +2,9 @@
  * Service layer for interaction for the workflow run API.
  */
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 /**
  * Download the workflow using the 'run' style (see workflow manager on backend

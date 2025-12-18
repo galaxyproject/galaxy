@@ -10,8 +10,6 @@ import time
 from datetime import datetime
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -42,6 +40,7 @@ from galaxy.model import (
     User,
     UserAddress,
     UserQuotaUsage,
+    UserWorkflowMenuEntry,
 )
 from galaxy.model.db.user import (
     _cleanup_nonprivate_user_roles,
@@ -96,7 +95,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Register a new user.
         """
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+        if not trans.app.config.allow_local_account_creation and not trans.user_is_admin:
             message = "User registration is disabled.  Please contact your local Galaxy administrator for an account."
             if trans.app.config.error_email_to is not None:
                 message += f" Contact: {trans.app.config.error_email_to}"
@@ -171,7 +170,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             job.mark_deleted(self.app.config.track_jobs_in_database)
         session.commit()
 
-    def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
+    def _get_all_active_jobs_from_user(self, user: User) -> list[Job]:
         """Get all jobs that are not ready yet and belong to the given user."""
         stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
         jobs = self.session().scalars(stmt)
@@ -238,11 +237,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         for role in user.all_roles():
             if self.app.config.redact_username_during_deletion:
                 role.name = role.name.replace(user.username, uname_hash)
-                role.description = role.description.replace(user.username, uname_hash)
+                if role.description:
+                    role.description = role.description.replace(user.username, uname_hash)
 
             if self.app.config.redact_email_during_deletion:
                 role.name = role.name.replace(user.email, email_hash)
-                role.description = role.description.replace(user.email, email_hash)
+                if role.description:
+                    role.description = role.description.replace(user.email, email_hash)
             self.session().add(role)
         private_role.name = email_hash
         private_role.description = f"Private Role for {email_hash}"
@@ -580,7 +581,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def get_reset_token(self, trans, email):
         reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
-        if not reset_user and email != email.lower():
+        if not reset_user:
             reset_user = self._get_user_by_email_case_insensitive(trans.sa_session, email)
         if reset_user and not reset_user.deleted:
             prt = self.app.model.PasswordResetToken(reset_user)
@@ -660,21 +661,18 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         self.add_view(
             "detailed",
             [
-                # 'update_time',
-                # 'create_time',
+                "active",
+                "deleted",
                 "is_admin",
-                "total_disk_usage",
                 "nice_total_disk_usage",
-                "quota_percent",
+                "preferences",
+                "preferred_object_store_id",
+                "purged",
                 "quota",
                 "quota_bytes",
-                "deleted",
-                "purged",
-                # 'active',
-                "preferences",
-                # all annotations
-                # 'annotations'
-                "preferred_object_store_id",
+                "quota_percent",
+                "stored_workflow_menu_entries",
+                "total_disk_usage",
             ],
             include_keys_from="summary",
         )
@@ -688,18 +686,20 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "id": self.serialize_id,
                 "create_time": self.serialize_date,
                 "update_time": self.serialize_date,
+                "active": lambda i, k, **c: bool(i.active),
                 "is_admin": lambda i, k, **c: self.user_manager.is_admin(i),
                 "preferences": lambda i, k, **c: self.user_manager.preferences(i),
                 "total_disk_usage": lambda i, k, **c: float(i.total_disk_usage),
                 "quota_percent": lambda i, k, **c: self.user_manager.quota(i),
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
                 "quota_bytes": lambda i, k, **c: self.user_manager.quota_bytes(i),
+                "stored_workflow_menu_entries": lambda i, k, **c: self.serialize_workflow_menu_entries(i),
             }
         )
 
-    def serialize_disk_usage(self, user: model.User) -> List[UserQuotaUsage]:
+    def serialize_disk_usage(self, user: model.User) -> list[UserQuotaUsage]:
         usages = user.dictify_usage(self.app.object_store)
-        rval: List[UserQuotaUsage] = []
+        rval: list[UserQuotaUsage] = []
         for usage in usages:
             quota_source_label = usage.quota_source_label
             quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)
@@ -730,6 +730,22 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             quota_bytes=quota_bytes,
         )
 
+    def serialize_workflow_menu_entries(self, user: model.User) -> list[UserWorkflowMenuEntry]:
+        stored_workflow_menu_index = {}
+        stored_workflow_menu_entries: list[UserWorkflowMenuEntry] = []
+        for menu_item in getattr(user, "stored_workflow_menu_entries", []):
+            encoded_id = self.app.security.encode_id(menu_item.stored_workflow_id)
+            if encoded_id not in stored_workflow_menu_index:
+                stored_workflow_menu_index[encoded_id] = True
+                encoded_name = util.unicodify(menu_item.stored_workflow.name)
+                stored_workflow_menu_entries.append(
+                    UserWorkflowMenuEntry(
+                        id=encoded_id,
+                        name=encoded_name,
+                    )
+                )
+        return stored_workflow_menu_entries
+
 
 class UserDeserializer(base.ModelDeserializer):
     """
@@ -741,7 +757,7 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        user_deserializers: Dict[str, base.Deserializer] = {
+        user_deserializers: dict[str, base.Deserializer] = {
             "active": self.default_deserializer,
             "username": self.deserialize_username,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,
@@ -782,8 +798,7 @@ class CurrentUserSerializer(UserSerializer):
         usage = 0
         percent = None
 
-        history = trans.history
-        if history:
+        if hasattr(trans, "history") and trans.history:
             usage = self.app.quota_agent.get_usage(trans, history=trans.history)
             percent = self.app.quota_agent.get_percent(trans=trans, usage=usage)
 

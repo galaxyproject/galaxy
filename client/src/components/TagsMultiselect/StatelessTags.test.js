@@ -1,10 +1,8 @@
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { useToast } from "composables/toast";
-import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { normalizeTag, useUserTagsStore } from "@/stores/userTagsStore";
-
-import StatelessTags from "./StatelessTags";
+import StatelessTags from "./StatelessTags.vue";
 
 const autocompleteTags = ["name:named_user_tag", "abc", "my_tag"];
 const toggleButton = ".toggle-button";
@@ -18,30 +16,30 @@ const mountWithProps = (props) => {
     });
 };
 
-suppressBootstrapVueWarnings();
-
-jest.mock("@/stores/userTagsStore");
-const onNewTagSeenMock = jest.fn((tag) => tag);
-useUserTagsStore.mockReturnValue({
-    userTags: autocompleteTags,
-    onNewTagSeen: onNewTagSeenMock,
-    onTagUsed: jest.fn(),
-    onMultipleNewTagsSeen: jest.fn(),
+const onNewTagSeenMock = vi.fn((tag) => tag);
+const warningMock = vi.fn((message, title) => {
+    return { message, title };
 });
 
 function normalize(tag) {
     return tag.replace(/^#/, "name:");
 }
 
-normalizeTag.mockImplementation(normalize);
+vi.mock("@/stores/userTagsStore", () => ({
+    useUserTagsStore: vi.fn(() => ({
+        userTags: autocompleteTags,
+        onNewTagSeen: onNewTagSeenMock,
+        onTagUsed: vi.fn(),
+        onMultipleNewTagsSeen: vi.fn(),
+    })),
+    normalizeTag: vi.fn((tag) => normalize(tag)),
+}));
 
-jest.mock("composables/toast");
-const warningMock = jest.fn((message, title) => {
-    return { message, title };
-});
-useToast.mockReturnValue({
-    warning: warningMock,
-});
+vi.mock("@/composables/toast", () => ({
+    useToast: vi.fn(() => ({
+        warning: warningMock,
+    })),
+}));
 
 const selectors = {
     multiselect: ".headless-multiselect",
@@ -50,6 +48,12 @@ const selectors = {
 };
 
 describe("StatelessTags", () => {
+    beforeEach(() => {
+        suppressBootstrapVueWarnings();
+        onNewTagSeenMock.mockClear();
+        warningMock.mockClear();
+    });
+
     it("shows tags", () => {
         const wrapper = mountWithProps({
             value: ["tag_1", "tag_2", "tags:tag_3"],

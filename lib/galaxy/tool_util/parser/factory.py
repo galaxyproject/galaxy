@@ -2,7 +2,6 @@
 
 import logging
 from typing import (
-    Any,
     Callable,
     Dict,
     List,
@@ -106,17 +105,6 @@ def get_tool_source(
     else:
         tree, macro_paths = load_tool_with_refereces(config_file)
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)
-
-
-def get_tool_source_from_representation(tool_format: Optional[str], tool_representation: Dict[str, Any]):
-    # TODO: make sure whatever is consuming this method uses ordered load.
-    log.info("Loading dynamic tool - this is experimental - tool may not function in future.")
-    if tool_format in ("GalaxyTool", "GalaxyUserTool"):
-        if "version" not in tool_representation:
-            tool_representation["version"] = "1.0.0"  # Don't require version for embedded tools.
-        return YamlToolSource(tool_representation)
-    else:
-        raise Exception(f"Unknown tool representation format [{tool_format}].")
 
 
 def get_input_source(content, trusted: bool = True):

@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import (
-    List,
+    Literal,
     Optional,
 )
 from uuid import UUID
@@ -118,8 +118,23 @@ class ComputeDatasetHashTaskRequest(Model):
     user: Optional[RequestUser] = None  # access checks should be done pre-celery so this is optional
 
 
+class CopyDatasetsPayloadSourceEntry(Model):
+    id: str
+    type: str
+
+
+class CopyDatasetsPayload(Model):
+    source_content: list[CopyDatasetsPayloadSourceEntry]
+    target_history_ids: Optional[list[str]] = None
+    target_history_name: Optional[str] = None
+
+
+class CopyDatasetsResponse(Model):
+    history_ids: list[str]
+
+
 class PurgeDatasetsTaskRequest(Model):
-    dataset_ids: List[int]
+    dataset_ids: list[int]
 
 
 class TaskState(str, Enum):
@@ -152,3 +167,20 @@ class TaskResult(Model):
         title="Result",
         description="The result message of the task. Empty if the task is still running. If the task failed, this will contain the exception message.",
     )
+
+
+TOOL_SOURCE_CLASS = Literal["XmlToolSource", "YamlToolSource", "CwlToolSource"]
+
+
+class ToolSource(Model):
+    raw_tool_source: str
+    tool_dir: str
+    tool_source_class: TOOL_SOURCE_CLASS = "XmlToolSource"
+
+
+class QueueJobs(Model):
+    tool_source: ToolSource
+    tool_request_id: int  # links to request ("incoming") and history
+    user: RequestUser  # TODO: test anonymous users through this submission path
+    use_cached_jobs: bool
+    rerun_remap_job_id: Optional[int]  # link to a job to rerun & remap

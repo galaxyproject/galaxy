@@ -1,27 +1,30 @@
-import { getGalaxyInstance } from "app";
-import { FilesDialog } from "components/FilesDialog";
+import { FilesDialog } from "@/components/FilesDialog";
+import { useHistoryStore } from "@/stores/historyStore";
+import { appendVueComponent } from "@/utils/mountVueComponent";
 
-import { getCurrentGalaxyHistory, mountSelectionDialog } from "./dataModalUtils";
-
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
+import DatasetCollectionDialog from "@/components/SelectionDialog/DatasetCollectionDialog.vue";
 
 /**
  * Opens a modal dialog for dataset collection selection
  * @param {function} callback - Result function called with selection
  */
-export function datasetCollectionDialog(callback, options = {}) {
-    getCurrentGalaxyHistory(getGalaxyInstance()).then((history_id) => {
-        Object.assign(options, {
-            callback: callback,
-            history: history_id,
-        });
-        mountSelectionDialog(DatasetCollectionDialog, options);
-    });
-}
+export async function datasetCollectionDialog(callback, options = {}) {
+    const { loadCurrentHistoryId } = useHistoryStore();
+    const historyId = await loadCurrentHistoryId();
 
-export function filesDialog(callback, options = {}) {
     Object.assign(options, {
         callback: callback,
+        history: historyId,
     });
-    mountSelectionDialog(FilesDialog, options);
+
+    appendVueComponent(DatasetCollectionDialog, options);
+}
+
+export function filesDialog(callback, options = {}, routePush) {
+    Object.assign(options, {
+        callback: callback,
+        routePush: routePush,
+    });
+
+    appendVueComponent(FilesDialog, options);
 }

@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -28,7 +29,7 @@ const TestComponent = defineComponent({
 });
 
 function setupWrapper(): any {
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     return shallowMount(TestComponent, { pinia });
 }
 
@@ -57,7 +58,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json([]);
-            })
+            }),
         );
     });
 
@@ -71,7 +72,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
-            })
+            }),
         );
 
         const wrapper = setupWrapper();
@@ -89,7 +90,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
-            })
+            }),
         );
 
         const wrapper = setupWrapper();
@@ -104,7 +105,7 @@ describe("useFileSources", () => {
         server.use(
             http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
                 return response(200).json(expectedFileSources);
-            })
+            }),
         );
 
         const wrapper = setupWrapper();

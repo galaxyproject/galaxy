@@ -60,7 +60,7 @@ watch(
     () => {
         collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value) ?? []);
@@ -68,7 +68,7 @@ const loading = computed(() => collectionElementsStore.isLoadingCollectionElemen
 const error = computed(() => collectionElementsStore.getLoadingCollectionElementsError(dsc.value));
 const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
 const populatedStateMsg = computed(() =>
-    "populated_state_message" in dsc.value ? dsc.value.populated_state_message : undefined
+    "populated_state_message" in dsc.value ? dsc.value.populated_state_message : undefined,
 );
 const rootCollection = computed(() => {
     if (isHDCA(props.selectedCollections[0])) {
@@ -117,7 +117,7 @@ watch(
             // Send up event closing out selected collection on history change.
             emit("update:selected-collections", []);
         }
-    }
+    },
 );
 
 watch(
@@ -126,7 +126,7 @@ watch(
         collectionElementsStore.invalidateCollectionElements(dsc.value);
         collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
     },
-    { deep: true }
+    { deep: true },
 );
 </script>
 

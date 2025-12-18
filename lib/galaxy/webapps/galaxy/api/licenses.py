@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import Path
 
 from galaxy.managers.licenses import (
@@ -31,7 +29,7 @@ class FastAPILicenses:
         summary="Lists all available SPDX licenses",
         response_description="List of SPDX licenses",
     )
-    async def index(self) -> List[LicenseMetadataModel]:
+    async def index(self) -> list[LicenseMetadataModel]:
         """Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/)."""
         return self.licenses_manager.get_licenses()
 

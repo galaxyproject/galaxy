@@ -1,5 +1,5 @@
 /** en/main localization hash - for use with requirejs' i18n plugin */
-define({
+export default {
     // ----------------------------------------------------------------------------- masthead
     "Analyze Data": "Daten analysieren",
     Workflow: "Arbeitsablauf",
@@ -201,4 +201,4 @@ define({
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "Variablen",
     "Edit annotation": "Anmerkung bearbeiten",
-});
+};

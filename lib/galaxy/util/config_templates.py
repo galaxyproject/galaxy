@@ -5,12 +5,15 @@ This is capturing code shared by file source templates and object store template
 
 import logging
 import os
+from collections.abc import Iterable
 from typing import (
     Any,
+    Callable,
     cast,
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -24,10 +27,13 @@ from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
     ConfigDict,
+    create_model,
     RootModel,
     ValidationError,
 )
+from pydantic.fields import FieldInfo
 from typing_extensions import (
+    Annotated,
     Literal,
     NotRequired,
     Protocol,
@@ -50,6 +56,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
 from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
@@ -73,12 +80,12 @@ class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
     help: Optional[MarkdownContent]
+    validators: Optional[Sequence[AnySafeValidatorModel]] = None
 
 
 class TemplateVariableString(BaseTemplateVariable):
     type: Literal["string"]
     default: str = ""
-    # add non-empty validation?
 
 
 class TemplateVariableInteger(BaseTemplateVariable):
@@ -336,6 +343,17 @@ def find_template_by(templates: List[T], template_id: str, template_version: int
     raise ObjectNotFound(f"Could not find a {what} template with id {template_id} and version {template_version}")
 
 
+def _run_variable_validator(validator: AnySafeValidatorModel, value: Any, variable_name: str) -> None:
+    """Run a single validator on a variable value.
+
+    Raises RequestParameterInvalidException if validation fails.
+    """
+    try:
+        validator.statically_validate(value)
+    except ValueError as e:
+        raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {str(e)}")
+
+
 def validate_variable_types(instance: InstanceDefinition, template: Template) -> None:
     pass
 
@@ -389,6 +407,11 @@ def validate_specified_datatypes_variables(variables: Dict[str, Any], template: 
         if template_type == "boolean":
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
+
+        # Run custom validators if present and value is not None or empty
+        if template_variable.validators and variable_value is not None and variable_value != "":
+            for validator in template_variable.validators:
+                _run_variable_validator(validator, variable_value, name)
 
 
 def validate_no_extra_secrets_defined(secrets: Dict[str, str], template: Template) -> None:
@@ -608,3 +631,54 @@ def read_oauth2_info_from_configuration(
 # but injected dynamically. Currently only `oauth2_access_token`.
 class ImplicitConfigurationParameters(TypedDict):
     oauth2_access_token: NotRequired[str]
+
+
+M = TypeVar("M", bound="BaseModel")
+
+
+# Implementation copied from https://github.com/pydantic/pydantic/issues/12329#issuecomment-3382159312
+def _make_field_optional(field_info: FieldInfo):
+    """Returns the field's definition to be used in a `create_model()` call to make the field optional."""
+    annotation = field_info.annotation
+    assert annotation is not None
+    if field_info.is_required():
+        return Annotated[Union[annotation, None], field_info], None
+    else:
+        return Annotated[annotation, field_info]
+
+
+def make_model_with_all_fields_optional(model: Type[M], fields=None) -> Type[M]:
+    """Returns a new Pydantic model based on `model`, but with all fields optional."""
+    if fields is None:
+        fields = model.model_fields.items()
+    return create_model(
+        model.__name__,
+        __doc__=model.__doc__,
+        __base__=model,
+        **{field_name: _make_field_optional(field_info) for field_name, field_info in fields},
+    )
+
+
+# TODO: This is a workaround to make all fields optional.
+#       It should be removed when Python/pydantic supports this feature natively.
+# https://github.com/pydantic/pydantic/issues/1673
+def partial_model(
+    include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
+) -> Callable[[Type[M]], Type[M]]:
+    """Decorator to make all model fields optional"""
+
+    if exclude is None:
+        exclude = []
+
+    def decorator(model: Type[M]) -> Type[M]:
+        if include is None:
+            fields: Iterable[tuple[str, FieldInfo]] = model.model_fields.items()
+        else:
+            fields = ((k, v) for k, v in model.model_fields.items() if k in include)
+
+        if exclude is not None:
+            fields = ((k, v) for k, v in fields if k not in exclude)
+
+        return make_model_with_all_fields_optional(model, fields)
+
+    return decorator

@@ -72,7 +72,7 @@ const connectionPosition = computed(() => {
 
 const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.output.stepId]?.isCollection);
 const inputIsMappedOver = computed(
-    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection
+    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection,
 );
 
 const outputIsOptional = computed(() => {
@@ -80,7 +80,7 @@ const outputIsOptional = computed(() => {
         stepStore.getStep(props.connection.output.stepId)?.when ||
             stepStore
                 .getStep(props.connection.output.stepId)
-                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional)
+                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional),
     );
 });
 
@@ -233,8 +233,8 @@ function keyForIndex(index: number) {
 </template>
 
 <style lang="scss">
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-editor-drawable-connection {
     .connection {

@@ -1,9 +1,9 @@
 <template>
     <div>
-        <h2 v-if="title" class="h-md">
+        <Heading v-if="title" id="job-outputs-heading" h2 separator inline size="md">
             {{ title }}
             <span v-if="paginate && totalLength > firstN"> (showing {{ firstN }} of {{ totalLength }}) </span>
-        </h2>
+        </Heading>
         <table id="job-outputs" class="tabletip info_data_table">
             <thead>
                 <tr>
@@ -38,12 +38,15 @@
 
 <script>
 import { BButton } from "bootstrap-vue";
-import GenericHistoryItem from "components/History/Content/GenericItem";
+
+import Heading from "../Common/Heading.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 export default {
     components: {
         BButton,
         GenericHistoryItem,
+        Heading,
     },
     props: {
         jobOutputs: Object,

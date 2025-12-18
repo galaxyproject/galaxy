@@ -3,7 +3,6 @@ import logging
 import os
 import re
 from typing import (
-    List,
     Optional,
 )
 
@@ -13,17 +12,6 @@ from cryptography.fernet import (
     MultiFernet,
 )
 from sqlalchemy import select
-
-try:
-    from custos.clients.resource_secret_management_client import ResourceSecretManagementClient
-    from custos.clients.utils.exceptions.CustosExceptions import KeyDoesNotExist
-    from custos.transport.settings import CustosServerClientSettings
-
-    logging.getLogger("custos.clients.resource_secret_management_client").setLevel(logging.CRITICAL)
-
-    custos_sdk_available = True
-except ImportError:
-    custos_sdk_available = False
 
 try:
     import hvac
@@ -70,7 +58,7 @@ class Vault(abc.ABC):
         """
 
     @abc.abstractmethod
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         """
         Lists secrets at a given path.
 
@@ -105,7 +93,7 @@ class NullVault(Vault):
             "No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml"
         )
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -124,12 +112,13 @@ class HashicorpVault(Vault):
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response["data"]["data"].get("value")
         except hvac.exceptions.InvalidPath:
+            log.exception(f"Failed to read secret from Hashicorp Vault at key: {key}")
             return None
 
     def write_secret(self, key: str, value: str) -> None:
         self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={"value": value})
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -176,40 +165,12 @@ class DatabaseVault(Vault):
         self.sa_session.delete(vault_entry)
         self.sa_session.flush()
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
     def _get_vault_value(self, key):
         stmt = select(model.Vault).filter_by(key=key).limit(1)
         return self.sa_session.scalars(stmt).first()
-
-
-class CustosVault(Vault):
-    def __init__(self, config):
-        if not custos_sdk_available:
-            raise InvalidVaultConfigException(
-                "Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed."
-            )
-        custos_settings = CustosServerClientSettings(
-            custos_host=config.get("custos_host"),
-            custos_port=config.get("custos_port"),
-            custos_client_id=config.get("custos_client_id"),
-            custos_client_sec=config.get("custos_client_sec"),
-        )
-        self.client = ResourceSecretManagementClient(custos_settings)
-
-    def read_secret(self, key: str) -> Optional[str]:
-        try:
-            response = self.client.get_kv_credential(key=key)
-            return response.get("value")
-        except KeyDoesNotExist:
-            return None
-
-    def write_secret(self, key: str, value: str) -> None:
-        self.client.set_kv_credential(key=key, value=value)
-
-    def list_secrets(self, key: str) -> List[str]:
-        raise NotImplementedError()
 
 
 class UserVaultWrapper(Vault):
@@ -226,7 +187,7 @@ class UserVaultWrapper(Vault):
     def write_secret(self, key: str, value: str) -> None:
         return self.vault.write_secret(f"user/{self.user.id}/{key}", value)
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -262,7 +223,7 @@ class VaultKeyValidationWrapper(Vault):
         key = self.normalize_key(key)
         return self.vault.write_secret(key, value)
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -281,7 +242,7 @@ class VaultKeyPrefixWrapper(Vault):
     def write_secret(self, key: str, value: str) -> None:
         return self.vault.write_secret(f"/{self.prefix}/{key}", value)
 
-    def list_secrets(self, key: str) -> List[str]:
+    def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
 
 
@@ -300,8 +261,6 @@ class VaultFactory:
             vault = HashicorpVault(cfg)
         elif vault_type == "database":
             vault = DatabaseVault(app.model.context, cfg)
-        elif vault_type == "custos":
-            vault = CustosVault(cfg)
         else:
             raise InvalidVaultConfigException(f"Unknown vault type: {vault_type}")
         vault_prefix = cfg.get("path_prefix") or "/galaxy"

@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";
@@ -13,7 +14,7 @@ import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 const localVue = getLocalVue(true);
 
 async function mountComponent(component: object, propsData: object = {}): Promise<Wrapper<Vue>> {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = mount(component, {
@@ -36,7 +37,7 @@ describe("Notifications categories", () => {
         });
 
         expect(wrapper.find(`#g-card-description-${notification.id}`).html()).toContain(
-            "This is a <strong>markdown</strong> message to test <em>rendering</em>"
+            "This is a <strong>markdown</strong> message to test <em>rendering</em>",
         );
     });
 
@@ -51,10 +52,10 @@ describe("Notifications categories", () => {
         expect(wrapper.text()).toContain(`The user ${notification.content.owner_name} shared`);
 
         expect(wrapper.find(`#g-card-description-${notification.id}`).text()).toContain(
-            `The user ${notification.content.owner_name} shared`
+            `The user ${notification.content.owner_name} shared`,
         );
         expect(wrapper.find(`#g-card-description-${notification.id}`).text()).toContain(
-            `${notification.content.item_type}  with you`
+            `${notification.content.item_type}  with you`,
         );
     });
 
@@ -70,7 +71,7 @@ describe("Notifications categories", () => {
 
         const notificationsStore = useNotificationsStore();
 
-        const spyOnUpdateNotification = jest.spyOn(notificationsStore, "updateNotification");
+        const spyOnUpdateNotification = vi.spyOn(notificationsStore, "updateNotification");
         spyOnUpdateNotification.mockImplementation(async (notification, changes) => {
             if (changes.deleted) {
                 wrapper.setProps({
@@ -117,7 +118,7 @@ describe("Notifications categories", () => {
 
         const notificationsStore = useNotificationsStore();
 
-        const spyOnUpdateNotification = jest.spyOn(notificationsStore, "updateNotification");
+        const spyOnUpdateNotification = vi.spyOn(notificationsStore, "updateNotification");
         spyOnUpdateNotification.mockImplementation(async (_notification, changes) => {
             if (changes.deleted) {
                 wrapper.setProps({

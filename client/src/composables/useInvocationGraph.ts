@@ -1,4 +1,4 @@
-import { type IconDefinition, library } from "@fortawesome/fontawesome-svg-core";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faCheckCircle,
     faClock,
@@ -8,20 +8,17 @@ import {
     faSpinner,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
-import { GalaxyApi } from "@/api";
-import { fetchCollectionDetails } from "@/api/datasetCollections";
+import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
 import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
-import { getWorkflowFull } from "@/components/Workflow/workflows.services";
-import { useInvocationStore } from "@/stores/invocationStore";
 import type { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
@@ -79,43 +76,50 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
  */
 export function useInvocationGraph(
     invocation: Ref<WorkflowInvocationElementView>,
-    workflowId: string | undefined,
-    workflowVersion: number | undefined
+    stepsJobsSummary: Ref<StepJobSummary[]>,
+    workflowId: Ref<string | undefined>,
+    workflowVersion: Ref<number | undefined>,
 ) {
-    library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
-
     const steps = ref<{ [index: string]: GraphStep }>({});
     const stepsPopulated = ref(false);
     const storeId = computed(() => `invocation-${invocation.value.id}`);
 
     const lastStepsJobsSummary = ref<StepJobSummary[]>([]);
-    const invocationStore = useInvocationStore();
-    const { graphStepsByStoreId } = storeToRefs(invocationStore);
 
-    /** The full invocation mapped onto the original workflow */
+    /** The full invocation mapped onto the original workflow.
+     * _(Needed to map the invocation onto the workflow editor graph.)_
+     */
     const invocationGraph = ref<InvocationGraph | null>(null);
 
     /** The workflow that was invoked */
     const loadedWorkflow = ref<any>(null);
 
+    const workflowStore = useWorkflowStore();
+
     const loading = ref(true);
 
     provideScopedWorkflowStores(storeId);
 
-    async function loadInvocationGraph() {
+    /** Load the invocation graph and steps onto the editor canvas.
+     * @param loadOntoEditor - If set to false, initializes graph steps but does not load them onto the editor.
+     */
+    async function loadInvocationGraph(loadOntoEditor = true) {
         loading.value = true;
 
         try {
-            if (!workflowId) {
+            if (!workflowId.value) {
                 throw new Error("Workflow Id is not defined");
             }
-            if (workflowVersion === undefined) {
+            if (workflowVersion.value === undefined) {
                 throw new Error("Workflow Version is not defined");
             }
 
             // initialize the original full workflow and invocation graph refs (only on the first load)
             if (!loadedWorkflow.value) {
-                loadedWorkflow.value = await getWorkflowFull(workflowId, workflowVersion);
+                loadedWorkflow.value = await workflowStore.getFullWorkflowCached(
+                    workflowId.value,
+                    workflowVersion.value,
+                );
             }
             if (!invocationGraph.value) {
                 invocationGraph.value = {
@@ -125,22 +129,12 @@ export function useInvocationGraph(
                 };
             }
 
-            // get the job summary for each step in the invocation
-            const { data: stepsJobsSummary, error } = await GalaxyApi().GET(
-                "/api/invocations/{invocation_id}/step_jobs_summary",
-                {
-                    params: { path: { invocation_id: invocation.value.id } },
-                }
-            );
-
-            if (error) {
-                rethrowSimple(error);
+            if (stepsJobsSummary.value) {
+                await updateSteps(stepsJobsSummary.value);
             }
 
-            await updateSteps(stepsJobsSummary);
-
             // Load the invocation graph into the editor the first time
-            if (!stepsPopulated.value) {
+            if (!stepsPopulated.value && loadOntoEditor) {
                 invocationGraph.value!.steps = { ...steps.value };
                 await fromSimple(storeId.value, invocationGraph.value as any);
                 stepsPopulated.value = true;
@@ -201,10 +195,6 @@ export function useInvocationGraph(
             if (!steps.value[i]) {
                 set(steps.value, i, graphStepFromWfStep);
             }
-
-            // update the invocation store's graph steps object
-            // TODO: Find a better way of doing this, instead of using two separate objects...?
-            set(graphStepsByStoreId.value, storeId.value, steps.value);
         }
 
         lastStepsJobsSummary.value = stepsJobsSummary;
@@ -219,7 +209,7 @@ export function useInvocationGraph(
     function updateStep(
         graphStep: GraphStep,
         invocationStep: InvocationStep | undefined,
-        invocationStepSummary: StepJobSummary | undefined
+        invocationStepSummary: StepJobSummary | undefined,
     ) {
         /** The new state for the graph step */
         let newState = graphStep.state;
@@ -334,7 +324,7 @@ export function useInvocationGraph(
                 set(graphStep, "state", getContentItemState(hda));
                 set(graphStep, "nodeText", `${hda.hid}: <b>${hda.name}</b>`);
             } else {
-                const hdca = await fetchCollectionDetails({ hdca_id: inputItem.id });
+                const hdca = await fetchCollectionSummary({ hdca_id: inputItem.id });
                 // TODO: Same type mismatch as above
                 set(graphStep, "state", getContentItemState(hdca));
                 set(graphStep, "nodeText", `${hdca.hid}: <b>${hdca.name}</b>`);
@@ -351,7 +341,7 @@ export function useInvocationGraph(
 
     function getWorkflowInputParam(invocation: WorkflowInvocationElementView, invocationStep: InvocationStep) {
         return Object.values(invocation.input_step_parameters).find(
-            (param) => param.workflow_step_id === invocationStep.workflow_step_id
+            (param) => param.workflow_step_id === invocationStep.workflow_step_id,
         );
     }
 

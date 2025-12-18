@@ -3,7 +3,7 @@ from abc import (
     abstractmethod,
 )
 
-from ._schema import (
+from galaxy.schema.tours import (
     TourDetails,
     TourList,
 )

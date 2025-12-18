@@ -1,30 +1,34 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { BDropdown, BDropdownItem } from "bootstrap-vue";
-import { useToast } from "composables/toast";
 import { createPinia, defineStore, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
+
+import { useToast } from "@/composables/toast";
+import { uploadPayload } from "@/utils/upload-payload.js";
+import { sendPayload } from "@/utils/upload-submit.js";
 
 import UploadExamples from "./VisualizationExamples.vue";
 
-jest.mock("@/utils/upload-payload.js", () => ({
-    uploadPayload: jest.fn(() => "mockedPayload"),
+vi.mock("@/utils/upload-payload.js", () => ({
+    uploadPayload: vi.fn(() => "mockedPayload"),
 }));
 
-jest.mock("@/utils/upload-submit.js", () => ({
-    sendPayload: jest.fn(),
+vi.mock("@/utils/upload-submit.js", () => ({
+    sendPayload: vi.fn(),
 }));
 
-jest.mock("@/composables/toast");
-const toastSuccess = jest.fn();
-const toastError = jest.fn();
+vi.mock("@/composables/toast");
+const toastSuccess = vi.fn();
+const toastError = vi.fn();
 useToast.mockReturnValue({
     success: toastSuccess,
     error: toastError,
 });
 
 let mockedStore;
-jest.mock("@/stores/historyStore", () => ({
+vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => mockedStore,
 }));
 
@@ -37,6 +41,7 @@ describe("UploadExamples.vue", () => {
     ];
 
     beforeEach(() => {
+        vi.clearAllMocks();
         setActivePinia(createPinia());
         const useFakeHistoryStore = defineStore("history", {
             state: () => ({
@@ -67,8 +72,6 @@ describe("UploadExamples.vue", () => {
     });
 
     it("calls upload and shows success toast on item click", async () => {
-        const { uploadPayload } = require("@/utils/upload-payload.js");
-        const { sendPayload } = require("@/utils/upload-submit.js");
         const wrapper = mount(UploadExamples, {
             localVue,
             propsData: { urlData },
@@ -77,25 +80,24 @@ describe("UploadExamples.vue", () => {
         await items.at(0).find("a").trigger("click");
         expect(uploadPayload).toHaveBeenCalledWith(
             [{ fileMode: "new", fileName: "Example 1", fileUri: urlData[0].url, extension: urlData[0].ftype }],
-            "fake-history-id"
+            "fake-history-id",
         );
         expect(sendPayload).toHaveBeenCalledWith("mockedPayload", {
             success: expect.any(Function),
             error: expect.any(Function),
         });
-        sendPayload.mock.calls[0][1].success();
+        vi.mocked(sendPayload).mock.calls[0][1].success();
         expect(toastSuccess).toHaveBeenCalledWith("The sample dataset 'Example 1' is being uploaded to your history.");
     });
 
     it("shows error toast when upload fails", async () => {
-        const { sendPayload } = require("@/utils/upload-submit.js");
         const wrapper = mount(UploadExamples, {
             localVue,
             propsData: { urlData },
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items.at(1).find("a").trigger("click");
-        sendPayload.mock.calls[0][1].error();
+        vi.mocked(sendPayload).mock.calls[0][1].error();
         expect(toastError).toHaveBeenCalledWith("Uploading the sample dataset 'Example 2' has failed.");
     });
 

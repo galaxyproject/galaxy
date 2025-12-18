@@ -4,8 +4,6 @@ import os
 import re
 from typing import (
     Callable,
-    Dict,
-    List,
     Optional,
 )
 
@@ -206,7 +204,7 @@ class Stockholm_1_0(Text):
         )
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
         """
 
         Split the input files by model records.

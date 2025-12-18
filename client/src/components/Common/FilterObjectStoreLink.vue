@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
@@ -9,8 +8,6 @@ import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import ObjectStoreSelect from "./ObjectStoreSelect.vue";
 import SelectModal from "@/components/Dataset/DatasetStorage/SelectModal.vue";
-
-library.add(faTimes);
 
 interface FilterObjectStoreLinkProps {
     value?: string;
@@ -52,7 +49,7 @@ const selectionText = computed(() => {
         </SelectModal>
         <b-link href="#" @click="showModal = true">{{ selectionText }}</b-link>
         <span v-if="value" v-b-tooltip.hover title="Remove Filter">
-            <FontAwesomeIcon icon="times" @click="onSelect(undefined)" />
+            <FontAwesomeIcon :icon="faTimes" @click="onSelect(undefined)" />
         </span>
     </span>
 </template>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
@@ -11,8 +10,6 @@ import type { FilterType, ValidFilter } from "@/utils/filtering";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
-
-library.add(faQuestion);
 
 type FilterValue = QuotaUsage | string | boolean | undefined;
 
@@ -44,13 +41,13 @@ watch(
     () => localValue.value,
     () => {
         emit("change", props.name, localValue.value);
-    }
+    },
 );
 watch(
     () => propValue.value,
     () => {
         localValue.value = propValue.value;
-    }
+    },
 );
 
 // datalist refs
@@ -88,7 +85,7 @@ async function loadQuotaUsages() {
         // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
         if (propValue.value && typeof propValue.value === "string") {
             localValue.value = quotaUsages.value.find(
-                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value
+                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value,
             );
         }
     } catch (e) {

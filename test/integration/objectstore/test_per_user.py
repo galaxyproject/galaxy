@@ -1,7 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    Tuple,
 )
 
 from galaxy.objectstore.templates.examples import get_example
@@ -83,7 +81,7 @@ MULTI_VERSION_WITH_SECRETS_LIBRARY = get_example("testing_multi_version_with_sec
 
 
 class BaseUserObjectStoreIntegration(BaseObjectStoreIntegrationTestCase):
-    def _create_simple_payload(self) -> Dict[str, Any]:
+    def _create_simple_payload(self) -> dict[str, Any]:
         body = {
             "name": "My Cool Disk",
             "template_id": "general_disk",
@@ -147,7 +145,7 @@ class BaseUserObjectStoreIntegration(BaseObjectStoreIntegrationTestCase):
         self.dataset_populator.set_user_preferred_object_store_id(None)
         return storage_info, output
 
-    def _storage_info_for_job_output(self, job_dict) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def _storage_info_for_job_output(self, job_dict) -> tuple[dict[str, Any], dict[str, Any]]:
         outputs = job_dict["outputs"]  # could be a list or dictionary depending on source
         try:
             output = outputs[0]
@@ -161,7 +159,7 @@ class BaseUserObjectStoreIntegration(BaseObjectStoreIntegrationTestCase):
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
         cls._configure_object_store_template_catalog(catalog, config)
 
-    def _get_dataset_filename(self, history_id: str, output: Dict[str, Any]) -> str:
+    def _get_dataset_filename(self, history_id: str, output: dict[str, Any]) -> str:
         details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=output["id"])
         assert "file_name" in details
         file_name = details["file_name"]

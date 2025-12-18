@@ -1,27 +1,28 @@
-import { faLayerGroup, faList, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faLayerGroup, faList, faSpinner, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, type Ref, ref } from "vue";
+import { computed, type Ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { GalaxyApi } from "@/api";
 import type { WorkflowSummary } from "@/api/workflows";
 import type { CardBadge } from "@/components/Common/GCard.types";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { useUserStore } from "@/stores/userStore";
-import { rethrowSimple } from "@/utils/simple-error";
 
 export function useWorkflowCardBadges(
     workflow: Ref<WorkflowSummary>,
     publishedView: boolean,
     filterable: boolean,
     hideRuns: boolean,
-    updateFilter: (key: string, value: string) => void
+    updateFilter: (key: string, value: string) => void,
 ) {
     const router = useRouter();
+
+    const invocationStore = useInvocationStore();
 
     const userStore = useUserStore();
     const { isAnonymous } = storeToRefs(userStore);
 
-    const invocationCount = ref(0);
+    const invocationCount = computed(() => invocationStore.getInvocationCountByWorkflowId(workflow.value.id));
 
     const shared = computed(() => {
         return !userStore.matchesCurrentUsername(workflow.value.owner);
@@ -41,31 +42,14 @@ export function useWorkflowCardBadges(
     });
 
     const invocationText = computed(() => {
-        if (invocationCount.value === 0) {
+        if (invocationCount.value === null) {
+            return "loading...";
+        } else if (invocationCount.value === 0) {
             return "never run";
         } else {
             return `workflow runs: ${invocationCount.value}`;
         }
     });
-
-    async function initCounts() {
-        const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
-            params: { path: { workflow_id: workflow.value.id } },
-        });
-
-        if (error) {
-            rethrowSimple(error);
-        }
-
-        let allCounts = 0;
-        for (const stateCount of Object.values(data)) {
-            if (stateCount) {
-                allCounts += stateCount;
-            }
-        }
-
-        return allCounts;
-    }
 
     function onViewMySharedByUser() {
         router.push(`/workflows/list_shared_with_me?owner=${workflow.value.owner}`);
@@ -79,7 +63,21 @@ export function useWorkflowCardBadges(
 
     const workflowCardBadges = computed<CardBadge[]>(() => [
         {
-            id: "step-count",
+            id: "invocations-count-loading",
+            label: invocationText.value,
+            title: "Loading workflow invocation count",
+            icon: faSpinner,
+            spin: true,
+            visible:
+                !hideRuns &&
+                !isAnonymous.value &&
+                !shared.value &&
+                !workflow.value.number_of_steps &&
+                invocationCount.value === null,
+            loading: true,
+        },
+        {
+            id: "invocations-count-zero",
             label: invocationText.value,
             title: "This workflow has never been run",
             icon: faList,
@@ -88,7 +86,7 @@ export function useWorkflowCardBadges(
                 !isAnonymous.value &&
                 !shared.value &&
                 !workflow.value.number_of_steps &&
-                invocationCount.value !== undefined &&
+                invocationCount.value !== null &&
                 invocationCount.value === 0,
         },
         {
@@ -103,7 +101,7 @@ export function useWorkflowCardBadges(
                 !isAnonymous.value &&
                 !shared.value &&
                 !workflow.value.number_of_steps &&
-                invocationCount.value !== undefined &&
+                invocationCount.value !== null &&
                 invocationCount.value > 0,
         },
         {
@@ -137,10 +135,6 @@ export function useWorkflowCardBadges(
             visible: workflow.value.published && publishedView,
         },
     ]);
-
-    onMounted(async () => {
-        invocationCount.value = await initCounts();
-    });
 
     return {
         workflowCardBadges,

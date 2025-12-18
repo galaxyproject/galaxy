@@ -8,7 +8,7 @@
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
                 <span class="popper-close align-items-center cursor-pointer" @click="visible = false">
-                    <FontAwesomeIcon icon="fa-times-circle" />
+                    <FontAwesomeIcon :icon="faTimesCircle" />
                 </span>
             </div>
             <slot />
@@ -17,7 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
@@ -26,11 +25,10 @@ import { ref } from "vue";
 
 import { type Trigger, usePopper } from "./usePopper";
 
-library.add(faTimesCircle);
-
 const props = defineProps({
     arrow: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
+    interactive: { type: Boolean, default: false },
     mode: { type: String, default: "dark" },
     placement: String as PropType<Placement>,
     referenceEl: HTMLElement,
@@ -43,6 +41,7 @@ const reference = props.referenceEl ? ref(props.referenceEl) : ref();
 const popper = ref();
 
 const { visible } = usePopper(reference, popper, {
+    interactive: props.interactive,
     placement: props.placement,
     trigger: props.trigger,
 });
@@ -55,7 +54,7 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 @function popper-border($border-color) {
     @return 1px solid $border-color;
@@ -64,6 +63,7 @@ defineExpose({
 .popper-element {
     z-index: 9999;
     border-radius: $border-radius-large;
+    pointer-events: auto;
 }
 
 /** Available variants */

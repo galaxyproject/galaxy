@@ -45,7 +45,7 @@ const { throttle: dragThrottle } = useAnimationFrameThrottle();
 watch(
     () => props.viewportBoundingBox,
     () => (redraw = true),
-    { deep: true }
+    { deep: true },
 );
 
 const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
@@ -77,7 +77,7 @@ watch(
             aabbChanged = true;
         }
     },
-    { deep: true }
+    { deep: true },
 );
 
 // these settings are controlled via css, so they can be defined in one common place
@@ -205,7 +205,7 @@ function renderMinimap() {
                 selectedStep.position!.left - edge,
                 selectedStep.position!.top - edge,
                 rect.width + edge * 2,
-                rect.height + edge * 2
+                rect.height + edge * 2,
             );
         }
 
@@ -221,7 +221,7 @@ function renderMinimap() {
         props.viewportBoundingBox.x,
         props.viewportBoundingBox.y,
         props.viewportBoundingBox.width,
-        props.viewportBoundingBox.height
+        props.viewportBoundingBox.height,
     );
     ctx.fill();
     ctx.stroke();
@@ -239,7 +239,7 @@ watch(dragHandlePosition, () => {
     // resize
     minimapSize.value = Math.max(
         unref(props.viewportBounds.right) - dragHandlePosition.value.x,
-        unref(props.viewportBounds.bottom) - dragHandlePosition.value.y
+        unref(props.viewportBounds.bottom) - dragHandlePosition.value.y,
     );
 
     // clamp
@@ -312,8 +312,8 @@ useDraggable(canvas, {
 </template>
 
 <style lang="scss" scoped>
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-overview {
     --workflow-overview-size: 150px;
@@ -331,7 +331,7 @@ useDraggable(canvas, {
     bottom: 0px;
     border-top: solid $border-color var(--workflow-overview-border);
     border-left: solid $border-color var(--workflow-overview-border);
-    background: $workflow-overview-bg no-repeat url("assets/images/resizable.png");
+    background: $workflow-overview-bg no-repeat url("@/assets/images/resizable.png");
     z-index: 20000;
     overflow: hidden;
     padding: var(--workflow-overview-padding) 0 0 var(--workflow-overview-padding);

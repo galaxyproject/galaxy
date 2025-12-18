@@ -2,6 +2,7 @@
 /**
  * Editable list of items: add/edit/remove (no duplictes/empty values)
  */
+import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
@@ -118,7 +119,7 @@ function resetForm() {
 <template>
     <div>
         <div v-if="showForm">
-            <b-input v-model="currentItem" :state="currentItemError ? false : null" @click="removeErrorMessage" />
+            <b-input v-model="currentItem" :state="currentItemError ? false : null" @focus="removeErrorMessage" />
             <div class="spacer"></div>
             <div v-if="currentItemError" class="error">{{ currentItemError }}</div>
             <div v-if="props.description" v-html="description"></div>
@@ -136,7 +137,7 @@ function resetForm() {
                         size="sm"
                         :title="`Edit ${props.itemName}`"
                         @click="onEdit(index)">
-                        <FontAwesomeIcon icon="edit" />
+                        <FontAwesomeIcon :icon="faEdit" />
                     </b-button>
                     <b-button
                         v-b-tooltip.hover
@@ -145,7 +146,7 @@ function resetForm() {
                         size="sm"
                         :title="`Remove ${props.itemName}`"
                         @click="onRemove(index)">
-                        <FontAwesomeIcon icon="times" />
+                        <FontAwesomeIcon :icon="faTimes" />
                     </b-button>
                 </div>
             </div>
@@ -156,9 +157,10 @@ function resetForm() {
     </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
+@import "@/style/scss/custom_theme_variables.scss";
 .error {
-    color: red;
+    color: var(--color-red-500);
 }
 .spacer {
     padding: 5px;

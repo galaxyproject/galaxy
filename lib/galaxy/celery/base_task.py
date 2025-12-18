@@ -1,5 +1,6 @@
 import datetime
 from abc import abstractmethod
+from typing import cast
 
 from celery import Task
 from sqlalchemy import (
@@ -10,6 +11,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import insert as ps_insert
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session
 
@@ -143,7 +145,9 @@ class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLi
             except IntegrityError:
                 #  Row was inserted by another thread since we tried the update above.
                 sched_time = now + datetime.timedelta(seconds=task_interval_secs)
-                result = sa_session.execute(self._update_stmt, {"userid": user_id, "sched_time": sched_time})
+                result = cast(
+                    CursorResult, sa_session.execute(self._update_stmt, {"userid": user_id, "sched_time": sched_time})
+                )
                 if result.rowcount == 0:
                     raise Exception(f"Failed to update a celery_user_rate_limit row for user id {user_id}")
                 sa_session.commit()

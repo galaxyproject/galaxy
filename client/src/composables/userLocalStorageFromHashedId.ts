@@ -11,7 +11,7 @@ import { syncRefToLocalStorage } from "./persistentRef";
 export function useUserLocalStorageFromHashId<T>(
     key: string,
     initialValue: T,
-    hashedUserId: Ref<string | null>
+    hashedUserId: Ref<string | null>,
 ): Ref<UnwrapRef<T>> {
     const refToSync = ref(initialValue);
     let hasSynced = false;
@@ -23,7 +23,7 @@ export function useUserLocalStorageFromHashId<T>(
                 syncRefToLocalStorage(`${key}-${hashedUserId.value}`, refToSync);
                 hasSynced = true;
             }
-        }
+        },
     );
 
     return refToSync;

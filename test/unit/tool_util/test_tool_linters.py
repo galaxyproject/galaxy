@@ -894,6 +894,23 @@ VALID_CENTER_OF_MASS = """
     </tests>
 </tool>
 """
+ASSERTS_STRING_COERCION = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="data_name" format="ome.tiff"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="data_name">
+               <assert_contents>
+                    <!-- channels is defined as an integer, so coercion from string must be applied on validation -->
+                    <has_image_channels channels="3" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
+"""
 TESTS_VALID = """
 <tool id="id" name="name">
     <outputs>
@@ -2042,6 +2059,12 @@ def test_tests_asserts(lint_ctx):
     assert len(lint_ctx.error_messages) == 9
 
 
+def test_tests_asserts_string_coercion(lint_ctx):
+    tool_source = get_xml_tool_source(ASSERTS_STRING_COERCION)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert len(lint_ctx.warn_messages) == 0, lint_ctx.warn_messages
+
+
 def test_tests_assertion_models_valid(lint_ctx):
     tool_source = get_xml_tool_source(VALID_CENTER_OF_MASS)
     run_lint_module(lint_ctx, tests, tool_source)
@@ -2182,7 +2205,7 @@ def test_valid_datatypes(lint_ctx):
     assert "Unknown datatype [collection_format] used in collection" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in param" in lint_ctx.error_messages
     assert "Unknown datatype [invalid] used in discover_datasets" in lint_ctx.error_messages
-    assert "Format [auto] can not be used for tool or tool test inputs" in lint_ctx.error_messages  # 2x
+    assert "Invalid format (auto or input) in tool or tool test inputs" in lint_ctx.error_messages  # 2x
     assert len(lint_ctx.error_messages) == 8
 
 

@@ -2,8 +2,6 @@ import sys
 from typing import (
     Any,
     Generic,
-    Tuple,
-    Type,
     TypeVar,
 )
 
@@ -23,7 +21,7 @@ ref_to_name = {}
 
 class GenericModel(BaseModel):
     @classmethod
-    def model_parametrized_name(cls, params: Tuple[Type[Any], ...]) -> str:
+    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
         suffix = cls.__determine_suffix__(params)
         class_name = cls.__name__.split("Generic", 1)[-1]
         return f"{class_name}{suffix}"
@@ -35,7 +33,7 @@ class GenericModel(BaseModel):
         return result
 
     @classmethod
-    def __determine_suffix__(cls, params: Tuple[Type[Any], ...]) -> str:
+    def __determine_suffix__(cls, params: tuple[type[Any], ...]) -> str:
         suffix = "Incoming"
         if params[0] is EncodedDatabaseIdField:
             suffix = "Response"
@@ -87,10 +85,10 @@ class PatchGenericPickle:
 
         if not issubclass(cls, BaseModel):
             raise TypeError("PatchGenericPickle can only be used with subclasses of pydantic.BaseModel")
-        if not issubclass(cls, Generic):  # type: ignore [arg-type]
+        if not issubclass(cls, Generic):  # type: ignore[unreachable]  # https://github.com/python/mypy/issues/19377
             raise TypeError("PatchGenericPickle can only be used with Generic models")
 
-        qualname = cls.__qualname__
+        qualname = cls.__qualname__  # type: ignore[unreachable]  # https://github.com/python/mypy/issues/19377
         declaring_module = sys.modules[cls.__module__]
         if qualname not in declaring_module.__dict__:
             # This should work in all cases, but we might need to make this check and update more

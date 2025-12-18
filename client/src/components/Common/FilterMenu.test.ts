@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -9,6 +10,9 @@ import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
 import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
 
 import FilterMenu from "./FilterMenu.vue";
+
+// Mock object stores API before imports
+vi.mock("@/api/objectStores");
 
 const { server, http } = useServerMock();
 
@@ -87,7 +91,7 @@ describe("FilterMenu", () => {
                         total_disk_usage: 4,
                     },
                 ]);
-            })
+            }),
         );
     });
 
@@ -104,7 +108,7 @@ describe("FilterMenu", () => {
             stubs: {
                 icon: { template: "<div></div>" },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     }
 
@@ -216,7 +220,7 @@ describe("FilterMenu", () => {
                 "filter_key:item-filter has_help:has-help-filter list_item:1234 " +
                 "number>1234 number<5678 name:name-filter radio:true bool_def:true",
             TestFilters,
-            false
+            false,
         );
     });
 

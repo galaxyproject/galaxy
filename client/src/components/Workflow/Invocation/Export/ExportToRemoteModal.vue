@@ -19,7 +19,7 @@ const emit = defineEmits<{
     (e: "onExportToFileSource", exportDirectory: string, fileName: string): void;
 }>();
 
-const title = computed(() => `Export ${props.exportPlugin.title} to remote file source`);
+const title = computed(() => `Export ${props.exportPlugin.title} to repository`);
 
 /** Opens the modal dialog. */
 function showModal() {

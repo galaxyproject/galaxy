@@ -1,72 +1,110 @@
 <script setup lang="ts">
-import { BNav, BNavItem } from "bootstrap-vue";
+import { faBug, faChartBar, faEye, faFileAlt, faInfoCircle, faPen } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink, BNav, BNavItem } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
-import { useDatatypeVisualizationsStore } from "@/stores/datatypeVisualizationsStore";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import { useDatatypeStore } from "@/stores/datatypeStore";
+import STATES from "@/utils/datasetStates";
+import { withPrefix } from "@/utils/redirect";
+import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
+import DatasetDisplay from "./DatasetDisplay.vue";
 import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
-import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
-import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
+import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";
 
 const datasetStore = useDatasetStore();
-const datatypeVisualizationsStore = useDatatypeVisualizationsStore();
+const datatypeStore = useDatatypeStore();
+const datatypesMapperStore = useDatatypesMapperStore();
 const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("dataset-header-collapsed");
 
 interface Props {
     datasetId: string;
-    tab?: "details" | "edit" | "error" | "preview" | "visualize";
+    tab?: "details" | "edit" | "error" | "preview" | "raw" | "visualize";
+    displayOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tab: "preview",
+    displayOnly: false,
 });
 
 const iframeLoading = ref(true);
-const preferredVisualization = ref<string>();
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
+const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
-const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId));
-const showError = computed(
-    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
+
+// Track datatype loading state
+const isDatatypeLoading = ref(false);
+
+// Consolidated loading state
+const isLoading = computed(() => {
+    return datasetStore.isLoadingDataset(props.datasetId) || isDatatypeLoading.value || datatypesMapperStore.loading;
+});
+
+// Match datatype variant
+const isAutoDownloadType = computed(
+    () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
+);
+const isBinaryDataset = computed(() => {
+    if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
+        return false;
+    }
+    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, ["galaxy.datatypes.binary"]);
+});
+const isImageDataset = computed(() => {
+    if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
+        return false;
+    }
+    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, [
+        "galaxy.datatypes.images.Image",
+    ]);
+});
+const isPdfDataset = computed(() => {
+    return dataset.value?.file_ext === "pdf";
+});
+
+// Has a preferred visualization?
+const preferredVisualization = computed(
+    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
 );
 
-// Check if the dataset has a preferred visualization by datatype
-async function checkPreferredVisualization() {
-    if (dataset.value && dataset.value.file_ext) {
-        try {
-            const mapping = await datatypeVisualizationsStore.getPreferredVisualizationForDatatype(
-                dataset.value.file_ext
-            );
-            if (mapping) {
-                preferredVisualization.value = mapping.visualization;
-            } else {
-                preferredVisualization.value = undefined;
-            }
-        } catch (error) {
-            preferredVisualization.value = undefined;
-        }
-    } else {
-        preferredVisualization.value = undefined;
-    }
-}
+// Match dataset state
+const showError = computed(() => dataset.value && STATES.ERROR === dataset.value.state);
+const showOk = computed(() => dataset.value && STATES.OK_STATES.includes(dataset.value.state));
 
-// Watch for changes to the dataset to check for preferred visualizations
-watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: true });
+// Watch for changes to the dataset to fetch datatype info
+watch(
+    () => dataset.value?.file_ext,
+    async () => {
+        if (dataset.value && dataset.value.file_ext) {
+            isDatatypeLoading.value = true;
+            await Promise.all([
+                datatypeStore.fetchDatatypeDetails(dataset.value.file_ext),
+                datatypesMapperStore.createMapper(),
+            ]);
+            isDatatypeLoading.value = false;
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
     <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
-    <div v-else class="dataset-view d-flex flex-column h-100">
-        <header :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
+    <div v-else class="dataset-view d-flex flex-column">
+        <header v-if="!displayOnly" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
                 <Heading
                     h1
@@ -76,10 +114,15 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                     class="flex-grow-1"
                     :collapse="headerState"
                     @click="toggleHeaderCollapse">
-                    {{ dataset?.hid }}: <span class="font-weight-bold">{{ dataset?.name }}</span>
-                    <span class="dataset-state-header">
-                        <DatasetState :dataset-id="datasetId" />
-                    </span>
+                    <div class="dataset-header-content">
+                        <div class="dataset-title-row">
+                            <span class="dataset-hid">{{ dataset?.hid }}:</span>
+                            <span class="dataset-name font-weight-bold">{{ dataset?.name }}</span>
+                        </div>
+                        <span class="dataset-state-header">
+                            <DatasetState :dataset-id="datasetId" />
+                        </span>
+                    </div>
                 </Heading>
             </div>
             <transition v-if="dataset" name="header">
@@ -100,60 +143,108 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
                             {{ dataset.genome_build }}
                         </BLink>
                     </span>
-                    <div v-if="dataset.misc_info" class="info">
-                        <span class="value">{{ dataset.misc_info }}</span>
-                    </div>
+                    <span v-if="dataset.file_size" class="filesize">
+                        <span v-localize class="prompt">size</span>
+                        <span class="value font-weight-bold" v-html="bytesToString(dataset.file_size, false)" />
+                    </span>
                 </div>
             </transition>
         </header>
-        <BNav pills class="my-2 p-2 bg-light border-bottom">
-            <BNavItem title="Preview" :active="tab === 'preview'" :to="`/datasets/${datasetId}/preview`">
-                Preview
+        <BNav v-if="!displayOnly" pills class="my-2 p-2 bg-light border-bottom">
+            <BNavItem
+                v-if="showOk"
+                title="View a preview of the dataset contents"
+                :active="tab === 'preview'"
+                :to="`/datasets/${datasetId}/preview`">
+                <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
             </BNavItem>
             <BNavItem
-                v-if="!showError"
-                title="Visualize"
+                v-if="showOk && preferredVisualization"
+                title="View raw dataset contents"
+                :active="tab === 'raw'"
+                :to="`/datasets/${datasetId}/raw`">
+                <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Raw
+            </BNavItem>
+            <BNavItem
+                v-if="showOk"
+                title="Explore available visualizations for this dataset"
                 :active="tab === 'visualize'"
                 :to="`/datasets/${datasetId}/visualize`">
-                Visualize
+                <FontAwesomeIcon :icon="faChartBar" class="mr-1" /> Visualize
             </BNavItem>
-            <BNavItem title="Details" :active="tab === 'details'" :to="`/datasets/${datasetId}/details`">
-                Details
+            <BNavItem
+                title="View detailed information about this dataset"
+                :active="tab === 'details'"
+                :to="`/datasets/${datasetId}/details`">
+                <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" /> Details
             </BNavItem>
-            <BNavItem title="Edit" :active="tab === 'edit'" :to="`/datasets/${datasetId}/edit`">Edit</BNavItem>
-            <BNavItem v-if="showError" title="Error" :active="tab === 'error'" :to="`/datasets/${datasetId}/error`">
-                Error
+            <BNavItem
+                title="Edit dataset attributes and metadata"
+                :active="tab === 'edit'"
+                :to="`/datasets/${datasetId}/edit`">
+                <FontAwesomeIcon :icon="faPen" class="mr-1" /> Edit
+            </BNavItem>
+            <BNavItem
+                v-if="showError"
+                title="View error information for this dataset"
+                :active="tab === 'error'"
+                :to="`/datasets/${datasetId}/error`">
+                <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
-        <div v-if="tab === 'preview'" class="h-100">
-            <VisualizationFrame
+        <div v-if="tab === 'preview'" class="tab-content-panel">
+            <VisualizationDisplay
                 v-if="preferredVisualization"
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
-            <CenterFrame
-                v-else
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is_preview="true"
-                @load="iframeLoading = false" />
+            <div v-else-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
+                <div class="alert alert-info">
+                    <h4>Download Required</h4>
+                    <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
+                    <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
+                    <a :href="downloadUrl" class="btn btn-primary mt-2" download>
+                        <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
+                    </a>
+                </div>
+            </div>
+            <DatasetAsImage
+                v-else-if="isImageDataset && !isPdfDataset"
+                :history-dataset-id="datasetId"
+                :allow-size-toggle="true"
+                class="p-3" />
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
-        <div v-else-if="tab === 'visualize'" class="d-flex flex-column overflow-hidden overflow-y">
+        <div v-else-if="tab === 'raw'" class="tab-content-panel">
+            <div v-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
+                <div class="alert alert-info">
+                    <h4>Download Required</h4>
+                    <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
+                    <p>File size: <strong v-html="bytesToString(dataset.file_size || 0, false)" /></p>
+                    <a :href="downloadUrl" class="btn btn-primary mt-2" download>
+                        <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Download File
+                    </a>
+                </div>
+            </div>
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
+        </div>
+        <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'edit'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
+        <div v-else-if="tab === 'edit'" class="tab-content-panel mt-2">
             <DatasetAttributes :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'details'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
+        <div v-else-if="tab === 'details'" class="tab-content-panel mt-2">
             <DatasetDetails :dataset-id="datasetId" />
         </div>
-        <div v-else-if="tab === 'error'" class="d-flex flex-column overflow-hidden overflow-y mt-2">
+        <div v-else-if="tab === 'error'" class="tab-content-panel mt-2">
             <DatasetError :dataset-id="datasetId" />
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .header-details {
     padding-left: 1rem;
@@ -161,6 +252,21 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
     opacity: 1;
     transition: all 0.25s ease;
     overflow: hidden;
+
+    .datatype,
+    .dbkey,
+    .filesize {
+        margin-right: 1rem;
+    }
+
+    .prompt {
+        color: $text-muted;
+        margin-right: 0.25rem;
+    }
+
+    .blurb {
+        margin-bottom: 0.25rem;
+    }
 }
 
 .header-enter, /* change to header-enter-from with Vue 3 */
@@ -172,8 +278,52 @@ watch(() => dataset.value?.file_ext, checkPreferredVisualization, { immediate: t
     opacity: 0;
 }
 
+.dataset-header-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.dataset-title-row {
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.dataset-hid {
+    white-space: nowrap;
+    margin-right: 0.25rem;
+}
+
+.dataset-name {
+    word-break: break-word;
+    min-width: 0;
+}
+
 .dataset-state-header {
     font-size: $h5-font-size;
-    vertical-align: middle;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.tab-content-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    height: 100%;
+}
+
+.auto-download-message {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    height: 100%;
+
+    .alert {
+        max-width: 600px;
+        width: 100%;
+    }
 }
 </style>

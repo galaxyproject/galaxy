@@ -2,10 +2,6 @@ import argparse
 import logging
 import os
 import sys
-from typing import (
-    Dict,
-    Type,
-)
 
 import yaml
 
@@ -107,7 +103,7 @@ def main(argv=None):
     if export_type is None:
         export_type = "directory" if not export_path.endswith(".tgz") else "bag_archive"
 
-    export_types: Dict[str, Type[store.DirectoryModelExportStore]] = {
+    export_types: dict[str, type[store.DirectoryModelExportStore]] = {
         "directory": store.DirectoryModelExportStore,
         "tar": store.TarModelExportStore,
         "bag_directory": store.BagDirectoryModelExportStore,

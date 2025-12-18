@@ -4,6 +4,8 @@ import { computed, ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import { getStoredProgressData, type MonitoringRequest } from "@/composables/persistentProgressMonitor";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { useInvocationStore } from "@/stores/invocationStore";
 
 import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTaskProgressMonitorAlert.vue";
 
@@ -28,6 +30,18 @@ const emit = defineEmits<{
 const hasExistingStsExportData = ref(false);
 const hasExistingRemoteExportData = ref(false);
 
+const { getInvocationById } = useInvocationStore();
+const invocation = computed(() => getInvocationById(props.invocationId));
+
+const workflowName = computed(() => {
+    if (!invocation.value) {
+        return "No invocation found";
+    }
+    const { workflow } = useWorkflowInstance(invocation.value.workflow_id);
+
+    return workflow.value?.name || "No workflow name provided";
+});
+
 const exportToStsRequest = computed<MonitoringRequest>(() => ({
     source: monitoringSource,
     action: "export",
@@ -35,8 +49,9 @@ const exportToStsRequest = computed<MonitoringRequest>(() => ({
     object: {
         id: props.invocationId,
         type: "invocation",
+        name: workflowName.value,
     },
-    description: `Exporting invocation ${props.invocationId} to Short Term Storage in preparation for download`,
+    description: `Invocation export for workflow ${workflowName.value} for direct download`,
 }));
 
 const exportToRemoteRequest = computed<MonitoringRequest>(() => ({
@@ -46,8 +61,9 @@ const exportToRemoteRequest = computed<MonitoringRequest>(() => ({
     object: {
         id: props.invocationId,
         type: "invocation",
+        name: workflowName.value,
     },
-    description: `Exporting invocation ${props.invocationId} to remote source`,
+    description: `Invocation export for workflow ${workflowName.value} to remote source`,
     remoteUri: props.exportToRemoteTargetUri,
 }));
 

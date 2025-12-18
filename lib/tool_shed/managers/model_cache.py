@@ -2,9 +2,7 @@ import json
 import os
 from typing import (
     Any,
-    Dict,
     Optional,
-    Type,
     TypeVar,
 )
 
@@ -12,20 +10,20 @@ from pydantic import BaseModel
 
 from galaxy.util.hash_util import md5_hash_str
 
-RAW_CACHED_JSON = Dict[str, Any]
+RAW_CACHED_JSON = dict[str, Any]
 
 
-def hash_model(model_class: Type[BaseModel]) -> str:
+def hash_model(model_class: type[BaseModel]) -> str:
     return md5_hash_str(json.dumps(model_class.model_json_schema()))
 
 
-MODEL_HASHES: Dict[Type[BaseModel], str] = {}
+MODEL_HASHES: dict[type[BaseModel], str] = {}
 
 
 M = TypeVar("M", bound=BaseModel)
 
 
-def ensure_model_has_hash(model_class: Type[BaseModel]) -> None:
+def ensure_model_has_hash(model_class: type[BaseModel]) -> None:
     if model_class not in MODEL_HASHES:
         MODEL_HASHES[model_class] = hash_model(model_class)
 
@@ -38,20 +36,20 @@ class ModelCache:
             os.makedirs(cache_directory)
         self._cache_directory = cache_directory
 
-    def _cache_target(self, model_class: Type[M], tool_id: str, tool_version: str) -> str:
+    def _cache_target(self, model_class: type[M], tool_id: str, tool_version: str) -> str:
         ensure_model_has_hash(model_class)
         # consider breaking this into multiple directories...
         cache_target = os.path.join(self._cache_directory, MODEL_HASHES[model_class], tool_id, tool_version)
         return cache_target
 
-    def get_cache_entry_for(self, model_class: Type[M], tool_id: str, tool_version: str) -> Optional[M]:
+    def get_cache_entry_for(self, model_class: type[M], tool_id: str, tool_version: str) -> Optional[M]:
         cache_target = self._cache_target(model_class, tool_id, tool_version)
         if not os.path.exists(cache_target):
             return None
         with open(cache_target) as f:
             return model_class.model_validate(json.load(f))
 
-    def has_cached_entry_for(self, model_class: Type[M], tool_id: str, tool_version: str) -> bool:
+    def has_cached_entry_for(self, model_class: type[M], tool_id: str, tool_version: str) -> bool:
         cache_target = self._cache_target(model_class, tool_id, tool_version)
         return os.path.exists(cache_target)
 

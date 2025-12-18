@@ -14,7 +14,7 @@ export function useFileSetSources(isBusy: Ref<boolean>) {
         const rawFiles = await getRemoteEntriesAt(uri);
         if (rawFiles) {
             const files: RemoteFile[] = (rawFiles as ListUriResponse).filter(
-                (file: RemoteFile | RemoteDirectory) => file["class"] == "File"
+                (file: RemoteFile | RemoteDirectory) => file["class"] == "File",
             ) as RemoteFile[];
             uris.value = files;
         }

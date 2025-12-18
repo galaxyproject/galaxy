@@ -12,7 +12,7 @@ export function useCollectionCreation() {
         name: string,
         collection_type: string,
         element_identifiers: CollectionElementIdentifiers,
-        hide_source_items: boolean
+        hide_source_items: boolean,
     ): CreateNewCollectionPayload {
         return createCollectionPayload({
             name: name,

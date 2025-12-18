@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import type { HistoryDetailed, HistorySummary, MessageException } from "@/api";
 import { GalaxyApi } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -47,7 +49,7 @@ server.use(
             return response("5XX").json(EXPECTED_500_ERROR, { status: 500 });
         }
         return response(200).json(TEST_HISTORY_SUMMARY);
-    })
+    }),
 );
 
 describe("useServerMock", () => {
@@ -100,7 +102,7 @@ describe("useServerMock", () => {
 
             expect(error).toBeDefined();
             expect(`${JSON.stringify(error)}`).toContain(
-                "Make sure you have added a request handler for this request in your tests."
+                "Make sure you have added a request handler for this request in your tests.",
             );
         }
     });

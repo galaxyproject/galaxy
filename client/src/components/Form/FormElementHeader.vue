@@ -27,7 +27,7 @@ const renderFormats = computed(
         props.type &&
         ["data", "data_collection"].includes(props.type) &&
         props.extensions?.length &&
-        props.extensions.indexOf("data") < 0
+        props.extensions.indexOf("data") < 0,
 );
 
 const populatedClass = computed<string>(() => {

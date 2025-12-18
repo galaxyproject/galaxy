@@ -1,15 +1,16 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
-import JobMetrics from "./JobMetrics";
+import JobMetrics from "./JobMetrics.vue";
 
 const NO_METRICS_MESSAGE = "No metrics available for this job.";
 
 // Ignore all axios calls, data is mocked locally -- just say "OKAY!"
-jest.mock("axios", () => ({
+vi.mock("axios", () => ({
     get: async () => {
         return { response: { status: 200 } };
     },
@@ -20,7 +21,7 @@ const localVue = getLocalVue();
 describe("JobMetrics/JobMetrics.vue", () => {
     it("should not render a div if no plugins found in store", async () => {
         const wrapper = mount(JobMetrics, {
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             propsData: {
                 jobId: "9000",
             },
@@ -41,6 +42,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
         ];
 
         const pinia = createTestingPinia({
+            createSpy: vi.fn,
             initialState: {
                 jobMetricsStore: {
                     jobMetricsByJobId: {

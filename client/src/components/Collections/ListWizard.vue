@@ -17,14 +17,14 @@ import {
 } from "./common/useCollectionCreator";
 import { showHid } from "./common/useCollectionCreator";
 import type { WhichListBuilder } from "./ListWizard/types";
-import { autoPairWithCommonFilters } from "./pairing";
+import { useAutoPairing } from "./usePairing";
 
-import AutoPairing from "./common/AutoPairing.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import WhichBuilder from "./ListWizard/WhichBuilder.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
+import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 
 interface Props {
     initialAdvanced: boolean;
@@ -36,8 +36,8 @@ const isBusy = ref<boolean>(false);
 const whichBuilder = ref<WhichListBuilder>("list");
 const store = useCollectionBuilderItemSelection();
 const { currentHistoryId, createPayload } = useCollectionCreation();
-const currentForwardFilter = ref("");
-const currentReverseFilter = ref("");
+const { countPaired, currentForwardFilter, currentReverseFilter, AutoPairing, autoPair, onFilters } = useAutoPairing();
+
 const creationError = ref<string | null>(null);
 const collectionCreated = ref(false);
 
@@ -45,18 +45,13 @@ type InferrableBuilder = "list" | "list:paired";
 const collectionCreator = ref<CollectionCreatorComponent>();
 const { selectedItems } = storeToRefs(store);
 
-const countPaired = ref(-1);
-const countUnpaired = ref(-1);
 const inferredBuilder = ref<InferrableBuilder>("list");
 const builderInputsValid = ref(false);
 
 async function initialize() {
     isBusy.value = true;
-    const summary = autoPairWithCommonFilters(selectedItems.value, true);
-    currentForwardFilter.value = summary.forwardFilter || "";
-    currentReverseFilter.value = summary.reverseFilter || "";
-    countPaired.value = summary.pairs?.length || 0;
-    countUnpaired.value = summary.unpaired.length;
+    autoPair(selectedItems.value);
+    // updates currentForwardFilter, currentReverseFilter, countPaired
     if (countPaired.value * 2 > selectedItems.value.length * 0.2) {
         whichBuilder.value = "list:paired";
         inferredBuilder.value = "list:paired";
@@ -142,7 +137,7 @@ const wizard = useWizard({
 });
 
 const collectionTypeForPairedOrUnpairedBuilder = computed(
-    () => whichBuilder.value as SupportedPairedOrPairedBuilderCollectionTypes
+    () => whichBuilder.value as SupportedPairedOrPairedBuilderCollectionTypes,
 );
 
 const buildButtonLabel = computed(() => {
@@ -181,7 +176,7 @@ async function ruleOnAttemptCreate(createRequest: RuleCreationRequestT) {
             request.name,
             request.collectionType,
             request.elementIdentifiers,
-            request.hide_source_items
+            request.hide_source_items,
         );
         await onCreate(payload);
     }
@@ -189,11 +184,6 @@ async function ruleOnAttemptCreate(createRequest: RuleCreationRequestT) {
 
 function setWhichBuilder(newWhichBuilder: WhichListBuilder) {
     whichBuilder.value = newWhichBuilder;
-}
-
-function onFilters(forwardFilter: string, reverseFilter: string) {
-    currentForwardFilter.value = forwardFilter;
-    currentReverseFilter.value = reverseFilter;
 }
 
 function goToAutoPairing() {
@@ -210,16 +200,22 @@ function onRuleState(newRuleState: boolean) {
 <template>
     <div v-if="currentHistoryId">
         <div v-if="creationError">
-            <BAlert variant="danger">
+            <BAlert variant="danger" show>
                 {{ creationError }}
             </BAlert>
         </div>
         <div v-if="collectionCreated">
             <BAlert variant="success" show> Collection created and it has been added to your history. </BAlert>
         </div>
-        <div v-else-if="!selectedItems">Loading...</div>
+        <div v-else-if="!selectedItems">
+            <BAlert variant="info" show>
+                <LoadingSpan />
+            </BAlert>
+        </div>
         <div v-else-if="selectedItems.length == 0">
-            <p>Select datasets from history panel to use the Galaxy list building wizard.</p>
+            <BAlert variant="info" show>
+                Select datasets from the history panel to use the Galaxy list building wizard.
+            </BAlert>
         </div>
         <GenericWizard v-else :use="wizard" :is-busy="isBusy" :submit-button-label="buildButtonLabel" @submit="submit">
             <div v-if="wizard.isCurrent('which-builder')">
@@ -254,6 +250,8 @@ function onRuleState(newRuleState: boolean) {
                     :history-id="currentHistoryId"
                     :initial-elements="selectedItems || []"
                     :collection-type="collectionTypeForPairedOrUnpairedBuilder"
+                    :forward-filter="currentForwardFilter"
+                    :reverse-filter="currentReverseFilter"
                     mode="wizard"
                     :default-hide-source-items="true"
                     :from-selection="true"

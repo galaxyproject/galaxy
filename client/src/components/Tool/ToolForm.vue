@@ -36,6 +36,7 @@
             :disabled="disabled || showExecuting"
             :allow-object-store-selection="config.object_store_allows_id_selection"
             :preferred-object-store-id="preferredObjectStoreId"
+            allow-generated-tours
             itemscope="itemscope"
             itemtype="https://schema.org/CreativeWork"
             @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
@@ -81,12 +82,15 @@
                     v-model="dataManagerMode"
                     :options="bundleOptions"
                     title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
+                <ToolFormTags :tags.sync="tags" />
             </div>
             <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"
+                    class="text-nowrap"
                     title="Run Tool"
-                    :disabled="!canMutateHistory"
+                    data-description="run tool button"
+                    :disabled="runButtonDisabled"
                     size="small"
                     :wait="showExecuting"
                     :tooltip="tooltip"
@@ -96,7 +100,7 @@
                 <ButtonSpinner
                     title="Run Tool"
                     class="mt-3 mb-3"
-                    :disabled="!canMutateHistory"
+                    :disabled="runButtonDisabled"
                     :wait="showExecuting"
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
@@ -106,28 +110,30 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
-import ButtonSpinner from "components/Common/ButtonSpinner";
-import Heading from "components/Common/Heading";
-import FormDisplay from "components/Form/FormDisplay";
-import FormElement from "components/Form/FormElement";
-import LoadingSpan from "components/LoadingSpan";
-import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState, storeToRefs } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
-import { useJobStore } from "stores/jobStore";
 
 import { canMutateHistory } from "@/api";
+import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useJobStore } from "@/stores/jobStore";
+import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
-import { startWatchingHistory } from "@/watch/watchHistoryProvided";
+import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
-import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
-import ToolCard from "./ToolCard";
 
+import ToolRecommendation from "../ToolRecommendation.vue";
+import ToolCard from "./ToolCard.vue";
+import ToolFormTags from "./ToolFormTags.vue";
+import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
+import Heading from "@/components/Common/Heading.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 export default {
     components: {
@@ -138,6 +144,7 @@ export default {
         FormElement,
         FormSelect,
         ToolEntryPoints,
+        ToolFormTags,
         ToolRecommendation,
         Heading,
     },
@@ -165,7 +172,10 @@ export default {
     },
     setup() {
         const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
-        return { config, isConfigLoaded };
+
+        const { getCredentialsExecutionContextForTool } = useUserToolsServiceCredentialsStore();
+
+        return { config, isConfigLoaded, getCredentialsExecutionContextForTool };
     },
     data() {
         return {
@@ -204,12 +214,15 @@ export default {
             ],
             immutableHistoryMessage:
                 "This history is immutable and you cannot run tools in it. Please switch to a different history.",
+            tags: [],
+            formConfigInitialized: false,
         };
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId", "currentHistory"]),
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
+        ...mapState(useTourStore, ["currentTour"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -225,6 +238,15 @@ export default {
         tooltip() {
             if (!this.canMutateHistory) {
                 return this.immutableHistoryMessage;
+            }
+            if (this.hasConfigOrValErrors) {
+                return "Please resolve highlighted issues before running the tool.";
+            }
+            if (this.hasCredentialsErrors) {
+                return "Please provide all required credentials before running the tool.";
+            }
+            if (this.showExecuting) {
+                return "Tool is being executed...";
             }
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
@@ -251,8 +273,25 @@ export default {
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
-        runButtonTitle() {
-            return "Run Tool";
+        hasCredentialsErrors() {
+            if (this.formConfig.credentials?.length) {
+                const { hasUserProvidedAllRequiredServiceCredentials } = useUserToolCredentials(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
+                return !hasUserProvidedAllRequiredServiceCredentials.value;
+            }
+            return false;
+        },
+        runButtonDisabled() {
+            return this.disabled || !this.canMutateHistory || this.hasConfigOrValErrors || this.hasCredentialsErrors;
+        },
+        /** If there are any backend returned `formConfig.errors` or internal/client checked validation errors. */
+        hasConfigOrValErrors() {
+            return (
+                (this.formConfig.errors && Object.values(this.formConfig.errors).length > 0) ||
+                this.validationInternal?.length
+            );
         },
     },
     watch: {
@@ -268,12 +307,13 @@ export default {
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
+        ...mapActions(useTourStore, ["setTour"]),
+        ...mapActions(useHistoryStore, ["startWatchingHistory"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
         onHistoryChange() {
-            const Galaxy = getGalaxyInstance();
-            if (this.initialized && Galaxy && Galaxy.currHistoryPanel) {
+            if (this.initialized) {
                 console.debug(`ToolForm::onHistoryChange - Loading history changes. [${this.id}]`);
                 this.onUpdate();
             }
@@ -285,7 +325,12 @@ export default {
             this.formData = newData;
             if (refreshRequest) {
                 this.onUpdate();
+            } else if (this.formConfigInitialized && this.hasConfigOrValErrors) {
+                // After the first manual change to a form input, for every change, if there isn't a request to refresh,
+                // we reset the errors since we haven't received a tool form update via the backend.
+                this.formConfig.errors = null;
             }
+            this.formConfigInitialized = true;
         },
         onUpdate() {
             this.disabled = true;
@@ -305,8 +350,8 @@ export default {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
             this.loading = true;
-            console.debug("ToolForm - Requesting tool.", this.id);
-            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
+
+            return getToolFormData(this.id || this.toolUuid, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
                     this.currentVersion = data.version;
                     this.formConfig = data;
@@ -333,6 +378,11 @@ export default {
             this.preferredObjectStoreId = preferredObjectStoreId;
         },
         onExecute(config, historyId) {
+            // If a tour is active that was generated for this tool, end it.
+            if (this.currentTour?.id.startsWith(`tool-generated-${this.formConfig.id}`)) {
+                this.setTour(undefined);
+            }
+
             if (this.validationInternal) {
                 this.validationScrollTo = this.validationInternal.slice();
                 return;
@@ -343,6 +393,7 @@ export default {
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
                 tool_uuid: this.toolUuid,
+                __tags: this.tags,
                 inputs: {
                     ...this.formData,
                 },
@@ -362,6 +413,12 @@ export default {
             if (this.dataManagerMode === "bundle") {
                 jobDef.data_manager_mode = this.dataManagerMode;
             }
+            if (this.formConfig.credentials?.length) {
+                jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
+            }
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;
             submitJob(jobDef).then(
@@ -369,7 +426,7 @@ export default {
                     this.submissionRequestFailed = false;
                     this.showExecuting = false;
                     let changeRoute = false;
-                    startWatchingHistory();
+                    this.startWatchingHistory();
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
                         this.entryPoints = jobResponse.jobs;
@@ -430,7 +487,7 @@ export default {
                         this.errorTitle = "Job submission failed.";
                         this.errorContent = jobDef;
                     }
-                }
+                },
             );
         },
     },

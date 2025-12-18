@@ -246,7 +246,7 @@ watch(
             fetchOptions();
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 function onSelectDbKey(item: DbKey) {
@@ -263,7 +263,7 @@ watch(
         if (!datatypesLoading.value) {
             fetchExtAndDbKey();
         }
-    }
+    },
 );
 </script>
 

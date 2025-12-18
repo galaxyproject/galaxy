@@ -5,6 +5,7 @@ import { GalaxyApi } from "./client";
 
 export type Creator = components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
+export type WorkflowStepTyped = StoredWorkflowDetailed["steps"][number];
 
 //TODO: replace with generated schema model when available
 export type WorkflowSummary = {
@@ -86,11 +87,15 @@ export async function loadWorkflows({
     return { data, totalMatches };
 }
 
-export async function getWorkflowInfo(workflowId: string) {
+export async function getWorkflowInfo(workflowId: string, version?: number, instance?: boolean) {
     const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}", {
         params: {
             path: {
                 workflow_id: workflowId,
+            },
+            query: {
+                version: version,
+                instance: instance,
             },
         },
     });

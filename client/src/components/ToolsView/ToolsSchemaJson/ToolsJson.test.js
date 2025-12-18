@@ -1,13 +1,15 @@
 // test response
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import testToolsListResponse from "../testData/toolsList";
 import testToolsListInPanelResponse from "../testData/toolsListInPanel";
-import ToolsJson from "./ToolsJson";
+
+import ToolsJson from "./ToolsJson.vue";
 
 const localVue = getLocalVue();
 
@@ -33,8 +35,8 @@ describe("ToolSchemaJson/ToolsView.vue", () => {
         const tools = wrapper.vm.createToolsJson(toolsList, toolsListInPanel);
         const schemaElement = document.getElementById("schema-json");
         const schemaText = JSON.parse(schemaElement.text);
-        expect(tools["@graph"].length === 5).toBeTruthy();
-        expect(schemaText["@graph"].length === 5).toBeTruthy();
-        expect(schemaElement.type === defaultSchemaElementTag).toBeTruthy();
+        expect(tools["@graph"].length).toBe(5);
+        expect(schemaText["@graph"].length).toBe(5);
+        expect(schemaElement.type).toBe(defaultSchemaElementTag);
     });
 });

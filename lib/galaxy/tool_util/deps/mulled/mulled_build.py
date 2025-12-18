@@ -20,12 +20,17 @@ import sys
 from sys import platform as _platform
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
+    NoReturn,
+    Optional,
+    TYPE_CHECKING,
 )
 
 import yaml
+from typing_extensions import Literal
 
 from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import (
@@ -55,6 +60,9 @@ from .util import (
     v2_image_name,
 )
 from ..conda_compat import MetaData
+
+if TYPE_CHECKING:
+    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -199,31 +207,31 @@ class BuildExistsException(Exception):
 
 def mull_targets(
     targets: List[CondaTarget],
-    involucro_context=None,
-    command="build",
-    channels=DEFAULT_CHANNELS,
-    namespace="biocontainers",
-    test="true",
-    test_files=None,
-    image_build=None,
-    name_override=None,
-    repository_template=DEFAULT_REPOSITORY_TEMPLATE,
-    dry_run=False,
-    conda_version=None,
-    mamba_version=None,
-    use_mamba=False,
-    verbose=False,
-    binds=DEFAULT_BINDS,
-    rebuild=True,
-    oauth_token=None,
-    hash_func="v2",
-    singularity=False,
-    singularity_image_dir="singularity_import",
-    base_image=None,
-    determine_base_image=True,
-    invfile=INVFILE,
-    strict_channel_priority=True,
-):
+    involucro_context: Optional["InvolucroContext"] = None,
+    command: str = "build",
+    channels: List[str] = DEFAULT_CHANNELS,
+    namespace: str = "biocontainers",
+    test: str = "true",
+    test_files: Optional[List[str]] = None,
+    image_build: Optional[str] = None,
+    name_override: Optional[str] = None,
+    repository_template: str = DEFAULT_REPOSITORY_TEMPLATE,
+    dry_run: bool = False,
+    conda_version: Optional[str] = None,
+    mamba_version: Optional[str] = None,
+    use_mamba: bool = False,
+    verbose: bool = False,
+    binds: List[str] = DEFAULT_BINDS,
+    rebuild: bool = True,
+    oauth_token: Optional[str] = None,
+    hash_func: Literal["v1", "v2"] = "v2",
+    singularity: bool = False,
+    singularity_image_dir: "StrPath" = "singularity_import",
+    base_image: Optional[str] = None,
+    determine_base_image: bool = True,
+    invfile: str = INVFILE,
+    strict_channel_priority: bool = True,
+) -> int:
     if involucro_context is None:
         involucro_context = InvolucroContext()
 
@@ -301,26 +309,22 @@ def mull_targets(
     if test:
         involucro_args.extend(["-set", f"TEST={test}"])
 
-    verbose = "--verbose" if verbose else "--quiet"
+    verbose_opt = "--verbose" if verbose else "--quiet"
+    specs: List[str] = []
+    if conda_version is not None:
+        specs.append(f"conda={conda_version}")
     conda_bin = "conda"
     if use_mamba:
         conda_bin = "mamba"
-        if mamba_version is None:
-            mamba_version = ""
-    involucro_args.extend(["-set", f"CONDA_BIN={conda_bin}"])
-    if conda_version is not None or mamba_version is not None:
-        mamba_test = "true"
-        specs = []
-        if conda_version is not None:
-            specs.append(f"conda={conda_version}")
         if mamba_version is not None:
-            if mamba_version == "" and not specs:
-                # If nothing but mamba without a specific version is requested,
-                # then only run conda install if mamba is not already installed.
-                mamba_test = "[ '[]' = \"$( conda list --json --full-name mamba )\" ]"
             specs.append(f"mamba={mamba_version}")
-        conda_install = f"""conda install {verbose} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
-        involucro_args.extend(["-set", f"PREINSTALL=if {mamba_test} ; then {conda_install} ; fi"])
+        else:
+            # For https://github.com/mamba-org/mamba/pull/3919
+            specs.append("mamba>=2.2.0")
+    involucro_args.extend(["-set", f"CONDA_BIN={conda_bin}"])
+    if specs:
+        conda_install = f"""conda install {verbose_opt} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
+        involucro_args.extend(["-set", f"PREINSTALL={conda_install}"])
 
     if test_files:
         test_bind = []
@@ -375,7 +379,12 @@ def context_from_args(args):
 class InvolucroContext(installable.InstallableContext):
     installable_description = "Involucro"
 
-    def __init__(self, involucro_bin=None, shell_exec=None, verbose="3"):
+    def __init__(
+        self,
+        involucro_bin: Optional[str] = None,
+        shell_exec: Optional[Callable[[List[str]], int]] = None,
+        verbose: str = "3",
+    ) -> None:
         if involucro_bin is None:
             if os.path.exists("./involucro"):
                 self.involucro_bin = "./involucro"
@@ -583,7 +592,7 @@ def args_to_mull_targets_kwds(args):
     return kwds
 
 
-def main(argv=None):
+def main(argv=None) -> NoReturn:
     """Main entry-point for the CLI tool."""
     parser = arg_parser(argv, globals())
     add_build_arguments(parser)

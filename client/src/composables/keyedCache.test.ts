@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, ref } from "vue";
 
 import { useKeyedCache } from "./keyedCache";
@@ -8,8 +9,8 @@ interface ItemData {
     name: string;
 }
 
-const fetchItem = jest.fn();
-const shouldFetch = jest.fn();
+const fetchItem = vi.fn();
+const shouldFetch = vi.fn();
 
 describe("useKeyedCache", () => {
     beforeEach(() => {
@@ -35,7 +36,7 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
     it("should not fetch the item if it is already stored", async () => {
@@ -45,6 +46,25 @@ describe("useKeyedCache", () => {
         fetchItem.mockResolvedValue(item);
 
         const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
+
+        storedItems.value[id] = item;
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+
+        getItemById.value(id);
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(fetchItem).not.toHaveBeenCalled();
+    });
+
+    it("should not fetch if the stored item is 0 (or any falsy value)", async () => {
+        const id = "1";
+        const item = 0;
+
+        fetchItem.mockResolvedValue(item);
+
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<number>(fetchItem);
 
         storedItems.value[id] = item;
 
@@ -77,7 +97,7 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
     });
 
@@ -100,7 +120,7 @@ describe("useKeyedCache", () => {
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledTimes(1);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
     it("should not fetch the item if it is already being fetched, even if shouldFetch returns true", async () => {
@@ -123,7 +143,7 @@ describe("useKeyedCache", () => {
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledTimes(1);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
     });
 
@@ -146,7 +166,7 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
     });
 
     it("should accept a computed for shouldFetch", async () => {
@@ -169,7 +189,26 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
-        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams, expect.anything());
         expect(shouldFetch).toHaveBeenCalled();
+    });
+
+    it("should handle fake timers without hanging when advanced manually", async () => {
+        vi.useFakeTimers();
+        const id = "1";
+        const item = { id, name: "Item 1" };
+        fetchItem.mockImplementation(() => {
+            return new Promise((resolve) => {
+                setTimeout(() => resolve(item), 10);
+            });
+        });
+        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
+        getItemById.value(id);
+        getItemById.value(id);
+        getItemById.value(id);
+        await flushPromises();
+        vi.runOnlyPendingTimers();
+        await flushPromises();
+        expect(true).toBe(true);
     });
 });

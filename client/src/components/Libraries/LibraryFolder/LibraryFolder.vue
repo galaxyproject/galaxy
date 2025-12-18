@@ -50,14 +50,14 @@
                     class="select-checkbox cursor-pointer"
                     size="lg"
                     title="Check to select all datasets"
-                    icon="minus-square"
+                    :icon="faMinusSquare"
                     @click="toggleSelect" />
                 <FontAwesomeIcon
                     v-else
                     class="select-checkbox cursor-pointer"
                     size="lg"
                     title="Check to select all datasets"
-                    :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
+                    :icon="isAllSelectedOnPage() ? faCheckSquare : faSquare"
                     @click="toggleSelect" />
             </template>
             <template v-slot:cell(selected)="row">
@@ -65,7 +65,7 @@
                     v-if="!row.item.isNewFolder && !row.item.deleted"
                     class="select-checkbox lib-folder-checkbox"
                     size="lg"
-                    :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']" />
+                    :icon="row.rowSelected ? faCheckSquare : faSquare" />
             </template>
             <!-- Name -->
             <template v-slot:cell(name)="row">
@@ -128,7 +128,9 @@
                             <span
                                 class="shrinked-description"
                                 :title="getMessage(row.item)"
-                                v-html="linkify(sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
+                                v-html="
+                                    linkify(purify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))
+                                ">
                             </span>
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
@@ -137,13 +139,13 @@
                             </a>
                         </div>
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>
+                        <div v-else v-html="linkify(purify.sanitize(getMessage(row.item)))"></div>
                     </div>
                 </div>
             </template>
             <template v-slot:cell(type_icon)="row">
-                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
-                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
+                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="faFolder" title="Folder" />
+                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="faFile" />
             </template>
             <template v-slot:cell(type)="row">
                 <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
@@ -161,13 +163,13 @@
                 <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
-                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" icon="ban"></FontAwesomeIcon>
-                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
+                <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" :icon="faGlobe" />
+                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" :icon="faBan"></FontAwesomeIcon>
+                <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" :icon="faKey" />
                 <FontAwesomeIcon
                     v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
                     title="Restricted dataset"
-                    icon="shield-alt" />
+                    :icon="faShieldAlt" />
             </template>
 
             <template v-slot:cell(buttons)="row">
@@ -176,14 +178,14 @@
                         class="primary-button btn-sm permission_folder_btn save_folder_btn"
                         :title="'save ' + row.item.name"
                         @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
-                        <FontAwesomeIcon :icon="['far', 'save']" />
+                        <FontAwesomeIcon :icon="faSave" />
                         Save
                     </button>
                     <button
                         class="primary-button btn-sm permission_folder_btn"
                         title="Discard Changes"
                         @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon :icon="['fas', 'times']" />
+                        <FontAwesomeIcon :icon="faTimes" />
                         Cancel
                     </button>
                 </div>
@@ -196,16 +198,16 @@
                         class="lib-btn permission_folder_btn edit_folder_btn"
                         :title="'Edit ' + row.item.name"
                         @click="toggleEditMode(row.item)">
-                        <FontAwesomeIcon icon="pencil-alt" />
+                        <FontAwesomeIcon :icon="faPencilAlt" />
                         Edit
                     </b-button>
                     <b-button
-                        v-if="currentUser.is_admin"
+                        v-if="currentUser?.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
                         :to="{ path: `${navigateToPermission(row.item)}` }">
-                        <FontAwesomeIcon icon="users" />
+                        <FontAwesomeIcon :icon="faUsers" />
                         Manage
                     </b-button>
                     <button
@@ -214,7 +216,7 @@
                         class="lib-btn primary-button btn-sm undelete_dataset_btn"
                         type="button"
                         @click="undelete(row.item, folder_id)">
-                        <FontAwesomeIcon icon="unlock" />
+                        <FontAwesomeIcon :icon="faUnlock" />
                         Undelete
                     </button>
                 </div>
@@ -262,26 +264,37 @@
 </template>
 
 <script>
+import { faCheckSquare, faFile, faFolder, faSave, faSquare } from "@fortawesome/free-regular-svg-icons";
+import {
+    faBan,
+    faGlobe,
+    faKey,
+    faMinusSquare,
+    faPencilAlt,
+    faShieldAlt,
+    faTimes,
+    faUnlock,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { initFolderTableIcons } from "components/Libraries/icons";
-import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
-import UtcDate from "components/UtcDate";
-import { Toast } from "composables/toast";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import linkifyHtml from "linkify-html";
-import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
-import Utils from "utils/utils";
 import Vue from "vue";
 
+import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
+import { usePersistentRef } from "@/composables/persistentRef";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
+import Utils from "@/utils/utils";
 
 import { Services } from "./services";
 import { fields } from "./table-fields";
-import FolderTopBar from "./TopToolbar/FolderTopBar";
 
-initFolderTableIcons();
+import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 Vue.use(BootstrapVue);
 
@@ -321,6 +334,24 @@ export default {
         return {
             ...initialFolderState(),
             ...{
+                // Icons
+                faBan,
+                faCheckSquare,
+                faFile,
+                faFolder,
+                faGlobe,
+                faKey,
+                faMinusSquare,
+                faPencilAlt,
+                faSave,
+                faShieldAlt,
+                faSquare,
+                faTimes,
+                faUnlock,
+                faUsers,
+                // Utilities
+                purify,
+                // Data
                 currentPage: 1,
                 sortBy: "name",
                 sortDesc: false,
@@ -342,7 +373,10 @@ export default {
         ...mapState(useUserStore, ["currentUser"]),
     },
     watch: {
-        perPage() {
+        perPage(newValue) {
+            if (this.perPageRef) {
+                this.perPageRef.value = newValue;
+            }
             this.fetchFolderContents();
         },
         includeDeleted() {
@@ -357,10 +391,12 @@ export default {
     },
     created() {
         this.services = new Services({ root: this.root });
+        this.perPageRef = usePersistentRef("library-folder-per-page", DEFAULT_PER_PAGE);
+        this.perPage = this.perPageRef.value;
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        sanitize,
+        purify,
         getFolder(folder_id, page) {
             this.currentFolderId = folder_id;
             this.currentPage = page;
@@ -370,6 +406,10 @@ export default {
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
+            // Restore perPage from localStorage after reset
+            if (this.perPageRef) {
+                this.perPage = this.perPageRef.value;
+            }
         },
         onSort(props) {
             this.sortBy = props.sortBy;
@@ -385,7 +425,7 @@ export default {
                     this.sortDesc,
                     this.perPage,
                     (this.currentPage ? this.currentPage - 1 : 0) * this.perPage,
-                    this.searchText
+                    this.searchText,
                 )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
@@ -572,7 +612,7 @@ export default {
                     },
                     () => {
                         Toast.error("An error occurred.");
-                    }
+                    },
                 );
             }
         },
@@ -593,7 +633,7 @@ export default {
                         this.refreshTable();
                         Toast.success("Folder undeleted.");
                     },
-                    onError
+                    onError,
                 );
             } else {
                 this.services.undeleteDataset(
@@ -609,7 +649,7 @@ export default {
                             },
                         });
                     },
-                    onError
+                    onError,
                 );
             }
         },
@@ -618,7 +658,7 @@ export default {
         },
 
         /*
-         Former Backbone code, adopted to work with Vue
+         Former code, adopted to work with Vue
         */
         saveChanges(folder) {
             let is_changed = false;
@@ -651,7 +691,7 @@ export default {
                         } else {
                             Toast.error("An error occurred while attempting to update the folder.");
                         }
-                    }
+                    },
                 );
             } else {
                 Toast.info("Nothing has changed.");

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
@@ -15,8 +14,6 @@ import License from "@/components/License/License.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faBuilding, faUser);
-
 interface Props {
     workflowInfo: StoredWorkflowDetailed;
     embedded?: boolean;
@@ -27,7 +24,7 @@ const props = defineProps<Props>();
 const userStore = useUserStore();
 
 const gravatarSource = computed(
-    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`
+    () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`,
 );
 
 const publishedByUser = computed(() => `/workflows/list_published?owner=${props.workflowInfo?.owner}`);
@@ -91,8 +88,8 @@ function hasDoi() {
 
             <ul class="list-unstyled mb-0">
                 <li v-for="(creator, index) in workflowInfo.creator" :key="index">
-                    <FontAwesomeIcon v-if="creator.class === 'Person'" icon="fa-user" />
-                    <FontAwesomeIcon v-if="creator.class === 'Organization'" icon="fa-building" />
+                    <FontAwesomeIcon v-if="creator.class === 'Person'" :icon="faUser" />
+                    <FontAwesomeIcon v-if="creator.class === 'Organization'" :icon="faBuilding" />
                     {{ creator.name }}
                 </li>
             </ul>
