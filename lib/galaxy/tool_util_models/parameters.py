@@ -44,10 +44,6 @@ from typing_extensions import (
     Protocol,
 )
 
-from galaxy.schema.schema import (
-    SampleSheetColumnDefinitions,
-    SampleSheetRow,
-)
 from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
@@ -66,6 +62,10 @@ from .parameter_validators import (
     NoOptionsParameterValidatorModel,
     RegexParameterValidatorModel,
     StaticValidatorModel,
+)
+from .sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
 )
 from .tool_source import (
     DrillDownOptionsDict,
@@ -502,8 +502,9 @@ class DataRequestCollectionUri(StrictModel):
     deferred: StrictBool = False
     name: Optional[StrictStr] = None
     src: None = Field(None, exclude=True)
+    # Sample sheet metadata
     column_definitions: Optional[SampleSheetColumnDefinitions] = None
-    rows: Optional[dict[str, SampleSheetRow]] = None
+    rows: Optional[Dict[str, SampleSheetRow]] = None
 
 
 _DataRequest = Annotated[
@@ -1443,7 +1444,7 @@ DiscriminatorType = Union[bool, str]
 
 
 def cond_test_parameter_default_value(
-    test_parameter: Union["BooleanParameterModel", "SelectParameterModel"],
+    test_parameter: Union[BooleanParameterModel, "SelectParameterModel"],
 ) -> Optional[DiscriminatorType]:
     default_value: Optional[DiscriminatorType] = None
     if isinstance(test_parameter, BooleanParameterModel):
