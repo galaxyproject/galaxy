@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { faFolder, faFolderOpen, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormInput, BPagination, BTable } from "bootstrap-vue";
+import { BAlert, BFormCheckbox, BFormInput, BPagination, BTable } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { browseRemoteFiles, fetchFileSources, type RemoteEntry } from "@/api/remoteFiles";
-import { UrlTracker } from "@/components/DataDialog/utilities";
 import { Model } from "@/components/FilesDialog/model";
 import { fileSourcePluginToItem } from "@/components/FilesDialog/utilities";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -16,6 +15,7 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadQueue } from "@/composables/uploadQueue";
+import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { mapToRemoteFileUpload } from "@/utils/upload/itemMappers";
 
@@ -35,6 +35,11 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 interface Props {
     method: UploadMethodConfig;
     targetHistoryId: string;
+}
+
+interface Breadcrumb {
+    label: string;
+    index: number;
 }
 
 const props = defineProps<Props>();
@@ -76,8 +81,7 @@ const remoteFileItems = ref<RemoteFileItem[]>([]);
 
 const selectionModel = ref<Model>(new Model({ multiple: true }));
 const selectionCount = ref(0);
-const urlTracker = ref(new UrlTracker(""));
-const currentDirectory = ref<SelectionItem>();
+const urlTracker = useUrlTracker<SelectionItem>();
 const browserItems = ref<SelectionItem[]>([]);
 const isBusy = ref(false);
 const errorMessage = ref<string>();
@@ -87,6 +91,14 @@ const totalMatches = ref(0);
 
 const hasItems = computed(() => remoteFileItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
+
+const breadcrumbs = computed(() => {
+    const crumbs: Breadcrumb[] = [{ label: "Sources", index: -1 }];
+    urlTracker.navigationHistory.value.forEach((item, index) => {
+        crumbs.push({ label: item.label, index });
+    });
+    return crumbs;
+});
 
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
@@ -138,10 +150,10 @@ async function loadDirectory(uri: string) {
 }
 
 async function load() {
-    if (urlTracker.value.atRoot()) {
+    if (urlTracker.isAtRoot.value) {
         await loadFileSources();
-    } else if (currentDirectory.value) {
-        await loadDirectory(currentDirectory.value.url);
+    } else if (urlTracker.current.value) {
+        await loadDirectory(urlTracker.current.value.url);
     }
 }
 
@@ -157,14 +169,26 @@ function onItemClick(item: SelectionItem) {
 }
 
 function open(item: SelectionItem) {
-    currentDirectory.value = urlTracker.value.getUrl({ ...item });
+    urlTracker.forward(item);
     currentPage.value = 1;
     load();
 }
 
-function goBack() {
-    const result = urlTracker.value.getUrl(undefined, true);
-    currentDirectory.value = result.url;
+function navigateToBreadcrumb(index: number) {
+    // Navigate to a specific breadcrumb by resetting navigation to that point
+    if (index === -1) {
+        // Navigate to root
+        urlTracker.reset();
+    } else {
+        // Navigate to specific index in history
+        const targetDepth = index + 1;
+        const currentDepth = urlTracker.navigationHistory.value.length;
+        const stepsBack = currentDepth - targetDepth;
+
+        for (let i = 0; i < stepsBack; i++) {
+            urlTracker.backward();
+        }
+    }
     currentPage.value = 1;
     load();
 }
@@ -294,6 +318,7 @@ function clearAll() {
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
     selectionCount.value = 0;
+    urlTracker.reset();
 }
 
 function startUpload() {
@@ -308,6 +333,7 @@ function startUpload() {
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
     selectionCount.value = 0;
+    urlTracker.reset();
 }
 
 onMounted(() => {
@@ -315,7 +341,7 @@ onMounted(() => {
 });
 
 watch(currentPage, () => {
-    if (!urlTracker.value.atRoot()) {
+    if (!urlTracker.isAtRoot.value) {
         load();
     }
 });
@@ -328,15 +354,25 @@ defineExpose<UploadMethodComponent>({ startUpload });
         <!-- File Browser Phase -->
         <div v-if="showBrowser" class="file-browser">
             <!-- Navigation breadcrumb -->
-            <div v-if="!urlTracker.atRoot()" class="browser-header mb-2">
-                <BButton size="sm" variant="outline-secondary" @click="goBack">
-                    <FontAwesomeIcon :icon="faFolderOpen" class="mr-1" />
-                    Back
-                </BButton>
-                <span class="ml-2 text-muted">{{ currentDirectory?.label || "Browse Files" }}</span>
-            </div>
-            <div v-else class="browser-header mb-2">
-                <span class="font-weight-bold">Select a File Source</span>
+            <div class="browser-header mb-2">
+                <nav v-if="!urlTracker.isAtRoot.value" class="breadcrumb-nav">
+                    <template v-for="(crumb, idx) in breadcrumbs">
+                        <button
+                            v-if="idx < breadcrumbs.length - 1"
+                            :key="`link-${idx}`"
+                            class="breadcrumb-link"
+                            @click="navigateToBreadcrumb(crumb.index)">
+                            {{ crumb.label }}
+                        </button>
+                        <span v-else :key="`current-${idx}`" class="breadcrumb-current-label">
+                            {{ crumb.label }}
+                        </span>
+                        <span v-if="idx < breadcrumbs.length - 1" :key="`sep-${idx}`" class="breadcrumb-separator">
+                            /
+                        </span>
+                    </template>
+                </nav>
+                <span v-else class="font-weight-bold">Select a File Source</span>
             </div>
 
             <!-- Error message -->
@@ -388,7 +424,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             </div>
 
             <!-- Pagination -->
-            <div v-if="!urlTracker.atRoot() && totalMatches > perPage" class="mt-2">
+            <div v-if="!urlTracker.isAtRoot.value && totalMatches > perPage" class="mt-2">
                 <BPagination
                     v-model="currentPage"
                     :total-rows="totalMatches"
@@ -399,7 +435,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Action buttons -->
             <div class="browser-actions mt-3">
-                <GButton v-if="urlTracker.atRoot()" color="blue" @click="createNewFileSource">
+                <GButton v-if="urlTracker.isAtRoot.value" color="blue" @click="createNewFileSource">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
                     Connect New Remote Source
                 </GButton>
@@ -407,7 +443,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     View Selected Files ({{ remoteFileItems.length }})
                 </GButton>
                 <GButton
-                    v-if="!urlTracker.atRoot()"
+                    v-if="!urlTracker.isAtRoot.value"
                     color="blue"
                     :disabled="!hasSelection"
                     class="ml-auto"
@@ -651,5 +687,56 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    row-gap: 0.5rem;
+}
+
+.breadcrumb-link {
+    background: none;
+    border: none;
+    color: $brand-primary;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+
+    &:hover {
+        background-color: rgba($brand-primary, 0.1);
+        text-decoration: underline;
+    }
+
+    &:focus {
+        outline: 2px solid $brand-primary;
+        outline-offset: 2px;
+    }
+}
+
+.breadcrumb-current-label {
+    font-weight: 600;
+    color: $text-color;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
+
+.breadcrumb-separator {
+    color: $text-muted;
+    font-size: 0.9rem;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
 }
 </style>
