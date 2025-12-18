@@ -50,6 +50,11 @@ from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
 )
+from galaxy.tool_util_models.sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+    SampleSheetRows,
+)
 from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.config_templates import partial_model
 from galaxy.util.hash_util import HashFunctionNameEnum
@@ -375,34 +380,6 @@ class LimitedUserModel(Model):
 
 
 MaybeLimitedUserModel = Union[UserModel, LimitedUserModel]
-
-# named in compatibility with CWL - trying to keep CWL fields in mind with
-# this implementation. https://www.commonwl.org/user_guide/topics/inputs.html#inputs
-# element_identifier is not like CWL - it is used to specify the value in the row should
-# be the element_identifier for another element if present. It is a way to specify relationships
-# between elements in the collection - specifically implemented for the "control" use case.
-SampleSheetColumnType = Literal[
-    "string", "int", "float", "boolean", "element_identifier"
-]  # excluding "long" and "double" and composite types from CWL for now - we don't think at this level of abstraction in Galaxy generally
-NoneType = type(None)
-SampleSheetColumnValueT = Union[int, float, bool, str, NoneType]
-
-
-# type ignore because mypy can't handle closed TypedDicts yet
-class SampleSheetColumnDefinition(TypedDict, closed=True):  # type: ignore[call-arg]
-    name: str
-    description: NotRequired[Optional[str]]
-    type: SampleSheetColumnType
-    optional: bool
-    default_value: NotRequired[Optional[SampleSheetColumnValueT]]
-    validators: NotRequired[Optional[list[dict[str, Any]]]]
-    restrictions: NotRequired[Optional[list[SampleSheetColumnValueT]]]
-    suggestions: NotRequired[Optional[list[SampleSheetColumnValueT]]]
-
-
-SampleSheetColumnDefinitions = list[SampleSheetColumnDefinition]
-SampleSheetRow = list[SampleSheetColumnValueT]
-SampleSheetRows = dict[str, SampleSheetRow]
 
 
 class DiskUsageUserModel(Model):

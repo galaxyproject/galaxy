@@ -20,7 +20,7 @@ if TYPE_CHECKING:
         BaseDatasetCollectionType,
         DatasetInstanceMapping,
     )
-    from galaxy.schema.schema import SampleSheetRow
+    from galaxy.tool_util_models.sample_sheet import SampleSheetRow
     from galaxy.tool_util_models.tool_source import FieldDict
 
 

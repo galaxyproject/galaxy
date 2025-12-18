@@ -4,7 +4,7 @@ from io import BytesIO
 from pathlib import Path
 from urllib.parse import quote
 
-from galaxy.schema.schema import SampleSheetColumnDefinitions
+from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import galaxy_root_path
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import (
