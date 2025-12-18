@@ -1,6 +1,6 @@
 import { computed, type ComputedRef, type Ref } from "vue";
 
-import type { CollectionCreationState } from "@/components/Panels/Upload/types/collectionCreation";
+import type { CollectionCreationState } from "./collectionTypes";
 
 /**
  * Composable for determining if upload items are ready to be uploaded.

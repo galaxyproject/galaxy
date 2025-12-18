@@ -1,16 +1,11 @@
 import { computed } from "vue";
 
-import type { FetchDatasetHash } from "@/api/tools";
-import type { SupportedCollectionType } from "@/components/Panels/Upload/types/collectionCreation";
+import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
+import type { NewUploadItem, UploadItem, UploadStatus } from "@/composables/upload/uploadItemTypes";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-
-import type { UploadMode } from "./types";
 
 const LOCAL_STORAGE_KEY = "uploadPanel.activeUploads";
 const BATCHES_STORAGE_KEY = "uploadPanel.activeBatches";
-
-/** Upload lifecycle status */
-export type UploadStatus = "queued" | "uploading" | "processing" | "completed" | "error";
 
 /** Collection batch lifecycle status */
 export type BatchStatus = "uploading" | "creating-collection" | "completed" | "error";
@@ -40,55 +35,6 @@ export interface CollectionBatchState {
     /** Timestamp when batch was created */
     createdAt: number;
 }
-
-/** Internal state tracking for an upload */
-interface UploadState {
-    id: string;
-    status: UploadStatus;
-    progress: number;
-    error?: string;
-    createdAt: number;
-    /** Optional reference to parent batch */
-    batchId?: string;
-}
-
-/** Common properties shared by all upload item types */
-interface UploadItemCommon {
-    uploadMode: UploadMode;
-    name: string;
-    size: number;
-    targetHistoryId: string;
-    dbkey: string;
-    extension: string;
-    spaceToTab: boolean;
-    toPosixLines: boolean;
-    deferred: boolean;
-    hashes?: FetchDatasetHash[];
-}
-
-/** Upload item from a local file */
-export interface LocalFileUploadItem extends UploadItemCommon {
-    uploadMode: "local-file";
-    /** File handle (not persisted in localStorage) */
-    fileData?: File;
-}
-
-/** Upload item from pasted text content */
-export interface PastedContentUploadItem extends UploadItemCommon {
-    uploadMode: "paste-content";
-    content: string;
-}
-
-/** Upload item from a URL */
-export interface UrlUploadItem extends UploadItemCommon {
-    uploadMode: "paste-links";
-    url: string;
-}
-
-export type NewUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem;
-
-/** Upload item with state tracking */
-export type UploadItem = NewUploadItem & UploadState;
 
 function generateId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

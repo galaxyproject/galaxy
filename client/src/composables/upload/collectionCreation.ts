@@ -5,8 +5,9 @@
 
 import { type Ref, ref } from "vue";
 
-import type { CollectionCreationState } from "@/components/Panels/Upload/types/collectionCreation";
 import type { CollectionConfig } from "@/composables/uploadQueue";
+
+import type { CollectionCreationState } from "./collectionTypes";
 
 export function useCollectionCreation(collectionConfigComponent?: Ref<{ reset: () => void } | null>) {
     const collectionState = ref<CollectionCreationState>({

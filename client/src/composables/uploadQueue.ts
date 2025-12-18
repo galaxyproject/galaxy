@@ -10,12 +10,9 @@
 import type { CollectionElementIdentifiers } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import type { FetchDataResponse } from "@/api/tools";
-import type {
-    CollectionCreationInput,
-    SupportedCollectionType,
-} from "@/components/Panels/Upload/types/collectionCreation";
-import type { NewUploadItem } from "@/components/Panels/Upload/uploadState";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
+import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
+import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 import type { UploadItem } from "@/utils/upload";
 import { createFileUploadItem, createPastedUploadItem, createUrlUploadItem, uploadDatasets } from "@/utils/upload";
