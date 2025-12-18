@@ -919,13 +919,13 @@ class BaseDatasetPopulator(BasePopulator):
 
     def create_landing_raw(self, payload: BaseModel, landing_type: Literal["file", "data", "tool"]) -> Response:
         create_url = f"{landing_type}_landings"
-        json = payload.model_dump(mode="json")
+        json = payload.model_dump(mode="json", by_alias=True)
         create_response = self._post(create_url, json, json=True, anon=True)
         return create_response
 
     def create_workflow_landing(self, payload: CreateWorkflowLandingRequestPayload) -> WorkflowLandingRequest:
         create_url = "workflow_landings"
-        json = payload.model_dump(mode="json")
+        json = payload.model_dump(mode="json", by_alias=True)
         create_response = self._post(create_url, json, json=True, anon=True)
         api_asserts.assert_status_code_is(create_response, 200)
         assert create_response.headers["access-control-allow-origin"]

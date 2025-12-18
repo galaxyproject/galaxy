@@ -44,6 +44,10 @@ from typing_extensions import (
     Protocol,
 )
 
+from galaxy.schema.schema import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+)
 from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
@@ -498,6 +502,8 @@ class DataRequestCollectionUri(StrictModel):
     deferred: StrictBool = False
     name: Optional[StrictStr] = None
     src: None = Field(None, exclude=True)
+    column_definitions: Optional[SampleSheetColumnDefinitions] = None
+    rows: Optional[dict[str, SampleSheetRow]] = None
 
 
 _DataRequest = Annotated[

@@ -100,14 +100,38 @@ class TestLandingApi(ApiTestCase):
         assert target["elements"]
         assert len(target["elements"]) == 1
 
-    def test_file_landing(self):
+    def test_file_landing_with_sample_sheet(self):
+        """Test that sample sheet metadata is preserved through landing request creation and claiming."""
         file_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
             [
                 {
-                    "class": "File",
-                    "location": "base64://eyJ0ZXN0IjogInRlc3QifQ==",  # base64 encoded {"test": "test"}
-                    "filetype": "txt",
-                    "deferred": False,
+                    "class": "Collection",
+                    "collection_type": "sample_sheet",
+                    "name": "test sample sheet",
+                    "elements": [
+                        {
+                            "class": "File",
+                            "identifier": "sample1",
+                            "location": "base64://c2FtcGxlMQ==",  # base64 encoded "sample1"
+                            "filetype": "txt",
+                            "deferred": False,
+                        },
+                        {
+                            "class": "File",
+                            "identifier": "sample2",
+                            "location": "base64://c2FtcGxlMg==",  # base64 encoded "sample2"
+                            "filetype": "txt",
+                            "deferred": False,
+                        },
+                    ],
+                    "column_definitions": [
+                        {"type": "int", "name": "replicate", "optional": False},
+                        {"type": "string", "name": "condition", "optional": False},
+                    ],
+                    "rows": {
+                        "sample1": [1, "control"],
+                        "sample2": [2, "treatment"],
+                    },
                 },
             ],
         )
@@ -115,6 +139,7 @@ class TestLandingApi(ApiTestCase):
         response = self.dataset_populator.create_file_landing(payload)
         assert response.tool_id == "__DATA_FETCH__"
 
+        # Verify the landing request has sample sheet metadata
         tool_landing = self.dataset_populator.use_tool_landing(response.uuid)
         request_state = tool_landing.request_state
         assert request_state
@@ -124,9 +149,55 @@ class TestLandingApi(ApiTestCase):
         assert targets
         assert len(targets) == 1
         target = targets[0]
-        assert "elements" in target
-        assert target["elements"]
-        assert len(target["elements"]) == 1
+
+        # Check that column_definitions and rows were preserved
+        assert "column_definitions" in target
+        assert target["column_definitions"] is not None
+        assert len(target["column_definitions"]) == 2
+        assert target["column_definitions"][0]["name"] == "replicate"
+        assert target["column_definitions"][0]["type"] == "int"
+        assert target["column_definitions"][1]["name"] == "condition"
+        assert target["column_definitions"][1]["type"] == "string"
+
+        assert "rows" in target
+        assert target["rows"] is not None
+        assert "sample1" in target["rows"]
+        assert target["rows"]["sample1"] == [1, "control"]
+        assert "sample2" in target["rows"]
+        assert target["rows"]["sample2"] == [2, "treatment"]
+
+    def test_file_landing_with_sample_sheet_invalid_collection_type(self):
+        """Test that sample sheet metadata with non-sample_sheet collection_type is rejected."""
+        file_landing_request_state = FileOrCollectionRequestsAdapter.validate_python(
+            [
+                {
+                    "class": "Collection",
+                    "collection_type": "list",  # Invalid: should be "sample_sheet" or "sample_sheet:*"
+                    "name": "invalid sample sheet",
+                    "elements": [
+                        {
+                            "class": "File",
+                            "identifier": "sample1",
+                            "location": "base64://c2FtcGxlMQ==",
+                            "filetype": "txt",
+                            "deferred": False,
+                        },
+                    ],
+                    "column_definitions": [
+                        {"type": "int", "name": "replicate", "optional": False},
+                    ],
+                    "rows": {
+                        "sample1": [1],
+                    },
+                },
+            ],
+        )
+        payload = CreateFileLandingPayload(request_state=file_landing_request_state, public=True)
+        response = self.dataset_populator.create_landing_raw(payload, "file")
+        assert_status_code_is(response, 400)
+        assert_error_code_is(response, 400008)
+        assert "Sample sheet metadata" in response.text
+        assert "can only be used with collection_type 'sample_sheet'" in response.text
 
     @skip_without_tool("cat1")
     def test_create_public_workflow_landing_authenticated_user(self):
