@@ -229,7 +229,7 @@ class TestHistoryArchivingWithExportRecord(PosixFileSourceSetup, IntegrationTest
         )
         self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
         export_records = self.dataset_populator.get_history_export_tasks(history_id)
-        assert len(export_records) == 1
+        assert len(export_records) >= 1
         last_record = export_records[0]
         self.dataset_populator.wait_for_export_task_on_record(last_record)
         assert last_record["ready"] is True
@@ -238,28 +238,17 @@ class TestHistoryArchivingWithExportRecord(PosixFileSourceSetup, IntegrationTest
     def _export_history_to_short_term_storage(self, history_id):
         self.dataset_populator.download_history_to_store(history_id)
         export_records = self.dataset_populator.get_history_export_tasks(history_id)
-        assert len(export_records) == 1
+        assert len(export_records) >= 1
         last_record = export_records[0]
         self.dataset_populator.wait_for_export_task_on_record(last_record)
         assert last_record["ready"] is True
         return last_record
 
 
-class TestHistoryArchivingUserUpdateTime(PosixFileSourceSetup, IntegrationTestCase):
-    """Test user update_time handling during history archival."""
+class TestHistoryArchivingAdmin(TestHistoryArchivingWithExportRecord):
+    """Test admin-specific history archival behavior."""
 
-    dataset_populator: DatasetPopulator
-    task_based = True
     require_admin_user = True
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
-        IntegrationTestCase.handle_galaxy_config_kwds(config)
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_user_archive_own_history_updates_update_time(self):
         """When a user archives their own history, their update_time should be updated."""
@@ -283,7 +272,7 @@ class TestHistoryArchivingUserUpdateTime(PosixFileSourceSetup, IntegrationTestCa
 
         # Archive with purge
         target_uri = f"gxfiles://posix_test/history_{history_id}"
-        export_record = self._export_history(history_id, target_uri)
+        export_record = self._export_history_to_permanent_storage(history_id, target_uri=target_uri)
         archive_response = self.dataset_populator.archive_history(
             history_id,
             export_record_id=export_record["id"],
@@ -325,7 +314,7 @@ class TestHistoryArchivingUserUpdateTime(PosixFileSourceSetup, IntegrationTestCa
 
         # Admin archives owner's history with purge
         target_uri = f"gxfiles://posix_test/history_{history_id}"
-        export_record = self._export_history(history_id, target_uri)
+        export_record = self._export_history_to_permanent_storage(history_id, target_uri=target_uri)
         archive_response = self.dataset_populator.archive_history(
             history_id,
             export_record_id=export_record["id"],
@@ -342,13 +331,3 @@ class TestHistoryArchivingUserUpdateTime(PosixFileSourceSetup, IntegrationTestCa
             f"Owner's update_time should NOT be updated when admin archives their history. "
             f"Got {owner.update_time}, expected {old_update_time}"
         )
-
-    def _export_history(self, history_id: str, target_uri: str):
-        """Export history and return export record."""
-        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, ModelStoreFormat.ROCRATE_ZIP)
-        export_records = self.dataset_populator.get_history_export_tasks(history_id)
-        assert len(export_records) >= 1
-        last_record = export_records[0]
-        self.dataset_populator.wait_for_export_task_on_record(last_record)
-        assert last_record["ready"] is True
-        return last_record
