@@ -166,9 +166,35 @@ class LandingRequestManager:
                 if isinstance(value, dict):
                     try:
                         # persist values after model validators and aliases have been applied
-                        request_state[key] = DataOrCollectionRequestAdapter.validate_python(value).model_dump(
-                            by_alias=True, exclude_unset=True, mode="json"
-                        )
+                        validated_value = DataOrCollectionRequestAdapter.validate_python(value)
+
+                        # Validate sample sheet metadata for collections
+                        if isinstance(validated_value, DataRequestCollectionUri):
+                            has_sample_sheet_metadata = (
+                                validated_value.column_definitions is not None or validated_value.rows is not None
+                            )
+                            if has_sample_sheet_metadata:
+                                collection_type = validated_value.collection_type
+                                if not collection_type.startswith("sample_sheet"):
+                                    raise RequestParameterInvalidException(
+                                        f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
+                                    )
+
+                                # Validate column definitions structure
+                                if validated_value.column_definitions is not None:
+                                    validate_column_definitions(validated_value.column_definitions)
+
+                                # Validate rows against column definitions and element identifiers
+                                if validated_value.rows:
+                                    element_identifiers = [elem.identifier for elem in validated_value.elements]
+                                    for identifier, row in validated_value.rows.items():
+                                        if identifier not in element_identifiers:
+                                            raise RequestParameterInvalidException(
+                                                f"Row identifier '{identifier}' not found in collection elements"
+                                            )
+                                        validate_row(row, validated_value.column_definitions, element_identifiers)
+
+                        request_state[key] = validated_value.model_dump(by_alias=True, exclude_unset=True, mode="json")
                     except ValidationError:
                         pass
         return request_state

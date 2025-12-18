@@ -47,7 +47,7 @@ from galaxy.model.dataset_collections.workbook_util import (
     ReadOnlyWorkbook,
     set_column_width,
 )
-from galaxy.schema.schema import SampleSheetColumnValueT
+from galaxy.tool_util_models.sample_sheet import SampleSheetColumnValueT
 from galaxy.util import (
     string_as_bool,
     string_as_bool_or_none,

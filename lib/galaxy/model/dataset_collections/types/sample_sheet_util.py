@@ -14,14 +14,14 @@ from pydantic import (
 from typing_extensions import Self
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.schema.schema import (
+from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
+from galaxy.tool_util_models.sample_sheet import (
     SampleSheetColumnDefinition,
     SampleSheetColumnDefinitions,
     SampleSheetColumnType,
     SampleSheetColumnValueT,
     SampleSheetRow,
 )
-from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
 
 SampleSheetRows = dict[str, SampleSheetRow]
 OptionalSampleSheetRows = Optional[SampleSheetRows]
