@@ -10,8 +10,7 @@ Focus on the user's **intent**.
 
 - For errors, failures, or debugging, route to: **error_analysis**.
 - For creating new tools or tool wrappers, route to: **custom_tool**.
-- For finding tutorials, learning, or "how-to" questions, route to: **gtn_training**.
-- For complex, multi-part queries (e.g., "fix my error AND show me a tutorial"), route to: **orchestrator**.
+- For complex, multi-part queries (e.g., "fix my error AND create a tool"), route to: **orchestrator**.
 - For general questions or tasks that don't fit the above categories, route to: **orchestrator**.
 
 ## Direct Responses

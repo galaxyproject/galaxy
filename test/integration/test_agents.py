@@ -95,7 +95,6 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert "router" in agent_types
         assert "custom_tool" in agent_types
         assert "error_analysis" in agent_types
-        assert "gtn_training" in agent_types
 
     @patch("galaxy.agents.router.Agent")
     def test_query_agent_auto_routing_mocked(self, mock_agent_class):

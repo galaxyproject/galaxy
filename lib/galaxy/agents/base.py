@@ -94,7 +94,6 @@ class AgentType:
     ROUTER = "router"
     ERROR_ANALYSIS = "error_analysis"
     CUSTOM_TOOL = "custom_tool"
-    GTN_TRAINING = "gtn_training"
     ORCHESTRATOR = "orchestrator"
 
 
@@ -537,7 +536,7 @@ class BaseGalaxyAgent(ABC):
         reducing code duplication and providing consistent error handling.
 
         Args:
-            agent_type: Type of agent to call (e.g., "error_analysis", "gtn_training")
+            agent_type: Type of agent to call (e.g., "error_analysis", "custom_tool")
             query: Query to send to the target agent
             ctx: RunContext from the calling tool function
             usage: Optional usage tracking object (defaults to ctx.usage)

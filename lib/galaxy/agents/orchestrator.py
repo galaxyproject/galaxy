@@ -277,7 +277,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return """
         You coordinate multiple Galaxy agents. Determine which agents to call and in what order.
 
-        Available agents: error_analysis, gtn_training, custom_tool
+        Available agents: error_analysis, custom_tool
 
         Respond in this format:
         AGENTS: [agent1, agent2]

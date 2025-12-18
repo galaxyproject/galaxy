@@ -161,7 +161,6 @@ class TestAgentUnitMocked:
             "router",
             "custom_tool",
             "error_analysis",
-            "gtn_training",
         ]
 
         for agent_type in required_agents:
@@ -170,23 +169,6 @@ class TestAgentUnitMocked:
             info = agent_registry.get_agent_info(agent_type)
             assert info["agent_type"] == agent_type
             assert "class_name" in info
-
-    def test_gtn_database_connectivity(self):
-        """Test that GTN database is accessible."""
-        from galaxy.agents.gtn import GTNSearchDB
-
-        try:
-            db = GTNSearchDB()
-            metadata = db.get_metadata()
-            assert metadata is not None
-            assert "version" in metadata or "tutorial_count" in metadata
-
-            # Test basic search
-            results = db.search("RNA-seq", limit=1)
-            assert isinstance(results, list)
-        except Exception as e:
-            # GTN database might not be available in test environment
-            pytest.skip(f"GTN database not available: {e}")
 
     @pytest.mark.skip(reason="TestModel API changed in pydantic-ai, needs update for new version")
     @pytest.mark.asyncio
@@ -263,9 +245,9 @@ class TestAgentUnitMocked:
 
         # Mock a complex plan requiring sequential orchestration
         complex_plan = AgentPlan(
-            agents=["error_analysis", "gtn_training"],
+            agents=["error_analysis", "custom_tool"],
             sequential=True,
-            reasoning="Multi-step workflow: error diagnosis -> learning resources",
+            reasoning="Multi-step workflow: error diagnosis -> tool creation",
         )
 
         # Mock each agent call in the sequential workflow
@@ -281,33 +263,33 @@ class TestAgentUnitMocked:
                 content="Tool failed due to memory issues", agent_type="error_analysis"
             )
 
-            mock_training_agent = AsyncMock()
-            mock_training_agent.process.return_value = MagicMock(
-                content="Training available: RNA-seq tutorial", agent_type="gtn_training"
+            mock_custom_tool_agent = AsyncMock()
+            mock_custom_tool_agent.process.return_value = MagicMock(
+                content="Created custom tool wrapper", agent_type="custom_tool"
             )
 
             # Configure mock to return different agents
             def get_agent_side_effect(agent_type, deps):
                 if agent_type == "error_analysis":
                     return mock_error_agent
-                elif agent_type == "gtn_training":
-                    return mock_training_agent
+                elif agent_type == "custom_tool":
+                    return mock_custom_tool_agent
                 else:
                     raise ValueError(f"Unexpected agent type: {agent_type}")
 
             mock_get_agent.side_effect = get_agent_side_effect
 
-            response = await agent.process("My RNA-seq tool failed with memory error and I need tutorials")
+            response = await agent.process("My tool failed with memory error, help me create a fixed version")
 
             # Verify orchestration occurred
             assert response.agent_type == "orchestrator"
             assert response.metadata.get("execution_type") == "sequential"
             assert "memory issues" in response.content
-            assert "Training available" in response.content
+            assert "custom tool" in response.content.lower()
 
             # Verify agents were called in sequence
             assert mock_error_agent.process.called
-            assert mock_training_agent.process.called
+            assert mock_custom_tool_agent.process.called
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_parallel_execution(self):
@@ -321,7 +303,7 @@ class TestAgentUnitMocked:
 
         # Mock parallel plan
         parallel_plan = AgentPlan(
-            agents=["error_analysis", "gtn_training"],
+            agents=["error_analysis", "custom_tool"],
             sequential=False,
             reasoning="Independent tasks can run in parallel",
         )
@@ -338,28 +320,28 @@ class TestAgentUnitMocked:
                 content="Error diagnosis: memory limit exceeded", agent_type="error_analysis"
             )
 
-            mock_training_agent = AsyncMock()
-            mock_training_agent.process.return_value = MagicMock(
-                content="Available tutorials: Alignment workflow", agent_type="gtn_training"
+            mock_custom_tool_agent = AsyncMock()
+            mock_custom_tool_agent.process.return_value = MagicMock(
+                content="Custom tool created successfully", agent_type="custom_tool"
             )
 
             def get_agent_side_effect(agent_type, deps):
                 if agent_type == "error_analysis":
                     return mock_error_agent
-                elif agent_type == "gtn_training":
-                    return mock_training_agent
+                elif agent_type == "custom_tool":
+                    return mock_custom_tool_agent
                 else:
                     raise ValueError(f"Unexpected agent type: {agent_type}")
 
             mock_get_agent.side_effect = get_agent_side_effect
 
-            response = await agent.process("I need help with my error and training materials")
+            response = await agent.process("Help with my error and create a custom tool")
 
             # Verify parallel execution
             assert response.agent_type == "orchestrator"
             assert response.metadata.get("execution_type") == "parallel"
             assert "Error diagnosis" in response.content
-            assert "Available tutorials" in response.content
+            assert "Custom tool" in response.content
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):
@@ -419,7 +401,6 @@ class TestAgentUnitLiveLLM:
         test_cases = [
             ("Create a BWA tool", "custom_tool"),
             ("Why did my job fail?", "error_analysis"),
-            ("Find me a tutorial on variant calling", "gtn_training"),
         ]
 
         for query, expected_agent in test_cases:
@@ -468,10 +449,6 @@ class TestAgentConsistencyLiveLLM:
         ("Why did my job fail with exit code 127?", "error_analysis"),
         ("Help me debug this memory error", "error_analysis"),
         ("What does 'command not found' mean?", "error_analysis"),
-        # GTN training queries
-        ("Find me a tutorial on variant calling", "gtn_training"),
-        ("How do I learn Galaxy basics?", "gtn_training"),
-        ("Training materials for proteomics", "gtn_training"),
         # Meta queries (should get direct response)
         ("Hello", None),
         ("Thank you", None),
