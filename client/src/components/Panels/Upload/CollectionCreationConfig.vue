@@ -8,7 +8,7 @@ import type {
     CollectionCreationState,
     CollectionTypeOption,
     SupportedCollectionType,
-} from "@/components/Panels/Upload/types/collectionCreation";
+} from "@/composables/upload/collectionTypes";
 
 interface FileItem {
     name: string;

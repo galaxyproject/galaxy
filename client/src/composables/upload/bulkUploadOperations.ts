@@ -6,12 +6,13 @@ import type { ExtensionDetails } from "@/composables/uploadConfigurations";
 /**
  * Base interface for upload items that support bulk operations.
  * Upload items must have these properties to work with bulk operations.
+ * The deferred property is optional since not all upload types support it (e.g., local files).
  */
 export interface BulkUploadItem {
-    extension?: string;
-    dbkey?: string;
-    spaceToTab?: boolean;
-    toPosixLines?: boolean;
+    extension: string;
+    dbkey: string;
+    spaceToTab: boolean;
+    toPosixLines: boolean;
     deferred?: boolean;
 }
 
@@ -143,9 +144,7 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
         }
 
         items.value.forEach((item) => {
-            if ("extension" in item) {
-                item.extension = extension;
-            }
+            item.extension = extension;
         });
     }
 
@@ -161,9 +160,7 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
         }
 
         items.value.forEach((item) => {
-            if ("dbkey" in item) {
-                item.dbkey = dbKey;
-            }
+            item.dbkey = dbKey;
         });
     }
 
@@ -174,9 +171,7 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
     function toggleAllSpaceToTab() {
         const newValue = !allSpaceToTab.value;
         items.value.forEach((item) => {
-            if ("spaceToTab" in item) {
-                item.spaceToTab = newValue;
-            }
+            item.spaceToTab = newValue;
         });
     }
 
@@ -187,9 +182,7 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
     function toggleAllToPosixLines() {
         const newValue = !allToPosixLines.value;
         items.value.forEach((item) => {
-            if ("toPosixLines" in item) {
-                item.toPosixLines = newValue;
-            }
+            item.toPosixLines = newValue;
         });
     }
 
@@ -201,7 +194,7 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
     function toggleAllDeferred() {
         const newValue = !allDeferred.value;
         items.value.forEach((item) => {
-            if ("deferred" in item) {
+            if (item.deferred !== undefined) {
                 item.deferred = newValue;
             }
         });

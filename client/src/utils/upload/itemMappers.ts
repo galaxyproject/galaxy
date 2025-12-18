@@ -4,11 +4,7 @@
  */
 
 import type { LocalFileItem, PasteContentItem, PasteUrlItem } from "@/components/Panels/Upload/types/uploadItem";
-import type {
-    LocalFileUploadItem,
-    PastedContentUploadItem,
-    UrlUploadItem,
-} from "@/components/Panels/Upload/uploadState";
+import type { LocalFileUploadItem, PastedContentUploadItem, UrlUploadItem } from "@/composables/upload/uploadItemTypes";
 
 /**
  * Maps a local file item to a local file upload item for the upload queue
