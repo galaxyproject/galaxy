@@ -3965,6 +3965,58 @@ steps:
                 }
             ]
 
+    def test_run_subworkflow_with_required_input_with_default_unconnected(self):
+        """Test subworkflow with required parameter input that has default value but is unconnected.
+
+        This test verifies that a subworkflow can run successfully when:
+        1. Parent workflow has a subworkflow step
+        2. Subworkflow has a parameter input with:
+           - optional: false (required)
+           - default: "default_value"
+        3. The parameter input is NOT connected from parent workflow
+        4. The default value should be used automatically
+
+        Before the fix, this would fail with "Subworkflow has disconnected required input."
+        After the fix, the workflow runs successfully using the default value.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  subworkflow_step:
+    in:
+      subworkflow_data_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        subworkflow_data_input:
+          type: data
+        subworkflow_text_param:
+          type: text
+          optional: false
+          default: "default_value"
+      outputs:
+        workflow_output:
+          outputSource: cat/out_file1
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: subworkflow_data_input
+test_data:
+  parent_input:
+    value: 1.bed
+    type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
