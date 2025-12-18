@@ -59,6 +59,8 @@ class MockToolbox:
 
 class MockTool:
 
+    id = TEST_TOOL_ID
+
     @property
     def parameters(self) -> list[ToolParameterT]:
         return [DataParameterModel(type="data", name="input1")]

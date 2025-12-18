@@ -18,6 +18,7 @@ from galaxy import (
     util,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.context import (
@@ -109,15 +110,10 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
 
     This function transforms data/collection requests (used in workflow landing and data request payloads) into the fetch API's target format.
     """
-    from galaxy.exceptions import RequestParameterInvalidException
-    from galaxy.tool_util_models.parameters import DataRequestCollectionUri
-
     # Validate sample sheet metadata before conversion
     for request_item in data_landing_payload.request_state:
         if isinstance(request_item, DataRequestCollectionUri):
-            has_sample_sheet_metadata = (
-                request_item.column_definitions is not None or request_item.rows is not None
-            )
+            has_sample_sheet_metadata = request_item.column_definitions is not None or request_item.rows is not None
             if has_sample_sheet_metadata:
                 collection_type = request_item.collection_type
                 if not collection_type.startswith("sample_sheet"):

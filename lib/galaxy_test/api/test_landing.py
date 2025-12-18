@@ -400,6 +400,186 @@ class TestLandingApi(ApiTestCase):
             landing_response.uuid
         ), "landing_uuid should match the original landing request"
 
+    @skip_without_tool("cat1")
+    def test_workflow_landing_with_sample_sheet(self):
+        """Test that workflow landing requests can include sample sheet metadata and it's preserved."""
+        # Create a workflow (simple_workflow has inputs: WorkflowInput1 and WorkflowInput2)
+        workflow_id = self.workflow_populator.simple_workflow("test_workflow_landing_sample_sheet")
+
+        # Create request state with sample sheet collection
+        # Note: Using WorkflowInput1 to match the workflow's expected input name
+        input_b64_1 = b64encode(b"sample1 data").decode("utf-8")
+        input_b64_2 = b64encode(b"sample2 data").decode("utf-8")
+        request_state = {
+            "WorkflowInput1": {
+                "class": "Collection",
+                "collection_type": "sample_sheet",
+                "name": "test sample sheet",
+                "elements": [
+                    {
+                        "class": "File",
+                        "identifier": "sample1",
+                        "url": f"base64://{input_b64_1}",
+                        "ext": "txt",
+                        "deferred": False,
+                    },
+                    {
+                        "class": "File",
+                        "identifier": "sample2",
+                        "url": f"base64://{input_b64_2}",
+                        "ext": "txt",
+                        "deferred": False,
+                    },
+                ],
+                "column_definitions": [
+                    {"type": "int", "name": "replicate", "optional": False},
+                    {"type": "string", "name": "condition", "optional": False},
+                ],
+                "rows": {
+                    "sample1": [1, "control"],
+                    "sample2": [2, "treatment"],
+                },
+            }
+        }
+
+        # Create workflow landing request with sample sheet
+        landing_request = CreateWorkflowLandingRequestPayload(
+            workflow_id=workflow_id,
+            workflow_target_type="stored_workflow",
+            request_state=request_state,
+            public=True,
+        )
+        landing_response = self.dataset_populator.create_workflow_landing(landing_request)
+
+        # Use the landing request
+        claimed_response = self.dataset_populator.use_workflow_landing(landing_response.uuid)
+
+        # Verify sample sheet metadata is preserved in the claimed response
+        workflow_input = claimed_response.request_state.get("WorkflowInput1")
+        assert workflow_input is not None
+        assert "column_definitions" in workflow_input
+        assert workflow_input["column_definitions"] is not None
+        assert len(workflow_input["column_definitions"]) == 2
+        assert workflow_input["column_definitions"][0]["name"] == "replicate"
+        assert workflow_input["column_definitions"][1]["name"] == "condition"
+
+        assert "rows" in workflow_input
+        assert workflow_input["rows"] is not None
+        assert "sample1" in workflow_input["rows"]
+        assert workflow_input["rows"]["sample1"] == [1, "control"]
+        assert "sample2" in workflow_input["rows"]
+        assert workflow_input["rows"]["sample2"] == [2, "treatment"]
+
+    @skip_without_tool("cat1")
+    def test_workflow_landing_with_sample_sheet_execution(self):
+        """Test that executing a workflow from landing request preserves sample sheet metadata in output."""
+        with self.dataset_populator.test_history() as history_id:
+            # Create a simple workflow that maps cat1 over a collection input
+            workflow_id = self.workflow_populator.upload_yaml_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: sample_sheet
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: input_collection
+"""
+            )
+
+            # Create request state with sample sheet collection
+            input_b64_1 = b64encode(b"sample1 data").decode("utf-8")
+            input_b64_2 = b64encode(b"sample2 data").decode("utf-8")
+            request_state = {
+                "input_collection": {
+                    "class": "Collection",
+                    "collection_type": "sample_sheet",
+                    "name": "test sample sheet for execution",
+                    "elements": [
+                        {
+                            "class": "File",
+                            "identifier": "sample1",
+                            "url": f"base64://{input_b64_1}",
+                            "ext": "txt",
+                            "deferred": False,
+                        },
+                        {
+                            "class": "File",
+                            "identifier": "sample2",
+                            "url": f"base64://{input_b64_2}",
+                            "ext": "txt",
+                            "deferred": False,
+                        },
+                    ],
+                    "column_definitions": [
+                        {"type": "int", "name": "replicate", "optional": False},
+                        {"type": "string", "name": "condition", "optional": False},
+                    ],
+                    "rows": {
+                        "sample1": [1, "control"],
+                        "sample2": [2, "treatment"],
+                    },
+                }
+            }
+
+            # Create workflow landing request with sample sheet
+            landing_request = CreateWorkflowLandingRequestPayload(
+                workflow_id=workflow_id,
+                workflow_target_type="stored_workflow",
+                request_state=request_state,
+                public=True,
+            )
+            landing_response = self.dataset_populator.create_workflow_landing(landing_request)
+
+            # Use the landing request
+            claimed_response = self.dataset_populator.use_workflow_landing(landing_response.uuid)
+
+            # Invoke the workflow
+            invocation_response = self.workflow_populator.invoke_workflow(
+                claimed_response.workflow_id,
+                inputs=claimed_response.request_state,
+                history_id=history_id,
+                inputs_by="name",
+            )
+            invocation_id = invocation_response.json()["id"]
+
+            # Wait for workflow to complete
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id, claimed_response.workflow_id, invocation_id, assert_ok=True
+            )
+
+            # Get the output collections from the history
+            collections = self.dataset_populator.get_history_contents_of_type(history_id, "dataset_collections")
+            assert len(collections) >= 2, f"Expected at least 2 collections (input and output), got {len(collections)}"
+
+            # Find the output collection (should be the last one created)
+            output_collection = collections[-1]
+
+            # Get full collection details
+            collection_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_collection["id"]
+            )
+
+            # Verify sample sheet metadata is preserved
+            assert "column_definitions" in collection_details
+            assert collection_details["column_definitions"] is not None
+            assert len(collection_details["column_definitions"]) == 2
+            assert collection_details["column_definitions"][0]["name"] == "replicate"
+            assert collection_details["column_definitions"][1]["name"] == "condition"
+
+            # Verify elements have columns metadata
+            assert "elements" in collection_details
+            elements = collection_details["elements"]
+            assert len(elements) == 2
+
+            # Check that columns metadata was preserved for each element
+            for element in elements:
+                assert "columns" in element, f"Element {element.get('element_identifier')} missing columns"
+                assert element["columns"] is not None
+
 
 def _workflow_request_state() -> dict[str, Any]:
     deferred = False

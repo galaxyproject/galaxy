@@ -16,6 +16,7 @@ from sqlalchemy.orm import (
     Session,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Dataset,
     DatasetCollection,
@@ -29,11 +30,11 @@ from galaxy.model import (
     REQUESTED_TRANSFORM_ACTIONS,
     User,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.schema import (
-    SampleSheetColumnDefinitions,
-    SampleSheetRow,
+from galaxy.model.dataset_collections.types.sample_sheet_util import (
+    validate_column_definitions,
+    validate_row,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
     CollectionElementDataRequestUri,
@@ -41,6 +42,7 @@ from galaxy.tool_util_models.parameters import (
     DataRequestUri,
     FileRequestUri,
 )
+from galaxy.tool_util_models.sample_sheet import SampleSheetRow
 
 log = logging.getLogger(__name__)
 
@@ -151,19 +153,15 @@ def dereference_collection_dataset_element(
 
 
 def _validate_sample_sheet_metadata(
-    dataset_collection: DatasetCollection,
-    column_definitions: Optional[SampleSheetColumnDefinitions],
-    rows: Optional[dict[str, SampleSheetRow]],
+    data_request_uri: DataRequestCollectionUri,
 ):
     """Validate sample sheet metadata for landing requests."""
-    from galaxy.exceptions import RequestParameterInvalidException
-    from galaxy.model.dataset_collections.types.sample_sheet_util import (
-        validate_column_definitions,
-        validate_row,
-    )
+    # Extract metadata from data request
+    collection_type = data_request_uri.collection_type
+    column_definitions = data_request_uri.column_definitions
+    rows = data_request_uri.rows
 
     # Validate that sample sheet metadata is only used with sample_sheet collection types
-    collection_type = dataset_collection.collection_type
     is_sample_sheet = collection_type.startswith("sample_sheet")
     has_sample_sheet_metadata = column_definitions is not None or rows is not None
 
@@ -176,11 +174,11 @@ def _validate_sample_sheet_metadata(
     if column_definitions is not None:
         validate_column_definitions(column_definitions)
 
-    # Get element identifiers for validation
-    element_identifiers = [elem.element_identifier for elem in dataset_collection.elements]
-
     # Validate each row
     if rows:
+        # Get element identifiers for validation
+        element_identifiers = [elem.identifier for elem in data_request_uri.elements]
+
         for identifier, row in rows.items():
             if identifier not in element_identifiers:
                 raise RequestParameterInvalidException(
@@ -196,6 +194,9 @@ def derefence_collection_to_model(
     data_request_uri: DataRequestCollectionUri,
     collection_name: str = "Collection",
 ) -> HistoryDatasetCollectionAssociation:
+    # Validate sample sheet metadata before creating any objects
+    _validate_sample_sheet_metadata(data_request_uri)
+
     name = data_request_uri.name or collection_name
     hdca = HistoryDatasetCollectionAssociation(
         name=name,
@@ -217,10 +218,6 @@ def derefence_collection_to_model(
             dereference_collection_dataset_element(sa_session, user, history, element, dc, element_index=i, rows=rows)
         elif element.class_ == "Collection":
             derefence_collection_element(sa_session, user, history, element, dc, i)
-
-    # Validate sample sheet metadata
-    if data_request_uri.column_definitions is not None or data_request_uri.rows is not None:
-        _validate_sample_sheet_metadata(dc, data_request_uri.column_definitions, data_request_uri.rows)
 
     dc.populated_state = "ok"
     dc.element_count = len(data_request_uri.elements)
