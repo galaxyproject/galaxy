@@ -109,6 +109,22 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
 
     This function transforms data/collection requests (used in workflow landing and data request payloads) into the fetch API's target format.
     """
+    from galaxy.exceptions import RequestParameterInvalidException
+    from galaxy.tool_util_models.parameters import DataRequestCollectionUri
+
+    # Validate sample sheet metadata before conversion
+    for request_item in data_landing_payload.request_state:
+        if isinstance(request_item, DataRequestCollectionUri):
+            has_sample_sheet_metadata = (
+                request_item.column_definitions is not None or request_item.rows is not None
+            )
+            if has_sample_sheet_metadata:
+                collection_type = request_item.collection_type
+                if not collection_type.startswith("sample_sheet"):
+                    raise RequestParameterInvalidException(
+                        f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
+                    )
+
     targets: list[Union[DataElementsTarget, HdcaDataItemsTarget]] = []
 
     for request_item in data_landing_payload.request_state:
@@ -174,6 +190,8 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
                     elements=elements,
                     collection_type=request_item.collection_type,
                     name=request_item.name,
+                    column_definitions=request_item.column_definitions,
+                    rows=request_item.rows,
                 )
             )
 
