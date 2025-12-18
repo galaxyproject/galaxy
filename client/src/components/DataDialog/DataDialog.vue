@@ -151,15 +151,18 @@ function onUpload() {
 }
 
 /** Performs server request to retrieve data records **/
-function load(url: string = "") {
-    url = urlTracker.getUrl(url);
+function load(url?: string) {
+    if (url) {
+        urlTracker.forward(url);
+    }
+    const currentUrl = urlTracker.current.value;
     filter.value = "";
     optionsShow.value = false;
-    undoShow.value = !urlTracker.atRoot.value;
+    undoShow.value = !urlTracker.isAtRoot.value;
     services
-        .get(url)
+        .get(currentUrl)
         .then((incoming) => {
-            if (props.library && urlTracker.atRoot()) {
+            if (props.library && urlTracker.isAtRoot.value) {
                 incoming.unshift({
                     label: "Data Libraries",
                     url: `${getAppRoot()}api/libraries`,
