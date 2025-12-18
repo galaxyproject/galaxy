@@ -3,8 +3,18 @@
  * These mappers convert component-specific item types to standardized upload queue format.
  */
 
-import type { LocalFileItem, PasteContentItem, PasteUrlItem } from "@/components/Panels/Upload/types/uploadItem";
-import type { LocalFileUploadItem, PastedContentUploadItem, UrlUploadItem } from "@/composables/upload/uploadItemTypes";
+import type {
+    LocalFileItem,
+    PasteContentItem,
+    PasteUrlItem,
+    RemoteFileItem,
+} from "@/components/Panels/Upload/types/uploadItem";
+import type {
+    LocalFileUploadItem,
+    PastedContentUploadItem,
+    RemoteFileUploadItem,
+    UrlUploadItem,
+} from "@/composables/upload/uploadItemTypes";
 
 /**
  * Maps a local file item to a local file upload item for the upload queue
@@ -57,5 +67,24 @@ export function mapToPasteUrlUpload(item: PasteUrlItem, targetHistoryId: string)
         toPosixLines: item.toPosixLines,
         deferred: item.deferred,
         url: item.url,
+    };
+}
+
+/**
+ * Maps a remote file item to a remote file upload item for the upload queue
+ */
+export function mapToRemoteFileUpload(item: RemoteFileItem, targetHistoryId: string): RemoteFileUploadItem {
+    return {
+        uploadMode: "remote-files" as const,
+        name: item.name,
+        size: item.size,
+        targetHistoryId,
+        dbkey: item.dbkey,
+        extension: item.extension,
+        spaceToTab: item.spaceToTab,
+        toPosixLines: item.toPosixLines,
+        deferred: item.deferred,
+        url: item.url,
+        hashes: item.hashes,
     };
 }

@@ -42,8 +42,14 @@ export interface UrlUploadItem extends UploadItemCommon {
     url: string;
 }
 
+/** Upload item from a remote file */
+export interface RemoteFileUploadItem extends UploadItemCommon {
+    uploadMode: "remote-files";
+    url: string;
+}
+
 /** Union of all new upload item types (before state tracking is added) */
-export type NewUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem;
+export type NewUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem | RemoteFileUploadItem;
 
 /** Internal state tracking for an upload */
 export interface UploadState {
