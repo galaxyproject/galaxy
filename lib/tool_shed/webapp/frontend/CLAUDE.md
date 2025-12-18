@@ -70,6 +70,20 @@ const { data } = await ToolShedApi().GET("/api/repositories", { params: { query:
 - `RepositoryPage.vue` - Single repository view
 - `LandingPage.vue` - Homepage
 - `PaginatedRepositoriesGrid.vue` - Repository listing grid
+- `ComponentsShowcase.vue` - Developer page for widget demos
+
+## Component Showcase
+When creating reusable UI components, add examples to `src/components/pages/ComponentsShowcase.vue`. This page (accessible via `/showcase`) helps developers see components in isolation. Pattern:
+```vue
+<component-showcase title="MyComponent">
+    <component-showcase-example title="default">
+        <my-component />
+    </component-showcase-example>
+    <component-showcase-example title="with props">
+        <my-component some-prop="value" />
+    </component-showcase-example>
+</component-showcase>
+```
 
 ## Path Alias
 `@/` maps to `src/` directory.
