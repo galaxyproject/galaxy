@@ -1,5 +1,6 @@
 /**
- * Collection creation related types and interfaces
+ * Collection creation related types and interfaces.
+ * Co-located with collection creation logic for better cohesion.
  */
 
 /**
