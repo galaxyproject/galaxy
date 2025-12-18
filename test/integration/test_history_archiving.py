@@ -295,6 +295,7 @@ class TestHistoryArchivingUserUpdateTime(PosixFileSourceSetup, IntegrationTestCa
             self.dataset_populator.wait_for_purge(history_id, dataset_id)
 
         user = sa_session.get(model.User, user_db_id)
+        assert user is not None
         assert user.update_time > old_update_time, (
             f"User's update_time should be updated when archiving own history. "
             f"Got {user.update_time}, expected > {old_update_time}"
@@ -336,6 +337,7 @@ class TestHistoryArchivingUserUpdateTime(PosixFileSourceSetup, IntegrationTestCa
             self.dataset_populator.wait_for_purge(history_id, dataset_id)
 
         owner = sa_session.get(model.User, owner_db_id)
+        assert owner is not None
         assert owner.update_time == old_update_time, (
             f"Owner's update_time should NOT be updated when admin archives their history. "
             f"Got {owner.update_time}, expected {old_update_time}"
