@@ -922,6 +922,16 @@ def __parse_test_attributes(
         count = int(attrib.pop("count"))
     except KeyError:
         pass
+    min: Optional[int] = None
+    try:
+        min = int(attrib.pop("min"))
+    except KeyError:
+        pass
+    max: Optional[int] = None
+    try:
+        max = int(attrib.pop("max"))
+    except KeyError:
+        pass
     extra_files: List[Dict[str, Any]] = []
     ftype: Optional[str] = None
     if "ftype" in attrib:
@@ -966,6 +976,8 @@ def __parse_test_attributes(
         pin_labels=pin_labels,
         location=location,
         count=count,
+        min=min,
+        max=max,
         metadata=metadata,
         md5=md5sum,
         checksum=checksum,
