@@ -75,6 +75,7 @@ dependencies = [
     "pulsar-galaxy-lib>=0.15.10",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
+    "pydantic-ai>=0.1.16",  # AI agent framework
     "PyJWT",
     "pykwalify",
     "pylibmagic",

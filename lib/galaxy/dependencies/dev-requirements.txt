@@ -179,6 +179,7 @@ rich-click==1.9.4
 roc-validator==0.4.2 ; python_full_version < '3.9.20'
 roc-validator==0.4.6 ; python_full_version >= '3.9.20' and python_full_version < '3.10'
 roc-validator==0.7.3 ; python_full_version >= '3.10'
+roman-numerals==4.1.0 ; python_full_version >= '3.11'
 roman-numerals-py==3.1.0 ; python_full_version >= '3.11'
 rpds-py==0.27.1 ; python_full_version < '3.10'
 rpds-py==0.30.0 ; python_full_version >= '3.10'
