@@ -230,6 +230,7 @@ onMounted(async () => {
 
 <style>
 .dataset-attributes {
+    height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
 }
