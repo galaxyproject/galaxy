@@ -84,26 +84,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/ai/agents/tool-recommendation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Recommend Tools
-         * @description **Warning**: This API is unstable and may change without notice.
-         */
-        post: operations["recommend_tools_api_ai_agents_tool_recommendation_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/authenticate/baseauth": {
         parameters: {
             query?: never;
@@ -7614,24 +7594,6 @@ export interface components {
             landing_uuid?: unknown;
             /** Targets */
             targets: unknown;
-        };
-        /** Body_recommend_tools_api_ai_agents_tool_recommendation_post */
-        Body_recommend_tools_api_ai_agents_tool_recommendation_post: {
-            /**
-             * Input Format
-             * @description Input data format
-             */
-            input_format?: string | null;
-            /**
-             * Output Format
-             * @description Desired output format
-             */
-            output_format?: string | null;
-            /**
-             * Query
-             * @description Description of the analysis task
-             */
-            query: string;
         };
         /** BooleanParameterModel */
         BooleanParameterModel: {
@@ -25064,51 +25026,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentQueryResponse"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    recommend_tools_api_ai_agents_tool_recommendation_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Body_recommend_tools_api_ai_agents_tool_recommendation_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentResponse"];
                 };
             };
             /** @description Request Error */
