@@ -159,39 +159,15 @@ true
         </test>
         <test expect_num_outputs="1">
             <param name="produce_discovered_dataset_invisible" value="true" />
-            <output name="discovered_dataset_invisible" min="3" max="3">
-                <expand macro="content_assertion"/>
-                <discovered_dataset designation="2" ftype="txt">
-                    <expand macro="content_assertion"/>
-                </discovered_dataset>
-                <discovered_dataset designation="3" ftype="txt">
-                    <expand macro="content_assertion"/>
-                </discovered_dataset>
-            </output>
+            <output name="discovered_dataset_invisible" min="3" max="3"/>
         </test>
         <test expect_num_outputs="1" expect_test_failure="true">
             <param name="produce_discovered_dataset_invisible" value="true" />
-            <output name="discovered_dataset_invisible" min="4">
-                <expand macro="content_assertion"/>
-                <discovered_dataset designation="2" ftype="txt">
-                    <expand macro="content_assertion"/>
-                </discovered_dataset>
-                <discovered_dataset designation="3" ftype="txt">
-                    <expand macro="content_assertion"/>
-                </discovered_dataset>
-            </output>
+            <output name="discovered_dataset_invisible" min="4"/>
         </test>
         <test expect_num_outputs="1" expect_test_failure="true">
             <param name="produce_discovered_dataset_invisible" value="true" />
-            <output name="discovered_dataset_invisible" max="2">
-                <expand macro="content_assertion"/>
-                <discovered_dataset designation="2" ftype="txt">
-                    <expand macro="content_assertion"/>
-                </discovered_dataset>
-                <discovered_dataset designation="3" ftype="txt">
-                    <expand macro="content_assertion"/>
-                </discovered_dataset>
-            </output>
+            <output name="discovered_dataset_invisible" max="2"/>
         </test>
 
         <!-- discovered datasets invisible -->
@@ -364,20 +340,12 @@ true
             <param name="produce_paired_list" value="true" />
             <output_collection name="paired_list" type="list:paired" min="2" max="2">
                 <element name="p1" min="2" max="2">
-                    <element name="forward" min="1" max="1">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse" min="1" max="1">
-                        <expand macro="content_assertion"/>
-                    </element>
+                    <element name="forward" min="1" max="1"/>
+                    <element name="reverse" min="1" max="1"/>
                 </element>
                 <element name="p2" min="2" max="2">
-                    <element name="forward" min="1" max="1">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse" min="1" max="1">
-                        <expand macro="content_assertion"/>
-                    </element>
+                    <element name="forward" min="1" max="1"/>
+                    <element name="reverse" min="1" max="1"/>
                 </element>
             </output_collection>
         </test>
@@ -385,91 +353,28 @@ true
         <!-- unsuccessful test of min of output_collection -->
         <test expect_num_outputs="1" expect_test_failure="true">
             <param name="produce_paired_list" value="true" />
-            <output_collection name="paired_list" type="list:paired" min="3">
-                <element name="p1">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
-                <element name="p2">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
-            </output_collection>
+            <output_collection name="paired_list" type="list:paired" min="3"/>
         </test>
         <!-- unsuccessful test of max of output_collection -->
         <test expect_num_outputs="1" expect_test_failure="true">
             <param name="produce_paired_list" value="true" />
-            <output_collection name="paired_list" type="list:paired" max="1">
-                <!-- TODO allow testing without all this -->
-                <element name="p1">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
-                <element name="p2">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
-            </output_collection>
+            <output_collection name="paired_list" type="list:paired" max="1"/>
         </test>
 
         <!-- unsuccessful test of min of element -->
         <test expect_num_outputs="1" expect_test_failure="true">
             <param name="produce_paired_list" value="true" />
             <output_collection name="paired_list" type="list:paired" min="2" max="2">
-                <element name="p1" min="3">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
-                <element name="p2" min="3">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
+                <element name="p1" min="3"/>
+                <element name="p2" min="3"/>
             </output_collection>
         </test>
         <!-- unsuccessful test of min of element -->
         <test expect_num_outputs="1" expect_test_failure="true">
             <param name="produce_paired_list" value="true" />
             <output_collection name="paired_list" type="list:paired" min="2" max="2">
-                <element name="p1" max="1">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
-                <element name="p2" max="1">
-                    <element name="forward">
-                        <expand macro="content_assertion"/>
-                    </element>
-                    <element name="reverse">
-                        <expand macro="content_assertion"/>
-                    </element>
-                </element>
+                <element name="p1" max="1"/>
+                <element name="p2" max="1"/>
             </output_collection>
         </test>
 

@@ -932,6 +932,7 @@ def __parse_test_attributes(
         max = int(attrib.pop("max"))
     except KeyError:
         pass
+    has_count_assertions = count is not None or min is not None or max is not None
     extra_files: List[Dict[str, Any]] = []
     ftype: Optional[str] = None
     if "ftype" in attrib:
@@ -959,7 +960,7 @@ def __parse_test_attributes(
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
     has_object = value_object is not VALUE_OBJECT_UNSET
-    if not (assert_list or file or metadata or has_checksum or has_nested_tests or has_object):
+    if not (assert_list or file or metadata or has_checksum or has_nested_tests or has_object or has_count_assertions):
         raise Exception(
             "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)"
         )

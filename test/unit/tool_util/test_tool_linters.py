@@ -2098,19 +2098,19 @@ def test_tests_discover_outputs(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
     run_lint_module(lint_ctx, tests, tool_source)
     assert (
-        "Test 3: test output 'data_name' must have a 'count' attribute and/or 'discovered_dataset' children"
+        "Test 3: test output 'data_name' must have a 'count/min/max' attribute and/or 'discovered_dataset' children"
         in lint_ctx.error_messages
     )
     assert (
-        "Test 3: test collection 'collection_name' must have a 'count' attribute or 'element' children"
+        "Test 3: test collection 'collection_name' must have a 'count/min/max' attribute or 'element' children"
         in lint_ctx.error_messages
     )
     assert (
-        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count' attribute"
+        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count/min/max' attribute"
         in lint_ctx.error_messages
     )
     assert (
-        "Test 5: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count' attribute"
+        "Test 5: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count/min/max' attribute"
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.error_messages) == 4
