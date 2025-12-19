@@ -20,7 +20,7 @@ const { loading, repository, repositoryMetadata, repositoryPermissions } = store
 repositoryStore.setId(props.repositoryId)
 
 const canManage = computed(() => repositoryPermissions.value?.can_manage || false)
-const activeTab = ref("overview")
+const activeTab = ref("revisions")
 
 const revisionCount = computed(() => {
     if (!repositoryMetadata.value) return 0
@@ -81,23 +81,23 @@ function onResetComplete() {
             </q-banner>
 
             <q-tabs v-model="activeTab" class="text-primary" align="left">
-                <q-tab name="overview" label="Overview" />
-                <q-tab name="tool-history" label="Tool History" />
                 <q-tab name="revisions" :label="`Revisions (${revisionCount})`" />
+                <q-tab name="tool-history" label="Tool History" />
+                <q-tab name="raw-json" label="Raw JSON" />
                 <q-tab name="reset" label="Reset Metadata" v-if="canManage" />
             </q-tabs>
 
             <q-separator />
 
             <q-tab-panels v-model="activeTab">
-                <q-tab-panel name="overview">
-                    <OverviewTab :metadata="repositoryMetadata" />
+                <q-tab-panel name="revisions">
+                    <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
                 </q-tab-panel>
                 <q-tab-panel name="tool-history">
                     <ToolHistoryTab :metadata="repositoryMetadata" @goToRevision="goToRevision" />
                 </q-tab-panel>
-                <q-tab-panel name="revisions">
-                    <RevisionsTab :metadata="repositoryMetadata" :expand-revision="expandRevision" />
+                <q-tab-panel name="raw-json">
+                    <OverviewTab :metadata="repositoryMetadata" />
                 </q-tab-panel>
                 <q-tab-panel name="reset" v-if="canManage">
                     <ResetMetadataTab :repository-id="repositoryId" @resetComplete="onResetComplete" />
