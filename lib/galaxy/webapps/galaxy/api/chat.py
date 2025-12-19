@@ -226,9 +226,9 @@ class ChatAPI:
 
         except Exception as e:
             log.error(f"Error getting AI response: {e}")
-            result["response"] = f"Sorry, there was an error processing your query. Error: {str(e)}"
+            result["response"] = "Sorry, there was an error processing your query. Please try again later."
             result["error_code"] = 500
-            result["error_message"] = str(e)
+            result["error_message"] = "Internal error"
 
         # Return the enhanced response structure
         return ChatResponse(**result)
@@ -435,7 +435,7 @@ class ChatAPI:
                 return result.content
             except UnexpectedModelBehavior as e:
                 log.error(f"Unexpected model behavior: {e}")
-                return f"Sorry, there was an unexpected response from the AI model. Error: {str(e)}"
+                return "Sorry, there was an unexpected response from the AI model. Please try again."
             except Exception as e:
                 log.error(f"Error using pydantic-ai Agent: {e}")
                 # Try fallback to direct OpenAI if available
@@ -473,7 +473,7 @@ class ChatAPI:
             raise
         except Exception as e:
             log.error(f"Error calling OpenAI: {e}")
-            raise ConfigurationError(f"An error occurred while communicating with OpenAI: {str(e)}")
+            raise ConfigurationError("An error occurred while communicating with the AI service.")
 
     def _get_system_prompt(self) -> str:
         """Get the system prompt for the AI"""
