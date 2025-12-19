@@ -119,6 +119,14 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
     if expansion_error is None:
         items = target.get("elements", None)
         assert items is not None, f"No element definition found for destination [{destination}]"
+
+        # If rows are specified at the collection level, add them to individual elements
+        if "rows" in target:
+            rows_dict = target["rows"]
+            for item in items:
+                item_name = item.get("name")
+                if item_name and item_name in rows_dict:
+                    item["row"] = rows_dict[item_name]
     else:
         items = []
 

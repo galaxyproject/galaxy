@@ -98,6 +98,10 @@ def validate_row(
 ):
     if column_definitions is None:
         return
+    if row is None:
+        raise RequestParameterInvalidException(
+            "Sample sheet row is missing. Ensure all element names in 'elements' have corresponding entries in 'rows'."
+        )
     if len(row) != len(column_definitions):
         raise RequestParameterInvalidException(
             "Sample sheet row validation failed, incorrect number of columns specified."
