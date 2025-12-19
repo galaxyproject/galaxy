@@ -13,7 +13,7 @@ boto3==1.41.5
 botocore==1.41.5
 cachecontrol==0.14.3 ; python_full_version < '3.10'
 cachecontrol==0.14.4 ; python_full_version >= '3.10'
-cachetools==6.2.3
+cachetools==6.2.4
 cattrs==25.3.0
 certifi==2025.11.12
 cffi==2.0.0 ; implementation_name != 'pypy' and os_name == 'nt'
@@ -64,7 +64,7 @@ jsonschema-specifications==2025.9.1
 junit-xml==1.9
 kiwisolver==1.4.7 ; python_full_version < '3.10'
 kiwisolver==1.4.9 ; python_full_version >= '3.10'
-librt==0.7.3
+librt==0.7.4 ; platform_python_implementation != 'PyPy'
 lxml==6.0.2
 markdown-it-py==3.0.0
 markupsafe==3.0.3
@@ -76,7 +76,7 @@ mirakuru==3.0.1 ; python_full_version >= '3.10'
 mistune==3.1.4
 msgpack==1.1.2
 multidict==6.7.0
-mypy==1.19.0
+mypy==1.19.1
 mypy-extensions==1.1.0
 numpy==2.0.2 ; python_full_version < '3.10'
 numpy==2.2.6 ; python_full_version == '3.10.*'
@@ -131,8 +131,7 @@ python-irodsclient==3.2.0
 python-slugify==8.0.4
 pyyaml==6.0.3
 rdflib==7.4.0
-referencing==0.36.2 ; python_full_version < '3.10'
-referencing==0.37.0 ; python_full_version >= '3.10'
+referencing==0.36.2
 requests==2.32.5
 requests-cache==1.2.1
 responses==0.25.8
@@ -143,9 +142,9 @@ roc-validator==0.4.6 ; python_full_version >= '3.9.20' and python_full_version <
 roc-validator==0.7.3 ; python_full_version >= '3.10'
 rpds-py==0.27.1 ; python_full_version < '3.10'
 rpds-py==0.30.0 ; python_full_version >= '3.10'
-ruamel-yaml==0.18.16
-ruamel-yaml-clib==0.2.15 ; python_full_version < '3.14' and platform_python_implementation == 'CPython'
-rucio-clients==38.5.1
+ruamel-yaml==0.18.17
+ruamel-yaml-clib==0.2.15 ; python_full_version < '3.15' and platform_python_implementation == 'CPython'
+rucio-clients==39.0.0
 s3transfer==0.15.0
 schema-salad==8.9.20251102115403
 scipy==1.13.1 ; python_full_version < '3.10'
@@ -178,7 +177,7 @@ types-requests==2.31.0.6 ; python_full_version < '3.10'
 types-requests==2.32.4.20250913 ; python_full_version >= '3.10'
 types-urllib3==1.26.25.14 ; python_full_version < '3.10'
 typing-extensions==4.15.0
-tzdata==2025.2 ; sys_platform == 'win32'
+tzdata==2025.3 ; sys_platform == 'win32'
 url-normalize==2.2.1
 urllib3==1.26.20 ; python_full_version < '3.10'
 urllib3==2.6.2 ; python_full_version >= '3.10'
