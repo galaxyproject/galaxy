@@ -40,6 +40,7 @@ from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.settings import ModelSettings
 
 # Try to import Anthropic support (optional)
 try:
@@ -49,8 +50,8 @@ try:
     HAS_ANTHROPIC = True
 except ImportError:
     HAS_ANTHROPIC = False
-    AnthropicModel = None
-    AnthropicProvider = None
+    AnthropicModel = None  # type: ignore[assignment,misc]
+    AnthropicProvider = None  # type: ignore[assignment,misc]
 
 # Try to import Google/Gemini support (optional)
 try:
@@ -60,8 +61,8 @@ try:
     HAS_GOOGLE = True
 except ImportError:
     HAS_GOOGLE = False
-    GoogleModel = None
-    GoogleProvider = None
+    GoogleModel = None  # type: ignore[assignment,misc]
+    GoogleProvider = None  # type: ignore[assignment,misc]
 
 log = logging.getLogger(__name__)
 
@@ -135,6 +136,7 @@ class BaseGalaxyAgent(ABC):
 
     # Subclasses must define their agent type explicitly
     agent_type: str
+    agent: Agent[GalaxyAgentDependencies, Any]
 
     def __init__(self, deps: GalaxyAgentDependencies):
         """Initialize the agent with dependencies."""
@@ -146,7 +148,7 @@ class BaseGalaxyAgent(ABC):
         self.agent = self._create_agent()
 
     @abstractmethod
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create the pydantic-ai Agent instance."""
         pass
 
@@ -239,7 +241,7 @@ class BaseGalaxyAgent(ABC):
         last_exception = None
 
         # Get model settings from config
-        model_settings = {
+        model_settings: ModelSettings = {
             "temperature": self._get_temperature(),
             "max_tokens": self._get_max_tokens(),
         }
@@ -478,16 +480,16 @@ class BaseGalaxyAgent(ABC):
             if not HAS_ANTHROPIC:
                 raise ImportError("Anthropic support requires pydantic-ai[anthropic] to be installed")
             model_name = model_spec[10:]  # Strip 'anthropic:' prefix
-            provider = AnthropicProvider(api_key=api_key)
-            return AnthropicModel(model_name, provider=provider)
+            anthropic_provider = AnthropicProvider(api_key=api_key)
+            return AnthropicModel(model_name, provider=anthropic_provider)
 
         # Check for Google/Gemini models
         if model_spec.startswith("google:"):
             if not HAS_GOOGLE:
                 raise ImportError("Google support requires pydantic-ai[google] to be installed")
             model_name = model_spec[7:]  # Strip 'google:' prefix
-            provider = GoogleProvider(api_key=api_key)
-            return GoogleModel(model_name, provider=provider)
+            google_provider = GoogleProvider(api_key=api_key)
+            return GoogleModel(model_name, provider=google_provider)
 
         # Strip 'openai:' prefix if present
         if model_spec.startswith("openai:"):
@@ -496,8 +498,8 @@ class BaseGalaxyAgent(ABC):
             model_name = model_spec
 
         # OpenAI or OpenAI-compatible (TACC, vLLM, Ollama, etc.)
-        provider = OpenAIProvider(api_key=api_key, base_url=base_url)
-        return OpenAIChatModel(model_name, provider=provider)
+        openai_provider = OpenAIProvider(api_key=api_key, base_url=base_url)
+        return OpenAIChatModel(model_name, provider=openai_provider)
 
     def _get_temperature(self) -> float:
         """Get the temperature setting for this agent."""
@@ -606,7 +608,7 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
     Useful for agents that don't need complex response schemas.
     """
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         """Create a simple agent with text output."""
         return Agent(
             self._get_model(),

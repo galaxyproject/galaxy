@@ -57,7 +57,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 try:
     import openai
 except ImportError:
-    openai = None
+    openai = None  # type: ignore[assignment]
 
 log = logging.getLogger(__name__)
 
@@ -397,21 +397,12 @@ class ChatAPI:
         try:
             # Use pydantic-ai Agent for the response
             model_name = f"openai:{self.config.ai_model}"
-            agent = Agent(model_name)
-
-            # Add system prompt and user info
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "system",
-                    "content": f"You will address the user as {username}",
-                },
-                {"role": "user", "content": query},
-            ]
+            full_system_prompt = f"{system_prompt}\n\nYou will address the user as {username}"
+            agent: Agent[None, str] = Agent(model_name, system_prompt=full_system_prompt)
 
             # Get response from the agent
-            result = agent.chat(messages)
-            return result.content
+            result = agent.run_sync(query)
+            return result.output
         except UnexpectedModelBehavior as e:
             log.error(f"Unexpected model behavior: {e}")
             return "Sorry, there was an unexpected response from the AI model. Please try again."
@@ -425,7 +416,7 @@ class ChatAPI:
     def _call_openai_directly(self, query: str, system_prompt: str, username: str) -> str:
         """Direct OpenAI API call as fallback"""
         try:
-            messages = [
+            messages: List[Dict[str, str]] = [
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "system",
@@ -435,9 +426,9 @@ class ChatAPI:
             ]
             response = openai.chat.completions.create(
                 model=self.config.ai_model,
-                messages=messages,
+                messages=messages,  # type: ignore[arg-type]
             )
-            return response.choices[0].message.content
+            return response.choices[0].message.content or ""
         except openai.APIConnectionError:
             log.exception("OpenAI API Connection Error")
             raise ConfigurationError("An error occurred while connecting to OpenAI.")

@@ -256,11 +256,11 @@ class ChatManager:
         if not chat_exchange:
             return []
 
-        messages = []
         import json
 
         if not format_for_pydantic_ai:
             # Format as simple role/content dictionaries
+            messages: List[Dict[str, Any]] = []
             for msg in chat_exchange.messages:
                 try:
                     # Parse the JSON to get query and response
@@ -277,16 +277,17 @@ class ChatManager:
             return messages
         else:
             # Format for pydantic-ai
+            pydantic_messages: List[ModelMessage] = []
             for msg in chat_exchange.messages:
                 try:
                     data = json.loads(msg.message)
                     if "query" in data:
-                        messages.append(ModelRequest(parts=[UserPromptPart(content=data["query"])]))
+                        pydantic_messages.append(ModelRequest(parts=[UserPromptPart(content=data["query"])]))
                     if "response" in data:
-                        messages.append(ModelResponse(parts=[TextPart(content=data["response"])]))
+                        pydantic_messages.append(ModelResponse(parts=[TextPart(content=data["response"])]))
                 except (json.JSONDecodeError, KeyError):
-                    messages.append(ModelResponse(parts=[TextPart(content=msg.message)]))
-            return messages
+                    pydantic_messages.append(ModelResponse(parts=[TextPart(content=msg.message)]))
+            return pydantic_messages
 
     def get_user_chat_history(
         self, trans: ProvidesUserContext, limit: int = 50, include_job_chats: bool = False
