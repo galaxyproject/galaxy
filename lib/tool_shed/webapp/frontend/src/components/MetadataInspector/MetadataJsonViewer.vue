@@ -19,8 +19,8 @@ withDefaults(defineProps<Props>(), {
     <VueJsonPretty :data="data" :virtual="false" :show-length="true" :deep="deep">
         <template #renderNodeKey="{ node, defaultKey }">
             <span
-                :title="getFieldDescription(modelName, String(node.key))"
-                :class="{ 'has-description': getFieldDescription(modelName, String(node.key)) }"
+                :title="getFieldDescription(modelName, String(node.key), node.path)"
+                :class="{ 'has-description': getFieldDescription(modelName, String(node.key), node.path) }"
             >
                 {{ defaultKey }}
             </span>

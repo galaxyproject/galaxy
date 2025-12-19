@@ -41,6 +41,17 @@ const fallbackDescriptions: Record<string, Record<string, string>> = {
         tests: "Test cases defined for this tool",
         add_to_tool_panel: "Whether tool should appear in Galaxy tool panel",
     },
+    RepositoryToolTest: {
+        name: "Test case name/identifier",
+        required_files: "Input files needed for this test",
+        inputs: "Input parameter values for the test",
+        outputs: "Expected output files and their properties",
+    },
+    RepositoryToolRequirement: {
+        name: "Required package or dependency name",
+        version: "Required version of the package",
+        type: "Dependency type (e.g., 'package', 'set_environment')",
+    },
     RepositoryDependency: {
         name: "Name of the required repository",
         owner: "Owner of the required repository",
@@ -91,7 +102,42 @@ for (const [model, fields] of Object.entries(fallbackDescriptions)) {
     }
 }
 
-export function getFieldDescription(modelName: string | undefined, fieldName: string): string {
+/**
+ * Determine the effective model based on path context.
+ * vue-json-pretty paths look like: "root.tests[0].name" or "root.tools[0].tests[1].name"
+ */
+function getContextualModel(modelName: string, path: string): string {
+    // Normalize path: "root.tests[0].name" → ["root", "tests", "name"]
+    // Remove array indices and split
+    const normalized = path.replace(/\[\d+\]/g, "")
+    const pathParts = normalized.split(".").filter(Boolean)
+
+    if (modelName === "RepositoryTool" || modelName === "RepositoryRevisionMetadata") {
+        // Check if we're inside a tests array (and not at the tests key itself)
+        const testsIdx = pathParts.indexOf("tests")
+        if (testsIdx >= 0 && testsIdx < pathParts.length - 1) {
+            return "RepositoryToolTest"
+        }
+        // Check if we're inside a requirements array
+        const reqIdx = pathParts.indexOf("requirements")
+        if (reqIdx >= 0 && reqIdx < pathParts.length - 1) {
+            return "RepositoryToolRequirement"
+        }
+        // Check if we're inside tools array (for RepositoryRevisionMetadata)
+        if (modelName === "RepositoryRevisionMetadata") {
+            const toolsIdx = pathParts.indexOf("tools")
+            if (toolsIdx >= 0 && toolsIdx < pathParts.length - 1) {
+                // Recurse to check for nested contexts within tools
+                const subPath = pathParts.slice(toolsIdx + 1).join(".")
+                return getContextualModel("RepositoryTool", subPath)
+            }
+        }
+    }
+    return modelName
+}
+
+export function getFieldDescription(modelName: string | undefined, fieldName: string, path?: string): string {
     if (!modelName) return ""
-    return descriptions[modelName]?.[fieldName] ?? ""
+    const effectiveModel = path ? getContextualModel(modelName, path) : modelName
+    return descriptions[effectiveModel]?.[fieldName] ?? descriptions[modelName]?.[fieldName] ?? ""
 }

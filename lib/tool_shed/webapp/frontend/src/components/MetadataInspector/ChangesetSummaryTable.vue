@@ -24,6 +24,21 @@ const actionIcons: Record<string, string> = {
     error: "sym_r_error",
 }
 
+const actionDescriptions: Record<string, string> = {
+    created: "New metadata record created for this changeset",
+    updated: "Existing metadata record was updated",
+    unchanged: "Metadata matches existing record, no changes",
+    skipped: "No metadata to record (equal, subset, or initial)",
+    error: "Failed to process this changeset",
+}
+
+const headerDescriptions: Record<string, string> = {
+    revision: "Mercurial changeset revision number and hash",
+    action: "What happened to metadata for this changeset",
+    tools: "Whether this changeset contains tool definitions",
+    error: "Errors encountered processing this changeset",
+}
+
 const columns = [
     {
         name: "revision",
@@ -47,6 +62,14 @@ const columns = [
         :pagination="{ rowsPerPage: 0 }"
         hide-pagination
     >
+        <template #header-cell="props">
+            <q-th :props="props">
+                {{ props.col.label }}
+                <q-tooltip v-if="headerDescriptions[props.col.name]">
+                    {{ headerDescriptions[props.col.name] }}
+                </q-tooltip>
+            </q-th>
+        </template>
         <template #body-cell-action="props">
             <q-td :props="props">
                 <q-chip
@@ -56,6 +79,9 @@ const columns = [
                     size="sm"
                 >
                     {{ props.value }}
+                    <q-tooltip v-if="actionDescriptions[props.value]">
+                        {{ actionDescriptions[props.value] }}
+                    </q-tooltip>
                 </q-chip>
             </q-td>
         </template>
