@@ -35,20 +35,11 @@ if TYPE_CHECKING:
     from galaxy.tools import ToolBox
     from galaxy.tools.cache import ToolCache
 
-# Try to import pydantic-ai components
-try:
-    from pydantic_ai import Agent
-    from pydantic_ai.exceptions import UnexpectedModelBehavior
-    from pydantic_ai.models.openai import OpenAIChatModel
-    from pydantic_ai.providers.openai import OpenAIProvider
-
-    HAS_PYDANTIC_AI = True
-except ImportError:
-    HAS_PYDANTIC_AI = False
-    Agent = None
-    UnexpectedModelBehavior = Exception
-    OpenAIChatModel = None
-    OpenAIProvider = None
+# Import pydantic-ai components (required dependency)
+from pydantic_ai import Agent
+from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 # Try to import Anthropic support (optional)
 try:
@@ -151,11 +142,6 @@ class BaseGalaxyAgent(ABC):
 
         if not hasattr(self, "agent_type") or not self.agent_type:
             raise NotImplementedError(f"{self.__class__.__name__} must define 'agent_type' class attribute")
-
-        if not HAS_PYDANTIC_AI:
-            raise ImportError(
-                "pydantic-ai is required for agent functionality. Please install with: pip install pydantic-ai"
-            )
 
         self.agent = self._create_agent()
 

@@ -6,6 +6,13 @@ from typing import (
     Union,
 )
 
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    TextPart,
+    UserPromptPart,
+)
 from sqlalchemy import (
     and_,
     select,
@@ -26,25 +33,6 @@ from galaxy.model import (
     ChatExchangeMessage,
 )
 from galaxy.util import unicodify
-
-# Try to import pydantic-ai for enhanced chat functionality
-try:
-    from pydantic_ai import Agent
-    from pydantic_ai.messages import (
-        ModelMessage,
-        ModelRequest,
-        ModelResponse,
-    )
-
-    ModelRequest = ModelRequest
-
-    HAS_PYDANTIC_AI = True
-except ImportError:
-    HAS_PYDANTIC_AI = False
-    Agent = None
-    ModelMessage = None
-    ModelRequest = None
-    ModelResponse = None
 
 
 class ChatManager:
@@ -271,7 +259,7 @@ class ChatManager:
         messages = []
         import json
 
-        if not format_for_pydantic_ai or not HAS_PYDANTIC_AI:
+        if not format_for_pydantic_ai:
             # Format as simple role/content dictionaries
             for msg in chat_exchange.messages:
                 try:
@@ -293,11 +281,11 @@ class ChatManager:
                 try:
                     data = json.loads(msg.message)
                     if "query" in data:
-                        messages.append(ModelRequest(content=data["query"]))
+                        messages.append(ModelRequest(parts=[UserPromptPart(content=data["query"])]))
                     if "response" in data:
-                        messages.append(ModelResponse(content=data["response"]))
+                        messages.append(ModelResponse(parts=[TextPart(content=data["response"])]))
                 except (json.JSONDecodeError, KeyError):
-                    messages.append(ModelResponse(content=msg.message))
+                    messages.append(ModelResponse(parts=[TextPart(content=msg.message)]))
             return messages
 
     def get_user_chat_history(

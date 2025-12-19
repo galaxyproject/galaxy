@@ -49,16 +49,9 @@ except ImportError:
     HAS_AGENTS = False
     GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
 
-# Import pydantic-ai components
-try:
-    from pydantic_ai import Agent
-    from pydantic_ai.exceptions import UnexpectedModelBehavior
-
-    HAS_PYDANTIC_AI = True
-except ImportError:
-    HAS_PYDANTIC_AI = False
-    Agent = None
-    UnexpectedModelBehavior = Exception
+# Import pydantic-ai components (required dependency)
+from pydantic_ai import Agent
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 # Keep OpenAI as a fallback option
 try:
@@ -171,7 +164,7 @@ class ChatAPI:
 
         # Use new agent system if available, otherwise fallback to legacy
         try:
-            if HAS_AGENTS and HAS_PYDANTIC_AI:
+            if HAS_AGENTS:
                 # Build context with conversation history
                 full_context: Dict[str, Any] = query_context.copy() if query_context else {}
 
@@ -392,61 +385,42 @@ class ChatAPI:
         return messages
 
     def _ensure_ai_configured(self):
-        """Ensure AI libraries are available and configured"""
-        if HAS_PYDANTIC_AI:
-            # Check if OpenAI API key is configured for pydantic-ai
-            if self.config.ai_api_key is None:
-                raise ConfigurationError("OpenAI API key is not configured for this instance.")
-        elif openai is not None:
-            # Fall back to direct OpenAI integration
-            if self.config.ai_api_key is None:
-                raise ConfigurationError("OpenAI API key is not configured for this instance.")
-            openai.api_key = self.config.ai_api_key
-            if self.config.ai_api_base_url is not None:
-                openai.base_url = self.config.ai_api_base_url
-        else:
-            raise ConfigurationError(
-                "Neither pydantic-ai nor OpenAI is installed. Please install one of these packages to use this feature."
-            )
+        """Ensure AI is configured"""
+        if self.config.ai_api_key is None:
+            raise ConfigurationError("AI API key is not configured for this instance.")
 
     def _get_ai_response(self, query: str, trans: ProvidesUserContext, context_type: Optional[str] = None) -> str:
-        """Get response from AI using pydantic-ai Agent or falling back to OpenAI"""
+        """Get response from AI using pydantic-ai Agent"""
         system_prompt = self._get_system_prompt()
         username = trans.user.username if trans.user else "Anonymous User"
 
-        if HAS_PYDANTIC_AI:
-            try:
-                # Use pydantic-ai Agent for the response
-                model_name = f"openai:{self.config.ai_model}"
-                agent = Agent(model_name)
+        try:
+            # Use pydantic-ai Agent for the response
+            model_name = f"openai:{self.config.ai_model}"
+            agent = Agent(model_name)
 
-                # Add system prompt and user info
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {
-                        "role": "system",
-                        "content": f"You will address the user as {username}",
-                    },
-                    {"role": "user", "content": query},
-                ]
+            # Add system prompt and user info
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "system",
+                    "content": f"You will address the user as {username}",
+                },
+                {"role": "user", "content": query},
+            ]
 
-                # Get response from the agent
-                result = agent.chat(messages)
-                return result.content
-            except UnexpectedModelBehavior as e:
-                log.error(f"Unexpected model behavior: {e}")
-                return "Sorry, there was an unexpected response from the AI model. Please try again."
-            except Exception as e:
-                log.error(f"Error using pydantic-ai Agent: {e}")
-                # Try fallback to direct OpenAI if available
-                if openai is not None:
-                    return self._call_openai_directly(query, system_prompt, username)
-                raise
-        elif openai is not None:
-            # Use direct OpenAI integration as fallback
-            return self._call_openai_directly(query, system_prompt, username)
-        else:
-            raise ConfigurationError("No AI provider available")
+            # Get response from the agent
+            result = agent.chat(messages)
+            return result.content
+        except UnexpectedModelBehavior as e:
+            log.error(f"Unexpected model behavior: {e}")
+            return "Sorry, there was an unexpected response from the AI model. Please try again."
+        except Exception as e:
+            log.error(f"Error using pydantic-ai Agent: {e}")
+            # Try fallback to direct OpenAI if available
+            if openai is not None:
+                return self._call_openai_directly(query, system_prompt, username)
+            raise
 
     def _call_openai_directly(self, query: str, system_prompt: str, username: str) -> str:
         """Direct OpenAI API call as fallback"""
