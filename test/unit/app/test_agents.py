@@ -184,10 +184,10 @@ class TestAgentUnitMocked:
             # This API no longer exists in newer pydantic-ai versions
             # test_model.set_result({...})
 
-            test_agent = Agent(
+            test_agent: Any = Agent(  # type: ignore[call-overload]
                 "test-router",
                 model=test_model,
-                result_type=Dict[str, Any],
+                output_type=Dict[str, Any],
             )
             mock_create.return_value = test_agent
 
