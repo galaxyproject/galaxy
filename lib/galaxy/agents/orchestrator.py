@@ -59,7 +59,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
     def __init__(self, deps: GalaxyAgentDependencies):
         super().__init__(deps)
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create the orchestrator agent with conditional structured output."""
         if self._supports_structured_output():
             agent = Agent(

@@ -47,7 +47,7 @@ class CustomToolAgent(BaseGalaxyAgent):
         """CustomToolAgent requires structured output for proper tool generation."""
         return True
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create agent with UserToolSource as the output type."""
         return Agent(
             self._get_model(),

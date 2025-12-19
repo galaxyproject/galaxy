@@ -54,7 +54,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
     agent_type = AgentType.ERROR_ANALYSIS
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create the error analysis agent with conditional structured output."""
         if self._supports_structured_output():
             agent = Agent(

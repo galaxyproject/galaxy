@@ -53,7 +53,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
     agent_type = AgentType.ROUTER
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create the router agent with structured output."""
         model_name = self._get_agent_config("model", "")
 
