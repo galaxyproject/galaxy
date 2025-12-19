@@ -187,6 +187,7 @@ class AgentType:
     CUSTOM_TOOL = "custom_tool"
     ORCHESTRATOR = "orchestrator"
     TOOL_RECOMMENDATION = "tool_recommendation"
+    HISTORY_ANALYZER = "history_analyzer"
 
 
 # Internal agent response model (simplified for internal use)
