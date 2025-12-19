@@ -1128,8 +1128,7 @@ ON CONFLICT
                     "amount": int(amount),
                     "label": quota_source_label,
                 }
-                with sa_session.begin():
-                    sa_session.execute(statement, params)
+                sa_session.execute(statement, params)
 
     def _get_social_auth(self, provider_backend):
         if not self.social_auth:
