@@ -770,25 +770,33 @@ class WorkflowProgress:
                     break
 
             if not input_subworkflow_step.input_optional and not connection_found:
+                # Check if input has a default value (matching pattern from run_request.py).
+                # A required input can be disconnected if it has a default value.
+                # Use sentinel object to distinguish "no default" from "default is None/empty".
+                default_not_set = object()
+                default_value = input_subworkflow_step.get_input_default_value(default_not_set)
+                has_default = default_value is not default_not_set
 
-                if not input_connections:
-                    # TODO: Prevent this on import / runtime !
+                # Only raise error if there's no default value
+                if not has_default:
+                    if not input_connections:
+                        # TODO: Prevent this on import / runtime !
+                        raise modules.FailWorkflowEvaluation(
+                            InvocationUnexpectedFailure(
+                                reason=FailureReason.unexpected_failure,
+                                workflow_step_id=step.id,
+                                details="Subworkflow has disconnected required input.",
+                            )
+                        )
+
                     raise modules.FailWorkflowEvaluation(
-                        InvocationUnexpectedFailure(
-                            reason=FailureReason.unexpected_failure,
+                        InvocationFailureOutputNotFound(
+                            reason=FailureReason.output_not_found,
                             workflow_step_id=step.id,
-                            details="Subworkflow has disconnected required input.",
+                            output_name=input_connection.output_name,
+                            dependent_workflow_step_id=input_connection.output_step.id,
                         )
                     )
-
-                raise modules.FailWorkflowEvaluation(
-                    InvocationFailureOutputNotFound(
-                        reason=FailureReason.output_not_found,
-                        workflow_step_id=step.id,
-                        output_name=input_connection.output_name,
-                        dependent_workflow_step_id=input_connection.output_step.id,
-                    )
-                )
 
         return WorkflowProgress(
             subworkflow_invocation,
