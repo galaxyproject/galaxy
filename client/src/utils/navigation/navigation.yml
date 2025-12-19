@@ -668,6 +668,7 @@ workflows:
     share_button: '[id^="g-card-action-workflow-share-"]'
     download_button: '[id^="g-card-action-workflow-download-"]'
     run_button: '[id^="g-card-action-workflow-run-"]'
+    run_button_by_id: '#g-card-action-workflow-run-${id}'
     edit_button: '[id^="g-card-action-workflow-edit-"]'
     rename_input: '#workflow-name-input'
     workflow_drop_down: '[id^="g-card-extra-actions-"]'
