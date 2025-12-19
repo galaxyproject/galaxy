@@ -17,6 +17,21 @@ tool_shed/
 └── util/             # Shared utilities
 ```
 
+## Running Commands
+
+**IMPORTANT:** Always run commands from the package directory for this
+subproject (the directory where this file is located).
+
+Always use `uv run python` and `uv run pytest` to run commands in this directory to ensure the correct environment is used.
+
+Example:
+```bash
+uv run python -c "from selenium.webdriver.common.by import By; print(By.CLASS_NAME)"
+uv run pytest tests/seleniumtests/test_has_driver.py -v
+```
+
+**DO NOT run pytest from the monorepo root** (e.g., `../../` from here). This causes fixture scope issues and incorrect test execution. Always run pytest from this directory.
+
 ## Testing
 
 Run from this directory (`packages/tool_shed`):
