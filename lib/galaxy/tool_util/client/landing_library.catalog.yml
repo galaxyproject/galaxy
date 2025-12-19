@@ -487,3 +487,34 @@ upload_one:
         name: "Reference information"
         url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
         ext: "txt"
+
+upload_sheet:
+  request_state:
+    - class: Collection
+      collection_type: sample_sheet
+      name: test sample sheet
+      elements:
+        - class: File
+          identifier: sample1
+          url: base64://eyJ0ZXN0IjogInRlc3QifQ=="
+          ext: txt
+          deferred: False
+        - class: File
+          identifier: sample2
+          url: base64://eyJ0ZXN0IjogInRlc3QifQ=="
+          ext: txt
+          deferred: False
+      column_definitions:
+      - type: int
+        name: replicate
+        optional: False
+      - type: string
+        name: condition
+        optional: False
+      rows:
+        sample1:
+          - 1
+          - control
+        sample2:
+          - 2
+          - treatment
