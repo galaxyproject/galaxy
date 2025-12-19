@@ -213,3 +213,78 @@ class FastAPIAgent:
         #     operations_used=result.all_messages(),  # Track which tools were called
         #     success=True,
         # )
+
+    @router.post(
+        "/api/agent/analyze-history/{history_id}",
+        summary="Analyze a Galaxy history",
+    )
+    async def analyze_history(
+        self,
+        history_id: str,
+        focus: str = "summary",
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> dict[str, Any]:
+        """
+        Analyze a Galaxy history and generate a summary or methods section.
+
+        This endpoint uses the HistoryAnalyzerAgent to examine all datasets and tools
+        used in a history, then generates a comprehensive analysis including:
+        - Summary of what was done
+        - Tools used and their versions
+        - Input and output data descriptions
+        - Publication-ready methods section (when focus="methods")
+
+        Args:
+            history_id: The Galaxy history ID to analyze
+            focus: Analysis focus - "summary" (default), "methods", or "detailed"
+            trans: User session context
+
+        Returns:
+            Analysis results including title, summary, tools used, citations, etc.
+        """
+        try:
+            from galaxy.agents import (
+                AgentType,
+                GalaxyAgentDependencies,
+                HistoryAnalyzerAgent,
+            )
+            from galaxy.managers.jobs import JobManager
+
+            # Build agent dependencies
+            deps = GalaxyAgentDependencies(
+                trans=trans,
+                user=trans.user,
+                config=trans.app.config,
+                job_manager=trans.app.job_manager if hasattr(trans.app, "job_manager") else JobManager(trans.app),
+                toolbox=trans.app.toolbox,
+            )
+
+            agent = HistoryAnalyzerAgent(deps)
+            result = await agent.analyze_history(history_id, focus)
+
+            return {
+                "success": True,
+                "title": result.title,
+                "summary": result.summary,
+                "workflow_description": result.workflow_description,
+                "tools_used": result.tools_used,
+                "tool_versions": result.tool_versions,
+                "citations": result.citations,
+                "input_data": result.input_data,
+                "output_data": result.output_data,
+                "methods_text": result.methods_text,
+                "confidence": result.confidence,
+            }
+
+        except ImportError as e:
+            log.error(f"Agent dependencies not available: {e}")
+            return {
+                "success": False,
+                "error": "pydantic-ai is required for this feature but is not installed",
+            }
+        except Exception as e:
+            log.exception(f"History analysis failed for {history_id}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
