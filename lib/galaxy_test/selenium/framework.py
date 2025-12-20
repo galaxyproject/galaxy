@@ -14,7 +14,6 @@ from typing import (
     Any,
     cast,
     Optional,
-    TYPE_CHECKING,
 )
 
 import requests
@@ -36,8 +35,13 @@ from galaxy.selenium.has_driver_protocol import (
 from galaxy.selenium.navigates_galaxy import (
     exception_seems_to_indicate_transition,
     galaxy_timeout_handler,
-    NavigatesGalaxy,
     retry_during_transitions,
+)
+from galaxy.selenium.navigates_galaxy_mixin import NavigatesGalaxyMixin
+from galaxy.selenium.stories import (
+    NoopStory,
+    Story,
+    StoryProtocol,
 )
 from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
@@ -137,6 +141,7 @@ DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
+GALAXY_TEST_STORIES_DIRECTORY = os.environ.get("GALAXY_TEST_STORIES_DIRECTORY", None)
 # Driver backend can be ["selenium", "playwright"]
 GALAXY_TEST_DRIVER_BACKEND = os.environ.get("GALAXY_TEST_DRIVER_BACKEND", "selenium")
 # Test browser can be ["CHROME", "FIREFOX"]
@@ -307,11 +312,43 @@ def try_symlink(file1, file2):
         pass
 
 
+def _create_story_directory(test_name: str) -> str:
+    """Create and return path to story directory for test.
+
+    Args:
+        test_name: Name of the test function
+
+    Returns:
+        Absolute path to created story directory
+    """
+    if GALAXY_TEST_STORIES_DIRECTORY is None:
+        raise ValueError("GALAXY_TEST_STORIES_DIRECTORY is not set")
+
+    test_stories_directory = os.path.abspath(GALAXY_TEST_STORIES_DIRECTORY)
+    if not os.path.exists(test_stories_directory):
+        os.makedirs(test_stories_directory)
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    story_dir_name = f"{test_name}_{timestamp}"
+    story_dir = os.path.join(test_stories_directory, story_dir_name)
+    os.makedirs(story_dir)
+
+    return story_dir
+
+
 def selenium_test(f):
     test_name = f.__name__
+    test_docstring = f.__doc__
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
+        # Initialize story (real or noop)
+        if GALAXY_TEST_STORIES_DIRECTORY:
+            story_dir = _create_story_directory(test_name)
+            self.story = Story(test_name, test_docstring or "", story_dir)
+        else:
+            self.story = NoopStory()
+
         retry_attempts = 0
         while True:
             if retry_attempts > 0:
@@ -319,6 +356,12 @@ def selenium_test(f):
             try:
                 rval = f(self, *args, **kwds)
                 self.assert_baseline_accessibility()
+
+                # Finalize story on success
+                self.story.finalize()
+                if GALAXY_TEST_STORIES_DIRECTORY:
+                    try_symlink(story_dir, os.path.abspath(os.path.join(GALAXY_TEST_STORIES_DIRECTORY, "latest")))
+
                 return rval
             except unittest.SkipTest:
                 dump_test_information(self, test_name)
@@ -326,6 +369,11 @@ def selenium_test(f):
                 raise
             except Exception:
                 dump_test_information(self, test_name)
+
+                # Still finalize story on failure (useful for debugging)
+                self.story.add_documentation("## Test Failed\n\nSee error directory for details.")
+                self.story.finalize()
+
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
                     print(
@@ -427,6 +475,8 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def setup_selenium(self):
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
+        # Initialize story as noop (decorator will override if stories enabled)
+        self.story: StoryProtocol = NoopStory()
         self.setup_driver_and_session()
         if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
             self._setup_interactor()
@@ -483,7 +533,50 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         with open(target, "w") as f:
             f.write(content)
 
+    def screenshot(self, label: str, caption: Optional[str] = None):
+        """Take a screenshot and save to both story and screenshots directories if configured.
+
+        Overrides parent implementation to support dual-saving when both
+        GALAXY_TEST_STORIES_DIRECTORY and GALAXY_TEST_SCREENSHOTS_DIRECTORY are set.
+
+        Args:
+            label: Base filename for screenshot
+            caption: Optional caption for the screenshot in the story
+        """
+        # Get primary target path
+        target = self._screenshot_path(label)
+        if target is None:
+            return
+
+        # Save to primary location
+        self.save_screenshot(target)
+
+        # If story is enabled AND screenshots directory is also configured, save there too
+        if self.story.enabled and GALAXY_TEST_SCREENSHOTS_DIRECTORY is not None:
+            screenshots_target = self._screenshots_directory_path(label)
+            if screenshots_target:
+                self.save_screenshot(screenshots_target)
+
+        # Add to story (noop if NoopStory)
+        self.story.add_screenshot(target, caption or label)
+
+        return target
+
     def _screenshot_path(self, label, extension=".png"):
+        """Generate screenshot path.
+
+        If story mode is enabled, saves to story directory with sequential numbering.
+        Otherwise uses the standard screenshots directory.
+        """
+        # If stories are enabled, save to story directory
+        if self.story.enabled:
+            target = os.path.join(
+                self.story.output_directory, f"{self.story.screenshot_counter:03d}_{label}{extension}"
+            )
+            self.story.screenshot_counter += 1
+            return target
+
+        # Otherwise use screenshots directory (existing behavior)
         if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
             return
         if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
@@ -497,7 +590,25 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 
         return target
 
+    def _screenshots_directory_path(self, label, extension=".png"):
+        """Generate path for screenshots directory (not story).
+
+        Helper method for saving screenshots to the screenshots directory
+        when story mode is also enabled.
+        """
+        if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
+            return None
+        if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
+            os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
+        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + extension)
+        copy = 1
+        while os.path.exists(target):
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, f"{label}-{copy}{extension}")
+            copy += 1
+        return target
+
     def reset_driver_and_session(self):
+        self.story.reset()
         self.tear_down_driver()
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.setup_driver_and_session()
@@ -652,12 +763,6 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
 
     def setup_shared_state(self):
         """Override this to setup shared data for tests that gets initialized only once."""
-
-
-if TYPE_CHECKING:
-    NavigatesGalaxyMixin = NavigatesGalaxy
-else:
-    NavigatesGalaxyMixin = object
 
 
 class UsesLibraryAssertions(NavigatesGalaxyMixin):

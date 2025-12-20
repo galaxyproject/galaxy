@@ -1124,6 +1124,38 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         return self.page.screenshot()
 
+    def highlight_element(self, element: WebElementProtocol):
+        """
+        Highlight element with red border for screenshots (context manager).
+
+        Returns context manager that places thick red border around element
+        and removes it on exit.
+
+        Args:
+            element: Element to highlight
+
+        Returns:
+            Context manager that highlights on enter and clears on exit
+        """
+        return self._highlight_element(self._unwrap_element(element))
+
+    def _highlight_element(self, element: ElementHandle):
+        """Internal implementation of highlight_element."""
+
+        @contextmanager
+        def _highlight_context():
+            # Store original border style
+            original_border = self.page.evaluate("element => element.style.border", element)
+            try:
+                # Apply thick red border
+                self.page.evaluate("element => element.style.border = '3px solid red'", element)
+                yield
+            finally:
+                # Restore original border
+                self.page.evaluate(f"element => element.style.border = '{original_border}'", element)
+
+        return _highlight_context()
+
     def close(self) -> None:
         """Cleanup the current browser tab/page."""
         self._playwright_resources.browser.close()

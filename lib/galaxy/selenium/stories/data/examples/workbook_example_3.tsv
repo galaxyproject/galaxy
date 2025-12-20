@@ -1,0 +1,4 @@
+list identifier	forward_url	reverse_url	genome
+DRX036147	https://zenodo.org/records/3263975/files/DRX036147_1.fastq.gz	https://zenodo.org/records/3263975/files/DRX036147_2.fastq.gz	dm6
+DRX036148	https://zenodo.org/records/3263975/files/DRX036148_1.fastq.gz	https://zenodo.org/records/3263975/files/DRX036148_2.fastq.gz	dm6
+DRX036149	https://zenodo.org/records/3263975/files/DRX036149_1.fastq.gz	https://zenodo.org/records/3263975/files/DRX036149_2.fastq.gz	dm6

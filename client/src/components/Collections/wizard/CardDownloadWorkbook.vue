@@ -21,7 +21,7 @@ const emit = defineEmits(["download"]);
         <BCardTitle>
             <b>Step 1: Download</b>
         </BCardTitle>
-        <BLink :href="generateWorkbookLink" @click="emit('download')"
+        <BLink data-description="workbook download link" :href="generateWorkbookLink" @click="emit('download')"
             ><FontAwesomeIcon size="xl" :icon="faDownload" /> Download workbook.</BLink
         >
     </BCard>

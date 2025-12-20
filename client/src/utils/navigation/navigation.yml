@@ -170,6 +170,12 @@ dataset_display:
     container: .dataset-display
     content: body
 
+activity_bar:
+  selectors:
+    settings: "#activity-settings"
+    show_activity: "button[data-activity-id='${activity_id}'] button"
+    additional_activities: '[data-description="Additional Activities"]'
+
 history_panel:
   menu:
     labels:
@@ -1388,6 +1394,17 @@ rule_builder:
     source: '.rule-source'
     table: '#rules-ag-grid .ag-root'
     extension_select: '.rule-footer-extension-group .extension-select'
+
+    activity: '#activity-rules'
+    workbook_upload_button: '.workbook-upload-helper'
+    workbook_upload_file_input: '[data-description="workbook-file-input"]'
+    create_collections: '[data-creating-what="collections"]'
+    wizard_import: ".wizard-actions .btn-primary"
+    wizard_next: ".wizard-actions .go-next-btn"
+    data_import_source_from: '[data-import-source-from="${source}"]'
+    workbook_download_link: '[data-description="workbook download link"]'
+    workbook_upload_link: '[data-description="workbook upload card"] [data-description="workbook upload link"]'
+    workbook_upload_file_input_explicit: '[data-description="workbook upload card"] [data-description="workbook-file-input"]'
 
 charts:
   selectors:
