@@ -1996,12 +1996,12 @@ This is available in Galaxy since release 17.05 and was introduced in [pull requ
         <xs:documentation xml:lang="en">Number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="min" type="xs:integer">
+    <xs:attribute name="min" type="xs:integer" gxdocs:added="26.0">
       <xs:annotation>
         <xs:documentation xml:lang="en">Minimum number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="max" type="xs:integer">
+    <xs:attribute name="max" type="xs:integer" gxdocs:added="26.0">
       <xs:annotation>
         <xs:documentation xml:lang="en">Maximum number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
       </xs:annotation>
@@ -2358,12 +2358,12 @@ This value is the same as the value of the ``name`` attribute of the
         <xs:documentation xml:lang="en">Number of elements in output collection.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="min" type="xs:integer">
+    <xs:attribute name="min" type="xs:integer" gxdocs:added="26.0">
       <xs:annotation>
         <xs:documentation xml:lang="en">Minimum number of elements in output collection.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="max" type="xs:integer">
+    <xs:attribute name="max" type="xs:integer" gxdocs:added="26.0">
       <xs:annotation>
         <xs:documentation xml:lang="en">Maximum number of elements in output collection.</xs:documentation>
       </xs:annotation>
