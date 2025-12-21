@@ -244,7 +244,6 @@ class FastAPIAgent:
         """
         try:
             from galaxy.agents import (
-                AgentType,
                 GalaxyAgentDependencies,
                 HistoryAnalyzerAgent,
             )
