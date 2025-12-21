@@ -25,13 +25,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'client/yarn.lock'
-      - run: yarn install --frozen-lockfile
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
         working-directory: client
       - name: Pre-build (icons and plugins)
         run: node scripts/build.mjs
         working-directory: client
       - name: Run Vitest Unit Tests
-        run: yarn test
+        run: pnpm test
         working-directory: client
