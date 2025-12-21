@@ -82,11 +82,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'client/yarn.lock'
           registry-url: 'https://registry.npmjs.org'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
       - name: build client
-        run: yarn && yarn build-production
+        run: pnpm install && pnpm build-production
         working-directory: 'client'
       # Ensure npm 11.5.1 or later for trusted publishing
       - run: npm install -g npm@latest
