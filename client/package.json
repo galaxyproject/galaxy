@@ -19,9 +19,14 @@
     "not ios_saf <= 15.0",
     "not kaios > 0"
   ],
-  "resolutions": {
-    "chokidar": "3.5.3",
-    "vue": "2.7.16"
+  "pnpm": {
+    "overrides": {
+      "chokidar": "3.5.3",
+      "vue": "2.7.16"
+    },
+    "onlyBuiltDependencies": [
+      "vue-demi"
+    ]
   },
   "dependencies": {
     "@citation-js/core": "^0.7.1",
@@ -45,6 +50,7 @@
     "@sentry/vue": "^7.114.0",
     "@vueuse/core": "^10.5.0",
     "@vueuse/math": "^10.9.0",
+    "@vueuse/shared": "^10.5.0",
     "ace-builds": "^1.39.0",
     "ag-grid-community": "^30",
     "ag-grid-vue": "^30",
@@ -55,6 +61,7 @@
     "bootstrap-vue": "^2.23.0",
     "csv-parse": "^5.5.2",
     "d3": "^7.8.5",
+    "d3-selection": "^3.0.0",
     "d3-zoom": "^3.0.0",
     "d3v3": "npm:d3@3",
     "date-fns": "^2.30.0",
@@ -80,15 +87,19 @@
     "katex": "^0.16.22",
     "linkify-html": "^4.1.1",
     "linkifyjs": "^4.1.1",
+    "lodash": "^4.17.21",
     "lodash.isequal": "^4.5.0",
     "lucide-vue": "^0.344.0",
     "markdown-it": "^13.0.2",
     "markdown-it-regexp": "^0.4.0",
     "monaco-editor": "^0.52.2",
+    "monaco-languageserver-types": "^0.4.0",
+    "monaco-types": "^0.1.0",
+    "monaco-worker-manager": "^2.0.1",
     "monaco-yaml": "^5.4.0",
     "object-hash": "^3.0.0",
     "openapi-fetch": "^0.10.6",
-    "pinia": "^2.1.7",
+    "pinia": "^2.3.1",
     "popper.js": "^1.16.1",
     "pretty-bytes": "^6.1.1",
     "pyre-to-regexp": "^0.0.6",
@@ -109,8 +120,10 @@
     "vega": "^5.30.0",
     "vega-embed": "^6.26.0",
     "vega-lite": "^5.21.0",
+    "vscode-languageserver-types": "^3.17.5",
     "vue": "^2.7.16",
     "vue-class-component": "^7.2.6",
+    "vue-demi": "0.13.11",
     "vue-echarts": "^7.0.3",
     "vue-infinite-scroll": "^2.0.2",
     "vue-json-pretty": "^1.9.5",
@@ -128,16 +141,16 @@
   },
   "scripts": {
     "develop": "NODE_ENV=development vite",
-    "build": "NODE_ENV=development node scripts/build.mjs && vite build && yarn run stage-build",
-    "build-production": "NODE_ENV=production node scripts/build.mjs && vite build && yarn run stage-build",
-    "build-production-maps": "GXY_BUILD_SOURCEMAPS=1 NODE_ENV=production node scripts/build.mjs && vite build && yarn run stage-build",
+    "build": "NODE_ENV=development node scripts/build.mjs && vite build && pnpm run stage-build",
+    "build-production": "NODE_ENV=production node scripts/build.mjs && vite build && pnpm run stage-build",
+    "build-production-maps": "GXY_BUILD_SOURCEMAPS=1 NODE_ENV=production node scripts/build.mjs && vite build && pnpm run stage-build",
     "icons": "node scripts/build.mjs icons",
     "plugins": "node scripts/build.mjs plugins",
     "plugins-rebuild": "node scripts/build.mjs plugins --force",
     "stage-build": "cpy 'dist/**/*' '../static/dist' && (git rev-parse HEAD 2>/dev/null || echo '') >../static/client_build_hash.txt",
     "format": "prettier --write . --cache",
     "format-check": "prettier --check .",
-    "prettier": "yarn run format",
+    "prettier": "pnpm run format",
     "test": "vitest run",
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
@@ -148,7 +161,7 @@
   },
   "devDependencies": {
     "@modyfi/vite-plugin-yaml": "^1.1.1",
-    "@pinia/testing": "0.1.3",
+    "@pinia/testing": "0.1.5",
     "@rollup/plugin-inject": "^5.0.5",
     "@testing-library/jest-dom": "^6.4.8",
     "@types/d3": "^7.4.2",
