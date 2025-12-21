@@ -45,7 +45,7 @@ code updates its test extensions again.
             "request": "launch",
 
             // launches version of vitest from inside the node_modules
-            // this means you need to have run yarn first
+            // this means you need to have run pnpm install first
             "program": "${workspaceFolder}/client/node_modules/vitest/vitest.mjs",
             "args": [
                 // Run tests in a single thread for debugging
