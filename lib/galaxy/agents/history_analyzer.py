@@ -67,7 +67,7 @@ class HistoryAnalyzerAgent(BaseGalaxyAgent):
         super().__init__(deps)
         self.ops = AgentOperationsManager(app=deps.trans.app, trans=deps.trans)
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create the pydantic-ai agent with tools for Galaxy data access."""
         agent = Agent(
             self._get_model(),
