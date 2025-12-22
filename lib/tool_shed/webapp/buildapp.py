@@ -34,6 +34,11 @@ log = logging.getLogger(__name__)
 class ToolShedGalaxyWebTransaction(GalaxyWebTransaction):
     @property
     def repositories_hostname(self) -> str:
+        # Use configured tool_shed_url if available
+        tool_shed_url = self.app.config.tool_shed_url
+        if tool_shed_url:
+            return tool_shed_url.rstrip("/")
+        # Fall back to request-based URL
         return url_for("/", qualified=True).rstrip("/")
 
     def get_or_create_default_history(self):
