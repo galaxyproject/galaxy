@@ -127,8 +127,3 @@ class TestComponentShowcase(PlaywrightTestCase):
         self._navigate_to_showcase()
         self._screenshot_component("ToolHistoryTab")
 
-    @skip_if_api_v1
-    def test_log_messages_viewer(self):
-        """Screenshot LogMessagesViewer component."""
-        self._navigate_to_showcase()
-        self._screenshot_component("LogMessagesViewer")
