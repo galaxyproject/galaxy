@@ -7,8 +7,8 @@ cffi==2.0.0 ; platform_python_implementation != 'PyPy'
 cryptography==46.0.3
 librt==0.7.4 ; platform_python_implementation != 'PyPy'
 lxml-stubs==0.5.1
-mypy==1.19.1
-mypy-boto3-s3==1.42.10
+mypy==1.19.0
+mypy-boto3-s3==1.42.3
 mypy-extensions==1.1.0
 pathspec==0.12.1
 pycparser==2.23 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'

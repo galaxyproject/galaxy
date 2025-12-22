@@ -76,7 +76,7 @@ mirakuru==3.0.1 ; python_full_version >= '3.10'
 mistune==3.1.4
 msgpack==1.1.2
 multidict==6.7.0
-mypy==1.19.1
+mypy==1.19.0
 mypy-extensions==1.1.0
 numpy==2.0.2 ; python_full_version < '3.10'
 numpy==2.2.6 ; python_full_version == '3.10.*'

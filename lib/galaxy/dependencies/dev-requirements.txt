@@ -102,7 +102,7 @@ mistune==3.1.4
 more-itertools==10.8.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
 msgpack==1.1.2
 multidict==6.7.0
-mypy==1.19.1
+mypy==1.19.0
 mypy-extensions==1.1.0
 myst-parser==3.0.1 ; python_full_version < '3.10'
 myst-parser==4.0.1 ; python_full_version >= '3.10'
