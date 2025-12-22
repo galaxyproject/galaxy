@@ -2,7 +2,6 @@
 
 from .framework import (
     managed_history,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -15,7 +14,6 @@ class TestWorkflowRunInputs(SeleniumTestCase):
 
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_sample_sheet_from_existing_filters_on_collection_type(self):
