@@ -302,10 +302,11 @@ class AuthnzManager:
                 msg = f"An error occurred when authenticating a user. Invalid EntityID: `{idphint}`"
                 log.exception(msg)
                 return False, msg, None
+            redirect = backend.authenticate(trans, idphint)
             return (
                 True,
                 f"Redirecting to the `{provider}` identity provider for authentication",
-                backend.authenticate(trans, idphint),
+                redirect.url,
             )
         except Exception:
             msg = f"An error occurred when authenticating a user on `{provider}` identity provider"

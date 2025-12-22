@@ -1,6 +1,8 @@
 import json
 import logging
+import sys
 import time
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 import jwt
@@ -42,6 +44,18 @@ from .oidc_utils import (
     verify_oidc_response,
 )
 from ..config import GalaxyAppConfiguration
+
+if TYPE_CHECKING:
+    from social_core.backends.oauth import BaseOAuth2
+
+    if sys.version_info >= (3, 10):
+        from social_core.strategy import HttpResponseProtocol
+    else:
+        from typing import Protocol
+
+        class HttpResponseProtocol(Protocol):
+            url: str
+
 
 log = logging.getLogger(__name__)
 
@@ -125,6 +139,15 @@ AUTH_PIPELINE = (
 )
 
 DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy.authnz.psa_authnz.disconnect")
+
+
+class Redirect:
+    """
+    Implementation of the HttpResponseProtocol defined in social_core.strategy
+    """
+
+    def __init__(self, url: str) -> None:
+        self.url = url
 
 
 class PSAAuthnz(IdentityProvider):
@@ -215,7 +238,7 @@ class PSAAuthnz(IdentityProvider):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
 
-    def _load_backend(self, strategy, redirect_uri):
+    def _load_backend(self, strategy, redirect_uri) -> "BaseOAuth2":
         backends = self._get_helper("AUTHENTICATION_BACKENDS")
         backend = get_backend(backends, BACKENDS_NAME[self.config["provider"]])
         return backend(strategy, redirect_uri)
@@ -280,10 +303,11 @@ class PSAAuthnz(IdentityProvider):
 
         return None
 
-    def authenticate(self, trans, idphint=None):
+    def authenticate(self, trans, idphint=None) -> "HttpResponseProtocol":
         on_the_fly_config(trans.sa_session)
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
+        backend.DEFAULT_SCOPE = backend.DEFAULT_SCOPE or []
         if (
             backend.name is BACKENDS_NAME["google"]
             and "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config
@@ -305,12 +329,13 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
-        redirect_url = do_complete(
+        redirect = do_complete(
             backend,
             login=lambda backend, user, social_user: self._login_user(backend, user, social_user),
             user=trans.user,
             state=state_token,
         )
+        redirect_url = redirect.url if hasattr(redirect, "url") else redirect
 
         user = self.config.get("user", None)
 
@@ -362,8 +387,9 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
         response = do_disconnect(backend, trans.user, association_id)
-        if isinstance(response, str):
-            return True, "", response
+        response_url = response.url if hasattr(response, "url") else response
+        if isinstance(response_url, str):
+            return True, "", response_url
         return response.get("success", False), response.get("message", ""), ""
 
     def logout(self, trans, post_user_logout_href=None):
@@ -435,6 +461,7 @@ class PSAAuthnz(IdentityProvider):
 
             # Decode and verify the access token using oidc_utils
             # This will raise exceptions for: expired tokens, invalid audience, invalid signature, etc.
+            assert is_oidc_backend(backend)
             decoded_jwt = decode_access_token_oidc(access_token, backend)
 
             # JWT verified, now fetch the user
@@ -575,8 +602,8 @@ class Strategy(BaseStrategy):
             )
         return path
 
-    def redirect(self, url):
-        return url
+    def redirect(self, url: str) -> Redirect:
+        return Redirect(url)
 
     def html(self, content):
         raise NotImplementedError("Not implemented.")
