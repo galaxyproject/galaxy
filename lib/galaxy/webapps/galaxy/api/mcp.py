@@ -3,7 +3,10 @@ Model Context Protocol (MCP) server integration for Galaxy.
 
 This module provides MCP tools that allow AI assistants to interact
 with Galaxy programmatically. Tools are thin wrappers around the
-AgentOperationsManager which provides the actual functionality.
+AgentOperationsManager which handles the operations.
+
+Uses Streamable HTTP transport (the modern MCP standard) with stateless
+mode enabled for multi-worker compatibility.
 """
 
 import logging
@@ -12,6 +15,7 @@ from typing import Any
 from fastmcp import (
     Context as MCPContext,
     FastMCP,
+    settings as fastmcp_settings,
 )
 
 from galaxy.managers.agent_operations import AgentOperationsManager
@@ -32,8 +36,12 @@ def get_mcp_app(gx_app):
     Returns:
         FastAPI application with MCP endpoints
     """
+    # Enable stateless HTTP mode for multi-worker deployments
+    # This allows the MCP server to work correctly with multiple uvicorn workers
+    fastmcp_settings.stateless_http = True
+
     # Create MCP server instance
-    mcp = FastMCP("Galaxy", dependencies=["httpx>=0.27.0"])
+    mcp = FastMCP("Galaxy")
 
     # Helper function to create AgentOperationsManager from API key
     def get_operations_manager(api_key: str, ctx: MCPContext) -> AgentOperationsManager:
@@ -783,10 +791,10 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to get user info: {str(e)}")
             raise ValueError(f"Failed to get user info: {str(e)}") from e
 
-    # Create the HTTP app for mounting
-    # The path="/mcp" parameter here is just for SSE endpoint naming
+    # Create the HTTP app for mounting using Streamable HTTP transport
+    # (SSE transport is deprecated as of MCP spec 2025-03-26)
     # The actual mount point is determined by fast_app.py
-    mcp_app = mcp.sse_app()
+    mcp_app = mcp.http_app()
 
-    logger.info("MCP server initialized with 29 tools")
+    logger.info("MCP server initialized with 29 tools (Streamable HTTP)")
     return mcp_app

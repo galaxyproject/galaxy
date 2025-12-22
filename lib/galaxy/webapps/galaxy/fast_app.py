@@ -202,7 +202,8 @@ def include_mcp(app: FastAPI, gx_app):
     """
     Include Model Context Protocol (MCP) server if enabled in configuration.
 
-    This mounts an MCP endpoint that allows AI assistants to interact with Galaxy.
+    Mounts an MCP endpoint using Streamable HTTP transport (stateless mode)
+    that allows AI assistants like Claude Desktop to interact with Galaxy.
     """
     if not gx_app.config.enable_mcp_server:
         return
@@ -222,7 +223,7 @@ def include_mcp(app: FastAPI, gx_app):
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.info(f"MCP server mounted at {mcp_path}")
+        logger.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
     except ImportError as e:
         import logging
 
