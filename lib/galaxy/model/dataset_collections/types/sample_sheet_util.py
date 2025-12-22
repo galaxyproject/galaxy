@@ -22,6 +22,7 @@ from galaxy.tool_util_models.sample_sheet import (
     SampleSheetColumnValueT,
     SampleSheetRow,
 )
+from galaxy.util import strip_control_characters
 
 SampleSheetRows = dict[str, SampleSheetRow]
 OptionalSampleSheetRows = Optional[SampleSheetRows]
@@ -145,7 +146,7 @@ def validate_column_value(
     elif column_type == "string":
         if not isinstance(column_value, (str,)):
             raise RequestParameterInvalidException(f"{column_value} was not a string as expected")
-        validate_no_special_characters(column_value)
+        strip_control_characters(column_value)
     elif column_type == "boolean":
         if not isinstance(column_value, (bool,)):
             raise RequestParameterInvalidException(f"{column_value} was not a boolean as expected")
