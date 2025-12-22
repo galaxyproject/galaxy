@@ -7414,7 +7414,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                         flush=False, element_destination=history
                     )
             else:
-                raise ValueError("Cannot replace {type(replacement.element_object)}")
+                raise ValueError(f"Cannot replace {type(replacement.element_object)}")
 
     def replace_failed_elements(self, replacements):
         stmt = self._build_nested_collection_attributes_stmt(
