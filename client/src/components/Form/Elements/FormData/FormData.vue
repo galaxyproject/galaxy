@@ -564,7 +564,11 @@ function getElementAttributes(element: HistoryOrCollectionItem): {
             // we already know it is a collection element by this point
             if (isCollectionElement(element)) {
                 collectionType = element.object.collection_type;
-                columnDefinitions = element.object.column_definitions;
+                // Cast needed: schema has two structurally identical SampleSheetColumnDefinition types
+                columnDefinitions = element.object.column_definitions as
+                    | SampleSheetColumnDefinition[]
+                    | null
+                    | undefined;
             }
         }
     } else {

@@ -1067,6 +1067,9 @@ class DCObject(Model, WithModelClass):
     elements_datatypes: set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
     )
+    column_definitions: Optional[SampleSheetColumnDefinitions] = Field(
+        None, description="Column definitions for sample sheet collections."
+    )
 
 
 class DCESummary(Model, WithModelClass):
