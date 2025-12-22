@@ -332,7 +332,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
             rows={"sample1": [42]},
         )
         create_response = self._post("dataset_collections", payload, json=True)
-        print(create_response.json())
         self._check_create_response(create_response)
         dataset_collection = create_response.json()
         assert dataset_collection["collection_type"] == "sample_sheet:paired"
