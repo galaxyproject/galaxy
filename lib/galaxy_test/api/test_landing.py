@@ -493,6 +493,10 @@ steps:
             # Create request state with sample sheet collection
             input_b64_1 = b64encode(b"sample1 data").decode("utf-8")
             input_b64_2 = b64encode(b"sample2 data").decode("utf-8")
+            row_data = {
+                "sample1": [1, "control"],
+                "sample2": [2, "treatment"],
+            }
             request_state = {
                 "input_collection": {
                     "class": "Collection",
@@ -518,10 +522,7 @@ steps:
                         {"type": "int", "name": "replicate", "optional": False},
                         {"type": "string", "name": "condition", "optional": False},
                     ],
-                    "rows": {
-                        "sample1": [1, "control"],
-                        "sample2": [2, "treatment"],
-                    },
+                    "rows": row_data,
                 }
             }
 
@@ -575,10 +576,166 @@ steps:
             elements = collection_details["elements"]
             assert len(elements) == 2
 
-            # Check that columns metadata was preserved for each element
+            # Verify each element has correct columns
             for element in elements:
-                assert "columns" in element, f"Element {element.get('element_identifier')} missing columns"
-                assert element["columns"] is not None
+                element_id = element.get("element_identifier")
+                expected_columns = row_data.get(element_id)
+
+                assert "columns" in element, f"Element {element_id} missing columns"
+                assert (
+                    element["columns"] == expected_columns
+                ), f"Element {element_id} has incorrect columns: {element['columns']}, expected {expected_columns}"
+
+    @skip_without_tool("cat1")
+    def test_workflow_landing_with_sample_sheet_paired_execution(self):
+        """Test that executing a workflow from landing request preserves sample sheet metadata for paired collections."""
+        with self.dataset_populator.test_history() as history_id:
+            column_definitions = [
+                {"type": "int", "name": "replicate", "optional": False},
+                {"type": "string", "name": "condition", "optional": False},
+            ]
+            rows = {
+                "sample1": [1, "control"],
+                "sample2": [2, "treatment"],
+            }
+
+            workflow_id = self.workflow_populator.upload_yaml_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: sample_sheet:paired
+steps:
+  cat:
+    tool_id: cat1
+    in:
+      input1: input_collection
+"""
+            )
+
+            # Create paired elements (forward/reverse for each sample)
+            forward_b64_1 = b64encode(b"sample1 forward data").decode("utf-8")
+            reverse_b64_1 = b64encode(b"sample1 reverse data").decode("utf-8")
+            forward_b64_2 = b64encode(b"sample2 forward data").decode("utf-8")
+            reverse_b64_2 = b64encode(b"sample2 reverse data").decode("utf-8")
+
+            request_state = {
+                "input_collection": {
+                    "class": "Collection",
+                    "collection_type": "sample_sheet:paired",
+                    "name": "test sample sheet paired for execution",
+                    "elements": [
+                        {
+                            "class": "Collection",
+                            "identifier": "sample1",
+                            "collection_type": "paired",
+                            "elements": [
+                                {
+                                    "class": "File",
+                                    "identifier": "forward",
+                                    "url": f"base64://{forward_b64_1}",
+                                    "ext": "txt",
+                                    "deferred": False,
+                                },
+                                {
+                                    "class": "File",
+                                    "identifier": "reverse",
+                                    "url": f"base64://{reverse_b64_1}",
+                                    "ext": "txt",
+                                    "deferred": False,
+                                },
+                            ],
+                        },
+                        {
+                            "class": "Collection",
+                            "identifier": "sample2",
+                            "collection_type": "paired",
+                            "elements": [
+                                {
+                                    "class": "File",
+                                    "identifier": "forward",
+                                    "url": f"base64://{forward_b64_2}",
+                                    "ext": "txt",
+                                    "deferred": False,
+                                },
+                                {
+                                    "class": "File",
+                                    "identifier": "reverse",
+                                    "url": f"base64://{reverse_b64_2}",
+                                    "ext": "txt",
+                                    "deferred": False,
+                                },
+                            ],
+                        },
+                    ],
+                    "column_definitions": column_definitions,
+                    "rows": rows,
+                }
+            }
+
+            landing_request = CreateWorkflowLandingRequestPayload(
+                workflow_id=workflow_id,
+                workflow_target_type="stored_workflow",
+                request_state=request_state,
+                public=True,
+            )
+            landing_response = self.dataset_populator.create_workflow_landing(landing_request)
+
+            claimed_response = self.dataset_populator.use_workflow_landing(landing_response.uuid)
+            invocation_response = self.workflow_populator.invoke_workflow(
+                claimed_response.workflow_id,
+                inputs=claimed_response.request_state,
+                history_id=history_id,
+                inputs_by="name",
+            )
+            invocation_id = invocation_response.json()["id"]
+
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id, claimed_response.workflow_id, invocation_id, assert_ok=True
+            )
+
+            collections = self.dataset_populator.get_history_contents_of_type(history_id, "dataset_collections")
+            assert len(collections) >= 2, f"Expected at least 2 collections (input and output), got {len(collections)}"
+            output_collection = collections[-1]
+            collection_details = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_collection["id"]
+            )
+
+            assert "column_definitions" in collection_details
+            assert collection_details["column_definitions"] is not None
+            assert len(collection_details["column_definitions"]) == 2
+            assert collection_details["column_definitions"][0]["name"] == "replicate"
+            assert collection_details["column_definitions"][1]["name"] == "condition"
+
+            assert "elements" in collection_details
+            elements = collection_details["elements"]
+            assert len(elements) == 2
+
+            for element in elements:
+                element_id = element.get("element_identifier")
+                expected_columns = rows.get(element_id)  # Reuse shared rows data
+
+                assert "columns" in element, f"Element {element_id} missing columns"
+                assert (
+                    element["columns"] == expected_columns
+                ), f"Element {element_id} has incorrect columns: {element['columns']}, expected {expected_columns}"
+
+                # Additional verification specific to paired collections
+                assert element.get("element_type") == "dataset_collection"
+                assert "object" in element
+                inner_collection = element["object"]
+                assert inner_collection["collection_type"] == "paired"
+
+                # Verify inner paired elements exist but don't have columns (only outer elements do)
+                assert "elements" in inner_collection
+                paired_elements = inner_collection["elements"]
+                assert len(paired_elements) == 2
+                for paired_element in paired_elements:
+                    assert paired_element.get("columns") is None, (
+                        f"Inner element {paired_element.get('element_identifier')} "
+                        "should not have columns (only outer collection elements have sample sheet metadata)"
+                    )
 
 
 def _workflow_request_state() -> dict[str, Any]:

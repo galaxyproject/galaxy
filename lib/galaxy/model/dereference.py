@@ -103,13 +103,21 @@ def derefence_collection_element(
     element: CollectionElementCollectionRequestUri,
     parent_dataset_collection: DatasetCollection,
     element_index: int,
+    rows: Optional[dict[str, SampleSheetRow]] = None,
 ):
     child_dataset_collection = DatasetCollection(collection_type=element.collection_type)
+
+    # Extract row for this element if present
+    columns = None
+    if rows and element.identifier in rows:
+        columns = rows[element.identifier]
+
     DatasetCollectionElement(
         collection=parent_dataset_collection,
         element=child_dataset_collection,
         element_identifier=element.identifier,
         element_index=element_index,
+        columns=columns,
     )
     sa_session.add(child_dataset_collection)
     for index, child_element in enumerate(element.elements):
@@ -217,7 +225,7 @@ def derefence_collection_to_model(
         if element.class_ == "File":
             dereference_collection_dataset_element(sa_session, user, history, element, dc, element_index=i, rows=rows)
         elif element.class_ == "Collection":
-            derefence_collection_element(sa_session, user, history, element, dc, i)
+            derefence_collection_element(sa_session, user, history, element, dc, i, rows=rows)
 
     dc.populated_state = "ok"
     dc.element_count = len(data_request_uri.elements)
