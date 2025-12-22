@@ -327,6 +327,8 @@ class AscpFileSystem(AbstractFileSystem):
             "timed out",
             "refused",
             "unreachable",
+            "session stop",  # Session Stop  (Error: Client unable to connect to server (check UDP port and firewall))
+            "connect via ssh",  # Unable to connect via SSH, exiting
         ]
 
         return any(pattern in error_msg for pattern in retryable_patterns)
