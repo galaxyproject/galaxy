@@ -73,7 +73,10 @@ class AgentIntegrationTestCase(IntegrationTestCase):
 
 def _create_deps_with_mock_model(self, trans, user):
     """Replacement for AgentService.create_dependencies that injects a mock model_factory."""
-    from galaxy.agents import GalaxyAgentDependencies, agent_registry
+    from galaxy.agents import (
+        agent_registry,
+        GalaxyAgentDependencies,
+    )
 
     toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
     return GalaxyAgentDependencies(
