@@ -11,7 +11,6 @@ from a2wsgi import WSGIMiddleware
 from fastapi import (
     Depends,
     FastAPI,
-    Query,
 )
 from fastapi.responses import (
     HTMLResponse,
@@ -112,15 +111,6 @@ def frontend_controller(app):
     return app, index
 
 
-def redirect_legacy_repository_url(app):
-
-    @app.get("/repository")
-    def redirect(repository_id: str = Query(...)):
-        # make sure it is real ID to sanitize before redirection
-        sanitized_repository_id = app.security.encode_id(app.security.decode_id(repository_id))
-        return RedirectResponse(f"/repositories/{sanitized_repository_id}")
-
-
 def redirect_route(app, from_url: str, to_url: str):
     @app.get(from_url)
     def redirect():
@@ -186,8 +176,6 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
 
         for from_route, to_route in LEGACY_ROUTES.items():
             redirect_route(app, from_route, to_route)
-
-        redirect_legacy_repository_url(app)
 
         mount_static(FRONTEND / "static")
         if TOOL_SHED_USE_HMR:
