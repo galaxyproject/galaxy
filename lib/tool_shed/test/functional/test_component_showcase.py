@@ -126,4 +126,3 @@ class TestComponentShowcase(PlaywrightTestCase):
         """Screenshot ToolHistoryTab component."""
         self._navigate_to_showcase()
         self._screenshot_component("ToolHistoryTab")
-
