@@ -230,7 +230,7 @@ def test_reset_metadata_fixes_tool_config_path(
 
     # The before snapshot should show the corrupted path
     before_has_corruption = False
-    for rev_key, rev_data in before_dict.items():
+    for _rev_key, rev_data in before_dict.items():
         if rev_data.tools:
             for tool in rev_data.tools:
                 if tool.tool_config == corrupted_path:
@@ -243,7 +243,7 @@ def test_reset_metadata_fixes_tool_config_path(
 
     # The after snapshot should show the fixed path (based on repo_path)
     after_has_fix = False
-    for rev_key, rev_data in after_dict.items():
+    for _rev_key, rev_data in after_dict.items():
         if rev_data.tools:
             for tool in rev_data.tools:
                 if tool.tool_config.startswith(repo_path):
@@ -309,7 +309,7 @@ def test_reset_metadata_dry_run_shows_visual_diff(
     assert result.repository_metadata_before is not None, "Expected before snapshot"
     before_dict = result.repository_metadata_before.root
     before_has_corruption = False
-    for rev_key, rev_data in before_dict.items():
+    for _rev_key, rev_data in before_dict.items():
         if rev_data.tools:
             for tool in rev_data.tools:
                 if tool.tool_config == corrupted_path:
@@ -322,7 +322,7 @@ def test_reset_metadata_dry_run_shows_visual_diff(
     assert result.repository_metadata_after is not None, "Expected after snapshot"
     after_dict = result.repository_metadata_after.root
     after_has_fix = False
-    for rev_key, rev_data in after_dict.items():
+    for _rev_key, rev_data in after_dict.items():
         if rev_data.tools:
             for tool in rev_data.tools:
                 if tool.tool_config.startswith(repo_path) and tool.tool_config != corrupted_path:

@@ -463,7 +463,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert len(after) > 0
 
         # Verify each revision has tools with tool_config
-        for rev_key, rev_data in after.items():
+        for _rev_key, rev_data in after.items():
             if rev_data.get("tools"):
                 for tool in rev_data["tools"]:
                     assert "tool_config" in tool

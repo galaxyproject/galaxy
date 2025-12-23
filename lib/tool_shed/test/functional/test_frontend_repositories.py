@@ -66,7 +66,7 @@ class TestFrontendRepositories(PlaywrightTestCase):
     def test_metadata_inspector_reset_tab(self):
         """Verify Reset Metadata tab with admin login."""
         self.login()
-        repository = self._setup_repo_and_visit_inspector()
+        self._setup_repo_and_visit_inspector()
         page = self._page
 
         # Reset tab should be visible when logged in as admin
