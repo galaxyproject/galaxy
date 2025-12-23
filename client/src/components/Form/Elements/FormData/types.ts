@@ -89,6 +89,7 @@ export type DataOption = {
     name: string;
     src: string;
     tags: Array<string>;
+    column_definitions?: SampleSheetColumnDefinition[] | null;
 };
 
 export function isDataOption(item: object): item is DataOption {

@@ -1838,6 +1838,11 @@ class NavigatesGalaxy(HasDriver):
             self.send_enter(tag_area)
         self.send_escape(tag_area)
 
+    def workflow_run_with_id(self, workflow_id: str):
+        self.workflow_index_open()
+        self.components.workflows.run_button_by_id(id=workflow_id).wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     def workflow_run_with_name(self, name: str):
         self.workflow_index_open()
         self.workflow_index_search_for(name)

@@ -17,15 +17,37 @@ interface Props {
 
 const props = defineProps<Props>();
 
+function getCompatibleSourceTypes(sampleSheetType: string): string[] | undefined {
+    if (sampleSheetType === "sample_sheet") {
+        return ["list", "sample_sheet"];
+    }
+    if (sampleSheetType === "sample_sheet:paired") {
+        return ["list:paired", "sample_sheet:paired"];
+    }
+    if (sampleSheetType === "sample_sheet:paired_or_unpaired") {
+        return [
+            "list",
+            "list:paired",
+            "list:paired_or_unpaired",
+            "sample_sheet",
+            "sample_sheet:paired",
+            "sample_sheet:paired_or_unpaired",
+        ];
+    }
+    if (sampleSheetType === "sample_sheet:record") {
+        return ["list:record", "sample_sheet:record"];
+    }
+    return undefined;
+}
+
 function inputDialog() {
-    const collectionType = props.collectionType;
+    const compatibleTypes = getCompatibleSourceTypes(props.collectionType);
     datasetCollectionDialog(
         (data: SelectionItem) => {
             targetCollection.value = data.id;
         },
         {
-            // TODO: use this in that dialog.
-            collectionType: collectionType,
+            collectionTypes: compatibleTypes,
         },
     );
 }
