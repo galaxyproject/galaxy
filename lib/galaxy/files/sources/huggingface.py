@@ -26,8 +26,8 @@ try:
         HfFileSystem,
     )
 except ImportError:
-    HfApi = None
-    HfFileSystem = None
+    HfApi = None  # type: ignore[misc, assignment, unused-ignore]
+    HfFileSystem = None  # type: ignore[misc, assignment, unused-ignore]
 
 from galaxy.exceptions import MessageException
 from galaxy.files.sources._fsspec import (
