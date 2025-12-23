@@ -129,6 +129,8 @@ class GalaxyAgentDependencies:
     toolbox: Optional["ToolBox"] = None
     # Callable to get agent instances, avoids circular import in base.py
     get_agent: Optional[Callable[[str, "GalaxyAgentDependencies"], "BaseGalaxyAgent"]] = None
+    # Optional factory for creating model instances (useful for testing)
+    model_factory: Optional[Callable[[], Any]] = None
 
 
 class BaseGalaxyAgent(ABC):
@@ -451,7 +453,6 @@ class BaseGalaxyAgent(ABC):
         elif key == "api_base_url":
             if hasattr(self.deps.config, "ai_api_base_url") and self.deps.config.ai_api_base_url:
                 return self.deps.config.ai_api_base_url
-
         # 4. Return provided default
         return default
 
@@ -470,7 +471,12 @@ class BaseGalaxyAgent(ABC):
         - Any model + base_url → OpenAI-compatible (TACC, vLLM, Ollama, etc.)
 
         All credentials come from Galaxy config, never from environment variables.
+        If deps.model_factory is set, uses that instead (for testing).
         """
+        # Allow injection of model factory (useful for testing)
+        if self.deps.model_factory:
+            return self.deps.model_factory()
+
         model_spec = self._get_model_name()
         api_key = self._get_agent_config("api_key")
         base_url = self._get_agent_config("api_base_url")

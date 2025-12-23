@@ -34,6 +34,7 @@ from unittest.mock import (
     patch,
 )
 
+from galaxy.agents.router import RoutingDecision
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 from galaxy_test.base.populators import (
@@ -70,6 +71,22 @@ class AgentIntegrationTestCase(IntegrationTestCase):
             config["ai_model"] = ai_model
 
 
+def _create_deps_with_mock_model(self, trans, user):
+    """Replacement for AgentService.create_dependencies that injects a mock model_factory."""
+    from galaxy.agents import GalaxyAgentDependencies, agent_registry
+
+    toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
+    return GalaxyAgentDependencies(
+        trans=trans,
+        user=user,
+        config=self.config,
+        job_manager=self.job_manager,
+        toolbox=toolbox,
+        get_agent=agent_registry.get_agent,
+        model_factory=lambda: MagicMock(),
+    )
+
+
 class TestAgentsApiMocked(AgentIntegrationTestCase):
     """Test the Galaxy AI agents API with mocked LLM responses.
 
@@ -96,31 +113,62 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert "custom_tool" in agent_types
         assert "error_analysis" in agent_types
 
+    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
+    @patch("galaxy.agents.custom_tool.Agent")
     @patch("galaxy.agents.router.Agent")
-    def test_query_agent_auto_routing_mocked(self, mock_agent_class):
+    def test_query_agent_auto_routing_mocked(self, mock_router_agent_class, mock_custom_tool_agent_class):
         """Test automatic agent routing with mocked LLM."""
-        # Set up mock agent
-        mock_agent = AsyncMock()
-        mock_agent_class.return_value = mock_agent
+        # Set up mock router agent
+        mock_router_agent = AsyncMock()
+        mock_router_agent_class.return_value = mock_router_agent
 
-        # Mock routing decision
-        async def mock_run(query, *args, **kwargs):
+        # Mock routing decision - returns RoutingDecision object
+        async def mock_router_run(query, *args, **kwargs):
             result = MagicMock()
             if "BWA" in query or "tool" in query.lower():
-                result.data = {
-                    "primary_agent": "custom_tool",
-                    "reasoning": "Tool creation request detected",
-                    "confidence": 0.95,
-                }
+                result.data = RoutingDecision(
+                    primary_agent="custom_tool",
+                    reasoning="Tool creation request detected",
+                    complexity="simple",
+                    confidence="high",
+                )
             else:
-                result.data = {
-                    "primary_agent": "orchestrator",
-                    "reasoning": "General query",
-                    "confidence": 0.7,
-                }
+                result.data = RoutingDecision(
+                    primary_agent="orchestrator",
+                    reasoning="General query",
+                    complexity="simple",
+                    confidence="medium",
+                )
             return result
 
-        mock_agent.run = mock_run
+        mock_router_agent.run = mock_router_run
+
+        # Set up mock custom_tool agent (created after routing)
+        mock_custom_tool_agent = AsyncMock()
+        mock_custom_tool_agent_class.return_value = mock_custom_tool_agent
+
+        # Mock tool creation response
+        mock_tool = UserToolSource(
+            **{
+                "class": "GalaxyUserTool",
+                "id": "bwa-mem-paired",
+                "name": "BWA-MEM Paired End",
+                "version": "1.0.0",
+                "description": "BWA-MEM for paired-end reads",
+                "container": "biocontainers/bwa:latest",
+                "shell_command": "bwa mem ref.fa read1.fq read2.fq > output.sam",
+                "inputs": [],
+                "outputs": [],
+            }
+        )
+
+        async def mock_custom_tool_run(*args, **kwargs):
+            result = MagicMock()
+            result.data = mock_tool
+            result.output = mock_tool
+            return result
+
+        mock_custom_tool_agent.run = mock_custom_tool_run
 
         response = self._post(
             "ai/agents/query",
@@ -135,6 +183,7 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert "routing_info" in data
         assert data["routing_info"]["selected_agent"] == "custom_tool"
 
+    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
     @patch("galaxy.agents.custom_tool.Agent")
     def test_query_custom_tool_agent_mocked(self, mock_agent_class):
         """Test the custom tool agent with mocked LLM."""
@@ -174,10 +223,13 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         )
         self._assert_status_code_is_ok(response)
         data = response.json()
-        assert "metadata" in data
-        assert data["metadata"]["tool_id"] == "line-counter"
-        assert "wc -l" in data["metadata"]["tool_yaml"]
+        # Response structure is {'response': {..., 'metadata': {...}}, 'routing_info': ..., ...}
+        assert "response" in data
+        assert "metadata" in data["response"]
+        assert data["response"]["metadata"]["tool_id"] == "line-counter"
+        assert "wc -l" in data["response"]["metadata"]["tool_yaml"]
 
+    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
     @patch("galaxy.agents.error_analysis.Agent")
     def test_query_error_analysis_agent_mocked(self, mock_agent_class):
         """Test the error analysis agent with mocked LLM."""
@@ -206,23 +258,23 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
 
         mock_agent.run = mock_run
 
-        # Mock job ID
-        mock_job_id = "test_job_123"
-
+        # Don't pass a job_id - the agent handles missing job context gracefully
+        # and we're testing the mocked LLM response, not job lookup
         response = self._post(
             "ai/agents/query",
             data={
-                "query": "Why did my job fail?",
+                "query": "Why did my job fail? stderr shows: command not found: samtools",
                 "agent_type": "error_analysis",
-                "context": {"job_id": mock_job_id},
             },
             json=True,
         )
         self._assert_status_code_is_ok(response)
         data = response.json()
-        assert "content" in data
+        # Response structure is {'response': {..., 'content': ...}, ...}
+        assert "response" in data
+        assert "content" in data["response"]
         # Should mention the error type or solution
-        content = data["content"].lower()
+        content = data["response"]["content"].lower()
         assert "command" in content or "samtools" in content or "not found" in content
 
 
