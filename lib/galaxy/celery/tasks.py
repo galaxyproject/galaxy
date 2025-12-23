@@ -96,9 +96,11 @@ def recalculate_user_disk_usage(
 
 
 @galaxy_task(ignore_result=True, action="purge a history dataset")
-def purge_hda(hda_manager: HDAManager, hda_id: int, task_user_id: Optional[int] = None):
+def purge_hda(
+    hda_manager: HDAManager, hda_id: int, task_user_id: Optional[int] = None, preserve_owner_update_time: bool = False
+):
     hda = hda_manager.by_id(hda_id)
-    hda_manager._purge(hda)
+    hda_manager._purge(hda, preserve_owner_update_time=preserve_owner_update_time)
 
 
 @galaxy_task(ignore_result=True, action="completely removes a set of datasets from the object_store")

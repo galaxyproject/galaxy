@@ -731,7 +731,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 raise glx_exceptions.RequestParameterMissingException(
                     "Cannot purge history without an export record. A valid archive_export_id is required."
                 )
-            self.manager.purge(history)
+            # Preserve owner's update_time when admin archives another user's history
+            preserve_owner_update_time = trans.user and history.user_id is not None and trans.user.id != history.user_id
+            self.manager.purge(history, preserve_owner_update_time=preserve_owner_update_time)
         history = self.manager.archive_history(history, archive_export_id=archive_export_id)
         return self._serialize_archived_history(trans, history)
 
