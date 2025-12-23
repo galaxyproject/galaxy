@@ -3371,6 +3371,10 @@ class BaseDatasetCollectionPopulator:
         return hdca_id
 
     def create_list_of_pairs_in_history(self, history_id, **kwds):
+        upload_kwds = {}
+        if "name" in kwds:
+            upload_kwds["name"] = kwds.pop("name")
+
         return self.upload_collection(
             history_id,
             "list:paired",
@@ -3383,6 +3387,7 @@ class BaseDatasetCollectionPopulator:
                     ],
                 }
             ],
+            **upload_kwds,
         )
 
     def create_list_of_list_in_history(self, history_id: str, **kwds):
