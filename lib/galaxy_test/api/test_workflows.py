@@ -3411,6 +3411,52 @@ steps:
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
 
+    @skip_without_tool("cat")
+    def test_workflow_invocation_report_invalid_hdca_id(self):
+        """Test that an invalid HDCA id is reported in errors."""
+        workflow_with_unknown_directive = """
+class: GalaxyWorkflow
+name: Workflow With Unknown Directive
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+report:
+  markdown: |
+    ## Test Report
+
+    ```galaxy
+    history_dataset_collection_display(history_dataset_collection_id=1000000)
+    ```
+"""
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(workflow_with_unknown_directive, test_data=test_data, history_id=history_id)
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            # Fetch the report - errors should be collected in the response
+            report_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}/report")
+            self._assert_status_code_is(report_response, 200)
+            response_json = report_response.json()
+            # Check that errors were collected
+            assert "errors" in response_json
+            assert response_json["errors"] is not None
+            assert len(response_json["errors"]) > 0
+            # Verify the error message mentions the actual error
+            error_entry = response_json["errors"][0]
+            assert "error" in error_entry
+            assert "History dataset collection association not found" in error_entry["error"]
+
     @skip_without_tool("cat1")
     def test_export_invocation_bco(self):
         with self.dataset_populator.test_history() as history_id:
