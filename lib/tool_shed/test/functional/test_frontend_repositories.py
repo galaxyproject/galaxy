@@ -39,17 +39,17 @@ class TestFrontendRepositories(PlaywrightTestCase):
 
         expect(page.locator("text=Metadata Inspector")).to_be_visible()
         # Always-visible tabs (Reset Metadata requires can_manage permission)
-        expect(page.locator("[role=tab]").filter(has_text="Overview")).to_be_visible()
         expect(page.locator("[role=tab]").filter(has_text="Revisions")).to_be_visible()
         expect(page.locator("[role=tab]").filter(has_text="Tool History")).to_be_visible()
+        expect(page.locator("[role=tab]").filter(has_text="Raw JSON")).to_be_visible()
 
     @skip_if_api_v1
-    def test_metadata_inspector_overview_tab(self):
-        """Verify Overview tab shows repository info."""
+    def test_metadata_inspector_default_tab(self):
+        """Verify Revisions is the default landing tab."""
         repository = self._setup_repo_and_visit_inspector()
         page = self._page
 
-        # Overview tab active by default, repo name visible
+        # Revisions tab active by default, repo name visible
         expect(page.locator("body")).to_contain_text(repository.name)
 
     @skip_if_api_v1
@@ -84,15 +84,15 @@ class TestFrontendRepositories(PlaywrightTestCase):
         self._setup_repo_and_visit_inspector(multi_revision=True)
         page = self._page
 
-        # Overview tab (default) - wait for content to load
+        # Revisions tab (default) - wait for content to load
         page.wait_for_selector("text=Metadata Inspector")
         page.wait_for_load_state("networkidle")
-        self.screenshot("metadata_inspector_overview")
-
-        # Revisions tab
-        page.locator("[role=tab]").filter(has_text="Revisions").click()
-        page.wait_for_load_state("networkidle")
         self.screenshot("metadata_inspector_revisions")
+
+        # Raw JSON tab
+        page.locator("[role=tab]").filter(has_text="Raw JSON").click()
+        page.wait_for_load_state("networkidle")
+        self.screenshot("metadata_inspector_raw_json")
 
         # Tool History tab
         page.locator("[role=tab]").filter(has_text="Tool History").click()
