@@ -4,6 +4,86 @@
  */
 
 export interface paths {
+    "/api/ai/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Agents
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["list_agents_api_ai_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/agents/custom-tool": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Custom Tool
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["create_custom_tool_api_ai_agents_custom_tool_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/agents/error-analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Error
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["analyze_error_api_ai_agents_error_analysis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/agents/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query Agent
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["query_agent_api_ai_agents_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/authenticate/baseauth": {
         parameters: {
             query?: never;
@@ -32,10 +112,74 @@ export interface paths {
         put?: never;
         /**
          * Query
-         * @description We're off to ask the wizard and return a JSON response
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["query_api_chat_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchange/{exchange_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Exchange Feedback
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        put: operations["set_exchange_feedback_api_chat_exchange__exchange_id__feedback_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchange/{exchange_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Exchange Messages
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_exchange_messages_api_chat_exchange__exchange_id__messages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chat History
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_chat_history_api_chat_history_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Clear Chat History
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        delete: operations["clear_chat_history_api_chat_history_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -51,7 +195,7 @@ export interface paths {
         get?: never;
         /**
          * Feedback
-         * @description Provide feedback on the chatbot response.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         put: operations["feedback_api_chat__job_id__feedback_put"];
         post?: never;
@@ -650,9 +794,7 @@ export interface paths {
         /**
          * Resolve parameters as a list for nested display.
          * @deprecated
-         * @description Resolve parameters as a list for nested display.
-         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         *     this endpoint will change frequently.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["resolve_parameters_display_api_datasets__dataset_id__parameters_display_get"];
         put?: never;
@@ -1647,9 +1789,7 @@ export interface paths {
         };
         /**
          * Search the Galaxy Help forum.
-         * @description Search the Galaxy Help forum using the Discourse API.
-         *
-         *     **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["search_forum_api_help_forum_search_get"];
         put?: never;
@@ -2014,9 +2154,7 @@ export interface paths {
         };
         /**
          * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         *     **Note**: this is a volatile endpoint and settings and behavior may change.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["history_contents__archive"];
         put?: never;
@@ -2036,9 +2174,7 @@ export interface paths {
         };
         /**
          * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         *     **Note**: this is a volatile endpoint and settings and behavior may change.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["history_contents__archive_named"];
         put?: never;
@@ -3282,9 +3418,7 @@ export interface paths {
         };
         /**
          * Resolve parameters as a list for nested display.
-         * @description Resolve parameters as a list for nested display.
-         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         *     this endpoint will change frequently.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["resolve_parameters_display_api_jobs__job_id__parameters_display_get"];
         put?: never;
@@ -5337,13 +5471,13 @@ export interface paths {
         };
         /**
          * Return information about beacon share settings
-         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         get: operations["get_beacon_settings_api_users__user_id__beacon_get"];
         put?: never;
         /**
          * Change beacon setting
-         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         * @description **Warning**: This API is unstable and may change without notice.
          */
         post: operations["set_beacon_settings_api_users__user_id__beacon_post"];
         delete?: never;
@@ -6640,6 +6774,40 @@ export interface components {
              */
             link: string;
         };
+        /**
+         * ActionSuggestion
+         * @description Structured suggestion for user action.
+         */
+        ActionSuggestion: {
+            /** @description Type of action to take */
+            action_type: components["schemas"]["ActionType"];
+            /** @description Confidence in this suggestion */
+            confidence: components["schemas"]["ConfidenceLevel"];
+            /**
+             * Description
+             * @description Human-readable description of the action
+             */
+            description: string;
+            /**
+             * Parameters
+             * @description Parameters for the action
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Priority
+             * @description Priority level (1=high, 2=medium, 3=low)
+             * @default 1
+             */
+            priority: number;
+        };
+        /**
+         * ActionType
+         * @description Types of actions agents can suggest.
+         * @enum {string}
+         */
+        ActionType: "tool_run" | "documentation" | "contact_support" | "view_external" | "save_tool" | "refine_query";
         /** AddInputAction */
         AddInputAction: {
             /**
@@ -6763,6 +6931,107 @@ export interface components {
             version: string | null;
             /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
+        };
+        /**
+         * AgentListResponse
+         * @description Response listing available agents.
+         */
+        AgentListResponse: {
+            /**
+             * Agents
+             * @description List of available agents
+             */
+            agents: components["schemas"]["AvailableAgent"][];
+            /**
+             * Total Count
+             * @description Total number of agents
+             */
+            total_count: number;
+        };
+        /**
+         * AgentQueryRequest
+         * @description Request to query an AI agent.
+         */
+        AgentQueryRequest: {
+            /**
+             * Agent Type
+             * @description Preferred agent type ('auto' for routing)
+             * @default auto
+             */
+            agent_type: string;
+            /**
+             * Context
+             * @description Additional context for the query
+             */
+            context?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Query
+             * @description The user's question or request
+             */
+            query: string;
+            /**
+             * Stream
+             * @description Whether to stream the response
+             * @default false
+             */
+            stream: boolean;
+        };
+        /**
+         * AgentQueryResponse
+         * @description Response from an AI agent query.
+         */
+        AgentQueryResponse: {
+            /**
+             * Processing Time
+             * @description Time taken to process the query in seconds
+             */
+            processing_time?: number | null;
+            /** @description The agent's response */
+            response: components["schemas"]["AgentResponse"];
+            /**
+             * Routing Info
+             * @description Information about how the query was routed
+             */
+            routing_info?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * AgentResponse
+         * @description Structured response from an AI agent.
+         */
+        AgentResponse: {
+            /**
+             * Agent Type
+             * @description Type of agent that generated this response
+             */
+            agent_type: string;
+            /** @description Confidence in the response */
+            confidence: components["schemas"]["ConfidenceLevel"];
+            /**
+             * Content
+             * @description Main response content
+             */
+            content: string;
+            /**
+             * Metadata
+             * @description Additional metadata
+             */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Reasoning
+             * @description Explanation of the agent's reasoning
+             */
+            reasoning?: string | null;
+            /**
+             * Suggestions
+             * @description Actionable suggestions
+             */
+            suggestions?: components["schemas"]["ActionSuggestion"][];
         };
         /** AnonUserModel */
         AnonUserModel: {
@@ -7064,6 +7333,42 @@ export interface components {
              */
             supported_types?: components["schemas"]["SupportedType"][] | null;
         };
+        /**
+         * AvailableAgent
+         * @description Information about an available agent.
+         */
+        AvailableAgent: {
+            /**
+             * Agent Type
+             * @description Unique identifier for the agent
+             */
+            agent_type: string;
+            /**
+             * Description
+             * @description Description of the agent's capabilities
+             */
+            description: string;
+            /**
+             * Enabled
+             * @description Whether the agent is currently enabled
+             */
+            enabled: boolean;
+            /**
+             * Model
+             * @description LLM model used by the agent
+             */
+            model?: string | null;
+            /**
+             * Name
+             * @description Human-readable name
+             */
+            name: string;
+            /**
+             * Specialties
+             * @description Areas of specialization
+             */
+            specialties?: string[];
+        };
         /** BadgeDict */
         BadgeDict: {
             /** Message */
@@ -7157,6 +7462,26 @@ export interface components {
              */
             type: string;
         };
+        /** Body_analyze_error_api_ai_agents_error_analysis_post */
+        Body_analyze_error_api_ai_agents_error_analysis_post: {
+            /**
+             * Error Details
+             * @description Additional error details
+             */
+            error_details?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Job Id
+             * @description Job ID for context
+             */
+            job_id?: string | null;
+            /**
+             * Query
+             * @description Description of the error or problem
+             */
+            query: string;
+        };
         /** Body_create_api_histories_post */
         Body_create_api_histories_post: {
             /**
@@ -7177,6 +7502,21 @@ export interface components {
             history_id?: unknown;
             /** Name */
             name?: unknown;
+        };
+        /** Body_create_custom_tool_api_ai_agents_custom_tool_post */
+        Body_create_custom_tool_api_ai_agents_custom_tool_post: {
+            /**
+             * Context
+             * @description Additional context for tool creation
+             */
+            context?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Query
+             * @description Description of the tool to create
+             */
+            query: string;
         };
         /** Body_create_form_api_libraries__library_id__contents_post */
         Body_create_form_api_libraries__library_id__contents_post: {
@@ -7533,6 +7873,11 @@ export interface components {
              * @default
              */
             context: string | null;
+            /**
+             * Exchange ID
+             * @description The ID of an existing chat exchange to continue.
+             */
+            exchange_id?: number | null;
             /**
              * Query
              * @description The query to be sent to the chatbot.
@@ -8165,6 +8510,12 @@ export interface components {
                 | components["schemas"]["SectionParameterModel-Output"]
             )[];
         };
+        /**
+         * ConfidenceLevel
+         * @description Confidence levels for agent responses.
+         * @enum {string}
+         */
+        ConfidenceLevel: "low" | "medium" | "high";
         /** ConnectAction */
         ConnectAction: {
             /**
@@ -24521,6 +24872,182 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_agents_api_ai_agents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentListResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    create_custom_tool_api_ai_agents_custom_tool_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_create_custom_tool_api_ai_agents_custom_tool_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    analyze_error_api_ai_agents_error_analysis_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_analyze_error_api_ai_agents_error_analysis_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    query_agent_api_ai_agents_query_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentQueryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentQueryResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     get_api_key_api_authenticate_baseauth_get: {
         parameters: {
             query?: never;
@@ -24561,8 +25088,12 @@ export interface operations {
     };
     query_api_chat_post: {
         parameters: {
-            query: {
-                job_id: string | null;
+            query?: {
+                job_id?: string | null;
+                /** @description Query string for general chat */
+                query?: string | null;
+                /** @description Agent type to use for the query */
+                agent_type?: string;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -24571,9 +25102,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["ChatPayload"];
+                "application/json": components["schemas"]["ChatPayload"] | null;
             };
         };
         responses: {
@@ -24584,6 +25115,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    set_exchange_feedback_api_chat_exchange__exchange_id__feedback_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": number;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_exchange_messages_api_chat_exchange__exchange_id__messages_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_chat_history_api_chat_history_get: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of chats to return */
+                limit?: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    clear_chat_history_api_chat_history_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Request Error */

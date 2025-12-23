@@ -3884,6 +3884,11 @@ class ChatPayload(Model):
         title="Context",
         description="The context for the chatbot.",
     )
+    exchange_id: Optional[int] = Field(
+        default=None,
+        title="Exchange ID",
+        description="The ID of an existing chat exchange to continue.",
+    )
 
 
 class ChatResponse(BaseModel):

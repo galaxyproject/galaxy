@@ -4505,7 +4505,7 @@ class Npz(CompressedArchive):
     def sniff(self, filename: str) -> bool:
         try:
             with np.load(filename) as npz:
-                if isinstance(npz, np.lib.npyio.NpzFile) and any(f.filename.endswith(".npy") for f in npz.zip.filelist):
+                if isinstance(npz, np.lib.npyio.NpzFile) and any(f.filename.endswith(".npy") for f in npz.zip.filelist):  # type: ignore[union-attr, unused-ignore]
                     return True
         except Exception:
             return False

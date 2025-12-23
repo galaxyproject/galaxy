@@ -347,15 +347,14 @@ class FastAPIUsers:
         "/api/users/{user_id}/beacon",
         name="get_beacon_settings",
         summary="Return information about beacon share settings",
+        unstable=True,
     )
     def get_beacon(
         self,
         user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> UserBeaconSetting:
-        """
-        **Warning**: This endpoint is experimental and might change or disappear in future versions.
-        """
+        """Return information about beacon share settings."""
         user = self.service.get_user(trans, user_id)
 
         enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
@@ -366,6 +365,7 @@ class FastAPIUsers:
         "/api/users/{user_id}/beacon",
         name="set_beacon_settings",
         summary="Change beacon setting",
+        unstable=True,
     )
     def set_beacon(
         self,
@@ -373,9 +373,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         payload: UserBeaconSetting = Body(...),
     ) -> UserBeaconSetting:
-        """
-        **Warning**: This endpoint is experimental and might change or disappear in future versions.
-        """
+        """Change beacon setting."""
         user = self.service.get_user(trans, user_id)
 
         user.preferences["beacon_enabled"] = payload.enabled

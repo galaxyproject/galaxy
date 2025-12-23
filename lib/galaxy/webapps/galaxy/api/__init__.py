@@ -527,6 +527,15 @@ class FrameworkRouter(APIRouter):
             openapi_extra["security"] = []
         if openapi_extra:
             kwd["openapi_extra"] = openapi_extra
+
+        unstable = kwd.pop("unstable", False)
+        if unstable:
+            warning = "**Warning**: This API is unstable and may change without notice.\n\n"
+            if "description" in kwd:
+                kwd["description"] = warning + kwd["description"]
+            else:
+                kwd["description"] = warning
+
         return kwd
 
     @property

@@ -60,6 +60,14 @@ def skip_unless_environ(env_var: str) -> Union[Callable[[Callable[P, T]], Callab
     return pytest.mark.skip(f"{env_var} must be set for this test")
 
 
+# Pytest mark for tests that require a live LLM connection
+# Set GALAXY_TEST_ENABLE_LIVE_LLM=1 to run these tests
+pytestmark_live_llm = pytest.mark.skipif(
+    not os.environ.get("GALAXY_TEST_ENABLE_LIVE_LLM"),
+    reason="Live LLM tests disabled. Set GALAXY_TEST_ENABLE_LIVE_LLM=1 to enable.",
+)
+
+
 def transient_failure(issue: int, potentially_fixed: bool = False) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """Mark test as known transient failure with GitHub issue tracking.
 
