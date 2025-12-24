@@ -11,7 +11,6 @@ import {
     type FilterFileSourcesOptions,
     type RemoteEntry,
 } from "@/api/remoteFiles";
-import { UrlTracker } from "@/components/DataDialog/utilities";
 import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import {
     type ItemsProvider,
@@ -22,6 +21,7 @@ import {
 } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
+import { useUrlTracker } from "@/composables/urlTracker";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { USER_FILE_PREFIX } from "@/utils/url";
@@ -85,10 +85,9 @@ const hasValue = ref(false);
 const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
-const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
 const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
-const urlTracker = ref(new UrlTracker(""));
+const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
 const totalItems = ref(0);
 
 const fields = computed(() => {
@@ -106,11 +105,11 @@ const fields = computed(() => {
 const fileMode = computed(() => props.mode == "file");
 
 const okButtonDisabled = computed(
-    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot()),
+    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.isAtRoot.value),
 );
 
 const canCreateNewFileSource = computed(() => {
-    return urlTracker.value.atRoot() && fileSourceTemplatesStore.hasTemplates;
+    return urlTracker.isAtRoot.value && fileSourceTemplatesStore.hasTemplates;
 });
 
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
@@ -127,7 +126,7 @@ function clicked(record: SelectionItem) {
         selectSingleRecord(record);
     } else {
         // you cannot select entire root directory
-        urlTracker.value.atRoot() ? open(record) : selectDirectoryRecursive(record);
+        urlTracker.isAtRoot.value ? open(record) : selectDirectoryRecursive(record);
     }
     formatRows();
 }
@@ -227,8 +226,8 @@ function formatRows() {
         Vue.set(item, "_rowVariant", _rowVariant);
     }
     allSelected.value = checkIfAllSelected();
-    if (currentDirectory.value?.url) {
-        selectAllIcon.value = getIcon(allSelected.value, currentDirectory.value.url);
+    if (urlTracker.current.value?.url) {
+        selectAllIcon.value = getIcon(allSelected.value, urlTracker.current.value.url);
     }
 }
 
@@ -242,27 +241,27 @@ function checkIfAllSelected(): boolean {
         Boolean(items.value.length) &&
         items.value.every(({ id }) => selectionModel.value.exists(id) || isDirectorySelected(id));
 
-    if (isAllSelected && currentDirectory.value && !isDirectorySelected(currentDirectory.value.id)) {
+    if (isAllSelected && urlTracker.current.value && !isDirectorySelected(urlTracker.current.value.id)) {
         // if all selected, select current folder
-        selectedDirectories.value.push(currentDirectory.value);
+        selectedDirectories.value.push(urlTracker.current.value);
     }
 
     return isAllSelected;
 }
 
 function open(record: SelectionItem) {
-    currentDirectory.value = urlTracker.value.getUrl({ ...record, parentPage: selectionDialog.value.currentPage });
+    urlTracker.forward({ ...record, parentPage: selectionDialog.value.currentPage });
     selectionDialog.value?.resetPagination(1);
     load();
 }
 
 /** Performs server request to retrieve data records **/
 function load() {
-    showFTPHelper.value = currentDirectory.value?.url === "gxftp://";
+    showFTPHelper.value = urlTracker.current.value?.url === "gxftp://";
     filter.value = undefined;
     optionsShow.value = false;
-    undoShow.value = !urlTracker.value.atRoot();
-    if (urlTracker.value.atRoot() || errorMessage.value) {
+    undoShow.value = !urlTracker.isAtRoot.value;
+    if (urlTracker.isAtRoot.value || errorMessage.value) {
         itemsProvider.value = undefined;
         errorMessage.value = undefined;
         fetchFileSources(props.filterOptions)
@@ -283,7 +282,7 @@ function load() {
                 errorMessage.value = errorMessageAsString(error);
             });
     } else {
-        if (!currentDirectory.value) {
+        if (!urlTracker.current.value) {
             return;
         }
         if (props.mode === "source") {
@@ -296,14 +295,14 @@ function load() {
         }
 
         if (shouldUseItemsProvider()) {
-            itemsProvider.value = (ctx) => provideItems(ctx, currentDirectory.value?.url);
+            itemsProvider.value = (ctx) => provideItems(ctx, urlTracker.current.value?.url);
             optionsShow.value = true;
             showTime.value = true;
             showDetails.value = false;
             return;
         }
 
-        browseRemoteFiles(currentDirectory.value?.url, false, props.requireWritable)
+        browseRemoteFiles(urlTracker.current.value?.url, false, props.requireWritable)
             .then((result) => {
                 items.value = filterByMode(result.entries).map(entryToRecord);
                 totalItems.value = result.totalMatches;
@@ -337,10 +336,10 @@ function sortPrivateFileSourcesFirst(a: SelectionItem, b: SelectionItem): number
  * If it does, we will use the items provider to fetch items.
  */
 function shouldUseItemsProvider(): boolean {
-    if (!currentDirectory.value) {
+    if (!urlTracker.current.value) {
         return false;
     }
-    const fileSource = filesSources.getFileSourceByUri(currentDirectory.value.url);
+    const fileSource = filesSources.getFileSourceByUri(urlTracker.current.value.url);
     const supportsPagination = fileSource?.supports?.pagination;
     return Boolean(supportsPagination);
 }
@@ -395,10 +394,10 @@ function entryToRecord(entry: RemoteEntry): SelectionItem {
 
 /** select all files in current folder**/
 function onSelectAll() {
-    if (!currentDirectory.value) {
+    if (!urlTracker.current.value) {
         return;
     }
-    const isUnselectAll = selectionModel.value.pathExists(currentDirectory.value.url);
+    const isUnselectAll = selectionModel.value.pathExists(urlTracker.current.value.url);
 
     for (const item of items.value) {
         if (isUnselectAll) {
@@ -411,9 +410,9 @@ function onSelectAll() {
     }
 
     if (!isUnselectAll && items.value.length !== 0) {
-        selectedDirectories.value.push(currentDirectory.value);
-    } else if (isDirectorySelected(currentDirectory.value.id)) {
-        selectDirectoryRecursive(currentDirectory.value);
+        selectedDirectories.value.push(urlTracker.current.value);
+    } else if (isDirectorySelected(urlTracker.current.value.id)) {
+        selectDirectoryRecursive(urlTracker.current.value);
     }
 
     hasValue.value = selectionModel.value.count() > 0;
@@ -428,8 +427,8 @@ function finalize() {
 }
 
 function onOk() {
-    if (!fileMode.value && currentDirectory.value) {
-        selectSingleRecord(currentDirectory.value);
+    if (!fileMode.value && urlTracker.current.value) {
+        selectSingleRecord(urlTracker.current.value);
     }
     finalize();
 }
@@ -442,14 +441,12 @@ function pushToPropRouter(route: string) {
 }
 
 function onGoBack(record?: SelectionItem) {
-    const res = urlTracker.value.getUrl(record, true);
-
-    currentDirectory.value = res.url;
+    const { popped } = urlTracker.backwardWithContext();
 
     load();
 
-    if (res?.popped) {
-        selectionDialog.value?.resetPagination(res?.popped.parentPage);
+    if (popped) {
+        selectionDialog.value?.resetPagination(popped.parentPage);
     }
 }
 
@@ -458,7 +455,9 @@ watch(query, () => {
 });
 
 onMounted(() => {
-    currentDirectory.value = urlTracker.value.getUrl(props.selectedItem);
+    if (props.selectedItem) {
+        urlTracker.forward(props.selectedItem);
+    }
     load();
 });
 </script>
