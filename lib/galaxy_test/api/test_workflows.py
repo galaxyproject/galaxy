@@ -4049,6 +4049,44 @@ test_data:
             galaxy_slots = [m for m in job_metrics if m["name"] == "galaxy_slots"]
             assert len(galaxy_slots) == 1
 
+    def test_invocation_job_metrics_with_subworkflow(self):
+        """Test that subworkflow job metrics are included in parent invocation metrics."""
+        with self.dataset_populator.test_history() as history_id:
+            # WORKFLOW_NESTED_SIMPLE structure:
+            # Step 0: first_cat (cat1)
+            # Step 1: nested_workflow -> random_lines (random_lines1)
+            # Step 2: second_cat (cat1)
+            summary = self._run_workflow(
+                WORKFLOW_NESTED_SIMPLE, test_data={"outer_input": "hello world"}, history_id=history_id
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id=summary.workflow_id, invocation_id=summary.invocation_id
+            )
+
+            job_metrics = self._get(f"invocations/{summary.invocation_id}/metrics").json()
+
+            # Verify we have metrics from all tools including subworkflow
+            tool_ids = {m["tool_id"] for m in job_metrics}
+            assert "cat1" in tool_ids, "Should have metrics from cat1 tool"
+            assert "random_lines1" in tool_ids, "Should have metrics from subworkflow's random_lines1 tool"
+
+            # Verify subworkflow metrics use hierarchical indexing
+            # Note: WORKFLOW_NESTED_SIMPLE has input steps, so:
+            # Parent: Step 0=outer_input, 1=first_cat, 2=nested_workflow, 3=second_cat
+            # Subworkflow: Step 0=inner_input, 1=random_lines
+            # Therefore random_lines should be indexed as "2.1"
+            subworkflow_metrics = [m for m in job_metrics if m["tool_id"] == "random_lines1"]
+            assert len(subworkflow_metrics) > 0, "Should have at least one metric from subworkflow"
+            for metric in subworkflow_metrics:
+                assert metric["step_index"] == "2.1", "Subworkflow metrics should use hierarchical index '2.1'"
+
+            # Verify all metrics have required fields
+            for metric in job_metrics:
+                assert "job_id" in metric
+                assert "tool_id" in metric
+                assert "step_index" in metric
+                assert "name" in metric
+
     def test_invocation_job_metrics_map_over(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(

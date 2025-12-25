@@ -24639,7 +24639,7 @@ export interface components {
              */
             raw_value: string;
             /** Step Index */
-            step_index: number;
+            step_index: number | string;
             /** Step Label */
             step_label: string | null;
             /**
