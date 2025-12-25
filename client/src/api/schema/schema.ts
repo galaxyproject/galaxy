@@ -14020,9 +14020,11 @@ export interface components {
              * Errors
              * @description Errors associated with the invocation.
              */
-            errors?: {
-                [key: string]: unknown;
-            } | null;
+            errors?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Galaxy Version
              * @description The version of Galaxy this object was generated with.
