@@ -9,7 +9,6 @@ from fastapi._compat import (
     v2,
 )
 from fastapi._compat.model_field import ModelField
-from fastapi._compat.shared import PYDANTIC_V2
 from fastapi.types import ModelNameMap
 from typing_extensions import Literal
 
@@ -30,25 +29,22 @@ def get_definitions(
     dict[str, dict[str, Any]],
 ]:
     if sys.version_info < (3, 14):
-        v1_fields = [field for field in fields if isinstance(field, may_v1.ModelField)]
+        v1_fields = [field for field in fields if isinstance(field, may_v1.ModelField)]  # type: ignore[unreachable]
         v1_field_maps, v1_definitions = may_v1.get_definitions(
-            fields=v1_fields,
+            fields=v1_fields,  # type: ignore[arg-type]
             model_name_map=model_name_map,
             separate_input_output_schemas=separate_input_output_schemas,
         )
-        if not PYDANTIC_V2:
-            return v1_field_maps, v1_definitions
-        else:
-            v2_fields = [field for field in fields if isinstance(field, v2.ModelField)]
-            v2_field_maps, v2_definitions = v2_get_definitions(
-                fields=v2_fields,
-                model_name_map=model_name_map,
-                separate_input_output_schemas=separate_input_output_schemas,
-                schema_generator=schema_generator,
-            )
-            all_definitions = {**v1_definitions, **v2_definitions}
-            all_field_maps = {**v1_field_maps, **v2_field_maps}
-            return all_field_maps, all_definitions
+        v2_fields = [field for field in fields if isinstance(field, v2.ModelField)]
+        v2_field_maps, v2_definitions = v2_get_definitions(
+            fields=v2_fields,
+            model_name_map=model_name_map,
+            separate_input_output_schemas=separate_input_output_schemas,
+            schema_generator=schema_generator,
+        )
+        all_definitions = {**v1_definitions, **v2_definitions}
+        all_field_maps = {**v1_field_maps, **v2_field_maps}  # type: ignore[misc]
+        return all_field_maps, all_definitions
 
     # Pydantic v1 is not supported since Python 3.14
     else:

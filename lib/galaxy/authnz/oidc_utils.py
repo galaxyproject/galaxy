@@ -6,16 +6,21 @@ authentication. These should not be used with non-OIDC backends like OAuth2.
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 import jwt
 from social_core.backends.open_id_connect import OpenIdConnectAuth
+from typing_extensions import TypeIs
 
 from galaxy.exceptions import MalformedContents
+
+if TYPE_CHECKING:
+    from social_core.backends.base import BaseAuth
 
 log = logging.getLogger(__name__)
 
 
-def is_oidc_backend(backend) -> bool:
+def is_oidc_backend(backend: "BaseAuth") -> TypeIs[OpenIdConnectAuth]:
     """
     Check if a PSA backend is OIDC-based.
 
