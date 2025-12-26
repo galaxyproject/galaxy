@@ -7,6 +7,7 @@ settings:
 overrides:
   chokidar: 3.5.3
   vue: 2.7.16
+  '@fortawesome/fontawesome-common-types': 6.2.1
 
 importers:
 
@@ -358,6 +359,12 @@ importers:
       '@types/d3':
         specifier: ^7.4.2
         version: 7.4.2
+      '@types/d3-selection':
+        specifier: ^3.0.11
+        version: 3.0.11
+      '@types/d3-zoom':
+        specifier: ^3.0.8
+        version: 3.0.8
       '@types/dompurify':
         specifier: ^3.0.2
         version: 3.0.2
@@ -388,6 +395,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.0.14
         version: 4.0.14(vitest@4.0.14)
+      '@vitest/spy':
+        specifier: ^4.0.14
+        version: 4.0.14
       '@vitest/ui':
         specifier: ^4.0.14
         version: 4.0.14(vitest@4.0.14)
@@ -778,16 +788,8 @@ packages:
   '@fontsource/atkinson-hyperlegible@5.0.17':
     resolution: {integrity: sha512-Evhr7GER/hFVxYj93msIC/BxEDpIMU27C42alWeILCyWsQEu3AWKLxQY/IVZyLrpgVT1ktWAXnH52WS1NarPPg==}
 
-  '@fortawesome/fontawesome-common-types@0.2.36':
-    resolution: {integrity: sha512-a/7BiSgobHAgBWeN7N0w+lAhInrGxksn13uK7231n2m8EDPE3BMCl9NZLTGrj9ZXfCmC6LM0QLqXidIizVQ6yg==}
-    engines: {node: '>=6'}
-
   '@fortawesome/fontawesome-common-types@6.2.1':
     resolution: {integrity: sha512-Sz07mnQrTekFWLz5BMjOzHl/+NooTdW8F8kDQxjWwbpOJcnoSg4vUDng8d/WR1wOxM0O+CY9Zw0nR054riNYtQ==}
-    engines: {node: '>=6'}
-
-  '@fortawesome/fontawesome-common-types@6.7.2':
-    resolution: {integrity: sha512-Zs+YeHUC5fkt7Mg1l6XTniei3k4bwG/yo3iFUtZWd/pMx9g3fdvkSK9E0FOC+++phXOka78uJcYb8JaFkW52Xg==}
     engines: {node: '>=6'}
 
   '@fortawesome/fontawesome-free@5.15.4':
@@ -1319,8 +1321,8 @@ packages:
   '@types/d3-scale@4.0.3':
     resolution: {integrity: sha512-PATBiMCpvHJSMtZAMEhc2WyL+hnzarKzI6wAHYjhsonjWJYGq5BXTzQjv4l8m2jO183/4wZ90rKvSeT7o72xNQ==}
 
-  '@types/d3-selection@3.0.5':
-    resolution: {integrity: sha512-xCB0z3Hi8eFIqyja3vW8iV01+OHGYR2di/+e+AiOcXIOrY82lcvWW8Ke1DYE/EUVMsBl4Db9RppSBS3X1U6J0w==}
+  '@types/d3-selection@3.0.11':
+    resolution: {integrity: sha512-bhAXu23DJWsrI45xafYpkQ4NtcKMwWnAC/vKrd2l+nxMFuvOT3XMYTIj2opv8vq8AO5Yh7Qac/nSeP/3zjTK0w==}
 
   '@types/d3-shape@3.1.1':
     resolution: {integrity: sha512-6Uh86YFF7LGg4PQkuO2oG6EMBRLuW9cbavUW46zkIO5kuS2PfTqo2o9SkgtQzguBHbLgNnU90UNsITpsX1My+A==}
@@ -1337,8 +1339,8 @@ packages:
   '@types/d3-transition@3.0.3':
     resolution: {integrity: sha512-/S90Od8Id1wgQNvIA8iFv9jRhCiZcGhPd2qX0bKF/PS+y0W5CrXKgIiELd2CvG1mlQrWK/qlYh3VxicqG1ZvgA==}
 
-  '@types/d3-zoom@3.0.2':
-    resolution: {integrity: sha512-t09DDJVBI6AkM7N8kuPsnq/3d/ehtRKBN1xSiYjjMCgbiw6HM6Ged5VhvswmhprfKyGvzeTEL/4WBaK9llWvlA==}
+  '@types/d3-zoom@3.0.8':
+    resolution: {integrity: sha512-iqMC4/YlFCSlO8+2Ii1GGGliCAY4XdeG748w5vQUbevlbDu0zSjH/+jojorQVBK/se0j6DUFNPBGSqD3YWYnDw==}
 
   '@types/d3@7.4.2':
     resolution: {integrity: sha512-Y4g2Yb30ZJmmtqAJTqMRaqXwRawfvpdpVmyEYEcyGNhrQI/Zvkq3k7yE1tdN07aFSmNBfvmegMQ9Fe2qy9ZMhw==}
@@ -4867,11 +4869,7 @@ snapshots:
 
   '@fontsource/atkinson-hyperlegible@5.0.17': {}
 
-  '@fortawesome/fontawesome-common-types@0.2.36': {}
-
   '@fortawesome/fontawesome-common-types@6.2.1': {}
-
-  '@fortawesome/fontawesome-common-types@6.7.2': {}
 
   '@fortawesome/fontawesome-free@5.15.4': {}
 
@@ -4881,19 +4879,19 @@ snapshots:
 
   '@fortawesome/free-brands-svg-icons@5.15.4':
     dependencies:
-      '@fortawesome/fontawesome-common-types': 0.2.36
+      '@fortawesome/fontawesome-common-types': 6.2.1
 
   '@fortawesome/free-regular-svg-icons@5.15.4':
     dependencies:
-      '@fortawesome/fontawesome-common-types': 0.2.36
+      '@fortawesome/fontawesome-common-types': 6.2.1
 
   '@fortawesome/free-solid-svg-icons@5.15.4':
     dependencies:
-      '@fortawesome/fontawesome-common-types': 0.2.36
+      '@fortawesome/fontawesome-common-types': 6.2.1
 
   '@fortawesome/free-solid-svg-icons@6.7.2':
     dependencies:
-      '@fortawesome/fontawesome-common-types': 6.7.2
+      '@fortawesome/fontawesome-common-types': 6.2.1
 
   '@fortawesome/vue-fontawesome@2.0.9(@fortawesome/fontawesome-svg-core@6.2.1)(vue@2.7.16)':
     dependencies:
@@ -5324,11 +5322,11 @@ snapshots:
 
   '@types/d3-axis@3.0.2':
     dependencies:
-      '@types/d3-selection': 3.0.5
+      '@types/d3-selection': 3.0.11
 
   '@types/d3-brush@3.0.2':
     dependencies:
-      '@types/d3-selection': 3.0.5
+      '@types/d3-selection': 3.0.11
 
   '@types/d3-chord@3.0.2': {}
 
@@ -5345,7 +5343,7 @@ snapshots:
 
   '@types/d3-drag@3.0.2':
     dependencies:
-      '@types/d3-selection': 3.0.5
+      '@types/d3-selection': 3.0.11
 
   '@types/d3-dsv@3.0.1': {}
 
@@ -5383,7 +5381,7 @@ snapshots:
     dependencies:
       '@types/d3-time': 3.0.0
 
-  '@types/d3-selection@3.0.5': {}
+  '@types/d3-selection@3.0.11': {}
 
   '@types/d3-shape@3.1.1':
     dependencies:
@@ -5397,12 +5395,12 @@ snapshots:
 
   '@types/d3-transition@3.0.3':
     dependencies:
-      '@types/d3-selection': 3.0.5
+      '@types/d3-selection': 3.0.11
 
-  '@types/d3-zoom@3.0.2':
+  '@types/d3-zoom@3.0.8':
     dependencies:
       '@types/d3-interpolate': 3.0.1
-      '@types/d3-selection': 3.0.5
+      '@types/d3-selection': 3.0.11
 
   '@types/d3@7.4.2':
     dependencies:
@@ -5429,13 +5427,13 @@ snapshots:
       '@types/d3-random': 3.0.1
       '@types/d3-scale': 4.0.3
       '@types/d3-scale-chromatic': 3.0.0
-      '@types/d3-selection': 3.0.5
+      '@types/d3-selection': 3.0.11
       '@types/d3-shape': 3.1.1
       '@types/d3-time': 3.0.0
       '@types/d3-time-format': 4.0.0
       '@types/d3-timer': 3.0.0
       '@types/d3-transition': 3.0.3
-      '@types/d3-zoom': 3.0.2
+      '@types/d3-zoom': 3.0.8
 
   '@types/deep-eql@4.0.2': {}
 
