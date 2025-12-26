@@ -2342,6 +2342,14 @@ class DirectoryModelExportStore(ModelExportStore):
                     assoc.dataset_collection, include_hidden=include_hidden, include_deleted=include_deleted
                 )
 
+        # Recursively export subworkflow invocations
+        for subworkflow_invocation_assoc in workflow_invocation.subworkflow_invocations:
+            subworkflow_invocation = subworkflow_invocation_assoc.subworkflow_invocation
+            if subworkflow_invocation:
+                self.export_workflow_invocation(
+                    subworkflow_invocation, include_hidden=include_hidden, include_deleted=include_deleted
+                )
+
     def add_job_output_dataset_associations(
         self, job_id: int, name: str, dataset_instance: model.DatasetInstance
     ) -> None:
@@ -2574,7 +2582,7 @@ class WriteCrates:
 
     def _generate_markdown_readme(self) -> str:
         markdown_parts: list[str] = []
-        if self._is_single_invocation_export():
+        if self._is_invocation_export():
             invocation = self.included_invocations[0]
             name = invocation.workflow.name
             create_time = invocation.create_time
@@ -2586,11 +2594,13 @@ class WriteCrates:
 
         return "\n".join(markdown_parts)
 
-    def _is_single_invocation_export(self) -> bool:
-        return len(self.included_invocations) == 1
+    def _is_invocation_export(self) -> bool:
+        # Maybe we need to have more complicated logic here to discriminate a history export from a workflow invocation export.
+        # But for now we only populate included_invocations when exporting a workflow invocation, so this is fine.
+        return bool(self.included_invocations)
 
     def _init_crate(self) -> ROCrate:
-        is_invocation_export = self._is_single_invocation_export()
+        is_invocation_export = self._is_invocation_export()
         if is_invocation_export:
             invocation_crate_builder = WorkflowRunCrateProfileBuilder(self)
             return invocation_crate_builder.build_crate()

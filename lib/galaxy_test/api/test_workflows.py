@@ -3680,6 +3680,37 @@ input_1:
                     output_content.strip() == "hello world"
                 ), f"Expected content 'hello world', got '{output_content.strip()}'"
 
+    @skip_without_tool("random_lines1")
+    def test_export_invocation_ro_crate_with_subworkflow(self):
+        """Test that subworkflow invocation datasets are included in export"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                WORKFLOW_NESTED_SIMPLE, test_data={"outer_input": "1 2 3"}, history_id=history_id, wait=True
+            )
+            invocation_id = summary.invocation_id
+
+            # Get all datasets in the history to verify export completeness
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            datasets = [d for d in history_contents if d["history_content_type"] == "dataset"]
+
+            # Export as RO-Crate
+            crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=True)
+
+            # Verify the workflow is present
+            workflow = crate.mainEntity
+            assert workflow
+
+            # Verify files from both parent and subworkflow are present
+            # The RO-Crate should contain files from both the parent workflow and the subworkflow
+            files = [entity for entity in crate.get_entities() if entity.type == "File"]
+
+            # Should have at least: outer_input, first_cat output, random_lines (subworkflow) output, second_cat output
+            # We expect at least as many files as non-deleted datasets
+            assert len(files) >= len(datasets), (
+                f"Expected at least {len(datasets)} files in RO-Crate, "
+                f"but found {len(files)}. This suggests subworkflow datasets may not be exported."
+            )
+
     @skip_without_tool("__MERGE_COLLECTION__")
     def test_merge_collection_scheduling(self, history_id):
         summary = self._run_workflow(
