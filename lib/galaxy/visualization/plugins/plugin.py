@@ -27,21 +27,21 @@ class VisualizationPlugin:
     def to_dict(self):
         return {
             "name": self.name,
-            "html": self.config.get("name"),
             "description": self.config.get("description"),
             "data_sources": self.config.get("data_sources"),
-            "help": self.config.get("help"),
-            "logo": self.config.get("logo"),
-            "tags": self.config.get("tags"),
-            "title": self.config.get("title"),
-            "params": self.config.get("params"),
             "embeddable": self.config.get("embeddable"),
             "entry_point": self.config.get("entry_point"),
+            "html": self.config.get("name"),
+            "href": url_for(self.static_path),
+            "help": self.config.get("help"),
+            "logo": self.config.get("logo"),
+            "params": self.config.get("params"),
+            "tags": self.config.get("tags"),
+            "tests": self.config.get("tests"),
+            "title": self.config.get("title"),
+            "tracks": self.config.get("tracks"),
             "settings": self.config.get("settings"),
             "specs": self.config.get("specs"),
-            "tracks": self.config.get("tracks"),
-            "tests": self.config.get("tests"),
-            "href": url_for(self.static_path),
         }
 
     def _set_logo(self):
