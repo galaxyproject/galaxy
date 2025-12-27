@@ -3982,6 +3982,7 @@ steps:
                     "details": "Subworkflow has disconnected required input.",
                     "reason": "unexpected_failure",
                     "workflow_step_id": 0,
+                    "workflow_step_id_path": [0],
                 }
             ]
 
@@ -4036,6 +4037,55 @@ test_data:
                 wait=True,
                 assert_ok=True,
             )
+
+    def test_subworkflow_validation_error_step_path(self):
+        """Test that validation errors from subworkflows include the full step path."""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  some_file:
+    type: data
+steps:
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        subworkflow_input:
+          type: data
+      steps:
+        conditional_step:
+          tool_id: cat1
+          in:
+            input1: subworkflow_input
+          when: $("not_a_boolean")
+    in:
+      subworkflow_input: some_file
+""",
+                test_data="""
+some_file:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "when_not_boolean"
+            assert message["details"] == "Type is: str"
+            # workflow_step_id should be the conditional_step in the subworkflow
+            # workflow_step_id_path should contain the subworkflow_step from the parent workflow
+            assert "workflow_step_id_path" in message
+            assert message["workflow_step_id_path"] is not None
+            assert len(message["workflow_step_id_path"]) == 1
+            # Verify the path contains the step ID (order_index, not the database id)
+            assert isinstance(message["workflow_step_id_path"][0], int)
+            assert message["workflow_step_id_path"][0] > 0
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")

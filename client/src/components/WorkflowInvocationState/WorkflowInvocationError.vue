@@ -25,6 +25,7 @@ const props = defineProps<InvocationMessageProps>();
 
 const emit = defineEmits<{
     (e: "view-step", stepId: number): void;
+    (e: "view-subworkflow-invocation", invocationId: string, stepId: number): void;
 }>();
 
 const workflow = computed(() => {
@@ -97,7 +98,13 @@ function openJobInNewTab(jobId: string) {
 
 <template>
     <div>
-        <InvocationMessageView :invocation-message="props.invocationMessage" />
+        <InvocationMessageView
+            :invocation-message="props.invocationMessage"
+            :invocation="props.invocation"
+            @view-step="emit('view-step', $event)"
+            @view-subworkflow-invocation="
+                (invocationId, stepId) => emit('view-subworkflow-invocation', invocationId, stepId)
+            " />
         <div class="invocation-error-grid d-flex flex-wrap">
             <GCard
                 v-if="dependentWorkflowStep"
