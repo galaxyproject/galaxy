@@ -464,7 +464,7 @@ class InvocationReport(Model, WithModelClass):
     generate_time: Optional[str] = schema.GenerateTimeField
     generate_version: Optional[str] = schema.GenerateVersionField
 
-    errors: Optional[dict[str, Any]] = Field(
+    errors: Optional[list[dict[str, Any]]] = Field(
         default=None,
         title="Errors",
         description="Errors associated with the invocation.",

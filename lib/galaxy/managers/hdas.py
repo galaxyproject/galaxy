@@ -233,15 +233,20 @@ class HDAManager(
 
     # .... deletion and purging
     def purge(self, item, flush=True, **kwargs):
+        preserve_owner_update_time = kwargs.get("preserve_owner_update_time", False)
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_hda
 
             user = kwargs.get("user")
-            return purge_hda.delay(hda_id=item.id, task_user_id=getattr(user, "id", None))
+            return purge_hda.delay(
+                hda_id=item.id,
+                task_user_id=getattr(user, "id", None),
+                preserve_owner_update_time=preserve_owner_update_time,
+            )
         else:
-            self._purge(item, flush=flush)
+            self._purge(item, flush=flush, preserve_owner_update_time=preserve_owner_update_time)
 
-    def _purge(self, hda: HistoryDatasetAssociation, flush: bool = True):
+    def _purge(self, hda: HistoryDatasetAssociation, flush: bool = True, preserve_owner_update_time: bool = False):
         """
         Purge this HDA and the dataset underlying it.
         """
@@ -254,7 +259,9 @@ class HDAManager(
         if user:
             quota_source_info = hda.dataset.quota_source_info
             if quota_amount_reduction and quota_source_info.use:
-                user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
+                user.adjust_total_disk_usage(
+                    -quota_amount_reduction, quota_source_info.label, preserve_update_time=preserve_owner_update_time
+                )
                 # TODO: don't flush above if we're going to re-flush here
                 session = object_session(user)
                 assert session
