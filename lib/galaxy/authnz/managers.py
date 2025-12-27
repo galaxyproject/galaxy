@@ -55,7 +55,7 @@ class AuthnzManager:
             tree = parse_xml(config_file)
             root = tree.getroot()
             if root.tag != "OIDC":
-                raise etree.ParseError(
+                raise exceptions.ConfigurationError(
                     "The root element in OIDC_Config xml file is expected to be `OIDC`, "
                     f"found `{root.tag}` instead -- unable to continue."
                 )
@@ -86,8 +86,8 @@ class AuthnzManager:
                 self.oidc_config[child.get("Property")] = func(child.get("Value"))
         except ImportError:
             raise
-        except etree.ParseError as e:
-            raise etree.ParseError(f"Invalid configuration at `{config_file}`: {e} -- unable to continue.")
+        except (etree.ParseError, exceptions.ConfigurationError) as e:
+            raise exceptions.ConfigurationError(f"Invalid configuration at `{config_file}`: {e} -- unable to continue.")
 
     def _get_idp_icon(self, idp):
         return self.oidc_backends_config[idp].get("icon") or DEFAULT_OIDC_IDP_ICONS.get(idp)
@@ -103,7 +103,7 @@ class AuthnzManager:
                 tree = parse_xml(config_file, schemafname=oidc_backend_schema_path)
             root = tree.getroot()
             if root.tag != "OIDC":
-                raise etree.ParseError(
+                raise exceptions.ConfigurationError(
                     "The root element in OIDC config xml file is expected to be `OIDC`, "
                     f"found `{root.tag}` instead -- unable to continue."
                 )
@@ -126,7 +126,7 @@ class AuthnzManager:
                         "custom_button_text": self._get_idp_button_text(idp),
                     }
                 else:
-                    raise etree.ParseError("Unknown provider specified")
+                    raise exceptions.ConfigurationError("Unknown provider specified")
                 if "end_user_registration_endpoint" in self.oidc_backends_config[idp]:
                     self.app.config.oidc[idp]["end_user_registration_endpoint"] = self.oidc_backends_config[idp][
                         "end_user_registration_endpoint"
@@ -135,11 +135,11 @@ class AuthnzManager:
                     self.app.config.oidc[idp]["profile_url"] = self.oidc_backends_config[idp]["profile_url"]
 
             if len(self.oidc_backends_config) == 0:
-                raise etree.ParseError("No valid provider configuration parsed.")
+                raise exceptions.ConfigurationError("No valid provider configuration parsed.")
         except ImportError:
             raise
-        except etree.ParseError as e:
-            raise etree.ParseError(f"Invalid configuration at `{config_file}`: {e} -- unable to continue.")
+        except (etree.ParseError, exceptions.ConfigurationError) as e:
+            raise exceptions.ConfigurationError(f"Invalid configuration at `{config_file}`: {e} -- unable to continue.")
 
     def _parse_idp_config(self, config_xml):
         rtv = {
