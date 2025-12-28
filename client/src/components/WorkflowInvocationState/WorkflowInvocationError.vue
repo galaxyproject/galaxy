@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { InvocationMessage, WorkflowInvocationElementView } from "@/api/invocations";
+import { useInvocationMessageStepData } from "@/composables/useInvocationMessageStepData";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
@@ -28,28 +29,35 @@ const emit = defineEmits<{
     (e: "view-subworkflow-invocation", invocationId: string, stepId: number): void;
 }>();
 
+// Use the composable to get enriched step data for the actual failing step
+const { stepData } = useInvocationMessageStepData(
+    computed(() => props.invocation?.id || ""),
+    computed(() => {
+        if (
+            "workflow_step_id_path" in props.invocationMessage &&
+            Array.isArray(props.invocationMessage.workflow_step_id_path)
+        ) {
+            return props.invocationMessage.workflow_step_id_path as number[];
+        }
+        return [];
+    }),
+    computed(() => {
+        if ("workflow_step_id" in props.invocationMessage) {
+            return props.invocationMessage.workflow_step_id as number;
+        }
+        return undefined;
+    }),
+);
+
+// Get the actual failing step from the enriched data
+const failingStepInfo = computed(() => {
+    return stepData.value.find((step) => step.isFinalStep);
+});
+
 const workflow = computed(() => {
     if ("workflow_step_id" in props.invocationMessage) {
         const { workflow } = useWorkflowInstance(props.invocation.workflow_id);
         return workflow.value;
-    }
-    return undefined;
-});
-
-const workflowStep = computed(() => {
-    if (
-        "workflow_step_id" in props.invocationMessage &&
-        props.invocationMessage.workflow_step_id !== undefined &&
-        props.invocationMessage.workflow_step_id !== null &&
-        workflow.value
-    ) {
-        return workflow.value.steps[props.invocationMessage.workflow_step_id];
-    }
-    return undefined;
-});
-const invocationStep = computed(() => {
-    if (workflowStep.value) {
-        return props.invocation.steps[workflowStep.value.id];
     }
     return undefined;
 });
@@ -94,6 +102,24 @@ function openJobInNewTab(jobId: string) {
     const url = `/jobs/${jobId}/view`;
     window.open(url, "_blank");
 }
+
+function handleFailingStepClick() {
+    if (!failingStepInfo.value) {
+        return;
+    }
+
+    // If the failing step has a parentInvocationId, it's in a subworkflow
+    if (failingStepInfo.value.parentInvocationId) {
+        emit(
+            "view-subworkflow-invocation",
+            failingStepInfo.value.parentInvocationId,
+            failingStepInfo.value.workflowStepId,
+        );
+    } else {
+        // Otherwise it's in the current workflow
+        emit("view-step", failingStepInfo.value.workflowStepId);
+    }
+}
 </script>
 
 <template>
@@ -127,21 +153,10 @@ function openJobInNewTab(jobId: string) {
                         " />
                 </strong>
             </GCard>
-            <GCard
-                v-if="workflowStep"
-                clickable
-                :current="activeNodeId === workflowStep.id"
-                grid-view
-                @click="emit('view-step', workflowStep.id)">
+            <GCard v-if="failingStepInfo" clickable grid-view @click="handleFailingStepClick">
                 {{ stepDescription }}:
                 <strong>
-                    <WorkflowStepTitle
-                        :step-index="workflowStep.id"
-                        :step-label="invocationStep?.workflow_step_label || `Step ${workflowStep.id + 1}`"
-                        :step-type="workflowStep.type"
-                        :step-tool-id="workflowStep.tool_id"
-                        :step-tool-uuid="workflowStep.tool_uuid"
-                        :step-subworkflow-id="'workflow_id' in workflowStep ? workflowStep.workflow_id : null" />
+                    {{ failingStepInfo.label }}
                 </strong>
             </GCard>
             <GCard v-if="HdaId" grid-view>
