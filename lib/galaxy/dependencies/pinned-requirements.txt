@@ -223,7 +223,7 @@ protobuf==5.29.5 ; python_full_version < '3.10'
 protobuf==6.33.3 ; python_full_version >= '3.10'
 prov==1.5.1
 psutil==7.2.1
-pulsar-galaxy-lib==0.15.12
+pulsar-galaxy-lib==0.15.13
 py-key-value-aio==0.3.0 ; python_full_version >= '3.10'
 py-key-value-shared==0.3.0 ; python_full_version >= '3.10'
 pyasn1==0.6.1
