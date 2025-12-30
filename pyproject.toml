@@ -79,7 +79,7 @@ dependencies = [
     "PyJWT",
     "pykwalify",
     "pylibmagic",
-    "pyparsing",
+    "pyparsing>=3.0.0",
     "pypng",
     "pysam>=0.21",  # for Python 3.11 support on macOS
     "python-dateutil",
