@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BButton, BCard, BCardBody, BCardTitle } from "bootstrap-vue";
-import { type Ref, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import type { TrsSelection } from "@/components/Workflow/Import/types";
 import { Services } from "@/components/Workflow/services";
@@ -11,8 +12,17 @@ import TrsImport from "@/components/Workflow/Import/TrsImport.vue";
 
 type ImportView = "cards" | "upload" | "fetch" | "repository";
 
+const route = useRoute();
 const currentView = ref<ImportView>("cards");
 const trsServers: Ref<TrsSelection[]> = ref([]);
+
+const queryParams = computed(() => ({
+    trsId: route.query.trs_id as string | undefined,
+    trsUrl: route.query.trs_url as string | undefined,
+    trsServer: route.query.trs_server as string | undefined,
+    trsVersionId: route.query.trs_version_id as string | undefined,
+    isRun: route.query.run_form === "true",
+}));
 
 function selectView(view: ImportView) {
     currentView.value = view;
@@ -27,6 +37,10 @@ services.getTrsServers().then((res) => {
     trsServers.value = res;
 });
 
+// Auto-select view based on query parameters
+if (queryParams.value.trsId || queryParams.value.trsUrl || queryParams.value.trsServer) {
+    currentView.value = "repository";
+}
 </script>
 
 <template>
@@ -59,6 +73,9 @@ services.getTrsServers().then((res) => {
                     <BCard class="h-100 workflow-import-trs-id-link clickable-card text-center" @click="selectView('repository')">
                         <BCardTitle>Import from repository</BCardTitle>
                         <BCardBody>
+                            <p>
+                                Import a workflow from a configured GA4GH server:
+                            </p>
                             <ul class="text-left text-muted">
                                 <li v-for="server in trsServers" :key="server.id">
                                     {{ server.label }}
@@ -80,8 +97,14 @@ services.getTrsServers().then((res) => {
                     <FromUrl />
                 </div>
 
-                <div v-if="currentView === 'repository'" class="container-narrow">
-                    <TrsImport :trs-servers="trsServers"/>
+                <div v-if="currentView === 'repository'" class="container-wide">
+                    <TrsImport
+                        :trs-servers="trsServers"
+                        :is-run="queryParams.isRun"
+                        :query-trs-id="queryParams.trsId"
+                        :query-trs-url="queryParams.trsUrl"
+                        :query-trs-server="queryParams.trsServer"
+                        :query-trs-version-id="queryParams.trsVersionId" />
                 </div>
             </div>
         </div>
@@ -102,11 +125,17 @@ services.getTrsServers().then((res) => {
 .page-centered {
     display: flex;
     justify-content: center;
-    margin-top: 20vh;
+    align-items: center;
+    min-height: 60vh;
 }
 .container-narrow {
     margin: 0 auto;
-    min-width: 600px;
-    max-width: 100%;
+    width: 100%;
+    max-width: 600px;
+}
+.container-wide {
+    margin: 0 auto;
+    width: 100%;
+    max-width: min(1000px, 80vw);
 }
 </style>
