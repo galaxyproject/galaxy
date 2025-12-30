@@ -2,7 +2,7 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { BAlert, BButton, BCard, BCardBody, BCardTitle } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref } from "vue";
+import { type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
@@ -13,6 +13,7 @@ import type { TrsSelection } from "./types";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsIdImport from "@/components/Workflow/Import/TrsIdImport.vue";
+import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
 import TrsUrlImport from "@/components/Workflow/Import/TrsUrlImport.vue";
 
 
@@ -27,23 +28,15 @@ interface Props {
 
 const props = defineProps<Props>();
 
-type TrsView = "cards" | "trsId" | "trsUrl";
+type TrsView = "cards" | "trsId" | "trsUrl" | "trsSearch";
 
 const currentView = ref<TrsView>("cards");
 const { isAnonymous } = storeToRefs(useUserStore());
 const importing = ref(false);
 const errorMessage: Ref<string | null> = ref(null);
-const isAutoImport = ref(
-    Boolean((props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId) || props.queryTrsUrl),
-);
 
 const services = new Services();
 const router = useRouter();
-
-const trsServerLabels = computed(() => {
-    const serversStr = props.trsServers?.map(i => i.label).join(', ') || 'a TRS server.'
-    return serversStr.replace(/,([^,]*)$/, ' & $1');
-});
 
 function selectView(view: TrsView) {
     currentView.value = view;
@@ -91,48 +84,67 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 }
 
 // Auto-select view if query params are present
-if (isAutoImport.value) {
-    if (props.queryTrsUrl) {
-        currentView.value = "trsUrl";
-    } else if (props.queryTrsId) {
-        currentView.value = "trsId";
-    }
+if (props.queryTrsUrl) {
+    currentView.value = "trsUrl";
+} else if (props.queryTrsId || props.queryTrsServer) {
+    currentView.value = "trsId";
 }
 </script>
 
 <template>
+
     <div class="workflow-import-trs">
         <BAlert v-if="isAnonymous" class="text-center my-2" show variant="danger">
             Anonymous user cannot import workflows, please register or log in
         </BAlert>
+
         <div v-else>
-            <div v-if="currentView === 'cards'" class="row my-3">
-                <div class="col-md-6 mb-3">
-                    <BCard class="h-100 workflow-import-trs-id-link clickable-card" @click="selectView('trsId')">
-                        <BCardBody class="text-center">
-                            <BCardTitle>TRS ID</BCardTitle>
-                            <p>
-                                <span>
-                                    <FontAwesomeIcon
-                                        :icon="faInfoCircle"
-                                        tooltip
-                                        title="A TRS ID can be obtained by visiting the website of the selected TRS server."
-                                    />
-                                </span>
-                                If you know the TRS ID for
-                                {{ trsServerLabels }}
-                            </p>
-                        </BCardBody>
-                    </BCard>
+            <div v-if="currentView === 'cards'">
+                <div class="my-5">
+                    Workflows can be imported from TRS-compliant workflow registries using the GA4GH protocol. This Galaxy server has {{ trsServers?.length || 0 }} configured TRS server(s):
+                    <ul>
+                        <li v-for="server in trsServers" :key="server.id">
+                            {{ server.label }} ({{ server.link_url }})
+                        </li>
+                    </ul>
                 </div>
 
-                <div class="col-md-6 mb-3">
-                    <BCard class="h-100 workflow-import-trs-url-link clickable-card" @click="selectView('trsUrl')">
-                        <BCardBody class="text-center">
-                            <BCardTitle>TRS URL</BCardTitle>
-                            <p>Import directly from any TRS URL</p>
-                        </BCardBody>
-                    </BCard>
+                <div class="row my-3">
+                    <div class="col-md-4 mb-3">
+                        <BCard class="h-100 workflow-import-trs-search-link clickable-card" @click="selectView('trsSearch')">
+                            <BCardBody class="text-center">
+                                <BCardTitle>Search workflow registries</BCardTitle>
+                                <p>Search for workflows across configured GA4GH servers</p>
+                            </BCardBody>
+                        </BCard>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <BCard class="h-100 workflow-import-trs-id-link clickable-card" @click="selectView('trsId')">
+                            <BCardBody class="text-center">
+                                <BCardTitle>TRS ID</BCardTitle>
+                                <p>
+                                    <span>
+                                        <FontAwesomeIcon
+                                            :icon="faInfoCircle"
+                                            tooltip
+                                            title="A TRS ID can be obtained by visiting the website of the selected TRS server."
+                                        />
+                                    </span>
+                                    If you know the TRS ID for a workflow in one of the configured servers.
+                                </p>
+                            </BCardBody>
+                        </BCard>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <BCard class="h-100 workflow-import-trs-url-link clickable-card" @click="selectView('trsUrl')">
+                            <BCardBody class="text-center">
+                                <BCardTitle>TRS URL</BCardTitle>
+                                <p>Import directly from any TRS URL</p>
+                            </BCardBody>
+                        </BCard>
+                    </div>
                 </div>
             </div>
 
@@ -149,7 +161,11 @@ if (isAutoImport.value) {
                     {{ errorMessage }}
                 </BAlert>
 
-                <div v-if="currentView === 'trsId'">
+                <div v-if="currentView === 'trsSearch'" style="min-height: 500px">
+                    <TrsSearch />
+                </div>
+
+                <div v-if="currentView === 'trsId'" style="min-height: 500px">
                     <TrsIdImport
                         :is-run="props.isRun"
                         :query-trs-id="props.queryTrsId"
@@ -158,7 +174,7 @@ if (isAutoImport.value) {
                         @onImport="(trsId, toolId, version) => importVersion(trsId, toolId, version, props.isRun)" />
                 </div>
 
-                <div v-if="currentView === 'trsUrl'">
+                <div v-if="currentView === 'trsUrl'" style="min-height: 500px">
                     <TrsUrlImport
                         :query-trs-url="props.queryTrsUrl"
                         @onImport="(url) => importVersionFromUrl(url, props.isRun)" />
