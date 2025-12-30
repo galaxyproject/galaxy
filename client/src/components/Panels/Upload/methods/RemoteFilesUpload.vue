@@ -6,6 +6,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { browseRemoteFiles, fetchFileSources, type RemoteEntry } from "@/api/remoteFiles";
+import type { BreadcrumbItem } from "@/components/Common";
 import { Model } from "@/components/FilesDialog/model";
 import { fileSourcePluginToItem } from "@/components/FilesDialog/utilities";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -31,15 +32,11 @@ import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
 import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
 
 interface Props {
     method: UploadMethodConfig;
     targetHistoryId: string;
-}
-
-interface Breadcrumb {
-    label: string;
-    index: number;
 }
 
 const props = defineProps<Props>();
@@ -93,9 +90,9 @@ const hasItems = computed(() => remoteFileItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
 
 const breadcrumbs = computed(() => {
-    const crumbs: Breadcrumb[] = [{ label: "Sources", index: -1 }];
+    const crumbs: BreadcrumbItem[] = [{ title: "Sources", index: -1 }];
     urlTracker.navigationHistory.value.forEach((item, index) => {
-        crumbs.push({ label: item.label, index });
+        crumbs.push({ title: item.label, index });
     });
     return crumbs;
 });
@@ -355,23 +352,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
         <div v-if="showBrowser" class="file-browser">
             <!-- Navigation breadcrumb -->
             <div class="browser-header mb-2">
-                <nav v-if="!urlTracker.isAtRoot.value" class="breadcrumb-nav">
-                    <template v-for="(crumb, idx) in breadcrumbs">
-                        <button
-                            v-if="idx < breadcrumbs.length - 1"
-                            :key="`link-${idx}`"
-                            class="breadcrumb-link"
-                            @click="navigateToBreadcrumb(crumb.index)">
-                            {{ crumb.label }}
-                        </button>
-                        <span v-else :key="`current-${idx}`" class="breadcrumb-current-label">
-                            {{ crumb.label }}
-                        </span>
-                        <span v-if="idx < breadcrumbs.length - 1" :key="`sep-${idx}`" class="breadcrumb-separator">
-                            /
-                        </span>
-                    </template>
-                </nav>
+                <BreadcrumbNavigation
+                    v-if="!urlTracker.isAtRoot.value"
+                    :items="breadcrumbs"
+                    @navigate="navigateToBreadcrumb" />
                 <span v-else class="font-weight-bold">Select a File Source</span>
             </div>
 
@@ -687,56 +671,5 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
 .cursor-pointer {
     cursor: pointer;
-}
-
-.breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0;
-    row-gap: 0.5rem;
-}
-
-.breadcrumb-link {
-    background: none;
-    border: none;
-    color: $brand-primary;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 250px;
-
-    &:hover {
-        background-color: rgba($brand-primary, 0.1);
-        text-decoration: underline;
-    }
-
-    &:focus {
-        outline: 2px solid $brand-primary;
-        outline-offset: 2px;
-    }
-}
-
-.breadcrumb-current-label {
-    font-weight: 600;
-    color: $text-color;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 250px;
-}
-
-.breadcrumb-separator {
-    color: $text-muted;
-    font-size: 0.9rem;
-    padding: 0 0.25rem;
-    flex-shrink: 0;
 }
 </style>
