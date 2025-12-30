@@ -38,7 +38,7 @@ if (trsUrl.value) {
 
 <template>
     <BForm class="mt-4" @submit="submit">
-        <h2 class="h-sm">alternatively, provide a TRS URL directly</h2>
+        <h2 class="h-sm">Import from TRS URL</h2>
 
         <BFormGroup label="TRS URL:" label-class="font-weight-bold">
             <BFormInput id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
