@@ -53,7 +53,7 @@ if (queryParams.value.trsId || queryParams.value.trsUrl || queryParams.value.trs
                     <BCard class="h-100 workflow-import-file-link clickable-card text-center" @click="selectView('upload')">
                         <BCardTitle>Upload file</BCardTitle>
                         <BCardBody>
-                            <p class="text-muted">Upload a *.ga file from your computer</p>
+                            <p class="text-muted">Upload a <code>*.ga</code> file from your computer</p>
                         </BCardBody>
                     </BCard>
                 </div>
@@ -63,7 +63,7 @@ if (queryParams.value.trsId || queryParams.value.trsUrl || queryParams.value.trs
                         <BCardTitle>Fetch URL</BCardTitle>
                         <BCardBody>
                             <p class="text-muted">
-                                Fetch a remote *.ga file from any publicly accessible URL.
+                                Fetch a remote <code>*.ga</code> file from any publicly accessible URL.
                             </p>
                         </BCardBody>
                     </BCard>
@@ -86,25 +86,25 @@ if (queryParams.value.trsId || queryParams.value.trsUrl || queryParams.value.trs
                 </div>
             </div>
 
-            <div v-else>
-                <BButton variant="link" class="p-0" @click="backToCards"> &larr; Back to import options </BButton>
+            <div v-else class="d-flex flex-column flex-1">
 
-                <div v-if="currentView === 'upload'" class="container-narrow">
-                    <FromFile />
-                </div>
-
-                <div v-if="currentView === 'fetch'" class="container-narrow">
-                    <FromUrl />
-                </div>
-
-                <div v-if="currentView === 'repository'" class="container-wide">
+                <div
+                    :class="currentView === 'repository' ? 'container-wide' : 'container-narrow'"
+                >
+                    <p class="mb-0">
+                        <BButton variant="link" class="p-0" @click="backToCards"> &larr; Back to import options </BButton>
+                    </p>
+                    <FromFile v-if="currentView === 'upload'" />
+                    <FromUrl v-if="currentView === 'fetch'" />
                     <TrsImport
+                        v-if="currentView === 'repository'"
                         :trs-servers="trsServers"
                         :is-run="queryParams.isRun"
                         :query-trs-id="queryParams.trsId"
                         :query-trs-url="queryParams.trsUrl"
                         :query-trs-server="queryParams.trsServer"
-                        :query-trs-version-id="queryParams.trsVersionId" />
+                        :query-trs-version-id="queryParams.trsVersionId"
+                    />
                 </div>
             </div>
         </div>
@@ -127,6 +127,7 @@ if (queryParams.value.trsId || queryParams.value.trsUrl || queryParams.value.trs
     justify-content: center;
     align-items: center;
     min-height: 60vh;
+    width: 100%;
 }
 .container-narrow {
     margin: 0 auto;
