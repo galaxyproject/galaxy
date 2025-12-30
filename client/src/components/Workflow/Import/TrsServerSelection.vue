@@ -37,6 +37,10 @@ const services = new Services();
 
 async function configureTrsServers() {
     const servers = await services.getTrsServers();
+
+    console.log("Fetched TRS servers:");
+    console.log(servers);
+
     const queryTrsServer = props.queryTrsServer;
 
     trsServers.value = servers;
