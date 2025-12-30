@@ -86,6 +86,41 @@ const currentPage = ref(1);
 const perPage = ref(25);
 const totalMatches = ref(0);
 
+/**
+ * Sequence id to track latest load request. Incremented on each navigation/load.
+ */
+const loadSequenceId = ref(0);
+
+async function executeIfLatest<T>(
+    operation: () => Promise<T>,
+    onSuccess: (data: T) => void,
+    onError?: (error: unknown) => void,
+): Promise<void> {
+    const seq = loadSequenceId.value;
+    isBusy.value = true;
+    errorMessage.value = undefined;
+
+    try {
+        const result = await operation();
+        // Ignore if a newer load started while we were fetching
+        if (seq === loadSequenceId.value) {
+            onSuccess(result);
+        }
+    } catch (error) {
+        if (seq === loadSequenceId.value) {
+            if (onError) {
+                onError(error);
+            } else {
+                errorMessage.value = errorMessageAsString(error);
+            }
+        }
+    } finally {
+        if (seq === loadSequenceId.value) {
+            isBusy.value = false;
+        }
+    }
+}
+
 const hasItems = computed(() => remoteFileItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
 
@@ -117,36 +152,32 @@ function entryToSelectionItem(entry: RemoteEntry): SelectionItem {
 }
 
 async function loadFileSources() {
-    isBusy.value = true;
-    errorMessage.value = undefined;
-    try {
-        const sources = await fetchFileSources();
-        browserItems.value = sources.map(fileSourcePluginToItem);
-    } catch (error) {
-        errorMessage.value = errorMessageAsString(error);
-    } finally {
-        isBusy.value = false;
-    }
+    await executeIfLatest(
+        () => fetchFileSources(),
+        (sources) => {
+            browserItems.value = sources.map(fileSourcePluginToItem);
+        },
+    );
 }
 
 async function loadDirectory(uri: string) {
-    isBusy.value = true;
-    errorMessage.value = undefined;
-    try {
-        const offset = (currentPage.value - 1) * perPage.value;
-        const result = await browseRemoteFiles(uri, false, false, perPage.value, offset);
-        browserItems.value = result.entries.map(entryToSelectionItem);
-        totalMatches.value = result.totalMatches;
-    } catch (error) {
-        errorMessage.value = errorMessageAsString(error);
-        browserItems.value = [];
-        totalMatches.value = 0;
-    } finally {
-        isBusy.value = false;
-    }
+    const offset = (currentPage.value - 1) * perPage.value;
+    await executeIfLatest(
+        () => browseRemoteFiles(uri, false, false, perPage.value, offset),
+        (result) => {
+            browserItems.value = result.entries.map(entryToSelectionItem);
+            totalMatches.value = result.totalMatches;
+        },
+        () => {
+            browserItems.value = [];
+            totalMatches.value = 0;
+        },
+    );
 }
 
 async function load() {
+    // Bump sequence id so any in-flight requests are considered stale
+    loadSequenceId.value += 1;
     if (urlTracker.isAtRoot.value) {
         await loadFileSources();
     } else if (urlTracker.current.value) {
