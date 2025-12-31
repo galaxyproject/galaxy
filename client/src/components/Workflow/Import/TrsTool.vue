@@ -25,7 +25,7 @@ const reversedVersions = computed(() => {
 });
 
 const selectedVersion = ref<TrsToolVersion | null>(
-    reversedVersions.value.length > 0 ? reversedVersions.value[0] : null
+    reversedVersions.value.length > 0 ? reversedVersions.value[0] : null,
 );
 
 const versionOptions = computed(() => {
@@ -72,10 +72,7 @@ function importSelectedVersion() {
                     class="workflow-version-select"
                     style="max-width: 300px" />
 
-                <BButton
-                    class="workflow-import"
-                    :disabled="!selectedVersion"
-                    @click="importSelectedVersion">
+                <BButton class="workflow-import" :disabled="!selectedVersion" @click="importSelectedVersion">
                     Import
 
                     <FontAwesomeIcon :icon="faUpload" />
