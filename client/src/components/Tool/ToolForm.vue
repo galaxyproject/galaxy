@@ -111,7 +111,7 @@
 
 <script>
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 import { mapActions, mapState, storeToRefs } from "pinia";
 
 import { canMutateHistory } from "@/api";
@@ -373,7 +373,7 @@ export default {
                 } else if (state == "failed") {
                     this.handleError(null, requestContent);
                 } else {
-                    startWatchingHistory();
+                    this.startWatchingHistory();
                     this.showForm = false;
                     this.showSuccess = true;
                     this.handleSubmissionComplete(config, prevRoute);
@@ -537,7 +537,7 @@ export default {
                         this.submissionRequestFailed = false;
                         this.showExecuting = false;
                         let changeRoute = false;
-                        startWatchingHistory();
+                        this.startWatchingHistory();
                         if (jobResponse.produces_entry_points) {
                             this.showEntryPoints = true;
                             this.entryPoints = jobResponse.jobs;

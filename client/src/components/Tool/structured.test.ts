@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import SPEC_PARAMETERS from "./parameter_models.yml";
 import SPEC_TESTS from "./parameter_specification.yml";
 import type { IntegerParameterModel } from "./parameterModels";
