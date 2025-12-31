@@ -82,7 +82,10 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.go_to_trs_search()
         self.components.trs_search.search.wait_for_and_send_keys("organization: iwc-workflows")
         self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
-        self.components.trs_search.import_version(version="v0.4").wait_for_and_click()
+        # Select version from dropdown
+        version_select = self.components.trs_search.version_select.wait_for_visible()
+        self.select_dropdown_item(version_select, "v0.4")
+        self.components.trs_search.import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
@@ -125,7 +128,10 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_import.select_server_button.wait_for_and_click()
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
-        self.components.trs_import.import_version(version="v0.4").wait_for_and_click()
+        # Select version from dropdown
+        version_select = self.components.trs_import.version_select.wait_for_visible()
+        self.select_dropdown_item(version_select, "v0.4")
+        self.components.trs_import.import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)

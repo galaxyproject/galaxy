@@ -750,7 +750,10 @@ trs_search:
       selector: "//td[contains(., '${workflow_name}')]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
-    import_version: '[data-version-name*="${version}"]'
+    version_select: ".workflow-version-select"
+    version_option:
+      type: xpath
+      selector: "//option[contains(text(), '${version}')]"
     select_server:
       type: xpath
       selector: "//a[contains(@class, 'dropdown-item') and normalize-space(text()) = '${server}']"
@@ -758,10 +761,11 @@ trs_search:
 trs_import:
   selectors:
     input: "#trs-id-input"
-    # *= means attribute value contains "${version}"
-    # needed because dockstore uses branch or git tag, while workflowhub
-    # concatenates name and version
-    import_version: '[data-version-name*="${version}"]'
+    version_select: ".workflow-version-select"
+    version_option:
+      type: xpath
+      selector: "//option[contains(text(), '${version}')]"
+    import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
     select_server:
       type: xpath
