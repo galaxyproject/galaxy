@@ -31,10 +31,10 @@ const emit = defineEmits<{
 const invocationId = computed(() => props.invocation?.id || "");
 const pathStepOrderIndices = computed(() => {
     if (
-        "workflow_step_id_path" in props.invocationMessage &&
-        Array.isArray(props.invocationMessage.workflow_step_id_path)
+        "workflow_step_index_path" in props.invocationMessage &&
+        Array.isArray(props.invocationMessage.workflow_step_index_path)
     ) {
-        return props.invocationMessage.workflow_step_id_path as number[];
+        return props.invocationMessage.workflow_step_index_path as number[];
     }
     return [];
 });
@@ -73,16 +73,18 @@ const stepPathInfo = computed(() => {
 
 function buildStepPath(message: InvocationMessage): string {
     if (
-        "workflow_step_id_path" in message &&
+        "workflow_step_index_path" in message &&
         "workflow_step_id" in message &&
-        message.workflow_step_id_path &&
-        Array.isArray(message.workflow_step_id_path) &&
-        message.workflow_step_id_path.length > 0 &&
+        message.workflow_step_index_path &&
+        Array.isArray(message.workflow_step_index_path) &&
+        message.workflow_step_index_path.length > 0 &&
         message.workflow_step_id !== null &&
         message.workflow_step_id !== undefined
     ) {
         // Build path like "Step 2 → Step 5 → Step 9"
-        const pathSteps = (message.workflow_step_id_path as number[]).map((id: number) => `Step ${id + 1}`).join(" → ");
+        const pathSteps = (message.workflow_step_index_path as number[])
+            .map((id: number) => `Step ${id + 1}`)
+            .join(" → ");
         return `${pathSteps} → Step ${message.workflow_step_id + 1}`;
     }
     if ("workflow_step_id" in message && message.workflow_step_id !== null && message.workflow_step_id !== undefined) {

@@ -289,9 +289,9 @@ class WorkflowInvoker:
                     # If this step is a subworkflow, prepend its ID to the path
                     if step.type == "subworkflow":
                         error_dict = e.why.model_dump()
-                        current_path = error_dict.get("workflow_step_id_path") or []
+                        current_path = error_dict.get("workflow_step_index_path") or []
                         current_path.append(step.order_index)
-                        error_dict["workflow_step_id_path"] = current_path
+                        error_dict["workflow_step_index_path"] = current_path
                         error_class = type(e.why)
                         e.why = error_class(**error_dict)
                 if isinstance(e, MessageException):

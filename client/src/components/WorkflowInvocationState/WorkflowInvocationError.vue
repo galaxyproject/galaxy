@@ -34,10 +34,10 @@ const { stepData } = useInvocationMessageStepData(
     computed(() => props.invocation?.id || ""),
     computed(() => {
         if (
-            "workflow_step_id_path" in props.invocationMessage &&
-            Array.isArray(props.invocationMessage.workflow_step_id_path)
+            "workflow_step_index_path" in props.invocationMessage &&
+            Array.isArray(props.invocationMessage.workflow_step_index_path)
         ) {
-            return props.invocationMessage.workflow_step_id_path as number[];
+            return props.invocationMessage.workflow_step_index_path as number[];
         }
         return [];
     }),

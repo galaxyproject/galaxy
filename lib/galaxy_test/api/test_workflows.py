@@ -3982,7 +3982,7 @@ steps:
                     "details": "Subworkflow has disconnected required input.",
                     "reason": "unexpected_failure",
                     "workflow_step_id": 0,
-                    "workflow_step_id_path": [0],
+                    "workflow_step_index_path": [0],
                 }
             ]
 
@@ -4079,13 +4079,13 @@ some_file:
             assert message["reason"] == "when_not_boolean"
             assert message["details"] == "Type is: str"
             # workflow_step_id should be the conditional_step in the subworkflow
-            # workflow_step_id_path should contain the subworkflow_step from the parent workflow
-            assert "workflow_step_id_path" in message
-            assert message["workflow_step_id_path"] is not None
-            assert len(message["workflow_step_id_path"]) == 1
+            # workflow_step_index_path should contain the subworkflow_step from the parent workflow
+            assert "workflow_step_index_path" in message
+            assert message["workflow_step_index_path"] is not None
+            assert len(message["workflow_step_index_path"]) == 1
             # Verify the path contains the step ID (order_index, not the database id)
-            assert isinstance(message["workflow_step_id_path"][0], int)
-            assert message["workflow_step_id_path"][0] > 0
+            assert isinstance(message["workflow_step_index_path"][0], int)
+            assert message["workflow_step_index_path"][0] > 0
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")

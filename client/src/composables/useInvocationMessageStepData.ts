@@ -57,7 +57,7 @@ function generateStepLabel(orderIndex: number, workflowStep: WorkflowStep): stri
  * the necessary invocation and workflow data to properly display step information in error messages.
  *
  * @param invocationId - The workflow invocation ID
- * @param pathStepOrderIndices - Array of step order indices from workflow_step_id_path
+ * @param pathStepOrderIndices - Array of step order indices from workflow_step_index_path
  * @param finalStepOrderIndex - The failing step order index from workflow_step_id
  * @returns Object containing stepData array, loading state, and error message
  */

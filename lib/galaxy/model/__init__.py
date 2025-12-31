@@ -9891,9 +9891,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             exclude_unset=True,
             exclude={"history_id"},  # history_id comes in through workflow_invocation and isn't persisted in database
         )
-        # Convert workflow_step_id_path list to JSON string for database storage
-        if "workflow_step_id_path" in message_dict and message_dict["workflow_step_id_path"] is not None:
-            message_dict["workflow_step_id_path"] = message_dict["workflow_step_id_path"]
+        # Convert workflow_step_index_path list to JSON string for database storage
+        if "workflow_step_index_path" in message_dict and message_dict["workflow_step_index_path"] is not None:
+            message_dict["workflow_step_index_path"] = message_dict["workflow_step_index_path"]
         self.messages.append(
             WorkflowInvocationMessage(  # type:ignore[abstract]
                 workflow_invocation_id=self.id,
@@ -9977,7 +9977,7 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"))
     hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"))
     hdca_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_collection_association.id"))
-    workflow_step_id_path: Mapped[Optional[list[int]]] = mapped_column(JSON)
+    workflow_step_index_path: Mapped[Optional[list[int]]] = mapped_column(JSON)
 
     workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="messages", lazy=True)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(foreign_keys=workflow_step_id, lazy=True)

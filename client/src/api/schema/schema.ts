@@ -15652,10 +15652,10 @@ export interface components {
              */
             reason: "history_deleted";
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationCancellationReviewFailedResponse */
         InvocationCancellationReviewFailedResponse: {
@@ -15670,10 +15670,10 @@ export interface components {
              */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationCancellationUserRequestResponse */
         InvocationCancellationUserRequestResponse: {
@@ -15683,10 +15683,10 @@ export interface components {
              */
             reason: "user_request";
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationEvaluationWarningWorkflowOutputNotFoundResponse */
         InvocationEvaluationWarningWorkflowOutputNotFoundResponse: {
@@ -15703,10 +15703,10 @@ export interface components {
             /** Workflow step id of step that caused a warning. */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationFailureCollectionFailedResponse */
         InvocationFailureCollectionFailedResponse: {
@@ -15732,10 +15732,10 @@ export interface components {
              */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationFailureDatasetFailedResponse */
         InvocationFailureDatasetFailedResponse: {
@@ -15761,10 +15761,10 @@ export interface components {
              */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationFailureExpressionEvaluationFailedResponse */
         InvocationFailureExpressionEvaluationFailedResponse: {
@@ -15784,10 +15784,10 @@ export interface components {
              */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationFailureJobFailedResponse */
         InvocationFailureJobFailedResponse: {
@@ -15813,10 +15813,10 @@ export interface components {
              */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationFailureOutputNotFoundResponse */
         InvocationFailureOutputNotFoundResponse: {
@@ -15838,10 +15838,10 @@ export interface components {
              */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationFailureWhenNotBooleanResponse */
         InvocationFailureWhenNotBooleanResponse: {
@@ -15861,10 +15861,10 @@ export interface components {
              */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationFailureWorkflowParameterInvalidResponse */
         InvocationFailureWorkflowParameterInvalidResponse: {
@@ -15881,10 +15881,10 @@ export interface components {
             /** Workflow parameter step that failed validation */
             workflow_step_id: number;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationInput */
         InvocationInput: {
@@ -16364,10 +16364,10 @@ export interface components {
              */
             workflow_step_id?: number | null;
             /**
-             * Workflow Step Id Path
+             * Workflow Step Index Path
              * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
              */
-            workflow_step_id_path?: number[] | null;
+            workflow_step_index_path?: number[] | null;
         };
         /** InvocationUpdatePayload */
         InvocationUpdatePayload: {

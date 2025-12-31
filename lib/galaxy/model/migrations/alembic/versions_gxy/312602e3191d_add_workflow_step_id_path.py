@@ -1,4 +1,4 @@
-"""Add workflow_step_id_path column to workflow_invocation_message table
+"""Add workflow_step_index_path column to workflow_invocation_message table
 
 Revision ID: 312602e3191d
 Revises: 75b461a2b24a
@@ -20,7 +20,7 @@ depends_on = None
 
 # database object names used in this revision
 table_name = "workflow_invocation_message"
-column_name = "workflow_step_id_path"
+column_name = "workflow_step_index_path"
 
 
 def upgrade():

@@ -117,7 +117,7 @@ class CancelReason(str, Enum):
 
 class InvocationMessageBase(GenericModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
-    workflow_step_id_path: Optional[List[int]] = Field(
+    workflow_step_index_path: Optional[List[int]] = Field(
         None,
         description="Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).",
     )
