@@ -4055,6 +4055,10 @@ steps:
         subworkflow_input:
           type: data
       steps:
+        first_step:
+          tool_id: cat1
+          in:
+            input1: subworkflow_input
         conditional_step:
           tool_id: cat1
           in:
@@ -4078,14 +4082,12 @@ some_file:
             message = invocation_details["messages"][0]
             assert message["reason"] == "when_not_boolean"
             assert message["details"] == "Type is: str"
-            # workflow_step_id should be the conditional_step in the subworkflow
-            # workflow_step_index_path should contain the subworkflow_step from the parent workflow
-            assert "workflow_step_index_path" in message
-            assert message["workflow_step_index_path"] is not None
-            assert len(message["workflow_step_index_path"]) == 1
-            # Verify the path contains the step ID (order_index, not the database id)
-            assert isinstance(message["workflow_step_index_path"][0], int)
-            assert message["workflow_step_index_path"][0] > 0
+            # Validate the complete workflow_step_index_path
+            # workflow_step_index_path tracks the path of subworkflow steps from parent to the subworkflow containing the error
+            # workflow_step_id is the ID of the actual failing step within that subworkflow
+            assert message["workflow_step_index_path"] == [1]
+            # Verify workflow_step_id points to the conditional_step (step 2 in the subworkflow)
+            assert message["workflow_step_id"] == 2
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
