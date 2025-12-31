@@ -183,7 +183,9 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 striped
                 caption-top
                 :busy="loading"
-                @row-clicked="showRowDetails">
+                tbody-tr-class="clickable-row"
+                @row-clicked="showRowDetails"
+            >
                 <template v-slot:row-details="row">
                     <BCard>
                         <BAlert v-if="importing" variant="info" show>
@@ -192,7 +194,8 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
                         <TrsTool
                             :trs-tool="row.item.data"
-                            @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
+                            @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)"
+                        />
                     </BCard>
                 </template>
 
@@ -212,5 +215,21 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     line-clamp: 3;
+}
+.clickable-row:not(.b-table-details) {
+    cursor: pointer;
+}
+.clickable-row.b-table-has-details {
+    border: 1px solid #ccc;
+    border-top: 2px solid #ccc;
+    border-bottom: none;
+}
+.clickable-row.b-table-details {
+    border: 1px solid #ccc;
+    border-top: none;
+    border-bottom: 2px solid #ccc;
+}
+.clickable-row.b-table-details:hover {
+    background: unset;
 }
 </style>
