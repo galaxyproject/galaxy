@@ -83,8 +83,15 @@ function onTrsSelectionError(message: string) {
     errorMessage.value = message;
 }
 
-function showRowDetails(row: BCard, index: number, e: MouseEvent) {
+function showRowDetails(row: any, _index: number, e: MouseEvent) {
     if ((e.target as Node | undefined)?.nodeName !== "A") {
+        // Collapse all other rows
+        itemsComputed.value.forEach((item) => {
+            if (item !== row) {
+                item._showDetails = false;
+            }
+        });
+        // Toggle the clicked row
         row._showDetails = !row._showDetails;
     }
 }
