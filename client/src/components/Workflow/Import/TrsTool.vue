@@ -25,7 +25,7 @@ const reversedVersions = computed(() => {
 });
 
 const selectedVersion = ref<TrsToolVersion | null>(
-    reversedVersions.value.length > 0 ? reversedVersions.value[0] : null,
+    reversedVersions.value.length > 0 ? reversedVersions.value[0] ?? null : null,
 );
 
 const versionOptions = computed(() => {
@@ -36,10 +36,9 @@ const versionOptions = computed(() => {
 });
 
 function importSelectedVersion() {
-    if (selectedVersion.value) {
-        const version_id = selectedVersion.value.id.includes(`:${selectedVersion.value.name}`)
-            ? selectedVersion.value.name
-            : selectedVersion.value.id;
+    const version = selectedVersion.value;
+    if (version) {
+        const version_id = version.id.includes(`:${version.name}`) ? version.name : version.id;
         emit("onImport", version_id);
     }
 }
