@@ -191,8 +191,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 caption-top
                 :busy="loading"
                 tbody-tr-class="clickable-row"
-                @row-clicked="showRowDetails"
-            >
+                @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
                     <BCard>
                         <BAlert v-if="importing" variant="info" show>
@@ -201,8 +200,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
                         <TrsTool
                             :trs-tool="row.item.data"
-                            @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)"
-                        />
+                            @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
                     </BCard>
                 </template>
 
