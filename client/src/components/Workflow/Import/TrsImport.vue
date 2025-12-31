@@ -102,24 +102,31 @@ if (props.queryTrsUrl) {
             <div v-if="currentView === 'cards'">
                 <div class="my-5">
                     Workflows can be imported from TRS-compliant workflow registries using the GA4GH protocol. This Galaxy server has {{ trsServers?.length || 0 }} configured TRS server(s):
-                    <ul>
-                        <li v-for="server in trsServers" :key="server.id">
-                            {{ server.label }} ({{ server.link_url }})
-                        </li>
-                    </ul>
+                    <div class="text-center my-3">
+                        <a
+                            v-for="server in trsServers"
+                            :key="server.id"
+                            :href="server.link_url"
+                            class="btn btn-primary m-2"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {{ server.label }}
+                        </a>
+                    </div>
                 </div>
 
                 <div class="row my-3">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-xl-4 mb-3">
                         <BCard class="h-100 workflow-import-trs-search-link clickable-card" @click="selectView('trsSearch')">
                             <BCardBody class="text-center">
                                 <BCardTitle>Search workflow registries</BCardTitle>
-                                <p>Search for workflows across configured GA4GH servers</p>
+                                <p>Search for workflows across configured GA4GH servers.</p>
                             </BCardBody>
                         </BCard>
                     </div>
 
-                    <div class="col-md-4 mb-3">
+                    <div class="col-xl-4 mb-3">
                         <BCard class="h-100 workflow-import-trs-id-link clickable-card" @click="selectView('trsId')">
                             <BCardBody class="text-center">
                                 <BCardTitle>TRS ID</BCardTitle>
@@ -131,17 +138,17 @@ if (props.queryTrsUrl) {
                                             title="A TRS ID can be obtained by visiting the website of the selected TRS server."
                                         />
                                     </span>
-                                    If you know the TRS ID for a workflow in one of the configured servers.
+                                    When you know the TRS ID for a workflow in one of the configured GA4GH servers.
                                 </p>
                             </BCardBody>
                         </BCard>
                     </div>
 
-                    <div class="col-md-4 mb-3">
+                    <div class="col-xl-4 mb-3">
                         <BCard class="h-100 workflow-import-trs-url-link clickable-card" @click="selectView('trsUrl')">
                             <BCardBody class="text-center">
                                 <BCardTitle>TRS URL</BCardTitle>
-                                <p>Import directly from any TRS URL</p>
+                                <p>Import directly from any GA4GH server with a TRS URL.</p>
                             </BCardBody>
                         </BCard>
                     </div>
