@@ -1,5 +1,7 @@
 import os
 
+from selenium.webdriver.support.ui import Select
+
 from .framework import SeleniumIntegrationTestCase
 
 TRS_API_URL_DOCKSTORE = "https://dockstore.org/api"
@@ -84,7 +86,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
         # Select version from dropdown
         version_select = self.components.trs_search.version_select.wait_for_visible()
-        self.select_dropdown_item(version_select, "v0.4")
+        Select(version_select).select_by_visible_text("v0.4")
         self.components.trs_search.import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
@@ -130,7 +132,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
         # Select version from dropdown
         version_select = self.components.trs_import.version_select.wait_for_visible()
-        self.select_dropdown_item(version_select, "v0.4")
+        Select(version_select).select_by_visible_text("v0.4")
         self.components.trs_import.import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
