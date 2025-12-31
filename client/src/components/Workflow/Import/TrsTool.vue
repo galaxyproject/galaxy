@@ -25,7 +25,7 @@ const reversedVersions = computed(() => {
 });
 
 const selectedVersion = ref<TrsToolVersion | null>(
-    reversedVersions.value.length > 0 ? reversedVersions.value[0] ?? null : null,
+    reversedVersions.value.length > 0 ? (reversedVersions.value[0] ?? null) : null,
 );
 
 const versionOptions = computed(() => {
