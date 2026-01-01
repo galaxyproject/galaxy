@@ -201,13 +201,8 @@ class TestKubeInteractiveToolsRemoteProxyIntegration(AbstractTestCases.BaseInter
     jobs_directory: str
 
     @classmethod
-    def setUpClass(cls) -> None:
-        # realpath for docker deployed in a VM on Mac, also done in driver_util.
-        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
-        super().setUpClass()
-
-    @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
+        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
         interactivetools_map = os.environ.get("GALAXY_TEST_K8S_EXTERNAL_PROXY_MAP")
         interactivetools_proxy_host = os.environ.get("GALAXY_TEST_K8S_EXTERNAL_PROXY_HOST")
         if not interactivetools_map or not interactivetools_proxy_host:

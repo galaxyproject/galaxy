@@ -108,21 +108,17 @@ class AbstractTestCases:
         job_plugin: ClassVar[str]
 
         @classmethod
-        def setUpClass(cls):
-            cls.container_name = f"{cls.__name__}_container"
-            cls.jobs_directory = cls._test_driver.mkdtemp()
-            cls.remote_connection = start_ssh_docker(
-                container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image
-            )
-            super().setUpClass()
-
-        @classmethod
         def tearDownClass(cls):
             stop_ssh_docker(cls.container_name, cls.remote_connection)
             super().tearDownClass()
 
         @classmethod
         def handle_galaxy_config_kwds(cls, config):
+            cls.container_name = f"{cls.__name__}_container"
+            cls.jobs_directory = cls._test_driver.mkdtemp()
+            cls.remote_connection = start_ssh_docker(
+                container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image
+            )
             config["jobs_directory"] = cls.jobs_directory
             config["file_path"] = cls.jobs_directory
             config["job_config_file"] = cli_job_config(

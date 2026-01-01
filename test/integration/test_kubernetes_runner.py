@@ -183,8 +183,15 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
 
     @classmethod
-    def setUpClass(cls) -> None:
-        # realpath for docker deployed in a VM on Mac, also done in driver_util.
+    def tearDownClass(cls) -> None:
+        for claim in cls.persistent_volume_claims:
+            claim.teardown()
+        for volume in cls.persistent_volumes:
+            volume.teardown()
+        super().tearDownClass()
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
         cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
         volumes = [
             (cls.jobs_directory, "jobs-directory-volume", "jobs-directory-claim"),
@@ -200,18 +207,6 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
             claim_obj.setup()
             cls.persistent_volume_claims.append(claim_obj)
         cls.job_config = job_config(jobs_directory=cls.jobs_directory)
-        super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        for claim in cls.persistent_volume_claims:
-            claim.teardown()
-        for volume in cls.persistent_volumes:
-            volume.teardown()
-        super().tearDownClass()
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config) -> None:
         # TODO: implement metadata setting as separate job, as service or side-car
         super().handle_galaxy_config_kwds(config)
         config["jobs_directory"] = cls.jobs_directory
