@@ -216,6 +216,91 @@ If you need to add additional parameters to your condor submission, you can do s
 </destinations>
 ```
 
+### Condor2 (htcondor2 API)
+
+Runs jobs via the [HTCondor](https://research.cs.wisc.edu/htcondor/) DRM using the htcondor2 Python bindings (v2 API). Configuration is identical to the Condor runner, but submission, monitoring, and removal are performed through the Python API instead of the CLI. Ensure the `htcondor2` module is available in Galaxy's virtualenv (from your HTCondor installation or a Python package providing the bindings).
+
+```xml
+<plugins>
+    <plugin id="condor2" type="runner" load="galaxy.jobs.runners.condor2:Condor2JobRunner"/>
+</plugins>
+<destinations>
+    <destination id="condor2" runner="condor2">
+        <param id="request_cpus">4</param>
+    </destination>
+</destinations>
+```
+
+YAML configuration example:
+
+```yaml
+runners:
+  condor2:
+    load: galaxy.jobs.runners.condor2:Condor2JobRunner
+
+execution:
+  default: condor2
+  environments:
+    condor2:
+      runner: condor2
+      request_cpus: 4
+```
+
+For remote pools, supply the collector/schedd and (optionally) a specific `CONDOR_CONFIG` file. These `condor2_*` parameters are consumed by the runner and are not passed through to the submit description.
+
+```yaml
+execution:
+  environments:
+    condor2_remote:
+      runner: condor2
+      condor2_collector: "collector.example.org:9618"
+      condor2_schedd: "schedd@collector.example.org"
+      condor2_config: "/etc/condor/condor_config"
+```
+
+#### Testing with htcondor/mini (Docker)
+
+The integration test for the condor2 runner can be exercised against the `htcondor/mini` container. The key points are:
+
+- Mount your Galaxy checkout into the container at the same path so job scripts and datasets are reachable.
+- Use IDTOKENS for authentication and a client config file for `CONDOR_CONFIG`.
+- Ensure the submitter user exists in the container (so the owner is valid).
+
+Example (adjust `/home/$USER` if your checkout lives elsewhere):
+
+```bash
+docker run -d --name htcondor-mini -v /home/$USER:/home/$USER htcondor/mini
+
+CONDOR_HOSTNAME=$(docker inspect -f '{{.Config.Hostname}}' htcondor-mini)
+CONDOR_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' htcondor-mini)
+
+docker exec htcondor-mini bash -lc "getent passwd $USER >/dev/null || echo '$USER:x:$(id -u):$(id -g):$USER:/home/$USER:/bin/bash' >> /etc/passwd"
+docker exec htcondor-mini bash -lc "printf 'RUN_AS_OWNER = True\n' > /etc/condor/config.d/99-galaxy-test.conf"
+docker exec htcondor-mini condor_reconfig
+
+docker exec htcondor-mini condor_token_create -identity "$USER@$CONDOR_HOSTNAME" -file /tmp/galaxy.token
+mkdir -p /home/$USER/condor-token
+docker cp htcondor-mini:/tmp/galaxy.token /home/$USER/condor-token/galaxy.token
+chmod 600 /home/$USER/condor-token/galaxy.token
+cat > /home/$USER/condor-token/condor_client.conf <<'EOF'
+include : /etc/condor/condor_config
+SEC_TOKEN_DIRECTORY = /home/$USER/condor-token
+SEC_DEFAULT_AUTHENTICATION_METHODS = IDTOKENS
+SEC_DEFAULT_AUTHENTICATION = REQUIRED
+EOF
+
+export GALAXY_TEST_HTCONDOR=1
+export GALAXY_TEST_HTCONDOR_COLLECTOR="$CONDOR_IP:9618"
+export GALAXY_TEST_HTCONDOR_CONFIG="/home/$USER/condor-token/condor_client.conf"
+python -m pytest test/integration/test_condor2_runner.py -q
+
+docker rm -f htcondor-mini
+```
+
+The test creates `condor2_job_working_*` and `condor2_data_*` directories under the repository root by default. You can override these with `GALAXY_TEST_HTCONDOR_JOB_WORKING_DIRECTORY` and `GALAXY_TEST_HTCONDOR_DATA_DIR` if you need different locations.
+
+If your pool enforces a low cgroup memory limit, set `GALAXY_TEST_HTCONDOR_REQUEST_MEMORY` to a higher value (the test defaults to 512 MB).
+
 ### Pulsar
 
 Runs jobs via Galaxy [Pulsar](https://pulsar.readthedocs.io/). Pulsar does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts. It also has the ability to interface with all of the DRMs supported by Galaxy. Pulsar provides a much looser coupling between Galaxy job execution and the Galaxy server host than is possible with Galaxy's native job execution code.
