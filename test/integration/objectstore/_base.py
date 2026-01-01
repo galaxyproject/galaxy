@@ -8,9 +8,9 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_HOST", "127.0.0.1")
-OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 9000))
-OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "minioadmin")
-OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "minioadmin")
+OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 8333))
+OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "admin")
+OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "admin")
 OBJECT_STORE_RUCIO_ACCOUNT = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCOUNT", "root")
 OBJECT_STORE_RUCIO_USERNAME = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_USERNAME", "rucio")
 OBJECT_STORE_RUCIO_RSE_NAME = "TEST"
@@ -162,7 +162,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
     @classmethod
     def setUpClass(cls):
         cls.container_name = f"{cls.__name__}_container"
-        start_minio(cls.container_name)
+        start_seaweedfs(cls.container_name)
         super().setUpClass()
 
     @classmethod
@@ -358,9 +358,9 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         return True
 
 
-def start_minio(container_name):
-    ports = [(OBJECT_STORE_PORT, 9000)]
-    docker_run("minio/minio:latest", container_name, "server", "/data", ports=ports)
+def start_seaweedfs(container_name):
+    ports = [(OBJECT_STORE_PORT, 8333)]
+    docker_run("chrislusf/seaweedfs:latest", container_name, "server", "-s3", ports=ports)
 
 
 def start_onezone(oz_container_name):
