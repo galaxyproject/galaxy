@@ -8854,3 +8854,83 @@ steps:
             assert (
                 cached_grep_input_id != grep_input_id
             ), "Cached run should have copied the implicitly converted dataset to the new history"
+
+    @skip_without_tool("__SAMPLE_SHEET_TO_TABULAR__")
+    def test_run_workflow_use_cached_job_with_sample_sheet(self):
+        """Test that use_cached_job works correctly with sample sheet collections.
+
+        Uses sample_sheet_to_tabular tool which actually consumes the sample sheet
+        collection and its metadata, rather than just mapping over it.
+        """
+        wf = """class: GalaxyWorkflow
+inputs:
+  sample_sheet_input:
+    type: collection
+    collection_type: sample_sheet
+steps:
+  sample_sheet_to_tabular:
+    tool_id: __SAMPLE_SHEET_TO_TABULAR__
+    in:
+      input: sample_sheet_input
+"""
+        with self.dataset_populator.test_history() as history_id:
+            # Create a sample sheet collection
+            contents = [
+                ("sample1", "1 2 3"),
+                ("sample2", "4 5 6"),
+            ]
+            sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+            payload = dict(
+                name="test sample sheet",
+                instance_type="history",
+                history_id=history_id,
+                element_identifiers=sample_sheet_identifiers,
+                collection_type="sample_sheet",
+                column_definitions=[
+                    {"type": "int", "name": "replicate", "default_value": 0, "optional": False},
+                    {"type": "string", "name": "treatment", "default_value": "control", "optional": False},
+                ],
+                rows={"sample1": [1, "treatment"], "sample2": [2, "control"]},
+            )
+            create_response = self._post("dataset_collections", payload, json=True)
+            self._assert_status_code_is(create_response, 200)
+            sample_sheet_hdca = create_response.json()
+
+            # Upload workflow
+            workflow_id = self.workflow_populator.upload_yaml_workflow(
+                name="Sample Sheet Cached Job Test", yaml_content=wf
+            )
+
+            # First invocation - run without cache
+            workflow_request: dict[str, Any] = {
+                "inputs": json.dumps({"sample_sheet_input": {"src": "hdca", "id": sample_sheet_hdca["id"]}}),
+                "history": f"hist_id={history_id}",
+                "inputs_by": "name",
+            }
+            first_invocation_summary = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request
+            ).json()
+            first_invocation = self.workflow_populator.get_invocation(first_invocation_summary["id"], step_details=True)
+            first_job_id = first_invocation["steps"][1]["jobs"][0]["id"]
+
+            # Verify first invocation job completed successfully
+            first_job_details = self.dataset_populator.get_job_details(first_job_id, full=True).json()
+            assert first_job_details["state"] == "ok"
+            assert not first_job_details["copied_from_job_id"]
+
+            # Second invocation - run with cached jobs
+            workflow_request["use_cached_job"] = True
+            second_invocation_summary = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request
+            ).json()
+            second_invocation = self.workflow_populator.get_invocation(
+                second_invocation_summary["id"], step_details=True
+            )
+            second_job_id = second_invocation["steps"][1]["jobs"][0]["id"]
+
+            # Verify second invocation used cached job
+            second_job_details = self.dataset_populator.get_job_details(second_job_id, full=True).json()
+            assert second_job_details["state"] == "ok"
+            assert (
+                second_job_details["copied_from_job_id"] == first_job_id
+            ), "Job should be cached from first invocation"
