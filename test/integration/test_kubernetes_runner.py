@@ -185,7 +185,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
     @classmethod
     def setUpClass(cls) -> None:
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
-        cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
+        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
         volumes = [
             (cls.jobs_directory, "jobs-directory-volume", "jobs-directory-claim"),
             (TOOL_DIR, "tool-directory-volume", "tool-directory-claim"),

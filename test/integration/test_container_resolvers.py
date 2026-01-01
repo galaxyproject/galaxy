@@ -1,7 +1,6 @@
 import json
 import os
 import re
-from tempfile import mkdtemp
 from typing import (
     Any,
     ClassVar,
@@ -148,8 +147,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
         if not cls.allow_conda_fallback:
             disable_dependency_resolution(config)
         else:
-            cls.conda_tmp_prefix = mkdtemp()
-            cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
+            cls.conda_tmp_prefix = cls._test_driver.mkdtemp()
             config["use_cached_dependency_manager"] = True
             config["conda_auto_init"] = True
             config["conda_auto_install"] = True

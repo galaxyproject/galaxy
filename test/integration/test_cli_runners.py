@@ -110,7 +110,7 @@ class AbstractTestCases:
         @classmethod
         def setUpClass(cls):
             cls.container_name = f"{cls.__name__}_container"
-            cls.jobs_directory = tempfile.mkdtemp()
+            cls.jobs_directory = cls._test_driver.mkdtemp()
             cls.remote_connection = start_ssh_docker(
                 container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image
             )
