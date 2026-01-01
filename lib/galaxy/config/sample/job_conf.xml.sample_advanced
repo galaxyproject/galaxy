@@ -26,6 +26,12 @@
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
+        <plugin id="condor2" type="runner" load="galaxy.jobs.runners.condor2:Condor2JobRunner">
+            <!-- Optional connection overrides for a remote schedd/collector. -->
+            <!-- <param id="condor2_collector">collector.example.org:9618</param> -->
+            <!-- <param id="condor2_schedd">schedd@collector.example.org</param> -->
+            <!-- <param id="condor2_config">/etc/condor/condor_config</param> -->
+        </plugin>
         <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
         <plugin id="dynamic" type="runner">
             <!-- The dynamic runner is not a real job running plugin and is
@@ -985,6 +991,18 @@
             the docker_image submission parameter.
             -->
             <!-- <param id="docker_default_container_id">busybox:1.36.1-glibc</param> -->
+        </destination>
+
+        <destination id="condor2" runner="condor2">
+            <!-- Same destination parameters as the condor runner, but using
+                 the htcondor2 Python bindings instead of the CLI.
+            -->
+            <param id="request_cpus">8</param>
+            <!-- Optional per-destination HTCondor connection overrides (not passed to submit):
+            <param id="condor2_collector">collector.example.org:9618</param>
+            <param id="condor2_schedd">schedd@collector.example.org</param>
+            <param id="condor2_config">/etc/condor/condor_config</param>
+            -->
         </destination>
 
         <!-- Jobs can be re-submitted for various reasons (to the same destination or others,
