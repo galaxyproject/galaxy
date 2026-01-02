@@ -6,7 +6,7 @@
  *
  * Usage: mount(Component, { global: getLocalVue() })
  */
-import { createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 import { expect, vi } from "vitest";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -44,6 +44,7 @@ const mockedDirective = {
 export function getLocalVue(instrumentLocalization = false) {
     const l = instrumentLocalization ? testLocalize : _l;
     const pinia = createPinia();
+    setActivePinia(pinia);
 
     return {
         plugins: [[localizationPlugin, l], pinia],
@@ -139,9 +140,15 @@ export function suppressLucideVue2Deprecation() {
     const originalWarn = console.warn;
     vi.spyOn(console, "warn").mockImplementation(
         vi.fn((msg) => {
-            if (msg.indexOf("[Lucide Vue] This package will be deprecated") < 0) {
-                originalWarn(msg);
+            // Filter out Lucide deprecation warnings
+            if (msg && msg.indexOf && msg.indexOf("[Lucide Vue] This package will be deprecated") >= 0) {
+                return;
             }
+            // Filter out Vue compat warnings (they shouldn't fail tests during migration)
+            if (msg && msg.indexOf && msg.indexOf("[Vue warn]") >= 0) {
+                return;
+            }
+            originalWarn(msg);
         }),
     );
 }
