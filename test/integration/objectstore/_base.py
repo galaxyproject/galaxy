@@ -20,10 +20,10 @@ OBJECT_STORE_CONFIG = string.Template(
     """
 <object_store type="hierarchical" id="primary">
     <backends>
-        <object_store id="swifty" type="generic_s3" weight="1" order="0">
+        <object_store id="swifty" type="boto3" weight="1" order="0">
             <auth access_key="${access_key}" secret_key="${secret_key}" />
-            <bucket name="galaxy" use_reduced_redundancy="False" max_chunk_size="250"/>
-            <connection host="${host}" port="${port}" is_secure="False" conn_path="" multipart="True"/>
+            <bucket name="galaxy" />
+            <connection endpoint_url="http://${host}:${port}" region="us-east-1" />
             <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_swift"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_swift"/>
@@ -361,6 +361,37 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
 def start_seaweedfs(container_name):
     ports = [(OBJECT_STORE_PORT, 8333)]
     docker_run("chrislusf/seaweedfs:latest", container_name, "server", "-s3", ports=ports)
+    # Wait for SeaweedFS S3 API to be ready
+    import socket
+    max_attempts = 30
+    for attempt in range(max_attempts):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            sock.connect(("127.0.0.1", OBJECT_STORE_PORT))
+            sock.close()
+            time.sleep(5)  # Give it more time for S3 API to be fully ready
+            break
+        except (socket.error, ConnectionRefusedError):
+            if attempt == max_attempts - 1:
+                raise TimeoutError(f"SeaweedFS did not start within {max_attempts} seconds")
+            time.sleep(1)
+
+    # Create the galaxy bucket
+    try:
+        import boto3
+        from botocore.client import Config
+        s3 = boto3.client(
+            's3',
+            endpoint_url=f"http://127.0.0.1:{OBJECT_STORE_PORT}",
+            aws_access_key_id=OBJECT_STORE_ACCESS_KEY,
+            aws_secret_access_key=OBJECT_STORE_SECRET_KEY,
+            region_name='us-east-1',
+            config=Config(signature_version='s3v4')
+        )
+        s3.create_bucket(Bucket='galaxy')
+    except Exception:
+        pass  # Bucket may already exist
 
 
 def start_onezone(oz_container_name):
