@@ -4,9 +4,8 @@ import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { HttpResponse } from "msw";
-import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import VueRouter from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
@@ -19,15 +18,14 @@ import OperationErrorDialog from "./CurrentHistory/HistoryOperations/OperationEr
 import HistoryView from "./HistoryView.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 
-const localVue = getLocalVue();
-localVue.use(VueRouter);
-
 vi.mock("@/stores/services/history.services", () => ({
     getHistoryByIdFromServer: vi.fn(),
     setCurrentHistoryOnServer: vi.fn(),
 }));
 
 setupSelectableMock();
+
+let localVue;
 
 const { server, http } = useServerMock();
 
@@ -74,7 +72,6 @@ function create_datasets(historyId, count) {
 }
 
 async function createWrapper(localVue, currentUserId, history) {
-    const pinia = createPinia();
     getHistoryByIdFromServer.mockResolvedValue({ data: history, error: undefined });
     setCurrentHistoryOnServer.mockResolvedValue(history);
     const history_contents_result = create_datasets(history.id, history.count);
@@ -86,20 +83,25 @@ async function createWrapper(localVue, currentUserId, history) {
         }),
     );
 
-    const router = new VueRouter();
-    router.push(`/history/${history.id}`);
+    const router = createRouter({
+        history: createWebHistory(),
+        routes: [{ path: "/history/:id", component: { template: "<div />" } }],
+    });
+    await router.push(`/history/${history.id}`);
+    await router.isReady();
 
     const wrapper = mount(HistoryView, {
         props: { id: history.id },
-        global: localVue,
-        provide: {
-            store: {
-                dispatch: vi.fn,
-                getters: {},
+        global: {
+            ...localVue,
+            plugins: [...(localVue.plugins || []), router],
+            provide: {
+                store: {
+                    dispatch: vi.fn,
+                    getters: {},
+                },
             },
         },
-        pinia,
-        router,
     });
     const userStore = useUserStore();
     userStore.currentUser = getFakeRegisteredUser({ id: currentUserId });
@@ -109,6 +111,7 @@ async function createWrapper(localVue, currentUserId, history) {
 
 describe("History center panel View", () => {
     beforeEach(() => {
+        localVue = getLocalVue();
         suppressLucideVue2Deprecation();
     });
 
