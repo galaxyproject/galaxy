@@ -109,6 +109,9 @@ class LandingRequestManager:
             model.workflow_source_type = "trs_url"
             # validate this ?
             model.workflow_source = payload.workflow_id
+        elif payload.workflow_target_type == "url":
+            model.workflow_source_type = "url"
+            model.workflow_source = payload.workflow_id
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.request_state = self.validate_workflow_request_state(payload.request_state)
@@ -155,6 +158,13 @@ class LandingRequestManager:
             assert request.workflow_source
             workflow = self.workflow_contents_manager.get_or_create_workflow_from_trs(
                 trans, trs_url=request.workflow_source
+            )
+            request.workflow_id = workflow.latest_workflow_id
+        elif request.workflow_source_type == "url" and isinstance(trans.app, StructuredApp):
+            # trans is always structured app except for unit test
+            assert request.workflow_source
+            workflow = self.workflow_contents_manager.get_or_create_workflow_from_url(
+                trans, url=request.workflow_source
             )
             request.workflow_id = workflow.latest_workflow_id
 
@@ -226,7 +236,7 @@ class LandingRequestManager:
         elif model.workflow_id is not None:
             workflow_id = model.workflow_id
             target_type = "workflow"
-        elif model.workflow_source_type == "trs_url":
+        elif model.workflow_source_type in ("trs_url", "url"):
             target_type = model.workflow_source_type
             workflow_id = model.workflow_source
         assert workflow_id

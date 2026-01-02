@@ -4132,7 +4132,7 @@ class CreateToolLandingRequestPayload(Model):
 
 class CreateWorkflowLandingRequestPayload(Model):
     workflow_id: str
-    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url", "url"]
     request_state: Optional[dict[str, Any]] = None
     client_secret: Optional[str] = None
     public: bool = Field(
@@ -4158,7 +4158,7 @@ class ToolLandingRequest(Model):
 class WorkflowLandingRequest(Model):
     uuid: UuidField
     workflow_id: str
-    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url", "url"]
     request_state: dict[str, Any]
     state: LandingRequestState
     origin: Optional[HttpUrl] = None
