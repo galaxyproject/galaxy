@@ -751,8 +751,8 @@ def _get_image_labels(
             return float(label)
         if numpy.issubdtype(im_arr.dtype, bool):
             label_lower = label.lower()
-            if label_lower in ('0', '1', 'false', 'true'):
-                return label_lower in ('1', 'true')
+            if label_lower in ("0", "1", "false", "true"):
+                return label_lower in ("1", "true")
             else:
                 raise AssertionError(f'Label "{label}" incompatible with label type "{im_arr.dtype}"')
         raise AssertionError(f'Unsupported image label type: "{im_arr.dtype}"')
