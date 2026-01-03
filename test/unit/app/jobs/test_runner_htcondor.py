@@ -2,6 +2,11 @@ import os
 import sys
 from queue import Queue
 from types import ModuleType
+from typing import (
+    Any,
+    cast,
+    ClassVar,
+)
 from unittest import mock
 
 from galaxy import (
@@ -9,6 +14,7 @@ from galaxy import (
     model,
 )
 from galaxy.app_unittest_utils.tools_support import UsesTools
+from galaxy.jobs import MinimalJobWrapper
 from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import htcondor
 from galaxy.util import bunch
@@ -82,7 +88,7 @@ def _fake_htcondor2_module():
             ]
 
     class FakeJobEventLog:
-        events_by_log = {}
+        events_by_log: ClassVar[dict[str, list["FakeJobEvent"]]] = {}
 
         def __init__(self, filename):
             self.filename = filename
@@ -94,8 +100,7 @@ def _fake_htcondor2_module():
         def events(self, stop_after=None):
             events = self.events_by_log.get(self.filename, [])
             self.events_by_log[self.filename] = []
-            for event in events:
-                yield event
+            yield from events
 
     class FakeSchedd:
         def __init__(self, location=None):
@@ -111,7 +116,7 @@ def _fake_htcondor2_module():
             self.actions.append((action, job_spec, reason))
             return {}
 
-    fake = ModuleType("htcondor2")
+    fake: Any = ModuleType("htcondor2")
     fake.Submit = FakeSubmit
     fake.Schedd = FakeSchedd
     fake.Collector = FakeCollector
@@ -128,7 +133,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
         self.setup_app()
         self._init_tool()
         self.app.job_metrics = job_metrics.JobMetrics()
-        self.app.config.cleanup_job = "never"
+        self.app.config.cleanup_job = "never"  # type: ignore[attr-defined]
         self.job_wrapper = MockJobWrapper(self.app, self.test_directory, self.tool)
         self.fake_htcondor2 = _fake_htcondor2_module()
         self.patcher = mock.patch.dict(sys.modules, {"htcondor2": self.fake_htcondor2})
@@ -141,7 +146,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
     def test_queue_job_submits(self):
         self.job_wrapper.job_destination.params["request_cpus"] = 2
         runner = htcondor.HTCondorJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         cjs = runner.monitor_queue.get_nowait()
         schedd = runner._schedd_for_destination(self.job_wrapper.job_destination)
@@ -164,7 +169,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
         runner = htcondor.HTCondorJobRunner(self.app, 1)
         container = bunch.Bunch(container_id="quay.io/galaxy/test:latest")
         with mock.patch.object(runner, "_find_container", side_effect=[None, container]):
-            runner.queue_job(self.job_wrapper)
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         schedd = runner._schedd_for_destination(self.job_wrapper.job_destination)
         submit = schedd.submissions[0]
@@ -175,7 +180,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
     def test_event_log_transitions(self):
         runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         cjs = runner.monitor_queue.get_nowait()
         runner.watched = [cjs]
 
@@ -202,7 +207,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
     def test_event_log_aborted_triggers_fail(self):
         runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         cjs = runner.monitor_queue.get_nowait()
         runner.watched = [cjs]
 
@@ -220,7 +225,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
     def test_event_log_cluster_remove_triggers_fail(self):
         runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         cjs = runner.monitor_queue.get_nowait()
         runner.watched = [cjs]
 
@@ -239,7 +244,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
         runner = htcondor.HTCondorJobRunner(self.app, 1)
         schedd = runner._schedd_for_destination(self.job_wrapper.job_destination)
         with mock.patch.object(schedd, "submit", side_effect=RuntimeError("boom")):
-            runner.queue_job(self.job_wrapper)
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         assert self.job_wrapper.fail_message == "htcondor submit failed"
         assert self.job_wrapper.job.job_runner_external_id is None
@@ -247,7 +252,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
     def test_missing_event_log_keeps_job_watched(self):
         runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         cjs = runner.monitor_queue.get_nowait()
         runner.watched = [cjs]
 
@@ -262,7 +267,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
 
     def test_stop_job_removes(self):
         runner = htcondor.HTCondorJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         runner.stop_job(self.job_wrapper)
         schedd = runner._schedd_for_destination(self.job_wrapper.job_destination)
         action, job_spec, _reason = schedd.actions[0]
@@ -273,7 +278,7 @@ class TestHTCondorJobRunner(TestCase, UsesTools):
         self.job_wrapper.job_destination.params["htcondor_collector"] = "collector:9618"
         self.job_wrapper.job_destination.params["htcondor_schedd"] = "schedd@remote"
         runner = htcondor.HTCondorJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         schedd = next(iter(runner._schedd_cache.values()))
         submit = schedd.submissions[0]
