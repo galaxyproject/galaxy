@@ -5,8 +5,8 @@ import os
 import subprocess
 import threading
 from typing import (
-    TYPE_CHECKING,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -435,6 +435,8 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
         job_failed = False
         job_held = False
 
+        if cjs.job_id is None:
+            raise RuntimeError("Missing HTCondor job_id while summarizing event log.")
         cluster_id = int(cjs.job_id)
         log_size = os.path.getsize(cjs.user_log)
         event_log = cjs.event_log(self.htcondor)
