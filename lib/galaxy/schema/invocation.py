@@ -4,6 +4,7 @@ from typing import (
     Annotated,
     Any,
     Generic,
+    List,
     Optional,
     Union,
 )
@@ -116,6 +117,10 @@ class CancelReason(str, Enum):
 
 class InvocationMessageBase(GenericModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
+    workflow_step_index_path: Optional[List[int]] = Field(
+        None,
+        description="Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).",
+    )
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
