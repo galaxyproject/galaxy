@@ -8917,6 +8917,104 @@ outer_input:
         r = self._post("workflows", files={"archive_file": io.StringIO(malformated_yaml)})
         assert r.status_code == 400
 
+    @skip_without_tool("cat1")
+    def test_copy_inputs_to_history_with_tags(self):
+        """Test that tags are copied when workflow inputs are copied to a new history."""
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input_dataset: data
+  input_collection: collection
+steps:
+  cat_dataset:
+    tool_id: cat1
+    in:
+      input1: input_dataset
+  cat_collection:
+    tool_id: cat1
+    in:
+      input1: input_collection
+"""
+        with self.dataset_populator.test_history() as history_id:
+            # Create a tagged dataset
+            hda = self.dataset_populator.new_dataset(history_id, content="dataset content\n", wait=True)
+            dataset_tags = ["tag1", "tag2", "input:dataset"]
+            self.dataset_populator.update_dataset(hda["id"], {"tags": dataset_tags})
+
+            # Create a tagged dataset collection
+            hdca_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["collection item 1\n", "collection item 2\n"], wait=True
+            )
+            hdca_data = hdca_response.json()
+            # The response has the collection info in 'outputs' array for fetch API
+            hdca_id = hdca_data["outputs"][0]["id"] if "outputs" in hdca_data else hdca_data["id"]
+            collection_tags = ["tag3", "tag4", "input:collection"]
+            # Tag the collection using the dataset_populator abstraction
+            self.dataset_populator.update_dataset_collection(hdca_id, {"tags": collection_tags})
+
+            # Run workflow in new history
+            new_history_name = self.dataset_populator.get_random_name()
+            inputs = {
+                "input_dataset": {"src": "hda", "id": hda["id"]},
+                "input_collection": {"src": "hdca", "id": hdca_id},
+            }
+            workflow_request = {
+                "new_history_name": new_history_name,
+                "inputs": json.dumps(inputs),
+                "inputs_by": "name",
+            }
+
+            workflow_id = self.workflow_populator.upload_yaml_workflow(workflow)
+            invocation_response = self.workflow_populator.invoke_workflow(workflow_id, request=workflow_request)
+            if invocation_response.status_code != 200:
+                error_msg = (
+                    f"Workflow invocation failed with {invocation_response.status_code}: {invocation_response.text}"
+                )
+                raise AssertionError(error_msg)
+            response_data = invocation_response.json()
+            invocation_id = response_data["id"]
+            new_history_id = response_data["history_id"]
+
+            # Wait for workflow to complete
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=new_history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation_id,
+                assert_ok=True,
+            )
+
+            # Get all contents from the new history to find the copied inputs (with tags)
+            history_contents_response = self._get(f"histories/{new_history_id}/contents?v=dev&view=detailed&keys=tags")
+            history_contents_response.raise_for_status()
+            history_contents = history_contents_response.json()
+
+            all_datasets = [item for item in history_contents if item["history_content_type"] == "dataset"]
+            datasets_info = [(item["name"], item.get("tags", [])) for item in all_datasets]
+
+            # Find copied dataset (should have the same content but be in new history with tags)
+            copied_datasets_with_tags = [
+                item
+                for item in history_contents
+                if item["history_content_type"] == "dataset"
+                and item.get("tags")
+                and set(item["tags"]) == set(dataset_tags)
+            ]
+            assert (
+                len(copied_datasets_with_tags) > 0
+            ), f"Should find copied dataset with tags {dataset_tags} in new history. Found datasets: {datasets_info}"
+
+            # Find copied collection (should have the same content but be in new history with tags)
+            copied_collections_with_tags = [
+                item
+                for item in history_contents
+                if item["history_content_type"] == "dataset_collection"
+                and item.get("tags")
+                and set(item["tags"]) == set(collection_tags)
+            ]
+            assert (
+                len(copied_collections_with_tags) > 0
+            ), f"Should find copied collection with tags {collection_tags} in new history"
+
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
     require_admin_user = True
