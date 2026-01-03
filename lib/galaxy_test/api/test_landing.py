@@ -3,6 +3,7 @@ from typing import (
     Any,
 )
 
+import yaml
 from pydantic import HttpUrl
 
 from galaxy.schema.fetch_data import (
@@ -253,6 +254,55 @@ class TestLandingApi(ApiTestCase):
         workflow = self.workflow_populator._get(f"/api/workflows/{workflow_id}?instance=true").json()
         assert workflow["source_metadata"]["trs_tool_id"] == "#workflow/github.com/iwc-workflows/chipseq-pe/main"
         assert workflow["source_metadata"]["trs_version_id"] == "v0.12"
+
+    @skip_without_tool("cat1")
+    def test_workflow_landing_with_url_base64(self):
+        """Test creating a workflow landing request using a URL (base64:// scheme)."""
+        # Create a simple workflow definition
+        workflow_dict = {
+            "class": "GalaxyWorkflow",
+            "inputs": {
+                "WorkflowInput1": {"type": "data"},
+            },
+            "steps": {
+                "0": {
+                    "tool_id": "cat1",
+                    "in": {
+                        "input1": "WorkflowInput1",
+                    },
+                },
+            },
+        }
+
+        # Convert workflow to YAML and encode as base64
+        workflow_yaml = yaml.dump(workflow_dict)
+        workflow_b64 = b64encode(workflow_yaml.encode("utf-8")).decode("utf-8")
+        workflow_url = f"base64://{workflow_b64}"
+
+        # Create workflow landing request with URL
+        request_state = _workflow_request_state()
+        request = CreateWorkflowLandingRequestPayload(
+            workflow_id=workflow_url,
+            workflow_target_type="url",
+            request_state=request_state,
+            public=True,
+        )
+        response = self.dataset_populator.create_workflow_landing(request)
+        assert response.workflow_id == workflow_url
+        assert response.workflow_target_type == "url"
+
+        # Claim and use the landing request
+        landing_request = self.dataset_populator.use_workflow_landing(response.uuid)
+        # After claiming, the workflow should be imported and have a proper ID
+        assert landing_request.workflow_id != workflow_url
+        # The workflow should now have a workflow ID (not "url" anymore, since it's been imported)
+        assert landing_request.workflow_target_type == "workflow"
+
+        # Verify the workflow was imported correctly
+        workflow = self.workflow_populator._get(f"/api/workflows/{landing_request.workflow_id}?instance=true").json()
+        assert workflow["name"]
+        # Verify the workflow has the expected structure
+        assert len(workflow["steps"]) >= 1
 
     @skip_without_tool("cat1")
     def test_workflow_landing_to_invocation_association(self):

@@ -9257,7 +9257,7 @@ export interface components {
              * Workflow Target Type
              * @enum {string}
              */
-            workflow_target_type: "stored_workflow" | "workflow" | "trs_url";
+            workflow_target_type: "stored_workflow" | "workflow" | "trs_url" | "url";
         };
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
@@ -24678,7 +24678,7 @@ export interface components {
              * Workflow Target Type
              * @enum {string}
              */
-            workflow_target_type: "stored_workflow" | "workflow" | "trs_url";
+            workflow_target_type: "stored_workflow" | "workflow" | "trs_url" | "url";
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
