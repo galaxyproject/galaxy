@@ -10,7 +10,7 @@ from galaxy import (
 )
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs.job_destination import JobDestination
-from galaxy.jobs.runners import condor2
+from galaxy.jobs.runners import htcondor
 from galaxy.util import bunch
 from galaxy.util.unittest import TestCase
 
@@ -123,7 +123,7 @@ def _fake_htcondor2_module():
     return fake
 
 
-class TestCondor2JobRunner(TestCase, UsesTools):
+class TestHTCondorJobRunner(TestCase, UsesTools):
     def setUp(self):
         self.setup_app()
         self._init_tool()
@@ -140,7 +140,7 @@ class TestCondor2JobRunner(TestCase, UsesTools):
 
     def test_queue_job_submits(self):
         self.job_wrapper.job_destination.params["request_cpus"] = 2
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.queue_job(self.job_wrapper)
 
         cjs = runner.monitor_queue.get_nowait()
@@ -161,7 +161,7 @@ class TestCondor2JobRunner(TestCase, UsesTools):
 
     def test_queue_job_docker_universe_sets_image(self):
         self.job_wrapper.job_destination.params["universe"] = "docker"
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         container = bunch.Bunch(container_id="quay.io/galaxy/test:latest")
         with mock.patch.object(runner, "_find_container", side_effect=[None, container]):
             runner.queue_job(self.job_wrapper)
@@ -173,7 +173,7 @@ class TestCondor2JobRunner(TestCase, UsesTools):
         assert f"docker_image = {container.container_id}" in submit.description
 
     def test_event_log_transitions(self):
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
         runner.queue_job(self.job_wrapper)
         cjs = runner.monitor_queue.get_nowait()
@@ -200,7 +200,7 @@ class TestCondor2JobRunner(TestCase, UsesTools):
         assert job_state.job_id == "123"
 
     def test_event_log_aborted_triggers_fail(self):
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
         runner.queue_job(self.job_wrapper)
         cjs = runner.monitor_queue.get_nowait()
@@ -218,7 +218,7 @@ class TestCondor2JobRunner(TestCase, UsesTools):
         assert job_state.job_id == "123"
 
     def test_event_log_cluster_remove_triggers_fail(self):
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
         runner.queue_job(self.job_wrapper)
         cjs = runner.monitor_queue.get_nowait()
@@ -236,16 +236,16 @@ class TestCondor2JobRunner(TestCase, UsesTools):
         assert job_state.job_id == "123"
 
     def test_queue_job_submit_failure(self):
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         schedd = runner._schedd_for_destination(self.job_wrapper.job_destination)
         with mock.patch.object(schedd, "submit", side_effect=RuntimeError("boom")):
             runner.queue_job(self.job_wrapper)
 
-        assert self.job_wrapper.fail_message == "condor2 submit failed"
+        assert self.job_wrapper.fail_message == "htcondor submit failed"
         assert self.job_wrapper.job.job_runner_external_id is None
 
     def test_missing_event_log_keeps_job_watched(self):
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.work_queue = Queue()
         runner.queue_job(self.job_wrapper)
         cjs = runner.monitor_queue.get_nowait()
@@ -261,7 +261,7 @@ class TestCondor2JobRunner(TestCase, UsesTools):
         assert runner.work_queue.empty()
 
     def test_stop_job_removes(self):
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.queue_job(self.job_wrapper)
         runner.stop_job(self.job_wrapper)
         schedd = runner._schedd_for_destination(self.job_wrapper.job_destination)
@@ -270,9 +270,9 @@ class TestCondor2JobRunner(TestCase, UsesTools):
         assert job_spec == 123
 
     def test_queue_job_uses_remote_schedd(self):
-        self.job_wrapper.job_destination.params["condor2_collector"] = "collector:9618"
-        self.job_wrapper.job_destination.params["condor2_schedd"] = "schedd@remote"
-        runner = condor2.Condor2JobRunner(self.app, 1)
+        self.job_wrapper.job_destination.params["htcondor_collector"] = "collector:9618"
+        self.job_wrapper.job_destination.params["htcondor_schedd"] = "schedd@remote"
+        runner = htcondor.HTCondorJobRunner(self.app, 1)
         runner.queue_job(self.job_wrapper)
 
         schedd = next(iter(runner._schedd_cache.values()))
@@ -280,8 +280,8 @@ class TestCondor2JobRunner(TestCase, UsesTools):
 
         assert schedd.location["Name"] == "schedd@remote"
         assert schedd.location["Pool"] == "collector:9618"
-        assert "condor2_collector" not in submit.description
-        assert "condor2_schedd" not in submit.description
+        assert "htcondor_collector" not in submit.description
+        assert "htcondor_schedd" not in submit.description
 
 
 class MockJobWrapper:

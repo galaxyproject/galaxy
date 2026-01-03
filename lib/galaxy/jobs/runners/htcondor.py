@@ -27,12 +27,12 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-__all__ = ("Condor2JobRunner",)
+__all__ = ("HTCondorJobRunner",)
 
-CONDOR2_DESTINATION_KEYS = ("condor2_collector", "condor2_schedd", "condor2_config")
+HTCONDOR_DESTINATION_KEYS = ("htcondor_collector", "htcondor_schedd", "htcondor_config")
 
 
-class Condor2JobState(AsynchronousJobState):
+class HTCondorJobState(AsynchronousJobState):
     def __init__(
         self,
         job_wrapper: "MinimalJobWrapper",
@@ -73,24 +73,24 @@ class Condor2JobState(AsynchronousJobState):
         return self._event_log
 
 
-class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
+class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling.
     """
 
-    runner_name = "Condor2Runner"
+    runner_name = "HTCondorRunner"
 
     def __init__(self, app, nworkers, **kwargs):
         runner_param_specs = dict(
-            condor2_collector=dict(map=str, default=None),
-            condor2_schedd=dict(map=str, default=None),
-            condor2_config=dict(map=str, default=None),
+            htcondor_collector=dict(map=str, default=None),
+            htcondor_schedd=dict(map=str, default=None),
+            htcondor_config=dict(map=str, default=None),
         )
         if "runner_param_specs" not in kwargs:
             kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
-        condor_config = kwargs.get("condor2_config")
+        condor_config = kwargs.get("htcondor_config")
         if condor_config:
             os.environ.setdefault("CONDOR_CONFIG", condor_config)
 
@@ -108,8 +108,8 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
         # Protect schedd initialization/cache in multi-threaded runners.
         self._schedd_lock = threading.Lock()
 
-        if self.runner_params.condor2_config:
-            self._apply_condor_config(self.runner_params.condor2_config)
+        if self.runner_params.htcondor_config:
+            self._apply_condor_config(self.runner_params.htcondor_config)
 
     def _apply_condor_config(self, condor_config: Optional[str]) -> None:
         """Set CONDOR_CONFIG and reload htcondor2 config when possible."""
@@ -118,7 +118,7 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
         existing = os.environ.get("CONDOR_CONFIG")
         if existing and existing != condor_config:
             log.warning(
-                "CONDOR_CONFIG is already set to %s; ignoring condor2_config=%s",
+                "CONDOR_CONFIG is already set to %s; ignoring htcondor_config=%s",
                 existing,
                 condor_config,
             )
@@ -130,12 +130,12 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
             except Exception as exc:
                 log.warning("Failed to reload HTCondor config after setting CONDOR_CONFIG: %s", exc)
 
-    def _condor2_params(self, job_destination: "JobDestination"):
+    def _htcondor_params(self, job_destination: "JobDestination"):
         """Resolve collector/schedd/config parameters from the destination or runner defaults."""
         params = job_destination.params
-        collector = params.get("condor2_collector", None) or self.runner_params.condor2_collector
-        schedd_name = params.get("condor2_schedd", None) or self.runner_params.condor2_schedd
-        condor_config = params.get("condor2_config", None) or self.runner_params.condor2_config
+        collector = params.get("htcondor_collector", None) or self.runner_params.htcondor_collector
+        schedd_name = params.get("htcondor_schedd", None) or self.runner_params.htcondor_schedd
+        condor_config = params.get("htcondor_config", None) or self.runner_params.htcondor_config
         return collector, schedd_name, condor_config
 
     def _local_schedd_for_destination(self):
@@ -153,7 +153,7 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
         because the locate calls involve network lookups; a lock protects cache
         access since the runner uses multiple threads.
         """
-        collector, schedd_name, condor_config = self._condor2_params(job_destination)
+        collector, schedd_name, condor_config = self._htcondor_params(job_destination)
         self._apply_condor_config(condor_config)
 
         if not collector and not schedd_name:
@@ -185,8 +185,8 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
         return schedd
 
     def _submit_params(self, job_destination: "JobDestination"):
-        """Map destination params to submit params, excluding condor2_* keys."""
-        params = {k: v for k, v in job_destination.params.items() if k not in CONDOR2_DESTINATION_KEYS}
+        """Map destination params to submit params, excluding htcondor_* keys."""
+        params = {k: v for k, v in job_destination.params.items() if k not in HTCONDOR_DESTINATION_KEYS}
         return submission_params(prefix="", **params)
 
     def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
@@ -215,7 +215,7 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
         else:
             galaxy_slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
-        cjs = Condor2JobState(
+        cjs = HTCondorJobState(
             job_wrapper=job_wrapper,
             job_destination=job_destination,
             user_log=os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log"),
@@ -272,17 +272,17 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
         log.debug(f"({galaxy_id_tag}) submitting file {executable}")
 
         try:
-            # The condor2 runner targets the htcondor2 API only; no legacy-API fallback is maintained.
+            # The htcondor runner targets the htcondor2 API only; no legacy-API fallback is maintained.
             submit_description = self.htcondor.Submit(submit_file_contents)
             schedd = self._schedd_for_destination(job_destination)
             submit_result = schedd.submit(submit_description)
             external_job_id = str(submit_result.cluster())
         except Exception:
-            log.exception("condor2 submit failed for job %s", job_wrapper.get_id_tag())
+            log.exception("htcondor submit failed for job %s", job_wrapper.get_id_tag())
             if self.app.config.cleanup_job == "always" and os.path.exists(submit_file):
                 os.unlink(submit_file)
                 cjs.cleanup()
-            job_wrapper.fail("condor2 submit failed", exception=True)
+            job_wrapper.fail("htcondor submit failed", exception=True)
             return
 
         if os.path.exists(submit_file):
@@ -410,7 +410,7 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
         if job_id is None:
             self.put(job_wrapper)
             return
-        cjs = Condor2JobState(
+        cjs = HTCondorJobState(
             job_wrapper=job_wrapper,
             job_destination=job_wrapper.job_destination,
             user_log=os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log"),
@@ -429,7 +429,7 @@ class Condor2JobRunner(AsynchronousJobRunner[Condor2JobState]):
             cjs.running = False
             self.monitor_queue.put(cjs)
 
-    def _summarize_event_log(self, cjs: Condor2JobState):
+    def _summarize_event_log(self, cjs: HTCondorJobState):
         job_running = cjs.running
         job_complete = False
         job_failed = False
