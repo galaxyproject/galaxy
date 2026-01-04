@@ -150,6 +150,18 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         title=STEP_PARAMETERS_NORMALIZED_TITLE,
         description=STEP_PARAMETERS_NORMALIZED_DESCRIPTION,
     )
+    on_complete: Optional[list[dict[str, Any]]] = Field(
+        None,
+        title="On Complete Actions",
+        description=(
+            "List of actions to execute when the workflow invocation completes. "
+            "Each action is an object with the action name as key and configuration as value. "
+            "Available actions: 'send_notification' (notify user, no config required), "
+            "'export_to_file_source' (export results, requires target_uri). "
+            "Example: [{'send_notification': {}}, {'export_to_file_source': {"
+            "'target_uri': 'gxfiles://my_storage/exports/', 'format': 'rocrate.zip'}}]"
+        ),
+    )
 
     @field_validator(
         "parameters",
