@@ -18853,6 +18853,22 @@ export interface components {
              */
             oldest_create_time: string;
         };
+        /** Organization */
+        Organization: {
+            /**
+             * Name
+             * @description Name of the organization responsible for the service
+             * @example My organization
+             */
+            name: string;
+            /**
+             * Url
+             * Format: uri
+             * @description URL of the website of the organization (RFC 3986 format)
+             * @example https://example.com
+             */
+            url: string;
+        };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -21061,7 +21077,7 @@ export interface components {
              */
             name: string;
             /** @description Organization providing the service */
-            organization: components["schemas"]["galaxy__schema__drs__Organization"];
+            organization: components["schemas"]["Organization"];
             type: components["schemas"]["ServiceType"];
             /**
              * Updatedat
@@ -24881,22 +24897,6 @@ export interface components {
             filename?: string | null;
             /** name */
             name?: string | null;
-        };
-        /** Organization */
-        galaxy__schema__drs__Organization: {
-            /**
-             * Name
-             * @description Name of the organization responsible for the service
-             * @example My organization
-             */
-            name: string;
-            /**
-             * Url
-             * Format: uri
-             * @description URL of the website of the organization (RFC 3986 format)
-             * @example https://example.com
-             */
-            url: string;
         };
         /** Organization */
         galaxy__schema__schema__Organization: {
