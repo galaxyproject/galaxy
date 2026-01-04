@@ -70,7 +70,7 @@ if (queryParams.value.trsId || queryParams.value.trsUrl || queryParams.value.trs
 
                 <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
                     <BCard
-                        class="h-100 workflow-import-trs-search-link clickable-card text-center"
+                        class="h-100 workflow-import-url-link clickable-card text-center"
                         @click="selectView('fetch')">
                         <BCardTitle>Fetch URL</BCardTitle>
                         <BCardBody>
@@ -85,7 +85,7 @@ if (queryParams.value.trsId || queryParams.value.trsUrl || queryParams.value.trs
 
                 <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
                     <BCard
-                        class="h-100 workflow-import-trs-id-link clickable-card text-center"
+                        class="h-100 workflow-import-trs-link clickable-card text-center"
                         @click="selectView('repository')">
                         <BCardTitle>Import from repository</BCardTitle>
                         <BCardBody>

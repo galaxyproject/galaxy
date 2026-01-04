@@ -1800,6 +1800,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.home()
         self.click_activity_workflow()
 
+    def navigate_to_workflows_import(self):
+        self.get("workflows/import")
+
     def workflow_index_open_with_name(self, name: str):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
@@ -1922,6 +1925,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             raise KeyError(f"Failed to find tag {tag} on workflow with index {workflow_index}")
 
     def workflow_import_submit_url(self, url):
+        self.components.workflows.import_url_link.wait_for_and_click()
         form_button = self.wait_for_selector_visible("#workflow-import-button")
         url_element = self.wait_for_selector_visible("#workflow-import-url-input")
         url_element.send_keys(url)
