@@ -371,6 +371,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def go_to_trs_by_id(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
+        # Click the TRS ID sub-card to show the TRS ID import form
+        self.components.workflows.import_trs_id_link.wait_for_and_click()
+
+    def go_to_trs_by_url(self) -> None:
+        self.navigate_to(self.build_url("workflows/trs_import"))
+        self.components.masthead._.wait_for_visible()
+        # Click the TRS URL sub-card to show the TRS URL import form
+        self.components.workflows.import_trs_url_link.wait_for_and_click()
 
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
         self.navigate_to(self.build_url(f"workflows/sharing?id={workflow_id}"))

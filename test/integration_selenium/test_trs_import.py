@@ -139,7 +139,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.assert_workflow_imported(WORKFLOW_NAME)
 
     def _import_by_trs_url(self, trs_url):
-        self.go_to_trs_by_id()
+        self.go_to_trs_by_url()
         self.components.trs_import.url_input.wait_for_and_send_keys(trs_url)
         self.components.trs_import.url_import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)

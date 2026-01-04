@@ -716,6 +716,7 @@ workflows:
     import_trs_link: '.workflow-import-trs-link'
     import_trs_search_link: '.workflow-import-trs-search-link'
     import_trs_id_link: '.workflow-import-trs-id-link'
+    import_trs_url_link: '.workflow-import-trs-url-link'
 
     workflow_with_name:
       type: xpath
