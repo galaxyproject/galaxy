@@ -9304,6 +9304,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     uuid: Mapped[Optional[Union[UUID]]] = mapped_column(UUIDType())
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    on_complete: Mapped[Optional[list]] = mapped_column(JSONType)
 
     history = relationship("History", back_populates="workflow_invocations")
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
@@ -9339,6 +9340,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     messages = relationship("WorkflowInvocationMessage", back_populates="workflow_invocation")
     landing_request: Mapped[Optional["LandingRequestToWorkflowInvocationAssociation"]] = relationship(
         "LandingRequestToWorkflowInvocationAssociation",
+        back_populates="workflow_invocation",
+        uselist=False,
+    )
+    completion: Mapped[Optional["WorkflowInvocationCompletion"]] = relationship(
+        "WorkflowInvocationCompletion",
         back_populates="workflow_invocation",
         uselist=False,
     )
@@ -10003,6 +10009,24 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     @property
     def history_id(self):
         return self.workflow_invocation.history_id
+
+
+class WorkflowInvocationCompletion(Base, RepresentById):
+    """Records workflow invocation completion details."""
+
+    __tablename__ = "workflow_invocation_completion"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True, unique=True)
+    completion_time: Mapped[datetime] = mapped_column(default=now)
+    # Summary of final job states: {"ok": 5, "error": 1, "skipped": 2}
+    job_state_summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
+    # Whether all jobs completed successfully (no errors)
+    all_jobs_ok: Mapped[bool] = mapped_column(default=False)
+    # Hooks that have been executed (for idempotency)
+    hooks_executed: Mapped[Optional[list[str]]] = mapped_column(JSON)
+
+    workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="completion")
 
 
 class EffectiveOutput(TypedDict):

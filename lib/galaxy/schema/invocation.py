@@ -317,6 +317,7 @@ class InvocationState(str, Enum):
     CANCELLED = "cancelled"
     CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration.
     FAILED = "failed"
+    COMPLETED = "completed"  # All jobs have reached terminal states (ok, error, deleted, skipped, paused, stopped)
 
 
 class InvocationStepState(str, Enum):
@@ -712,6 +713,31 @@ class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseMod
         default=...,
         title="ID",
         description="The encoded ID of the collection job.",
+    )
+
+
+class WorkflowInvocationCompletionResponse(Model):
+    """Response model for workflow invocation completion details."""
+
+    completion_time: datetime = Field(
+        ...,
+        title="Completion Time",
+        description="The time when the workflow invocation completed.",
+    )
+    job_state_summary: dict[str, int] = Field(
+        ...,
+        title="Job State Summary",
+        description="Summary of job states, mapping state names to counts.",
+    )
+    all_jobs_ok: bool = Field(
+        ...,
+        title="All Jobs OK",
+        description="Whether all jobs completed successfully (OK or SKIPPED states).",
+    )
+    hooks_executed: list[str] = Field(
+        default_factory=list,
+        title="Hooks Executed",
+        description="List of completion hook names that have been executed.",
     )
 
 

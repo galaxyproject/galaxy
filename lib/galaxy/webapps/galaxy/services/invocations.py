@@ -140,6 +140,12 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         wfi = self._workflows_manager.get_invocation(trans, invocation_id, check_ownership=False, check_accessible=True)
         return self.serialize_workflow_invocation(wfi, serialization_params)
 
+    def get_invocation(self, trans, invocation_id) -> WorkflowInvocation:
+        """Get the raw WorkflowInvocation model object."""
+        return self._workflows_manager.get_invocation(
+            trans, invocation_id, check_ownership=False, check_accessible=True
+        )
+
     def as_request(self, trans: ProvidesUserContext, invocation_id) -> WorkflowInvocationRequestModel:
         wfi = self._workflows_manager.get_invocation(trans, invocation_id, check_ownership=True, check_accessible=True)
         return self.serialize_workflow_invocation_to_request(trans, wfi)

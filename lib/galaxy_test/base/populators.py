@@ -2664,7 +2664,7 @@ class BaseWorkflowPopulator(BasePopulator):
     ) -> None:
         state = self.wait_for_invocation(workflow_id, invocation_id, assert_ok=assert_ok)
         if assert_ok:
-            assert state == "scheduled", state
+            assert state in ("scheduled", "completed"), state
         time.sleep(0.5)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(0.5)
@@ -3880,7 +3880,7 @@ def wait_on_state(
             "deleting",
         ]
     if ok_states is None:
-        ok_states = ["ok", "scheduled", "deferred"]
+        ok_states = ["ok", "scheduled", "deferred", "completed"]
     # Remove ok_states from skip_states, so we can wait for a state to becoming running
     skip_states = [s for s in skip_states if s not in ok_states]
     try:

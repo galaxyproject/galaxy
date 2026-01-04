@@ -65,6 +65,7 @@
                     type="boolean" />
             </template>
         </FormCard>
+        <OnCompleteActions v-model="onCompleteActions" />
         <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
             <template v-slot:body>
                 <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
@@ -107,6 +108,7 @@ import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
+import OnCompleteActions from "@/components/Workflow/Run/OnCompleteActions.vue";
 import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
 
 export default {
@@ -116,6 +118,7 @@ export default {
         FormDisplay,
         FormCard,
         FormElement,
+        OnCompleteActions,
         WorkflowCredentials,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
@@ -148,6 +151,7 @@ export default {
             inputs: {},
             historyData: {},
             useCachedJobs: false,
+            onCompleteActions: [],
             historyInputs: [
                 {
                     type: "conditional",
@@ -299,6 +303,8 @@ export default {
                 // they can still choose to invoke the workflow anyway.
                 require_exact_tool_versions: false,
                 version: this.model.runData.version,
+                // Completion actions to run when workflow finishes
+                on_complete: this.onCompleteActions.length > 0 ? this.onCompleteActions : null,
             };
 
             console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);

@@ -915,3 +915,32 @@ steps: {}
         history_id = self.current_history_id()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
         return self.workflow_populator.history_invocations(history_id)[0]
+
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    @managed_history
+    def test_on_complete_notification_action(self):
+        """Test configuring the send notification completion action."""
+        self.perform_upload(self.get_filename("1.fasta"))
+        self.wait_for_history()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_run_ensure_expanded()
+
+        # Find and click the send notification checkbox
+        notification_checkbox = self.driver.find_element(
+            By.CSS_SELECTOR, "[data-test-id='send-notification-checkbox']"
+        )
+        notification_checkbox.click()
+        self.screenshot("workflow_run_on_complete_notification_enabled")
+
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # Verify the invocation has the on_complete action
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocations = self.workflow_populator.history_invocations(history_id)
+        invocation = self.workflow_populator.get_invocation(invocations[0]["id"])
+        on_complete = invocation.get("on_complete", [])
+        assert len(on_complete) == 1
+        assert "send_notification" in on_complete[0]
