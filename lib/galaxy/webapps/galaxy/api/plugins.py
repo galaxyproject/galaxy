@@ -30,7 +30,6 @@ from openai.types.chat import (
 )
 from pydantic import BaseModel
 
-from galaxy import exceptions
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     MessageException,
@@ -45,16 +44,13 @@ from galaxy.structured_app import StructuredApp
 from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.galaxy.api import (
+    BaseGalaxyAPIController,
     depends,
     DependsOnApp,
     DependsOnUser,
     Router,
 )
 from galaxy.webapps.galaxy.fast_app import limiter
-from . import (
-    BaseGalaxyAPIController,
-    depends,
-)
 
 log = logging.getLogger(__name__)
 
