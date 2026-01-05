@@ -436,7 +436,7 @@ def build_workflow_run_configs(
                     if isinstance(content, HistoryDatasetCollectionAssociation):
                         content = content.copy(element_destination=history, flush=False)
                     else:
-                        content = content.copy(flush=False)
+                        content = content.copy(copy_tags=content.tags, flush=False)
                     history.stage_addition(content)
                 input_dict["content"] = content
             except AssertionError:
