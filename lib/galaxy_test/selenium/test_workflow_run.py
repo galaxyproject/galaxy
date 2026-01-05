@@ -39,6 +39,10 @@ from .test_workflow_editor import CHIPSEQ_COLUMNS
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
     ensure_registered = True
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["simplified_workflow_run_ui"] = "prefer"
+
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
@@ -927,10 +931,15 @@ steps: {}
         self.workflow_run_ensure_expanded()
 
         # Find and click the send notification checkbox
+        # For Bootstrap Vue switch checkbox, click the parent label to trigger Vue reactivity
         notification_checkbox = self.driver.find_element(
             By.CSS_SELECTOR, "[data-test-id='send-notification-checkbox']"
         )
-        notification_checkbox.click()
+        # Find the parent custom-control div and click the label within it
+        parent_control = notification_checkbox.find_element(By.XPATH, "./..")
+        label = parent_control.find_element(By.CSS_SELECTOR, "label.custom-control-label")
+        label.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_run_on_complete_notification_enabled")
 
         self.workflow_run_submit()
@@ -941,6 +950,6 @@ steps: {}
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
         invocations = self.workflow_populator.history_invocations(history_id)
         invocation = self.workflow_populator.get_invocation(invocations[0]["id"])
-        on_complete = invocation.get("on_complete", [])
-        assert len(on_complete) == 1
-        assert "send_notification" in on_complete[0]
+        on_complete = invocation.get("on_complete") or []
+        assert len(on_complete) == 1, f"Expected 1 on_complete action, got {on_complete}"
+        assert "send_notification" in on_complete[0], f"Expected send_notification in {on_complete[0]}"

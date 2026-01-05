@@ -601,6 +601,11 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
         title="Landing UUID",
         description="The UUID of the workflow landing request associated with this invocation.",
     )
+    on_complete: Optional[list[dict[str, Any]]] = Field(
+        default=None,
+        title="On Complete Actions",
+        description="Actions to be executed when the workflow invocation completes.",
+    )
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
 
 

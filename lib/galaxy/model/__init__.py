@@ -9727,6 +9727,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             rval["landing_uuid"] = str(self.landing_request.landing_request.uuid)
         else:
             rval["landing_uuid"] = None
+
+        # Add on_complete actions
+        rval["on_complete"] = self.on_complete
+
         if view == "element":
             steps = []
             for step in self.steps:
