@@ -1,6 +1,7 @@
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -9,7 +10,6 @@ from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import Literal
 
 from galaxy.util.config_templates import (
     ConfiguredOAuth2Sources,

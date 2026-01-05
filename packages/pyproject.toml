@@ -2,7 +2,7 @@
 name = "galaxy-meta-package"
 version = "0.0.0"
 description = "Meta package stub (not a real package)"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = []
 
 [tool.uv]

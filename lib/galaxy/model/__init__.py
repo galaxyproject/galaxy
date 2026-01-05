@@ -32,10 +32,12 @@ from typing import (
     cast,
     ClassVar,
     Generic,
+    Literal,
     NamedTuple,
     Optional,
     overload,
     TYPE_CHECKING,
+    TypeAlias,
     TypeVar,
     Union,
 )
@@ -132,10 +134,8 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     deprecated,
-    Literal,
     NotRequired,
     Protocol,
-    TypeAlias,
     TypedDict,
 )
 

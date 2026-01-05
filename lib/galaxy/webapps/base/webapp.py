@@ -721,7 +721,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             if self.app.datatypes_registry.get_display_sites("ucsc") and self.request.path == display_as:
                 try:
                     host = socket.gethostbyaddr(self.environ["REMOTE_ADDR"])[0]
-                except (OSError, socket.herror, socket.gaierror, socket.timeout):
+                except (OSError, socket.herror, socket.gaierror):
                     host = None
                 if host in UCSC_SERVERS:
                     return

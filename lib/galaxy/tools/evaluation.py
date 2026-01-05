@@ -5,10 +5,10 @@ import re
 import shlex
 import string
 import tempfile
+from collections.abc import Callable
 from datetime import datetime
 from typing import (
     Any,
-    Callable,
     Literal,
     Optional,
     TYPE_CHECKING,

@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from typing import (
     Any,
     cast,
+    Literal,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -16,7 +17,6 @@ from pydantic import (
     Field,
 )
 from typing_extensions import (
-    Literal,
     Protocol,
 )
 

@@ -1,6 +1,7 @@
 import json
 from typing import (
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -11,7 +12,6 @@ from pydantic import (
     field_validator,
     UUID4,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,

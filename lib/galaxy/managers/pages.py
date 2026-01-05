@@ -8,10 +8,10 @@ from within Galaxy.
 
 import logging
 import re
+from collections.abc import Callable
 from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
-    Callable,
     Optional,
     TYPE_CHECKING,
     Union,

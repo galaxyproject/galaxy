@@ -6,9 +6,9 @@ import signal
 import sys
 import threading
 import time
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     Optional,
 )
 

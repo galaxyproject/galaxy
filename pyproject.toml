@@ -10,7 +10,7 @@ maintainers = [
 ]
 license = {file = "LICENSE.txt"}
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "a2wsgi",
     "aiofiles",
@@ -189,7 +189,6 @@ typecheck = [
 
 [tool.black]
 line-length = 120
-target-version = ['py39']
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
@@ -202,7 +201,6 @@ extend-exclude = '''
 isort = true
 
 [tool.ruff]
-target-version = "py39"
 exclude = [
     "lib/tool_shed/test/test_data/repos"
 ]
@@ -218,7 +216,8 @@ select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
 # G* are TODOs
-ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
+# UP007, UP045: Python >=3.10 type annotation improvements, to be revisited later
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004", "UP007", "UP045"]
 
 [tool.ruff.lint.flake8-comprehensions]
 allow-dict-calls-with-keyword-arguments = true

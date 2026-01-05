@@ -6,8 +6,8 @@ a dictionary of string data/ids (often from a query string).
 import json
 import logging
 import weakref
+from collections.abc import Callable
 from typing import (
-    Callable,
     Optional,
     Union,
 )

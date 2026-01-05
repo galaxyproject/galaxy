@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 import time
 from typing import TYPE_CHECKING
 from urllib.parse import quote
@@ -47,14 +46,7 @@ from ..config import GalaxyAppConfiguration
 
 if TYPE_CHECKING:
     from social_core.backends.oauth import BaseOAuth2
-
-    if sys.version_info >= (3, 10):
-        from social_core.strategy import HttpResponseProtocol
-    else:
-        from typing import Protocol
-
-        class HttpResponseProtocol(Protocol):
-            url: str
+    from social_core.strategy import HttpResponseProtocol
 
 
 log = logging.getLogger(__name__)

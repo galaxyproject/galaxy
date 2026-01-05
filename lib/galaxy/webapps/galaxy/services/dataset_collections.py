@@ -1,6 +1,7 @@
 from io import BytesIO
 from logging import getLogger
 from typing import (
+    Literal,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -13,7 +14,6 @@ from pydantic import (
     RootModel,
     ValidationError,
 )
-from typing_extensions import Literal
 
 from galaxy import exceptions
 from galaxy.datatypes.registry import Registry

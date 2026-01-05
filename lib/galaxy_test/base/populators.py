@@ -52,14 +52,17 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from collections.abc import Generator
+from collections.abc import (
+    Callable,
+    Generator,
+)
 from functools import wraps
 from io import StringIO
 from operator import itemgetter
 from typing import (
     Any,
-    Callable,
     cast,
+    Literal,
     NamedTuple,
     Optional,
     Union,
@@ -82,7 +85,6 @@ from pydantic import (
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import (
-    Literal,
     Self,
     TypedDict,
 )

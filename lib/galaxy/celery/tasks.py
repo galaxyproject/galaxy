@@ -1,12 +1,12 @@
 import datetime
 import json
 import shutil
+from collections.abc import Callable
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
     Optional,
 )
 

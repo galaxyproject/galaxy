@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import (
     cast,
+    Literal,
     Optional,
     Protocol,
     TYPE_CHECKING,
@@ -15,7 +16,6 @@ from pydantic import (
     BaseModel,
     Field,
 )
-from typing_extensions import Literal
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections.rule_target_columns import (

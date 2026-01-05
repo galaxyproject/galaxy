@@ -5,10 +5,10 @@ import logging
 import operator
 import os
 import re
+from collections.abc import Callable
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
-    Callable,
     Optional,
     TYPE_CHECKING,
     Union,

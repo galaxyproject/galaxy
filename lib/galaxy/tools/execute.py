@@ -8,17 +8,17 @@ import collections
 import logging
 import typing
 from abc import abstractmethod
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     NamedTuple,
     Optional,
+    TypeAlias,
     Union,
 )
 
 from boltons.iterutils import remap
 from packaging.version import Version
-from typing_extensions import TypeAlias
 
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException

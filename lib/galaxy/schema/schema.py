@@ -9,7 +9,9 @@ from enum import Enum
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
+    TypeAlias,
     Union,
 )
 from uuid import UUID
@@ -29,9 +31,7 @@ from pydantic import (
 )
 from pydantic_core import core_schema
 from typing_extensions import (
-    Literal,
     NotRequired,
-    TypeAlias,
     TypedDict,
 )
 

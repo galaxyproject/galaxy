@@ -5,13 +5,13 @@ import urllib.request
 from typing import (
     Any,
     cast,
+    Literal,
     Optional,
 )
 from urllib.error import HTTPError
 from urllib.parse import quote
 
 from typing_extensions import (
-    Literal,
     TypedDict,
 )
 

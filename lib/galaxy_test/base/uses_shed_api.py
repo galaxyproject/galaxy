@@ -1,7 +1,7 @@
 import abc
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     Optional,
 )
 from unittest import SkipTest

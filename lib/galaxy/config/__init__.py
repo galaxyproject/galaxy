@@ -16,10 +16,10 @@ import string
 import sys
 import tempfile
 import threading
+from collections.abc import Callable
 from datetime import timedelta
 from typing import (
     Any,
-    Callable,
     cast,
     Optional,
     SupportsInt,

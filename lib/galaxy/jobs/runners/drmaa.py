@@ -10,10 +10,9 @@ import string
 import time
 from typing import (
     TYPE_CHECKING,
+    TypeAlias,
     Union,
 )
-
-from typing_extensions import TypeAlias
 
 from galaxy import model
 from galaxy.jobs.handler import DEFAULT_JOB_RUNNER_FAILURE_MESSAGE

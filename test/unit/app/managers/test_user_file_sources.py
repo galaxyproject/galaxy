@@ -884,4 +884,4 @@ class MockExceptionResponse:
         self._exception_msg = exception_msg
 
     def raise_for_status(self):
-        raise HTTPError(self._exception_msg, self._exception_msg, response=None)  # type: ignore[arg-type,unused-ignore]  # Fixed in types-requests 2.31.0.9 , which requires Python >=3.9 via urllib3 >=2
+        raise HTTPError(self._exception_msg, self._exception_msg, response=None)
