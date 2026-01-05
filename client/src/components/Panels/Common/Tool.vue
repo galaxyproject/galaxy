@@ -30,7 +30,7 @@
         </a>
         <ToolFavoriteButton
             v-if="showFavoriteAction"
-            class="tool-favorite-button"
+            :class="['tool-favorite-button', { 'tool-favorite-button-hover': showFavoriteOnHover }]"
             :data-tool-id="tool.id"
             :id="tool.id"
             color="grey" />
@@ -112,7 +112,10 @@ export default {
             }
         },
         showFavoriteAction() {
-            return this.showFavoriteButton && !this.isFavorite;
+            return this.showFavoriteButton || this.isFavorite;
+        },
+        showFavoriteOnHover() {
+            return this.isFavorite;
         },
     },
     methods: {
@@ -139,5 +142,26 @@ export default {
 }
 .tool-favorite-button {
     margin-left: 0.25rem;
+}
+.tool-favorite-button-hover {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    transition-delay: 0s;
+    pointer-events: none;
+}
+.toolTitle:hover .tool-favorite-button-hover {
+    opacity: 1;
+    transition-delay: 0.5s;
+    pointer-events: auto;
+}
+.toolTitle:focus-within .tool-favorite-button-hover {
+    opacity: 1;
+    transition-delay: 0s;
+    pointer-events: auto;
+}
+.tool-favorite-button-hover:focus {
+    opacity: 1;
+    transition-delay: 0s;
+    pointer-events: auto;
 }
 </style>

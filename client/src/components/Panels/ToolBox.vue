@@ -7,7 +7,6 @@ import { computed, type ComputedRef, type Ref, ref, watch } from "vue";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
-import { getAppRoot } from "@/onload/loadConfig";
 import type { Tool, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -57,7 +56,7 @@ const resultPanel: Ref<Record<string, Tool | ToolSectionType> | null> = ref(null
 const closestTerm: Ref<string | null> = ref(null);
 
 const toolStore = useToolStore();
-const { currentFavorites } = storeToRefs(useUserStore());
+const { currentFavorites, recentTools } = storeToRefs(useUserStore());
 
 const { currentPanelView, currentToolSections, defaultPanelView, toolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
@@ -130,11 +129,20 @@ type PanelItem = Tool | ToolSectionType | ToolSectionLabel;
 
 const favoriteToolIds = computed(() => currentFavorites.value.tools || []);
 const favoriteToolIdSet = computed(() => new Set(favoriteToolIds.value));
+const favoriteToolIdsInPanel = computed(() =>
+    favoriteToolIds.value.filter((toolId) => !!localToolsById.value[toolId]),
+);
+const recentToolIds = computed(() => recentTools.value || []);
+const recentToolIdsInPanel = computed(() => recentToolIds.value.filter((toolId) => !!localToolsById.value[toolId]));
+const recentToolIdsToShow = computed(() =>
+    recentToolIdsInPanel.value.filter((toolId) => !favoriteToolIdSet.value.has(toolId)),
+);
+const recentToolIdsToShowSet = computed(() => new Set(recentToolIdsToShow.value));
 const favoriteResults = computed(() => results.value.filter((id) => favoriteToolIdSet.value.has(id)));
 const nonFavoriteResults = computed(() => results.value.filter((id) => !favoriteToolIdSet.value.has(id)));
 const hasMixedResults = computed(() => favoriteResults.value.length > 0 && nonFavoriteResults.value.length > 0);
 
-const toolsListHref = computed(() => `${getAppRoot()}tools/list`);
+const toolsListRoute = "/tools/list";
 const toolsCount = computed(() => toolsList.value.length);
 const showEmptyFavorites = computed(
     () => props.favoritesDefault && !query.value && favoriteToolIds.value.length === 0,
@@ -143,6 +151,12 @@ const showEmptyFavorites = computed(
 const FAVORITES_RESULTS_SECTION_ID = "favorites_results";
 const FAVORITES_RESULTS_LABEL_ID = "favorites_results_label";
 const SEARCH_RESULTS_LABEL_ID = "search_results_label";
+const FAVORITES_LABEL_ID = "favorites_label";
+const RECENT_TOOLS_LABEL_ID = "recent_tools_label";
+const FAVORITES_EMPTY_ALERT_ID = "favorites_empty_alert";
+
+const favoritesCollapsed = ref(false);
+const recentToolsCollapsed = ref(false);
 
 function buildToolSection(id: string, name: string, tools: string[]): ToolSectionType {
     return {
@@ -224,10 +238,12 @@ const flatResultsPanel = computed<Record<string, PanelItem> | null>(() => {
     }
     const entries: Array<[string, PanelItem]> = [];
     entries.push([FAVORITES_RESULTS_LABEL_ID, buildToolLabel(FAVORITES_RESULTS_LABEL_ID, localize("Favorites"))]);
-    for (const toolId of favoriteResults.value) {
-        const tool = localToolsById.value[toolId];
-        if (tool) {
-            entries.push([toolId, tool]);
+    if (!favoritesCollapsed.value) {
+        for (const toolId of favoriteResults.value) {
+            const tool = localToolsById.value[toolId];
+            if (tool) {
+                entries.push([toolId, tool]);
+            }
         }
     }
     entries.push([SEARCH_RESULTS_LABEL_ID, buildToolLabel(SEARCH_RESULTS_LABEL_ID, localize("Search results"))]);
@@ -235,6 +251,41 @@ const flatResultsPanel = computed<Record<string, PanelItem> | null>(() => {
         const tool = localToolsById.value[toolId];
         if (tool) {
             entries.push([toolId, tool]);
+        }
+    }
+    return Object.fromEntries(entries);
+});
+
+const favoritesDefaultPanel = computed<Record<string, PanelItem> | null>(() => {
+    if (!props.favoritesDefault || query.value) {
+        return null;
+    }
+    const entries: Array<[string, PanelItem]> = [];
+    const favorites = favoriteToolIdsInPanel.value;
+    const recents = recentToolIdsToShow.value;
+
+    entries.push([FAVORITES_LABEL_ID, buildToolLabel(FAVORITES_LABEL_ID, localize("Favorites"))]);
+    if (!favoritesCollapsed.value) {
+        if (showEmptyFavorites.value) {
+            entries.push([FAVORITES_EMPTY_ALERT_ID, buildToolLabel(FAVORITES_EMPTY_ALERT_ID, "")]);
+        } else {
+            for (const toolId of favorites) {
+                const tool = localToolsById.value[toolId];
+                if (tool) {
+                    entries.push([toolId, tool]);
+                }
+            }
+        }
+    }
+    if (recents.length > 0) {
+        entries.push([RECENT_TOOLS_LABEL_ID, buildToolLabel(RECENT_TOOLS_LABEL_ID, localize("Recent tools"))]);
+        if (!recentToolsCollapsed.value) {
+            for (const toolId of recents) {
+                const tool = localToolsById.value[toolId];
+                if (tool) {
+                    entries.push([toolId, tool]);
+                }
+            }
         }
     }
     return Object.fromEntries(entries);
@@ -274,7 +325,7 @@ const sectionedResultsPanel = computed<Record<string, Tool | ToolSectionType> | 
  */
 const localPanel: ComputedRef<Record<string, PanelItem> | null> = computed(() => {
     if (props.favoritesDefault && !query.value) {
-        return filterTools(localToolsById.value, favoriteToolIds.value) as Record<string, PanelItem>;
+        return favoritesDefaultPanel.value || {};
     }
     if (hasResults.value) {
         if (showSections.value) {
@@ -345,6 +396,27 @@ function onSearchQuery(q: string) {
 function onToggle() {
     showSections.value = !showSections.value;
 }
+
+const collapsedLabels = computed(() =>
+    props.favoritesDefault
+        ? {
+              [FAVORITES_LABEL_ID]: favoritesCollapsed.value,
+              [FAVORITES_RESULTS_LABEL_ID]: favoritesCollapsed.value,
+              [RECENT_TOOLS_LABEL_ID]: recentToolsCollapsed.value,
+          }
+        : {},
+);
+
+function onLabelToggle(labelId: string) {
+    if (!props.favoritesDefault) {
+        return;
+    }
+    if (labelId === FAVORITES_LABEL_ID || labelId === FAVORITES_RESULTS_LABEL_ID) {
+        favoritesCollapsed.value = !favoritesCollapsed.value;
+    } else if (labelId === RECENT_TOOLS_LABEL_ID) {
+        recentToolsCollapsed.value = !recentToolsCollapsed.value;
+    }
+}
 </script>
 
 <template>
@@ -386,32 +458,35 @@ function onToggle() {
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
-                <div v-if="showEmptyFavorites" class="tool-panel-empty">
-                    <BAlert variant="info" show>
-                        You haven't favorited any tools yet. Search the toolbox or use
-                        <GButton
-                            class="ml-1"
-                            size="small"
-                            color="blue"
-                            :href="toolsListHref"
-                            data-description="discover-tools">
-                            Discover Tools
-                        </GButton>
-                        to explore {{ toolsCount }} community curated tools.
-                    </BAlert>
-                </div>
-                <div v-else-if="localPanel" class="toolMenu">
+                <div v-if="localPanel" class="toolMenu">
                     <div v-for="(panel, key) in localPanel" :key="key">
+                        <div v-if="panel?.id === FAVORITES_EMPTY_ALERT_ID" class="tool-panel-empty">
+                            <BAlert variant="info" show>
+                                You haven't favorited any tools yet. Search the toolbox or use
+                                <GButton
+                                    class="ml-1"
+                                    size="small"
+                                    color="blue"
+                                    :to="toolsListRoute"
+                                    data-description="discover-tools">
+                                    Discover Tools
+                                </GButton>
+                                to explore {{ toolsCount }} community curated tools.
+                            </BAlert>
+                        </div>
                         <ToolSection
-                            v-if="panel"
+                            v-else-if="panel"
                             :category="panel || {}"
                             :query-filter="hasResults ? query : undefined"
                             :has-filter-button="
                                 hasResults && currentPanelView === 'default' && panel.id !== FAVORITES_RESULTS_SECTION_ID
                             "
                             :search-active="hasResults"
+                            :show-favorite-button="recentToolIdsToShowSet.has(panel.id)"
+                            :collapsed-labels="collapsedLabels"
                             @onClick="onToolClick"
-                            @onFilter="onSectionFilter" />
+                            @onFilter="onSectionFilter"
+                            @onLabelToggle="onLabelToggle" />
                     </div>
                 </div>
             </div>

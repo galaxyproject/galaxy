@@ -1,7 +1,7 @@
 import "@tests/vitest/mockHelpPopovers";
 
 import { getFakeRegisteredUser } from "@tests/test-data";
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -17,6 +17,7 @@ import ToolForm from "./ToolForm.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 const pinia = createPinia();
 
 describe("ToolForm", () => {
@@ -72,6 +73,7 @@ describe("ToolForm", () => {
                 version: "version",
             },
             localVue,
+            router,
             stubs: {
                 UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
                 FormDisplay: true,
@@ -84,6 +86,7 @@ describe("ToolForm", () => {
         historyStore = useHistoryStore();
         historyStore.setHistories([{ id: "fakeHistory" }]);
         historyStore.setCurrentHistoryId("fakeHistory");
+        historyStore.startWatchingHistory = () => {};
     });
 
     it("shows props", async () => {
@@ -96,5 +99,16 @@ describe("ToolForm", () => {
         expect(help.text()).toBe("help_text");
         const creator = wrapper.find(".creative-work-creator");
         expect(creator.text()).toContain("FakeName FakeSurname");
+    });
+
+    it("adds the executed tool to recent tools", async () => {
+        await flushPromises();
+        await wrapper.setData({ formData: {} });
+
+        const button = wrapper.find("[data-description='run tool button']");
+        await button.trigger("click");
+        await flushPromises();
+
+        expect(userStore.recentTools).toEqual(["tool_id"]);
     });
 });

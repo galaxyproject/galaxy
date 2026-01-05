@@ -26,6 +26,8 @@ export type ListViewMode = "grid" | "list";
 
 type UserListViewPreferences = Record<string, ListViewMode>;
 
+const RECENT_TOOLS_LIMIT = 20;
+
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
@@ -40,6 +42,8 @@ export const useUserStore = defineStore("userStore", () => {
     const hasSeenUploadHelp = useUserLocalStorageFromHashId("user-store-seen-upload-help", false, hashedUserId);
 
     const historyPanelWidth = useUserLocalStorageFromHashId("user-store-history-panel-width", 300, hashedUserId);
+
+    const recentTools = useUserLocalStorageFromHashId<string[]>("user-store-recent-tools", [], hashedUserId);
 
     let loadPromise: Promise<void> | null = null;
 
@@ -144,6 +148,18 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
+    function addRecentTool(toolId: string) {
+        if (!toolId) {
+            return;
+        }
+        const currentTools = recentTools.value || [];
+        recentTools.value = [toolId, ...currentTools.filter((id) => id !== toolId)].slice(0, RECENT_TOOLS_LIMIT);
+    }
+
+    function clearRecentTools() {
+        recentTools.value = [];
+    }
+
     function setListViewPreference(listId: string, view: ListViewMode) {
         currentListViewPreferences.value = {
             ...currentListViewPreferences.value,
@@ -171,6 +187,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentListViewPreferences,
         hasSeenUploadHelp,
         historyPanelWidth,
+        recentTools,
         loadUser,
         matchesCurrentUsername,
         setCurrentUser,
@@ -178,6 +195,8 @@ export const useUserStore = defineStore("userStore", () => {
         setListViewPreference,
         addFavoriteTool,
         removeFavoriteTool,
+        addRecentTool,
+        clearRecentTools,
         $reset,
     };
 });

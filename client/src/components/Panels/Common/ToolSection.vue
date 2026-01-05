@@ -16,6 +16,7 @@ const emit = defineEmits<{
     (e: "onClick", tool: any, evt: Event): void;
     (e: "onFilter", filter: string): void;
     (e: "onOperation", tool: any, evt: Event): void;
+    (e: "onLabelToggle", labelId: string): void;
 }>();
 
 const eventBus = useEventBus<string>("open-tool-section");
@@ -33,6 +34,8 @@ interface Props {
     sortItems?: boolean;
     hasFilterButton?: boolean;
     searchActive?: boolean;
+    showFavoriteButton?: boolean;
+    collapsedLabels?: Record<string, boolean>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -47,6 +50,8 @@ const props = withDefaults(defineProps<Props>(), {
     sortItems: true,
     hasFilterButton: false,
     searchActive: false,
+    showFavoriteButton: false,
+    collapsedLabels: () => ({}),
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -149,6 +154,9 @@ function onClick(tool: any, evt: Event) {
 function onOperation(tool: any, evt: Event) {
     emit("onOperation", tool, evt);
 }
+function onLabelToggle(labelId: string) {
+    emit("onLabelToggle", labelId);
+}
 function toggleMenu(nextState = !opened.value) {
     opened.value = nextState;
 }
@@ -186,7 +194,9 @@ function toggleMenu(nextState = !opened.value) {
                     <ToolPanelLabel
                         v-if="toolSectionLabel.text || el.model_class === 'ToolSectionLabel'"
                         :key="key"
-                        :definition="el" />
+                        :definition="el"
+                        :collapsed="props.collapsedLabels[el.id]"
+                        @toggle="onLabelToggle" />
                     <Tool
                         v-else
                         :key="key"
@@ -196,7 +206,7 @@ function toggleMenu(nextState = !opened.value) {
                         :hide-name="hideName"
                         :operation-title="operationTitle"
                         :operation-icon="operationIcon"
-                        :show-favorite-button="searchActive"
+                        :show-favorite-button="props.showFavoriteButton || searchActive"
                         @onOperation="onOperation"
                         @onClick="onClick" />
                 </template>
@@ -204,14 +214,18 @@ function toggleMenu(nextState = !opened.value) {
         </transition>
     </div>
     <div v-else>
-        <ToolPanelLabel v-if="toolSectionLabel.text" :definition="toolSectionLabel" />
+        <ToolPanelLabel
+            v-if="toolSectionLabel.text"
+            :definition="toolSectionLabel"
+            :collapsed="props.collapsedLabels[toolSectionLabel.id]"
+            @toggle="onLabelToggle" />
         <Tool
             v-else
             :tool="category"
             :hide-name="hideName"
             :operation-title="operationTitle"
             :operation-icon="operationIcon"
-            :show-favorite-button="searchActive"
+            :show-favorite-button="props.showFavoriteButton || searchActive"
             @onOperation="onOperation"
             @onClick="onClick" />
     </div>
