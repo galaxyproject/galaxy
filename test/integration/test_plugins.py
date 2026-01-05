@@ -28,14 +28,14 @@ class TestAiApi(IntegrationTestCase):
         return payload
 
     def _post_payload(self, payload=None, anon=False):
-        return self._post("ai/plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
+        return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
 
     def _mock_plugin(self, mock_get_plugin):
         mock_plugin = MagicMock()
         mock_plugin.config = {"specs": {"ai_prompt": "test prompt"}}
         mock_get_plugin.return_value = mock_plugin
 
-    @patch("galaxy.webapps.galaxy.api.ai.AsyncOpenAI")
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
     @patch("galaxy.visualization.plugins.registry.VisualizationsRegistry.get_plugin")
     def test_non_streaming_success(self, mock_get_plugin, mock_client):
         mock_response = MagicMock()
@@ -49,7 +49,7 @@ class TestAiApi(IntegrationTestCase):
         self._assert_status_code_is(response, 200)
         assert response.json()["id"] == "test"
 
-    @patch("galaxy.webapps.galaxy.api.ai.AsyncOpenAI")
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
     @patch("galaxy.visualization.plugins.registry.VisualizationsRegistry.get_plugin")
     def test_streaming_success(self, mock_get_plugin, mock_client):
         async def stream_gen():
