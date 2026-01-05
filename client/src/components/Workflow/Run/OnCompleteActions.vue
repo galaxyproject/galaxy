@@ -22,12 +22,12 @@ interface OnCompleteAction {
 }
 
 interface Props {
-    modelValue: OnCompleteAction[];
+    value: OnCompleteAction[];
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-    (e: "update:modelValue", value: OnCompleteAction[]): void;
+    (e: "input", value: OnCompleteAction[]): void;
 }>();
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
@@ -46,9 +46,9 @@ const state = reactive({
     } as ExportConfig,
 });
 
-// Initialize state from modelValue
+// Initialize state from value prop (Vue 2 style v-model)
 watch(
-    () => props.modelValue,
+    () => props.value,
     (newValue) => {
         if (newValue && newValue.length > 0) {
             state.sendNotification = newValue.some((a) => "send_notification" in a);
@@ -79,7 +79,7 @@ function emitOnComplete() {
     if (state.exportEnabled && state.exportConfig.target_uri) {
         actions.push({ export_to_file_source: { ...state.exportConfig } });
     }
-    emit("update:modelValue", actions);
+    emit("input", actions);
 }
 
 function onExportConfigured(config: ExportConfig) {

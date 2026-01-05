@@ -207,6 +207,8 @@ def get_local_driver(browser=DEFAULT_BROWSER, headless=False) -> WebDriver:
         chrome_options = ChromeOptions()
         if headless:
             chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
         prefs = {"download.default_directory": DEFAULT_DOWNLOAD_PATH}
         chrome_options.add_experimental_option("prefs", prefs)
         chrome_options.set_capability("goog:loggingPrefs", LOGGING_PREFS)
