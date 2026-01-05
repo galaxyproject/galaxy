@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -11,6 +11,7 @@ import LoadingSpan from "../LoadingSpan.vue";
 import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
+import { MY_PANEL_VIEW_ID } from "./panelViews";
 import ToolBox from "./ToolBox.vue";
 
 const toolStore = useToolStore();
@@ -26,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const { currentPanelView, currentToolSections, isPanelPopulated, toolSections } = storeToRefs(toolStore);
+const isMyPanel = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
 
 const errorMessage = ref("");
 const panelsFetched = ref(false);
@@ -79,12 +81,13 @@ initializePanel();
             <PanelViewMenu />
         </template>
         <template v-slot:header-buttons>
-            <FavoritesButton v-model="showFavorites" />
+            <FavoritesButton v-if="!isMyPanel" v-model="showFavorites" />
         </template>
         <ToolBox
             v-if="isPanelPopulated"
             :workflow="props.workflow"
             :show-favorites.sync="showFavorites"
+            :favorites-default="isMyPanel"
             :use-search-worker="useSearchWorker"
             @onInsertTool="onInsertTool" />
         <div v-else-if="errorMessage" data-description="tool panel error message">

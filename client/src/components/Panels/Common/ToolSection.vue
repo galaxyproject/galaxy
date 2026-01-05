@@ -32,6 +32,7 @@ interface Props {
     expanded?: boolean;
     sortItems?: boolean;
     hasFilterButton?: boolean;
+    searchActive?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,6 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
     expanded: false,
     sortItems: true,
     hasFilterButton: false,
+    searchActive: false,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -194,6 +196,7 @@ function toggleMenu(nextState = !opened.value) {
                         :hide-name="hideName"
                         :operation-title="operationTitle"
                         :operation-icon="operationIcon"
+                        :show-favorite-button="searchActive"
                         @onOperation="onOperation"
                         @onClick="onClick" />
                 </template>
@@ -208,6 +211,7 @@ function toggleMenu(nextState = !opened.value) {
             :hide-name="hideName"
             :operation-title="operationTitle"
             :operation-icon="operationIcon"
+            :show-favorite-button="searchActive"
             @onOperation="onOperation"
             @onClick="onClick" />
     </div>

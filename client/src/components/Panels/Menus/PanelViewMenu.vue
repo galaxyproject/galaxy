@@ -21,6 +21,7 @@ const groupsDefinitions = [
     { type: "publication", title: "...from Publication" },
     { type: "training", title: "...for Training" },
 ];
+const groupedPanelViewTypes = new Set(groupsDefinitions.map((group) => group.type));
 
 const props = defineProps<{
     /** Whether the menu is compact: doesn't take up full width of the parent when `true`.
@@ -81,7 +82,16 @@ const groupedPanelViews = computed(() => {
     return groups;
 });
 
-const ungroupedPanelViews = computed(() => panelViewsOfType("generic"));
+const ungroupedPanelViews = computed(() => {
+    const defaultPanelId = defaultPanelView.value?.id;
+    return Object.values(panels.value).filter((panel) => {
+        if (!panel || panel.id === defaultPanelId) {
+            return false;
+        }
+        const viewType = panel.view_type;
+        return viewType ? !groupedPanelViewTypes.has(viewType) : false;
+    });
+});
 
 function panelViewsOfType(panelViewType: string) {
     const panelViews = [];

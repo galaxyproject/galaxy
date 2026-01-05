@@ -7,6 +7,12 @@ import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
 import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
+import {
+    MY_PANEL_VIEW_DESCRIPTION,
+    MY_PANEL_VIEW_ID,
+    MY_PANEL_VIEW_NAME,
+    MY_PANEL_VIEW_TYPE,
+} from "@/components/Panels/panelViews";
 import { parseHelpForSummary } from "@/components/ToolsList/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -84,6 +90,17 @@ export interface ToolSectionLabel {
 export type ToolHelpData = {
     help?: string;
     summary?: string;
+};
+
+const MY_PANEL_VIEW_SECTION_ID = "favorites";
+
+const MY_PANEL_VIEW: Panel = {
+    id: MY_PANEL_VIEW_ID,
+    model_class: "StaticToolPanelView",
+    name: MY_PANEL_VIEW_NAME,
+    description: MY_PANEL_VIEW_DESCRIPTION,
+    view_type: MY_PANEL_VIEW_TYPE,
+    searchable: true,
 };
 
 export const useToolStore = defineStore("toolStore", () => {
@@ -185,12 +202,24 @@ export const useToolStore = defineStore("toolStore", () => {
     });
 
     async function fetchToolSections(panelView: string) {
+        if (!panelView || toolSections.value[panelView]) {
+            return;
+        }
+        if (panelView === MY_PANEL_VIEW_ID) {
+            saveToolSections(panelView, {
+                [MY_PANEL_VIEW_SECTION_ID]: {
+                    model_class: "ToolSection",
+                    id: MY_PANEL_VIEW_SECTION_ID,
+                    name: "Favorites",
+                    tools: [],
+                },
+            });
+            return;
+        }
         try {
-            if (panelView && !toolSections.value[panelView]) {
-                loading.value = true;
-                const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
-                saveToolSections(panelView, data);
-            }
+            loading.value = true;
+            const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+            saveToolSections(panelView, data);
         } catch (e) {
             rethrowSimple(e);
         } finally {
@@ -203,7 +232,10 @@ export const useToolStore = defineStore("toolStore", () => {
             if (!defaultPanelView.value || Object.keys(panels.value).length === 0) {
                 const { data } = await axios.get(`${getAppRoot()}api/tool_panels`);
                 defaultPanelView.value = data.default_panel_view;
-                panels.value = data.views;
+                panels.value = {
+                    ...data.views,
+                    ...(data.views[MY_PANEL_VIEW_ID] ? {} : { [MY_PANEL_VIEW_ID]: MY_PANEL_VIEW }),
+                };
             }
         } catch (e) {
             rethrowSimple(e);
@@ -304,6 +336,13 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function setPanel(panelView: string) {
         try {
+            if (
+                panelView === MY_PANEL_VIEW_ID &&
+                defaultPanelView.value &&
+                panelView !== defaultPanelView.value
+            ) {
+                await fetchToolSections(defaultPanelView.value);
+            }
             await fetchToolSections(panelView);
             currentPanelView.value = panelView;
         } catch (e) {

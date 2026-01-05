@@ -8,6 +8,7 @@ import {
     faNewspaper,
     faProjectDiagram,
     faSitemap,
+    faStar,
     faUndo,
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
@@ -69,6 +70,7 @@ const TOOL_SECTION_SEARCH_KEYS: SearchCommonKeys = { exact: 4, startsWith: 3, na
 /** Returns icon for tool panel `view_type` */
 export const types_to_icons = {
     default: faUndo,
+    favorites: faStar,
     generic: faFilter,
     ontology: faSitemap,
     activity: faProjectDiagram,

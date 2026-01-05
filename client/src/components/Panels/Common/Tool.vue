@@ -1,6 +1,6 @@
 <template>
     <div class="toolTitle">
-        <a v-if="tool.disabled" :data-tool-id="tool.id" class="title-link name text-muted">
+        <a v-if="tool.disabled" :data-tool-id="tool.id" class="title-link name text-muted tool-link">
             <span v-if="!hideName">{{ tool.name }}</span>
             <span class="description">{{ tool.description }}</span>
         </a>
@@ -28,20 +28,34 @@
                 :title="operationTitle"
                 @click.stop.prevent="onOperation" />
         </a>
+        <ToolFavoriteButton
+            v-if="showFavoriteAction"
+            class="tool-favorite-button"
+            :data-tool-id="tool.id"
+            :id="tool.id"
+            color="grey" />
     </div>
 </template>
 
 <script>
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
+import { computed } from "vue";
+import { storeToRefs } from "pinia";
 
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import ariaAlert from "@/utils/ariaAlert";
+
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     name: "Tool",
+    components: {
+        ToolFavoriteButton,
+    },
     props: {
         tool: {
             type: Object,
@@ -67,12 +81,20 @@ export default {
             type: Boolean,
             default: false,
         },
+        showFavoriteButton: {
+            type: Boolean,
+            default: false,
+        },
     },
-    setup() {
+    setup(props) {
         const toolStore = useToolStore();
+        const userStore = useUserStore();
+        const { currentFavorites } = storeToRefs(userStore);
+        const isFavorite = computed(() => currentFavorites.value.tools?.includes(props.tool.id));
         return {
             getLinkById: toolStore.getLinkById,
             getTargetById: toolStore.getTargetById,
+            isFavorite,
         };
     },
     computed: {
@@ -84,10 +106,13 @@ export default {
         },
         targetClass() {
             if (this.toolKey) {
-                return `tool-menu-item-${this.tool[this.toolKey]} title-link cursor-pointer`;
+                return `tool-menu-item-${this.tool[this.toolKey]} title-link cursor-pointer tool-link`;
             } else {
-                return `title-link cursor-pointer`;
+                return `title-link cursor-pointer tool-link`;
             }
+        },
+        showFavoriteAction() {
+            return this.showFavoriteButton && !this.isFavorite;
         },
     },
     methods: {
@@ -105,6 +130,14 @@ export default {
 
 <style scoped>
 .toolTitle {
+    display: flex;
+    align-items: flex-start;
     overflow-wrap: anywhere;
+}
+.tool-link {
+    flex: 1 1 auto;
+}
+.tool-favorite-button {
+    margin-left: 0.25rem;
 }
 </style>

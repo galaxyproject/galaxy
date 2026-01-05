@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
+import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type Ref, ref, watch } from "vue";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
-import type { Tool, ToolSection as ToolSectionType } from "@/stores/toolStore";
+import { getAppRoot } from "@/onload/loadConfig";
+import type { Tool, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import {
@@ -37,12 +39,14 @@ interface Props {
     workflow?: boolean;
     useSearchWorker?: boolean;
     showFavorites?: boolean;
+    favoritesDefault?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     workflow: false,
     useSearchWorker: true,
     showFavorites: false,
+    favoritesDefault: false,
 });
 
 const query = ref("");
@@ -53,8 +57,9 @@ const resultPanel: Ref<Record<string, Tool | ToolSectionType> | null> = ref(null
 const closestTerm: Ref<string | null> = ref(null);
 
 const toolStore = useToolStore();
+const { currentFavorites } = storeToRefs(useUserStore());
 
-const { currentPanelView, currentToolSections } = storeToRefs(toolStore);
+const { currentPanelView, currentToolSections, defaultPanelView, toolSections } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
@@ -64,20 +69,24 @@ watch(
     () => query.value,
     () => {
         queryPending.value = true;
-        if (FAVORITES_KEYS.includes(query.value)) {
-            emit("update:show-favorites", true);
-        } else {
-            emit("update:show-favorites", false);
+        if (!props.favoritesDefault) {
+            if (FAVORITES_KEYS.includes(query.value)) {
+                emit("update:show-favorites", true);
+            } else {
+                emit("update:show-favorites", false);
+            }
         }
     },
 );
 watch(
     () => props.showFavorites,
     (newValue) => {
-        if (newValue) {
-            query.value = "#favorites";
-        } else {
-            query.value = "";
+        if (!props.favoritesDefault) {
+            if (newValue) {
+                query.value = "#favorites";
+            } else {
+                query.value = "";
+            }
         }
     },
 );
@@ -115,7 +124,147 @@ const localSectionsById = computed(() => {
     ) as Record<string, Tool | ToolSectionType>;
 });
 
+const ALL_TOOLS_SECTION_ID = "all_tools";
+
+type PanelItem = Tool | ToolSectionType | ToolSectionLabel;
+
+const favoriteToolIds = computed(() => currentFavorites.value.tools || []);
+const favoriteToolIdSet = computed(() => new Set(favoriteToolIds.value));
+const favoriteResults = computed(() => results.value.filter((id) => favoriteToolIdSet.value.has(id)));
+const nonFavoriteResults = computed(() => results.value.filter((id) => !favoriteToolIdSet.value.has(id)));
+const hasMixedResults = computed(() => favoriteResults.value.length > 0 && nonFavoriteResults.value.length > 0);
+
+const toolsListHref = computed(() => `${getAppRoot()}tools/list`);
+const toolsCount = computed(() => toolsList.value.length);
+const showEmptyFavorites = computed(
+    () => props.favoritesDefault && !query.value && favoriteToolIds.value.length === 0,
+);
+
+const FAVORITES_RESULTS_SECTION_ID = "favorites_results";
+const FAVORITES_RESULTS_LABEL_ID = "favorites_results_label";
+const SEARCH_RESULTS_LABEL_ID = "search_results_label";
+
+function buildToolSection(id: string, name: string, tools: string[]): ToolSectionType {
+    return {
+        model_class: "ToolSection",
+        id,
+        name,
+        tools,
+    };
+}
+
+function buildToolLabel(id: string, text: string): ToolSectionLabel {
+    return {
+        model_class: "ToolSectionLabel",
+        id,
+        text,
+    };
+}
+
+function filterPanelByToolIds(panel: Record<string, Tool | ToolSectionType>, toolIds: Set<string>) {
+    const filtered: Record<string, Tool | ToolSectionType> = {};
+    for (const [key, item] of Object.entries(panel)) {
+        const section = item as ToolSectionType;
+        if (section.tools) {
+            const tools = section.tools.filter((toolId) => typeof toolId === "string" && toolIds.has(toolId));
+            if (tools.length > 0) {
+                filtered[key] = { ...section, tools };
+            }
+        } else if ((item as Tool).id && toolIds.has((item as Tool).id)) {
+            filtered[key] = item;
+        }
+    }
+    return filtered;
+}
+
+const defaultSectionsById = computed(() => {
+    if (!defaultPanelView.value) {
+        return null;
+    }
+    const defaultPanelSections = toolSections.value[defaultPanelView.value];
+    if (!defaultPanelSections) {
+        return null;
+    }
+    const validToolIdsInCurrentView = Object.keys(localToolsById.value);
+    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, defaultPanelSections);
+    return getValidPanelItems(
+        sectionEntries,
+        validToolIdsInCurrentView,
+        !props.workflow ? SECTION_IDS_TO_EXCLUDE : [],
+    ) as Record<string, Tool | ToolSectionType>;
+});
+
+const resultsSet = computed(() => new Set(results.value));
+const nonFavoriteResultsSet = computed(() => new Set(nonFavoriteResults.value));
+const allToolsPanel = computed(() => {
+    return {
+        [ALL_TOOLS_SECTION_ID]: {
+            model_class: "ToolSection",
+            id: ALL_TOOLS_SECTION_ID,
+            name: localize("All tools"),
+            tools: Object.keys(localToolsById.value),
+        },
+    } as Record<string, Tool | ToolSectionType>;
+});
+const searchPanelSections = computed(() => {
+    if (props.favoritesDefault) {
+        return defaultSectionsById.value || allToolsPanel.value;
+    }
+    return localSectionsById.value;
+});
+
 const toolsList = computed(() => Object.values(localToolsById.value));
+
+const flatResultsPanel = computed<Record<string, PanelItem> | null>(() => {
+    if (!hasResults.value) {
+        return null;
+    }
+    if (!hasMixedResults.value) {
+        return filterTools(localToolsById.value, results.value) as Record<string, PanelItem>;
+    }
+    const entries: Array<[string, PanelItem]> = [];
+    entries.push([FAVORITES_RESULTS_LABEL_ID, buildToolLabel(FAVORITES_RESULTS_LABEL_ID, localize("Favorites"))]);
+    for (const toolId of favoriteResults.value) {
+        const tool = localToolsById.value[toolId];
+        if (tool) {
+            entries.push([toolId, tool]);
+        }
+    }
+    entries.push([SEARCH_RESULTS_LABEL_ID, buildToolLabel(SEARCH_RESULTS_LABEL_ID, localize("Search results"))]);
+    for (const toolId of nonFavoriteResults.value) {
+        const tool = localToolsById.value[toolId];
+        if (tool) {
+            entries.push([toolId, tool]);
+        }
+    }
+    return Object.fromEntries(entries);
+});
+
+const sectionedResultsPanel = computed<Record<string, Tool | ToolSectionType> | null>(() => {
+    if (!hasResults.value) {
+        return null;
+    }
+    const basePanel =
+        props.favoritesDefault && defaultSectionsById.value ? defaultSectionsById.value : resultPanel.value;
+    if (!basePanel) {
+        return null;
+    }
+    if (!hasMixedResults.value) {
+        return props.favoritesDefault && defaultSectionsById.value
+            ? filterPanelByToolIds(basePanel, resultsSet.value)
+            : basePanel;
+    }
+    const otherResultsPanel = filterPanelByToolIds(basePanel, nonFavoriteResultsSet.value);
+    const favoritesSection = buildToolSection(
+        FAVORITES_RESULTS_SECTION_ID,
+        localize("Favorites"),
+        favoriteResults.value,
+    );
+    return {
+        [FAVORITES_RESULTS_SECTION_ID]: favoritesSection,
+        ...otherResultsPanel,
+    };
+});
 
 /**
  * If not searching or no results, we show all tools in sections (default)
@@ -123,16 +272,21 @@ const toolsList = computed(() => Object.values(localToolsById.value));
  * If we have results for search, we show tools in sections or just tools,
  * based on whether `showSections` is true or false
  */
-const localPanel: ComputedRef<Record<string, Tool | ToolSectionType> | null> = computed(() => {
+const localPanel: ComputedRef<Record<string, PanelItem> | null> = computed(() => {
+    if (props.favoritesDefault && !query.value) {
+        return filterTools(localToolsById.value, favoriteToolIds.value) as Record<string, PanelItem>;
+    }
     if (hasResults.value) {
         if (showSections.value) {
-            return resultPanel.value;
+            return sectionedResultsPanel.value || flatResultsPanel.value;
         } else {
-            return filterTools(localToolsById.value, results.value) as Record<string, Tool | ToolSectionType>;
+            return flatResultsPanel.value;
         }
-    } else {
-        return localSectionsById.value;
     }
+    if (props.favoritesDefault) {
+        return {};
+    }
+    return localSectionsById.value;
 });
 
 const buttonIcon = computed(() => (showSections.value ? faEyeSlash : faEye));
@@ -200,7 +354,7 @@ function onToggle() {
                 :current-panel-view="currentPanelView"
                 :placeholder="localize('search tools')"
                 :tools-list="toolsList"
-                :current-panel="localSectionsById"
+                :current-panel="searchPanelSections"
                 :query="query"
                 :query-pending="queryPending"
                 :use-worker="useSearchWorker"
@@ -232,13 +386,30 @@ function onToggle() {
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
-                <div v-if="localPanel" class="toolMenu">
+                <div v-if="showEmptyFavorites" class="tool-panel-empty">
+                    <BAlert variant="info" show>
+                        You haven't favorited any tools yet. Search the toolbox or use
+                        <GButton
+                            class="ml-1"
+                            size="small"
+                            color="blue"
+                            :href="toolsListHref"
+                            data-description="discover-tools">
+                            Discover Tools
+                        </GButton>
+                        to explore {{ toolsCount }} community curated tools.
+                    </BAlert>
+                </div>
+                <div v-else-if="localPanel" class="toolMenu">
                     <div v-for="(panel, key) in localPanel" :key="key">
                         <ToolSection
                             v-if="panel"
                             :category="panel || {}"
                             :query-filter="hasResults ? query : undefined"
-                            :has-filter-button="hasResults && currentPanelView === 'default'"
+                            :has-filter-button="
+                                hasResults && currentPanelView === 'default' && panel.id !== FAVORITES_RESULTS_SECTION_ID
+                            "
+                            :search-active="hasResults"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter" />
                     </div>
@@ -251,5 +422,8 @@ function onToggle() {
 <style scoped>
 .toolTitle {
     overflow-wrap: anywhere;
+}
+.tool-panel-empty {
+    padding: 0.5rem;
 }
 </style>
