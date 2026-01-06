@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<visualization name="JupyterLite Test" hidden="true">
+    <description>Test fixture for AI chat integration tests</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+        </data_source>
+    </data_sources>
+    <entry_point entry_point_type="script" src="script.js" />
+    <specs>
+        <ai_prompt>test prompt</ai_prompt>
+    </specs>
+</visualization>

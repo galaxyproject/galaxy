@@ -96,10 +96,7 @@ class VisualizationsConfigParser:
             raise ParsingException("No valid data_sources for visualization")
         returned["data_sources"] = data_sources
 
-        # TODO: this is effectively required due to param_confs.findall( 'param' )
-        # parameters spell out how to convert query string params into resources and data
-        #   that will be parsed, fetched, etc. and passed to the template
-        # list or dict? ordered or not?
+        # parameters specify which values are required for the visualization
         params = {}
         param_confs = xml_tree.find("params")
         param_elements = param_confs.findall("param") if param_confs is not None else []
@@ -107,7 +104,6 @@ class VisualizationsConfigParser:
             param = self.param_parser.parse(param_conf)
             if param:
                 params[param_conf.text] = param
-        # params are not required
         if params:
             returned["params"] = params
 

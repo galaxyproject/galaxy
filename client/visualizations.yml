@@ -47,7 +47,7 @@ igv:
     version: 0.0.23
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
-    version: 0.0.17
+    version: 0.0.28
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
