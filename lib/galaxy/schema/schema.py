@@ -2608,7 +2608,7 @@ class Creator(Model):
     )
 
 
-class Organization(Creator):
+class CreatorOrganization(Creator):
     class_: str = Field(
         "Organization",
         alias="class",
@@ -2825,7 +2825,7 @@ class WorkflowToExport(Model):
         title="UUID",
         description="Universal unique identifier of the workflow.",
     )
-    creator: Optional[list[Union[Person, Organization]]] = Field(
+    creator: Optional[list[Union[Person, CreatorOrganization]]] = Field(
         None,
         title="Creator",
         description=("Additional information about the creator (or multiple creators) of this workflow."),

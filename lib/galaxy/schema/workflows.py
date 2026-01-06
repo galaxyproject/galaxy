@@ -15,11 +15,11 @@ from pydantic import (
 
 from galaxy.schema.schema import (
     AnnotationField,
+    CreatorOrganization,
     InputDataCollectionStep,
     InputDataStep,
     InputParameterStep,
     Model,
-    Organization,
     PauseStep,
     Person,
     StoredWorkflowSummary,
@@ -222,7 +222,7 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     inputs: dict[int, WorkflowInput] = Field(
         {}, title="Inputs", description="A dictionary containing information about all the inputs of the workflow."
     )
-    creator: Optional[list[Union[Person, Organization]]] = Field(
+    creator: Optional[list[Union[Person, CreatorOrganization]]] = Field(
         None,
         title="Creator",
         description=("Additional information about the creator (or multiple creators) of this workflow."),
