@@ -2,7 +2,7 @@
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BFormCheckbox, BFormInput, BModal, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -12,6 +12,7 @@ import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { FormParameterTypes } from "@/components/Form/parameterTypes";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useConfig } from "@/composables/config";
+import { useFileSources } from "@/composables/fileSources";
 import { usePersistentToggle } from "@/composables/persistentToggle";
 import { usePanels } from "@/composables/usePanels";
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
@@ -26,6 +27,7 @@ import { invokeWorkflow } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
+import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
 import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
 import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
@@ -74,6 +76,7 @@ const formData = ref<Record<string, any>>({});
 const inputTypes = ref<Record<string, string>>({});
 const stepValidation = ref<[string, string] | null>(null);
 const sendToNewHistory = ref(props.targetHistory === "new" || props.targetHistory === "prefer_new");
+const newHistoryName = ref(props.model.name);
 const useCachedJobs = ref(props.useJobCache);
 const splitObjectStore = ref(false);
 const preferredObjectStoreId = ref<string | null>(null);
@@ -81,6 +84,18 @@ const preferredIntermediateObjectStoreId = ref<string | null>(null);
 const waitingForRequest = ref(false);
 const showRightPanel = ref<"help" | "graph" | null>(null);
 const checkInputMatching = ref(props.requestState !== undefined);
+const sendNotificationOnComplete = ref(false);
+const showExportWizard = ref(false);
+const exportCheckboxKey = ref(0);
+const exportOnCompleteConfig = ref<{
+    target_uri: string;
+    format: string;
+    include_files: boolean;
+    include_hidden: boolean;
+    include_deleted: boolean;
+} | null>(null);
+
+const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
 
 const showGraph = computed(() => showRightPanel.value === "graph");
 const showHelp = computed(() => showRightPanel.value === "help");
@@ -284,6 +299,36 @@ function updateActiveNodeId(nodeId: number | null) {
     activeNodeId.value = nodeId;
 }
 
+function onExportConfigured(config: typeof exportOnCompleteConfig.value) {
+    exportOnCompleteConfig.value = config;
+    showExportWizard.value = false;
+}
+
+function clearExportConfig() {
+    exportOnCompleteConfig.value = null;
+}
+
+function onExportWizardCancel() {
+    showExportWizard.value = false;
+    // Force checkbox to re-render and reset to unchecked state if no config was set
+    if (exportOnCompleteConfig.value === null) {
+        exportCheckboxKey.value++;
+    }
+}
+
+const exportEnabled = computed({
+    get: () => exportOnCompleteConfig.value !== null,
+    set: (value: boolean) => {
+        if (value) {
+            // User wants to enable - open wizard, don't actually enable yet
+            showExportWizard.value = true;
+        } else {
+            // User wants to disable - clear the config
+            clearExportConfig();
+        }
+    },
+});
+
 async function onExecute() {
     waitingForRequest.value = true;
 
@@ -298,6 +343,14 @@ async function onExecute() {
             inputs[inputName] = value;
         }
     }
+    const onCompleteActions: any[] = [];
+    if (sendNotificationOnComplete.value) {
+        onCompleteActions.push({ send_notification: {} });
+    }
+    if (exportOnCompleteConfig.value) {
+        onCompleteActions.push({ export_to_file_source: exportOnCompleteConfig.value });
+    }
+
     const data: Record<string, any> = {
         replacement_dict: replacementParams,
         inputs: inputs,
@@ -306,12 +359,13 @@ async function onExecute() {
         use_cached_job: useCachedJobs.value,
         require_exact_tool_versions: false,
         version: props.model.runData.version,
+        on_complete: onCompleteActions.length > 0 ? onCompleteActions : null,
     };
     if (props.landingUuid) {
         data.landing_uuid = props.landingUuid;
     }
     if (sendToNewHistory.value) {
-        data.new_history_name = props.model.name;
+        data.new_history_name = newHistoryName.value;
     } else {
         data.history_id = props.model.historyId;
     }
@@ -432,6 +486,7 @@ onBeforeMount(() => {
                             transparent
                             color="blue"
                             class="workflow-run-settings"
+                            data-test-id="workflow-run-settings-button"
                             :pressed="showRuntimeSettingsPanel"
                             @click="toggleRuntimeSettings">
                             <FontAwesomeIcon :icon="faCog" fixed-width />
@@ -440,57 +495,101 @@ onBeforeMount(() => {
                 </WorkflowNavigationTitle>
 
                 <!-- Runtime Settings Panel -->
-                <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-2 rounded-bottom">
-                    <div class="d-flex flex-wrap align-items-center">
-                        <div class="mr-4">
-                            <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-3 rounded-bottom">
+                    <!-- Send to new history -->
+                    <div class="settings-row">
+                        <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target" switch>
+                            <HelpText
+                                uri="galaxy.workflows.runtimeSettings.sendToNewHistory"
+                                text="Send results to a new history" />
+                        </BFormCheckbox>
+                        <div v-if="sendToNewHistory" class="settings-detail">
+                            <BFormInput
+                                v-model="newHistoryName"
+                                size="sm"
+                                placeholder="New history name"
+                                class="history-name-input" />
+                        </div>
+                    </div>
+
+                    <!-- Use cached jobs -->
+                    <div class="settings-row">
+                        <BFormCheckbox v-model="useCachedJobs" switch>
+                            <HelpText
+                                uri="galaxy.workflows.runtimeSettings.useCachedJobs"
+                                text="Re-use jobs with identical parameters" />
+                        </BFormCheckbox>
+                    </div>
+
+                    <!-- Send notification -->
+                    <div class="settings-row">
+                        <BFormCheckbox
+                            v-model="sendNotificationOnComplete"
+                            switch
+                            data-test-id="send-notification-checkbox">
+                            <HelpText
+                                uri="galaxy.workflows.runtimeSettings.sendNotification"
+                                text="Notify me when complete" />
+                        </BFormCheckbox>
+                    </div>
+
+                    <!-- Export on completion -->
+                    <div v-if="hasWritableFileSources" class="settings-row">
+                        <div class="d-flex align-items-center">
+                            <BFormCheckbox :key="exportCheckboxKey" v-model="exportEnabled" switch>
                                 <HelpText
-                                    uri="galaxy.workflows.runtimeSettings.sendToNewHistory"
-                                    text="Send results to a new history" />
+                                    uri="galaxy.workflows.runtimeSettings.exportOnComplete"
+                                    text="Export results when complete" />
                             </BFormCheckbox>
                         </div>
-                        <div class="mr-4">
-                            <BFormCheckbox
-                                v-model="useCachedJobs"
-                                title="This may skip executing jobs that you have already run.">
+                        <div v-if="exportOnCompleteConfig" class="settings-detail">
+                            <span class="export-summary">
+                                <span class="text-muted">
+                                    {{ exportOnCompleteConfig.target_uri.split("/").pop() }}
+                                </span>
+                                <GButton
+                                    tooltip
+                                    transparent
+                                    color="blue"
+                                    size="small"
+                                    title="Edit export configuration"
+                                    @click="showExportWizard = true">
+                                    <span class="fa fa-edit" />
+                                </GButton>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Storage options -->
+                    <template v-if="isConfigLoaded && config.object_store_allows_id_selection">
+                        <div class="settings-row">
+                            <BFormCheckbox v-model="splitObjectStore" switch>
                                 <HelpText
-                                    uri="galaxy.workflows.runtimeSettings.useCachedJobs"
-                                    text="Attempt to re-use jobs with identical parameters?" />
+                                    uri="galaxy.workflows.runtimeSettings.splitObjectStore"
+                                    text="Send outputs and intermediate to different storage" />
                             </BFormCheckbox>
                         </div>
-
-                        <template v-if="isConfigLoaded && config.object_store_allows_id_selection">
-                            <div class="mr-4">
-                                <BFormCheckbox v-model="splitObjectStore">
-                                    <HelpText
-                                        uri="galaxy.workflows.runtimeSettings.splitObjectStore"
-                                        text="Send outputs and intermediate to different Galaxy storage?" />
-                                </BFormCheckbox>
-                            </div>
-                            <div class="mr-4">
-                                <WorkflowStorageConfiguration
-                                    :split-object-store="splitObjectStore"
-                                    :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                                    :invocation-intermediate-preferred-object-store-id="
-                                        preferredIntermediateObjectStoreId
-                                    "
-                                    @updated="onStorageUpdate">
-                                </WorkflowStorageConfiguration>
-                            </div>
-                        </template>
-
-                        <div class="mr-4">
-                            <GButton
-                                tooltip
-                                transparent
-                                color="blue"
-                                size="small"
-                                class="workflow-expand-form-link"
-                                title="Switch to the legacy workflow form"
-                                @click="$emit('showAdvanced')">
-                                Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
-                            </GButton>
+                        <div class="settings-row">
+                            <WorkflowStorageConfiguration
+                                :split-object-store="splitObjectStore"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
+                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                @updated="onStorageUpdate" />
                         </div>
+                    </template>
+
+                    <!-- Expanded form link -->
+                    <div class="settings-row mt-2 pt-2 border-top">
+                        <GButton
+                            tooltip
+                            transparent
+                            color="blue"
+                            size="small"
+                            class="workflow-expand-form-link"
+                            title="Switch to the legacy workflow form"
+                            @click="$emit('showAdvanced')">
+                            Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
+                        </GButton>
                     </div>
                 </div>
             </div>
@@ -544,6 +643,18 @@ onBeforeMount(() => {
                 </div>
             </div>
         </div>
+
+        <BModal
+            v-model="showExportWizard"
+            title="Configure Export on Completion"
+            size="lg"
+            hide-footer
+            @hidden="onExportWizardCancel">
+            <ExportOnCompleteWizard
+                :initial-config="exportOnCompleteConfig || undefined"
+                @configured="onExportConfigured"
+                @cancel="onExportWizardCancel" />
+        </BModal>
     </div>
 </template>
 
@@ -555,10 +666,37 @@ onBeforeMount(() => {
     border-left: 1px solid $gray-200;
     border-right: 1px solid $gray-200;
     border-bottom: 1px solid $gray-200;
-    transition: all 0.2s ease-in-out;
-    opacity: 1;
-    transform-origin: top;
     animation: slideDown 0.2s ease-in-out;
+}
+
+.settings-row {
+    padding: 0.4rem 0;
+    position: relative;
+
+    &:first-child {
+        padding-top: 0;
+    }
+
+    // Ensure popovers from this row appear above subsequent rows
+    &:hover {
+        z-index: 10;
+    }
+}
+
+.settings-detail {
+    margin-left: 2.5rem;
+    margin-top: 0.25rem;
+}
+
+.history-name-input {
+    max-width: 300px;
+}
+
+.export-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9em;
 }
 
 @keyframes slideDown {
@@ -570,7 +708,7 @@ onBeforeMount(() => {
     to {
         opacity: 1;
         transform: scaleY(1);
-        max-height: 200px;
+        max-height: 400px;
     }
 }
 </style>

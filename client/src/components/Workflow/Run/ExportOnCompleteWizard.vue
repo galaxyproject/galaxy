@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { BButton, BCard, BCardGroup, BCardTitle, BFormCheckbox, BFormGroup } from "bootstrap-vue";
-import { computed, reactive } from "vue";
+import { BButton, BCard, BCardGroup, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
+import { computed, ref } from "vue";
 
+import type { FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { borderVariant } from "@/components/Common/Wizard/utils";
 import { useFileSources } from "@/composables/fileSources";
 import { useMarkdown } from "@/composables/markdown";
+import localize from "@/utils/localization";
 
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -13,7 +15,7 @@ import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue"
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-interface ExportConfig {
+export interface ExportOnCompleteConfig {
     target_uri: string;
     format: string;
     include_files: boolean;
@@ -28,33 +30,28 @@ interface ExportFormat {
 }
 
 interface Props {
-    initialConfig?: ExportConfig;
+    initialConfig?: Partial<ExportOnCompleteConfig> & { fileName?: string; directory?: string };
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    initialConfig: () => ({
-        target_uri: "",
-        format: "rocrate.zip",
-        include_files: true,
-        include_hidden: false,
-        include_deleted: false,
-    }),
+    initialConfig: () => ({}),
 });
 
 const emit = defineEmits<{
-    (e: "configured", config: ExportConfig): void;
+    (e: "configured", config: ExportOnCompleteConfig): void;
     (e: "cancel"): void;
 }>();
 
-const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
+const defaultExportFilterOptions: FilterFileSourcesOptions = { exclude: ["rdm"] };
+const { hasWritable: hasWritableFileSources } = useFileSources(defaultExportFilterOptions);
 
-const exportData = reactive<ExportConfig>({
-    target_uri: props.initialConfig.target_uri || "",
-    format: props.initialConfig.format || "rocrate.zip",
-    include_files: props.initialConfig.include_files ?? true,
-    include_hidden: props.initialConfig.include_hidden ?? false,
-    include_deleted: props.initialConfig.include_deleted ?? false,
-});
+// Internal state for the wizard UI
+const directory = ref(props.initialConfig.directory || "");
+const fileName = ref(props.initialConfig.fileName || "galaxy-workflow-export");
+const format = ref(props.initialConfig.format || "rocrate.zip");
+const includeFiles = ref(props.initialConfig.include_files ?? true);
+const includeHidden = ref(props.initialConfig.include_hidden ?? false);
+const includeDeleted = ref(props.initialConfig.include_deleted ?? false);
 
 const exportFormats: ExportFormat[] = [
     {
@@ -73,7 +70,10 @@ This is a simple format suitable for backup and transfer.`,
     },
 ];
 
-const selectedFormat = computed(() => exportFormats.find((f) => f.id === exportData.format) || exportFormats[0]);
+const selectedFormat = computed(() => exportFormats.find((f) => f.id === format.value) || exportFormats[0]);
+
+const directoryDescription = computed(() => localize("Select a 'repository' to export the workflow results to."));
+const nameDescription = computed(() => localize("Give the exported file a name."));
 
 const wizard = useWizard({
     "select-format": {
@@ -85,7 +85,7 @@ const wizard = useWizard({
     "select-destination": {
         label: "Select destination",
         instructions: "Choose where to export the workflow results when it completes.",
-        isValid: () => Boolean(exportData.target_uri),
+        isValid: () => Boolean(directory.value) && Boolean(fileName.value),
         isSkippable: () => false,
     },
     "configure-options": {
@@ -97,7 +97,17 @@ const wizard = useWizard({
 });
 
 function onSubmit() {
-    emit("configured", { ...exportData });
+    // Construct full target_uri from directory + filename + format
+    const dir = directory.value.endsWith("/") ? directory.value : `${directory.value}/`;
+    const fullTargetUri = `${dir}${fileName.value}.${format.value}`;
+
+    emit("configured", {
+        target_uri: fullTargetUri,
+        format: format.value,
+        include_files: includeFiles.value,
+        include_hidden: includeHidden.value,
+        include_deleted: includeDeleted.value,
+    });
 }
 
 function onCancel() {
@@ -116,16 +126,16 @@ function onCancel() {
             <div v-if="wizard.isCurrent('select-format')">
                 <BCardGroup deck>
                     <BCard
-                        v-for="format in exportFormats"
-                        :key="format.id"
-                        :data-export-format="format.id"
+                        v-for="fmt in exportFormats"
+                        :key="fmt.id"
+                        :data-export-format="fmt.id"
                         class="wizard-selection-card"
-                        :border-variant="borderVariant(exportData.format === format.id)"
-                        @click="exportData.format = format.id">
+                        :border-variant="borderVariant(format === fmt.id)"
+                        @click="format = fmt.id">
                         <BCardTitle>
-                            <b>{{ format.title }}</b>
+                            <b>{{ fmt.title }}</b>
                         </BCardTitle>
-                        <div v-html="renderMarkdown(format.markdownDescription)" />
+                        <div v-html="renderMarkdown(fmt.markdownDescription)" />
                     </BCard>
                 </BCardGroup>
             </div>
@@ -134,33 +144,46 @@ function onCancel() {
                 <p v-if="!hasWritableFileSources" class="text-warning">
                     No writable file sources are configured. Please contact your administrator.
                 </p>
-                <BFormGroup
-                    v-else
-                    id="fieldset-directory"
-                    label="Export destination"
-                    label-for="directory"
-                    description="Select a remote storage location to export results to when the workflow completes.">
-                    <FilesInput
-                        id="directory"
-                        v-model="exportData.target_uri"
-                        mode="directory"
-                        :require-writable="true"
-                        :filter-options="{ exclude: ['rdm'] }"
-                        data-test-id="export-destination-input" />
-                </BFormGroup>
+                <template v-else>
+                    <BFormGroup
+                        id="fieldset-directory"
+                        label-for="directory"
+                        :description="directoryDescription"
+                        class="mt-3">
+                        <FilesInput
+                            id="directory"
+                            v-model="directory"
+                            mode="directory"
+                            :require-writable="true"
+                            :filter-options="defaultExportFilterOptions"
+                            data-test-id="export-destination-input" />
+                    </BFormGroup>
+
+                    <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
+                        <div class="d-flex align-items-center">
+                            <BFormInput
+                                id="name"
+                                v-model="fileName"
+                                placeholder="Name"
+                                required
+                                data-test-id="export-file-name-input" />
+                            <span class="ml-2 text-muted">.{{ format }}</span>
+                        </div>
+                    </BFormGroup>
+                </template>
             </div>
 
             <div v-if="wizard.isCurrent('configure-options')">
                 <BFormGroup label="Dataset files included in the export:">
-                    <BFormCheckbox v-model="exportData.include_files" switch data-test-id="include-files-checkbox">
+                    <BFormCheckbox v-model="includeFiles" switch data-test-id="include-files-checkbox">
                         Include Active Files
                     </BFormCheckbox>
 
-                    <BFormCheckbox v-model="exportData.include_deleted" switch data-test-id="include-deleted-checkbox">
+                    <BFormCheckbox v-model="includeDeleted" switch data-test-id="include-deleted-checkbox">
                         Include Deleted (not purged)
                     </BFormCheckbox>
 
-                    <BFormCheckbox v-model="exportData.include_hidden" switch data-test-id="include-hidden-checkbox">
+                    <BFormCheckbox v-model="includeHidden" switch data-test-id="include-hidden-checkbox">
                         Include Hidden
                     </BFormCheckbox>
                 </BFormGroup>
@@ -169,19 +192,18 @@ function onCancel() {
 
                 <div class="summary">
                     <h5>Summary</h5>
-                    <div>
-                        <strong>Format:</strong> {{ selectedFormat?.title }}
-                    </div>
+                    <div><strong>Format:</strong> {{ selectedFormat?.title }}</div>
                     <div>
                         <strong>Destination:</strong>
-                        <FileSourceNameSpan v-if="exportData.target_uri" :uri="exportData.target_uri" class="text-primary" />
+                        <FileSourceNameSpan v-if="directory" :uri="directory" class="text-primary" />
                         <span v-else class="text-muted">Not selected</span>
                     </div>
+                    <div v-if="fileName"><strong>File name:</strong> {{ fileName }}.{{ format }}</div>
                     <div>
                         <strong>Options:</strong>
-                        <span v-if="exportData.include_files">Include files</span>
-                        <span v-if="exportData.include_hidden">, Include hidden</span>
-                        <span v-if="exportData.include_deleted">, Include deleted</span>
+                        <span v-if="includeFiles">Include files</span>
+                        <span v-if="includeHidden">, Include hidden</span>
+                        <span v-if="includeDeleted">, Include deleted</span>
                     </div>
                 </div>
             </div>

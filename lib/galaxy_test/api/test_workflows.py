@@ -3432,7 +3432,9 @@ test_data:
 
             # Wait for the workflow to finish scheduling and ensure both the invocation
             # and the history are in valid states.
-            invocation_scheduled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, ("scheduled", "completed"))
+            invocation_scheduled = self._wait_for_invocation_state(
+                uploaded_workflow_id, invocation_id, ("scheduled", "completed")
+            )
             assert invocation_scheduled, "Workflow state is not scheduled or completed..."
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
@@ -5102,7 +5104,9 @@ input1:
 
             # Wait for the workflow to finish scheduling and ensure both the invocation
             # and the history are in valid states.
-            invocation_scheduled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, ("scheduled", "completed"))
+            invocation_scheduled = self._wait_for_invocation_state(
+                uploaded_workflow_id, invocation_id, ("scheduled", "completed")
+            )
             assert invocation_scheduled, "Workflow state is not scheduled or completed..."
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
