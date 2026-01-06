@@ -4,7 +4,6 @@ Test classes that should be shared between test scenarios.
 
 import os
 import shutil
-from tempfile import mkdtemp
 from typing import ClassVar
 
 from galaxy_test.driver.driver_util import GalaxyTestDriver
@@ -79,8 +78,7 @@ class PosixFileSourceSetup:
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        temp_dir = os.path.realpath(mkdtemp())
-        cls._test_driver.temp_directories.append(temp_dir)
+        temp_dir = cls._test_driver.mkdtemp()
         cls.root_dir = os.path.join(temp_dir, "root")
 
         file_sources_config_file = create_file_source_config_file_on(

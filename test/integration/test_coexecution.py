@@ -246,12 +246,6 @@ class TestCoexecution(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases)
         super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        # realpath for docker deployed in a VM on Mac, also done in driver_util.
-        cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
-        super().setUpClass()
-
 
 @integration_util.skip_unless_kubernetes()
 class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
@@ -260,6 +254,7 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
+        cls.jobs_directory = os.path.realpath(cls._test_driver.mkdtemp())
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         cls.job_config_file = job_config(CONTAINERIZED_TEMPLATE, cls.jobs_directory)
