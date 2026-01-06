@@ -57,11 +57,13 @@ jobs:
       - name: Install dependencies
         run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
       - name: Build Frontend
         run: |
           . .venv/bin/activate
           cd lib/tool_shed/webapp/frontend
-          yarn
+          pnpm install --frozen-lockfile
           make client
         working-directory: 'galaxy root'
       - name: Install playwright
