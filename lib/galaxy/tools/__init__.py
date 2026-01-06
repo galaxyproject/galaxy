@@ -18,6 +18,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -120,9 +121,9 @@ from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
-    LegacyVersion,
     parse_version,
 )
+from galaxy.tool_util.version_util import AnyVersionT
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
     HelpContent,
@@ -377,8 +378,20 @@ IMPLICITLY_REQUIRED_TOOL_FILES: dict[str, dict] = {
 
 
 class safe_update(NamedTuple):
-    min_version: Union[LegacyVersion, Version]
-    current_version: Union[LegacyVersion, Version]
+    min_version: AnyVersionT
+    current_version: AnyVersionT
+
+
+class RawToolSource(NamedTuple):
+    """Compact representation of a tool's raw source for transport/serialization.
+
+    Attributes:
+        raw_tool_source: String form of the tool source (typically XML or YAML).
+        tool_source_class: The class name of the ToolSource implementation (e.g., 'XmlToolSource').
+    """
+
+    raw_tool_source: str
+    tool_source_class: str
 
 
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
@@ -424,16 +437,17 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
+    ToolClass: Optional[Type[Tool]] = None
     if tool_source.parse_class() == "GalaxyUserTool":
-        return UserDefinedTool(config_file, tool_source, app, **kwds)
-    if (tool_module := tool_source.parse_tool_module()) is not None:
+        ToolClass = UserDefinedTool
+    elif (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
         ToolClass = getattr(mod, cls)
         assert issubclass(ToolClass, Tool)
     elif tool_type := tool_source.parse_tool_type():
         ToolClass = tool_types.get(tool_type)
-        if not ToolClass:
+        if ToolClass is None:
             if tool_type == "cwl":
                 raise ToolLoadError("Runtime support for CWL tools is not implemented currently")
             else:
@@ -1742,6 +1756,16 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         """
         self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
 
+    def to_raw_tool_source(self) -> RawToolSource:
+        """Return a compact representation of this tool's source for external processing.
+
+        Provides both the raw tool source string and the concrete ToolSource class name.
+        """
+        return RawToolSource(
+            raw_tool_source=self.tool_source.to_string(),
+            tool_source_class=type(self.tool_source).__name__,
+        )
+
     # TODO: Include the tool's name in any parsing warnings.
     def parse_stdio(self, tool_source: ToolSource):
         """
@@ -2434,6 +2458,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             rval = self._execute(
                 trans,
                 incoming=execution_slice.param_combination,
+                validated_parameters=execution_slice.validated_param_combination,
                 history=history,
                 rerun_remap_job_id=rerun_remap_job_id,
                 execution_cache=execution_cache,
@@ -2551,6 +2576,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self,
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        validated_parameters: Optional[JobInternalToolState] = None,
         history: Optional[History] = None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,

@@ -16,12 +16,14 @@ from typing_extensions import Literal
 
 from galaxy.tool_util_models.parameters import (
     create_job_internal_model,
+    create_job_runtime_model,
     create_landing_request_internal_model,
     create_landing_request_model,
     create_relaxed_request_model,
     create_request_internal_dereferenced_model,
     create_request_internal_model,
     create_request_model,
+    create_test_case_json_model,
     create_test_case_model,
     create_workflow_step_linked_model,
     create_workflow_step_model,
@@ -130,13 +132,28 @@ class JobInternalToolState(ToolState):
         return create_job_internal_model(parameters, name)
 
 
+class JobRuntimeToolState(ToolState):
+    state_representation: Literal["job_runtime"] = "job_runtime"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+        return create_job_runtime_model(parameters, name)
+
+
 class TestCaseToolState(ToolState):
     state_representation: Literal["test_case_xml"] = "test_case_xml"
 
     @classmethod
     def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
-        # implement a test case model...
         return create_test_case_model(parameters, name)
+
+
+class TestCaseJsonToolState(ToolState):
+    state_representation: Literal["test_case_json"] = "test_case_json"
+
+    @classmethod
+    def _parameter_model_for(cls, parameters: ToolParameterBundle, name: Optional[str] = None) -> Type[BaseModel]:
+        return create_test_case_json_model(parameters, name)
 
 
 class WorkflowStepToolState(ToolState):

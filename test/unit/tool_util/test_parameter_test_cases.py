@@ -25,7 +25,10 @@ from galaxy.tool_util.parser.interface import (
     ToolSource,
     ToolSourceTest,
 )
-from galaxy.tool_util.unittest_utils import functional_test_tool_directory
+from galaxy.tool_util.unittest_utils import (
+    functional_test_tool_directory,
+    functional_test_tool_source,
+)
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util_models.tool_source import (
     JsonTestCollectionDefDict,
@@ -138,7 +141,7 @@ def test_validate_framework_test_tools():
                 # tool conf (toolbox) files or sample datatypes
                 continue
             tool_path = os.path.join(test_directory, tool_name)
-            if not tool_path.endswith(".xml") or os.path.isdir(tool_path):
+            if not (tool_path.endswith(".xml") or tool_path.endswith(".yml")) or os.path.isdir(tool_path):
                 continue
 
             try:
@@ -254,6 +257,18 @@ def test_test_case_state_conversion():
     ]
     dict_verify_each(state.tool_state.input_state, expectations)
 
+    index = 0
+    tool_source = tool_source_for("simple_constructs_y")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[index])
+    expectations = [
+        (["booltest"], True),
+        (["simp_file", "path"], "simple_line.txt"),
+        (["more_files", 0, "nestinput", "path"], "simple_line_alternative.txt"),
+    ]
+    print(state.tool_state.input_state)
+    dict_verify_each(state.tool_state.input_state, expectations)
+
 
 def test_convert_to_requests():
     tools = [
@@ -288,6 +303,11 @@ def test_convert_to_requests():
 
 def _validate_path(tool_path: str):
     tool_source = get_tool_source(tool_path)
+
+    tool_source_class = type(tool_source).__name__
+    raw_tool_source = tool_source.to_string()
+    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+
     tool_id = tool_source.parse_id()
     model_name = f"{tool_id} (test case model)"
     parsed_tool = parse_tool(tool_source)
@@ -311,8 +331,4 @@ def case_state_for(tool_source: ToolSource, test_case: ToolSourceTest) -> TestCa
     return case_state(test_case, parsed_tool.inputs, profile)
 
 
-def tool_source_for(tool_name: str) -> ToolSource:
-    test_tool_directory = functional_test_tool_directory()
-    tool_path = os.path.join(test_tool_directory, f"{tool_name}.xml")
-    tool_source = get_tool_source(tool_path)
-    return tool_source
+tool_source_for = functional_test_tool_source

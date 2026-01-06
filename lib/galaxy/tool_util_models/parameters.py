@@ -48,7 +48,7 @@ from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
     expand_annotation,
-    is_optional,
+    is_optional as is_python_type_optional,
     list_type,
     optional,
     optional_if_needed,
@@ -85,6 +85,7 @@ StateRepresentationT = Literal[
     "job_runtime",
     "job_internal",
     "test_case_xml",
+    "test_case_json",
     "workflow_step",
     "workflow_step_linked",
 ]
@@ -164,7 +165,7 @@ def dynamic_model_information_from_py_type(
     if requires_value is None:
         requires_value = param_model.request_requires_value
     initialize = ... if requires_value else None
-    py_type_is_optional = is_optional(py_type)
+    py_type_is_optional = is_python_type_optional(py_type)
     validators = validators or {}
     if not py_type_is_optional and not requires_value:
         validators["not_null"] = field_validator(name)(Validators.validate_not_none)
@@ -588,14 +589,14 @@ class DataInternalJson(StrictModel):
     ]
     location: str
     path: Annotated[str, Field(description="The absolute path to the file on disk.")]
-    listing: Optional[List[str]]  # Should be recursive
+    listing: Optional[List[str]] = None  # Should be recursive
     nameroot: Annotated[Optional[str], Field(description="The basename root such that nameroot + nameext == basename")]
     nameext: Annotated[
         Optional[str], Field(description="The basename extension such that nameroot + nameext == basename")
     ]
     format: Annotated[str, Field(description="The datatype extension of the file, e.g. 'txt', 'bam', 'fastq.gz'.")]
     # "secondaryFiles": List[Any],
-    checksum: Optional[str]
+    checksum: Optional[str] = None
     size: int
 
 
@@ -630,9 +631,10 @@ DataRequestInternal: Type = cast(
         Field(discriminator=MultiDataInstanceDiscriminator),
     ],
 )
+DataRequestInternalDereferencedT = Union[DataRequestInternalHda, DataRequestInternalLdda]
 DataRequestInternalDereferenced: Type = cast(
     Type,
-    Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")],
+    Annotated[DataRequestInternalDereferencedT, Field(discriminator="src")],
 )
 DataJobInternal = DataRequestInternalDereferenced
 
@@ -747,6 +749,8 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif state_representation == "job_runtime":
             return dynamic_model_information_from_py_type(self, self.py_type_internal_json, requires_value=True)
         elif state_representation == "test_case_xml":
+            return dynamic_model_information_from_py_type(self, self.py_type_test_case)
+        elif state_representation == "test_case_json":
             return dynamic_model_information_from_py_type(self, self.py_type_test_case)
         elif state_representation == "workflow_step":
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
@@ -916,6 +920,8 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
         elif state_representation == "test_case_xml":
+            return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
+        elif state_representation == "test_case_json":
             return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
         else:
             raise NotImplementedError(
@@ -1158,6 +1164,10 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             if self.multiple:
                 validators = {"from_string": field_validator(self.name, mode="before")(SelectParameterModel.split_str)}
             py_type = optional_if_needed(py_type, self.optional)
+        elif state_representation == "test_case_json":
+            # in JSON test case representation, lists are already validated as lists (no string splitting)
+            py_type = self.py_type_if_required(allow_connections=False)
+            py_type = optional_if_needed(py_type, self.optional)
         elif state_representation in ("job_internal", "job_runtime"):
             requires_value = True
             py_type = self.py_type
@@ -1288,6 +1298,9 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type_test_case_xml if state_representation == "test_case_xml" else self.py_type
+        if state_representation == "test_case_json":
+            # JSON test cases use the normal type (not string-based)
+            py_type = self.py_type
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
@@ -1382,6 +1395,12 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
             requires_value = self.request_requires_value
             return dynamic_model_information_from_py_type(
                 self, self.py_type, validators=validators, requires_value=requires_value
+            )
+        elif state_representation == "test_case_json":
+            # JSON test cases accept lists directly (no string splitting)
+            requires_value = self.request_requires_value
+            return dynamic_model_information_from_py_type(
+                self, self.py_type, validators={}, requires_value=requires_value
             )
         else:
             requires_value = self.request_requires_value
@@ -1845,6 +1864,14 @@ RepeatParameterModel.model_rebuild()
 CwlUnionParameterModel.model_rebuild()
 
 
+def is_optional(tool_parameter: ToolParameterT):
+    if isinstance(tool_parameter, BaseGalaxyToolParameterModelDefinition):
+        return tool_parameter.optional
+    else:
+        # refine CWL logic in CWL branch...
+        return False
+
+
 class ToolParameterBundle(Protocol):
     """An object having a dictionary of input models (i.e. a 'Tool')"""
 
@@ -1891,6 +1918,7 @@ create_landing_request_internal_model = create_model_factory("landing_request_in
 create_job_internal_model = create_model_factory("job_internal")
 create_job_runtime_model = create_model_factory("job_runtime")
 create_test_case_model = create_model_factory("test_case_xml")
+create_test_case_json_model = create_model_factory("test_case_json")
 create_workflow_step_model = create_model_factory("workflow_step")
 create_workflow_step_linked_model = create_model_factory("workflow_step_linked")
 
