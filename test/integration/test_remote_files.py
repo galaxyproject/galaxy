@@ -1,7 +1,6 @@
 import operator
 import os
 import shutil
-from tempfile import mkdtemp
 from typing import ClassVar
 from unittest import SkipTest
 from urllib.parse import urlparse
@@ -37,8 +36,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        root = os.path.realpath(mkdtemp())
-        cls._test_driver.temp_directories.append(root)
+        root = os.path.realpath(cls._test_driver.mkdtemp())
         cls.root = root
         cls.library_dir = os.path.join(root, "library")
         cls.user_library_dir = os.path.join(root, "user_library")
