@@ -171,7 +171,11 @@ describe("ToolPanel", () => {
                 // Test: check if the panel header now has an icon and a changed name
                 const currentViewType = value.view_type as keyof typeof types_to_icons;
                 const panelViewIcon = wrapper.find("[data-description='panel view header icon']");
-                expect(panelViewIcon.attributes("data-icon")).toEqual(types_to_icons[currentViewType].iconName);
+                if (key === "my_panel") {
+                    expect(panelViewIcon.exists()).toBe(false);
+                } else {
+                    expect(panelViewIcon.attributes("data-icon")).toEqual(types_to_icons[currentViewType].iconName);
+                }
                 expect(wrapper.find("#toolbox-heading").text()).toBe(value!.name);
             } else {
                 // Test: check if the default panel view is already selected, and no icon
@@ -219,5 +223,13 @@ describe("ToolPanel", () => {
         await wrapper.setProps({ workflow: true });
 
         expect(wrapper.find('[data-description="Discover Tools button"]').exists()).toBe(false);
+    });
+
+    it("shows the tools count on the discover tools button", async () => {
+        const wrapper = await createWrapper();
+        const count = toolsList.length;
+        const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
+        const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
+        expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
     });
 });

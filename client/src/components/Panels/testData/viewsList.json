@@ -74,7 +74,7 @@
     "my_panel": {
         "id": "my_panel",
         "model_class": "StaticToolPanelView",
-        "name": "My panel",
+        "name": "My Tools",
         "description": "Search all tools and view your favorite tools.",
         "view_type": "favorites",
         "searchable": true

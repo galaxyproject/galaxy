@@ -9,6 +9,7 @@ import { computed, ref } from "vue";
 import { type Panel, useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 
+import { MY_PANEL_VIEW_ID, MY_PANEL_VIEW_NAME } from "../panelViews";
 import { types_to_icons } from "../utilities";
 
 import PanelViewMenuItem from "./PanelViewMenuItem.vue";
@@ -36,6 +37,9 @@ const { currentPanelView, loading, panels } = storeToRefs(toolStore);
 const panelName = ref("");
 
 const defaultPanelView = computed(() => panels.value["default"] || Object.values(panels.value)[0]);
+const currentPanel = computed(() => panels.value[currentPanelView.value]);
+const isFavoritesView = computed(() => currentPanel.value?.view_type === "favorites");
+const isMyToolsView = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
 
 const panelIcon = computed<IconDefinition | null>(() => {
     if (
@@ -59,12 +63,16 @@ const styleClasses = computed(() => {
 const toolPanelHeader = computed(() => {
     if (loading.value && panelName.value) {
         return localize(panelName.value);
-    } else if (currentPanelView.value !== "default" && panels.value && panels.value[currentPanelView.value]?.name) {
-        return localize(panels.value[currentPanelView.value]?.name);
+    } else if (currentPanelView.value !== "default" && panels.value && currentPanel.value?.name) {
+        const name = currentPanel.value.id === MY_PANEL_VIEW_ID ? MY_PANEL_VIEW_NAME : currentPanel.value.name;
+        return localize(name);
     } else {
         return localize("Tools");
     }
 });
+
+const headingClass = computed(() => (currentPanelView.value !== "default" && !isMyToolsView.value ? "font-italic" : ""));
+const showPanelIcon = computed(() => !!panelIcon.value && !loading.value && !isMyToolsView.value);
 
 const groupedPanelViews = computed(() => {
     const groups = [];
@@ -105,7 +113,7 @@ function panelViewsOfType(panelViewType: string) {
 }
 
 async function updatePanelView(panel: Panel) {
-    panelName.value = panel.name || "";
+    panelName.value = panel.id === MY_PANEL_VIEW_ID ? MY_PANEL_VIEW_NAME : panel.name || "";
     await toolStore.setPanel(panel.id);
     panelName.value = "";
 }
@@ -131,13 +139,13 @@ async function updatePanelView(panel: Panel) {
             <div class="d-flex panel-view-selector justify-content-between flex-gapx-1">
                 <div>
                     <FontAwesomeIcon
-                        v-if="panelIcon && !loading"
+                        v-if="showPanelIcon && !isFavoritesView"
                         class="mr-1"
                         :icon="panelIcon"
                         data-description="panel view header icon" />
                     <Heading
                         id="toolbox-heading"
-                        :class="toolPanelHeader !== 'Tools' && 'font-italic'"
+                        :class="headingClass"
                         h2
                         inline
                         size="sm">
@@ -146,6 +154,11 @@ async function updatePanelView(panel: Panel) {
                         </span>
                         <span v-else>{{ toolPanelHeader }}</span>
                     </Heading>
+                    <FontAwesomeIcon
+                        v-if="showPanelIcon && isFavoritesView"
+                        class="ml-1"
+                        :icon="panelIcon"
+                        data-description="panel view header icon" />
                 </div>
                 <div class="panel-header-buttons">
                     <FontAwesomeIcon :icon="faCaretDown" />

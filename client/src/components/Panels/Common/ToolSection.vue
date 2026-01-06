@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFilter } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronRight, faFilter } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -84,6 +84,7 @@ const title = computed(() => props.category.description || undefined);
 const links = computed(() => toolSection.value.links || {});
 
 const opened = ref(props.expanded || checkFilter());
+const sectionToggleIcon = computed(() => (opened.value ? faChevronDown : faChevronRight));
 
 const sortedElements = computed(() => {
     // If this.config.sortTools is true, sort the tools alphabetically
@@ -166,26 +167,33 @@ function toggleMenu(nextState = !opened.value) {
     <div v-if="isSection && hasElements" class="tool-panel-section">
         <div
             v-b-tooltip.topright.hover.noninteractive
-            :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
+            :class="[
+                'toolSectionTitle',
+                `tool-menu-section-${sectionName}`,
+                'tool-panel-divider',
+            ]"
             :title="title">
             <a
-                class="title-link d-flex justify-content-between align-items-center"
+                class="title-link tool-panel-divider-link"
                 href="javascript:void(0)"
+                role="button"
+                :aria-expanded="opened"
                 @click="toggleMenu()">
-                <div>
+                <span class="tool-panel-divider-text">
+                    <FontAwesomeIcon :icon="sectionToggleIcon" class="tool-panel-divider-toggle" />
                     <span class="name">
                         {{ name }}
                     </span>
                     <ToolPanelLinks :links="links" />
-                </div>
-                <button
-                    v-if="isSection && props.hasFilterButton"
-                    v-b-tooltip.hover.noninteractive.bottom
-                    title="Show full section"
-                    class="inline-icon-button"
-                    @click.stop="emit('onFilter', `section:${toolSection.name}`)">
-                    <FontAwesomeIcon :icon="faFilter" />
-                </button>
+                    <button
+                        v-if="isSection && props.hasFilterButton"
+                        v-b-tooltip.hover.noninteractive.bottom
+                        title="Show full section"
+                        class="inline-icon-button"
+                        @click.stop="emit('onFilter', `section:${toolSection.name}`)">
+                        <FontAwesomeIcon :icon="faFilter" />
+                    </button>
+                </span>
             </a>
         </div>
         <transition name="slide">
@@ -238,8 +246,8 @@ function toggleMenu(nextState = !opened.value) {
     font-size: 75%;
     padding: 0em 0.5em;
 }
-.tool-panel-label {
-    background: darken($panel-bg-color, 5%);
+
+.tool-panel-label:not(.tool-panel-divider) {
     border-left: 0.25rem solid darken($panel-bg-color, 25%);
     font-size: $h5-font-size;
     font-weight: 600;
@@ -249,11 +257,15 @@ function toggleMenu(nextState = !opened.value) {
     text-transform: uppercase;
 }
 
-.tool-panel-section .tool-panel-label {
+.tool-panel-section .tool-panel-label:not(.tool-panel-divider) {
     /* labels within subsections */
     margin-left: 1.5rem;
     padding-top: 0.125rem;
     padding-bottom: 0.125rem;
+}
+
+.tool-panel-section .tool-panel-label.tool-panel-divider {
+    margin-left: 1.5rem;
 }
 
 .slide-enter-active {
