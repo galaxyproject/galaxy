@@ -61,3 +61,32 @@ class TestToolDescribingTours(SeleniumTestCase):
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
         self.screenshot("tool_describing_tour_3_after_execute")
+
+    @selenium_test
+    def test_start_tour_with_query_parameter(self):
+        """Ensure start-tour query parameter auto-starts a tool tour."""
+        tool_id = "md5sum"
+
+        self.get(f"?tool_id={tool_id}&start-tour=true")
+
+        popover_component = self.components.tour.popover._
+        popover_component.wait_for_visible()
+
+        title = popover_component.title.wait_for_visible().text
+        assert title == "md5sum Tour", title
+
+        # Ensure any uploaded datasets from the generated tour are ready
+        self.history_panel_wait_for_hid_ok(1)
+
+    @selenium_test
+    def test_start_tour_with_query_parameter_no_value(self):
+        """Ensure start-tour works when passed without a value."""
+        tool_id = "md5sum"
+
+        self.get(f"?tool_id={tool_id}&start-tour")
+
+        popover_component = self.components.tour.popover._
+        popover_component.wait_for_visible()
+
+        title = popover_component.title.wait_for_visible().text
+        assert title == "md5sum Tour", title

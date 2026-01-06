@@ -57,6 +57,18 @@ export default {
             if (tool_version) {
                 result.version = tool_version.indexOf("+") >= 0 ? tool_version : decodeUriComponent(tool_version);
             }
+            const hasStartTourKey = "startTour" in this.query || "start-tour" in this.query;
+            if (hasStartTourKey) {
+                const startTourRaw = this.query.startTour ?? this.query["start-tour"];
+                // treat presence without value or explicit null as true; allow explicit false/0
+                if (startTourRaw === undefined || startTourRaw === null || startTourRaw === "") {
+                    result.startTour = true;
+                } else if (String(startTourRaw).toLowerCase() === "false" || startTourRaw === "0") {
+                    result.startTour = false;
+                } else {
+                    result.startTour = startTourRaw;
+                }
+            }
             return result;
         },
         workflowParams() {
