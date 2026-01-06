@@ -936,9 +936,7 @@ steps: {}
 
         # Find and click the send notification checkbox
         # For Bootstrap Vue switch checkbox, click the parent label to trigger Vue reactivity
-        notification_checkbox = self.driver.find_element(
-            By.CSS_SELECTOR, "[data-test-id='send-notification-checkbox']"
-        )
+        notification_checkbox = self.driver.find_element(By.CSS_SELECTOR, "[data-test-id='send-notification-checkbox']")
         # Find the parent custom-control div and click the label within it
         parent_control = notification_checkbox.find_element(By.XPATH, "./..")
         label = parent_control.find_element(By.CSS_SELECTOR, "label.custom-control-label")

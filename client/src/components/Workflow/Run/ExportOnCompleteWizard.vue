@@ -169,12 +169,13 @@ function onCancel() {
 
                 <div class="summary">
                     <h5>Summary</h5>
-                    <div>
-                        <strong>Format:</strong> {{ selectedFormat?.title }}
-                    </div>
+                    <div><strong>Format:</strong> {{ selectedFormat?.title }}</div>
                     <div>
                         <strong>Destination:</strong>
-                        <FileSourceNameSpan v-if="exportData.target_uri" :uri="exportData.target_uri" class="text-primary" />
+                        <FileSourceNameSpan
+                            v-if="exportData.target_uri"
+                            :uri="exportData.target_uri"
+                            class="text-primary" />
                         <span v-else class="text-muted">Not selected</span>
                     </div>
                     <div>

@@ -24487,6 +24487,15 @@ export interface components {
              */
             model_class: "WorkflowInvocation";
             /**
+             * On Complete Actions
+             * @description Actions to be executed when the workflow invocation completes.
+             */
+            on_complete?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+            /**
              * Invocation state
              * @description State of workflow invocation.
              */
@@ -24588,6 +24597,15 @@ export interface components {
              * @constant
              */
             model_class: "WorkflowInvocation";
+            /**
+             * On Complete Actions
+             * @description Actions to be executed when the workflow invocation completes.
+             */
+            on_complete?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Output collections
              * @description Output dataset collections of the workflow invocation.

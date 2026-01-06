@@ -5,8 +5,8 @@ import { computed, reactive, ref, watch } from "vue";
 import { useFileSources } from "@/composables/fileSources";
 
 import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
-import FormCard from "@/components/Form/FormCard.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
+import FormCard from "@/components/Form/FormCard.vue";
 
 interface ExportConfig {
     target_uri: string;
@@ -59,7 +59,7 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 // Emit changes when state changes
@@ -68,7 +68,7 @@ watch(
     () => {
         emitOnComplete();
     },
-    { deep: true }
+    { deep: true },
 );
 
 function emitOnComplete() {
@@ -114,17 +114,13 @@ const exportSummary = computed(() => {
 <template>
     <FormCard title="Completion Actions">
         <template v-slot:body>
-            <p class="text-muted">
-                Configure actions to run automatically when this workflow invocation completes.
-            </p>
+            <p class="text-muted">Configure actions to run automatically when this workflow invocation completes.</p>
 
             <BFormGroup>
                 <BFormCheckbox v-model="state.sendNotification" switch data-test-id="send-notification-checkbox">
                     <span class="font-weight-bold">Send notification</span>
                     <br />
-                    <small class="text-muted">
-                        Receive a notification when the workflow completes.
-                    </small>
+                    <small class="text-muted"> Receive a notification when the workflow completes. </small>
                 </BFormCheckbox>
             </BFormGroup>
 
