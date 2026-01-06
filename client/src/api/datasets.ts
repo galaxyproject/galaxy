@@ -69,22 +69,26 @@ export async function purgeDataset(datasetId: string) {
     return data;
 }
 
-type CopyDatasetParamsType = GalaxyApiPaths["/api/histories/{history_id}/contents/{type}s"]["post"]["parameters"];
-type CopyDatasetBodyType = components["schemas"]["CreateHistoryContentPayload"];
+type CopyContentParamsType = GalaxyApiPaths["/api/histories/{history_id}/contents/{type}s"]["post"]["parameters"];
+type CopyContentBodyType = components["schemas"]["CreateHistoryContentPayload"];
 
-export async function copyDataset(
-    datasetId: CopyDatasetBodyType["content"],
-    historyId: CopyDatasetParamsType["path"]["history_id"],
-    type: CopyDatasetParamsType["path"]["type"] = "dataset",
-    source: CopyDatasetBodyType["source"] = "hda",
+export async function copyContent(
+    contentId: CopyContentBodyType["content"],
+    historyId: CopyContentParamsType["path"]["history_id"],
+    type: CopyContentParamsType["path"]["type"] = "dataset",
+    source: CopyContentBodyType["source"] = null
 ) {
+    // match source from type unless explicitly provided
+    if (source === null) {
+        source = type === "dataset" ? "hda" : "hdca";
+    }
     const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
         params: {
             path: { history_id: historyId, type },
         },
         body: {
             source,
-            content: datasetId,
+            content: contentId,
             type,
             copy_elements: true,
             // TODO: Investigate. These should be optional, but the API requires explicit null values?
