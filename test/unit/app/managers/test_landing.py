@@ -1,6 +1,5 @@
 from typing import (
     cast,
-    List,
 )
 from uuid import uuid4
 
@@ -61,7 +60,7 @@ class MockToolbox:
 class MockTool:
 
     @property
-    def parameters(self) -> List[ToolParameterT]:
+    def parameters(self) -> list[ToolParameterT]:
         return [DataParameterModel(type="data", name="input1")]
 
 

@@ -5,6 +5,7 @@ import os
 from typing import (
     Annotated,
     Any,
+    cast,
     ClassVar,
     Optional,
     TypeVar,
@@ -12,7 +13,6 @@ from typing import (
 
 from fsspec import AbstractFileSystem
 from pydantic import Field
-from typing_extensions import cast
 
 from galaxy.exceptions import (
     AuthenticationRequired,

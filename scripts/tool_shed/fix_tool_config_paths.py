@@ -92,8 +92,7 @@ def construct_new_path(old_path, repository, current_file_path):
     expected_repo_path = repository.hg_repository_path(current_file_path)
 
     # Extract the portion after "repo_{id}/" to get the relative tool path
-    repo_pattern = f"repo_{repository.id}/"
-    if repo_pattern in old_path:
+    if (repo_pattern := f"repo_{repository.id}/") in old_path:
         # Split on the repo pattern and take everything after it
         relative_tool_path = old_path.split(repo_pattern, 1)[1]
         new_path = os.path.join(expected_repo_path, relative_tool_path)
@@ -102,9 +101,8 @@ def construct_new_path(old_path, repository, current_file_path):
     # Fallback: try to extract using regex pattern for hash_dirs/repo_id/file
     # Pattern matches: .../000/repo_123/tool.xml or .../000/123/456/repo_789/tool.xml
     pattern = r".*/(\d+/)*(repo_\d+/.*)"
-    match = re.search(pattern, old_path)
 
-    if match:
+    if match := re.search(pattern, old_path):
         # Extract everything from "repo_" onward
         repo_relative = match.group(2)  # e.g., "repo_123/filtering.xml"
 

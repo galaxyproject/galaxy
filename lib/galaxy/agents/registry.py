@@ -4,10 +4,7 @@ Agent registry for managing available AI agents.
 
 import logging
 from typing import (
-    Dict,
-    List,
     Optional,
-    Type,
 )
 
 from .base import (
@@ -23,14 +20,14 @@ class AgentRegistry:
 
     def __init__(self):
         """Initialize empty registry."""
-        self._agents: Dict[str, Type[BaseGalaxyAgent]] = {}
-        self._agent_metadata: Dict[str, Dict] = {}
+        self._agents: dict[str, type[BaseGalaxyAgent]] = {}
+        self._agent_metadata: dict[str, dict] = {}
 
     def register(
         self,
         agent_type: str,
-        agent_class: Type[BaseGalaxyAgent],
-        metadata: Optional[Dict] = None,
+        agent_class: type[BaseGalaxyAgent],
+        metadata: Optional[dict] = None,
     ):
         """
         Register an agent type.
@@ -90,15 +87,15 @@ class AgentRegistry:
         """Check if an agent type is registered."""
         return agent_type in self._agents
 
-    def list_agents(self) -> List[str]:
+    def list_agents(self) -> list[str]:
         """Get list of registered agent types."""
         return list(self._agents.keys())
 
-    def get_agent_metadata(self, agent_type: str) -> Dict:
+    def get_agent_metadata(self, agent_type: str) -> dict:
         """Get metadata for an agent type."""
         return self._agent_metadata.get(agent_type, {})
 
-    def get_agent_info(self, agent_type: str) -> Dict:
+    def get_agent_info(self, agent_type: str) -> dict:
         """
         Get comprehensive information about an agent.
 
@@ -119,7 +116,7 @@ class AgentRegistry:
             "description": getattr(agent_class, "__doc__", "").strip() if agent_class.__doc__ else None,
         }
 
-    def list_agent_info(self) -> List[Dict]:
+    def list_agent_info(self) -> list[dict]:
         """Get information for all registered agents."""
         return [self.get_agent_info(agent_type) for agent_type in self._agents.keys()]
 
@@ -133,7 +130,7 @@ def get_global_registry() -> AgentRegistry:
     return _global_registry
 
 
-def register_agent(agent_type: str, agent_class: Type[BaseGalaxyAgent], metadata: Optional[Dict] = None):
+def register_agent(agent_type: str, agent_class: type[BaseGalaxyAgent], metadata: Optional[dict] = None):
     """Register an agent in the global registry."""
     _global_registry.register(agent_type, agent_class, metadata)
 

@@ -17,7 +17,6 @@ and those that do not.
 import os
 from typing import (
     Any,
-    Dict,
 )
 from unittest import mock
 from unittest.mock import (
@@ -187,7 +186,7 @@ class TestAgentUnitMocked:
             test_agent: Any = Agent(  # type: ignore[call-overload]
                 "test-router",
                 model=test_model,
-                output_type=Dict[str, Any],
+                output_type=dict[str, Any],
             )
             mock_create.return_value = test_agent
 

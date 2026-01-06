@@ -60,14 +60,11 @@ class AgentIntegrationTestCase(IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         # AI/LLM configuration for agent tests
-        ai_api_key = os.environ.get("GALAXY_TEST_AI_API_KEY")
-        ai_api_base_url = os.environ.get("GALAXY_TEST_AI_API_BASE_URL")
-        ai_model = os.environ.get("GALAXY_TEST_AI_MODEL")
-        if ai_api_key:
+        if ai_api_key := os.environ.get("GALAXY_TEST_AI_API_KEY"):
             config["ai_api_key"] = ai_api_key
-        if ai_api_base_url:
+        if ai_api_base_url := os.environ.get("GALAXY_TEST_AI_API_BASE_URL"):
             config["ai_api_base_url"] = ai_api_base_url
-        if ai_model:
+        if ai_model := os.environ.get("GALAXY_TEST_AI_MODEL"):
             config["ai_model"] = ai_model
 
 

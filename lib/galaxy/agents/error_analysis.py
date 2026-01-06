@@ -7,8 +7,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
     Optional,
 )
@@ -38,8 +36,8 @@ class ErrorAnalysisResult(BaseModel):
     error_category: str  # e.g., "tool_configuration", "input_data", "parameters"
     error_severity: str  # "low", "medium", "high", "critical"
     likely_cause: str
-    solution_steps: List[str]
-    alternative_approaches: List[str] = []
+    solution_steps: list[str]
+    alternative_approaches: list[str] = []
     confidence: ConfidenceLiteral
     requires_admin: bool = False
 
@@ -78,7 +76,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "error_analysis.md"
         return prompt_path.read_text()
 
-    async def get_job_details(self, job_id: int) -> Dict[str, Any]:
+    async def get_job_details(self, job_id: int) -> dict[str, Any]:
         """
         Get comprehensive job information for error analysis.
 
@@ -115,7 +113,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error getting job details for {job_id}: {e}")
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
-    async def get_tool_info(self, tool_id: str) -> Dict[str, Any]:
+    async def get_tool_info(self, tool_id: str) -> dict[str, Any]:
         """Get tool metadata and documentation."""
         if not self.deps.toolbox:
             return {"error": "Toolbox not available"}
@@ -137,7 +135,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error getting tool info for {tool_id}: {e}")
             return {"error": f"Failed to retrieve tool info: {str(e)}"}
 
-    async def search_error_patterns(self, error_text: str) -> List[Dict[str, Any]]:
+    async def search_error_patterns(self, error_text: str) -> list[dict[str, Any]]:
         """
         Search for similar error patterns using keyword-based heuristics.
 
@@ -196,7 +194,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error searching patterns: {e}")
             return []
 
-    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
         Process an error analysis request.
 
@@ -266,7 +264,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error analysis value error: {e}")
             return self._get_fallback_response(query, str(e))
 
-    def _format_job_context(self, job_details: Dict[str, Any]) -> str:
+    def _format_job_context(self, job_details: dict[str, Any]) -> str:
         """Format job details for context."""
         parts = []
 
@@ -310,7 +308,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
         return "\n".join(parts)
 
-    def _create_suggestions(self, analysis: ErrorAnalysisResult) -> List[ActionSuggestion]:
+    def _create_suggestions(self, analysis: ErrorAnalysisResult) -> list[ActionSuggestion]:
         """Create action suggestions from analysis result."""
         suggestions = []
 
@@ -369,7 +367,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         CONFIDENCE: high
         """
 
-    def _parse_simple_response(self, response_text: str) -> Dict[str, Any]:
+    def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
         """Parse simple text response into structured format."""
         # Extract structured information from text
         error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", response_text, re.IGNORECASE)

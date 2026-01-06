@@ -28,8 +28,7 @@ class KeycloakOpenIdConnect(GalaxyOpenIdConnect):
         params = super().auth_params(state)
 
         # Add Keycloak IDP hint (default: "oidc")
-        idphint = self.setting("IDPHINT", "oidc")
-        if idphint:
+        if idphint := self.setting("IDPHINT", "oidc"):
             params["kc_idp_hint"] = idphint
 
         return params
@@ -44,8 +43,7 @@ class KeycloakOpenIdConnect(GalaxyOpenIdConnect):
         This allows administrators to configure the full Keycloak realm URL.
         """
         # Check if custom URL is configured
-        base_url = self.setting("URL")
-        if base_url:
+        if base_url := self.setting("URL"):
             # Remove potential trailing slash
             return base_url.rstrip("/")
         # Fall back to default OIDC endpoint discovery

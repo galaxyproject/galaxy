@@ -5,10 +5,10 @@ allowing NavigatesGalaxy to work with either backend via composition.
 """
 
 from abc import abstractmethod
+from contextlib import AbstractContextManager
 from typing import (
     Any,
     Callable,
-    ContextManager,
     Generic,
     Literal,
     Optional,
@@ -467,7 +467,7 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
 
     # Alert handling
     @abstractmethod
-    def accept_alert(self) -> "ContextManager[None]":
+    def accept_alert(self) -> AbstractContextManager[None]:
         """
         Return a context manager for accepting browser alert dialogs.
 

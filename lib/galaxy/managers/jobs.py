@@ -11,7 +11,6 @@ from typing import (
     Any,
     cast,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -1990,7 +1989,7 @@ class JobSubmitter:
 
     def dereference(
         self, trans: WorkRequestContext, tool: Tool, request: QueueJobs, tool_request: ToolRequest
-    ) -> Tuple[RequestInternalDereferencedToolState, list[DereferencedDatasetPair]]:
+    ) -> tuple[RequestInternalDereferencedToolState, list[DereferencedDatasetPair]]:
         new_hdas: list[DereferencedDatasetPair] = []
 
         def dereference_collection_callback(data_request: DataRequestCollectionUri) -> DataRequestInternalHdca:

@@ -4,7 +4,6 @@ import logging
 import time
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -129,7 +128,7 @@ class AgentAPI:
         self,
         query: str = Body(..., description="Description of the error or problem"),
         job_id: Optional[DecodedDatabaseIdField] = Body(None, description="Job ID for context"),
-        error_details: Optional[Dict[str, Any]] = Body(None, description="Additional error details"),
+        error_details: Optional[dict[str, Any]] = Body(None, description="Additional error details"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
@@ -169,7 +168,7 @@ class AgentAPI:
     async def create_custom_tool(
         self,
         query: str = Body(..., description="Description of the tool to create"),
-        context: Optional[Dict[str, Any]] = Body(None, description="Additional context for tool creation"),
+        context: Optional[dict[str, Any]] = Body(None, description="Additional context for tool creation"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:

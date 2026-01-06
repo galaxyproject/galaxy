@@ -7,8 +7,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
     Optional,
 )
@@ -36,7 +34,7 @@ class RoutingDecision(BaseModel):
     """Structured decision from the router agent."""
 
     primary_agent: str
-    secondary_agents: List[str] = []
+    secondary_agents: list[str] = []
     complexity: str  # "simple" or "complex"
     confidence: ConfidenceLiteral = "medium"
     reasoning: str
@@ -77,7 +75,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
         return prompt_path.read_text()
 
-    async def route_query(self, query: str, context: Optional[Dict[str, Any]] = None) -> RoutingDecision:
+    async def route_query(self, query: str, context: Optional[dict[str, Any]] = None) -> RoutingDecision:
         """
         Route a query to appropriate agent(s).
 
@@ -131,7 +129,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             log.warning(f"Router agent value error, using fallback: {e}")
             return self._fallback_routing(query, context)
 
-    def _fallback_routing(self, query: str, context: Optional[Dict[str, Any]] = None) -> RoutingDecision:
+    def _fallback_routing(self, query: str, context: Optional[dict[str, Any]] = None) -> RoutingDecision:
         """Fallback routing when AI router fails - uses intent-based heuristics."""
         query_lower = query.lower()
 
@@ -210,7 +208,7 @@ For specific tools, please also cite the individual tool publications.""",
             direct_response="",
         )
 
-    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
         Process a routing request and return guidance.
 

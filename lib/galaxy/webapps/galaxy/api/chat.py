@@ -7,8 +7,6 @@ import logging
 from typing import (
     Annotated,
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -166,7 +164,7 @@ class ChatAPI:
         try:
             if HAS_AGENTS:
                 # Build context with conversation history
-                full_context: Dict[str, Any] = query_context.copy() if query_context else {}
+                full_context: dict[str, Any] = query_context.copy() if query_context else {}
 
                 # If we have an exchange_id, ALWAYS load conversation history from database (source of truth)
                 if exchange_id:
@@ -232,7 +230,7 @@ class ChatAPI:
         limit: int = Query(default=50, description="Maximum number of chats to return"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get user's chat history."""
         if not user:
             return []
@@ -275,7 +273,7 @@ class ChatAPI:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Clear user's chat history (non-job chats only)."""
         if not user:
             return {"message": "No user logged in"}
@@ -325,7 +323,7 @@ class ChatAPI:
         feedback: int = Body(..., description="Feedback value: 0 for negative, 1 for positive"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Set feedback for a general chat exchange."""
         chat_exchange = self.chat_manager.set_feedback_for_exchange(trans, exchange_id, feedback)
         return {
@@ -339,7 +337,7 @@ class ChatAPI:
         exchange_id: int,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get all messages for a specific chat exchange."""
         exchange = self.chat_manager.get_exchange_by_id(trans, exchange_id)
         if not exchange:
@@ -416,7 +414,7 @@ class ChatAPI:
     def _call_openai_directly(self, query: str, system_prompt: str, username: str) -> str:
         """Direct OpenAI API call as fallback"""
         try:
-            messages: List[Dict[str, str]] = [
+            messages: list[dict[str, str]] = [
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "system",
@@ -451,7 +449,7 @@ class ChatAPI:
         trans: ProvidesUserContext,
         user: User,
         job=None,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[dict[str, Any]] = None,
     ) -> str:
         """Get response using the new agent system (legacy method for compatibility)."""
         result = await self._get_agent_response_full(query, agent_type, trans, user, job, context)
@@ -464,7 +462,7 @@ class ChatAPI:
         trans: ProvidesUserContext,
         user: User,
         job=None,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[dict[str, Any]] = None,
     ) -> AgentResponse:
         """Get full agent response with metadata and suggestions."""
         # Prepare context - merge passed context with job context

@@ -1146,8 +1146,7 @@ ON CONFLICT
 
     def get_oidc_tokens(self, provider_backend):
         tokens = {"id": None, "access": None, "refresh": None}
-        auth = self._get_social_auth(provider_backend)
-        if auth:
+        if auth := self._get_social_auth(provider_backend):
             tokens["access"] = auth.extra_data.get("access_token", None)
             tokens["refresh"] = auth.extra_data.get("refresh_token", None)
             tokens["id"] = auth.extra_data.get("id_token", None)

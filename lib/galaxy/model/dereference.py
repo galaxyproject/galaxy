@@ -1,9 +1,8 @@
 import logging
 import os.path
+from collections.abc import Sequence
 from typing import (
-    List,
     Optional,
-    Sequence,
     Union,
 )
 
@@ -169,7 +168,7 @@ def derefence_collection_to_model(
 def get_replacement_dataset(
     session: Session,
     user: Optional[User],
-    dataset_sources: List[DatasetSource],
+    dataset_sources: list[DatasetSource],
     dataset_hashes: Sequence[Union[DatasetHash, DatasetSourceHash]],
     extension: str,
     object_store_id: str,

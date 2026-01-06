@@ -1160,8 +1160,7 @@ class InputDataCollectionModule(InputModule):
                 fields=fields,
             )
             collection_type_description.validate()
-        column_definitions = state.get("column_definitions")
-        if column_definitions:
+        if column_definitions := state.get("column_definitions"):
             validate_column_definitions(column_definitions)
         return None
 
