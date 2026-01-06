@@ -1,16 +1,16 @@
 GALAXY_ROOT=../../../..
 
 client:
-	yarn build
+	pnpm build
 
 dev:
-	yarn dev
+	pnpm dev
 
 format:
-	yarn format
+	pnpm format
 
 lint:
-	yarn typecheck && yarn lint
+	pnpm typecheck && pnpm lint
 
 # These next two tasks don't really belong here, but they do demonstrate
 # how to get a test server running and populated with some initial data
