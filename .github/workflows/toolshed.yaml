@@ -59,6 +59,8 @@ jobs:
         working-directory: 'galaxy root'
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          package_json_file: 'galaxy root/lib/tool_shed/webapp/frontend/package.json'
       - name: Build Frontend
         run: |
           . .venv/bin/activate
