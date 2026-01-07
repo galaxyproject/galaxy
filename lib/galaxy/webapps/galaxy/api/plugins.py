@@ -77,13 +77,11 @@ class ChatMessage(BaseModel):
     role: Literal["assistant", "system", "tool", "user"]
     content: Optional[str] = None
     tool_calls: Optional[list[dict[str, Any]]] = None
-
     model_config = dict(extra="allow")
 
 
 class ChatToolFunction(BaseModel):
     name: str
-    parameters: dict[str, Any]
     model_config = dict(extra="allow")
 
 
@@ -98,7 +96,6 @@ class ChatCompletionRequest(BaseModel):
     tools: Optional[list[ChatTool]] = None
     stream: Optional[bool] = False
     max_tokens: Optional[int] = None
-
     model_config = dict(extra="allow")
 
 
@@ -169,8 +166,8 @@ class FastAPIAI:
             content = msg.content
             tool_calls = msg.tool_calls
             if role == "assistant":
-                msg_dict = dict(role="assistant")
-                if isinstance(content, str):
+                msg_dict: dict[str, Any] = dict(role="assistant")
+                if content is not None:
                     msg_dict["content"] = content
                 if isinstance(tool_calls, list):
                     msg_dict["tool_calls"] = tool_calls
