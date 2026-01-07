@@ -102,7 +102,6 @@ class TestVisualizations(SeleniumTestCase):
 
         self.navigate_to_saved_visualizations()
 
-
     def _wait_for_igv_container(self):
         igv = self.components.igv
         self.sleep_for(self.wait_types.UX_TRANSITION)
