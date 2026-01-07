@@ -68,6 +68,8 @@ export default {
                 } else {
                     result.startTour = startTourRaw;
                 }
+                // Remove kebab-case to prevent conflicts when v-bind spreads props
+                delete result["start-tour"];
             }
             return result;
         },
