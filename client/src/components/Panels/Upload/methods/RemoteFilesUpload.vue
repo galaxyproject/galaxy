@@ -34,6 +34,7 @@ import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
+import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
 interface Props {
     method: UploadMethodConfig;
@@ -81,6 +82,7 @@ const selectionModel = ref<Model>(new Model({ multiple: true }));
 const selectionCount = ref(0);
 const urlTracker = useUrlTracker<SelectionItem>();
 const browserItems = ref<SelectionItem[]>([]);
+const searchQuery = ref("");
 const isBusy = ref(false);
 const errorMessage = ref<string>();
 const currentPage = ref(1);
@@ -173,8 +175,16 @@ async function loadFileSources() {
     await executeIfLatest(
         () => fetchFileSources(),
         (sources) => {
-            const items = sources.map(fileSourcePluginToItem);
-            browserItems.value = items.sort(sortFileSources);
+            let items = sources.map(fileSourcePluginToItem);
+            items = items.sort(sortFileSources);
+
+            // Apply search filter if present
+            if (searchQuery.value) {
+                const query = searchQuery.value.toLowerCase();
+                items = items.filter((item) => item.label.toLowerCase().includes(query));
+            }
+
+            browserItems.value = items;
         },
     );
 }
@@ -182,7 +192,7 @@ async function loadFileSources() {
 async function loadDirectory(uri: string) {
     const offset = (currentPage.value - 1) * perPage.value;
     await executeIfLatest(
-        () => browseRemoteFiles(uri, false, false, perPage.value, offset),
+        () => browseRemoteFiles(uri, false, false, perPage.value, offset, searchQuery.value || undefined),
         (result) => {
             browserItems.value = result.entries.map(entryToSelectionItem);
             totalMatches.value = result.totalMatches;
@@ -218,6 +228,7 @@ function onItemClick(item: SelectionItem) {
 function open(item: SelectionItem) {
     urlTracker.forward(item);
     currentPage.value = 1;
+    clearSearch();
     load();
 }
 
@@ -237,6 +248,7 @@ function navigateToBreadcrumb(index: number) {
         }
     }
     currentPage.value = 1;
+    clearSearch();
     load();
 }
 
@@ -372,7 +384,12 @@ function clearAll() {
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
     selectionCount.value = 0;
+    clearSearch();
     urlTracker.reset();
+}
+
+function clearSearch() {
+    searchQuery.value = "";
 }
 
 function startUpload() {
@@ -387,10 +404,16 @@ function startUpload() {
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
     selectionCount.value = 0;
+    clearSearch();
     urlTracker.reset();
 }
 
 onMounted(() => {
+    load();
+});
+
+watch(searchQuery, () => {
+    currentPage.value = 1;
     load();
 });
 
@@ -414,6 +437,13 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     :items="breadcrumbs"
                     @navigate="navigateToBreadcrumb" />
                 <span v-else class="font-weight-bold">Select a File Source</span>
+            </div>
+
+            <!-- Search bar -->
+            <div class="search-bar-container mb-2">
+                <DataDialogSearch
+                    v-model="searchQuery"
+                    :title="urlTracker.isAtRoot.value ? 'file sources' : 'files and folders'" />
             </div>
 
             <!-- Error message -->
@@ -470,6 +500,17 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         <div class="text-center my-2">
                             <b-spinner small class="align-middle"></b-spinner>
                             <strong class="ml-2">Loading...</strong>
+                        </div>
+                    </template>
+
+                    <!-- Empty state -->
+                    <template v-slot:empty>
+                        <div class="text-center text-muted my-3">
+                            <p v-if="searchQuery">
+                                No {{ urlTracker.isAtRoot.value ? "file sources" : "files or folders" }} match your
+                                search "{{ searchQuery }}"
+                            </p>
+                            <p v-else>No items found</p>
                         </div>
                     </template>
                 </BTable>
@@ -668,6 +709,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .browser-header {
     flex-shrink: 0;
     @include upload-list-header;
+}
+
+.search-bar-container {
+    flex-shrink: 0;
 }
 
 .browser-table-container {
