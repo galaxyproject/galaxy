@@ -9,7 +9,6 @@ from .framework import (
     SeleniumTestCase,
 )
 
-IGV_DEFAULT_GENOME = "hg38"
 HG18_DBKEY_TEXT = "Human Mar. 2006 (NCBI36/hg18) (hg18)"
 
 
