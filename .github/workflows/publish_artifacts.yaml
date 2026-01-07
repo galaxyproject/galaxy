@@ -95,3 +95,13 @@ jobs:
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         run: npm publish --provenance --access public
         working-directory: 'client'
+      - name: sync client-api version
+        run: npm run sync-version
+        working-directory: 'client-api'
+      - name: build client-api
+        run: npm install && npm run build
+        working-directory: 'client-api'
+      - name: publish client-api
+        if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
+        run: npm publish --provenance --access public
+        working-directory: 'client-api'
