@@ -217,8 +217,7 @@ select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
 # G* are TODOs
-# UP006 and UP035 are PEP 585 type annotations
-ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004", "UP006", "UP035"]
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 
 [tool.ruff.lint.flake8-comprehensions]
 allow-dict-calls-with-keyword-arguments = true
@@ -242,17 +241,19 @@ keep-runtime-typing = true
 "lib/galaxy/schema/drs/*" = ["UP"]
 "lib/tool_shed_client/schema/trs.py" = ["UP"]
 "lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
-# Don't check some pyupgrade rules on packages for Pulsar, which need to stay compatible with Python 3.7
-"lib/galaxy/exceptions/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"scripts/check_python.py" = ["UP006", "UP007", "UP010", "UP032", "UP033", "UP035", "UP036"]
-"test/unit/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"test/unit/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"test/unit/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"test/unit/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+# Don't check some pyupgrade rules on packages for Pulsar, which need to stay compatible with Python 3.8
+"lib/galaxy/exceptions/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/tool_util_models/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"scripts/check_python.py" = ["UP006", "UP007", "UP010", "UP032", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/tool_util_models/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
 
 [tool.uv]
 constraint-dependencies = [

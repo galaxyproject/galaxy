@@ -10,14 +10,16 @@ import os
 import re
 import tarfile
 import tempfile
-from collections.abc import MutableMapping
+from collections.abc import (
+    MutableMapping,
+    Sequence,
+)
 from pathlib import Path
 from typing import (
     Any,
     cast,
     NamedTuple,
     Optional,
-    Sequence,
     TYPE_CHECKING,
     Union,
 )

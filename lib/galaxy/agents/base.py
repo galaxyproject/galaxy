@@ -12,8 +12,6 @@ from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -99,8 +97,8 @@ class AgentResponse:
         content: str,
         confidence: Union[str, ConfidenceLevel],
         agent_type: str,
-        suggestions: Optional[List[ActionSuggestion]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        suggestions: Optional[list[ActionSuggestion]] = None,
+        metadata: Optional[dict[str, Any]] = None,
         reasoning: Optional[str] = None,
     ):
         self.content = content
@@ -194,7 +192,7 @@ class BaseGalaxyAgent(ABC):
 
         return None
 
-    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
         Process a query and return structured response.
 
@@ -291,7 +289,7 @@ class BaseGalaxyAgent(ABC):
         # This should never be reached, but just in case
         raise last_exception or Exception("Max retries exhausted")
 
-    def _prepare_prompt(self, query: str, context: Dict[str, Any]) -> str:
+    def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         """Prepare the full prompt including context."""
         prompt_parts = [query]
 
@@ -303,7 +301,7 @@ class BaseGalaxyAgent(ABC):
 
         return "\n".join(prompt_parts)
 
-    def _format_response(self, result: Any, query: str, context: Dict[str, Any]) -> AgentResponse:
+    def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Convert pydantic-ai result to AgentResponse."""
         # Default implementation - subclasses can override
         content = str(result.data) if hasattr(result, "data") else str(result)
@@ -521,7 +519,7 @@ class BaseGalaxyAgent(ABC):
         query: str,
         ctx,
         usage=None,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[dict[str, Any]] = None,
     ) -> str:
         """
         Centralized helper method for calling other agents from within tool functions.
@@ -622,7 +620,7 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
             system_prompt=self.get_system_prompt(),
         )
 
-    def _format_response(self, result: Any, query: str, context: Dict[str, Any]) -> AgentResponse:
+    def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Format simple text response."""
         content = str(result.data) if hasattr(result, "data") else str(result)
 
@@ -653,7 +651,7 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
         else:
             return ConfidenceLevel.MEDIUM
 
-    def _extract_suggestions(self, content: str) -> List[ActionSuggestion]:
+    def _extract_suggestions(self, content: str) -> list[ActionSuggestion]:
         """Extract action suggestions from response content."""
         suggestions = []
 

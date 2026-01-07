@@ -3,7 +3,6 @@
 import base64
 from typing import (
     Any,
-    Dict,
 )
 
 import requests
@@ -234,13 +233,13 @@ class TestToolExecution(ApiTestCase):
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=job_output["dataset"])
             assert content == "Hello World!\nIt is me - a collection!\n"
 
-    def _assert_request_validates(self, tool_id: str, history_id: str, inputs: Dict[str, Any]):
+    def _assert_request_validates(self, tool_id: str, history_id: str, inputs: dict[str, Any]):
         response = self._run(tool_id, history_id, inputs)
         assert response.status_code == 200
 
-    def _assert_request_invalid(self, tool_id: str, history_id: str, inputs: Dict[str, Any]):
+    def _assert_request_invalid(self, tool_id: str, history_id: str, inputs: dict[str, Any]):
         response = self._run(tool_id, history_id, inputs)
         assert response.status_code == 400
 
-    def _run(self, tool_id: str, history_id: str, inputs: Dict[str, Any]) -> requests.Response:
+    def _run(self, tool_id: str, history_id: str, inputs: dict[str, Any]) -> requests.Response:
         return self.dataset_populator.tool_request_raw(tool_id, inputs, history_id)

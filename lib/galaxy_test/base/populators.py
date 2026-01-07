@@ -4044,8 +4044,7 @@ class DescribeFailure:
         return self
 
     def with_error_containing(self, message: str) -> Self:
-        actual_text = self._response.text
-        if message not in actual_text:
+        if message not in (actual_text := self._response.text):
             if self._tool_request:
                 state_message = self._tool_request["state_message"]
                 if message not in state_message:
@@ -4203,8 +4202,7 @@ class DescribeToolExecution:
     def assert_has_n_jobs(self, n: int) -> Self:
         self._assert_executed_ok()
         jobs = self._jobs
-        num_jobs = len(jobs)
-        if num_jobs != n:
+        if (num_jobs := len(jobs)) != n:
             raise AssertionError(f"Expected tool execution to produce {n} jobs but it produced {num_jobs}")
         return self
 

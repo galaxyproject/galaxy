@@ -96,16 +96,13 @@ def on_text_for_dataset_and_collections(
     collection_hids: Optional[list[int]] = None,
     element_ids: Optional[list[str]] = None,
 ) -> str:
-    on_text_datasets = on_text_for_numeric_ids(dataset_hids, "dataset")
-    on_text_collection = on_text_for_numeric_ids(collection_hids, "collection")
-    on_text_elements = on_text_for_names(element_ids)
 
     on_text = []
-    if on_text_datasets:
+    if on_text_datasets := on_text_for_numeric_ids(dataset_hids, "dataset"):
         on_text.append(on_text_datasets)
-    if on_text_collection:
+    if on_text_collection := on_text_for_numeric_ids(collection_hids, "collection"):
         on_text.append(on_text_collection)
-    if on_text_elements:
+    if on_text_elements := on_text_for_names(element_ids):
         on_text.append(on_text_elements)
 
     if len(on_text) == 0:

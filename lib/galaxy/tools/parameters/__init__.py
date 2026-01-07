@@ -7,7 +7,6 @@ from typing import (
     Any,
     cast,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -290,7 +289,7 @@ def visit_input_values(
 
 def check_param(
     trans, param: ToolParameter, incoming_value, param_values, simple_errors: bool = True
-) -> Tuple[Any, Union[str, ValueError, None]]:
+) -> tuple[Any, Union[str, ValueError, None]]:
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.

@@ -74,8 +74,7 @@ class AzureFlatFilesSource(
 
     def _adapt_entry_path(self, filesystem_path: str) -> str:
         result = filesystem_path
-        container_name = self.template_config.container_name
-        if container_name:
+        if container_name := self.template_config.container_name:
             prefix = f"{container_name}/"
             if filesystem_path.startswith(prefix):
                 result = filesystem_path.replace(prefix, "", 1)
@@ -147,9 +146,8 @@ class AzureFlatFilesSource(
         return f"{container_name}{adjusted_path}"
 
     def score_url_match(self, url: str):
-        container_name = self.template_config.container_name
         result = 0
-        if container_name:
+        if container_name := self.template_config.container_name:
             prefix = f"az://{container_name}"
             if url.startswith(f"{prefix}/") or url == prefix:
                 result = len(prefix)

@@ -3,7 +3,6 @@
 import logging
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -66,7 +65,7 @@ class AgentService:
         query: str,
         trans: ProvidesUserContext,
         user: User,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[dict[str, Any]] = None,
     ) -> AgentResponse:
         """Execute a specific agent and return response."""
         deps = self.create_dependencies(trans, user)
@@ -114,7 +113,7 @@ class AgentService:
         query: str,
         trans: ProvidesUserContext,
         user: User,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[dict[str, Any]] = None,
         agent_type: str = "auto",
     ) -> AgentResponse:
         """Route query to appropriate agent and execute. Uses router if agent_type is 'auto'."""

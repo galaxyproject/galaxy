@@ -1,7 +1,6 @@
 import os
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -57,9 +56,9 @@ class TourGenerator:
         self._trans = trans
         self._tool: Tool = self._get_and_ensure_tool(tool_id, tool_version)
         self._use_datasets = True
-        self._data_inputs: Dict[str, Any] = {}
+        self._data_inputs: dict[str, Any] = {}
         self._tour: Optional[TourDetails] = None
-        self._hids: Dict[str, Any] = {}
+        self._hids: dict[str, Any] = {}
         self._test: ToolTestDescription
         self._upload_test_data(performs_upload=performs_upload)
         self._generate_tour(performs_upload=performs_upload)
@@ -234,7 +233,7 @@ class TourGenerator:
                                 if test_option == option[1]:
                                     params.append(option[0])
                     # Conditional param cases
-                    cases: Dict[str, str] = {}
+                    cases: dict[str, str] = {}
                     for case in input.cases:
                         if case.inputs is not None:
                             for key, value in case.inputs.items():

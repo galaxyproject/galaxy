@@ -9403,6 +9403,38 @@ export interface components {
              */
             username: string;
         };
+        /** CreatorOrganization */
+        CreatorOrganization: {
+            /** Address */
+            address?: string | null;
+            /** Alternate Name */
+            alternateName?: string | null;
+            /**
+             * Class
+             * @default Organization
+             */
+            class: string;
+            /** Email */
+            email?: string | null;
+            /** Fax Number */
+            faxNumber?: string | null;
+            /**
+             * Identifier
+             * @description Identifier (typically an orcid.org ID)
+             */
+            identifier?: string | null;
+            /** Image URL */
+            image?: string | null;
+            /**
+             * Name
+             * @description The name of the creator.
+             */
+            name?: string | null;
+            /** Telephone */
+            telephone?: string | null;
+            /** URL */
+            url?: string | null;
+        };
         /** CredentialPayload */
         CredentialPayload: {
             /**
@@ -21850,9 +21882,7 @@ export interface components {
              * Creator
              * @description Additional information about the creator (or multiple creators) of this workflow.
              */
-            creator?:
-                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
-                | null;
+            creator?: (components["schemas"]["Person"] | components["schemas"]["CreatorOrganization"])[] | null;
             /**
              * Creator deleted
              * @description Whether the creator of this Workflow has been deleted.
@@ -24969,38 +24999,6 @@ export interface components {
             filename?: string | null;
             /** name */
             name?: string | null;
-        };
-        /** Organization */
-        galaxy__schema__schema__Organization: {
-            /** Address */
-            address?: string | null;
-            /** Alternate Name */
-            alternateName?: string | null;
-            /**
-             * Class
-             * @default Organization
-             */
-            class: string;
-            /** Email */
-            email?: string | null;
-            /** Fax Number */
-            faxNumber?: string | null;
-            /**
-             * Identifier
-             * @description Identifier (typically an orcid.org ID)
-             */
-            identifier?: string | null;
-            /** Image URL */
-            image?: string | null;
-            /**
-             * Name
-             * @description The name of the creator.
-             */
-            name?: string | null;
-            /** Telephone */
-            telephone?: string | null;
-            /** URL */
-            url?: string | null;
         };
     };
     responses: never;

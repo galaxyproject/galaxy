@@ -13,8 +13,6 @@ import os
 import sys
 import traceback
 from typing import (
-    Dict,
-    List,
     Optional,
 )
 
@@ -116,7 +114,7 @@ def find_galaxy_config(config_file: Optional[str] = None) -> Optional[str]:
     return None
 
 
-def load_file_sources_config(config_path: str) -> List[Dict]:
+def load_file_sources_config(config_path: str) -> list[dict]:
     """Load file sources configuration from YAML file"""
     try:
         with open(config_path) as f:
@@ -132,7 +130,7 @@ def load_file_sources_config(config_path: str) -> List[Dict]:
 
 
 def validate_file_source_config(
-    file_source_config: Dict,
+    file_source_config: dict,
     plugin_loader: FileSourcePluginLoader,
     file_sources_config: FileSourcePluginsConfig,
     verbose: bool = False,

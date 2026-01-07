@@ -1,7 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -82,7 +80,7 @@ class ChatManager:
         import json
 
         # Handle both string responses and full agent response objects
-        conversation_data: Dict[str, Any]
+        conversation_data: dict[str, Any]
         if isinstance(response_data, str):
             conversation_data = {
                 "query": query,
@@ -240,7 +238,7 @@ class ChatManager:
 
     def get_chat_history(
         self, trans: ProvidesUserContext, exchange_id: int, format_for_pydantic_ai: bool = False
-    ) -> Union[List[Dict[str, Any]], List[ModelMessage]]:
+    ) -> Union[list[dict[str, Any]], list[ModelMessage]]:
         """
         Get the chat history for a specific exchange, optionally formatted for pydantic-ai.
 
@@ -260,7 +258,7 @@ class ChatManager:
 
         if not format_for_pydantic_ai:
             # Format as simple role/content dictionaries
-            messages: List[Dict[str, Any]] = []
+            messages: list[dict[str, Any]] = []
             for msg in chat_exchange.messages:
                 try:
                     # Parse the JSON to get query and response
@@ -277,7 +275,7 @@ class ChatManager:
             return messages
         else:
             # Format for pydantic-ai
-            pydantic_messages: List[ModelMessage] = []
+            pydantic_messages: list[ModelMessage] = []
             for msg in chat_exchange.messages:
                 try:
                     data = json.loads(msg.message)
@@ -291,7 +289,7 @@ class ChatManager:
 
     def get_user_chat_history(
         self, trans: ProvidesUserContext, limit: int = 50, include_job_chats: bool = False
-    ) -> List[ChatExchange]:
+    ) -> list[ChatExchange]:
         """
         Get all chat exchanges for a user.
 

@@ -32,8 +32,7 @@ class CILogonOpenIdConnect(GalaxyOpenIdConnect):
         params = super().auth_params(state)
 
         # Add CILogon IDP hint (default: "cilogon")
-        idphint = self.setting("IDPHINT", "cilogon")
-        if idphint:
+        if idphint := self.setting("IDPHINT", "cilogon"):
             params["idphint"] = idphint
 
         return params
@@ -49,8 +48,7 @@ class CILogonOpenIdConnect(GalaxyOpenIdConnect):
         https://cilogon.org/authorize -> https://cilogon.org
         """
         # Check if custom URL is configured
-        base_url = self.setting("URL")
-        if base_url:
+        if base_url := self.setting("URL"):
             # Backwards compatibility: CILogon URL is sometimes given with /authorize
             # Remove it to get the correct openid configuration endpoint
             if base_url.endswith("/authorize"):

@@ -7,12 +7,14 @@ for some activity such as queuing up jobs or scheduling workflows.
 import logging
 import os
 import random
-from collections.abc import Sequence
+from collections.abc import (
+    Iterable,
+    Sequence,
+)
 from enum import Enum
 from typing import (
     Any,
     Callable,
-    Iterable,
     Protocol,
     TYPE_CHECKING,
     TypeVar,

@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
     Optional,
 )
 
@@ -61,7 +60,7 @@ class CustomToolAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "custom_tool_structured.md"
         return prompt_path.read_text()
 
-    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """Process tool creation request."""
         # Check model capabilities first
         capability_error = self._validate_model_capabilities()

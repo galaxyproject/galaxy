@@ -114,13 +114,11 @@ class ToolRunner(BaseUIController):
         if len(params) > 0:
             trans.log_event(f"Tool params: {str(params)}", tool_id=tool_id)
         status_text = "You can check the status of queued jobs in the History panel."
-        job_errors = vars.get("job_errors")
-        num_jobs = vars.get("num_jobs")
-        if job_errors:
+        if job_errors := vars.get("job_errors"):
             errors = "\n".join(f"- {job_error}" for job_error in job_errors)
             message = f"There were errors setting up {len(job_errors)} submitted job(s):\n{errors}"
             return trans.show_error_message(message)
-        if num_jobs > 1:
+        if (num_jobs := vars.get("num_jobs")) > 1:
             message = f"{num_jobs} jobs have been successfully added to the queue. {status_text}"
         else:
             message = f"A job has been successfully added to the queue. {status_text}"
