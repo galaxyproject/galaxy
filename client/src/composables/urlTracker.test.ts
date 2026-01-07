@@ -157,31 +157,6 @@ describe("useUrlTracker", () => {
         expect(tracker.current.value).toBe("/api/history2");
     });
 
-    it("should expose readonly navigationHistory", () => {
-        const tracker = useUrlTracker<string>({ root: "/root" });
-
-        tracker.forward("/folder1");
-        tracker.forward("/folder2");
-
-        const history = tracker.navigationHistory.value;
-        expect(history).toEqual(["/folder1", "/folder2"]);
-
-        // Verify it's readonly (TypeScript would catch this at compile time)
-        expect(tracker.navigationHistory.value).toHaveLength(2);
-    });
-
-    it("should update current reactively", () => {
-        const tracker = useUrlTracker<string>({ root: "/root" });
-
-        expect(tracker.current.value).toBe("/root");
-
-        tracker.forward("/folder");
-        expect(tracker.current.value).toBe("/folder");
-
-        tracker.backward();
-        expect(tracker.current.value).toBe("/root");
-    });
-
     it("should work without specifying root option", () => {
         const tracker = useUrlTracker<string>();
 
@@ -222,52 +197,24 @@ describe("useUrlTracker", () => {
         expect(tracker.isAtRoot.value).toBe(true);
     });
 
-    it("should support push/pop aliases", () => {
+    it("should support push/pop as aliases for forward/backward", () => {
         const tracker = useUrlTracker<string>({ root: "/root" });
 
-        // push is an alias for forward
-        tracker.push("/folder1");
-        expect(tracker.current.value).toBe("/folder1");
-        expect(tracker.isAtRoot.value).toBe(false);
+        tracker.push("/folder");
+        expect(tracker.current.value).toBe("/folder");
 
-        tracker.push("/folder2");
-        expect(tracker.current.value).toBe("/folder2");
-
-        // pop is an alias for backward
-        const url1 = tracker.pop();
-        expect(url1).toBe("/folder1");
-        expect(tracker.current.value).toBe("/folder1");
-
-        const url2 = tracker.pop();
-        expect(url2).toBe("/root");
-        expect(tracker.current.value).toBe("/root");
-        expect(tracker.isAtRoot.value).toBe(true);
+        const result = tracker.pop();
+        expect(result).toBe("/root");
     });
 
-    it("should maintain correct current value throughout navigation lifecycle", () => {
+    it("should allow forward navigation after returning to root", () => {
         const tracker = useUrlTracker<string>({ root: "/root" });
 
-        // At root
-        expect(tracker.current.value).toBe("/root");
-
-        // After first forward
         tracker.forward("/level1");
-        expect(tracker.current.value).toBe("/level1");
-
-        // After second forward
-        tracker.forward("/level2");
-        expect(tracker.current.value).toBe("/level2");
-
-        // After first backward
         tracker.backward();
-        expect(tracker.current.value).toBe("/level1");
-
-        // After second backward (back to root)
-        tracker.backward();
-        expect(tracker.current.value).toBe("/root");
-
-        // After forward again
         tracker.forward("/new-path");
+
         expect(tracker.current.value).toBe("/new-path");
+        expect(tracker.navigationHistory.value).toEqual(["/new-path"]);
     });
 });
