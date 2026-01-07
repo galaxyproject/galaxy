@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFolder, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faPlus, faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BFormInput, BPagination, BTable } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
@@ -19,6 +19,7 @@ import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { mapToRemoteFileUpload } from "@/utils/upload/itemMappers";
+import { USER_FILE_PREFIX } from "@/utils/url";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { RemoteFileItem } from "../types/uploadItem";
@@ -151,11 +152,29 @@ function entryToSelectionItem(entry: RemoteEntry): SelectionItem {
     };
 }
 
+/**
+ * Comparator for sorting file sources.
+ * User-created sources come first, then alphabetical by label.
+ */
+function sortFileSources(a: SelectionItem, b: SelectionItem): number {
+    const aIsUser = a.url.startsWith(USER_FILE_PREFIX);
+    const bIsUser = b.url.startsWith(USER_FILE_PREFIX);
+
+    if (aIsUser && !bIsUser) {
+        return -1;
+    }
+    if (!aIsUser && bIsUser) {
+        return 1;
+    }
+    return a.label.localeCompare(b.label);
+}
+
 async function loadFileSources() {
     await executeIfLatest(
         () => fetchFileSources(),
         (sources) => {
-            browserItems.value = sources.map(fileSourcePluginToItem);
+            const items = sources.map(fileSourcePluginToItem);
+            browserItems.value = items.sort(sortFileSources);
         },
     );
 }
@@ -283,6 +302,13 @@ const browserFields = [
         label: "",
         thStyle: { width: "40px" },
         tdClass: "align-middle",
+    },
+    {
+        key: "user",
+        label: "",
+        sortable: false,
+        thStyle: { width: "35px" },
+        tdClass: "align-middle text-center",
     },
     {
         key: "name",
@@ -414,6 +440,17 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             :checked="isSelected(item)"
                             @change="toggleFileSelection(item)"
                             @click.stop />
+                    </template>
+
+                    <!-- User icon column (for user-created file sources) -->
+                    <template v-slot:cell(user)="{ item }">
+                        <FontAwesomeIcon
+                            v-if="urlTracker.isAtRoot.value && !item.isLeaf && item.url.startsWith(USER_FILE_PREFIX)"
+                            v-b-tooltip.hover.noninteractive
+                            :icon="faUser"
+                            class="text-primary"
+                            fixed-width
+                            title="User-created file source" />
                     </template>
 
                     <!-- Name column with icons -->
