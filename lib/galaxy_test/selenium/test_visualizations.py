@@ -96,7 +96,9 @@ class TestVisualizations(SeleniumTestCase):
             igv.current_genome.wait_for_present()
             self.screenshot("visualization_plugin_igv_current_genome")
 
-            igv.name_input.wait_for_and_clear_aggressive_and_send_keys("igv with hg18")
+            igv.name_input.wait_for_and_click()
+            igv.name_input.wait_for_and_clear_and_send_keys("igv with hg18")
+
             igv.save_button.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_TRANSITION)
 
