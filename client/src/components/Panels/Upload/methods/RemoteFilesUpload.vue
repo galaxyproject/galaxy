@@ -197,9 +197,10 @@ async function loadDirectory(uri: string) {
             browserItems.value = result.entries.map(entryToSelectionItem);
             totalMatches.value = result.totalMatches;
         },
-        () => {
+        (error) => {
             browserItems.value = [];
             totalMatches.value = 0;
+            errorMessage.value = errorMessageAsString(error);
         },
     );
 }
@@ -215,6 +216,11 @@ async function load() {
 }
 
 function onItemClick(item: SelectionItem) {
+    // Don't allow navigation or selection while loading or if there's an error
+    if (isBusy.value || errorMessage.value) {
+        return;
+    }
+
     if (!item.isLeaf) {
         // Navigate into directory
         open(item);
@@ -423,6 +429,14 @@ watch(currentPage, () => {
     }
 });
 
+function onErrorRetry() {
+    errorMessage.value = undefined;
+    currentPage.value = 1;
+    clearSearch();
+
+    load();
+}
+
 defineExpose<UploadMethodComponent>({ startUpload });
 </script>
 
@@ -448,7 +462,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Error message -->
             <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = undefined">
-                {{ errorMessage }}
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>{{ errorMessage }}</span>
+                    <GButton color="red" class="ml-2" @click="onErrorRetry"> Retry </GButton>
+                </div>
             </BAlert>
 
             <!-- Browser table -->
