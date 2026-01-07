@@ -28,19 +28,19 @@ src/
 
 ```shell
 # Start dev server (port 4040)
-yarn dev
+pnpm dev
 
 # Build
-yarn build
+pnpm build
 
 # Typecheck
-yarn typecheck
+pnpm typecheck
 
 # Lint
-yarn lint
+pnpm lint
 
 # Format
-yarn format
+pnpm format
 ```
 
 Backend must be running with `TOOL_SHED_API_VERSION=v2`:

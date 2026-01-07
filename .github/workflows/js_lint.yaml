@@ -25,16 +25,16 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'client/yarn.lock'
-      - run: yarn install --frozen-lockfile
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
         working-directory: client
       - name: Run ESLint
-        run: yarn run eslint
+        run: pnpm run eslint
         working-directory: client
       - name: Run prettier checks
-        run: yarn run format-check
+        run: pnpm run format-check
         working-directory: client
       - name: Run vue-tsc
         working-directory: client
-        run: yarn type-check
+        run: pnpm type-check
