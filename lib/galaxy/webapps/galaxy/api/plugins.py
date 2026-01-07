@@ -84,11 +84,13 @@ class ChatMessage(BaseModel):
 class ChatToolFunction(BaseModel):
     name: str
     parameters: dict[str, Any]
+    model_config = dict(extra="allow")
 
 
 class ChatTool(BaseModel):
     type: Literal["function"]
     function: ChatToolFunction
+    model_config = dict(extra="allow")
 
 
 class ChatCompletionRequest(BaseModel):
@@ -166,10 +168,16 @@ class FastAPIAI:
             role = msg.role
             content = msg.content
             tool_calls = msg.tool_calls
-            if role in ("assistant", "user", "tool") and isinstance(content, str):
+            if role == "assistant":
+                msg_dict = dict(role="assistant")
+                if isinstance(content, str):
+                    msg_dict["content"] = content
+                if isinstance(tool_calls, list):
+                    msg_dict["tool_calls"] = tool_calls
+                if len(msg_dict) > 1:
+                    messages.append(cast(ChatCompletionMessageParam, msg_dict))
+            elif role in ("user", "tool") and isinstance(content, str):
                 messages.append(cast(ChatCompletionMessageParam, dict(role=role, content=content)))
-            elif role == "assistant" and isinstance(tool_calls, list):
-                messages.append(cast(ChatCompletionMessageParam, dict(role="assistant", tool_calls=tool_calls)))
             else:
                 continue
             if len(messages) >= MAX_MESSAGES:
