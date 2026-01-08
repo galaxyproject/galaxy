@@ -1135,7 +1135,15 @@ class OutputCollections:
         self.hdca_tags = hdca_tags  # only tags inherited from input HDCAs
 
     def create_collection(
-        self, output, name, collection_type=None, completed_job=None, propagate_hda_tags=True, **element_kwds
+        self,
+        output,
+        name,
+        collection_type=None,
+        completed_job=None,
+        propagate_hda_tags=True,
+        rows=None,
+        column_definitions=None,
+        **element_kwds,
     ):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collection_manager
@@ -1189,6 +1197,11 @@ class OutputCollections:
             elements = element_kwds["elements"]
             check_elements(elements)
 
+        if "sample_sheet" in collection_type and not column_definitions and not rows:
+            # we're probably getting here via a collection operation tool where no logical
+            # column / row handling is defined. Don't pretend this is still a sample sheet.
+            collection_type = collection_type.replace("sample_sheet", "list")
+
         if self.dataset_collection_elements is not None:
             dc = collections_manager.create_dataset_collection(
                 self.trans, collection_type=collection_type, **element_kwds
@@ -1220,6 +1233,8 @@ class OutputCollections:
                 flush=False,
                 completed_job=completed_job,
                 output_name=name,
+                rows=rows,
+                column_definitions=column_definitions,
                 **element_kwds,
             )
             # name here is name of the output element - not name
