@@ -102,6 +102,26 @@ backends:
     store_by: uuid
     weight: 0
     files_dir: /old-fs/galaxy/files
+  - id: temporal
+    type: disk
+    store_by: uuid
+    weight: 0
+    files_dir: /temporal-fs/galaxy/files
+    name: Scratch Storage
+    description: >
+      This data storage is fast and meant for exploratory analysis and methods development. Data stored here is not backed up
+      and automatically purged after a month. 
+    badges:
+        - type: faster
+        - type: less_stable
+        - type: not_backed_up
+        - type: short_term
+          message: The data stored here is purged after a month.
+    # This will display an expiration badge on datasets stored in this object store
+    # to inform users of when the data will be automatically deleted.
+    # This is only informative for the user and galaxy will not purge the data.
+    # The admin needs to take care of the purge
+    object_expires_after_days: 30
 
 #
 # Sample Nested (Distributed in Hierarchical) Object Store configuration
