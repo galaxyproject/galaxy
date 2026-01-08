@@ -1,13 +1,27 @@
 <script setup lang="ts">
 import axios from "axios";
 import { BAlert, BButton, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { withPrefix } from "@/utils/redirect";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface Props {
+    mode?: "modal" | "wizard";
+    hideSubmitButton?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    mode: "modal",
+    hideSubmitButton: false,
+});
+
+const emit = defineEmits<{
+    "input-valid": [valid: boolean];
+}>();
 
 const loading = ref(false);
 const sourceURL: Ref<string | null> = ref(null);
@@ -23,6 +37,20 @@ const importTooltip = computed(() => {
 
 const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
+});
+
+// Validation state for wizard mode
+const isValid = computed(() => {
+    return sourceURL.value !== null && sourceURL.value.length > 0;
+});
+
+watch(isValid, (newValue) => {
+    emit("input-valid", newValue);
+});
+
+// Show button in modal mode, hide in wizard mode or when hideSubmitButton is true
+const showSubmitButton = computed(() => {
+    return props.mode === "modal" && !props.hideSubmitButton;
 });
 
 function autoAppendJson(urlString: string): string {
@@ -65,6 +93,13 @@ async function submit(ev: SubmitEvent) {
         loading.value = false;
     }
 }
+
+// Expose method for wizard submit
+async function attemptImport() {
+    await submit(new Event("submit") as SubmitEvent);
+}
+
+defineExpose({ attemptImport });
 </script>
 
 <template>
@@ -89,6 +124,7 @@ async function submit(ev: SubmitEvent) {
         </BAlert>
 
         <BButton
+            v-if="showSubmitButton"
             id="workflow-import-button"
             type="submit"
             :disabled="isImportDisabled"

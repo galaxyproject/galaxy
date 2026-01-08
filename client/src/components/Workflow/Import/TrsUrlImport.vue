@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { BButton, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 interface Props {
     queryTrsUrl?: string;
+    hideSubmitButton?: boolean;
+    mode?: "modal" | "wizard";
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    hideSubmitButton: false,
+    mode: "modal",
+});
 
 const emit = defineEmits<{
     (e: "onImport", url: string): void;
+    (e: "input-valid", valid: boolean): void;
 }>();
 
 const trsUrl = ref(props.queryTrsUrl);
@@ -22,6 +28,20 @@ const importTooltip = computed(() => {
     return isImportDisabled.value ? "You must provide a TRS URL." : "Import workflow from TRS URL";
 });
 
+// Validation state for wizard mode
+const isValid = computed(() => {
+    return trsUrl.value !== null && trsUrl.value !== undefined && trsUrl.value.length > 0;
+});
+
+watch(isValid, (newValue) => {
+    emit("input-valid", newValue);
+});
+
+// Show button in modal mode, hide in wizard mode or when hideSubmitButton is true
+const showSubmitButton = computed(() => {
+    return props.mode === "modal" && !props.hideSubmitButton;
+});
+
 function submit(ev: SubmitEvent) {
     ev.preventDefault();
 
@@ -30,8 +50,18 @@ function submit(ev: SubmitEvent) {
     }
 }
 
+// Expose method for wizard submit
+function triggerImport() {
+    if (trsUrl.value) {
+        emit("onImport", trsUrl.value);
+    }
+}
+
+defineExpose({ triggerImport });
+
 // Automatically trigger the import if the TRS URL was provided as a query param
-if (trsUrl.value) {
+// Only in modal mode to avoid auto-import in wizard
+if (trsUrl.value && props.mode === "modal") {
     emit("onImport", trsUrl.value);
 }
 </script>
@@ -46,6 +76,7 @@ if (trsUrl.value) {
         </BFormGroup>
 
         <BButton
+            v-if="showSubmitButton"
             id="trs-url-import-button"
             type="submit"
             :disabled="isImportDisabled"
