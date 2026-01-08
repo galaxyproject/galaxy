@@ -23,11 +23,11 @@
             </small>
         </b-modal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
-<ToolCard
-    v-if="showForm"
-    :id="formConfig.id"
-    :version="formConfig.version"
-    :tool-uuid="uuid"
+        <ToolCard
+            v-if="showForm"
+            :id="formConfig.id"
+            :version="formConfig.version"
+            :tool-uuid="uuid"
             :title="formConfig.name"
             :description="formConfig.description"
             :options="formConfig"
@@ -96,26 +96,28 @@
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
-    <template v-slot:footer>
-        <ButtonSpinner
-            title="Run Tool"
-            class="mt-3 mb-3"
-            :disabled="runButtonDisabled"
-            :wait="showExecuting"
-            :tooltip="tooltip"
-            @onClick="onExecute(config, currentHistoryId)" />
-    </template>
-</ToolCard>
-<ToolTourAutoStarter
-    v-if="startTour && formConfig.id && formConfig.version"
-    :tool-id="formConfig.id"
-    :tool-version="formConfig.version"
-    :start="startTour" />
+            <template v-slot:footer>
+                <ButtonSpinner
+                    title="Run Tool"
+                    class="mt-3 mb-3"
+                    :disabled="runButtonDisabled"
+                    :wait="showExecuting"
+                    :tooltip="tooltip"
+                    @onClick="onExecute(config, currentHistoryId)" />
+            </template>
+        </ToolCard>
+
+        <ToolTourAutoStarter
+            v-if="startTour && formConfig.id && formConfig.version"
+            :tool-id="formConfig.id"
+            :tool-version="formConfig.version"
+            :start="startTour" />
     </div>
 </template>
 
 <script>
 import { mapActions, mapState, storeToRefs } from "pinia";
+
 import { canMutateHistory } from "@/api";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
@@ -137,8 +139,8 @@ import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 import ToolTourAutoStarter from "@/components/Tool/ToolTourAutoStarter.vue";
+import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 export default {
     components: {
@@ -180,18 +182,18 @@ export default {
             default: false,
         },
     },
-        setup() {
-            const configStore = useConfigStore();
-            const { config, isLoaded: isConfigLoaded } = storeToRefs(configStore);
+    setup() {
+        const configStore = useConfigStore();
+        const { config, isLoaded: isConfigLoaded } = storeToRefs(configStore);
 
-            const { getCredentialsExecutionContextForTool } = useUserToolsServiceCredentialsStore();
+        const { getCredentialsExecutionContextForTool } = useUserToolsServiceCredentialsStore();
 
-            return {
-                config,
-                isConfigLoaded,
-                getCredentialsExecutionContextForTool,
-            };
-        },
+        return {
+            config,
+            isConfigLoaded,
+            getCredentialsExecutionContextForTool,
+        };
+    },
     data() {
         return {
             disabled: false,

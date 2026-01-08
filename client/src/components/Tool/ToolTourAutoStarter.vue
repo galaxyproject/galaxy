@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { ERROR_STATES } from "@/api/jobs";
 import { generateTour, type TourDetails } from "@/api/tours";
@@ -10,11 +10,13 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useTourStore } from "@/stores/tourStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-const props = defineProps<{
+interface Props {
     toolId: string;
     toolVersion: string;
     start: boolean | string;
-}>();
+}
+
+const props = defineProps<Props>();
 
 const tourStore = useTourStore();
 const { toolGeneratedTours } = storeToRefs(tourStore);
@@ -23,8 +25,8 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 const historyItemsStore = useHistoryItemsStore();
 
 const generatingTour = ref(false);
-const localTourData = ref<{ tour: TourDetails; hids: number[] } | null>(null);
-const tourStartVersionKey = ref<string | null>(null);
+const tourGenerationResult = ref<{ tour: TourDetails; hids: number[] } | null>(null);
+const lastProcessedVersion = ref<string | null>(null);
 
 const generatedTourId = computed(() => `tool-generated-${props.toolId}-${props.toolVersion}`);
 
@@ -39,57 +41,29 @@ const shouldStartTour = computed(() => {
     return normalized !== "false" && normalized !== "0";
 });
 
-const generatedTourStates = computed(() => {
-    if (!localTourData.value?.hids?.length || !currentHistoryId.value) {
+const historyItemStates = computed(() => {
+    if (!tourGenerationResult.value?.hids?.length || !currentHistoryId.value) {
         return {};
     }
-    return historyItemsStore.getStatesForHids(currentHistoryId.value, localTourData.value.hids);
+    return historyItemsStore.getStatesForHids(currentHistoryId.value, tourGenerationResult.value.hids);
 });
 
-const waitedForItemsOk = computed(() => {
-    if (!localTourData.value?.hids?.length) {
+const areHistoryItemsReady = computed(() => {
+    if (!tourGenerationResult.value?.hids?.length) {
         return false;
     }
-    const states = Object.values(generatedTourStates.value);
+    const states = Object.values(historyItemStates.value);
     if (!states.length) {
         return false;
     }
     return states.every((state) => state && state === "ok");
 });
 
-const anyStateInvalid = computed(() => {
-    if (!localTourData.value?.hids?.length) {
+const hasFailedHistoryItems = computed(() => {
+    if (!tourGenerationResult.value?.hids?.length) {
         return false;
     }
-    return Object.values(generatedTourStates.value).some((state) => state && ERROR_STATES.includes(state));
-});
-
-watch(waitedForItemsOk, (value) => {
-    if (value) {
-        initializeGeneratedTour();
-    }
-});
-
-watch(anyStateInvalid, (value) => {
-    if (value) {
-        Toast.error(
-            "This tour uploads datasets that failed to be created. You can try generating the tour again.",
-            "Failed to generate tour",
-        );
-        resetTourGenerationState(true);
-    }
-});
-
-watch(
-    () => [props.toolId, props.toolVersion, shouldStartTour.value],
-    () => {
-        resetTourGenerationState(true);
-        maybeStartTour();
-    },
-);
-
-onMounted(() => {
-    maybeStartTour();
+    return Object.values(historyItemStates.value).some((state) => state && ERROR_STATES.includes(state));
 });
 
 function maybeStartTour() {
@@ -100,10 +74,10 @@ function maybeStartTour() {
         return;
     }
     const versionKey = `${props.toolId}/${props.toolVersion}`;
-    if (tourStartVersionKey.value === versionKey) {
+    if (lastProcessedVersion.value === versionKey) {
         return;
     }
-    tourStartVersionKey.value = versionKey;
+    lastProcessedVersion.value = versionKey;
     startToolTour();
 }
 
@@ -115,7 +89,7 @@ function startToolTour() {
     generateTour(props.toolId, props.toolVersion)
         .then(({ tour, uploaded_hids, use_datasets }) => {
             const hids = use_datasets ? uploaded_hids : [];
-            localTourData.value = { tour, hids };
+            tourGenerationResult.value = { tour, hids };
             if (!hids.length) {
                 initializeGeneratedTour();
             } else {
@@ -129,21 +103,52 @@ function startToolTour() {
 }
 
 function initializeGeneratedTour() {
-    if (!localTourData.value?.tour || !generatedTourId.value) {
+    if (!tourGenerationResult.value?.tour || !generatedTourId.value) {
         return;
     }
-    toolGeneratedTours.value[generatedTourId.value] = localTourData.value.tour;
+    toolGeneratedTours.value[generatedTourId.value] = tourGenerationResult.value.tour;
     tourStore.setTour(generatedTourId.value);
     resetTourGenerationState();
 }
 
 function resetTourGenerationState(resetKey = false) {
-    localTourData.value = null;
+    tourGenerationResult.value = null;
     generatingTour.value = false;
     if (resetKey) {
-        tourStartVersionKey.value = null;
+        lastProcessedVersion.value = null;
     }
 }
+
+// Initialize the tour once all required history items are ready
+watch(areHistoryItemsReady, (isReady) => {
+    if (isReady) {
+        initializeGeneratedTour();
+    }
+});
+
+// Handle failed history items by showing error and resetting state
+watch(hasFailedHistoryItems, (hasFailed) => {
+    if (hasFailed) {
+        Toast.error(
+            "This tour uploads datasets that failed to be created. You can try generating the tour again.",
+            "Failed to generate tour",
+        );
+        resetTourGenerationState(true);
+    }
+});
+
+// Re-initialize tour generation when tool or start parameter changes
+watch(
+    () => [props.toolId, props.toolVersion, shouldStartTour.value],
+    () => {
+        resetTourGenerationState(true);
+        maybeStartTour();
+    },
+);
+
+onMounted(() => {
+    maybeStartTour();
+});
 </script>
 
 <template>
