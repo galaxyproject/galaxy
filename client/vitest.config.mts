@@ -109,6 +109,10 @@ export default defineConfig({
     },
     resolve: {
         alias: {
+            // Vue Test Utils adapter - wraps mount/shallowMount to handle old v1 patterns
+            "@vue/test-utils": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-test-utils-adapter.ts"),
+            // Vue Router adapter - provides both VR3 (default export, constructor) and VR4 APIs
+            "vue-router": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-router-adapter.ts"),
             // Use @vue/compat for Vue 3 compatibility mode
             vue: "@vue/compat",
             // Use ESM version of bootstrap-vue so Vite can transform its imports
