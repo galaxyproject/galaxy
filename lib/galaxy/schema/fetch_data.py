@@ -20,14 +20,14 @@ from pydantic import (
 from typing_extensions import Literal
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    Model,
-    SampleSheetColumnDefinitions,
-    SampleSheetRow,
-)
+from galaxy.schema.schema import Model
 from galaxy.schema.terms import HelpTerms
 from galaxy.schema.types import CoercedStringType
 from galaxy.tool_util_models.parameters import FileOrCollectionRequest
+from galaxy.tool_util_models.sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+)
 from galaxy.util.hash_util import HashFunctionNames
 
 HELP_TERMS = HelpTerms()
@@ -95,6 +95,7 @@ class BaseCollectionTarget(BaseFetchDataTarget):
     tags: Optional[list[str]] = None
     name: Optional[str] = None
     column_definitions: Optional[SampleSheetColumnDefinitions] = None
+    rows: Optional[dict[str, SampleSheetRow]] = None
 
 
 class LibraryDestination(FetchBaseModel):

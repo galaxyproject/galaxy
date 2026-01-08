@@ -19,6 +19,39 @@ int_workflow:
   workflow_target_type: stored_workflow
   request_state:
     int_input: 8
+sheet_workflow:
+  workflow_id: f2db41e1fa331b3e
+  workflow_target_type: stored_workflow
+  request_state:
+    sample_sheet:
+      class: Collection
+      collection_type: sample_sheet
+      name: test sample sheet
+      elements:
+        - class: File
+          identifier: sample1
+          url: base64://eyJ0ZXN0IjogInRlc3QifQ=="
+          ext: txt
+          deferred: False
+        - class: File
+          identifier: sample2
+          url: base64://eyJ0ZXN0IjogInRlc3QifQ=="
+          ext: txt
+          deferred: False
+      column_definitions:
+      - type: int
+        name: replicate
+        optional: False
+      - type: string
+        name: condition
+        optional: False
+      rows:
+        sample1:
+        - 1
+        - control
+        sample2:
+        - 2
+        - treatment
 upload_file:
   request_state:
     - class: File
@@ -454,3 +487,34 @@ upload_one:
         name: "Reference information"
         url: "base64://eyJ0ZXN0IjogInRlc3QifQ=="
         ext: "txt"
+
+upload_sheet:
+  request_state:
+    - class: Collection
+      collection_type: sample_sheet
+      name: test sample sheet
+      elements:
+        - class: File
+          identifier: sample1
+          url: base64://eyJ0ZXN0IjogInRlc3QifQ=="
+          ext: txt
+          deferred: False
+        - class: File
+          identifier: sample2
+          url: base64://eyJ0ZXN0IjogInRlc3QifQ=="
+          ext: txt
+          deferred: False
+      column_definitions:
+      - type: int
+        name: replicate
+        optional: False
+      - type: string
+        name: condition
+        optional: False
+      rows:
+        sample1:
+          - 1
+          - control
+        sample2:
+          - 2
+          - treatment

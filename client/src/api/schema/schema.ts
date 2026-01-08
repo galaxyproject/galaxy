@@ -10461,6 +10461,8 @@ export interface components {
             class: "Collection";
             /** Collection Type */
             collection_type: string;
+            /** Column Definitions */
+            column_definitions?: components["schemas"]["SampleSheetColumnDefinition"][] | null;
             /**
              * Deferred
              * @default false
@@ -10473,6 +10475,10 @@ export interface components {
             )[];
             /** Name */
             name?: string | null;
+            /** Rows */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
             /** Src */
             src?: null;
         };
@@ -12742,6 +12748,10 @@ export interface components {
             items_from?: components["schemas"]["ElementsFromType"] | null;
             /** Name */
             name?: string | null;
+            /** Rows */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
             /**
              * Src
              * @constant
@@ -14471,6 +14481,10 @@ export interface components {
             name?: string | null;
             /** Path */
             path?: string | null;
+            /** Rows */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
             /** Server Dir */
             server_dir?: string | null;
             src: components["schemas"]["ItemsFromSrc"];
@@ -14509,6 +14523,10 @@ export interface components {
             )[];
             /** Name */
             name?: string | null;
+            /** Rows */
+            rows?: {
+                [key: string]: (number | boolean | string | null)[];
+            } | null;
             /** Tags */
             tags?: string[] | null;
         };
