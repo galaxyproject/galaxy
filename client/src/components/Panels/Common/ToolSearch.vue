@@ -148,7 +148,7 @@ onMounted(() => {
     if (props.useWorker) {
         // initialize worker
         if (!searchWorker.value) {
-            searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
+            searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url), { type: "module" });
         }
         searchWorker.value.onmessage = onMessage;
     }

@@ -17,7 +17,7 @@ export function useSelectMany({
 }) {
     // only start a single worker
     if (!worker) {
-        worker = new Worker(new URL("./selectMany.worker.js", import.meta.url));
+        worker = new Worker(new URL("./selectMany.worker.js", import.meta.url), { type: "module" });
     }
 
     workerReferenceCount += 1;
