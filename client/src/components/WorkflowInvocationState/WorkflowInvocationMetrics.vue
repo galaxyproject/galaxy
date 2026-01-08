@@ -55,7 +55,9 @@ function itemToX(item: components["schemas"]["WorkflowJobMetric"]) {
     if (groupBy.value === "tool_id") {
         return item.tool_id;
     } else if (groupBy.value === "step_id") {
-        return `${item.step_index + 1}: ${item.step_label || item.tool_id}`;
+        // Handle both int (top-level) and string (subworkflow) step indices
+        const stepDisplay = typeof item.step_index === "number" ? item.step_index + 1 : item.step_index;
+        return `${stepDisplay}: ${item.step_label || item.tool_id}`;
     } else {
         throw Error("Cannot happen");
     }
@@ -77,7 +79,7 @@ interface barChartData {
 
 interface JobInfo {
     toolId: string;
-    stepIndex: number;
+    stepIndex: number | string;
     stepLabel: string | null;
 }
 
@@ -86,7 +88,7 @@ interface DerivedMetric {
     job_id: string;
     raw_value: string;
     tool_id: string;
-    step_index: number;
+    step_index: number | string;
     step_label: string | null;
 }
 

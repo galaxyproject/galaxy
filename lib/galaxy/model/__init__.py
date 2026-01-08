@@ -10081,6 +10081,16 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     order_index: Mapped[int] = column_property(
         select(WorkflowStep.order_index).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
+    subworkflow_invocation_id: Mapped[Optional[int]] = column_property(
+        select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id)
+        .where(
+            and_(
+                WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == workflow_invocation_id,
+                WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == workflow_step_id,
+            )
+        )
+        .scalar_subquery(),
+    )
 
     dict_collection_visible_keys = [
         "id",
@@ -12623,19 +12633,6 @@ Visualization.average_rating = column_property(  # type:ignore[assignment]
 
 Workflow.step_count = column_property(  # type:ignore[assignment]
     select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(), deferred=True
-)
-
-WorkflowInvocationStep.subworkflow_invocation_id = column_property(
-    select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id)
-    .where(
-        and_(
-            WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id
-            == WorkflowInvocationStep.workflow_invocation_id,
-            WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id
-            == WorkflowInvocationStep.workflow_step_id,
-        )
-    )
-    .scalar_subquery(),
 )
 
 # Set up proxy so that this syntax is possible:
