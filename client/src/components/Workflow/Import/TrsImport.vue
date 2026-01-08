@@ -2,7 +2,7 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { BAlert, BButton, BCard, BCardBody, BCardTitle } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { type Ref, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
@@ -23,9 +23,18 @@ interface Props {
     queryTrsServer?: string;
     queryTrsVersionId?: string;
     trsServers?: TrsSelection[];
+    mode?: "modal" | "wizard";
+    trsMethod?: "cards" | "search" | "url" | "id";
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    mode: "modal",
+    trsMethod: "cards",
+});
+
+const emit = defineEmits<{
+    (e: "input-valid", valid: boolean): void;
+}>();
 
 type TrsView = "cards" | "trsId" | "trsUrl" | "trsSearch";
 
@@ -33,6 +42,10 @@ const currentView = ref<TrsView>("cards");
 const { isAnonymous } = storeToRefs(useUserStore());
 const importing = ref(false);
 const errorMessage: Ref<string | null> = ref(null);
+const trsSearchRef = ref<InstanceType<typeof TrsSearch>>();
+const trsIdImportRef = ref<InstanceType<typeof TrsIdImport>>();
+const trsUrlImportRef = ref<InstanceType<typeof TrsUrlImport>>();
+const validationState = ref(false);
 
 const services = new Services();
 const router = useRouter();
@@ -82,11 +95,59 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
     }
 }
 
-// Auto-select view if query params are present
-if (props.queryTrsUrl) {
-    currentView.value = "trsUrl";
-} else if (props.queryTrsId || props.queryTrsServer) {
-    currentView.value = "trsId";
+// In modal mode: use internal currentView state
+// In wizard mode: use trsMethod prop
+const effectiveView = computed<TrsView>(() => {
+    if (props.mode === "wizard") {
+        // Map wizard method names to TrsView names
+        const methodMap: Record<string, TrsView> = {
+            cards: "cards",
+            search: "trsSearch",
+            url: "trsUrl",
+            id: "trsId",
+        };
+        return methodMap[props.trsMethod] || "cards";
+    }
+    return currentView.value;
+});
+
+// Show card selection only in modal mode
+const showCardSelection = computed(() => {
+    return props.mode === "modal" && currentView.value === "cards";
+});
+
+// Show back button only in modal mode
+const showBackButton = computed(() => {
+    return props.mode === "modal" && currentView.value !== "cards";
+});
+
+// Forward validation from child components
+function onChildValidation(valid: boolean) {
+    validationState.value = valid;
+    emit("input-valid", valid);
+}
+
+// Expose import method for wizard
+async function attemptImport() {
+    // Delegate to the active view's import logic
+    if (effectiveView.value === "trsSearch" && trsSearchRef.value) {
+        trsSearchRef.value.triggerImport();
+    } else if (effectiveView.value === "trsUrl" && trsUrlImportRef.value) {
+        trsUrlImportRef.value.triggerImport();
+    } else if (effectiveView.value === "trsId" && trsIdImportRef.value) {
+        trsIdImportRef.value.triggerImport();
+    }
+}
+
+defineExpose({ attemptImport });
+
+// Auto-select view if query params are present (modal mode only)
+if (props.mode === "modal") {
+    if (props.queryTrsUrl) {
+        currentView.value = "trsUrl";
+    } else if (props.queryTrsId || props.queryTrsServer) {
+        currentView.value = "trsId";
+    }
 }
 </script>
 
@@ -97,7 +158,7 @@ if (props.queryTrsUrl) {
         </BAlert>
 
         <div v-else>
-            <div v-if="currentView === 'cards'">
+            <div v-if="showCardSelection">
                 <div class="my-5">
                     Workflows can be imported from TRS-compliant workflow registries using the GA4GH protocol. This
                     Galaxy server has {{ trsServers?.length || 0 }} configured TRS server(s):
@@ -155,7 +216,7 @@ if (props.queryTrsUrl) {
             </div>
 
             <div v-else>
-                <BButton variant="link" class="mb-5 p-0" @click="backToCards">
+                <BButton v-if="showBackButton" variant="link" class="mb-5 p-0" @click="backToCards">
                     &larr; Back to TRS import options
                 </BButton>
 
@@ -167,23 +228,29 @@ if (props.queryTrsUrl) {
                     {{ errorMessage }}
                 </BAlert>
 
-                <div v-if="currentView === 'trsSearch'" style="min-height: 500px">
-                    <TrsSearch />
+                <div v-if="effectiveView === 'trsSearch'" style="min-height: 500px">
+                    <TrsSearch ref="trsSearchRef" :mode="props.mode" @input-valid="onChildValidation" />
                 </div>
 
-                <div v-if="currentView === 'trsId'" style="min-height: 500px">
+                <div v-if="effectiveView === 'trsId'" style="min-height: 500px">
                     <TrsIdImport
+                        ref="trsIdImportRef"
                         :is-run="props.isRun"
                         :query-trs-id="props.queryTrsId"
                         :query-trs-server="props.queryTrsServer"
                         :query-trs-version-id="props.queryTrsVersionId"
-                        @onImport="(trsId, toolId, version) => importVersion(trsId, toolId, version, props.isRun)" />
+                        :mode="props.mode"
+                        @onImport="(trsId, toolId, version) => importVersion(trsId, toolId, version, props.isRun)"
+                        @input-valid="onChildValidation" />
                 </div>
 
-                <div v-if="currentView === 'trsUrl'" style="min-height: 500px">
+                <div v-if="effectiveView === 'trsUrl'" style="min-height: 500px">
                     <TrsUrlImport
+                        ref="trsUrlImportRef"
                         :query-trs-url="props.queryTrsUrl"
-                        @onImport="(url) => importVersionFromUrl(url, props.isRun)" />
+                        :mode="props.mode"
+                        @onImport="(url) => importVersionFromUrl(url, props.isRun)"
+                        @input-valid="onChildValidation" />
                 </div>
             </div>
         </div>

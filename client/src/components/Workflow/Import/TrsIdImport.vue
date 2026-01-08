@@ -16,12 +16,16 @@ interface Props {
     queryTrsId?: string;
     queryTrsServer?: string;
     queryTrsVersionId?: string;
+    mode?: "modal" | "wizard";
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    mode: "modal",
+});
 
 const emit = defineEmits<{
     (e: "onImport", trsId: string, toolId: string, version?: string): void;
+    (e: "input-valid", valid: boolean): void;
 }>();
 
 const trsTool: Ref<TrsToolInterface | null> = ref(null);
@@ -30,6 +34,7 @@ const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
 const toolId = ref(props.queryTrsId);
 const isAutoImport = ref(Boolean(props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId));
+const selectedVersion = ref<string | undefined>(undefined);
 
 const toolIdTrimmed = computed(() => {
     return toolId.value?.trim() || null;
@@ -37,6 +42,15 @@ const toolIdTrimmed = computed(() => {
 
 const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
+});
+
+// Validation state for wizard mode
+const isValid = computed(() => {
+    return trsTool.value !== null && !loading.value && !hasErrorMessage.value && selectedVersion.value !== undefined;
+});
+
+watch(isValid, (newValue) => {
+    emit("input-valid", newValue);
 });
 
 watch(toolIdTrimmed, () => {
@@ -98,9 +112,27 @@ function onTrsSelectionError(message: string) {
     errorMessage.value = message;
 }
 
+function onVersionSelected(versionId: string) {
+    selectedVersion.value = versionId;
+
+    // Only auto-import in modal mode or during auto-import
+    if (props.mode === "modal" || isAutoImport.value) {
+        importVersion(trsSelection.value?.id || "", trsTool.value?.id || "", versionId);
+    }
+}
+
 function importVersion(trsId: string, toolIdToImport: string, version?: string) {
     emit("onImport", trsId, toolIdToImport, version);
 }
+
+// Expose method for wizard submit
+function triggerImport() {
+    if (trsSelection.value && trsTool.value && selectedVersion.value) {
+        importVersion(trsSelection.value.id, trsTool.value.id, selectedVersion.value);
+    }
+}
+
+defineExpose({ triggerImport });
 </script>
 
 <template>
@@ -142,7 +174,9 @@ function importVersion(trsId: string, toolIdToImport: string, version?: string) 
             <TrsTool
                 v-if="trsTool"
                 :trs-tool="trsTool"
-                @onImport="(versionId) => importVersion(trsSelection?.id || '', trsTool?.id || '', versionId)" />
+                :mode="props.mode"
+                @onImport="onVersionSelected"
+                @onSelect="onVersionSelected" />
         </div>
     </div>
 </template>
