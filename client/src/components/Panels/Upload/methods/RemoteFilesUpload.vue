@@ -20,11 +20,13 @@ import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { mapToRemoteFileUpload } from "@/utils/upload/itemMappers";
 import { USER_FILE_PREFIX } from "@/utils/url";
+import { bytesToString } from "@/utils/utils";
 
 import type { UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { RemoteFileItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
+import RemoteEntryMetadata from "../shared/RemoteEntryMetadata.vue";
 import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
 import UploadTableBulkExtensionHeader from "../shared/UploadTableBulkExtensionHeader.vue";
 import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
@@ -332,15 +334,15 @@ const browserFields = [
         key: "name",
         label: "Name",
         sortable: false,
-        thStyle: { width: "200px" },
+        thStyle: { minWidth: "200px" },
         tdClass: "align-middle",
     },
     {
         key: "details",
         label: "Details",
         sortable: false,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle text-muted small",
+        thStyle: { width: "auto", minWidth: "200px" },
+        tdClass: "align-middle",
     },
 ];
 
@@ -352,6 +354,13 @@ const tableFields = [
         sortable: true,
         thStyle: { width: "200px" },
         tdClass: "file-name-cell align-middle",
+    },
+    {
+        key: "size",
+        label: "Size",
+        sortable: true,
+        thStyle: { minWidth: "80px", width: "80px" },
+        tdClass: "align-middle",
     },
     {
         key: "url",
@@ -512,6 +521,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         </div>
                     </template>
 
+                    <!-- Details column -->
+                    <template v-slot:cell(details)="{ item }">
+                        <span v-if="urlTracker.isAtRoot && item.details">
+                            {{ item.details }}
+                        </span>
+                        <RemoteEntryMetadata v-else-if="item.isLeaf && item.entry" :entry="item.entry" />
+                    </template>
+
                     <!-- Loading slot -->
                     <template v-slot:table-busy>
                         <div class="text-center my-2">
@@ -588,6 +605,11 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             :state="isNameValid(item.name)"
                             @input="item.name = $event"
                             @blur="restoreOriginalName(item, item.name)" />
+                    </template>
+
+                    <!-- Size column -->
+                    <template v-slot:cell(size)="{ item }">
+                        {{ bytesToString(item.size) }}
                     </template>
 
                     <!-- URL column (read-only) -->
