@@ -34,17 +34,27 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
 
         self.workflow_index_click_import()
         workflows.import_file_link.wait_for_and_click()
+        # Click Next to navigate to the file upload view
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
         workflows.import_file.assert_no_axe_violations_with_impact_of_at_least("moderate")
 
         self.navigate_to_workflows_import()
         workflows.import_trs_link.wait_for_and_click()
+        # Click Next to navigate to TRS method selection
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
         workflows.import_trs_search_link.wait_for_and_click()
+        # Click Next to navigate to TRS search view
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
         # moderate violation relating to header ordering
         workflows.import_trs_search.assert_no_axe_violations_with_impact_of_at_least("serious")
 
         self.navigate_to_workflows_import()
         workflows.import_trs_link.wait_for_and_click()
+        # Click Next to navigate to TRS method selection
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
         workflows.import_trs_id_link.wait_for_and_click()
+        # Click Next to navigate to TRS ID view
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
         # ditto - moderate violation relating to header ordering
         workflows.import_trs_id.assert_no_axe_violations_with_impact_of_at_least("serious")
 

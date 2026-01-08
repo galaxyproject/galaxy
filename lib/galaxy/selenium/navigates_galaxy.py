@@ -1933,11 +1933,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             raise KeyError(f"Failed to find tag {tag} on workflow with index {workflow_index}")
 
     def workflow_import_submit_url(self, url):
+        # Click the "Fetch URL" card to select that import method
         self.components.workflows.import_url_link.wait_for_and_click()
-        form_button = self.wait_for_selector_visible("#workflow-import-button")
+        # Click the wizard's Next button to proceed to the URL input step
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
+        # Enter the URL
         url_element = self.wait_for_selector_visible("#workflow-import-url-input")
         url_element.send_keys(url)
-        form_button.click()
+        # Wait a moment for validation to occur
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Wait for the Import button to become enabled (it's disabled until URL is valid)
+        import_button = self.wait_for_selector_clickable(".wizard-actions .go-next-btn.btn-primary:not([disabled])")
+        # Click the wizard's Import button
+        import_button.click()
+        # Wait for workflow list to appear after import completes
+        self.components.workflows.workflow_cards.wait_for_visible()
 
     def workflow_sharing_click_publish(self):
         self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
