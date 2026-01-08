@@ -20,7 +20,10 @@ from fastapi.responses import (
     JSONResponse,
     StreamingResponse,
 )
-from openai import AsyncOpenAI
+from openai import (
+    APIError,
+    AsyncOpenAI,
+)
 from openai._streaming import AsyncStream
 from openai.types.chat import (
     ChatCompletion,
@@ -218,7 +221,7 @@ class FastAPIAI:
                 tools=tools,
                 top_p=TOP_P,
             )
-        except Exception as e:
+        except APIError as e:
             log.debug("Failed to complete OpenAI request.", exc_info=e)
             status_code = getattr(e, "status_code", 500)
             if hasattr(e, "body") and isinstance(e.body, dict):

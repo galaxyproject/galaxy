@@ -6,6 +6,7 @@ from unittest.mock import (
 )
 
 import pytest
+from openai import APIError
 
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
@@ -158,15 +159,19 @@ class TestAiApi(IntegrationTestCase):
 
     @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
     def test_provider_error_body_forwarded(self, mock_client):
-        class MockOpenAIError(Exception):
+        class MockOpenAIError(APIError):
             def __init__(self):
+                super().__init__(
+                    message="original error message",
+                    request=object(),
+                    body={
+                        "message": "original error message",
+                        "type": "api_error",
+                        "param": None,
+                        "code": None,
+                    },
+                )
                 self.status_code = 404
-                self.body = {
-                    "message": "original error message",
-                    "type": "api_error",
-                    "param": None,
-                    "code": None,
-                }
 
         mock_instance = MagicMock()
         mock_instance.chat.completions.create = AsyncMock(side_effect=MockOpenAIError())
