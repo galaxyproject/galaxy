@@ -203,20 +203,27 @@ class FastAPIAI:
         try:
             client = AsyncOpenAI(**client_kwargs)
         except Exception as e:
-            log.debug("Failed to initialize OpenAI client", exc_info=e)
+            log.debug("Failed to initialize OpenAI client.", exc_info=e)
             return self.create_error("Failed to initialize AI client.", 500)
 
         # Connect to ai provider
         log.info(f"Proxying to {ai_model}, tokens: {max_tokens}")
-        response = await client.chat.completions.create(
-            max_tokens=max_tokens,
-            messages=messages,
-            model=ai_model,
-            stream=stream,
-            temperature=TEMPERATURE,
-            tools=tools,
-            top_p=TOP_P,
-        )
+        try:
+            response = await client.chat.completions.create(
+                max_tokens=max_tokens,
+                messages=messages,
+                model=ai_model,
+                stream=stream,
+                temperature=TEMPERATURE,
+                tools=tools,
+                top_p=TOP_P,
+            )
+        except Exception as e:
+            log.debug("Failed to complete OpenAI request.", exc_info=e)
+            status_code = getattr(e, "status_code", 500)
+            if hasattr(e, "body") and isinstance(e.body, dict):
+                return JSONResponse(content=dict(error=e.body), status_code=status_code)
+            return self.create_error("Failed to complete OpenAI request.", status_code)
 
         # Parse response
         if stream:
@@ -246,7 +253,7 @@ class FastAPIAI:
     def create_error(self, message: str, status_code=400):
         """Error handling helper."""
         log.debug(message)
-        return JSONResponse(status_code=status_code, content=dict(error=dict(message=message)))
+        return JSONResponse(content=dict(error=dict(message=message)), status_code=status_code)
 
 
 class PluginsController(BaseGalaxyAPIController):
