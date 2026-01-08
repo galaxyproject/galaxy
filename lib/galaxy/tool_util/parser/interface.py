@@ -89,6 +89,8 @@ class ToolSourceTestOutputAttributes(TypedDict):
     metric: str
     pin_labels: Optional[Any]
     count: Optional[int]
+    min: Optional[int]
+    max: Optional[int]
     metadata: Dict[str, Any]
     md5: Optional[str]
     checksum: Optional[str]
@@ -865,6 +867,10 @@ class TestCollectionOutputDef:
         else:
             count = attrib.get("count")
         self.count = int(count) if count is not None else None
+        min = attrib.get("min")
+        self.min = int(min) if min is not None else None
+        max = attrib.get("max")
+        self.max = int(max) if max is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
 

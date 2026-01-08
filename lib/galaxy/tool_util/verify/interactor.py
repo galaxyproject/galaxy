@@ -332,6 +332,8 @@ class GalaxyInteractorApi:
         attributes = output_testdef.attributes
         name = output_testdef.name
         expected_count = attributes.get("count")
+        min_count = attributes.get("min")
+        max_count = attributes.get("max")
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
         try:
@@ -356,6 +358,14 @@ class GalaxyInteractorApi:
         if expected_count is not None and expected_count != found_datasets:
             raise AssertionError(
                 f"Output '{name}': expected to have '{expected_count}' datasets, but it had '{found_datasets}'"
+            )
+        if min_count is not None and min_count > found_datasets:
+            raise AssertionError(
+                f"Output '{name}': expected to have at least '{min_count}' datasets, but it had '{found_datasets}'"
+            )
+        if max_count is not None and max_count < found_datasets:
+            raise AssertionError(
+                f"Output '{name}': expected to have at most '{max_count}' datasets, but it had '{found_datasets}'"
             )
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
@@ -1335,12 +1345,16 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
             message = f"Output collection '{name}': expected to be of type [{expected_collection_type}], was of type [{collection_type}]."
             raise AssertionError(message)
 
-    expected_element_count = output_collection_def.count
-    if expected_element_count is not None:
-        actual_element_count = len(data_collection["elements"])
-        if expected_element_count != actual_element_count:
-            message = f"Output collection '{name}': expected to have {expected_element_count} elements, but it had {actual_element_count}."
-            raise AssertionError(message)
+    actual_element_count = len(data_collection["elements"])
+    if output_collection_def.count and output_collection_def.count != actual_element_count:
+        message = f"Output collection '{name}': expected to have {output_collection_def.count} elements, but it had {actual_element_count}."
+        raise AssertionError(message)
+    if output_collection_def.min and output_collection_def.min > actual_element_count:
+        message = f"Output collection '{name}': expected to have at least {output_collection_def.min} elements, but it had {actual_element_count}."
+        raise AssertionError(message)
+    if output_collection_def.max and output_collection_def.max < actual_element_count:
+        message = f"Output collection '{name}': expected to have at most {output_collection_def.max} elements, but it had {actual_element_count}."
+        raise AssertionError(message)
 
     def get_element(elements, id):
         for element in elements:
@@ -1356,7 +1370,6 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                 element_outfile, element_attrib = None, element_test
             else:
                 element_outfile, element_attrib = element_test
-            expected_count = element_attrib.get("count")
             if "expected_sort_order" in element_attrib:
                 expected_sort_order[element_attrib["expected_sort_order"]] = element_identifier
 
@@ -1373,9 +1386,20 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                 elements = element["object"]["elements"]
                 element_count = len(elements)
                 verify_elements(elements, element_attrib.get("elements", {}))
+            expected_count = element_attrib.get("count")
             if expected_count is not None and expected_count != element_count:
                 raise AssertionError(
                     f"Element '{element_identifier}': expected to have {expected_count} elements, but it had {element_count}"
+                )
+            max = element_attrib.get("max")
+            if max is not None and max < element_count:
+                raise AssertionError(
+                    f"Element '{element_identifier}': expected to have at most {max} elements, but it had {element_count}"
+                )
+            min = element_attrib.get("min")
+            if min is not None and min > element_count:
+                raise AssertionError(
+                    f"Element '{element_identifier}': expected to have at least {min} elements, but it had {element_count}"
                 )
 
         if len(expected_sort_order) > 0:
