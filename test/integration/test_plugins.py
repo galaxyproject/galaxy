@@ -155,3 +155,24 @@ class TestAiApi(IntegrationTestCase):
         call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
         forwarded_tools = call_kwargs["tools"]
         assert forwarded_tools[0]["function"]["description"] == "Select a processing step"
+
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_provider_error_body_forwarded(self, mock_client):
+        class MockOpenAIError(Exception):
+            def __init__(self):
+                self.status_code = 404
+                self.body = {
+                    "message": "original error message",
+                    "type": "api_error",
+                    "param": None,
+                    "code": None,
+                }
+
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(side_effect=MockOpenAIError())
+        mock_client.return_value = mock_instance
+        response = self._post_payload(self._create_payload())
+        self._assert_status_code_is(response, 404)
+        body = response.json()
+        assert body["error"]["message"] == "original error message"
+        assert body["error"]["type"] == "api_error"

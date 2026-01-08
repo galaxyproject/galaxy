@@ -204,10 +204,10 @@ class FastAPIAI:
             client = AsyncOpenAI(**client_kwargs)
         except Exception as e:
             log.debug("Failed to initialize OpenAI client.", exc_info=e)
-            return self.create_error("Failed to initialize AI client.", 500)
+            return self.create_error("Failed to initialize OpenAI client.", 500)
 
         # Connect to ai provider
-        log.info(f"Proxying to {ai_model}, tokens: {max_tokens}")
+        log.info(f"Proxying to {ai_model}, tokens: {max_tokens}.")
         try:
             response = await client.chat.completions.create(
                 max_tokens=max_tokens,
