@@ -11,11 +11,12 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCollapse } from "bootstrap-vue";
 
+import type { UploadItem } from "@/composables/upload/uploadItemTypes";
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { bytesToString } from "@/utils/utils";
 
-import type { BatchStatus, CollectionBatchState, UploadItem } from "./uploadState";
+import type { BatchStatus, CollectionBatchState } from "./uploadState";
 import { useUploadState } from "./uploadState";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
