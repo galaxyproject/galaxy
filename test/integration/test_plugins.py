@@ -1,4 +1,8 @@
 import os
+from typing import (
+    Any,
+    cast,
+)
 from unittest.mock import (
     AsyncMock,
     MagicMock,
@@ -163,7 +167,7 @@ class TestAiApi(IntegrationTestCase):
             def __init__(self):
                 super().__init__(
                     message="original error message",
-                    request=object(),
+                    request=cast(Any, object()),
                     body={
                         "message": "original error message",
                         "type": "api_error",
