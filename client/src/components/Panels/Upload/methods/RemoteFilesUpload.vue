@@ -153,7 +153,7 @@ function entryToSelectionItem(entry: RemoteEntry): SelectionItem {
         label: entry.name,
         url: entry.uri,
         isLeaf: entry.class === "File",
-        details: entry.class === "File" ? entry.ctime : "",
+        details: "No details available",
         entry: entry,
     };
 }
@@ -528,10 +528,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Details column -->
                     <template v-slot:cell(details)="{ item }">
-                        <span v-if="urlTracker.isAtRoot && item.details">
+                        <RemoteEntryMetadata v-if="item.isLeaf && item.entry" :entry="item.entry" />
+                        <span v-else-if="urlTracker.isAtRoot && item.details">
                             {{ item.details }}
                         </span>
-                        <RemoteEntryMetadata v-else-if="item.isLeaf && item.entry" :entry="item.entry" />
                     </template>
 
                     <!-- Loading slot -->
