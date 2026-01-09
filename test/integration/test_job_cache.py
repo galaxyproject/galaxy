@@ -24,6 +24,63 @@ class TestJobCacheFiltering(integration_util.IntegrationTestCase):
     def sa_session(self):
         return self._app.model.session
 
+    def _set_hda_to_failed_metadata(self, hda_id: str) -> None:
+        """Set an HDA to failed_metadata state by its encoded ID."""
+        database_id = self._get(f"configuration/decode/{hda_id}").json()["decoded_id"]
+        hda_model = self.sa_session.scalar(
+            select(HistoryDatasetAssociation).where(HistoryDatasetAssociation.id == database_id)
+        )
+        assert hda_model
+        hda_model.state = HistoryDatasetAssociation.states.FAILED_METADATA
+        self.sa_session.add(hda_model)
+        self.sa_session.commit()
+
+    def _run_and_verify_cache_hit(self, tool_id: str, inputs: dict, history_id: str) -> str:
+        """Run a tool twice and verify the second run uses the cached job.
+
+        Returns the first job ID for reference.
+        """
+        first_run = self.dataset_populator.run_tool(
+            tool_id=tool_id,
+            inputs=inputs,
+            history_id=history_id,
+        )
+        first_job_id = first_run["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(first_job_id)
+
+        cached_run = self.dataset_populator.run_tool(
+            tool_id=tool_id,
+            inputs=inputs,
+            history_id=history_id,
+            use_cached_job=True,
+        )
+        cached_job_id = cached_run["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(cached_job_id)
+
+        cached_job_details = self.dataset_populator.get_job_details(cached_job_id, full=True).json()
+        assert cached_job_details["copied_from_job_id"] == first_job_id, "Second run should have used cached job"
+
+        return first_job_id
+
+    def _verify_cache_excluded_with_failed_metadata(self, tool_id: str, inputs: dict, history_id: str) -> None:
+        """Verify that cache is not used when input HDA is in failed_metadata state."""
+        third_run = self.dataset_populator.run_tool_raw(
+            tool_id=tool_id,
+            inputs=inputs,
+            history_id=history_id,
+            use_cached_job=True,
+        ).json()
+
+        # Either the tool fails with an error (expected for failed_metadata input),
+        # or the job runs without using cache (no copied_from_job_id)
+        if "errors" in third_run and third_run["errors"]:
+            assert "failed_metadata" in str(third_run["errors"]), "Error should mention failed_metadata state"
+        else:
+            # Job ran successfully - verify cache was NOT used
+            job_id = third_run["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert job_details.get("copied_from_job_id") is None, "Cache should NOT be used for failed_metadata input"
+
     def test_job_cache_excludes_failed_metadata_hda(self):
         """Test that job cache lookup excludes HDAs in failed_metadata state.
 
@@ -32,61 +89,13 @@ class TestJobCacheFiltering(integration_util.IntegrationTestCase):
         because the HDA is now in an invalid state.
         """
         with self.dataset_populator.test_history() as history_id:
-            # Create a dataset and run a job with it (this creates a cache entry)
             hda = self.dataset_populator.new_dataset(history_id, content="test content")
             hda_id = hda["id"]
             inputs = {"input1": {"src": "hda", "id": hda_id}}
 
-            # Run the first job without cache - this creates the cache entry
-            first_run = self.dataset_populator.run_tool(
-                tool_id="cat1",
-                inputs=inputs,
-                history_id=history_id,
-            )
-            first_job_id = first_run["jobs"][0]["id"]
-            self.dataset_populator.wait_for_job(first_job_id)
-
-            # Run the same job with caching enabled - should use cached job
-            cached_run = self.dataset_populator.run_tool(
-                tool_id="cat1",
-                inputs=inputs,
-                history_id=history_id,
-                use_cached_job=True,
-            )
-            cached_job_id = cached_run["jobs"][0]["id"]
-            self.dataset_populator.wait_for_job(cached_job_id)
-
-            # Verify job was cached (copied_from_job_id should be set)
-            cached_job_details = self.dataset_populator.get_job_details(cached_job_id, full=True).json()
-            assert cached_job_details["copied_from_job_id"] == first_job_id, "Second run should have used cached job"
-
-            # Now set the input HDA to failed_metadata state
-            database_id = self._get(f"configuration/decode/{hda_id}").json()["decoded_id"]
-            hda_model = self.sa_session.scalar(
-                select(HistoryDatasetAssociation).where(HistoryDatasetAssociation.id == database_id)
-            )
-            assert hda_model
-            hda_model.state = HistoryDatasetAssociation.states.FAILED_METADATA
-            self.sa_session.add(hda_model)
-            self.sa_session.commit()
-
-            # Run the same job again with caching enabled
-            # This time, cache should NOT be used because input HDA is in failed_metadata state
-            # The tool will also fail validation since the HDA is in an invalid state
-            third_run = self.dataset_populator.run_tool_raw(
-                tool_id="cat1",
-                inputs=inputs,
-                history_id=history_id,
-                use_cached_job=True,
-            ).json()
-
-            # The response should contain an error since the HDA is in failed_metadata state
-            # Most importantly, the cache should NOT have been used - if it were,
-            # the job would have succeeded by copying from the cached job
-            assert (
-                "errors" in third_run and third_run["errors"]
-            ), "Tool should fail when input HDA is in failed_metadata state"
-            assert "failed_metadata" in str(third_run["errors"]), "Error should mention failed_metadata state"
+            self._run_and_verify_cache_hit("cat1", inputs, history_id)
+            self._set_hda_to_failed_metadata(hda_id)
+            self._verify_cache_excluded_with_failed_metadata("cat1", inputs, history_id)
 
     def test_job_cache_excludes_failed_metadata_hdca_element(self):
         """Test that job cache lookup excludes HDCAs with elements in failed_metadata state.
@@ -95,65 +104,16 @@ class TestJobCacheFiltering(integration_util.IntegrationTestCase):
         not return a match for that collection.
         """
         with self.dataset_populator.test_history() as history_id:
-            # Create a dataset collection with two elements
             create_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["content1\n", "content2\n"], wait=True
             ).json()
             hdca_id = create_response["output_collections"][0]["id"]
 
-            # Get the first element's HDA ID
             hdca_details = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
             first_element_hda_id = hdca_details["elements"][0]["object"]["id"]
 
             inputs = {"input1": {"src": "hdca", "id": hdca_id}}
 
-            # Run the first job without cache - this creates the cache entry
-            first_run = self.dataset_populator.run_tool(
-                tool_id="cat_list",
-                inputs=inputs,
-                history_id=history_id,
-            )
-            first_job_id = first_run["jobs"][0]["id"]
-            self.dataset_populator.wait_for_job(first_job_id)
-
-            # Run the same job with caching enabled - should use cached job
-            cached_run = self.dataset_populator.run_tool(
-                tool_id="cat_list",
-                inputs=inputs,
-                history_id=history_id,
-                use_cached_job=True,
-            )
-            cached_job_id = cached_run["jobs"][0]["id"]
-            self.dataset_populator.wait_for_job(cached_job_id)
-
-            # Verify job was cached (copied_from_job_id should be set)
-            cached_job_details = self.dataset_populator.get_job_details(cached_job_id, full=True).json()
-            assert cached_job_details["copied_from_job_id"] == first_job_id, "Second run should have used cached job"
-
-            # Now set one of the collection element's HDA to failed_metadata state
-            database_id = self._get(f"configuration/decode/{first_element_hda_id}").json()["decoded_id"]
-            hda_model = self.sa_session.scalar(
-                select(HistoryDatasetAssociation).where(HistoryDatasetAssociation.id == database_id)
-            )
-            assert hda_model
-            hda_model.state = HistoryDatasetAssociation.states.FAILED_METADATA
-            self.sa_session.add(hda_model)
-            self.sa_session.commit()
-
-            # Run the same job again with caching enabled
-            # This time, cache should NOT be used because a leaf HDA is in failed_metadata state
-            # The tool will also fail validation since one of the HDAs is in an invalid state
-            third_run = self.dataset_populator.run_tool_raw(
-                tool_id="cat_list",
-                inputs=inputs,
-                history_id=history_id,
-                use_cached_job=True,
-            ).json()
-
-            # The response should contain an error since one of the HDAs is in failed_metadata state
-            # Most importantly, the cache should NOT have been used - if it were,
-            # the job would have succeeded by copying from the cached job
-            assert (
-                "errors" in third_run and third_run["errors"]
-            ), "Tool should fail when HDCA element is in failed_metadata state"
-            assert "failed_metadata" in str(third_run["errors"]), "Error should mention failed_metadata state"
+            self._run_and_verify_cache_hit("cat_list", inputs, history_id)
+            self._set_hda_to_failed_metadata(first_element_hda_id)
+            self._verify_cache_excluded_with_failed_metadata("cat_list", inputs, history_id)
