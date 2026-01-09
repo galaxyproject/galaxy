@@ -51,6 +51,26 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
         return sourceId;
     }
 
+    function supportsFeature(uri: string | null | undefined, feature: "pagination" | "search" | "sorting"): boolean {
+        if (!uri) {
+            return false;
+        }
+        const fileSource = getFileSourceByUri(uri);
+        return Boolean(fileSource?.supports?.[feature]);
+    }
+
+    function supportsPagination(uri: string | null | undefined): boolean {
+        return supportsFeature(uri, "pagination");
+    }
+
+    function supportsSearch(uri: string | null | undefined): boolean {
+        return supportsFeature(uri, "search");
+    }
+
+    function supportsSorting(uri: string | null | undefined): boolean {
+        return supportsFeature(uri, "sorting");
+    }
+
     return {
         /**
          * The list of available file sources from the server.
@@ -92,5 +112,26 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          * @returns Whether the file source is a private file source.
          */
         isPrivateFileSource,
+        /**
+         * Check if the file source at the given URI supports pagination.
+         *
+         * @param uri - The URI of the file source.
+         * @returns Whether the file source supports pagination.
+         */
+        supportsPagination,
+        /**
+         * Check if the file source at the given URI supports search.
+         *
+         * @param uri - The URI of the file source.
+         * @returns Whether the file source supports search.
+         */
+        supportsSearch,
+        /**
+         * Check if the file source at the given URI supports sorting.
+         *
+         * @param uri - The URI of the file source.
+         * @returns Whether the file source supports sorting.
+         */
+        supportsSorting,
     };
 }

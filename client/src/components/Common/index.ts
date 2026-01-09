@@ -42,6 +42,13 @@ export interface BreadcrumbItem {
     to?: RawLocation;
 
     /**
+     * Optional numeric index representing this item's position in navigation history.
+     * Used for index-based navigation without router integration.
+     * Negative values (e.g., -1) can represent root or special positions.
+     */
+    index?: number;
+
+    /**
      * Optional additional text displayed above the item.
      */
     superText?: string;
