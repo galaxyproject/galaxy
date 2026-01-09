@@ -10,6 +10,7 @@ import type { BreadcrumbItem } from "@/components/Common";
 import { Model } from "@/components/FilesDialog/model";
 import { fileSourcePluginToItem } from "@/components/FilesDialog/utilities";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { useFileSources } from "@/composables/fileSources";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
@@ -51,6 +52,7 @@ const emit = defineEmits<{
 
 const uploadQueue = useUploadQueue();
 const router = useRouter();
+const filesSources = useFileSources();
 
 const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
 
@@ -84,6 +86,7 @@ const selectionModel = ref<Model>(new Model({ multiple: true }));
 const selectionCount = ref(0);
 const urlTracker = useUrlTracker<SelectionItem>();
 const browserItems = ref<SelectionItem[]>([]);
+const allFetchedItems = ref<SelectionItem[]>([]); // Store all items for client-side pagination
 const searchQuery = ref("");
 const isBusy = ref(false);
 const errorMessage = ref<string>();
@@ -126,7 +129,19 @@ async function executeIfLatest<T>(
     }
 }
 
-const hasPagination = computed(() => !urlTracker.isAtRoot.value && totalMatches.value > perPage.value && !isBusy.value);
+const currentFileSourceUri = computed(() => urlTracker.current.value?.url);
+
+const supportsServerPagination = computed(() => filesSources.supportsPagination(currentFileSourceUri.value));
+
+const supportsServerSearch = computed(() => filesSources.supportsSearch(currentFileSourceUri.value));
+
+const hasPagination = computed(() => {
+    if (urlTracker.isAtRoot.value || isBusy.value) {
+        return false;
+    }
+    const itemCount = supportsServerPagination.value ? totalMatches.value : allFetchedItems.value.length;
+    return itemCount > perPage.value;
+});
 
 const hasItems = computed(() => remoteFileItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
@@ -175,6 +190,35 @@ function sortFileSources(a: SelectionItem, b: SelectionItem): number {
     return a.label.localeCompare(b.label);
 }
 
+/**
+ * Apply client-side search filter to items
+ */
+function filterItemsBySearch(items: SelectionItem[]): SelectionItem[] {
+    if (!searchQuery.value) {
+        return items;
+    }
+    const query = searchQuery.value.toLowerCase();
+    return items.filter((item) => item.label.toLowerCase().includes(query));
+}
+
+/**
+ * Apply client-side pagination to items
+ */
+function paginateItems(items: SelectionItem[]): SelectionItem[] {
+    const start = (currentPage.value - 1) * perPage.value;
+    const end = start + perPage.value;
+    return items.slice(start, end);
+}
+
+/**
+ * Update browser items with client-side filtering and pagination
+ */
+function updateClientSideView() {
+    const filteredItems = filterItemsBySearch(allFetchedItems.value);
+    browserItems.value = paginateItems(filteredItems);
+    totalMatches.value = filteredItems.length;
+}
+
 async function loadFileSources() {
     await executeIfLatest(
         () => fetchFileSources(),
@@ -194,15 +238,32 @@ async function loadFileSources() {
 }
 
 async function loadDirectory(uri: string) {
-    const offset = (currentPage.value - 1) * perPage.value;
+    const hasServerPagination = supportsServerPagination.value;
+    const hasServerSearch = supportsServerSearch.value;
+
+    // Only pass pagination/search params if the file source supports them
+    const limit = hasServerPagination ? perPage.value : undefined;
+    const offset = hasServerPagination ? (currentPage.value - 1) * perPage.value : undefined;
+    const query = hasServerSearch ? searchQuery.value || undefined : undefined;
+
     await executeIfLatest(
-        () => browseRemoteFiles(uri, false, false, perPage.value, offset, searchQuery.value || undefined),
+        () => browseRemoteFiles(uri, false, false, limit, offset, query),
         (result) => {
-            browserItems.value = result.entries.map(entryToSelectionItem);
-            totalMatches.value = result.totalMatches;
+            const allEntries = result.entries.map(entryToSelectionItem);
+
+            if (hasServerPagination) {
+                // Server handles pagination and search
+                browserItems.value = allEntries;
+                totalMatches.value = result.totalMatches;
+            } else {
+                // Client-side filtering and pagination
+                allFetchedItems.value = allEntries;
+                updateClientSideView();
+            }
         },
         (error) => {
             browserItems.value = [];
+            allFetchedItems.value = [];
             totalMatches.value = 0;
             errorMessage.value = errorMessageAsString(error);
         },
@@ -213,6 +274,7 @@ async function load() {
     // Bump sequence id so any in-flight requests are considered stale
     loadSequenceId.value += 1;
     if (urlTracker.isAtRoot.value) {
+        allFetchedItems.value = [];
         await loadFileSources();
     } else if (urlTracker.current.value) {
         await loadDirectory(urlTracker.current.value.url);
@@ -400,6 +462,7 @@ function clearAll() {
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
     selectionCount.value = 0;
+    allFetchedItems.value = [];
     clearSearch();
     urlTracker.reset();
     currentPage.value = 1;
@@ -433,18 +496,29 @@ onMounted(() => {
 
 watch(searchQuery, () => {
     currentPage.value = 1;
-    load();
+    if (supportsServerSearch.value) {
+        load();
+    } else if (allFetchedItems.value.length > 0) {
+        updateClientSideView();
+    }
 });
 
 watch(currentPage, () => {
-    if (!urlTracker.isAtRoot.value) {
+    if (urlTracker.isAtRoot.value) {
+        return;
+    }
+
+    if (supportsServerPagination.value) {
         load();
+    } else if (allFetchedItems.value.length > 0) {
+        updateClientSideView();
     }
 });
 
 function onErrorRetry() {
     errorMessage.value = undefined;
     currentPage.value = 1;
+    allFetchedItems.value = [];
     clearSearch();
 
     load();
@@ -538,7 +612,13 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <template v-slot:table-busy>
                         <div class="text-center my-2">
                             <b-spinner small class="align-middle"></b-spinner>
-                            <strong class="ml-2">Loading...</strong>
+                            <strong class="ml-2">
+                                {{
+                                    supportsServerPagination
+                                        ? "Loading..."
+                                        : "Loading all files (this may take a moment)..."
+                                }}
+                            </strong>
                         </div>
                     </template>
                 </BTable>
