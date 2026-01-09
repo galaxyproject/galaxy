@@ -126,6 +126,8 @@ async function executeIfLatest<T>(
     }
 }
 
+const hasPagination = computed(() => !urlTracker.isAtRoot.value && totalMatches.value > perPage.value && !isBusy.value);
+
 const hasItems = computed(() => remoteFileItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
 
@@ -395,12 +397,14 @@ const tableFields = [
 
 function clearAll() {
     remoteFileItems.value = [];
-    showBrowser.value = true;
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
     selectionCount.value = 0;
     clearSearch();
     urlTracker.reset();
+    currentPage.value = 1;
+    load();
+    showBrowser.value = true;
 }
 
 function clearSearch() {
@@ -554,7 +558,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             </div>
 
             <!-- Pagination -->
-            <div v-if="!urlTracker.isAtRoot.value && totalMatches > perPage" class="mt-2">
+            <div v-if="hasPagination" class="mt-2">
                 <BPagination
                     v-model="currentPage"
                     :total-rows="totalMatches"
