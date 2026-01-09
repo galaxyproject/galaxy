@@ -1163,6 +1163,8 @@
     <datatype extension="zset.geof" type="galaxy.datatypes.constructive_solid_geometry:ZsetGeof" display_in_upload="true"/>
     <datatype extension="vtkxml" type="galaxy.datatypes.constructive_solid_geometry:VtkXml" display_in_upload="true"/>
     <datatype extension="stl" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" description="STL is a file format native to the stereolithography CAD software created by 3D Systems."/>
+    <datatype extension="sg" type="galaxy.datatypes.constructive_solid_geometry:GocadSGrid" display_in_upload="true"/>
+    <datatype extension="fem" type="galaxy.datatypes.constructive_solid_geometry:FeflowFem" display_in_upload="true"/>
     <!-- Povray script -->
     <datatype extension="pov" type="galaxy.datatypes.text:Text" subclass="true" display_in_upload="true"/>
     <!-- End Structural Materials datatypes -->
@@ -1228,6 +1230,8 @@
     <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:GocadSGrid"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:FeflowFem"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtpAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtpBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkXml"/>
