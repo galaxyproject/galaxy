@@ -20,7 +20,10 @@ from fastapi.responses import (
     JSONResponse,
     StreamingResponse,
 )
-from openai import AsyncOpenAI
+from openai import (
+    APIError,
+    AsyncOpenAI,
+)
 from openai._streaming import AsyncStream
 from openai.types.chat import (
     ChatCompletion,
@@ -77,18 +80,18 @@ class ChatMessage(BaseModel):
     role: Literal["assistant", "system", "tool", "user"]
     content: Optional[str] = None
     tool_calls: Optional[list[dict[str, Any]]] = None
-
     model_config = dict(extra="allow")
 
 
 class ChatToolFunction(BaseModel):
     name: str
-    parameters: dict[str, Any]
+    model_config = dict(extra="allow")
 
 
 class ChatTool(BaseModel):
     type: Literal["function"]
     function: ChatToolFunction
+    model_config = dict(extra="allow")
 
 
 class ChatCompletionRequest(BaseModel):
@@ -96,7 +99,6 @@ class ChatCompletionRequest(BaseModel):
     tools: Optional[list[ChatTool]] = None
     stream: Optional[bool] = False
     max_tokens: Optional[int] = None
-
     model_config = dict(extra="allow")
 
 
@@ -166,10 +168,16 @@ class FastAPIAI:
             role = msg.role
             content = msg.content
             tool_calls = msg.tool_calls
-            if role in ("assistant", "user", "tool") and isinstance(content, str):
+            if role == "assistant":
+                msg_dict: dict[str, Any] = dict(role="assistant")
+                if content is not None:
+                    msg_dict["content"] = content
+                if isinstance(tool_calls, list):
+                    msg_dict["tool_calls"] = tool_calls
+                if len(msg_dict) > 1:
+                    messages.append(cast(ChatCompletionMessageParam, msg_dict))
+            elif role in ("user", "tool") and isinstance(content, str):
                 messages.append(cast(ChatCompletionMessageParam, dict(role=role, content=content)))
-            elif role == "assistant" and isinstance(tool_calls, list):
-                messages.append(cast(ChatCompletionMessageParam, dict(role="assistant", tool_calls=tool_calls)))
             else:
                 continue
             if len(messages) >= MAX_MESSAGES:
@@ -198,20 +206,27 @@ class FastAPIAI:
         try:
             client = AsyncOpenAI(**client_kwargs)
         except Exception as e:
-            log.debug("Failed to initialize OpenAI client", exc_info=e)
-            return self.create_error("Failed to initialize AI client.", 500)
+            log.debug("Failed to initialize OpenAI client.", exc_info=e)
+            return self.create_error("Failed to initialize OpenAI client.", 500)
 
         # Connect to ai provider
-        log.info(f"Proxying to {ai_model}, tokens: {max_tokens}")
-        response = await client.chat.completions.create(
-            max_tokens=max_tokens,
-            messages=messages,
-            model=ai_model,
-            stream=stream,
-            temperature=TEMPERATURE,
-            tools=tools,
-            top_p=TOP_P,
-        )
+        log.info(f"Proxying to {ai_model}, tokens: {max_tokens}.")
+        try:
+            response = await client.chat.completions.create(
+                max_tokens=max_tokens,
+                messages=messages,
+                model=ai_model,
+                stream=stream,
+                temperature=TEMPERATURE,
+                tools=tools,
+                top_p=TOP_P,
+            )
+        except APIError as e:
+            log.debug("Failed to complete OpenAI request.", exc_info=e)
+            status_code = getattr(e, "status_code", 500)
+            if hasattr(e, "body") and isinstance(e.body, dict):
+                return JSONResponse(content=dict(error=e.body), status_code=status_code)
+            return self.create_error("Failed to complete OpenAI request.", status_code)
 
         # Parse response
         if stream:
@@ -241,7 +256,7 @@ class FastAPIAI:
     def create_error(self, message: str, status_code=400):
         """Error handling helper."""
         log.debug(message)
-        return JSONResponse(status_code=status_code, content=dict(error=dict(message=message)))
+        return JSONResponse(content=dict(error=dict(message=message)), status_code=status_code)
 
 
 class PluginsController(BaseGalaxyAPIController):

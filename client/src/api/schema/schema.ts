@@ -7964,15 +7964,15 @@ export interface components {
              * @constant
              */
             type: "function";
+        } & {
+            [key: string]: unknown;
         };
         /** ChatToolFunction */
         ChatToolFunction: {
             /** Name */
             name: string;
-            /** Parameters */
-            parameters: {
-                [key: string]: unknown;
-            };
+        } & {
+            [key: string]: unknown;
         };
         /** CheckForUpdatesResponse */
         CheckForUpdatesResponse: {
