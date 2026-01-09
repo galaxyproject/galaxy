@@ -24,7 +24,9 @@ function handleNavigate(index: number | undefined) {
             <button
                 v-if="idx < items.length - 1"
                 :key="`link-${idx}`"
+                v-b-tooltip.hover.noninteractive
                 class="breadcrumb-link"
+                :title="`Navigate to ${item.title}`"
                 @click="handleNavigate(item.index)">
                 {{ item.title }}
             </button>
@@ -53,6 +55,7 @@ function handleNavigate(index: number | undefined) {
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
     white-space: nowrap;
+    overflow: hidden;
     text-overflow: ellipsis;
     max-width: 250px;
 
@@ -66,6 +69,7 @@ function handleNavigate(index: number | undefined) {
     font-weight: 600;
     padding: 0.25rem 0.5rem;
     white-space: nowrap;
+    overflow: hidden;
     text-overflow: ellipsis;
     max-width: 250px;
 }
