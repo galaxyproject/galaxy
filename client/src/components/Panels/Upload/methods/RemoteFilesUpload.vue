@@ -480,6 +480,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             <!-- Browser table -->
             <div class="browser-table-container">
                 <BTable
+                    v-if="!errorMessage && (browserItems.length > 0 || isBusy)"
                     :items="browserItems"
                     :fields="browserFields"
                     :busy="isBusy"
@@ -536,18 +537,20 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             <strong class="ml-2">Loading...</strong>
                         </div>
                     </template>
-
-                    <!-- Empty state -->
-                    <template v-slot:empty>
-                        <div class="text-center text-muted my-3">
-                            <p v-if="searchQuery">
-                                No {{ urlTracker.isAtRoot.value ? "file sources" : "files or folders" }} match your
-                                search "{{ searchQuery }}"
-                            </p>
-                            <p v-else>No items found</p>
-                        </div>
-                    </template>
                 </BTable>
+
+                <!-- Empty state message when no items are available -->
+                <div v-else-if="!errorMessage && !isBusy" class="text-center text-muted my-5">
+                    <p v-if="searchQuery" class="lead">
+                        No {{ urlTracker.isAtRoot.value ? "file sources" : "files or folders" }} match your search "{{
+                            searchQuery
+                        }}"
+                    </p>
+                    <p v-else-if="urlTracker.isAtRoot.value" class="lead">
+                        No file sources available. Connect a new remote source to get started.
+                    </p>
+                    <p v-else class="lead">This directory is empty.</p>
+                </div>
             </div>
 
             <!-- Pagination -->
