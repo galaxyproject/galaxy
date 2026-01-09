@@ -241,7 +241,7 @@ watchdog==6.0.0
 wcwidth==0.2.14
 webencodings==0.5.1 ; python_full_version < '3.10'
 websocket-client==1.9.0
-werkzeug==3.1.4
+werkzeug==3.1.5
 wsproto==1.2.0 ; python_full_version < '3.10'
 wsproto==1.3.2 ; python_full_version >= '3.10'
 yarl==1.22.0
