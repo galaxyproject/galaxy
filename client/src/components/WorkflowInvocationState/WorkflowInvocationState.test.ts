@@ -153,12 +153,12 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
     setActivePinia(pinia);
 
     const wrapper = shallowMount(WorkflowInvocationState as object, {
-        propsData: {
+        props: {
             invocationId,
             isFullPage,
         },
         pinia,
-        localVue,
+        global: localVue,
     });
     await flushPromises();
     return wrapper;

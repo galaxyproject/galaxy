@@ -1,4 +1,4 @@
-import { computed, del, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
@@ -224,7 +224,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         const stepId = newStep.id ?? getStepIndex.value + 1;
         const step = Object.freeze({ ...newStep, id: stepId } as Step);
 
-        set(steps.value, stepId.toString(), step);
+        steps.value[stepId.toString()] = step;
 
         if (createConnections) {
             stepToConnections(step).forEach((connection) => connectionStore.addConnection(connection));
@@ -280,18 +280,18 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
     }
 
     function changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {
-        set(stepMapOver.value, stepId, mapOver);
+        stepMapOver.value[stepId] = mapOver;
     }
 
     function resetStepInputMapOver(stepId: number) {
-        set(stepInputMapOver.value, stepId, {});
+        stepInputMapOver.value[stepId] = {};
     }
 
     function changeStepInputMapOver(stepId: number, inputName: string, mapOver: CollectionTypeDescriptor) {
         if (stepInputMapOver.value[stepId]) {
-            set(stepInputMapOver.value[stepId]!, inputName, mapOver);
+            stepInputMapOver.value[stepId]![inputName] = mapOver;
         } else {
-            set(stepInputMapOver.value, stepId, { [inputName]: mapOver });
+            stepInputMapOver.value[stepId] = { [inputName]: mapOver };
         }
     }
 
@@ -360,7 +360,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
                         outputLink.output_name === connection.output.name),
                 );
             } else {
-                del(inputStep.input_connections, connection.input.name);
+                delete inputStep.input_connections[connection.input.name];
             }
         }
 
@@ -374,10 +374,10 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
             .getConnectionsForStep(stepId)
             .forEach((connection) => connectionStore.removeConnection(getConnectionId(connection)));
 
-        del(steps.value, stepId.toString());
-        del(stepExtraInputs.value, stepId);
-        del(stateStore.multiSelectedSteps, stepId);
-        del(stepMapOver.value, stepId.toString());
+        delete steps.value[stepId.toString()];
+        delete stepExtraInputs.value[stepId];
+        delete stateStore.multiSelectedSteps[stepId];
+        delete stepMapOver.value[stepId];
 
         deleteStepPosition(stepId);
         deleteStepTerminals(stepId);

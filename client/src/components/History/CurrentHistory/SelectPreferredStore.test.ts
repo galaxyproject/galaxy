@@ -41,12 +41,12 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
     );
 
     const wrapper = mount(SelectPreferredStore as object, {
-        propsData: {
+        props: {
             preferredObjectStoreId: preferredObjectStoreId,
             history: TEST_HISTORY,
             showModal: true,
         },
-        localVue,
+        global: localVue,
         stubs: {
             BModal: {
                 template: `

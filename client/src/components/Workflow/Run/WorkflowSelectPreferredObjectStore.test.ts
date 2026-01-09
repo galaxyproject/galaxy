@@ -18,8 +18,8 @@ const localVue = getLocalVue(true);
 
 function mountComponent() {
     const wrapper = mount(WorkflowSelectPreferredObjectStore as object, {
-        propsData: { invocationPreferredObjectStoreId: null },
-        localVue,
+        props: { invocationPreferredObjectStoreId: null },
+        global: localVue,
     });
     return wrapper;
 }

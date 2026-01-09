@@ -19,7 +19,7 @@ import axios from "axios";
 import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormCheckbox, BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { canMutateHistory, type HistorySummary } from "@/api";
 import { iframeRedirect } from "@/components/plugins/legacyNavigation";
@@ -236,7 +236,7 @@ function onDelete() {
             </BDropdownItem>
         </BDropdown>
 
-        <CopyModal :history="history" :show-modal.sync="showCopyModal" />
+        <CopyModal v-model:show-modal="showCopyModal" :history="history" />
 
         <BModal
             v-model="showDeleteModal"

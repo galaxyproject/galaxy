@@ -54,16 +54,16 @@ describe("UploadExamples.vue", () => {
     it("renders loading spinner when no historyId", () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
         expect(wrapper.find("svg").exists()).toBe(true);
     });
 
     it("renders dropdown with upload options", () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         expect(items.length).toBe(urlData.length);
@@ -73,8 +73,8 @@ describe("UploadExamples.vue", () => {
 
     it("calls upload and shows success toast on item click", async () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items.at(0).find("a").trigger("click");
@@ -92,8 +92,8 @@ describe("UploadExamples.vue", () => {
 
     it("shows error toast when upload fails", async () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
         const items = wrapper.findAllComponents(BDropdownItem);
         await items.at(1).find("a").trigger("click");
@@ -103,8 +103,8 @@ describe("UploadExamples.vue", () => {
 
     it("does not render dropdown if urlData is missing", () => {
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: {},
+            global: localVue,
+            props: {},
         });
         expect(wrapper.findComponent(BDropdown).exists()).toBe(false);
     });
@@ -112,8 +112,8 @@ describe("UploadExamples.vue", () => {
     it("reacts to history ID becoming available", async () => {
         mockedStore.currentHistoryId = ref(null);
         const wrapper = mount(UploadExamples, {
-            localVue,
-            propsData: { urlData },
+            global: localVue,
+            props: { urlData },
         });
         expect(wrapper.find("svg").exists()).toBe(true);
         mockedStore.currentHistoryId = ref("new-history-id");

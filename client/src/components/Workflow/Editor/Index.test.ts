@@ -51,14 +51,14 @@ describe("Index", () => {
         });
         mockUnprivilegedToolsRequest(server, http);
         wrapper = shallowMount(Index as object, {
-            propsData: {
+            props: {
                 workflowId: "workflow_id",
                 initialVersion: 1,
                 workflowTags: ["moo", "cow"],
                 workflows: [],
                 toolbox: [],
             },
-            localVue,
+            global: localVue,
             pinia: testingPinia,
             // mock out components that have exposed methods used by Index.vue.
             stubs: {

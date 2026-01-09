@@ -42,7 +42,7 @@ function itShouldConform(specTestCase: SpecTestCase, i: number) {
                 if (finalSources !== undefined) {
                     expect(result.sources).toEqual(finalSources);
                 }
-            } catch (e) {
+            } catch {
                 expect(expectError).toBe(true);
             }
         } else {

@@ -229,6 +229,7 @@ function isSelected(item: SelectValue): boolean {
             v-if="hasOptions"
             :id="id"
             v-model="currentValue"
+            :name="id"
             :allow-empty="optional"
             :aria-expanded="ariaExpanded"
             :close-on-select="!multiple"

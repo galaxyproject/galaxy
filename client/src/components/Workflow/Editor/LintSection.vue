@@ -6,7 +6,7 @@
         </div>
         <div v-else>
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
-            <span>{{ warningMessage | localize }}</span>
+            <span>{{ localize(warningMessage) }}</span>
             <div v-if="hasWarningItems" class="mt-2">
                 <div
                     v-for="(item, idx) in warningItems"
@@ -17,10 +17,10 @@
                     @focusout="onMouseLeave(item)"
                     @mouseleave="onMouseLeave(item)">
                     <a
+                        v-bind="dataAttributes(item)"
                         href="#"
                         class="scrolls"
                         :data-item-index="idx"
-                        v-bind="dataAttributes(item)"
                         @click="onClick(item)">
                         <FontAwesomeIcon v-if="item.autofix" :icon="faMagic" class="mr-1" />
                         <FontAwesomeIcon v-else :icon="faSearch" class="mr-1" />
@@ -42,6 +42,8 @@ import { faCheck, faExclamationTriangle, faMagic, faPencilAlt, faSearch } from "
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
+
+import { localize } from "@/utils/localization";
 
 import { dataAttributes } from "./modules/linting";
 

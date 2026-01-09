@@ -25,7 +25,7 @@ const mockSetCurrentHistory = vi.fn();
 const mockApplyFilters = vi.fn();
 const mockWindowOpen = vi.fn(() => null);
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         resolve: (route: string) => ({
             href: `resolved-${route}`,
@@ -89,11 +89,11 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, has
     const filters = hasFilters ? { deleted: false, visible: true, hid: "1" } : undefined;
 
     const wrapper = mount(SwitchToHistoryLink as object, {
-        propsData: {
+        props: {
             historyId: history.id,
             filters,
         },
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

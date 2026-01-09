@@ -1,7 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -12,7 +12,6 @@ import { getUntypedWorkflowParameters } from "./modules/parameters";
 import Lint from "./Lint.vue";
 
 const localVue = getLocalVue();
-localVue.use(PiniaVuePlugin);
 
 const steps = {
     0: {
@@ -93,7 +92,7 @@ describe("Lint", () => {
         setActivePinia(pinia);
 
         wrapper = mount(Lint, {
-            propsData: {
+            props: {
                 untypedParameters: getUntypedWorkflowParameters(steps),
                 steps: steps,
                 annotation: "annotation",
@@ -102,7 +101,7 @@ describe("Lint", () => {
                 creator: null,
                 datatypesMapper: testDatatypesMapper,
             },
-            localVue,
+            global: localVue,
             pinia,
             provide: { workflowId: "mock-workflow" },
         });

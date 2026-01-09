@@ -25,10 +25,10 @@ describe("ToLink.vue", () => {
     async function mountWithInitialExports(exports) {
         axiosMock.onGet(TEST_EXPORTS_URL).reply(200, exports);
         wrapper = shallowMount(ToLink, {
-            propsData: {
+            props: {
                 historyId: TEST_HISTORY_ID,
             },
-            localVue,
+            global: localVue,
         });
         await wrapper.vm.$nextTick();
         expect(wrapper.find("loadingspan-stub").exists()).toBeTruthy();

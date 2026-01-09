@@ -1,16 +1,14 @@
-import { suppressDebugConsole } from "@tests/vitest/helpers";
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { createPinia, mapState } from "pinia";
+import { createPinia, mapState, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { watchHistoryOnce } from "./watchHistory";
-
-const pinia = createPinia();
 
 const testApp = {
     template: `<div/>`,
@@ -23,6 +21,7 @@ const testApp = {
 describe("watchHistory", () => {
     let axiosMock;
     let wrapper;
+    let pinia;
     const historyData = {
         id: "history-id",
         update_time: "0",
@@ -50,12 +49,15 @@ describe("watchHistory", () => {
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        const localVue = createLocalVue();
+        pinia = createPinia();
+        setActivePinia(pinia);
         useHistoryItemsStore(pinia);
 
         wrapper = mount(testApp, {
-            localVue,
-            pinia,
+            global: {
+                ...getLocalVue(),
+                plugins: [pinia],
+            },
         });
 
         const historyStore = useHistoryStore();

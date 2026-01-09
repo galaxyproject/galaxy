@@ -1032,6 +1032,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.upload_start()
 
         self.components.upload.close_button.wait_for_and_click()
+        # Wait for the modal to be hidden after closing (important for Vue 3 transitions)
+        self.wait_for_selector_absent_or_hidden(".ui-modal")
 
     def perform_upload_of_composite_dataset_pasted_data(self, ext, paste_content):
         self.home()
@@ -1047,6 +1049,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         self.upload_start(tab_id="composite")
         self.components.upload.composite_close_button.wait_for_and_click()
+        # Wait for the modal to be hidden after closing (important for Vue 3 transitions)
+        self.wait_for_selector_absent_or_hidden(".ui-modal")
 
     def upload_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
         self._collection_upload_start(test_paths, ext, genome, "List")

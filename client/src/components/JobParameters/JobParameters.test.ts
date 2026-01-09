@@ -14,7 +14,7 @@ import JobParameters from "./JobParameters.vue";
 const JOB_ID = "foo";
 const DatasetProvider: any = {
     render() {
-        return this.$scopedSlots.default({
+        return this.$slots.default({
             loading: false,
             result: raw,
         });
@@ -92,9 +92,9 @@ describe("JobParameters/JobParameters.vue", () => {
             param: "Iterate?",
         };
 
-        const getSingleParam = async (propsData: { jobId: string; param: string }) => {
+        const getSingleParam = async (_props: { jobId: string; param: string }) => {
             const wrapper = mount(JobParameters as object, {
-                propsData,
+                props: propsData,
                 stubs: {
                     DatasetProvider: DatasetProvider,
                     ContentItem: true,

@@ -29,8 +29,8 @@ describe("NewUserConfirmation", () => {
         axiosMock.onPost(/.*/).reply(200, {});
 
         wrapper = mount(MountTarget as object, {
-            propsData: {},
-            localVue,
+            props: {},
+            global: localVue,
         });
     });
 

@@ -34,8 +34,8 @@ it("renders success with resource and opens window", async () => {
         error: null,
     });
     const wrapper = mount(DisplayApplicationCreateLink, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             appName: "igv",
             datasetId: "1",
             linkName: "local_default",
@@ -67,8 +67,8 @@ it("handles refresh loop once", async () => {
             error: null,
         });
     mount(DisplayApplicationCreateLink, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             appName: "igv",
             datasetId: "1",
             linkName: "local_default",
@@ -86,8 +86,8 @@ it("renders error", async () => {
         error: { err_msg: "Failed" },
     });
     const wrapper = mount(DisplayApplicationCreateLink, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             appName: "igv",
             datasetId: "1",
             linkName: "local_default",
@@ -111,8 +111,8 @@ it("renders initialization steps", async () => {
         error: null,
     });
     const wrapper = mount(DisplayApplicationCreateLink, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             appName: "igv",
             datasetId: "1",
             linkName: "local_default",

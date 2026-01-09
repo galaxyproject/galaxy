@@ -7,8 +7,8 @@
                     <b-tab title="HTML Sanitized">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="toolshedColumns">
                             <template v-slot:rows>
-                                <template v-for="(row, blockedIdx) in toolshedBlocked">
-                                    <tr :key="blockedIdx">
+                                <template v-for="(row, blockedIdx) in toolshedBlocked" :key="blockedIdx">
+                                    <tr>
                                         <td>{{ row.tool_name }}</td>
                                         <td>
                                             <span>{{ row.tool_id[0] }}</span>
@@ -33,8 +33,8 @@
                     <b-tab title="HTML Rendered">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
-                                <template v-for="(row, allowedIdx) in toolshedAllowed">
-                                    <tr :key="allowedIdx">
+                                <template v-for="(row, allowedIdx) in toolshedAllowed" :key="allowedIdx">
+                                    <tr>
                                         <td>
                                             <span v-if="row.tool_name">
                                                 {{ row.tool_name }}
@@ -44,9 +44,8 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <template v-for="(part, part_idx) in row.tool_id">
-                                                <template v-if="part_idx > 0">/</template
-                                                ><span :key="part_idx">{{ part }}</span>
+                                            <template v-for="(part, part_idx) in row.tool_id" :key="part_idx">
+                                                <template v-if="part_idx > 0">/</template><span>{{ part }}</span>
                                             </template>
                                         </td>
                                         <td>
@@ -64,8 +63,8 @@
                     <b-tab title="HTML Sanitized">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
-                                <template v-for="(row, localBlockedIdx) in localBlocked">
-                                    <tr :key="localBlockedIdx">
+                                <template v-for="(row, localBlockedIdx) in localBlocked" :key="localBlockedIdx">
+                                    <tr>
                                         <td>{{ row.tool_name }}</td>
                                         <td>{{ row.tool_id[0] }}</td>
                                         <td>
@@ -79,8 +78,8 @@
                     <b-tab title="HTML Rendered">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
-                                <template v-for="(row, localAllowedIdx) in localAllowed">
-                                    <tr :key="localAllowedIdx">
+                                <template v-for="(row, localAllowedIdx) in localAllowed" :key="localAllowedIdx">
+                                    <tr>
                                         <td>
                                             <span v-if="row.tool_name">
                                                 {{ row.tool_name }}

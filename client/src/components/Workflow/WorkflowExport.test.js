@@ -29,10 +29,10 @@ describe("Workflow Export", () => {
     let wrapper;
     beforeEach(async () => {
         wrapper = shallowMount(WorkflowExport, {
-            propsData: {
+            props: {
                 id: "0",
             },
-            localVue,
+            global: localVue,
         });
         await flushPromises();
         await nextTick();

@@ -64,7 +64,7 @@ function toggleSelectPreferredStore() {
         </BButton>
 
         <SelectPreferredStore
-            :show-modal.sync="showSelectPreferredStore"
+            v-model:show-modal="showSelectPreferredStore"
             show-sub-setting
             :user-preferred-object-store-id="userPreferredObjectStoreId"
             :preferred-object-store-id="preferredObjectStoreId"

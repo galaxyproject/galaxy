@@ -49,11 +49,11 @@ describe("CitationsList", () => {
         router.push("/histories/citations?id=test-id");
 
         wrapper = mount(MountTarget as object, {
-            propsData: {
+            props: {
                 id: "test-id",
                 source: "histories",
             },
-            localVue,
+            global: localVue,
             pinia,
             router,
         });

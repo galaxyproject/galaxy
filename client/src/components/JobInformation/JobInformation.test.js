@@ -60,7 +60,7 @@ describe("JobInformation/JobInformation.vue", () => {
         };
         wrapper = mount(JobInformation, {
             propsData,
-            localVue,
+            global: localVue,
         });
         await flushPromises();
         jobInfoTable = wrapper.find("#job-information");

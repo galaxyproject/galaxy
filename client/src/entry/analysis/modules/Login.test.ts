@@ -41,7 +41,7 @@ function shallowMountLogin(routerQuery: object = {}) {
     setActivePinia(pinia);
 
     return shallowMount(Login as object, {
-        localVue,
+        global: localVue,
         pinia,
         mocks: {
             $router: mockRouter(routerQuery),

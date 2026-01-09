@@ -85,10 +85,10 @@ const { server, http } = useServerMock();
 describe("CreateForm", () => {
     it("should render a form with admin markdown converted to HTML in help", async () => {
         const wrapper = mount(CreateForm as object, {
-            propsData: {
+            props: {
                 template: STANDARD_TEMPLATE,
             },
-            localVue,
+            global: localVue,
         });
         await flushPromises();
 
@@ -103,10 +103,10 @@ describe("CreateForm", () => {
 
     it("should post to create a new object store on submit", async () => {
         const wrapper = mount(CreateForm as object, {
-            propsData: {
+            props: {
                 template: SIMPLE_TEMPLATE,
             },
-            localVue,
+            global: localVue,
         });
 
         server.use(
@@ -130,10 +130,10 @@ describe("CreateForm", () => {
 
     it("should indicate an error on failure", async () => {
         const wrapper = mount(CreateForm as object, {
-            propsData: {
+            props: {
                 template: SIMPLE_TEMPLATE,
             },
-            localVue,
+            global: localVue,
         });
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {

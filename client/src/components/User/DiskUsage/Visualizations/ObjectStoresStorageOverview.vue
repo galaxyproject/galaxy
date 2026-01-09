@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
@@ -60,14 +60,14 @@ function onViewObjectStore(objectStoreId: string) {
         <div v-else>
             <BarChart
                 v-if="objectStoresBySizeData"
+                v-bind="byteFormattingForChart"
                 :description="
                     localize(
                         `This graph displays how your Galaxy data is stored sorted into the location is stored in. Click on a bar to see more information about the Galaxy storage.`,
                     )
                 "
                 :data="objectStoresBySizeData"
-                :enable-selection="true"
-                v-bind="byteFormattingForChart">
+                :enable-selection="true">
                 <template v-slot:title>
                     <b>{{ localize(`Galaxy Storage by Usage`) }}</b>
                 </template>

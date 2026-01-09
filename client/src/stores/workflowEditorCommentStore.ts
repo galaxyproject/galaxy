@@ -1,4 +1,4 @@
-import { computed, del, ref, set } from "vue";
+import { computed, ref, toRaw } from "vue";
 
 import type { Color } from "@/components/Workflow/Editor/Comments/colors";
 import {
@@ -111,11 +111,11 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         select = false,
     ) => {
         commentsArray.forEach((comment) => {
-            const newComment = structuredClone(comment);
+            const newComment = structuredClone(toRaw(comment));
             newComment.position[0] += defaultPosition[0];
             newComment.position[1] += defaultPosition[1];
 
-            set(commentsRecord.value, newComment.id, newComment);
+            commentsRecord.value[newComment.id] = newComment;
 
             if (select) {
                 setCommentMultiSelected(newComment.id, true);
@@ -147,9 +147,9 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         const meta = localCommentsMetadata.value[id];
 
         if (meta) {
-            set(meta, "multiSelected", selected);
+            meta.multiSelected = selected;
         } else {
-            set(localCommentsMetadata.value, id, { multiSelected: selected });
+            localCommentsMetadata.value[id] = { multiSelected: selected };
         }
     }
 
@@ -163,23 +163,23 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
 
     function changePosition(id: number, position: [number, number]) {
         const comment = getComment.value(id);
-        set(comment, "position", vecReduceFigures(position));
+        comment.position = vecReduceFigures(position);
     }
 
     function changeSize(id: number, size: [number, number]) {
         const comment = getComment.value(id);
-        set(comment, "size", vecReduceFigures(size));
+        comment.size = vecReduceFigures(size);
     }
 
     function changeData(id: number, data: unknown) {
         const comment = getComment.value(id);
         assertCommentDataValid(comment.type, data);
-        set(comment, "data", data);
+        comment.data = data;
     }
 
     function changeColor(id: number, color: WorkflowCommentColor) {
         const comment = getComment.value(id);
-        set(comment, "color", color);
+        comment.color = color;
     }
 
     function addPoint(id: number, point: [number, number]) {
@@ -200,8 +200,8 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     }
 
     function deleteComment(id: number) {
-        del(commentsRecord.value, id);
-        del(localCommentsMetadata.value, id);
+        delete commentsRecord.value[id];
+        delete localCommentsMetadata.value[id];
     }
 
     /**
@@ -215,14 +215,14 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     }
 
     function markJustCreated(id: number) {
-        set(localCommentsMetadata.value, id, { justCreated: true });
+        localCommentsMetadata.value[id] = { justCreated: true };
     }
 
     function clearJustCreated(id: number) {
         const metadata = localCommentsMetadata.value[id];
 
         if (metadata) {
-            del(metadata, "justCreated");
+            delete metadata.justCreated;
         }
     }
 
@@ -260,7 +260,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
 
                 if (comment !== frame && bounds.contains(rect)) {
                     // push id and remove from candidates when in bounds
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
                     frame.child_comments!.push(comment.id);
                     return [];
                 } else {
@@ -307,7 +307,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
 
                 if (rect && bounds.contains(rect)) {
                     // push id and remove from candidates when in bounds
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
                     frame.child_steps!.push(step.id);
                     return [];
                 } else {

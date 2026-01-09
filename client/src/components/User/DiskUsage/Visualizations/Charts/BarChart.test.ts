@@ -28,8 +28,8 @@ function mountBarChartWrapper(props: BarChartProps) {
     const pinia = createTestingPinia({ createSpy: vi.fn });
     const localVue = getLocalVue();
     return mount(BarChart as object, {
-        propsData: props,
-        localVue,
+        props: props,
+        global: localVue,
         pinia,
     });
 }

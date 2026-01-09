@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
@@ -132,7 +132,7 @@ function formatRows() {
                     ? SELECTION_STATES.SELECTED
                     : SELECTION_STATES.UNSELECTED;
 
-            set(item, "_rowVariant", _rowVariant);
+            item._rowVariant = _rowVariant;
         }
     }
 
@@ -142,9 +142,9 @@ function formatRows() {
 function checkIfAllSelected(): boolean {
     return Boolean(
         items.value.length &&
-            items.value.every((item) => {
-                return selected.value.findIndex((i) => i.id === item.id) !== -1;
-            }),
+        items.value.every((item) => {
+            return selected.value.findIndex((i) => i.id === item.id) !== -1;
+        }),
     );
 }
 

@@ -10,7 +10,7 @@ const doublespaces = /\s\s+/g;
 function localizeDirective(l) {
     return {
         // TODO consider using a different hook if we need dynamic updates in content translation
-        bind(el, binding, vnode) {
+        beforeMount(el, binding, vnode) {
             el.childNodes.forEach((node) => {
                 // trim for lookup, but put back whitespace after
                 const leadingSpace = node.textContent.match(/^\s*/)[0];
@@ -37,9 +37,13 @@ function localizeMixin(l) {
 
 export const localizationPlugin = {
     install(Vue, l = _l) {
-        Vue.filter("localize", l);
-        Vue.filter("l", l);
+        // Filters are deprecated in Vue 3, use the mixin methods instead
+        // Vue.filter("localize", l);
+        // Vue.filter("l", l);
         Vue.directive("localize", localizeDirective(l));
         Vue.mixin(localizeMixin(l));
+        // Make l globally available as a property
+        Vue.config.globalProperties.l = l;
+        Vue.config.globalProperties.localize = l;
     },
 };
