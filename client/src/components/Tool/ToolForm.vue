@@ -106,6 +106,12 @@
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
         </ToolCard>
+
+        <ToolTourAutoStarter
+            v-if="startTour && formConfig.id && formConfig.version"
+            :tool-id="formConfig.id"
+            :tool-version="formConfig.version"
+            :start="startTour" />
     </div>
 </template>
 
@@ -133,6 +139,7 @@ import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import ToolTourAutoStarter from "@/components/Tool/ToolTourAutoStarter.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 export default {
@@ -141,6 +148,7 @@ export default {
         LoadingSpan,
         FormDisplay,
         ToolCard,
+        ToolTourAutoStarter,
         FormElement,
         FormSelect,
         ToolEntryPoints,
@@ -169,13 +177,22 @@ export default {
             type: String,
             default: null,
         },
+        startTour: {
+            type: [Boolean, String],
+            default: false,
+        },
     },
     setup() {
-        const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
+        const configStore = useConfigStore();
+        const { config, isLoaded: isConfigLoaded } = storeToRefs(configStore);
 
         const { getCredentialsExecutionContextForTool } = useUserToolsServiceCredentialsStore();
 
-        return { config, isConfigLoaded, getCredentialsExecutionContextForTool };
+        return {
+            config,
+            isConfigLoaded,
+            getCredentialsExecutionContextForTool,
+        };
     },
     data() {
         return {
@@ -307,8 +324,8 @@ export default {
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
-        ...mapActions(useTourStore, ["setTour"]),
         ...mapActions(useHistoryStore, ["startWatchingHistory"]),
+        ...mapActions(useTourStore, ["setTour"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
@@ -379,7 +396,7 @@ export default {
         },
         onExecute(config, historyId) {
             // If a tour is active that was generated for this tool, end it.
-            if (this.currentTour?.id.startsWith(`tool-generated-${this.formConfig.id}`)) {
+            if (this.currentTour?.id?.startsWith(`tool-generated-${this.formConfig.id}`)) {
                 this.setTour(undefined);
             }
 
