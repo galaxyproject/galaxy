@@ -731,12 +731,17 @@ visualization:
 
 igv:
   selectors:
-    _: ".igv-container"
+    _: '.igv-container'
     shadow_host: '#viewport'
-    current_genome: '.igv-current-genome'
-    settings_button: button.n-button
-    save_button: '[data-description="sidepanel save button"]'
+    confirm_button:
+      type: xpath
+      selector: '(//button[text()=" OK "])[1]'
+    current_genome: '[title="Human (hg18)"]'
+    default_genome: '[title="Human (GRCh38/hg38)"]'
+    expand_button: '[data-description="sidebutton expand"]'
     name_input: '.n-input__input input'
+    save_button: '[data-description="sidebutton save"]'
+    settings_tab: '.n-tabs-tab[data-name="settings"]'
 
 trs_search:
   selectors:
