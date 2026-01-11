@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    "input-valid": [valid: boolean];
+    (e: "input-valid", valid: boolean): void;
 }>();
 
 const loading = ref(false);
