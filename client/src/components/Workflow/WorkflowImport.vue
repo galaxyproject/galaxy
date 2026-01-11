@@ -326,7 +326,6 @@ function onTrsIdValid(e: boolean) {
 
 .clickable-card.selected {
     border-color: var(--brand-primary, #007bff);
-    border-width: 2px;
 }
 
 .method-selection {
