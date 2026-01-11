@@ -133,6 +133,26 @@ function onSubmit() {
         trsComponent.value.attemptImport();
     }
 }
+
+function onUploadValid(e: boolean) {
+    uploadValid.value = e;
+}
+
+function onUrlValid(e: boolean) {
+    urlValid.value = e;
+}
+
+function onTrsSearchValid(e: boolean) {
+    trsSearchValid.value = e;
+}
+
+function onTrsUrlValid(e: boolean) {
+    trsUrlValid.value = e;
+}
+
+function onTrsIdValid(e: boolean) {
+    trsIdValid.value = e;
+}
 </script>
 
 <template>
@@ -196,13 +216,13 @@ function onSubmit() {
 
             <div v-else-if="wizard.isCurrent('upload-file')" class="import-form">
                 <div class="container-narrow">
-                    <FromFile ref="fileComponent" mode="wizard" @input-valid="(e: boolean) => (uploadValid = e)" />
+                    <FromFile ref="fileComponent" mode="wizard" @input-valid="onUploadValid" />
                 </div>
             </div>
 
             <div v-else-if="wizard.isCurrent('fetch-url')" class="import-form">
                 <div class="container-narrow">
-                    <FromUrl ref="urlComponent" mode="wizard" @input-valid="(e: boolean) => (urlValid = e)" />
+                    <FromUrl ref="urlComponent" mode="wizard" @input-valid="onUrlValid" />
                 </div>
             </div>
 
@@ -256,7 +276,7 @@ function onSubmit() {
                         :is-run="queryParams.isRun"
                         mode="wizard"
                         trs-method="search"
-                        @input-valid="(e) => (trsSearchValid = e)" />
+                        @input-valid="onTrsSearchValid" />
                 </div>
             </div>
 
@@ -269,7 +289,7 @@ function onSubmit() {
                         :query-trs-url="queryParams.trsUrl"
                         mode="wizard"
                         trs-method="url"
-                        @input-valid="(e) => (trsUrlValid = e)" />
+                        @input-valid="onTrsUrlValid" />
                 </div>
             </div>
 
@@ -284,7 +304,7 @@ function onSubmit() {
                         :query-trs-version-id="queryParams.trsVersionId"
                         mode="wizard"
                         trs-method="id"
-                        @input-valid="(e) => (trsIdValid = e)" />
+                        @input-valid="onTrsIdValid" />
                 </div>
             </div>
         </GenericWizard>
