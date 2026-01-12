@@ -2351,7 +2351,7 @@ class JobMetric(Model):
 class WorkflowJobMetric(JobMetric):
     tool_id: str
     job_id: str
-    step_index: int
+    step_index: Union[int, str]  # int for top-level steps, str for subworkflow steps (e.g., "1.0")
     step_label: Optional[str]
 
 
