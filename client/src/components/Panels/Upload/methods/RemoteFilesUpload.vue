@@ -502,6 +502,10 @@ function clearSearch() {
     searchQuery.value = "";
 }
 
+function updateSearchQuery(newQuery: string) {
+    searchQuery.value = newQuery;
+}
+
 function startUpload() {
     const uploads = remoteFileItems.value.map((item) => mapToRemoteFileUpload(item, props.targetHistoryId));
     const collectionConfig = buildCollectionConfig(props.targetHistoryId);
@@ -524,7 +528,7 @@ onMounted(() => {
 
 watch(searchQuery, () => {
     currentPage.value = 1;
-    if (supportsServerSearch.value) {
+    if (urlTracker.isAtRoot.value || supportsServerSearch.value) {
         load();
     } else if (allFetchedItems.value.length > 0) {
         updateClientSideView();
@@ -571,8 +575,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
             <!-- Search bar -->
             <div class="search-bar-container mb-2">
                 <DataDialogSearch
-                    v-model="searchQuery"
-                    :title="urlTracker.isAtRoot.value ? 'file sources' : 'files and folders'" />
+                    :value="searchQuery"
+                    :title="urlTracker.isAtRoot.value ? 'file sources' : 'files and folders'"
+                    @input="updateSearchQuery" />
             </div>
 
             <!-- Error message -->

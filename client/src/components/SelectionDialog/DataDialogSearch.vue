@@ -27,13 +27,17 @@ const filter = computed({
 });
 
 const placeholder = computed(() => `search ${props.title.toLowerCase()}`);
+
+function reset() {
+    filter.value = "";
+}
 </script>
 
 <template>
     <BInputGroup class="w-100">
         <BFormInput v-model="filter" :placeholder="placeholder" debounce="500" />
         <BInputGroupAppend>
-            <BButton :disabled="!filter" @click="filter = ''"><FontAwesomeIcon :icon="faTimes" /></BButton>
+            <BButton :disabled="!filter" @click="reset"><FontAwesomeIcon :icon="faTimes" /></BButton>
         </BInputGroupAppend>
     </BInputGroup>
 </template>
