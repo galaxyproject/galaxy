@@ -162,6 +162,34 @@ const { isReadyToUpload } = useUploadReadyState(hasItems, collectionState);
 
 watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
 
+const filesOnCurrentPage = computed(() => browserItems.value.filter((item) => item.isLeaf));
+
+const allFilesSelected = computed(() => {
+    selectionCount.value;
+    const files = filesOnCurrentPage.value;
+    return files.length > 0 && files.every((file) => isSelected(file));
+});
+
+const someFilesSelected = computed(() => {
+    selectionCount.value;
+    const files = filesOnCurrentPage.value;
+    const selectedCount = files.filter((file) => isSelected(file)).length;
+    return selectedCount > 0 && selectedCount < files.length;
+});
+
+function toggleSelectAll() {
+    const files = filesOnCurrentPage.value;
+    const allSelected = files.every((file) => isSelected(file));
+
+    files.forEach((file) => {
+        const needsToggle = allSelected ? isSelected(file) : !isSelected(file);
+        if (needsToggle) {
+            selectionModel.value.add(file);
+        }
+    });
+    selectionCount.value = selectionModel.value.count();
+}
+
 function entryToSelectionItem(entry: RemoteEntry): SelectionItem {
     return {
         id: entry.uri,
@@ -568,6 +596,16 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     fixed
                     thead-class="browser-table-header"
                     @row-clicked="onItemClick">
+                    <!-- Select column header (select all) -->
+                    <template v-slot:head(select)>
+                        <BFormCheckbox
+                            v-if="!urlTracker.isAtRoot.value && filesOnCurrentPage.length > 0"
+                            :checked="allFilesSelected"
+                            :indeterminate="someFilesSelected"
+                            @change="toggleSelectAll"
+                            @click.stop />
+                    </template>
+
                     <!-- Select column (only for files) -->
                     <template v-slot:cell(select)="{ item }">
                         <BFormCheckbox
