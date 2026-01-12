@@ -170,8 +170,8 @@ class Image(data.Data):
                     im_ndim = len(im_shape)
 
                     # Determine the metadata values that are available without loading the image data
-                    dataset.metadata.width = im.size[1]
-                    dataset.metadata.height = im.size[0]
+                    dataset.metadata.width = im.size[0]
+                    dataset.metadata.height = im.size[1]
                     dataset.metadata.depth = 0
                     dataset.metadata.frames = getattr(im, "n_frames", 0)
                     dataset.metadata.dtype = str(np.array((0,), im_typestr).dtype)
