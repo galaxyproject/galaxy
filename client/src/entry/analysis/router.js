@@ -91,7 +91,6 @@ import VisualizationCreate from "@/components/Visualizations/VisualizationCreate
 import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";
 import VisualizationPublished from "@/components/Visualizations/VisualizationPublished.vue";
 import HistoryInvocations from "@/components/Workflow/HistoryInvocations.vue";
-import TrsImport from "@/components/Workflow/Import/TrsImport.vue";
 import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
 import InvocationReport from "@/components/Workflow/InvocationReport.vue";
 import WorkflowList from "@/components/Workflow/List/WorkflowList.vue";
@@ -862,14 +861,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/trs_import",
-                        component: TrsImport,
-                        props: (route) => ({
-                            queryTrsServer: route.query.trs_server,
-                            queryTrsId: route.query.trs_id,
-                            queryTrsVersionId: route.query.trs_version,
-                            queryTrsUrl: route.query.trs_url,
-                            isRun: route.query.run_form == "true",
-                        }),
+                        component: WorkflowImport,
                     },
                     {
                         path: "workflows/trs_search",
