@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFolder, faPlus, faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faGlobe, faPlus, faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BFormInput, BPagination, BTable } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
@@ -626,15 +626,20 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             @click.stop />
                     </template>
 
-                    <!-- User icon column (for user-created file sources) -->
+                    <!-- Icon column (for highlighting user-created file sources) -->
                     <template v-slot:cell(user)="{ item }">
-                        <FontAwesomeIcon
+                        <span
                             v-if="urlTracker.isAtRoot.value && !item.isLeaf && item.url.startsWith(USER_FILE_PREFIX)"
                             v-b-tooltip.hover.noninteractive
-                            :icon="faUser"
-                            class="text-primary"
-                            fixed-width
-                            title="User-created file source" />
+                            title="You created this file source">
+                            <FontAwesomeIcon :icon="faUser" class="text-primary" fixed-width />
+                        </span>
+                        <span
+                            v-else-if="urlTracker.isAtRoot.value && !item.isLeaf"
+                            v-b-tooltip.hover.noninteractive
+                            title="This file source was created by an administrator and is globally available">
+                            <FontAwesomeIcon :icon="faGlobe" class="text-primary" fixed-width />
+                        </span>
                     </template>
 
                     <!-- Name column with icons -->
