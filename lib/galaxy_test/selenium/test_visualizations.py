@@ -10,6 +10,8 @@ from .framework import (
 )
 
 HG18_DBKEY_TEXT = "Human Mar. 2006 (NCBI36/hg18) (hg18)"
+HG18_TITLE = "Human (hg18)"
+HG38_TITLE = "Human (GRCh38/hg38)"
 
 
 class TestVisualizationsAnonymous(SeleniumTestCase):
@@ -79,7 +81,7 @@ class TestVisualizations(SeleniumTestCase):
             igv.confirm_button.wait_for_and_click()
             igv.expand_button.wait_for_and_click()
             igv.settings_tab.wait_for_and_click()
-            igv.default_genome.wait_for_present()
+            igv.selected_genome(title=HG38_TITLE).wait_for_present()
             self.screenshot("visualization_plugin_igv_default_genome")
 
         dataset_component = self.history_panel_ensure_showing_item_details(hid)
@@ -93,7 +95,7 @@ class TestVisualizations(SeleniumTestCase):
             igv.confirm_button.assert_absent_or_hidden()
             igv.expand_button.wait_for_and_click()
             igv.settings_tab.wait_for_and_click()
-            igv.current_genome.wait_for_present()
+            igv.selected_genome(title=HG18_TITLE).wait_for_present()
             self.screenshot("visualization_plugin_igv_current_genome")
 
             igv.name_input.wait_for_and_click()

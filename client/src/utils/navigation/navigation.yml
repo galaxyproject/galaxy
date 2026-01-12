@@ -736,8 +736,7 @@ igv:
     confirm_button:
       type: xpath
       selector: '(//button[text()=" OK "])[1]'
-    current_genome: '[title="Human (hg18)"]'
-    default_genome: '[title="Human (GRCh38/hg38)"]'
+    selected_genome: '[title="${title}"]'
     expand_button: '[data-description="sidebutton expand"]'
     name_input: '.n-input__input input'
     save_button: '[data-description="sidebutton save"]'
