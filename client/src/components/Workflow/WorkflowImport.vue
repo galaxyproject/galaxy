@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BCard, BCardBody, BCardTitle } from "bootstrap-vue";
-import { computed, type Ref, ref } from "vue";
+import { computed, onMounted, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
@@ -43,13 +43,18 @@ services.getTrsServers().then((res) => {
     trsServers.value = res;
 });
 
-// Auto-select method based on query parameters
+// Auto-select method based on query parameters or route
+// If user navigates directly to /workflows/trs_import (the old TRS import route),
+// automatically select repository method for backwards compatibility
 if (queryParams.value.trsId || queryParams.value.trsServer) {
     selectedMethod.value = "repository";
     selectedTrsMethod.value = "id";
 } else if (queryParams.value.trsUrl) {
     selectedMethod.value = "repository";
     selectedTrsMethod.value = "url";
+} else if (route.path.includes("trs_import")) {
+    // Route is /workflows/trs_import - auto-select repository for backwards compatibility
+    selectedMethod.value = "repository";
 }
 
 const wizard = useWizard({
@@ -113,6 +118,20 @@ const wizard = useWizard({
         isValid: () => selectedMethod.value !== null,
         isSkippable: () => !(selectedMethod.value && selectedMethod.value === "repository" && !selectedTrsMethod.value), // Hide as soon as TRS method selected
     },
+});
+
+// Auto-navigate wizard based on URL route and query parameters
+onMounted(() => {
+    if (queryParams.value.trsId || queryParams.value.trsServer) {
+        // Navigate directly to TRS ID form
+        wizard.goTo("trs-id");
+    } else if (queryParams.value.trsUrl) {
+        // Navigate directly to TRS URL form
+        wizard.goTo("trs-url");
+    } else if (route.path.includes("trs_import")) {
+        // Navigate to TRS method selection step for backwards compatibility
+        wizard.goTo("select-trs-method");
+    }
 });
 
 function selectMethod(method: ImportMethod) {
@@ -230,7 +249,7 @@ function onTrsIdValid(e: boolean) {
                 <div class="row mx-auto" style="max-width: 1000px">
                     <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
                         <BCard
-                            class="h-100 clickable-card text-center wizard-selection-card"
+                            class="h-100 workflow-import-trs-search-link clickable-card text-center wizard-selection-card"
                             :class="{ selected: selectedTrsMethod === 'search' }"
                             @click="selectTrsMethod('search')">
                             <BCardTitle>Search workflow registries</BCardTitle>
@@ -242,7 +261,7 @@ function onTrsIdValid(e: boolean) {
 
                     <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
                         <BCard
-                            class="h-100 clickable-card text-center wizard-selection-card"
+                            class="h-100 workflow-import-trs-url-link clickable-card text-center wizard-selection-card"
                             :class="{ selected: selectedTrsMethod === 'url' }"
                             @click="selectTrsMethod('url')">
                             <BCardTitle>TRS URL</BCardTitle>
@@ -254,7 +273,7 @@ function onTrsIdValid(e: boolean) {
 
                     <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
                         <BCard
-                            class="h-100 clickable-card text-center wizard-selection-card"
+                            class="h-100 workflow-import-trs-id-link clickable-card text-center wizard-selection-card"
                             :class="{ selected: selectedTrsMethod === 'id' }"
                             @click="selectTrsMethod('id')">
                             <BCardTitle>TRS ID</BCardTitle>
