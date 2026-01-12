@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert, BButton, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed, type Ref, ref } from "vue";
+import { BAlert, BButton, BForm, BFormFile, BFormGroup } from "bootstrap-vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
@@ -9,39 +9,48 @@ import { withPrefix } from "@/utils/redirect";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+interface Props {
+    mode?: "modal" | "wizard";
+    hideSubmitButton?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    mode: "modal",
+    hideSubmitButton: false,
+});
+
+const emit = defineEmits<{
+    (e: "input-valid", valid: boolean): void;
+}>();
+
 const loading = ref(false);
-const sourceURL: Ref<string | null> = ref(null);
 const sourceFile: Ref<string | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
 const acceptedWorkflowFormats = ".ga, .yml";
 
 const isImportDisabled = computed(() => {
-    return !sourceFile.value && !sourceURL.value;
+    return !sourceFile.value;
 });
 
 const importTooltip = computed(() => {
-    return isImportDisabled.value
-        ? "You must provide a workflow archive URL or file."
-        : sourceURL.value
-          ? "Import workflow from URL"
-          : "Import workflow from File";
+    return isImportDisabled.value ? "You must provide a workflow file." : "Import workflow from File";
 });
 
 const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
 });
 
-function autoAppendJson(urlString: string): string {
-    const sharedWorkflowRegex = /^(https?:\/\/[\S]+\/u\/[\S]+\/w\/[^\s/]+)\/?$/;
-    const matches = urlString.match(sharedWorkflowRegex);
-    const bareUrl = matches?.[1];
+// Validation state for wizard mode
+const isValid = computed(() => sourceFile.value !== null);
 
-    if (bareUrl) {
-        return `${bareUrl}/json`;
-    } else {
-        return urlString;
-    }
-}
+watch(isValid, (newValue) => {
+    emit("input-valid", newValue);
+});
+
+// Show button in modal mode, hide in wizard mode or when hideSubmitButton is true
+const showSubmitButton = computed(() => {
+    return props.mode === "modal" && !props.hideSubmitButton;
+});
 
 const router = useRouter();
 
@@ -51,11 +60,6 @@ async function submit(ev: SubmitEvent) {
 
     if (sourceFile.value) {
         formData.append("archive_file", sourceFile.value);
-    }
-
-    if (sourceURL.value) {
-        const url = autoAppendJson(sourceURL.value);
-        formData.append("archive_source", url);
     }
 
     loading.value = true;
@@ -75,23 +79,21 @@ async function submit(ev: SubmitEvent) {
         loading.value = false;
     }
 }
+
+// Expose method for wizard submit
+async function attemptImport() {
+    await submit(new Event("submit") as SubmitEvent);
+}
+
+defineExpose({ attemptImport });
 </script>
 
 <template>
     <BForm class="mt-4 workflow-import-file" @submit="submit">
-        <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
-
-        <BFormGroup label="Archived Workflow URL">
-            <BFormInput
-                id="workflow-import-url-input"
-                v-model="sourceURL"
-                aria-label="Workflow Import URL"
-                type="url" />
-            If the workflow is accessible via a URL, enter the URL above and click Import.
-        </BFormGroup>
+        <h2 class="h-sm">Import from a workflow file</h2>
 
         <BFormGroup label="Archived Workflow File">
-            <b-form-file v-model="sourceFile" :accept="acceptedWorkflowFormats" />
+            <BFormFile v-model="sourceFile" :accept="acceptedWorkflowFormats" />
             If the workflow is in a file on your computer, choose it and then click Import.
         </BFormGroup>
 
@@ -104,6 +106,7 @@ async function submit(ev: SubmitEvent) {
         </BAlert>
 
         <BButton
+            v-if="showSubmitButton"
             id="workflow-import-button"
             type="submit"
             :disabled="isImportDisabled"

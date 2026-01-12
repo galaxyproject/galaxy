@@ -17,6 +17,18 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
 
+interface Props {
+    mode?: "modal" | "wizard";
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    mode: "modal",
+});
+
+const emit = defineEmits<{
+    (e: "input-valid", valid: boolean): void;
+}>();
+
 type TrsSearchData = {
     id: string;
     name: string;
@@ -39,9 +51,20 @@ const loading = ref(false);
 const importing = ref(false);
 const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
+const selectedTool = ref<TrsSearchData | null>(null);
+const selectedVersion = ref<string | undefined>(undefined);
 
 const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
+});
+
+// Validation state for wizard mode
+const isValid = computed(() => {
+    return selectedTool.value !== null && selectedVersion.value !== undefined;
+});
+
+watch(isValid, (newValue) => {
+    emit("input-valid", newValue);
 });
 
 const itemsComputed = computed(() => {
@@ -57,6 +80,9 @@ const services = new Services();
 watch(query, async () => {
     if (query.value == "") {
         results.value = [];
+        // Reset selection state when search is cleared
+        selectedTool.value = null;
+        selectedVersion.value = undefined;
     } else {
         loading.value = true;
 
@@ -83,9 +109,23 @@ function onTrsSelectionError(message: string) {
     errorMessage.value = message;
 }
 
-function showRowDetails(row: BCard, index: number, e: MouseEvent) {
+function showRowDetails(row: any, _index: number, e: MouseEvent) {
     if ((e.target as Node | undefined)?.nodeName !== "A") {
+        // Collapse all other rows
+        itemsComputed.value.forEach((item) => {
+            if (item !== row) {
+                item._showDetails = false;
+            }
+        });
+        // Toggle the clicked row
+        const wasExpanded = row._showDetails;
         row._showDetails = !row._showDetails;
+
+        // If collapsing the row, reset selection state
+        if (wasExpanded) {
+            selectedTool.value = null;
+            selectedVersion.value = undefined;
+        }
     }
 }
 
@@ -102,6 +142,16 @@ function computeItems(items: TrsSearchData[]) {
 }
 
 const router = useRouter();
+
+function onVersionSelected(toolData: TrsSearchData, versionId: string) {
+    selectedTool.value = toolData;
+    selectedVersion.value = versionId;
+
+    // Only auto-import in modal mode
+    if (props.mode === "modal") {
+        importVersion(trsSelection.value?.id, toolData.id, versionId);
+    }
+}
 
 async function importVersion(trsId?: string, toolIdToImport?: string, version?: string, isRunFormRedirect = false) {
     if (!trsId || !toolIdToImport) {
@@ -123,6 +173,15 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
     importing.value = false;
 }
+
+// Expose method for wizard submit
+function triggerImport() {
+    if (selectedTool.value && selectedVersion.value) {
+        importVersion(trsSelection.value?.id, selectedTool.value.id, selectedVersion.value);
+    }
+}
+
+defineExpose({ triggerImport });
 </script>
 
 <template>
@@ -167,7 +226,7 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
             </BInputGroup>
         </div>
 
-        <div>
+        <div class="vertical-scroll">
             <BAlert v-if="loading" variant="info" show>
                 <LoadingSpan :message="`Searching for ${query}, this may take a while - please be patient`" />
             </BAlert>
@@ -180,9 +239,9 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 :fields="fields"
                 :items="itemsComputed"
                 hover
-                striped
                 caption-top
                 :busy="loading"
+                tbody-tr-class="clickable-row"
                 @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
                     <BCard>
@@ -192,7 +251,9 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
                         <TrsTool
                             :trs-tool="row.item.data"
-                            @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
+                            :mode="props.mode"
+                            @onImport="(versionId) => onVersionSelected(row.item.data, versionId)"
+                            @onSelect="(versionId) => onVersionSelected(row.item.data, versionId)" />
                     </BCard>
                 </template>
 
@@ -212,5 +273,26 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     line-clamp: 3;
+}
+.vertical-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+}
+.clickable-row:not(.b-table-details) {
+    cursor: pointer;
+}
+.clickable-row:not(:first-child) {
+    border-top: 1px double #ccc;
+}
+.clickable-row.b-table-has-details {
+    border: 2px solid var(--brand-primary, #007bff);
+    border-bottom: none;
+}
+.clickable-row.b-table-details {
+    border: 2px solid var(--brand-primary, #007bff);
+    border-top: none;
+}
+.clickable-row.b-table-details:hover {
+    background: unset;
 }
 </style>

@@ -365,12 +365,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflow_run.run_workflow.wait_for_visible()
 
     def go_to_trs_search(self) -> None:
-        self.navigate_to(self.build_url("workflows/trs_search"))
+        self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
+        # The wizard auto-navigates to TRS method selection on mount
+        # Click the "Search workflow registries" card
+        self.components.workflows.import_trs_search_link.wait_for_and_click()
 
     def go_to_trs_by_id(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
+        # The wizard auto-navigates to TRS method selection on mount
+        # Click the TRS ID sub-card to show the TRS ID import form
+        self.components.workflows.import_trs_id_link.wait_for_and_click()
+
+    def go_to_trs_by_url(self) -> None:
+        self.navigate_to(self.build_url("workflows/trs_import"))
+        self.components.masthead._.wait_for_visible()
+        # The wizard auto-navigates to TRS method selection on mount
+        # Click the TRS URL sub-card to show the TRS URL import form
+        self.components.workflows.import_trs_url_link.wait_for_and_click()
 
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
         self.navigate_to(self.build_url(f"workflows/sharing?id={workflow_id}"))
@@ -1793,6 +1806,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.home()
         self.click_activity_workflow()
 
+    def navigate_to_workflows_import(self):
+        self.get("workflows/import")
+
     def workflow_index_open_with_name(self, name: str):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
@@ -1915,10 +1931,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             raise KeyError(f"Failed to find tag {tag} on workflow with index {workflow_index}")
 
     def workflow_import_submit_url(self, url):
-        form_button = self.wait_for_selector_visible("#workflow-import-button")
+        # Click the "Fetch URL" card to select that import method
+        self.components.workflows.import_url_link.wait_for_and_click()
+        # Click the wizard's Next button to proceed to the URL input step
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
+        # Enter the URL
         url_element = self.wait_for_selector_visible("#workflow-import-url-input")
         url_element.send_keys(url)
-        form_button.click()
+        # Wait a moment for validation to occur
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Wait for the Import button to become enabled (it's disabled until URL is valid)
+        import_button = self.wait_for_selector_clickable(".wizard-actions .go-next-btn.btn-primary:not([disabled])")
+        # Click the wizard's Import button
+        import_button.click()
+        # Wait for workflow list to appear after import completes
+        self.components.workflows.workflow_cards.wait_for_visible()
 
     def workflow_sharing_click_publish(self):
         self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
