@@ -569,7 +569,13 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     v-if="!urlTracker.isAtRoot.value"
                     :items="breadcrumbs"
                     @navigate="navigateToBreadcrumb" />
-                <span v-else class="font-weight-bold">Select a File Source</span>
+                <div v-else>
+                    <span class="font-weight-bold">Browse a File Source below</span> or
+                    <GButton color="grey" size="small" @click="createNewFileSource">
+                        <FontAwesomeIcon :icon="faPlus" class="mr-1" />
+                        Connect New Remote Source
+                    </GButton>
+                </div>
             </div>
 
             <!-- Search bar -->
@@ -692,10 +698,6 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Action buttons -->
             <div class="browser-actions mt-3">
-                <GButton v-if="urlTracker.isAtRoot.value" color="blue" @click="createNewFileSource">
-                    <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                    Connect New Remote Source
-                </GButton>
                 <GButton v-if="hasItems && !hasSelection" color="grey" outline @click="showFileList">
                     View Selected Files ({{ remoteFileItems.length }})
                 </GButton>
