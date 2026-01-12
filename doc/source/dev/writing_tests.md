@@ -459,9 +459,10 @@ Despite its name, ``DatasetPopulator`` has become a central hub for abstractions
 covering many Galaxy API operations beyond just datasets - including users, pages,
 object stores, and more. When looking for a testing helper, check here first.
 
-**The ``_raw`` Pattern**: Many populator methods come in pairs - a convenience
-method that returns parsed JSON and a ``_raw`` variant that returns the raw
-``Response`` object:
+#### Raw Requests vs. Python Dictionaries (The ``*_raw`` Pattern)
+
+Many populator methods come in pairs - a convenience method that returns parsed JSON
+and a ``_raw`` variant that returns the raw ``Response`` object:
 
 ```python
 # Convenience method: asserts success, returns parsed dict
