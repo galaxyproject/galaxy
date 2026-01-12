@@ -107,7 +107,7 @@ describe("GridList", () => {
         });
         const findInput = wrapper.find("[data-description='filter text input']");
         expect(findInput.attributes().placeholder).toBe("search tests");
-        expect(wrapper.find(".loading-message").text()).toBe("Loading...");
+        expect(wrapper.find(".grid-initial-loading .text-muted").text()).toBe("Loading...");
         const findAction = wrapper.find("[data-description='grid action test']");
         expect(findAction.text()).toBe("test");
         await findAction.trigger("click");
