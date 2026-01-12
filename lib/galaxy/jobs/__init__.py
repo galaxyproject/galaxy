@@ -1100,7 +1100,7 @@ class MinimalJobWrapper(HasResourceParameters):
             work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
             user_context = ProvidesFileSourcesUserContext(work_request)
             tool_source = self.tool.tool_source.to_string() if self.tool else None
-            tool_dir = str(self.tool.tool_dir) if self.tool and self.tool.tool_dir else None
+            tool_dir = self.tool.tool_dir if self.tool else None
             self._job_io = JobIO(
                 sa_session=self.sa_session,
                 job=job,
