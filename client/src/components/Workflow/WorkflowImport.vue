@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BCard, BCardBody, BCardTitle } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 
@@ -7,6 +6,7 @@ import { useWizard } from "@/components/Common/Wizard/useWizard";
 import type { TrsSelection } from "@/components/Workflow/Import/types";
 import { Services } from "@/components/Workflow/services";
 
+import GCard from "@/components/Common/GCard.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import FromFile from "@/components/Workflow/Import/FromFile.vue";
 import FromUrl from "@/components/Workflow/Import/FromUrl.vue";
@@ -40,7 +40,30 @@ const queryParams = computed(() => ({
 
 const services = new Services();
 services.getTrsServers().then((res) => {
-    trsServers.value = res;
+    // trsServers.value = res;
+    trsServers.value = [
+        { id: 'dockstore', label: 'Dockstore', link_url: '', doc: '' },
+        { id: 'workflowhub', label: 'WorkflowHub', link_url: '', doc: '' },
+        { id: 'github', label: 'GitHub', link_url: '', doc: '' },
+        { id: 'gitlab', label: 'GitLab', link_url: '', doc: '' },
+        { id: 'bitbucket', label: 'Bitbucket', link_url: '', doc: '' },
+    ];
+});
+
+const trsServersString = computed(() => {
+    const MAX_TO_DISPLAY = 3;
+    if (trsServers.value.length > MAX_TO_DISPLAY) {
+        const str = trsServers.value
+            .slice(0, MAX_TO_DISPLAY)
+            .map((server) => server.label)
+            .join(", ");
+        const n_more = trsServers.value.length - MAX_TO_DISPLAY;
+        return str + ` + ${n_more} more`;
+    } else {
+        return trsServers.value
+            .map((server) => server.label)
+            .join(", ");
+    }
 });
 
 // Auto-select method based on query parameters or route
@@ -84,7 +107,7 @@ const wizard = useWizard({
     },
     "select-trs-method": {
         label: "TRS Import Method",
-        instructions: "Choose how to import from the TRS repository",
+        instructions: `Choose how to import from the workflow repository.`,
         isValid: () => selectedTrsMethod.value !== null,
         isSkippable: () => !selectedMethod.value || selectedMethod.value !== "repository",
     },
@@ -183,52 +206,47 @@ function onTrsIdValid(e: boolean) {
             submit-button-label="Import"
             @submit="onSubmit">
             <div v-if="wizard.isCurrent('select-method')" class="method-selection">
-                <div class="row mx-auto" style="max-width: 1000px">
-                    <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
-                        <BCard
-                            class="h-100 workflow-import-file-link clickable-card text-center wizard-selection-card"
+                <div class="row">
+                    <div class="col-xl-4 mb-3">
+                        <GCard
+                            class="h-100 workflow-import-file-link clickable-card text-center"
                             :class="{ selected: selectedMethod === 'upload' }"
+                            :clickable="true"
                             @click="selectMethod('upload')">
-                            <BCardTitle>Upload file</BCardTitle>
-                            <BCardBody>
-                                <p class="text-muted">
-                                    Upload a <code>*.ga</code> file from your computer. These can be downloaded from
-                                    Galaxy servers, or from workflow repositories like Dockstore or WorkflowHub.
-                                </p>
-                            </BCardBody>
-                        </BCard>
+                            <h4>Upload file</h4>
+                            <p class="text-muted mb-0">
+                                Upload a <code>*.ga</code> file from your computer. These files can be downloaded from
+                                Galaxy servers or workflow repositories.
+                            </p>
+                        </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
-                        <BCard
-                            class="h-100 workflow-import-url-link clickable-card text-center wizard-selection-card"
+                    <div class="col-xl-4 mb-3">
+                        <GCard
+                            class="h-100 workflow-import-url-link clickable-card text-center"
                             :class="{ selected: selectedMethod === 'fetch' }"
+                            :clickable="true"
                             @click="selectMethod('fetch')">
-                            <BCardTitle>Fetch URL</BCardTitle>
-                            <BCardBody>
-                                <p class="text-muted">
-                                    Fetch a remote <code>*.ga</code> file from any publicly accessible URL. These can be
-                                    generated by any Galaxy server, or public repositories like GitHub.
-                                </p>
-                            </BCardBody>
-                        </BCard>
+                            <h4>Fetch URL</h4>
+                            <p class="text-muted mb-0">
+                                Fetch a remote <code>*.ga</code> file from any publicly accessible URL. These can be
+                                generated by any Galaxy server, or public repositories like GitHub.
+                            </p>
+                        </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
-                        <BCard
-                            class="h-100 workflow-import-trs-link clickable-card text-center wizard-selection-card"
+                    <div class="col-xl-4 mb-3">
+                        <GCard
+                            class="h-100 workflow-import-trs-link clickable-card text-center"
                             :class="{ selected: selectedMethod === 'repository' }"
+                            :clickable="true"
                             @click="selectMethod('repository')">
-                            <BCardTitle>Import from repository</BCardTitle>
-                            <BCardBody>
-                                <p>Import a workflow from a configured GA4GH server:</p>
-                                <ul class="text-left text-muted">
-                                    <li v-for="server in trsServers" :key="server.id">
-                                        {{ server.label }}
-                                    </li>
-                                </ul>
-                            </BCardBody>
-                        </BCard>
+                            <h4>Import from repository</h4>
+                            <p class="text-muted mb-0">
+                                Search and import workflows from our configured workflow repositories
+                                ({{ trsServersString }})
+                            </p>
+                        </GCard>
                     </div>
                 </div>
             </div>
@@ -246,43 +264,40 @@ function onTrsIdValid(e: boolean) {
             </div>
 
             <div v-else-if="wizard.isCurrent('select-trs-method')" class="method-selection">
-                <div class="row mx-auto" style="max-width: 1000px">
-                    <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
-                        <BCard
-                            class="h-100 workflow-import-trs-search-link clickable-card text-center wizard-selection-card"
+                <div class="row">
+                    <div class="col-xl-4 mb-3">
+                        <GCard
+                            class="h-100 workflow-import-trs-search-link clickable-card text-center"
                             :class="{ selected: selectedTrsMethod === 'search' }"
+                            :clickable="true"
                             @click="selectTrsMethod('search')">
-                            <BCardTitle>Search workflow registries</BCardTitle>
-                            <BCardBody>
-                                <p class="text-muted">Search for workflows across configured GA4GH servers.</p>
-                            </BCardBody>
-                        </BCard>
+                            <h4>Search workflow registries</h4>
+                            <p class="text-muted mb-0">Search for workflows across configured GA4GH servers.</p>
+                        </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
-                        <BCard
-                            class="h-100 workflow-import-trs-url-link clickable-card text-center wizard-selection-card"
+                    <div class="col-xl-4 mb-3">
+                        <GCard
+                            class="h-100 workflow-import-trs-url-link clickable-card text-center"
                             :class="{ selected: selectedTrsMethod === 'url' }"
+                            :clickable="true"
                             @click="selectTrsMethod('url')">
-                            <BCardTitle>TRS URL</BCardTitle>
-                            <BCardBody>
-                                <p class="text-muted">Import directly from any GA4GH server with a TRS URL.</p>
-                            </BCardBody>
-                        </BCard>
+                            <h4>TRS URL</h4>
+                            <p class="text-muted mb-0">Import directly from any GA4GH server with a TRS URL.</p>
+                        </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3 mx-auto" style="max-width: 300px">
-                        <BCard
-                            class="h-100 workflow-import-trs-id-link clickable-card text-center wizard-selection-card"
+                    <div class="col-xl-4 mb-3">
+                        <GCard
+                            class="h-100 workflow-import-trs-id-link clickable-card text-center"
                             :class="{ selected: selectedTrsMethod === 'id' }"
+                            :clickable="true"
                             @click="selectTrsMethod('id')">
-                            <BCardTitle>TRS ID</BCardTitle>
-                            <BCardBody>
-                                <p class="text-muted">
-                                    When you know the TRS ID for a workflow in one of the configured GA4GH servers.
-                                </p>
-                            </BCardBody>
-                        </BCard>
+                            <h4>TRS ID</h4>
+                            <p class="text-muted mb-0">
+                                When you know the TRS ID for a workflow in one of the configured GA4GH servers.
+                            </p>
+                        </GCard>
                     </div>
                 </div>
             </div>
@@ -331,41 +346,25 @@ function onTrsIdValid(e: boolean) {
 </template>
 
 <style scoped>
-.clickable-card {
-    cursor: pointer;
-    transition:
-        transform 0.2s,
-        box-shadow 0.2s;
-}
-
-.clickable-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.clickable-card.selected {
-    border-color: var(--brand-primary, #007bff);
-}
-
-.method-selection {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.import-form {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.container-narrow {
-    width: 100%;
-    max-width: 600px;
-}
-
-.container-wide {
-    width: 100%;
-    max-width: min(1000px, 80vw);
-}
+    .row {
+        flex: 1 1 100%;
+    }
+    .method-selection {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .import-form {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .container-narrow {
+        width: 100%;
+        max-width: 600px;
+    }
+    .container-wide {
+        width: 100%;
+        max-width: min(1000px, 80vw);
+    }
 </style>
