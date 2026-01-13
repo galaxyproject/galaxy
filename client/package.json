@@ -27,6 +27,7 @@
       "chokidar": "3.5.3",
       "vue": "3.5.18",
       "@vue/compat": "3.5.18",
+      "@vue/compiler-sfc": "3.5.18",
       "@fortawesome/fontawesome-common-types": "6.2.1"
     },
     "onlyBuiltDependencies": [
@@ -77,6 +78,7 @@
     "dompurify": "^3.0.6",
     "echarts": "^5.5.1",
     "elkjs": "^0.8.2",
+    "entities": "^4.5.0",
     "events": "^3.3.0",
     "file-saver": "^2.0.5",
     "flush-promises": "^1.0.2",
