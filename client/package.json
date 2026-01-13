@@ -25,12 +25,20 @@
       "chokidar": "3.5.3",
       "vue": "3.5.18",
       "@vue/compat": "3.5.18",
+      "@vue/compiler-sfc": "3.5.18",
       "@fortawesome/fontawesome-common-types": "6.2.1"
     },
     "peerDependencyRules": {
       "allowedVersions": {
         "@vitejs/plugin-vue2>vite": "^8.0.0",
         "@rollup/plugin-inject>rollup": "*"
+      }
+    },
+    "packageExtensions": {
+      "@vue/compat": {
+        "dependencies": {
+          "entities": "^4.5.0"
+        }
       }
     },
     "onlyBuiltDependencies": [
