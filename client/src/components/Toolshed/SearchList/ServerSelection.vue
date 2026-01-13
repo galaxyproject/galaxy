@@ -68,7 +68,12 @@ export default {
 };
 </script>
 <style scoped>
+
 span.dropdown {
     display: inline-block;
+}
+
+.dropdown-menu {
+    background-color: #ffffff;
 }
 </style>
