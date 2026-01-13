@@ -34,8 +34,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: 'galaxy root/package.json'
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}

@@ -2,6 +2,7 @@
   "name": "@galaxyproject/tool-shed-frontend",
   "license": "MIT",
   "version": "0.2.1",
+  "packageManager": "pnpm@10.26.1",
   "files": [
     "dist"
   ],
