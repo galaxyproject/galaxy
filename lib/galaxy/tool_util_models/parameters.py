@@ -63,6 +63,10 @@ from .parameter_validators import (
     RegexParameterValidatorModel,
     StaticValidatorModel,
 )
+from .sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+)
 from .tool_source import (
     DrillDownOptionsDict,
     JsonTestCollectionDefDict,
@@ -498,6 +502,9 @@ class DataRequestCollectionUri(StrictModel):
     deferred: StrictBool = False
     name: Optional[StrictStr] = None
     src: None = Field(None, exclude=True)
+    # Sample sheet metadata
+    column_definitions: Optional[SampleSheetColumnDefinitions] = None
+    rows: Optional[Dict[str, SampleSheetRow]] = None
 
 
 _DataRequest = Annotated[
@@ -1437,7 +1444,7 @@ DiscriminatorType = Union[bool, str]
 
 
 def cond_test_parameter_default_value(
-    test_parameter: Union["BooleanParameterModel", "SelectParameterModel"],
+    test_parameter: Union[BooleanParameterModel, "SelectParameterModel"],
 ) -> Optional[DiscriminatorType]:
     default_value: Optional[DiscriminatorType] = None
     if isinstance(test_parameter, BooleanParameterModel):

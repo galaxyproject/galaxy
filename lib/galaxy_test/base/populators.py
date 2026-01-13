@@ -94,7 +94,6 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
     CreateWorkflowLandingRequestPayload,
-    SampleSheetColumnDefinitions,
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
@@ -115,6 +114,7 @@ from galaxy.tool_util.verify.wait import (
 )
 from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
+from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
@@ -919,13 +919,13 @@ class BaseDatasetPopulator(BasePopulator):
 
     def create_landing_raw(self, payload: BaseModel, landing_type: Literal["file", "data", "tool"]) -> Response:
         create_url = f"{landing_type}_landings"
-        json = payload.model_dump(mode="json")
+        json = payload.model_dump(mode="json", by_alias=True)
         create_response = self._post(create_url, json, json=True, anon=True)
         return create_response
 
     def create_workflow_landing(self, payload: CreateWorkflowLandingRequestPayload) -> WorkflowLandingRequest:
         create_url = "workflow_landings"
-        json = payload.model_dump(mode="json")
+        json = payload.model_dump(mode="json", by_alias=True)
         create_response = self._post(create_url, json, json=True, anon=True)
         api_asserts.assert_status_code_is(create_response, 200)
         assert create_response.headers["access-control-allow-origin"]

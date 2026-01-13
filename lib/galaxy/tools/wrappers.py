@@ -33,8 +33,8 @@ from galaxy.model import (
 )
 from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
-from galaxy.schema.schema import SampleSheetRow
 from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.tool_util_models.sample_sheet import SampleSheetRow
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     TextToolParameter,

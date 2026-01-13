@@ -15,12 +15,17 @@ from galaxy.exceptions import (
     ItemAlreadyClaimedException,
     ItemMustBeClaimed,
     ObjectNotFound,
+    RequestParameterInvalidException,
     RequestParameterMissingException,
 )
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.model import (
     ToolLandingRequest as ToolLandingRequestModel,
     WorkflowLandingRequest as WorkflowLandingRequestModel,
+)
+from galaxy.model.dataset_collections.types.sample_sheet_util import (
+    validate_column_definitions,
+    validate_row,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
@@ -41,7 +46,10 @@ from galaxy.tool_util.parameters import (
     LandingRequestInternalToolState,
     LandingRequestToolState,
 )
-from galaxy.tool_util_models.parameters import DataOrCollectionRequestAdapter
+from galaxy.tool_util_models.parameters import (
+    DataOrCollectionRequestAdapter,
+    DataRequestCollectionUri,
+)
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
 from .tools import (
@@ -86,6 +94,38 @@ class LandingRequestManager:
                 input_state=landing_request_state.input_state
             )
 
+        # Validate sample sheet metadata in request_state for __DATA_FETCH__ tool
+        if tool.id == "__DATA_FETCH__" and request_state:
+
+            # Check each item in request_state for sample sheet metadata
+            for item in landing_request_state.input_state.get("request_state", []):
+                # Try to parse as DataRequestCollectionUri to access sample sheet fields
+                if isinstance(item, dict) and item.get("class") == "Collection":
+                    column_definitions = item.get("column_definitions")
+                    rows = item.get("rows")
+                    collection_type = item.get("collection_type", "")
+
+                    if column_definitions is not None or rows is not None:
+                        # Validate that sample sheet metadata is only used with sample_sheet collection types
+                        if not collection_type.startswith("sample_sheet"):
+                            raise RequestParameterInvalidException(
+                                f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
+                            )
+
+                        # Validate column definitions structure
+                        if column_definitions is not None:
+                            validate_column_definitions(column_definitions)
+
+                        # Validate rows against column definitions and element identifiers
+                        if rows:
+                            element_identifiers = [elem.get("identifier") for elem in item.get("elements", [])]
+                            for identifier, row in rows.items():
+                                if identifier not in element_identifiers:
+                                    raise RequestParameterInvalidException(
+                                        f"Row identifier '{identifier}' not found in collection elements"
+                                    )
+                                validate_row(row, column_definitions, element_identifiers)
+
         model = ToolLandingRequestModel()
         model.tool_id = tool_id
         model.tool_version = tool_version
@@ -126,9 +166,35 @@ class LandingRequestManager:
                 if isinstance(value, dict):
                     try:
                         # persist values after model validators and aliases have been applied
-                        request_state[key] = DataOrCollectionRequestAdapter.validate_python(value).model_dump(
-                            by_alias=True, exclude_unset=True, mode="json"
-                        )
+                        validated_value = DataOrCollectionRequestAdapter.validate_python(value)
+
+                        # Validate sample sheet metadata for collections
+                        if isinstance(validated_value, DataRequestCollectionUri):
+                            has_sample_sheet_metadata = (
+                                validated_value.column_definitions is not None or validated_value.rows is not None
+                            )
+                            if has_sample_sheet_metadata:
+                                collection_type = validated_value.collection_type
+                                if not collection_type.startswith("sample_sheet"):
+                                    raise RequestParameterInvalidException(
+                                        f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
+                                    )
+
+                                # Validate column definitions structure
+                                if validated_value.column_definitions is not None:
+                                    validate_column_definitions(validated_value.column_definitions)
+
+                                # Validate rows against column definitions and element identifiers
+                                if validated_value.rows:
+                                    element_identifiers = [elem.identifier for elem in validated_value.elements]
+                                    for identifier, row in validated_value.rows.items():
+                                        if identifier not in element_identifiers:
+                                            raise RequestParameterInvalidException(
+                                                f"Row identifier '{identifier}' not found in collection elements"
+                                            )
+                                        validate_row(row, validated_value.column_definitions, element_identifiers)
+
+                        request_state[key] = validated_value.model_dump(by_alias=True, exclude_unset=True, mode="json")
                     except ValidationError:
                         pass
         return request_state
