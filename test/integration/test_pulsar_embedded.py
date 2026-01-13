@@ -2,6 +2,9 @@
 
 import os
 
+from sqlalchemy import select
+
+from galaxy import model
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -25,6 +28,7 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
         config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "directory"
+        config["cleanup_job"] = "never"
 
     def test_tool_eval_failure(self):
         with self.dataset_populator.test_history() as history_id:
@@ -37,6 +41,45 @@ class TestEmbeddedPulsarIntegrationInstance(integration_util.IntegrationTestCase
             failed_dataset = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=False)
             assert failed_dataset["state"] == "error"
             assert failed_dataset["misc_info"] == "Parameter 'parameter': requires a value, but no legal values defined"
+
+    def test_collection_directory_discovery_does_not_collect_working_dir_files(self):
+        """Test that collection discovery with directory attribute doesn't collect files from working directory root."""
+        with self.dataset_populator.test_history() as history_id:
+            # Create input dataset
+            input_content = "101\t1\n101\t2\n101\t3\n1334\t1\n1334\t10\n1334\t11\n1334\t12\n1334\t13\n1334\t2\n"
+            dataset = self.dataset_populator.new_dataset(history_id=history_id, content=input_content, ext="tabular")
+
+            # Run the tool
+            run_response = self.dataset_populator.run_tool(
+                "collection_split_on_column",
+                inputs={"input1": {"src": "hda", "id": dataset["id"]}},
+                history_id=history_id,
+            )
+
+            # Wait for job to complete
+            self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"])
+
+            # Get the job from the database
+            job_id = run_response["jobs"][0]["id"]
+            job_id_decoded = self._app.security.decode_id(job_id)
+
+            sa_session = self._app.model.session
+            job = sa_session.scalars(select(model.Job).filter_by(id=job_id_decoded)).one()
+
+            # Get the job working directory using the object store
+            job_working_directory = self._app.object_store.get_filename(
+                job, base_dir="job_work", dir_only=True, obj_dir=True
+            )
+            assert job_working_directory is not None, "Could not determine job working directory"
+
+            # Verify that do_not_collect_me.txt does NOT exist in the Galaxy job working directory
+            # This file is created in the working directory but should not be staged back because
+            # the collection discovery specifies directory="outputs"
+            do_not_collect_path = os.path.join(job_working_directory, "working", "do_not_collect_me.txt")
+            assert not os.path.exists(do_not_collect_path), (
+                f"File {do_not_collect_path} should not have been collected from Pulsar, "
+                "but it exists in Galaxy's job working directory"
+            )
 
 
 instance = integration_util.integration_module_instance(TestEmbeddedPulsarIntegrationInstance)
@@ -64,5 +107,6 @@ test_tools = integration_util.integration_tool_runner(
         "tool_directory_copy",
         "metadata_columns",
         "create_directory_index",
+        "collection_split_on_column",
     ]
 )
