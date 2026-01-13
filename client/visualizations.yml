@@ -44,7 +44,7 @@ hyphyvision:
     version: 0.0.3
 igv:
     package: "@galaxyproject/igv"
-    version: 0.0.23
+    version: 0.0.25
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
     version: 0.0.28
@@ -68,7 +68,7 @@ niivue:
     version: 0.0.17
 nora:
     package: "@galaxyproject/nora"
-    version: 1.2.2
+    version: 1.2.4
 openlayers:
     package: "@galaxyproject/openlayers"
     version: 0.0.6
@@ -83,7 +83,7 @@ phylocanvas:
     version: 0.0.11
 plotly:
     package: "@galaxyproject/plotly"
-    version: 0.0.25
+    version: 0.0.28
 plotly_box:
     package: "@galaxyproject/plotly_box"
     version: 0.0.0
