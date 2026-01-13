@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BButton, BCard, BCardBody, BCardTitle } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -11,6 +11,8 @@ import { useUserStore } from "@/stores/userStore";
 
 import type { TrsSelection } from "./types";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GCard from "@/components/Common/GCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsIdImport from "@/components/Workflow/Import/TrsIdImport.vue";
 import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
@@ -177,48 +179,59 @@ if (props.mode === "modal") {
 
                 <div class="row my-3">
                     <div class="col-xl-4 mb-3">
-                        <BCard
+                        <GCard
                             class="h-100 workflow-import-trs-search-link clickable-card"
-                            @click="selectView('trsSearch')">
-                            <BCardBody class="text-center">
-                                <BCardTitle>Search workflow registries</BCardTitle>
-                                <p>Search for workflows across configured GA4GH servers.</p>
-                            </BCardBody>
-                        </BCard>
+                            title="Search workflow registries"
+                            @click="selectView('trsSearch')"
+                        >
+                            <p>
+                                Search for workflows across configured GA4GH servers.
+                            </p>
+                        </GCard>
                     </div>
 
                     <div class="col-xl-4 mb-3">
-                        <BCard class="h-100 workflow-import-trs-id-link clickable-card" @click="selectView('trsId')">
-                            <BCardBody class="text-center">
-                                <BCardTitle>TRS ID</BCardTitle>
-                                <p>
-                                    <span>
-                                        <FontAwesomeIcon
-                                            :icon="faInfoCircle"
-                                            tooltip
-                                            title="A TRS ID can be obtained by visiting the website of the selected TRS server." />
-                                    </span>
-                                    When you know the TRS ID for a workflow in one of the configured GA4GH servers.
-                                </p>
-                            </BCardBody>
-                        </BCard>
+                        <GCard
+                            class="h-100 workflow-import-trs-id-link clickable-card"
+                            title="TRS ID"
+                            @click="selectView('trsId')"
+                        >
+                            <p>
+                                <span>
+                                    <FontAwesomeIcon
+                                        :icon="faInfoCircle"
+                                        tooltip
+                                        title="A TRS ID can be obtained by visiting the website of the selected TRS server."
+                                    />
+                                </span>
+                                When you know the TRS ID for a workflow in one of the configured GA4GH servers.
+                            </p>
+                        </GCard>
                     </div>
 
                     <div class="col-xl-4 mb-3">
-                        <BCard class="h-100 workflow-import-trs-url-link clickable-card" @click="selectView('trsUrl')">
-                            <BCardBody class="text-center">
-                                <BCardTitle>TRS URL</BCardTitle>
-                                <p>Import directly from any GA4GH server with a TRS URL.</p>
-                            </BCardBody>
-                        </BCard>
+                        <GCard
+                            class="h-100 workflow-import-trs-url-link clickable-card"
+                            title="TRS URL"
+                            @click="selectView('trsUrl')"
+                        >
+                            <p>
+                                Import directly from any GA4GH server with a TRS URL.
+                            </p>
+                        </GCard>
                     </div>
                 </div>
             </div>
 
             <div v-else>
-                <BButton v-if="showBackButton" variant="link" class="mb-5 p-0" @click="backToCards">
+                <GButton
+                    v-if="showBackButton"
+                    color="grey"
+                    class="mb-5 p-0"
+                    @click="backToCards"
+                >
                     &larr; Back to TRS import options
-                </BButton>
+                </GButton>
 
                 <BAlert v-if="importing" show variant="info">
                     <LoadingSpan message="Importing workflow" />

@@ -2,7 +2,7 @@
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BButton, BCard, BFormInput, BInputGroup, BInputGroupAppend, BTable } from "bootstrap-vue";
+import { BAlert, BFormInput, BInputGroup, BInputGroupAppend, BTable } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -13,6 +13,8 @@ import { withPrefix } from "@/utils/redirect";
 
 import type { TrsSelection } from "./types";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GCard from "@/components/Common/GCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
@@ -185,7 +187,7 @@ defineExpose({ triggerImport });
 </script>
 
 <template>
-    <BCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <GCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
         <BAlert :show="hasErrorMessage" variant="danger">
             {{ errorMessage }}
         </BAlert>
@@ -210,18 +212,17 @@ defineExpose({ triggerImport });
                     @keyup.esc="query = ''" />
 
                 <BInputGroupAppend>
-                    <BButton
-                        v-b-tooltip
-                        placement="bottom"
-                        size="sm"
+                    <GButton
+                        tooltip
+                        size="small"
                         data-description="show help toggle"
                         :title="searchHelp">
                         <FontAwesomeIcon :icon="faQuestion" />
-                    </BButton>
+                    </GButton>
 
-                    <BButton size="sm" title="clear search" @click="query = ''">
+                    <GButton size="small" title="clear search" @click="query = ''">
                         <FontAwesomeIcon :icon="faTimes" />
-                    </BButton>
+                    </GButton>
                 </BInputGroupAppend>
             </BInputGroup>
         </div>
@@ -262,7 +263,7 @@ defineExpose({ triggerImport });
                 </template>
             </BTable>
         </div>
-    </BCard>
+    </GCard>
 </template>
 
 <style>

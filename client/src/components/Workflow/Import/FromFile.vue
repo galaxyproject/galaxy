@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert, BButton, BForm, BFormFile, BFormGroup } from "bootstrap-vue";
+import { BAlert, BForm, BFormFile, BFormGroup } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { withPrefix } from "@/utils/redirect";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -105,14 +106,16 @@ defineExpose({ attemptImport });
             <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
         </BAlert>
 
-        <BButton
+        <GButton
             v-if="showSubmitButton"
             id="workflow-import-button"
             type="submit"
             :disabled="isImportDisabled"
             :title="importTooltip"
-            variant="primary">
+            tooltip
+            color="blue"
+        >
             Import workflow
-        </BButton>
+        </GButton>
     </BForm>
 </template>

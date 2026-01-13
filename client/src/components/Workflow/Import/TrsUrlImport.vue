@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { BButton, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     queryTrsUrl?: string;
@@ -75,14 +77,14 @@ if (trsUrl.value && props.mode === "modal") {
             If the workflow is accessible via a TRS URL, enter the URL above and click Import.
         </BFormGroup>
 
-        <BButton
-            v-if="showSubmitButton"
+        <GButton
             id="trs-url-import-button"
             type="submit"
             :disabled="isImportDisabled"
             :title="importTooltip"
-            variant="primary">
+            tooltip
+            color="blue">
             Import workflow
-        </BButton>
+        </GButton>
     </BForm>
 </template>
