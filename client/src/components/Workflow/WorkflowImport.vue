@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, type Ref, ref } from "vue";
+import { computed, nextTick, onMounted, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
@@ -144,16 +144,19 @@ const wizard = useWizard({
 });
 
 // Auto-navigate wizard based on URL route and query parameters
-onMounted(() => {
+onMounted(async () => {
     if (queryParams.value.trsId || queryParams.value.trsServer) {
         // Navigate directly to TRS ID form
         wizard.goTo("trs-id");
+        await nextTick();
     } else if (queryParams.value.trsUrl) {
         // Navigate directly to TRS URL form
         wizard.goTo("trs-url");
+        await nextTick();
     } else if (route.path.includes("trs_import")) {
         // Navigate to TRS method selection step for backwards compatibility
         wizard.goTo("select-trs-method");
+        await nextTick();
     }
 });
 
