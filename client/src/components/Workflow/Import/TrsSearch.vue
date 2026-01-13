@@ -212,11 +212,7 @@ defineExpose({ triggerImport });
                     @keyup.esc="query = ''" />
 
                 <BInputGroupAppend>
-                    <GButton
-                        tooltip
-                        size="small"
-                        data-description="show help toggle"
-                        :title="searchHelp">
+                    <GButton tooltip size="small" data-description="show help toggle" :title="searchHelp">
                         <FontAwesomeIcon :icon="faQuestion" />
                     </GButton>
 

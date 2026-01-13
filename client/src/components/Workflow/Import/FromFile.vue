@@ -113,8 +113,7 @@ defineExpose({ attemptImport });
             :disabled="isImportDisabled"
             :title="importTooltip"
             tooltip
-            color="blue"
-        >
+            color="blue">
             Import workflow
         </GButton>
     </BForm>

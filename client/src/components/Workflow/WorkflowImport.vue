@@ -42,11 +42,11 @@ const services = new Services();
 services.getTrsServers().then((res) => {
     // trsServers.value = res;
     trsServers.value = [
-        { id: 'dockstore', label: 'Dockstore', link_url: '', doc: '' },
-        { id: 'workflowhub', label: 'WorkflowHub', link_url: '', doc: '' },
-        { id: 'github', label: 'GitHub', link_url: '', doc: '' },
-        { id: 'gitlab', label: 'GitLab', link_url: '', doc: '' },
-        { id: 'bitbucket', label: 'Bitbucket', link_url: '', doc: '' },
+        { id: "dockstore", label: "Dockstore", link_url: "", doc: "" },
+        { id: "workflowhub", label: "WorkflowHub", link_url: "", doc: "" },
+        { id: "github", label: "GitHub", link_url: "", doc: "" },
+        { id: "gitlab", label: "GitLab", link_url: "", doc: "" },
+        { id: "bitbucket", label: "Bitbucket", link_url: "", doc: "" },
     ];
 });
 
@@ -60,9 +60,7 @@ const trsServersString = computed(() => {
         const n_more = trsServers.value.length - MAX_TO_DISPLAY;
         return str + ` + ${n_more} more`;
     } else {
-        return trsServers.value
-            .map((server) => server.label)
-            .join(", ");
+        return trsServers.value.map((server) => server.label).join(", ");
     }
 });
 
@@ -246,8 +244,9 @@ function onTrsIdValid(e: boolean) {
                             @click="selectMethod('repository')">
                             <h4>Import from repository</h4>
                             <p class="text-muted mb-0">
-                                Search and import workflows from our configured workflow repositories
-                                ({{ trsServersString }})
+                                Search and import workflows from our configured workflow repositories ({{
+                                    trsServersString
+                                }})
                             </p>
                         </GCard>
                     </div>
@@ -349,25 +348,25 @@ function onTrsIdValid(e: boolean) {
 </template>
 
 <style scoped>
-    .row {
-        flex: 1 1 100%;
-    }
-    .method-selection {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
-    .import-form {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
-    .container-narrow {
-        width: 100%;
-        max-width: 600px;
-    }
-    .container-wide {
-        width: 100%;
-        max-width: min(1000px, 80vw);
-    }
+.row {
+    flex: 1 1 100%;
+}
+.method-selection {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+.import-form {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+.container-narrow {
+    width: 100%;
+    max-width: 600px;
+}
+.container-wide {
+    width: 100%;
+    max-width: min(1000px, 80vw);
+}
 </style>

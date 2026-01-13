@@ -182,11 +182,8 @@ if (props.mode === "modal") {
                         <GCard
                             class="h-100 workflow-import-trs-search-link clickable-card"
                             title="Search workflow registries"
-                            @click="selectView('trsSearch')"
-                        >
-                            <p>
-                                Search for workflows across configured GA4GH servers.
-                            </p>
+                            @click="selectView('trsSearch')">
+                            <p>Search for workflows across configured GA4GH servers.</p>
                         </GCard>
                     </div>
 
@@ -194,15 +191,13 @@ if (props.mode === "modal") {
                         <GCard
                             class="h-100 workflow-import-trs-id-link clickable-card"
                             title="TRS ID"
-                            @click="selectView('trsId')"
-                        >
+                            @click="selectView('trsId')">
                             <p>
                                 <span>
                                     <FontAwesomeIcon
                                         :icon="faInfoCircle"
                                         tooltip
-                                        title="A TRS ID can be obtained by visiting the website of the selected TRS server."
-                                    />
+                                        title="A TRS ID can be obtained by visiting the website of the selected TRS server." />
                                 </span>
                                 When you know the TRS ID for a workflow in one of the configured GA4GH servers.
                             </p>
@@ -213,23 +208,15 @@ if (props.mode === "modal") {
                         <GCard
                             class="h-100 workflow-import-trs-url-link clickable-card"
                             title="TRS URL"
-                            @click="selectView('trsUrl')"
-                        >
-                            <p>
-                                Import directly from any GA4GH server with a TRS URL.
-                            </p>
+                            @click="selectView('trsUrl')">
+                            <p>Import directly from any GA4GH server with a TRS URL.</p>
                         </GCard>
                     </div>
                 </div>
             </div>
 
             <div v-else>
-                <GButton
-                    v-if="showBackButton"
-                    color="grey"
-                    class="mb-5 p-0"
-                    @click="backToCards"
-                >
+                <GButton v-if="showBackButton" color="grey" class="mb-5 p-0" @click="backToCards">
                     &larr; Back to TRS import options
                 </GButton>
 
