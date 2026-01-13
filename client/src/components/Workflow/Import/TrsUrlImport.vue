@@ -78,6 +78,7 @@ if (trsUrl.value && props.mode === "modal") {
         </BFormGroup>
 
         <GButton
+            v-if="showSubmitButton"
             id="trs-url-import-button"
             type="submit"
             :disabled="isImportDisabled"
