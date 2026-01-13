@@ -87,12 +87,13 @@ class AgentService:
                 reasoning=response.reasoning,
             )
         except ValueError as e:
-            log.warning(f"Unknown agent type {agent_type}, falling back to error_analysis: {e}")
-            # Fallback to error analysis for unknown agents
-            agent = ErrorAnalysisAgent(deps)
-            response = await agent.process(query, context)
+            log.warning(f"Unknown agent type {agent_type}, falling back to router: {e}")
+            # Fallback to router for unknown agents - it handles general queries
+            router = QueryRouterAgent(deps)
+            response = await router.process(query, context)
             metadata = response.metadata.copy()
             metadata["fallback"] = True
+            metadata["original_agent_type"] = agent_type
             return AgentResponse(
                 content=response.content,
                 agent_type=response.agent_type,
@@ -116,49 +117,20 @@ class AgentService:
         context: Optional[dict[str, Any]] = None,
         agent_type: str = "auto",
     ) -> AgentResponse:
-        """Route query to appropriate agent and execute. Uses router if agent_type is 'auto'."""
-        deps = self.create_dependencies(trans, user)
+        """
+        Execute query with automatic routing or specific agent.
 
-        if context is None:
-            context = {}
-
-        # Route to appropriate agent
-        actual_agent_type = agent_type
-        routing_reasoning = None
-
+        When agent_type is 'auto', the router agent handles the query directly,
+        either answering it or using output functions to hand off to specialists.
+        """
         if agent_type == "auto":
-            # Use router agent to determine best agent
-            log.info(f"Router: Analyzing query for intent classification: '{query[:100]}...'")
-            router = QueryRouterAgent(deps)
-            routing_decision = await router.route_query(query, context)
-
-            if routing_decision.direct_response:
-                log.info("Router: Handling with direct response (no agent needed)")
-                return AgentResponse(
-                    content=routing_decision.direct_response,
-                    agent_type="router",
-                    confidence=routing_decision.confidence,
-                    suggestions=[],
-                    metadata={"handled_directly": True},
-                )
-
-            # Use the primary agent recommended by router
-            actual_agent_type = routing_decision.primary_agent
-            routing_reasoning = routing_decision.reasoning
-            log.info(f"Router: Selected agent '{actual_agent_type}' - Reason: {routing_reasoning}")
-            if routing_decision.secondary_agents:
-                log.info(f"Router: Secondary agents that could help: {routing_decision.secondary_agents}")
+            # Router handles everything via output functions:
+            # - Answers general questions directly
+            # - Hands off to error_analysis for debugging
+            # - Hands off to custom_tool for tool creation
+            log.info(f"Processing query via router: '{query[:100]}...'")
+            return await self.execute_agent("router", query, trans, user, context)
         else:
-            log.info(f"User explicitly requested agent: {actual_agent_type}")
-
-        # Execute the agent
-        result = await self.execute_agent(actual_agent_type, query, trans, user, context)
-
-        # Add routing information if we used the router
-        if routing_reasoning:
-            result.metadata["routing_info"] = {
-                "selected_agent": actual_agent_type,
-                "reasoning": routing_reasoning,
-            }
-
-        return result
+            # Explicit agent request - execute directly
+            log.info(f"User explicitly requested agent: {agent_type}")
+            return await self.execute_agent(agent_type, query, trans, user, context)

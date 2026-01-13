@@ -20,6 +20,7 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    extract_result_content,
     GalaxyAgentDependencies,
 )
 
@@ -219,10 +220,10 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             # Handle different response formats based on model capabilities
             if self._supports_structured_output():
                 # Handle structured output
-                if hasattr(result, "data"):
-                    analysis_result = result.data
-                elif hasattr(result, "output"):
+                if hasattr(result, "output"):
                     analysis_result = result.output
+                elif hasattr(result, "data"):
+                    analysis_result = result.data
                 else:
                     analysis_result = result
 
@@ -243,7 +244,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 )
             else:
                 # Handle simple text output from DeepSeek
-                response_text = str(result.data) if hasattr(result, "data") else str(result)
+                response_text = extract_result_content(result)
                 parsed_result = self._parse_simple_response(response_text)
 
                 return AgentResponse(

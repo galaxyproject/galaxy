@@ -1,339 +1,283 @@
 """
-Query router agent for intelligent request routing.
+Query router agent that answers directly or hands off to specialists.
+
+Uses pydantic-ai output functions to either:
+- Answer general Galaxy questions directly (returns str)
+- Hand off to error_analysis for job debugging
+- Hand off to custom_tool for explicit tool creation requests
 """
 
 import logging
-import re
 from pathlib import Path
 from typing import (
     Any,
-    Literal,
     Optional,
 )
 
-from pydantic import BaseModel
-from pydantic_ai import Agent
+from pydantic_ai import (
+    Agent,
+    RunContext,
+)
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
-    ActionSuggestion,
-    ActionType,
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    extract_result_content,
     GalaxyAgentDependencies,
 )
 
 log = logging.getLogger(__name__)
 
-# Type alias for confidence levels - using Literal inlines the enum values
-# in the JSON schema, avoiding $defs references that vLLM can't handle
-ConfidenceLiteral = Literal["low", "medium", "high"]
-
-
-class RoutingDecision(BaseModel):
-    """Structured decision from the router agent."""
-
-    primary_agent: str
-    secondary_agents: list[str] = []
-    complexity: str  # "simple" or "complex"
-    confidence: ConfidenceLiteral = "medium"
-    reasoning: str
-    direct_response: str = ""  # If router can answer directly
-
 
 class QueryRouterAgent(BaseGalaxyAgent):
     """
-    Router agent that analyzes queries and routes them to appropriate specialists.
+    Router agent that answers queries directly or hands off to specialists.
 
-    This agent serves as the central coordinator, determining which specialized
-    agent(s) should handle a user's query based on the content and context.
+    This agent serves as Galaxy's primary AI assistant, handling most queries
+    directly and only delegating to specialist agents when their specific
+    expertise is needed (error debugging, tool creation).
     """
 
     agent_type = AgentType.ROUTER
 
-    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
-        """Create the router agent with structured output."""
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
+        """Create the router agent with output functions for specialist handoff."""
         model_name = self._get_agent_config("model", "")
 
-        # DeepSeek models don't support structured output, use fallback
+        # DeepSeek and other models without structured output support
+        # fall back to simple text-based routing
         if "deepseek" in model_name.lower():
             return Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 system_prompt=self._get_simple_system_prompt(),
             )
-        else:
-            return Agent(
-                self._get_model(),
-                deps_type=GalaxyAgentDependencies,
-                output_type=RoutingDecision,
-                system_prompt=self.get_system_prompt(),
-            )
+
+        # Create output functions for specialist handoff
+        error_handoff = self._create_error_analysis_handoff()
+        tool_handoff = self._create_custom_tool_handoff()
+
+        return Agent(
+            self._get_model(),
+            deps_type=GalaxyAgentDependencies,
+            output_type=[
+                error_handoff,
+                tool_handoff,
+                str,  # Default: answer directly
+            ],
+            system_prompt=self.get_system_prompt(),
+        )
 
     def get_system_prompt(self) -> str:
         """Get the system prompt for the router agent."""
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
         return prompt_path.read_text()
 
-    async def route_query(self, query: str, context: Optional[dict[str, Any]] = None) -> RoutingDecision:
-        """
-        Route a query to appropriate agent(s).
+    def _create_error_analysis_handoff(self):
+        """Create output function for error analysis handoff."""
 
-        Args:
-            query: The user's query
-            context: Optional context (job info, etc.)
+        async def hand_off_to_error_analysis(
+            ctx: RunContext[GalaxyAgentDependencies],
+            task: str,
+        ) -> str:
+            """Route to error analysis agent for debugging job failures, tool errors, and crash analysis.
 
-        Returns:
-            RoutingDecision with agent selection and reasoning
-        """
-        try:
-            # Build the full query with context if we have conversation history
-            full_query = query
-            if context and "conversation_history" in context:
-                history = context["conversation_history"]
-                if history and len(history) > 0:
-                    # Format conversation history for the model
-                    history_text = "Previous conversation:\n"
-                    for msg in history[-6:]:
-                        role = msg.get("role", "unknown")
-                        content = msg.get("content", "")
-                        history_text += f"{role}: {content}\n"
-                    history_text += f"\nCurrent query: {query}"
-                    full_query = history_text
+            Use this when the user:
+            - Has a failed job with error messages or exit codes
+            - Is asking about stderr/stdout from a tool run
+            - Needs help understanding why a tool crashed
+            - Shows error logs they want explained
 
-            # Use pydantic-ai for all endpoints with retry logic
-            result = await self._run_with_retry(full_query)
+            Args:
+                task: Description of the error or debugging task to analyze
+            """
+            from .error_analysis import ErrorAnalysisAgent
 
-            model_name = self._get_agent_config("model", "")
+            log.info(f"Router handing off to error_analysis: '{task[:100]}...'")
 
-            # Handle DeepSeek simple text response
-            if "deepseek" in model_name.lower():
-                response_text = str(result.data) if hasattr(result, "data") else str(result)
-                return self._parse_simple_response(response_text, query)
+            try:
+                agent = ErrorAnalysisAgent(ctx.deps)
 
-            # Handle structured output for other models
-            if hasattr(result, "data"):
-                return result.data
-            elif hasattr(result, "output"):
-                return result.output
-            elif hasattr(result, "primary_agent"):
-                # It's already a RoutingDecision
-                return result
-            else:
-                # For pydantic-ai, the result might be wrapped
-                return result
-        except OSError as e:
-            log.warning(f"Router agent network error, using fallback: {e}")
-            return self._fallback_routing(query, context)
-        except ValueError as e:
-            log.warning(f"Router agent value error, using fallback: {e}")
-            return self._fallback_routing(query, context)
+                # Pass conversation history if available
+                message_history = ctx.messages[:-1] if hasattr(ctx, "messages") and ctx.messages else None
 
-    def _fallback_routing(self, query: str, context: Optional[dict[str, Any]] = None) -> RoutingDecision:
-        """Fallback routing when AI router fails - uses intent-based heuristics."""
-        query_lower = query.lower()
+                result = await agent.agent.run(
+                    task,
+                    deps=ctx.deps,
+                    usage=ctx.usage,
+                    message_history=message_history,
+                )
 
-        # Define keyword sets for different intents
-        intent_keywords = {
-            AgentType.ERROR_ANALYSIS: (
-                [
-                    "error",
-                    "fail",
-                    "crash",
-                    "not work",
-                    "broken",
-                    "stderr",
-                    "exit code",
-                    "died",
-                    "killed",
-                ],
-                1.0,  # Base score
-            ),
-            AgentType.CUSTOM_TOOL: (
-                [
-                    "create",
-                    "build",
-                    "make",
-                    "wrap",
-                    "custom tool",
-                    "new tool",
-                    "yaml",
-                    "xml definition",
-                ],
-                1.0,
-            ),
-        }
+                return extract_result_content(result)
+            except Exception as e:
+                log.error(f"Error analysis handoff failed: {e}")
+                return (
+                    f"I encountered an issue while analyzing the error. Please try again or contact support. Error: {e}"
+                )
 
-        # Score each intent
-        scores = dict.fromkeys(intent_keywords, 0.0)
-        for intent, (keywords, base_score) in intent_keywords.items():
-            if any(keyword in query_lower for keyword in keywords):
-                scores[intent] += base_score
+        return hand_off_to_error_analysis
 
-        # Determine the winning agent
-        if not any(scores.values()):
-            # If no keywords matched, default to orchestrator to coordinate response
-            best_agent = AgentType.ORCHESTRATOR
-            reasoning = "No clear intent keywords found, using orchestrator to coordinate response."
-            confidence = "low"
-        else:
-            best_agent = max(scores, key=lambda k: scores[k])
-            reasoning = f"Query contains keywords related to {best_agent.replace('_', ' ')}."
-            # Determine confidence based on score
-            if scores[best_agent] > 1.5:
-                confidence = "high"
-            elif scores[best_agent] > 0.5:
-                confidence = "medium"
-            else:
-                confidence = "low"
+    def _create_custom_tool_handoff(self):
+        """Create output function for custom tool handoff."""
 
-        # Simple direct responses for greetings or citations
-        if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
-            return RoutingDecision(
-                primary_agent="router",
-                complexity="simple",
-                confidence="high",
-                reasoning="User is asking for citation information.",
-                direct_response="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
+        async def hand_off_to_custom_tool(
+            ctx: RunContext[GalaxyAgentDependencies],
+            request: str,
+        ) -> str:
+            """Route to custom tool agent for explicit Galaxy tool creation requests.
 
-For specific tools, please also cite the individual tool publications.""",
-            )
+            Use this ONLY when the user explicitly:
+            - Asks to CREATE, BUILD, or MAKE a new Galaxy tool
+            - Wants to WRAP a command-line tool for Galaxy
+            - Requests generating a tool definition (XML/YAML)
 
-        return RoutingDecision(
-            primary_agent=best_agent,
-            secondary_agents=[],
-            complexity="simple",  # Fallback is always simple
-            confidence=confidence,
-            reasoning=reasoning,
-            direct_response="",
-        )
+            Do NOT use for:
+            - Tool discovery ("what tool does X?")
+            - Tool usage help ("how do I run BWA?")
+
+            Args:
+                request: Description of the tool to create
+            """
+            from .custom_tool import CustomToolAgent
+
+            log.info(f"Router handing off to custom_tool: '{request[:100]}...'")
+
+            try:
+                agent = CustomToolAgent(ctx.deps)
+
+                # Pass conversation history if available
+                message_history = ctx.messages[:-1] if hasattr(ctx, "messages") and ctx.messages else None
+
+                result = await agent.agent.run(
+                    request,
+                    deps=ctx.deps,
+                    usage=ctx.usage,
+                    message_history=message_history,
+                )
+
+                return extract_result_content(result)
+            except Exception as e:
+                log.error(f"Custom tool handoff failed: {e}")
+                return (
+                    f"I encountered an issue while creating the tool. Please try again or contact support. Error: {e}"
+                )
+
+        return hand_off_to_custom_tool
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
-        Process a routing request and return guidance.
+        Process a query and return the response.
 
-        For the router agent, processing means making routing decisions
-        and potentially providing direct responses for simple queries.
+        The router now handles most queries directly, only handing off to
+        specialist agents when their specific expertise is needed.
         """
-        routing_decision = await self.route_query(query, context)
+        try:
+            # Build the full query with conversation history if available
+            full_query = self._build_query_with_context(query, context)
 
-        # If we have a direct response, return it
-        if routing_decision.direct_response:
+            # Run the agent - it will either answer directly or use a handoff function
+            result = await self._run_with_retry(full_query)
+            content = extract_result_content(result)
+
             return AgentResponse(
-                content=routing_decision.direct_response,
-                confidence=routing_decision.confidence,
+                content=content,
+                confidence=ConfidenceLevel.HIGH,
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={
-                    "routing_decision": routing_decision.model_dump(),
-                    "handled_directly": True,
+                    "method": "output_function",
+                    "query_length": len(query),
                 },
             )
 
-        # Otherwise, provide routing guidance
-        content = self._format_routing_response(routing_decision)
+        except OSError as e:
+            log.warning(f"Router agent network error, using fallback: {e}")
+            return self._handle_fallback(query, context, str(e))
+        except ValueError as e:
+            log.warning(f"Router agent value error, using fallback: {e}")
+            return self._handle_fallback(query, context, str(e))
 
-        suggestions = [
-            ActionSuggestion(
-                action_type=ActionType.TOOL_RUN,
-                description=f"Route to {routing_decision.primary_agent} agent",
-                parameters={"agent": routing_decision.primary_agent},
-                confidence=routing_decision.confidence,
-                priority=1,
+    def _build_query_with_context(self, query: str, context: Optional[dict[str, Any]]) -> str:
+        """Build full query including conversation history if available."""
+        if not context or "conversation_history" not in context:
+            return query
+
+        history = context["conversation_history"]
+        if not history:
+            return query
+
+        history_text = "Previous conversation:\n"
+        for msg in history[-6:]:  # Last 6 messages for context
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            history_text += f"{role}: {content}\n"
+        history_text += f"\nCurrent query: {query}"
+
+        return history_text
+
+    def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
+        """Handle fallback when the main agent fails."""
+        query_lower = query.lower()
+
+        # Check for citation requests
+        if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
+            return AgentResponse(
+                content="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
+
+For specific tools, please also cite the individual tool publications.""",
+                confidence=ConfidenceLevel.HIGH,
+                agent_type=self.agent_type,
+                suggestions=[],
+                metadata={"fallback": True, "reason": "citation_request"},
             )
-        ]
 
-        # Add secondary agent suggestions
-        for secondary_agent in routing_decision.secondary_agents:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Also consult {secondary_agent} agent",
-                    parameters={"agent": secondary_agent},
-                    confidence="medium",
-                    priority=2,
-                )
+        # Check for error-related keywords
+        error_keywords = ["error", "fail", "crash", "not work", "broken", "stderr", "exit code", "died", "killed"]
+        if any(kw in query_lower for kw in error_keywords):
+            return AgentResponse(
+                content="I noticed you're asking about an error or failure. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment, or check the job details panel for error information.",
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[],
+                metadata={"fallback": True, "reason": "error_query_service_unavailable", "error": error_msg},
             )
 
+        # Check for explicit tool creation keywords
+        tool_keywords = ["create a tool", "build a tool", "make a tool", "wrap a tool", "tool wrapper"]
+        if any(kw in query_lower for kw in tool_keywords):
+            return AgentResponse(
+                content="I noticed you want to create a Galaxy tool. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment.",
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[],
+                metadata={"fallback": True, "reason": "tool_creation_service_unavailable", "error": error_msg},
+            )
+
+        # General fallback
         return AgentResponse(
-            content=content,
-            confidence=routing_decision.confidence,
+            content="I'm having trouble connecting to the AI service right now. Please try again in a moment. If you have a question about Galaxy, you can also check the Galaxy Training Network (https://training.galaxyproject.org/) for tutorials and documentation.",
+            confidence=ConfidenceLevel.LOW,
             agent_type=self.agent_type,
-            suggestions=suggestions,
-            metadata={
-                "routing_decision": routing_decision.model_dump(),
-                "handled_directly": False,
-            },
-            reasoning=routing_decision.reasoning,
+            suggestions=[],
+            metadata={"fallback": True, "reason": "service_unavailable", "error": error_msg},
         )
 
-    def _format_routing_response(self, decision: RoutingDecision) -> str:
-        """Format the routing decision into a user-friendly response."""
-        content_parts = [f"I'll route your query to the {decision.primary_agent.replace('_', ' ')} specialist."]
-
-        if decision.reasoning:
-            content_parts.append(f"Reasoning: {decision.reasoning}")
-
-        if decision.secondary_agents:
-            secondary_list = ", ".join(agent.replace("_", " ") for agent in decision.secondary_agents)
-            content_parts.append(f"I may also consult: {secondary_list}")
-
-        if decision.complexity == "complex":
-            content_parts.append("This appears to be a complex query that may require multiple steps to resolve.")
-
-        return " ".join(content_parts)
-
     def _get_simple_system_prompt(self) -> str:
-        """Simple system prompt for models that don't support structured output."""
-        return """
-        You are a Galaxy platform routing assistant. Analyze the user's query and respond with a simple routing decision.
+        """Simple system prompt for models that don't support output functions."""
+        return """You are Galaxy's helpful AI assistant. Answer questions about Galaxy usage, workflows, tools, and data analysis.
 
-        Available agents:
-        - error_analysis: For debugging, troubleshooting, job failures
-        - custom_tool: For creating new tools, tool development
-        - orchestrator: For general queries, multi-step tasks
+For general Galaxy questions: Answer directly and helpfully.
 
+For job failures or errors: Explain what might have gone wrong and suggest solutions.
 
-        Respond in this exact format:
-        ROUTE_TO: [agent_name]
-        REASONING: [brief explanation]
+For tool creation requests: Explain that you can help design Galaxy tools and provide guidance.
 
-        Example:
-        ROUTE_TO: error_analysis
-        REASONING: User asking about job failure
-        """
-
-    def _parse_simple_response(self, response_text: str, query: str) -> RoutingDecision:
-        """Parse simple text response from DeepSeek into RoutingDecision."""
-        # Extract ROUTE_TO and REASONING from response
-        route_match = re.search(r"ROUTE_TO:\s*(\w+)", response_text, re.IGNORECASE)
-        reasoning_match = re.search(r"REASONING:\s*(.+?)(?:\n|$)", response_text, re.IGNORECASE | re.DOTALL)
-
-        if route_match:
-            agent = route_match.group(1).lower()
-            reasoning = reasoning_match.group(1).strip() if reasoning_match else "DeepSeek routing"
-
-            # Validate agent is routable
-            routable_agents = [
-                AgentType.ERROR_ANALYSIS,
-                AgentType.CUSTOM_TOOL,
-                AgentType.ORCHESTRATOR,
-            ]
-            if agent not in routable_agents:
-                agent = AgentType.ORCHESTRATOR
-                reasoning = f"Fallback to {AgentType.ORCHESTRATOR}. Original: {reasoning}"
-
-            return RoutingDecision(
-                primary_agent=agent,
-                secondary_agents=[],
-                complexity="simple",
-                confidence="medium",
-                reasoning=reasoning,
-            )
-        else:
-            # Couldn't parse, use fallback
-            return self._fallback_routing(query)
+If you can't help with something, say so politely and suggest alternatives like the Galaxy Training Network."""
 
     def _get_fallback_content(self) -> str:
         """Get fallback content for router failures."""
-        return "Unable to determine the best routing for your query."
+        return (
+            "I'm having trouble processing your request. Please try again or check the Galaxy documentation for help."
+        )

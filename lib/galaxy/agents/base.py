@@ -72,9 +72,22 @@ __all__ = [
     "AgentType",
     "BaseGalaxyAgent",
     "ConfidenceLevel",
+    "extract_result_content",
     "GalaxyAgentDependencies",
     "SimpleGalaxyAgent",
 ]
+
+
+def extract_result_content(result: Any) -> str:
+    """Extract content from pydantic-ai result object.
+
+    pydantic-ai uses .output attribute, with .data as legacy fallback.
+    """
+    if hasattr(result, "output"):
+        return str(result.output)
+    elif hasattr(result, "data"):
+        return str(result.data)
+    return str(result)
 
 
 # Agent type constants
@@ -304,7 +317,7 @@ class BaseGalaxyAgent(ABC):
     def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Convert pydantic-ai result to AgentResponse."""
         # Default implementation - subclasses can override
-        content = str(result.data) if hasattr(result, "data") else str(result)
+        content = extract_result_content(result)
 
         return AgentResponse(
             content=content,
@@ -583,11 +596,11 @@ class BaseGalaxyAgent(ABC):
             )
 
             # Extract response data
-            response_data = result.data if hasattr(result, "data") else str(result)
+            response_data = extract_result_content(result)
 
             log.debug(f"Agent {self.agent_type} called {agent_type} via tool: '{query[:50]}...'")
 
-            return str(response_data)
+            return response_data
 
         except ValueError as e:
             # Unknown agent type
@@ -622,7 +635,7 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
 
     def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Format simple text response."""
-        content = str(result.data) if hasattr(result, "data") else str(result)
+        content = extract_result_content(result)
 
         # Try to extract confidence from the response
         confidence = self._extract_confidence(content)
