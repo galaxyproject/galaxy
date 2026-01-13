@@ -13,7 +13,6 @@ import { requireAuth } from "@/router/guards";
 import { parseBool } from "@/utils/utils";
 
 // import { patchRouterPush } from "./router-push";  // Vue Router 3 only
-
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
