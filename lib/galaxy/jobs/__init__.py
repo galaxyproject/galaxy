@@ -1042,7 +1042,7 @@ class MinimalJobWrapper(HasResourceParameters):
             self._setup_working_directory(job=job)
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
-        self._job_io = None
+        self._job_io: Optional[JobIO] = None
         self.tool_provided_job_metadata = None
         self.params = None
         if job.params:
@@ -1094,12 +1094,13 @@ class MinimalJobWrapper(HasResourceParameters):
         return tool_dir
 
     @property
-    def job_io(self):
+    def job_io(self) -> JobIO:
         if self._job_io is None:
             job = self.get_job()
             work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
             user_context = ProvidesFileSourcesUserContext(work_request)
-            tool_source = self.tool and self.tool.tool_source.to_string()
+            tool_source = self.tool.tool_source.to_string() if self.tool else None
+            tool_dir = self.tool.tool_dir if self.tool else None
             self._job_io = JobIO(
                 sa_session=self.sa_session,
                 job=job,
@@ -1123,7 +1124,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 check_job_script_integrity_sleep=self.app.config.check_job_script_integrity_sleep,
                 tool_source=tool_source,
                 tool_source_class=type(self.tool.tool_source).__name__ if self.tool else None,
-                tool_dir=self.tool and self.tool.tool_dir,
+                tool_dir=tool_dir,
                 is_task=self.is_task,
             )
         return self._job_io

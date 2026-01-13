@@ -30,6 +30,7 @@ from galaxy.model import (
 )
 from galaxy.util import safe_makedirs
 from galaxy.util.dictifiable import UsesDictVisibleKeys
+from galaxy.util.path import StrPath
 
 TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
 TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
@@ -104,13 +105,13 @@ class JobIO(UsesDictVisibleKeys):
         len_file_path: str,
         builds_file_path: str,
         check_job_script_integrity: bool,
-        check_job_script_integrity_count: int,
-        check_job_script_integrity_sleep: float,
+        check_job_script_integrity_count: Optional[int],
+        check_job_script_integrity_sleep: Optional[float],
         file_sources_dict: dict[str, Any],
         user_context: Union[FileSourcesUserContext, dict[str, Any]],
         tool_source: Optional[str] = None,
         tool_source_class: Optional["str"] = "XmlToolSource",
-        tool_dir: Optional[str] = None,
+        tool_dir: Optional[StrPath] = None,
         is_task: bool = False,
     ):
         user_context_instance: FileSourcesUserContext
