@@ -56,7 +56,7 @@ locuszoom:
     version: 0.0.7
 molstar:
     package: "@galaxyproject/molstar"
-    version: 0.0.2
+    version: 0.0.4
 mvpapp:
     package: "@galaxyproject/mvpapp"
     version: 0.0.2
