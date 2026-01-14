@@ -36,7 +36,7 @@ describe("FormNumber", () => {
 
             const inputRange = await getInputRange(wrapper);
             expect(inputRange.exists()).toBe(shouldExist);
-            wrapper.destroy();
+            wrapper.unmount();
         };
 
         const props = { value: 50, type: "float" };
@@ -64,7 +64,7 @@ describe("FormNumber", () => {
             const alert = await getAlert(wrapper);
             expect(alert.exists()).toBeTruthy();
             expect(alert.text().includes(`${number} is out`)).toBeTruthy();
-            wrapper.destroy();
+            wrapper.unmount();
         };
 
         const numberBiggerThanRange = [110, Number.MAX_VALUE];
@@ -92,7 +92,7 @@ describe("FormNumber", () => {
 
             const alert = await getAlert(wrapper);
             expect(alert.exists()).toBeTruthy();
-            wrapper.destroy();
+            wrapper.unmount();
         };
 
         const props = { value: 50, type: "integer", min: 10, max: 100 };

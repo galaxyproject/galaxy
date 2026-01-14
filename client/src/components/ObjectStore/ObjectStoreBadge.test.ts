@@ -1,6 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import type { ObjectStoreBadgeType } from "@/api/objectStores.templates";
 import { MESSAGES } from "@/components/ObjectStore/badgeMessages";

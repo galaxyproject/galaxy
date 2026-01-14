@@ -14,7 +14,7 @@ async function createWrapper(props: object, userData?: Partial<RegisteredUser>) 
     const pinia = createPinia();
 
     const wrapper = shallowMount(HistoryNavigation as object, {
-        propsData,
+        props,
         global: localVue,
         pinia,
     });
