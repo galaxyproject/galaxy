@@ -1,10 +1,18 @@
 import base64
 import os
 
+import pytest
+
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model import (
+    DatasetCollection,
+    DatasetCollectionElement,
+)
 from galaxy.model.dataset_collections.types.sample_sheet_util import (
     SampleSheetColumnDefinitionsModel,
 )
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
+    _list_to_sample_sheet_collection_type,
     CreateWorkbook,
     CreateWorkbookRequest,
     CreateWorkbookRequestForCollection,
@@ -18,6 +26,7 @@ from galaxy.model.dataset_collections.types.sample_sheet_workbook import (
     parse_workbook_for_collection,
     ParseWorkbook,
     ParseWorkbookForCollection,
+    SAMPLE_SHEET_COLLECTION_TYPES,
 )
 from galaxy.util.resources import resource_path
 
@@ -294,3 +303,96 @@ def _mock_collection() -> MockDatasetCollection:
     )
     collection.elements.append(dce)
     return collection
+
+
+class TestListToSampleSheetCollectionType:
+    """Tests for _list_to_sample_sheet_collection_type() function."""
+
+    def test_converts_list_types(self):
+        """Test conversion of list types to sample_sheet types."""
+        assert _list_to_sample_sheet_collection_type("list") == "sample_sheet"
+        assert _list_to_sample_sheet_collection_type("list:paired") == "sample_sheet:paired"
+        assert _list_to_sample_sheet_collection_type("list:paired_or_unpaired") == "sample_sheet:paired_or_unpaired"
+
+    def test_passthrough_sample_sheet_types(self):
+        """Test that sample_sheet types pass through unchanged (issue #21542 fix)."""
+        assert _list_to_sample_sheet_collection_type("sample_sheet") == "sample_sheet"
+        assert _list_to_sample_sheet_collection_type("sample_sheet:paired") == "sample_sheet:paired"
+        assert _list_to_sample_sheet_collection_type("sample_sheet:paired_or_unpaired") == "sample_sheet:paired_or_unpaired"
+        assert _list_to_sample_sheet_collection_type("sample_sheet:record") == "sample_sheet:record"
+
+    def test_all_sample_sheet_types_passthrough(self):
+        """Test all types in SAMPLE_SHEET_COLLECTION_TYPES pass through."""
+        for collection_type in SAMPLE_SHEET_COLLECTION_TYPES:
+            result = _list_to_sample_sheet_collection_type(collection_type)
+            assert result == collection_type
+
+    def test_invalid_type_raises_exception(self):
+        """Test that invalid types raise RequestParameterInvalidException."""
+        with pytest.raises(RequestParameterInvalidException):
+            _list_to_sample_sheet_collection_type("invalid_type")
+
+        with pytest.raises(RequestParameterInvalidException):
+            _list_to_sample_sheet_collection_type("paired")
+
+        with pytest.raises(RequestParameterInvalidException):
+            _list_to_sample_sheet_collection_type("")
+
+    def test_list_record_raises_not_implemented(self):
+        """Test that list:record raises NotImplementedError (WIP)."""
+        with pytest.raises(NotImplementedError):
+            _list_to_sample_sheet_collection_type("list:record")
+
+
+def _make_collection(collection_type: str, element_identifiers: list[str]) -> DatasetCollection:
+    """Create a real DatasetCollection with DatasetCollectionElements."""
+    collection = DatasetCollection(collection_type=collection_type)
+    for i, identifier in enumerate(element_identifiers):
+        DatasetCollectionElement(
+            id=i + 1,  # needs non-None id for ModelObjectPrefixValue
+            collection=collection,
+            element=DatasetCollectionElement.UNINITIALIZED_ELEMENT,
+            element_index=i,
+            element_identifier=identifier,
+        )
+        # element is auto-added to collection.elements via SQLAlchemy relationship
+    return collection
+
+
+def test_generate_from_sample_sheet_collection():
+    """Test generating workbook from existing sample_sheet collection (issue #21542)."""
+    column_definitions = column_definitions_as_models()
+    collection = _make_collection("sample_sheet", ["sample1", "sample2"])
+    create = CreateWorkbookRequestForCollection(
+        title=DEFAULT_TITLE,
+        dataset_collection=collection,
+        column_definitions=column_definitions,
+    )
+    workbook = generate_workbook_from_request_for_collection(create)
+    sheet = workbook.active
+    assert sheet.title == DEFAULT_TITLE
+    # "Element Identifier" prefix column + 3 user columns from TEST_COLUMN_DEFINITIONS_1
+    assert sheet["A1"].value == "Element Identifier"
+    assert sheet["A2"].value == "sample1"
+    assert sheet["A3"].value == "sample2"
+    # No more data rows after sample2
+    assert sheet["A4"].value is None
+
+
+def test_generate_from_sample_sheet_paired_collection():
+    """Test generating workbook from existing sample_sheet:paired collection (issue #21542)."""
+    column_definitions = column_definitions_as_models()
+    collection = _make_collection("sample_sheet:paired", ["paired_sample1"])
+    create = CreateWorkbookRequestForCollection(
+        title=DEFAULT_TITLE,
+        dataset_collection=collection,
+        column_definitions=column_definitions,
+    )
+    workbook = generate_workbook_from_request_for_collection(create)
+    sheet = workbook.active
+    assert sheet.title == DEFAULT_TITLE
+    assert sheet["A1"].value == "Element Identifier"
+    assert sheet["A2"].value == "paired_sample1"
+    # No more data rows after paired_sample1
+    assert sheet["A3"].value is None
+
