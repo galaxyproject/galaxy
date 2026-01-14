@@ -11,6 +11,8 @@ overrides:
   '@vue/compiler-sfc': 3.5.18
   '@fortawesome/fontawesome-common-types': 6.2.1
 
+packageExtensionsChecksum: sha256-HCgSDZGFiQVIm6oAHSr+b8liWpdEb2gns2T056M1GkA=
+
 importers:
 
   .:
@@ -144,9 +146,6 @@ importers:
       elkjs:
         specifier: ^0.8.2
         version: 0.8.2
-      entities:
-        specifier: ^4.5.0
-        version: 4.5.0
       events:
         specifier: ^3.3.0
         version: 3.3.0
@@ -5608,6 +5607,7 @@ snapshots:
   '@vue/compat@3.5.18(vue@3.5.18(typescript@5.9.3))':
     dependencies:
       '@babel/parser': 7.28.6
+      entities: 4.5.0
       estree-walker: 2.0.2
       source-map-js: 1.2.1
       vue: 3.5.18(typescript@5.9.3)
