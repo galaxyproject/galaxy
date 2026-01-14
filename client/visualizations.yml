@@ -120,6 +120,9 @@ unipept:
 venn:
     package: "@galaxyproject/venn"
     version: 0.0.8
+vintent:
+    package: "@galaxyproject/vintent"
+    version: 0.0.0
 vitessce:
     package: "@galaxyproject/vitessce"
     version: 0.0.5
