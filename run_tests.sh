@@ -27,7 +27,7 @@ cat <<EOF
 This wrapper script largely serves as a point documentation and convenience for
 running Galaxy's Python tests. All Python tests shipped with Galaxy can be run with
 pytest directly. Galaxy's client unit tests can be run with ``make client-test``
-or ``yarn`` directly as documented in detail in ``client/README.md``.
+or ``pnpm`` directly as documented in detail in ``client/README.md``.
 
 The main test types are as follows:
 
@@ -93,8 +93,15 @@ these end-to-end tests to use a specific user by copying and updating the sample
     cp lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample ./galaxy_selenium_context.yml
     vi galaxy_selenium_context.yml  # edit user and password, target galaxy server, etc..
 
+Config keys map to environment variables:
+    local_galaxy_url    -> GALAXY_TEST_SELENIUM_URL
+    login_email         -> GALAXY_TEST_SELENIUM_USER_EMAIL
+    login_password      -> GALAXY_TEST_SELENIUM_USER_PASSWORD
+    admin_api_key       -> GALAXY_TEST_SELENIUM_ADMIN_API_KEY
+    selenium_galaxy_url -> GALAXY_TEST_EXTERNAL_FROM_SELENIUM
+
 If you've setup this config file, the file can be used with any end-to-end/selenium/playwright test by
-setting GALAXY_TEST_END_TO_END_CONFIG when calling pytest or run_test.sh. So for example
+setting GALAXY_TEST_END_TO_END_CONFIG when calling pytest or run_tests.sh. So for example
 the last line in that previous example run could become:
 
     GALAXY_TEST_END_TO_END_CONFIG=./galaxy_selenium_context.yml pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
