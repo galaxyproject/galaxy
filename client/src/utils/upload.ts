@@ -828,6 +828,7 @@ export type LegacyUploadItem = UploadRowModel;
  */
 export function fromLegacyUploadItem(legacy: LegacyUploadItem, historyId: string): UploadItem | UploadItem[] | null {
     const baseOptions = {
+        name: legacy.fileName || DEFAULT_FILE_NAME,
         dbkey: legacy.dbKey || uploadItemDefaults.dbkey,
         ext: legacy.extension || uploadItemDefaults.ext,
         space_to_tab: legacy.spaceToTab ?? uploadItemDefaults.space_to_tab,
@@ -841,7 +842,6 @@ export function fromLegacyUploadItem(legacy: LegacyUploadItem, historyId: string
                 return null;
             }
             return createFileUploadItem(legacy.fileData, historyId, {
-                name: legacy.fileName || DEFAULT_FILE_NAME,
                 size: legacy.fileSize || 0,
                 ...baseOptions,
             });
@@ -859,7 +859,6 @@ export function fromLegacyUploadItem(legacy: LegacyUploadItem, historyId: string
                 return null;
             }
             return createUrlUploadItem(url, historyId, {
-                name: legacy.fileName || DEFAULT_FILE_NAME,
                 size: legacy.fileSize || 0,
                 ...baseOptions,
             });
@@ -870,7 +869,6 @@ export function fromLegacyUploadItem(legacy: LegacyUploadItem, historyId: string
                 return null;
             }
             return createUrlUploadItem(legacy.filePath, historyId, {
-                name: legacy.fileName || DEFAULT_FILE_NAME,
                 size: legacy.fileSize || 0,
                 ...baseOptions,
             });
