@@ -3632,6 +3632,35 @@ input_1:
             workflow = crate.mainEntity
             assert workflow
 
+    def _run_nested_workflow_simple(self, history_id: str) -> str:
+        """Run WORKFLOW_NESTED_SIMPLE and return the invocation ID."""
+        summary = self._run_workflow(
+            WORKFLOW_NESTED_SIMPLE, test_data={"outer_input": "1 2 3"}, history_id=history_id, wait=True
+        )
+        return summary.invocation_id
+
+    def _get_ro_crate(self, invocation_id: str, include_files: bool = False):
+        """Get an RO-Crate export and verify it has a main workflow entity."""
+        crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=include_files)
+        assert crate.mainEntity, "RO-Crate export should have a main workflow entity"
+        return crate
+
+    def _get_ro_crate_create_action_file_count(self, invocation_id: str, include_files: bool = False) -> int:
+        """Get the count of dataset File entities referenced by the CreateAction in an RO-Crate export."""
+        crate = self._get_ro_crate(invocation_id, include_files=include_files)
+        create_actions = [e for e in crate.get_entities() if e.type == "CreateAction"]
+        assert len(create_actions) == 1, f"Expected 1 CreateAction, found {len(create_actions)}"
+        create_action = create_actions[0]
+        object_refs = create_action.get("object", [])
+        result_refs = create_action.get("result", [])
+        return len(object_refs) + len(result_refs)
+
+    def _get_ro_crate_file_count(self, invocation_id: str, include_files: bool = False) -> int:
+        """Get the count of all File entities in an RO-Crate export."""
+        crate = self._get_ro_crate(invocation_id, include_files=include_files)
+        files = [entity for entity in crate.get_entities() if entity.type == "File"]
+        return len(files)
+
     @skip_without_tool("cat1")
     def test_reimport_invocation_with_files(self):
         """Test that reimporting an invocation with include_files=True preserves dataset state and content."""
@@ -3682,34 +3711,78 @@ input_1:
 
     @skip_without_tool("random_lines1")
     def test_export_invocation_ro_crate_with_subworkflow(self):
-        """Test that subworkflow invocation datasets are included in export"""
+        """Test that subworkflow invocation datasets are included in export."""
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(
-                WORKFLOW_NESTED_SIMPLE, test_data={"outer_input": "1 2 3"}, history_id=history_id, wait=True
+            invocation_id = self._run_nested_workflow_simple(history_id)
+            # CreateAction references 4 dataset files: input + 3 outputs (first_cat, random_lines, second_cat)
+            file_count = self._get_ro_crate_create_action_file_count(invocation_id, include_files=True)
+            assert file_count == 4, f"Expected 4 dataset files in RO-Crate CreateAction, but found {file_count}."
+
+    @skip_without_tool("cat1")
+    @skip_without_tool("random_lines1")
+    def test_export_reimport_reexport_invocation_with_subworkflow(self):
+        """Test that subworkflow invocation data survives a round-trip export/import/export cycle."""
+        with self.dataset_populator.test_history() as history_id:
+            invocation_id = self._run_nested_workflow_simple(history_id)
+            original_request = self.workflow_populator.invocation_to_request(invocation_id)
+
+            # Get original dataset contents for comparison
+            original_contents = self.dataset_populator.get_history_contents(history_id)
+            original_datasets = {
+                d["name"]: self.dataset_populator.get_history_dataset_content(history_id, dataset_id=d["id"])
+                for d in original_contents
+                if d["history_content_type"] == "dataset"
+            }
+
+            export_path = self.workflow_populator.download_invocation_to_store(
+                invocation_id, include_files=True, extension="tgz"
             )
-            invocation_id = summary.invocation_id
 
-            # Get all datasets in the history to verify export completeness
-            history_contents = self.dataset_populator.get_history_contents(history_id)
-            datasets = [d for d in history_contents if d["history_content_type"] == "dataset"]
+            with self.dataset_populator.test_history() as reimport_history_id:
+                import_response = self.workflow_populator.create_invocation_from_store(
+                    history_id=reimport_history_id,
+                    store_path=export_path,
+                    model_store_format="tgz",
+                )
 
-            # Export as RO-Crate
-            crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=True)
+                assert (
+                    len(import_response) == 2
+                ), f"Expected exactly 2 invocations (parent + subworkflow), got {len(import_response)}."
 
-            # Verify the workflow is present
-            workflow = crate.mainEntity
-            assert workflow
+                reimported_invocation_id = import_response[0]["id"]
+                self.dataset_populator.wait_on_history_length(reimport_history_id, 4)
 
-            # Verify files from both parent and subworkflow are present
-            # The RO-Crate should contain files from both the parent workflow and the subworkflow
-            files = [entity for entity in crate.get_entities() if entity.type == "File"]
+                # Verify all reimported datasets are in 'ok' state with correct content
+                reimported_contents = self.dataset_populator.get_history_contents(reimport_history_id)
+                reimported_datasets = [d for d in reimported_contents if d["history_content_type"] == "dataset"]
+                assert len(reimported_datasets) == 4, f"Expected 4 datasets, got {len(reimported_datasets)}"
 
-            # Should have at least: outer_input, first_cat output, random_lines (subworkflow) output, second_cat output
-            # We expect at least as many files as non-deleted datasets
-            assert len(files) >= len(datasets), (
-                f"Expected at least {len(datasets)} files in RO-Crate, "
-                f"but found {len(files)}. This suggests subworkflow datasets may not be exported."
-            )
+                for dataset in reimported_datasets:
+                    details = self.dataset_populator.get_history_dataset_details(
+                        reimport_history_id, dataset_id=dataset["id"]
+                    )
+                    assert (
+                        details["state"] == "ok"
+                    ), f"Dataset '{dataset['name']}' has state '{details['state']}', expected 'ok'"
+                    # Verify content matches original
+                    content = self.dataset_populator.get_history_dataset_content(
+                        reimport_history_id, dataset_id=dataset["id"]
+                    )
+                    assert dataset["name"] in original_datasets, f"Unknown dataset '{dataset['name']}'"
+                    assert content == original_datasets[dataset["name"]], f"Content mismatch for '{dataset['name']}'"
+
+                # Verify re-export produces valid RO-Crate with 10 File entities (4 datasets + 6 workflow files)
+                file_count = self._get_ro_crate_file_count(reimported_invocation_id, include_files=True)
+                assert file_count == 10, f"Expected 10 File entities in re-export, got {file_count}."
+
+                reimported_request = self.workflow_populator.invocation_to_request(reimported_invocation_id)
+                assert "inputs" in reimported_request, "Reimported invocation should have inputs"
+                assert len(reimported_request.get("inputs", {})) == len(original_request.get("inputs", {})), (
+                    f"Input count mismatch: original {len(original_request.get('inputs', {}))} inputs, "
+                    f"reimported {len(reimported_request.get('inputs', {}))}"
+                )
+                assert "workflow_id" in reimported_request, "Reimported invocation should have workflow_id"
+                assert reimported_request.get("instance") is True, "Should reference Workflow instance"
 
     @skip_without_tool("__MERGE_COLLECTION__")
     def test_merge_collection_scheduling(self, history_id):
