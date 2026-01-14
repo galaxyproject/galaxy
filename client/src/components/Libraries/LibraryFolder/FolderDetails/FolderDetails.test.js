@@ -49,7 +49,7 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     });
 
     afterEach(async () => {
-        wrapper.destroy();
+        wrapper.unmount();
     });
 
     it("Should display details button", async () => {
