@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import Categories from "./Categories.vue";
-import GLink from "@/components/BaseComponents/GLink.vue";
 
 vi.mock("../services", () => ({
     Services: class Services {

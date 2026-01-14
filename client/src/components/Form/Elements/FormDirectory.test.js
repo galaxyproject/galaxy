@@ -93,7 +93,7 @@ describe("DirectoryPathEditableBreadcrumb", () => {
     });
     afterEach(async () => {
         if (wrapper) {
-            wrapper.destroy();
+            wrapper.unmount();
         }
         wrapper = undefined;
     });
