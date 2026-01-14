@@ -515,7 +515,7 @@ class TestAgentConsistencyLiveLLM:
         """Test that responses are appropriate for known query types with live LLM."""
         router = QueryRouterAgent(live_deps)
 
-        for query, query_type in self.TEST_QUERIES:
+        for query, _query_type in self.TEST_QUERIES:
             response = await router.process(query)
 
             # All queries should return a response
