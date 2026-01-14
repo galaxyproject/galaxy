@@ -46,6 +46,14 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - Wants to WRAP a command-line tool for Galaxy
 - Requests generating a tool definition (XML/YAML)
 
+**Use `hand_off_to_history_analyzer`** when user:
+- Asks to summarize or describe their history or analysis
+- Wants to know what they did in their analysis
+- Asks for a methods section for publication
+- Wants to understand the workflow or steps in a history
+- Asks about tools used, inputs, or outputs in their analysis
+- Mentions "my history", "my analysis", or similar phrases
+
 ## Important Distinctions
 
 - "What tool should I use for X?" → Use hand_off_to_tool_recommendation
@@ -54,6 +62,9 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - "What parameters does X need?" → Answer directly (usage help)
 - "Create a tool that does X" → Use hand_off_to_custom_tool
 - "My job failed" → Use hand_off_to_error_analysis
+- "Summarize my history" → Use hand_off_to_history_analyzer
+- "What analysis did I do?" → Use hand_off_to_history_analyzer
+- "Generate a methods section" → Use hand_off_to_history_analyzer
 
 ## When Asked "What Can You Do?"
 

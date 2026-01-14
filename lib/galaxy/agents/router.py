@@ -62,6 +62,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         error_handoff = self._create_error_analysis_handoff()
         tool_handoff = self._create_custom_tool_handoff()
         tool_rec_handoff = self._create_tool_recommendation_handoff()
+        history_handoff = self._create_history_analyzer_handoff()
 
         return Agent(
             self._get_model(),
@@ -70,6 +71,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 error_handoff,
                 tool_handoff,
                 tool_rec_handoff,
+                history_handoff,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
@@ -211,6 +213,50 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 return f"I encountered an issue while searching for tools. Please try again or browse the tool panel directly. Error: {e}"
 
         return hand_off_to_tool_recommendation
+
+    def _create_history_analyzer_handoff(self):
+        """Create output function for history analysis handoff."""
+
+        async def hand_off_to_history_analyzer(
+            ctx: RunContext[GalaxyAgentDependencies],
+            request: str,
+        ) -> str:
+            """Route to history analyzer agent for summarizing and understanding Galaxy histories.
+
+            Use this when the user:
+            - Asks to summarize or describe their history or analysis
+            - Wants to know what they did in their analysis
+            - Asks for a methods section for publication
+            - Wants to understand the workflow or steps in a history
+            - Asks about tools used, inputs, or outputs in their analysis
+            - Mentions "my history", "my analysis", or similar
+
+            Examples:
+            - "Summarize my history"
+            - "What analysis did I do?"
+            - "Generate a methods section"
+            - "What tools did I use?"
+            - "Describe my RNA-seq analysis"
+
+            Args:
+                request: The user's request about their history/analysis
+            """
+            from .history_analyzer import HistoryAnalyzerAgent
+
+            log.info(f"Router handing off to history_analyzer: '{request[:100]}...'")
+
+            try:
+                agent = HistoryAnalyzerAgent(ctx.deps)
+
+                # Use the process method which handles discovery
+                result = await agent.process(request, context=None)
+
+                return result.content
+            except Exception as e:
+                log.error(f"History analyzer handoff failed: {e}")
+                return f"I encountered an issue while analyzing your history. Please try again or contact support. Error: {e}"
+
+        return hand_off_to_history_analyzer
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
@@ -383,6 +429,27 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_data={"reason": "training_service_unavailable"},
             )
 
+        # Check for history analysis keywords
+        history_keywords = [
+            "summarize my history",
+            "my history",
+            "my analysis",
+            "what did i do",
+            "what analysis",
+            "methods section",
+            "generate methods",
+            "tools i used",
+            "describe my",
+        ]
+        if any(kw in query_lower for kw in history_keywords):
+            return AgentResponse(
+                content="I noticed you want to analyze your history. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment.",
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[],
+                metadata={"fallback": True, "reason": "history_analysis_service_unavailable", "error": error_msg},
+            )
+
         # General fallback
         return self._build_response(
             content="I'm having trouble connecting to the AI service right now. Please try again in a moment. If you have a question about Galaxy, you can also check the Galaxy Training Network (https://training.galaxyproject.org/) for tutorials and documentation.",
@@ -405,6 +472,8 @@ For general Galaxy questions: Answer directly and helpfully.
 For job failures or errors: Explain what might have gone wrong and suggest solutions.
 
 For tool creation requests: Explain that you can help design Galaxy tools and provide guidance.
+
+For history analysis requests: Explain that you can help summarize their analysis, generate methods sections, or describe what was done in a history.
 
 For off-topic questions: Politely explain you can only help with Galaxy and scientific analysis.
 

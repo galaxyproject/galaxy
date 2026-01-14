@@ -10,8 +10,6 @@ import logging
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
 )
 
@@ -27,7 +25,6 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
-    ConfidenceLevel,
     GalaxyAgentDependencies,
 )
 
@@ -42,11 +39,11 @@ class HistoryAnalysis(BaseModel):
     title: str = Field(description="A concise title summarizing the analysis")
     summary: str = Field(description="Brief summary of what was done in the history")
     workflow_description: str = Field(description="Description of the analysis workflow and steps")
-    tools_used: List[str] = Field(description="List of tool names used in the analysis")
-    tool_versions: Dict[str, str] = Field(default_factory=dict, description="Tool versions used")
-    citations: List[str] = Field(default_factory=list, description="Formatted citations for tools used")
-    input_data: List[str] = Field(default_factory=list, description="Description of input datasets")
-    output_data: List[str] = Field(default_factory=list, description="Description of output datasets")
+    tools_used: list[str] = Field(description="List of tool names used in the analysis")
+    tool_versions: dict[str, str] = Field(default_factory=dict, description="Tool versions used")
+    citations: list[str] = Field(default_factory=list, description="Formatted citations for tools used")
+    input_data: list[str] = Field(default_factory=list, description="Description of input datasets")
+    output_data: list[str] = Field(default_factory=list, description="Description of output datasets")
     methods_text: str = Field(default="", description="Publication-ready methods section text")
     confidence: ConfidenceLiteral = Field(default="medium", description="Confidence in the analysis")
 
@@ -77,34 +74,43 @@ class HistoryAnalyzerAgent(BaseGalaxyAgent):
         )
 
         @agent.tool
-        async def get_history_info(ctx: RunContext[GalaxyAgentDependencies], history_id: str) -> Dict[str, Any]:
+        async def list_user_histories(ctx: RunContext[GalaxyAgentDependencies], limit: int = 20) -> dict[str, Any]:
+            """List the user's Galaxy histories to find which one to analyze.
+
+            Call this first to discover available histories before analyzing one.
+            Returns histories sorted by most recently updated.
+            """
+            return self.ops.list_histories(limit=limit)
+
+        @agent.tool
+        async def get_history_info(ctx: RunContext[GalaxyAgentDependencies], history_id: str) -> dict[str, Any]:
             """Get metadata about a Galaxy history including name, annotation, and tags."""
             return self.ops.get_history_details(history_id)
 
         @agent.tool
-        async def list_datasets(ctx: RunContext[GalaxyAgentDependencies], history_id: str) -> Dict[str, Any]:
+        async def list_datasets(ctx: RunContext[GalaxyAgentDependencies], history_id: str) -> dict[str, Any]:
             """List all datasets in a history with their basic info."""
             return self.ops.get_history_contents(history_id, limit=500, order="hid-asc")
 
         @agent.tool
-        async def get_dataset_info(ctx: RunContext[GalaxyAgentDependencies], dataset_id: str) -> Dict[str, Any]:
+        async def get_dataset_info(ctx: RunContext[GalaxyAgentDependencies], dataset_id: str) -> dict[str, Any]:
             """Get detailed information about a specific dataset."""
             return self.ops.get_dataset_details(dataset_id)
 
         @agent.tool
         async def get_job_for_dataset(
             ctx: RunContext[GalaxyAgentDependencies], dataset_id: str, history_id: str
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Get the job that created a dataset, including tool info and parameters."""
             return self.ops.get_job_details(dataset_id, history_id)
 
         @agent.tool
-        async def get_tool_citations(ctx: RunContext[GalaxyAgentDependencies], tool_id: str) -> Dict[str, Any]:
+        async def get_tool_citations(ctx: RunContext[GalaxyAgentDependencies], tool_id: str) -> dict[str, Any]:
             """Get citation information for a tool."""
             return self.ops.get_tool_citations(tool_id)
 
         @agent.tool
-        async def get_tool_info(ctx: RunContext[GalaxyAgentDependencies], tool_id: str) -> Dict[str, Any]:
+        async def get_tool_info(ctx: RunContext[GalaxyAgentDependencies], tool_id: str) -> dict[str, Any]:
             """Get detailed information about a tool including description and version."""
             return self.ops.get_tool_details(tool_id)
 
@@ -120,26 +126,39 @@ class HistoryAnalyzerAgent(BaseGalaxyAgent):
 
 Your task is to analyze a Galaxy history and provide a comprehensive understanding of what was done.
 
-When analyzing a history:
-1. First get the history info to understand the overall context
-2. List all datasets to see the workflow of inputs and outputs
-3. For output datasets, get the job that created them to understand the tools and parameters used
-4. Get tool information and citations when relevant
-5. Synthesize this into a clear understanding of the analysis
+## Finding the Right History
 
-You should be able to:
-- Summarize what analysis was performed
-- Identify the input data and final outputs
-- Describe the tools used and their purpose
-- Generate publication-ready methods sections when requested
-- Answer specific questions about the analysis workflow
+If no specific history is mentioned:
+1. Call list_user_histories to see the user's available histories
+2. Pick the most recently updated history (first in the list) unless the user's query suggests a different one
+3. If the user mentions a specific analysis type (e.g., "RNA-seq analysis"), look for a history with a matching name
 
-Guidelines:
+## Analyzing a History
+
+Once you have identified which history to analyze:
+1. Call get_history_info to get the history metadata (name, annotation, tags)
+2. Call list_datasets to see all datasets in the history
+3. For key output datasets, call get_job_for_dataset to understand what tool created them
+4. Call get_tool_citations for the main tools used
+5. Use get_tool_info if you need more details about a specific tool
+6. Synthesize this into a comprehensive analysis
+
+## Output Guidelines
+
 - Be thorough but concise
 - Use scientific terminology appropriately
 - Note tool versions when available
 - Organize information logically by analysis stage
 - Include citations in standard format when generating methods sections
+- For the methods_text field, write in third person past tense suitable for a publication
+
+## What You Can Do
+
+- Summarize what analysis was performed
+- Identify the input data and final outputs
+- Describe the tools used and their purpose
+- Generate publication-ready methods sections
+- Answer specific questions about the analysis workflow
 """
 
     async def analyze_history(self, history_id: str, focus: str = "summary") -> HistoryAnalysis:
@@ -180,13 +199,59 @@ Then synthesize this information into a comprehensive analysis."""
             return result.data
         return result
 
-    async def process(self, query: str, context: Dict[str, Any] | None = None) -> AgentResponse:
+    async def analyze_with_discovery(self, query: str, focus: str = "summary") -> HistoryAnalysis:
+        """
+        Analyze a history by first discovering which history to use.
+
+        The agent will list the user's histories and select the most appropriate
+        one based on the query, then analyze it.
+
+        Args:
+            query: User's request (e.g., "summarize my history", "what RNA-seq analysis did I do?")
+            focus: What to focus on - "summary", "methods", or "detailed"
+
+        Returns:
+            HistoryAnalysis with comprehensive analysis results
+        """
+        focus_instructions = {
+            "summary": "Provide a concise summary of what was done in this analysis.",
+            "methods": "Generate a publication-ready methods section with citations.",
+            "detailed": "Provide a detailed breakdown of every step in the analysis workflow.",
+        }
+
+        instruction = focus_instructions.get(focus, focus_instructions["summary"])
+
+        prompt = f"""The user asked: "{query}"
+
+{instruction}
+
+First, call list_user_histories to see the user's available histories.
+Then select the most appropriate history based on the user's request:
+- If they mention a specific analysis type or name, look for a matching history
+- Otherwise, use the most recently updated history (first in the list)
+
+Once you've identified the history, analyze it using:
+1. get_history_info to get the history metadata
+2. list_datasets to see all datasets
+3. get_job_for_dataset for key output datasets
+4. get_tool_citations for the main tools
+5. get_tool_info for additional tool details
+
+Synthesize this into a comprehensive analysis."""
+
+        result = await self._run_with_retry(prompt)
+
+        if hasattr(result, "data"):
+            return result.data
+        return result
+
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         """
         Process a history analysis request.
 
         Args:
             query: User's request or question about the history
-            context: Should contain 'history_id' key, optionally 'focus'
+            context: Optionally contains 'history_id' and/or 'focus'
 
         Returns:
             AgentResponse with the analysis
@@ -198,17 +263,13 @@ Then synthesize this information into a comprehensive analysis."""
             history_id = context.get("history_id")
             focus = context.get("focus", "summary")
 
-        if not history_id:
-            return AgentResponse(
-                content="Please provide a history_id to analyze.",
-                confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"error": "missing_history_id"},
-            )
-
         try:
-            result = await self.analyze_history(history_id, focus)
+            if history_id:
+                # Direct analysis of a specific history
+                result = await self.analyze_history(history_id, focus)
+            else:
+                # Discovery mode - let the agent find the right history
+                result = await self.analyze_with_discovery(query, focus)
 
             # Choose primary content based on focus
             if focus == "methods":
@@ -234,7 +295,7 @@ Then synthesize this information into a comprehensive analysis."""
             )
 
         except Exception as e:
-            log.exception(f"Error analyzing history {history_id}")
+            log.exception(f"Error analyzing history: {e}")
             return self._get_fallback_response(query, str(e))
 
     def _get_fallback_content(self) -> str:
