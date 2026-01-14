@@ -35,9 +35,13 @@ const isValid = computed(() => {
     return trsUrl.value !== null && trsUrl.value !== undefined && trsUrl.value.length > 0;
 });
 
-watch(isValid, (newValue) => {
-    emit("input-valid", newValue);
-});
+watch(
+    isValid,
+    (newValue) => {
+        emit("input-valid", newValue);
+    },
+    { immediate: true }
+);
 
 // Show button in modal mode, hide in wizard mode or when hideSubmitButton is true
 const showSubmitButton = computed(() => {
