@@ -210,7 +210,7 @@ function onTrsIdValid(e: boolean) {
                 <div class="row">
                     <div class="col-xl-4 mb-3">
                         <GCard
-                            class="h-100 workflow-import-file-link clickable-card text-center"
+                            class="h-100 workflow-import-file-link text-center"
                             :class="{ selected: selectedMethod === 'upload' }"
                             :clickable="true"
                             @click="selectMethod('upload')">
@@ -224,7 +224,7 @@ function onTrsIdValid(e: boolean) {
 
                     <div class="col-xl-4 mb-3">
                         <GCard
-                            class="h-100 workflow-import-url-link clickable-card text-center"
+                            class="h-100 workflow-import-url-link text-center"
                             :class="{ selected: selectedMethod === 'fetch' }"
                             :clickable="true"
                             @click="selectMethod('fetch')">
@@ -238,7 +238,7 @@ function onTrsIdValid(e: boolean) {
 
                     <div class="col-xl-4 mb-3">
                         <GCard
-                            class="h-100 workflow-import-trs-link clickable-card text-center"
+                            class="h-100 workflow-import-trs-link text-center"
                             :class="{ selected: selectedMethod === 'repository' }"
                             :clickable="true"
                             @click="selectMethod('repository')">
@@ -269,7 +269,7 @@ function onTrsIdValid(e: boolean) {
                 <div class="row">
                     <div class="col-xl-4 mb-3">
                         <GCard
-                            class="h-100 workflow-import-trs-search-link clickable-card text-center"
+                            class="h-100 workflow-import-trs-search-link text-center"
                             :class="{ selected: selectedTrsMethod === 'search' }"
                             :clickable="true"
                             @click="selectTrsMethod('search')">
@@ -280,7 +280,7 @@ function onTrsIdValid(e: boolean) {
 
                     <div class="col-xl-4 mb-3">
                         <GCard
-                            class="h-100 workflow-import-trs-url-link clickable-card text-center"
+                            class="h-100 workflow-import-trs-url-link text-center"
                             :class="{ selected: selectedTrsMethod === 'url' }"
                             :clickable="true"
                             @click="selectTrsMethod('url')">
@@ -291,7 +291,7 @@ function onTrsIdValid(e: boolean) {
 
                     <div class="col-xl-4 mb-3">
                         <GCard
-                            class="h-100 workflow-import-trs-id-link clickable-card text-center"
+                            class="h-100 workflow-import-trs-id-link text-center"
                             :class="{ selected: selectedTrsMethod === 'id' }"
                             :clickable="true"
                             @click="selectTrsMethod('id')">
