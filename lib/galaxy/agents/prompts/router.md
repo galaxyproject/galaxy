@@ -54,6 +54,14 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - Asks about tools used, inputs, or outputs in their analysis
 - Mentions "my history", "my analysis", or similar phrases
 
+**Use `hand_off_to_next_step_advisor`** when user:
+- Asks "what should I do next?" or "what's a good next step?"
+- Says "given my history/analysis, what should I..."
+- Wants suggestions or recommendations based on their current work
+- Asks for tutorials or learning resources related to their analysis
+- Needs guidance on continuing their workflow
+- Asks what they could do with their data
+
 ## Important Distinctions
 
 - "What tool should I use for X?" → Use hand_off_to_tool_recommendation
@@ -65,6 +73,9 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - "Summarize my history" → Use hand_off_to_history_analyzer
 - "What analysis did I do?" → Use hand_off_to_history_analyzer
 - "Generate a methods section" → Use hand_off_to_history_analyzer
+- "What should I do next?" → Use hand_off_to_next_step_advisor
+- "Given my data, what tutorials would help?" → Use hand_off_to_next_step_advisor
+- "What's a good next step for my analysis?" → Use hand_off_to_next_step_advisor
 
 ## When Asked "What Can You Do?"
 
