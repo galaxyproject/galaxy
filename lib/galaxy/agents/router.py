@@ -267,7 +267,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             ctx: RunContext[GalaxyAgentDependencies],
             request: str,
         ) -> str:
-            """Orchestrate history analysis and tutorial recommendations for next-step advice.
+            """Orchestrate multiple agents to provide next-step advice and recommendations.
 
             Use this when the user:
             - Asks "what should I do next?" or "what's a good next step?"
@@ -279,37 +279,15 @@ class QueryRouterAgent(BaseGalaxyAgent):
             Args:
                 request: The user's request about next steps or recommendations
             """
-            from .history_analyzer import HistoryAnalyzerAgent
+            from .orchestrator import WorkflowOrchestratorAgent
 
-            log.info(f"Router orchestrating next-step advice: '{request[:100]}...'")
+            log.info(f"Router handing off to orchestrator for next-step advice: '{request[:100]}...'")
 
             try:
-                # Step 1: Analyze history to understand current state
-                history_agent = HistoryAnalyzerAgent(ctx.deps)
-                history_result = await history_agent.process(
-                    "Summarize the current history briefly, noting the analysis type, tools used, and final outputs",
-                    context=None,
-                )
-
-                # Step 2: Get tutorial recommendations (if GTN agent available)
-                gtn_advice = ""
-                try:
-                    from .gtn_training import GTNTrainingAgent
-
-                    gtn_agent = GTNTrainingAgent(ctx.deps)
-                    gtn_query = f"Find tutorials for next steps after this analysis: {history_result.content[:500]}"
-                    gtn_result = await gtn_agent.process(gtn_query, context=None)
-                    gtn_advice = f"\n\n## Recommended Tutorials\n{gtn_result.content}"
-                except ImportError:
-                    gtn_advice = "\n\n*Tutorial recommendations will be available when the GTN agent is enabled.*"
-
-                # Step 3: Synthesize combined advice
-                return f"""## Your Analysis Summary
-{history_result.content}
-
-## Suggested Next Steps
-Based on your analysis, here are some recommendations:{gtn_advice}
-"""
+                # Delegate to the orchestrator which will plan and execute the appropriate agents
+                orchestrator = WorkflowOrchestratorAgent(ctx.deps)
+                result = await orchestrator.process(request, context=None)
+                return result.content
 
             except Exception as e:
                 log.error(f"Next-step advisor handoff failed: {e}")

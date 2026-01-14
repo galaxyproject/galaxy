@@ -276,15 +276,19 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return """
         You coordinate multiple Galaxy agents. Determine which agents to call and in what order.
 
-        Available agents: error_analysis, custom_tool
+        Available agents:
+        - error_analysis: Debug job failures and errors
+        - custom_tool: Create new Galaxy tools
+        - history_analyzer: Summarize histories, describe analyses
+        - gtn_training: Find relevant tutorials (may not be available)
 
         Respond in this format:
         AGENTS: [agent1, agent2]
         SEQUENTIAL: true/false
         REASONING: explanation
 
-        Example:
-        AGENTS: [error_analysis, custom_tool]
-        SEQUENTIAL: true
-        REASONING: Analyze error first, then suggest creating a tool
+        Examples:
+        - "What should I do next?" → AGENTS: [history_analyzer, gtn_training], SEQUENTIAL: true
+        - "My job failed" → AGENTS: [error_analysis], SEQUENTIAL: false
+        - "Summarize my history" → AGENTS: [history_analyzer], SEQUENTIAL: false
         """
