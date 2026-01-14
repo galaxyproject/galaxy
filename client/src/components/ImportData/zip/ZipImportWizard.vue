@@ -24,6 +24,18 @@ import ZipSelector from "./ZipSelector.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
+interface Props {
+    /** Whether to display the default H1 heading for the wizard.
+     *
+     * Useful when embedding the wizard in other components that already provide their own heading.
+     */
+    shouldDisplayHeading?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+    shouldDisplayHeading: true,
+});
+
 const router = useRouter();
 
 const { importArtifacts, isZipArchiveAvailable, zipExplorer, reset: resetExplorer } = useZipExplorer();
@@ -165,7 +177,7 @@ archiveExplorerEventBus.on((key, source) => {
             :is-busy="isWizardBusy"
             @submit="importItems">
             <template v-slot:header>
-                <Heading h1 separator inline>
+                <Heading v-if="shouldDisplayHeading" h1 separator inline>
                     Import individual files from archive
                     <sup
                         title="This feature is experimental and in some cases may not work as expected. Please report any issues you encounter to the Galaxy team."
