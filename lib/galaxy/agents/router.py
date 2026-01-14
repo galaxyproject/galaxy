@@ -64,6 +64,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         tool_rec_handoff = self._create_tool_recommendation_handoff()
         history_handoff = self._create_history_analyzer_handoff()
         next_step_handoff = self._create_next_step_advisor_handoff()
+        orchestrator_handoff = self._create_orchestrator_handoff()
 
         return Agent(
             self._get_model(),
@@ -74,6 +75,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 tool_rec_handoff,
                 history_handoff,
                 next_step_handoff,
+                orchestrator_handoff,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
@@ -295,6 +297,43 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return hand_off_to_next_step_advisor
 
+    def _create_orchestrator_handoff(self):
+        """Create output function for general multi-agent orchestration."""
+
+        async def hand_off_to_orchestrator(
+            ctx: RunContext[GalaxyAgentDependencies],
+            request: str,
+        ) -> str:
+            """Route to orchestrator for queries requiring multiple agents to work together.
+
+            Use this when the user's query explicitly requires multiple capabilities:
+            - "Summarize my history AND find tutorials" (history_analyzer + gtn_training)
+            - "Debug this error AND show me how to avoid it" (error_analysis + gtn_training)
+            - "Analyze my workflow AND suggest improvements" (multiple agents)
+            - Any request with "and" connecting distinct capabilities
+
+            Do NOT use for single-capability queries - use the specific handoff instead.
+
+            Args:
+                request: The user's multi-faceted request
+            """
+            from .orchestrator import WorkflowOrchestratorAgent
+
+            log.info(f"Router handing off to orchestrator: '{request[:100]}...'")
+
+            try:
+                orchestrator = WorkflowOrchestratorAgent(ctx.deps)
+                result = await orchestrator.process(request, context=None)
+                return result.content
+
+            except Exception as e:
+                log.error(f"Orchestrator handoff failed: {e}")
+                return (
+                    f"I encountered an issue coordinating the response. Please try again or contact support. Error: {e}"
+                )
+
+        return hand_off_to_orchestrator
+
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
         Process a query and return the response.
@@ -504,6 +543,25 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={"fallback": True, "reason": "next_step_service_unavailable", "error": error_msg},
+            )
+
+        # Check for multi-agent queries (combining multiple capabilities)
+        has_conjunction = " and " in query_lower or " also " in query_lower
+        capability_count = sum(
+            [
+                any(kw in query_lower for kw in error_keywords),
+                any(kw in query_lower for kw in tool_keywords),
+                any(kw in query_lower for kw in history_keywords),
+                any(kw in query_lower for kw in next_step_keywords),
+            ]
+        )
+        if has_conjunction and capability_count >= 2:
+            return AgentResponse(
+                content="I'd like to help with your multi-part request, but I'm having trouble connecting to the AI service right now. Please try again in a moment.",
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[],
+                metadata={"fallback": True, "reason": "orchestrator_service_unavailable", "error": error_msg},
             )
 
         # General fallback
