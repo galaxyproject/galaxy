@@ -3734,6 +3734,9 @@ input_1:
                 if d["history_content_type"] == "dataset"
             }
 
+            # Get first export file count for comparison
+            first_export_file_count = self._get_ro_crate_file_count(invocation_id, include_files=True)
+
             export_path = self.workflow_populator.download_invocation_to_store(
                 invocation_id, include_files=True, extension="tgz"
             )
@@ -3764,16 +3767,18 @@ input_1:
                     assert (
                         details["state"] == "ok"
                     ), f"Dataset '{dataset['name']}' has state '{details['state']}', expected 'ok'"
-                    # Verify content matches original
                     content = self.dataset_populator.get_history_dataset_content(
                         reimport_history_id, dataset_id=dataset["id"]
                     )
                     assert dataset["name"] in original_datasets, f"Unknown dataset '{dataset['name']}'"
                     assert content == original_datasets[dataset["name"]], f"Content mismatch for '{dataset['name']}'"
 
-                # Verify re-export produces valid RO-Crate with 10 File entities (4 datasets + 6 workflow files)
-                file_count = self._get_ro_crate_file_count(reimported_invocation_id, include_files=True)
-                assert file_count == 10, f"Expected 10 File entities in re-export, got {file_count}."
+                # Verify re-export has same file count as first export
+                second_export_file_count = self._get_ro_crate_file_count(reimported_invocation_id, include_files=True)
+                assert second_export_file_count == first_export_file_count, (
+                    f"File count mismatch: first export {first_export_file_count}, "
+                    f"re-export {second_export_file_count}."
+                )
 
                 reimported_request = self.workflow_populator.invocation_to_request(reimported_invocation_id)
                 assert "inputs" in reimported_request, "Reimported invocation should have inputs"
