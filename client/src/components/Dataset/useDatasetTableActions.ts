@@ -24,7 +24,7 @@ export function useDatasetTableActions(refreshList: () => Promise<void>) {
 
         try {
             await historyStore.applyFilters(history_id, filters);
-        } catch (error) {
+        } catch {
             Toast.error("Failed to show dataset in history");
         }
     }
@@ -42,7 +42,7 @@ export function useDatasetTableActions(refreshList: () => Promise<void>) {
             historyStore.loadCurrentHistory();
             await refreshList();
             Toast.success(`Dataset "${item.name}" copied to current history.`);
-        } catch (error) {
+        } catch {
             Toast.error("Failed to copy dataset");
         }
     }
@@ -64,7 +64,7 @@ export function useDatasetTableActions(refreshList: () => Promise<void>) {
                 Toast.success(`Dataset "${item.name}" ${purge ? "purged" : "deleted"}.`);
                 historyStore.loadCurrentHistory();
                 await refreshList();
-            } catch (error) {
+            } catch {
                 Toast.error(`Failed to ${purge ? "purge" : "delete"} dataset.`);
             }
         }

@@ -100,7 +100,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
         server.resetHandlers();
         currentItemState.value = null;
         setTourMock.mockClear();
