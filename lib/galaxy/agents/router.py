@@ -63,6 +63,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         tool_handoff = self._create_custom_tool_handoff()
         tool_rec_handoff = self._create_tool_recommendation_handoff()
         history_handoff = self._create_history_analyzer_handoff()
+        next_step_handoff = self._create_next_step_advisor_handoff()
 
         return Agent(
             self._get_model(),
@@ -72,6 +73,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 tool_handoff,
                 tool_rec_handoff,
                 history_handoff,
+                next_step_handoff,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
@@ -257,6 +259,63 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 return f"I encountered an issue while analyzing your history. Please try again or contact support. Error: {e}"
 
         return hand_off_to_history_analyzer
+
+    def _create_next_step_advisor_handoff(self):
+        """Create output function for next-step advice orchestration."""
+
+        async def hand_off_to_next_step_advisor(
+            ctx: RunContext[GalaxyAgentDependencies],
+            request: str,
+        ) -> str:
+            """Orchestrate history analysis and tutorial recommendations for next-step advice.
+
+            Use this when the user:
+            - Asks "what should I do next?" or "what's a good next step?"
+            - Says "given my history/analysis, what should I..."
+            - Wants suggestions or recommendations based on their current work
+            - Asks for tutorials or learning resources related to their analysis
+            - Needs guidance on continuing their workflow
+
+            Args:
+                request: The user's request about next steps or recommendations
+            """
+            from .history_analyzer import HistoryAnalyzerAgent
+
+            log.info(f"Router orchestrating next-step advice: '{request[:100]}...'")
+
+            try:
+                # Step 1: Analyze history to understand current state
+                history_agent = HistoryAnalyzerAgent(ctx.deps)
+                history_result = await history_agent.process(
+                    "Summarize the current history briefly, noting the analysis type, tools used, and final outputs",
+                    context=None,
+                )
+
+                # Step 2: Get tutorial recommendations (if GTN agent available)
+                gtn_advice = ""
+                try:
+                    from .gtn_training import GTNTrainingAgent
+
+                    gtn_agent = GTNTrainingAgent(ctx.deps)
+                    gtn_query = f"Find tutorials for next steps after this analysis: {history_result.content[:500]}"
+                    gtn_result = await gtn_agent.process(gtn_query, context=None)
+                    gtn_advice = f"\n\n## Recommended Tutorials\n{gtn_result.content}"
+                except ImportError:
+                    gtn_advice = "\n\n*Tutorial recommendations will be available when the GTN agent is enabled.*"
+
+                # Step 3: Synthesize combined advice
+                return f"""## Your Analysis Summary
+{history_result.content}
+
+## Suggested Next Steps
+Based on your analysis, here are some recommendations:{gtn_advice}
+"""
+
+            except Exception as e:
+                log.error(f"Next-step advisor handoff failed: {e}")
+                return f"I encountered an issue while analyzing your history for suggestions. Please try again or contact support. Error: {e}"
+
+        return hand_off_to_next_step_advisor
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
@@ -448,6 +507,25 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={"fallback": True, "reason": "history_analysis_service_unavailable", "error": error_msg},
+            )
+
+        # Check for next-step/recommendation keywords
+        next_step_keywords = [
+            "what should i do next",
+            "next step",
+            "what now",
+            "continue my analysis",
+            "what tutorials",
+            "recommend",
+            "suggestion",
+        ]
+        if any(kw in query_lower for kw in next_step_keywords):
+            return AgentResponse(
+                content="I'd like to suggest next steps for your analysis, but I'm having trouble connecting to the AI service right now. Please try again in a moment.",
+                confidence=ConfidenceLevel.LOW,
+                agent_type=self.agent_type,
+                suggestions=[],
+                metadata={"fallback": True, "reason": "next_step_service_unavailable", "error": error_msg},
             )
 
         # General fallback
