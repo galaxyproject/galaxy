@@ -62,6 +62,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.dataset_populator.create_contents_from_store(
             history_id,
             store_dict=one_hda_model_store_dict(include_source=False),
+            discarded_data="force",
         )
         # regression after 3/24/2022 - explicit refresh now required.
         self.home()

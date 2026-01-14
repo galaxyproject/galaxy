@@ -8671,6 +8671,12 @@ export interface components {
         };
         /** CreateHistoryContentFromStore */
         CreateHistoryContentFromStore: {
+            /**
+             * Discarded Data
+             * @description How to handle datasets with unavailable data. 'forbid': mark as deleted, 'allow': import as discarded but not deleted, 'force': import all datasets as discarded regardless of whether file data is available (useful for importing metadata only).
+             * @default allow
+             */
+            discarded_data: components["schemas"]["DiscardedDataType"];
             model_store_format?: components["schemas"]["ModelStoreFormat"] | null;
             /** Store Content Uri */
             store_content_uri?: string | null;
@@ -8772,6 +8778,12 @@ export interface components {
         };
         /** CreateHistoryFromStore */
         CreateHistoryFromStore: {
+            /**
+             * Discarded Data
+             * @description How to handle datasets with unavailable data. 'forbid': mark as deleted, 'allow': import as discarded but not deleted, 'force': import all datasets as discarded regardless of whether file data is available (useful for importing metadata only).
+             * @default allow
+             */
+            discarded_data: components["schemas"]["DiscardedDataType"];
             model_store_format?: components["schemas"]["ModelStoreFormat"] | null;
             /** Store Content Uri */
             store_content_uri?: string | null;
@@ -8803,6 +8815,12 @@ export interface components {
         };
         /** CreateInvocationsFromStorePayload */
         CreateInvocationsFromStorePayload: {
+            /**
+             * Discarded Data
+             * @description How to handle datasets with unavailable data. 'forbid': mark as deleted, 'allow': import as discarded but not deleted, 'force': import all datasets as discarded regardless of whether file data is available (useful for importing metadata only).
+             * @default allow
+             */
+            discarded_data: components["schemas"]["DiscardedDataType"];
             /**
              * History ID
              * @description The ID of the history associated with the invocations.
@@ -8841,6 +8859,12 @@ export interface components {
         };
         /** CreateLibrariesFromStore */
         CreateLibrariesFromStore: {
+            /**
+             * Discarded Data
+             * @description How to handle datasets with unavailable data. 'forbid': mark as deleted, 'allow': import as discarded but not deleted, 'force': import all datasets as discarded regardless of whether file data is available (useful for importing metadata only).
+             * @default allow
+             */
+            discarded_data: components["schemas"]["DiscardedDataType"];
             model_store_format?: components["schemas"]["ModelStoreFormat"] | null;
             /** Store Content Uri */
             store_content_uri?: string | null;
@@ -11114,6 +11138,12 @@ export interface components {
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[];
         };
+        /**
+         * DiscardedDataType
+         * @description Options for handling discarded datasets on import.
+         * @enum {string}
+         */
+        DiscardedDataType: "forbid" | "allow" | "force";
         /** DisconnectAction */
         DisconnectAction: {
             /**
