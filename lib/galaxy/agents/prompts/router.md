@@ -62,6 +62,14 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - Needs guidance on continuing their workflow
 - Asks what they could do with their data
 
+**Use `hand_off_to_orchestrator`** when the query explicitly requires MULTIPLE distinct capabilities:
+- "Summarize my history AND find related tutorials" (history + tutorials)
+- "Debug this error AND show me how to avoid it in the future" (error analysis + tutorials)
+- "Analyze my workflow AND suggest tools for the next step" (history + recommendations)
+- Any request with "and" or "also" connecting distinct agent capabilities
+
+Do NOT use orchestrator for single-capability queries - use the specific handoff instead.
+
 ## Important Distinctions
 
 - "What tool should I use for X?" → Use hand_off_to_tool_recommendation
@@ -76,6 +84,8 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - "What should I do next?" → Use hand_off_to_next_step_advisor
 - "Given my data, what tutorials would help?" → Use hand_off_to_next_step_advisor
 - "What's a good next step for my analysis?" → Use hand_off_to_next_step_advisor
+- "Summarize my history AND find tutorials" → Use hand_off_to_orchestrator (multi-agent)
+- "Debug this error AND teach me to avoid it" → Use hand_off_to_orchestrator (multi-agent)
 
 ## When Asked "What Can You Do?"
 
