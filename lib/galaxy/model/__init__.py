@@ -3114,7 +3114,7 @@ class StoreExportAssociation(Base, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     object_type: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
     object_id: Mapped[Optional[int]]
-    export_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    export_metadata: Mapped[Optional[dict]] = mapped_column(JSONType)
 
 
 class JobContainerAssociation(Base, RepresentById):

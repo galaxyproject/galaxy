@@ -12,7 +12,11 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.schema.schema import ModelStoreFormat
+from galaxy.managers.export_tracker import StoreExportTracker
+from galaxy.schema.schema import (
+    ExportObjectType,
+    ModelStoreFormat,
+)
 from galaxy.schema.tasks import (
     RequestUser,
     WriteInvocationTo,
@@ -108,6 +112,13 @@ class ExportToFileSourceHook(WorkflowCompletionHook):
         # Get galaxy URL for RO-Crate metadata
         galaxy_url = self.app.config.galaxy_infrastructure_url or ""
 
+        # Create export association for tracking in "Recent Exports"
+        export_tracker = StoreExportTracker(self.app)
+        export_association = export_tracker.create_export_association(
+            object_id=invocation.id,
+            object_type=ExportObjectType.INVOCATION,
+        )
+
         request = WriteInvocationTo(
             invocation_id=invocation.id,
             target_uri=target_uri,
@@ -117,13 +128,15 @@ class ExportToFileSourceHook(WorkflowCompletionHook):
             include_deleted=export_config.get("include_deleted", False),
             user=RequestUser(user_id=user.id),
             galaxy_url=galaxy_url,
+            export_association_id=export_association.id,
         )
 
         log.info(
-            "Queuing export of invocation %d to %s (format: %s)",
+            "Queuing export of invocation %d to %s (format: %s, export_association_id: %d)",
             invocation.id,
             target_uri,
             model_store_format,
+            export_association.id,
         )
 
         # Import here to avoid circular import (celery.tasks imports completion_hooks)
@@ -131,7 +144,11 @@ class ExportToFileSourceHook(WorkflowCompletionHook):
 
         # Queue the export via Celery task
         # The task handles dependency injection for ModelStoreManager
-        write_invocation_to.delay(request=request, task_user_id=user.id)
+        result = write_invocation_to.delay(request=request, task_user_id=user.id)
+
+        # Store the task UUID for tracking
+        export_association.task_uuid = result.id
+        self.app.model.context.commit()
 
     def _get_export_config(self, invocation) -> "Optional[dict[str, Any]]":
         """

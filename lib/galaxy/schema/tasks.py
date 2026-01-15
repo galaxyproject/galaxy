@@ -67,11 +67,13 @@ class BcoGenerationTaskParametersMixin(BcoGenerationParametersMixin):
 class GenerateInvocationDownload(ShortTermStoreExportPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
     user: RequestUser
+    export_association_id: Optional[int] = None
 
 
 class WriteInvocationTo(WriteStoreToPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
     user: RequestUser
+    export_association_id: Optional[int] = None
 
 
 class WriteHistoryContentTo(WriteStoreToPayload):

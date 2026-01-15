@@ -157,39 +157,71 @@ class ModelStoreManager:
     def prepare_invocation_download(self, request: GenerateInvocationDownload):
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
-        with storage_context(
-            request.short_term_storage_request_id, self._short_term_storage_monitor
-        ) as short_term_storage_target:
-            with model.store.get_export_store_factory(
-                self._app,
-                model_store_format,
-                export_files=export_files,
-                bco_export_options=self._bco_export_options(request),
-            )(short_term_storage_target.path) as export_store:
-                invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
-                export_store.export_workflow_invocation(
-                    invocation,  # type: ignore[arg-type]
-                    include_hidden=request.include_hidden,
-                    include_deleted=request.include_deleted,
-                )
+        export_metadata = self.set_invocation_export_request_metadata(request)
+
+        exception_exporting_invocation: Optional[Exception] = None
+        try:
+            with storage_context(
+                request.short_term_storage_request_id, self._short_term_storage_monitor
+            ) as short_term_storage_target:
+                with model.store.get_export_store_factory(
+                    self._app,
+                    model_store_format,
+                    export_files=export_files,
+                    bco_export_options=self._bco_export_options(request),
+                )(short_term_storage_target.path) as export_store:
+                    invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
+                    export_store.export_workflow_invocation(
+                        invocation,  # type: ignore[arg-type]
+                        include_hidden=request.include_hidden,
+                        include_deleted=request.include_deleted,
+                    )
+        except Exception as exception:
+            exception_exporting_invocation = exception
+            raise
+        finally:
+            self.set_invocation_export_result_metadata(
+                request.export_association_id,
+                export_metadata,
+                success=not bool(exception_exporting_invocation),
+                error=str(exception_exporting_invocation) if exception_exporting_invocation else None,
+            )
 
     def write_invocation_to(self, request: WriteInvocationTo):
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
         user_context = self._build_user_context(request.user.user_id)
-        with model.store.get_export_store_factory(
-            self._app,
-            model_store_format,
-            export_files=export_files,
-            bco_export_options=self._bco_export_options(request),
-            user_context=user_context,
-        )(target_uri) as export_store:
-            invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
-            export_store.export_workflow_invocation(
-                invocation,  # type: ignore[arg-type]
-                include_hidden=request.include_hidden,
-                include_deleted=request.include_deleted,
+        export_metadata = self.set_invocation_export_request_metadata(request)
+
+        exception_exporting_invocation: Optional[Exception] = None
+        uri: Optional[str] = None
+        try:
+            export_store = model.store.get_export_store_factory(
+                self._app,
+                model_store_format,
+                export_files=export_files,
+                bco_export_options=self._bco_export_options(request),
+                user_context=user_context,
+            )(target_uri)
+            with export_store:
+                invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
+                export_store.export_workflow_invocation(
+                    invocation,  # type: ignore[arg-type]
+                    include_hidden=request.include_hidden,
+                    include_deleted=request.include_deleted,
+                )
+            uri = str(export_store.file_source_uri) if export_store.file_source_uri else request.target_uri
+        except Exception as exception:
+            exception_exporting_invocation = exception
+            raise
+        finally:
+            self.set_invocation_export_result_metadata(
+                request.export_association_id,
+                export_metadata,
+                success=not bool(exception_exporting_invocation),
+                uri=uri,
+                error=str(exception_exporting_invocation) if exception_exporting_invocation else None,
             )
 
     def _bco_export_options(self, request: BcoGenerationTaskParametersMixin):
@@ -275,6 +307,40 @@ class ModelStoreManager:
         return export_metadata
 
     def set_history_export_result_metadata(
+        self,
+        export_association_id: Optional[int],
+        export_metadata: Optional[ExportObjectMetadata],
+        success: bool,
+        uri: Optional[str] = None,
+        error: Optional[str] = None,
+    ):
+        if export_association_id is not None and export_metadata is not None:
+            export_metadata.result_data = ExportObjectResultMetadata(success=success, uri=uri, error=error)
+            self._export_tracker.set_export_association_metadata(export_association_id, export_metadata)
+
+    def set_invocation_export_request_metadata(
+        self, request: Union[WriteInvocationTo, GenerateInvocationDownload]
+    ) -> Optional[ExportObjectMetadata]:
+        if request.export_association_id is None:
+            return None
+        request_dict = request.model_dump()
+        request_payload = (
+            WriteStoreToPayload(**request_dict)
+            if isinstance(request, WriteInvocationTo)
+            else ShortTermStoreExportPayload(**request_dict)
+        )
+        export_metadata = ExportObjectMetadata(
+            request_data=ExportObjectRequestMetadata(
+                object_id=request.invocation_id,
+                object_type=ExportObjectType.INVOCATION,
+                user_id=request.user.user_id,
+                payload=request_payload,
+            ),
+        )
+        self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
+        return export_metadata
+
+    def set_invocation_export_result_metadata(
         self,
         export_association_id: Optional[int],
         export_metadata: Optional[ExportObjectMetadata],

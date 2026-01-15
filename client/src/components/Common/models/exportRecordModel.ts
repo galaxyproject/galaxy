@@ -38,6 +38,8 @@ export interface ExportRecord {
     readonly expirationElapsedTime?: string;
     readonly hasExpired: boolean;
     readonly errorMessage?: string | null;
+    readonly objectType?: string;
+    readonly objectId?: string;
 }
 
 export class ExportParamsModel implements ExportParams {
@@ -197,5 +199,13 @@ export class ExportRecordModel implements ExportRecord {
 
     get errorMessage() {
         return this._data?.export_metadata?.result_data?.error;
+    }
+
+    get objectType() {
+        return this._requestMetadata?.object_type;
+    }
+
+    get objectId() {
+        return this._requestMetadata?.object_id;
     }
 }

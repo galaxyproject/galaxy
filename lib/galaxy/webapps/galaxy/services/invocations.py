@@ -19,6 +19,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import (
     fetch_job_states,
@@ -48,6 +49,7 @@ from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
     BcoGenerationParametersMixin,
+    ExportObjectType,
     InvocationIndexQueryPayload,
     StoreExportPayload,
     WriteStoreToPayload,
@@ -88,11 +90,13 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         histories_manager: HistoryManager,
         workflows_manager: WorkflowsManager,
         short_term_storage_allocator: ShortTermStorageAllocator,
+        export_tracker: StoreExportTracker,
     ):
         super().__init__(security=security)
         self._histories_manager = histories_manager
         self._workflows_manager = workflows_manager
         self.short_term_storage_allocator = short_term_storage_allocator
+        self._export_tracker = export_tracker
 
     def index(
         self, trans, invocation_payload: InvocationIndexPayload, serialization_params: InvocationSerializationParams
@@ -223,15 +227,22 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             invocation_name,
             model_store_format,
         )
+        export_association = self._export_tracker.create_export_association(
+            object_id=workflow_invocation.id, object_type=ExportObjectType.INVOCATION
+        )
         request = GenerateInvocationDownload(
             short_term_storage_request_id=short_term_storage_target.request_id,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
             galaxy_url=trans.request.url_path,
+            export_association_id=export_association.id,
             **payload.model_dump(),
         )
         result = prepare_invocation_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
-        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
+        task_summary = async_task_summary(result)
+        export_association.task_uuid = task_summary.id
+        trans.sa_session.commit()
+        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=task_summary)
 
     def write_store(
         self, trans, invocation_id: DecodedDatabaseIdField, payload: WriteInvocationStoreToPayload
