@@ -585,26 +585,37 @@ def _load_row_data(
     return rows
 
 
-def _list_to_sample_sheet_collection_type(input_collection_type: str) -> SampleSheetCollectionType:
-    """Convert simple list collection types to corresponding sample_sheet collection types.
+SAMPLE_SHEET_COLLECTION_TYPES: set[SampleSheetCollectionType] = {
+    "sample_sheet",
+    "sample_sheet:paired",
+    "sample_sheet:paired_or_unpaired",
+    "sample_sheet:record",
+}
 
-    What would the sample_sheet collection type that allows decorating that kind of list. For instance,
-    list:paired becomes sample_sheet:paired.
+
+def _list_to_sample_sheet_collection_type(input_collection_type: str) -> SampleSheetCollectionType:
+    """Convert list collection types to corresponding sample_sheet collection types.
+
+    Converts list types to sample_sheet types (e.g., list:paired -> sample_sheet:paired).
+    Passes through existing sample_sheet types unchanged.
     """
-    sample_sheet_collection_type: Optional[SampleSheetCollectionType] = None
+    # Pass through existing sample_sheet types unchanged
+    if input_collection_type in SAMPLE_SHEET_COLLECTION_TYPES:
+        return cast(SampleSheetCollectionType, input_collection_type)
+
+    # Convert list types to sample_sheet types
     if input_collection_type == "list":
-        sample_sheet_collection_type = "sample_sheet"
+        return "sample_sheet"
     elif input_collection_type == "list:paired":
-        sample_sheet_collection_type = "sample_sheet:paired"
+        return "sample_sheet:paired"
     elif input_collection_type == "list:paired_or_unpaired":
-        sample_sheet_collection_type = "sample_sheet:paired_or_unpaired"
+        return "sample_sheet:paired_or_unpaired"
     elif input_collection_type == "list:record":
-        raise NotImplementedError("Work in progress, this has not bee implemented yet")
+        raise NotImplementedError("Work in progress, this has not been implemented yet")
     else:
         raise RequestParameterInvalidException(
             f"Invalid collection type for sample sheet workbook generation {input_collection_type}"
         )
-    return sample_sheet_collection_type
 
 
 def _prefix_column_to_column_target(column_header: FetchPrefixColumn) -> ColumnTarget:
