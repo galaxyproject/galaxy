@@ -312,6 +312,20 @@
     <datatype extension="svs" type="galaxy.datatypes.images:Tiff" subclass="true" display_in_upload="false"/>
     <datatype extension="scn" type="galaxy.datatypes.images:Tiff" subclass="true" display_in_upload="false"/>
     <datatype extension="bif" type="galaxy.datatypes.images:Tiff" subclass="true" display_in_upload="false"/>
+
+    <!-- Montreal Forced Aligner datatypes -->
+    <datatype extension="mfa_validate_directory" type="galaxy.datatypes.data:Directory" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_acoustic_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_corpus_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_corpus_tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_g2p_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_ivector_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_language_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_tokenizer_model.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_TextGrids.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_oov.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="false"/>
+    <datatype extension="mfa_dictionary.dict" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="false"/>
+
     <datatype extension="ome.tiff" type="galaxy.datatypes.images:OMETiff" display_in_upload="true">
       <display file="image/avivator.xml"/>
     </datatype>
