@@ -651,8 +651,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         output_paths = job_wrapper.job_io.get_output_fnames()
         return [str(o) for o in output_paths]  # Force job_path from DatasetPath objects.
 
-    def get_input_files(self, job_wrapper):
-        input_paths = job_wrapper.job_io.get_input_paths()
+    def get_input_files(self, job_wrapper: "MinimalJobWrapper"):
+        input_paths = job_wrapper.job_io.get_input_paths(None)
         return [str(i) for i in input_paths]  # Force job_path from DatasetPath objects.
 
     def get_client_from_wrapper(self, job_wrapper: "MinimalJobWrapper") -> "BaseJobClient":

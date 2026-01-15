@@ -7433,7 +7433,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 else:
                     element.hda = replacement.hda.copy(copy_hid=False, flush=False)
                     history.stage_addition(element.hda)
-            if replacement.child_collection:
+            elif replacement.child_collection:
                 if element.child_collection:
                     element.child_collection.replace_elements_with_copies(
                         replacement.child_collection.elements, history=history

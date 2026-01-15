@@ -1314,6 +1314,74 @@ class TestToolsApi(ApiTestCase, TestsTools):
             job_details = self.dataset_populator.get_job_details(copied_job_id, full=True).json()
             assert job_details["copied_from_job_id"] == outputs_one["jobs"][0]["id"]
 
+    @skip_without_tool("collection_creates_list_2")
+    @requires_new_history
+    def test_job_cache_copy_collection(self):
+        """Test job caching when collection_creates_list_2 is run with renamed dataset input.
+
+        This tests the scenario where:
+        - A tool has both a dataset input and a collection input
+        - The tool outputs a flat list (HDA elements) with structured_like
+        - The dataset input is renamed between runs
+        - Early caching misses due to name mismatch
+        - Late caching (require_name_match=False) finds a match
+        - copy_from_job is called during job preparation
+
+        This triggers https://github.com/galaxyproject/galaxy/issues/21556
+        """
+        with self.dataset_populator.test_history_for(self.test_job_cache_copy_collection) as history_id:
+            # Create dataset input (header)
+            header_dataset = self.dataset_populator.new_dataset(history_id, content="HEADER LINE\n")
+
+            # Create list collection input
+            create_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["content_1", "content_2"], wait=True
+            ).json()
+            hdca = create_response["output_collections"][0]
+
+            # First run - creates the job and output collection
+            outputs_one = self._run(
+                "collection_creates_list_2",
+                history_id,
+                inputs={
+                    "header": {"src": "hda", "id": header_dataset["id"]},
+                    "input_collect": {"src": "hdca", "id": hdca["id"]},
+                },
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            first_job_id = outputs_one["jobs"][0]["id"]
+
+            # Rename the header dataset - this should cause early caching to miss
+            # but late caching (with require_name_match=False) should find a match
+            self.dataset_populator.rename_dataset(header_dataset["id"], "renamed_header")
+
+            # Second run with use_cached_job=True
+            # Early caching: misses due to name mismatch
+            # Late caching: finds match via require_name_match=False
+            # copy_from_job is called, triggering the bug
+            outputs_two = self._run(
+                "collection_creates_list_2",
+                history_id,
+                inputs={
+                    "header": {"src": "hda", "id": header_dataset["id"]},
+                    "input_collect": {"src": "hdca", "id": hdca["id"]},
+                },
+                use_cached_job=True,
+                assert_ok=True,
+                wait_for_job=True,
+            )
+
+            # Verify second job completed successfully
+            second_job_id = outputs_two["jobs"][0]["id"]
+            job_details = self.dataset_populator.get_job_details(second_job_id, full=True).json()
+            # If the bug exists, the job would fail with ValueError during preparation
+            assert job_details["state"] == "ok", f"Job failed with state {job_details['state']}"
+            # Verify that late caching was used (job was copied from first job)
+            assert (
+                job_details["copied_from_job_id"] == first_job_id
+            ), "Expected job to be copied from cached job via late caching"
+
     @skip_without_tool("identifier_single")
     @requires_new_history
     def test_run_identifier_single_map_over_nested_collection_use_cached_job(self):
