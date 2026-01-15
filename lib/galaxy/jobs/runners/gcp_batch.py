@@ -264,11 +264,16 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         container_image = self._get_container_image(ajs.job_wrapper, params)
         log.debug("Using container image: %s for job %s", container_image, job_wrapper.get_id_tag())
 
+        # Get compute resources first so we can pass them to script creation
+        cpu_milli, memory_mib = self._get_job_resources(job_wrapper, params)
+
         # Create the execution script based on whether we use containers or not
         if params.get("use_container", True):
-            execution_script = self._create_container_execution_script(job_wrapper, ajs, params, container_image)
+            execution_script = self._create_container_execution_script(
+                job_wrapper, ajs, params, container_image, cpu_milli, memory_mib
+            )
         else:
-            execution_script = self._create_direct_execution_script(job_wrapper, ajs, params)
+            execution_script = self._create_direct_execution_script(job_wrapper, ajs, params, cpu_milli, memory_mib)
 
         # Create runnable with script execution
         runnable = batch_v1.Runnable()
@@ -281,9 +286,8 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         task_spec.max_retry_count = params["max_retry_count"]
         task_spec.max_run_duration = params["max_run_duration"]
 
-        # Set compute resources from job requirements or fallback to parameters
+        # Set compute resources
         compute_resource = batch_v1.ComputeResource()
-        cpu_milli, memory_mib = self._get_job_resources(job_wrapper, params)
         compute_resource.cpu_milli = cpu_milli
         compute_resource.memory_mib = memory_mib
         task_spec.compute_resource = compute_resource
@@ -432,15 +436,10 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Determine memory requirements (in MiB)
         memory_mib = self._get_memory_mib(job_destination, params)
 
-        # Also update environment variables based on actual allocated resources
-        cpu_cores = cpu_milli / 1000.0
-        params["computed_galaxy_slots"] = max(1, int(cpu_cores))
-        params["computed_galaxy_memory_mb"] = memory_mib
-
         log.debug(
             "Job %s resource requirements: %.1f CPU cores (%d mCPU), %d MiB memory",
             job_wrapper.get_id_tag(),
-            cpu_cores,
+            cpu_milli / 1000.0,
             cpu_milli,
             memory_mib,
         )
@@ -478,7 +477,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Fall back to configured default
         return int(params.get("memory_mib", DEFAULT_MEMORY_MIB))
 
-    def _create_container_execution_script(self, job_wrapper, ajs, params, container_image):
+    def _create_container_execution_script(self, job_wrapper, ajs, params, container_image, cpu_milli, memory_mib):
         """Create a script that runs the Galaxy job inside a container with NFS and CVMFS mounts."""
         # Build Docker volume arguments for CVMFS mount
         docker_volume_args = DEFAULT_CVMFS_DOCKER_VOLUME
@@ -493,6 +492,9 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         else:
             docker_user_flag = ""
 
+        # Compute galaxy_slots from allocated CPU (at least 1 slot)
+        galaxy_slots = max(1, int(cpu_milli / 1000))
+
         template_params = {
             "job_id_tag": job_wrapper.get_id_tag(),
             "tool_id": job_wrapper.tool.id if job_wrapper.tool else "unknown",
@@ -501,23 +503,26 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "nfs_path": params.get("nfs_path", DEFAULT_NFS_PATH),
             "nfs_mount_path": params.get("nfs_mount_path", DEFAULT_NFS_MOUNT_PATH),
             "job_file": ajs.job_file,
-            "galaxy_slots": params.get("computed_galaxy_slots", "$(nproc)"),
-            "galaxy_memory_mb": params.get("computed_galaxy_memory_mb", params.get("memory_mib", DEFAULT_MEMORY_MIB)),
+            "galaxy_slots": galaxy_slots,
+            "galaxy_memory_mb": memory_mib,
             "docker_user_flag": docker_user_flag,
             "docker_volume_args": docker_volume_args,
         }
 
         return CONTAINER_SCRIPT_TEMPLATE.substitute(template_params)
 
-    def _create_direct_execution_script(self, job_wrapper, ajs, params):
+    def _create_direct_execution_script(self, job_wrapper, ajs, params, cpu_milli, memory_mib):
         """Create a script that runs the Galaxy job directly on the VM (without container)."""
+        # Compute galaxy_slots from allocated CPU (at least 1 slot)
+        galaxy_slots = max(1, int(cpu_milli / 1000))
+
         template_params = {
             "job_id_tag": job_wrapper.get_id_tag(),
             "tool_id": job_wrapper.tool.id if job_wrapper.tool else "unknown",
             "nfs_mount_path": params.get("nfs_mount_path", DEFAULT_NFS_MOUNT_PATH),
             "job_file": ajs.job_file,
-            "galaxy_slots": params.get("computed_galaxy_slots", "$(nproc)"),
-            "galaxy_memory_mb": params.get("computed_galaxy_memory_mb", params.get("memory_mib", DEFAULT_MEMORY_MIB)),
+            "galaxy_slots": galaxy_slots,
+            "galaxy_memory_mb": memory_mib,
         }
 
         return DIRECT_SCRIPT_TEMPLATE.substitute(template_params)
