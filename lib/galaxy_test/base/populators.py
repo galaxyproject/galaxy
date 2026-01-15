@@ -681,13 +681,19 @@ class BaseDatasetPopulator(BasePopulator):
         return create_response
 
     def create_contents_from_store(
-        self, history_id: str, store_dict: Optional[dict[str, Any]] = None, store_path: Optional[str] = None
+        self,
+        history_id: str,
+        store_dict: Optional[dict[str, Any]] = None,
+        store_path: Optional[str] = None,
+        discarded_data: Optional[str] = None,
     ) -> list[dict[str, Any]]:
         if store_dict is not None:
             assert isinstance(store_dict, dict)
         if store_path is not None:
             assert isinstance(store_path, str)
         payload = _store_payload(store_dict=store_dict, store_path=store_path)
+        if discarded_data is not None:
+            payload["discarded_data"] = discarded_data
         create_response = self.create_contents_from_store_raw(history_id, payload)
         create_response.raise_for_status()
         return create_response.json()
@@ -2256,7 +2262,7 @@ class BaseWorkflowPopulator(BasePopulator):
         store_dict: Optional[dict[str, Any]] = None,
         store_path: Optional[str] = None,
         model_store_format: Optional[str] = None,
-    ) -> Response:
+    ) -> list[dict[str, Any]]:
         create_response = self.create_invocation_from_store_raw(
             history_id, store_dict=store_dict, store_path=store_path, model_store_format=model_store_format
         )

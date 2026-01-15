@@ -1838,10 +1838,28 @@ class ModelStoreFormat(str, Enum):
         return value in [cls.BAG_DOT_TAR, cls.BAG_DOT_TGZ, cls.BAG_DOT_ZIP]
 
 
+class DiscardedDataType(str, Enum):
+    """Options for handling discarded datasets on import."""
+
+    # Don't allow discarded 'okay' datasets on import, datasets will be marked deleted.
+    FORBID = "forbid"
+    # Allow datasets to be imported as DISCARDED datasets that are not deleted if file data is unavailable.
+    ALLOW = "allow"
+    # Import all datasets as discarded regardless of whether file data is available in the store.
+    FORCE = "force"
+
+
 class StoreContentSource(Model):
     store_content_uri: Optional[str] = None
     store_dict: Optional[dict[str, Any]] = None
     model_store_format: Optional["ModelStoreFormat"] = None
+    discarded_data: DiscardedDataType = Field(
+        default=DiscardedDataType.ALLOW,
+        title="Discarded Data",
+        description="How to handle datasets with unavailable data. 'forbid': mark as deleted, "
+        "'allow': import as discarded but not deleted, 'force': import all datasets as discarded "
+        "regardless of whether file data is available (useful for importing metadata only).",
+    )
 
 
 class CreateHistoryFromStore(StoreContentSource):

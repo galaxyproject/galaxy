@@ -3632,6 +3632,54 @@ input_1:
             workflow = crate.mainEntity
             assert workflow
 
+    @skip_without_tool("cat1")
+    def test_reimport_invocation_with_files(self):
+        """Test that reimporting an invocation with include_files=True preserves dataset state and content."""
+        with self.dataset_populator.test_history() as history_id:
+            # Run a simple workflow
+            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id=summary.workflow_id, invocation_id=invocation_id
+            )
+
+            # Export the invocation with files included
+            store_path = self.workflow_populator.download_invocation_to_store(
+                invocation_id, include_files=True, extension="tgz"
+            )
+
+            # Create a new history and import the invocation
+            with self.dataset_populator.test_history() as new_history_id:
+                imported_invocations = self.workflow_populator.create_invocation_from_store(
+                    history_id=new_history_id, store_path=store_path
+                )
+                assert len(imported_invocations) == 1
+                imported_invocation_id = imported_invocations[0]["id"]
+
+                # Get the full invocation details including outputs
+                imported_invocation = self.workflow_populator.get_invocation(imported_invocation_id)
+
+                # Verify the imported invocation has output datasets
+                assert "outputs" in imported_invocation
+                assert "wf_output_1" in imported_invocation["outputs"]
+                output_id = imported_invocation["outputs"]["wf_output_1"]["id"]
+
+                # Get the imported dataset and verify it has state 'ok'
+                dataset_details = self.dataset_populator.get_history_dataset_details(
+                    new_history_id, dataset_id=output_id
+                )
+                assert (
+                    dataset_details["state"] == "ok"
+                ), f"Expected dataset state 'ok', got '{dataset_details['state']}'"
+
+                # Verify the content is correct
+                output_content = self.dataset_populator.get_history_dataset_content(
+                    new_history_id, dataset_id=output_id
+                )
+                assert (
+                    output_content.strip() == "hello world"
+                ), f"Expected content 'hello world', got '{output_content.strip()}'"
+
     @skip_without_tool("__MERGE_COLLECTION__")
     def test_merge_collection_scheduling(self, history_id):
         summary = self._run_workflow(

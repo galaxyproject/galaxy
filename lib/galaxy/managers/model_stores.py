@@ -25,6 +25,7 @@ from galaxy.schema.schema import (
     ExportObjectType,
     HistoryContentType,
     ShortTermStoreExportPayload,
+    StoreContentSource,
     WriteStoreToPayload,
 )
 from galaxy.schema.tasks import (
@@ -325,17 +326,22 @@ class ModelStoreManager:
 def create_objects_from_store(
     app: MinimalManagerApp,
     galaxy_user: Optional[model.User],
-    payload,
+    payload: StoreContentSource,
     history: Optional[model.History] = None,
     for_library: bool = False,
 ) -> ObjectImportTracker:
+    # Note: Galaxy's base Model uses use_enum_values=True, so enum fields
+    # are stored as their string values after pydantic validation.
     import_options = ImportOptions(
-        discarded_data=ImportDiscardedDataType.FORCE,
+        discarded_data=ImportDiscardedDataType(payload.discarded_data),
         allow_library_creation=for_library,
     )
     user_context = ModelStoreUserContext(app, galaxy_user) if galaxy_user is not None else None
+    source = payload.store_content_uri or payload.store_dict
+    if source is None:
+        raise RequestParameterInvalidException("Must provide store_content_uri or store_dict")
     model_import_store = source_to_import_store(
-        payload.store_content_uri or payload.store_dict,
+        source,
         app=app,
         import_options=import_options,
         model_store_format=payload.model_store_format,
