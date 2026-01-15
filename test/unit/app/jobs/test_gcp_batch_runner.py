@@ -2,11 +2,15 @@
 
 import pytest
 
-from galaxy.jobs.runners.gcp_batch import GoogleCloudBatchJobRunner
+from galaxy.jobs.runners.util.gcp_batch import (
+    convert_cpu_to_milli,
+    convert_memory_to_mib,
+    sanitize_label_value,
+)
 
 
 class TestSanitizeLabelValue:
-    """Tests for _sanitize_label_value static method."""
+    """Tests for sanitize_label_value helper function."""
 
     @pytest.mark.parametrize(
         "input_value,expected",
@@ -24,19 +28,12 @@ class TestSanitizeLabelValue:
         ],
     )
     def test_sanitize_label_value(self, input_value, expected):
-        result = GoogleCloudBatchJobRunner._sanitize_label_value(input_value)
+        result = sanitize_label_value(input_value)
         assert result == expected
 
 
 class TestConvertCpuToMilli:
-    """Tests for _convert_cpu_to_milli method."""
-
-    @pytest.fixture
-    def runner(self):
-        class MockRunner:
-            pass
-
-        return MockRunner()
+    """Tests for convert_cpu_to_milli helper function."""
 
     @pytest.mark.parametrize(
         "input_value,expected",
@@ -55,20 +52,13 @@ class TestConvertCpuToMilli:
             ("2500m", 2500),  # larger milli value
         ],
     )
-    def test_convert_cpu_to_milli(self, runner, input_value, expected):
-        result = GoogleCloudBatchJobRunner._convert_cpu_to_milli(runner, input_value)
+    def test_convert_cpu_to_milli(self, input_value, expected):
+        result = convert_cpu_to_milli(input_value)
         assert result == expected
 
 
 class TestConvertMemoryToMib:
-    """Tests for _convert_memory_to_mib method."""
-
-    @pytest.fixture
-    def runner(self):
-        class MockRunner:
-            pass
-
-        return MockRunner()
+    """Tests for convert_memory_to_mib helper function."""
 
     @pytest.mark.parametrize(
         "input_value,expected",
@@ -87,6 +77,6 @@ class TestConvertMemoryToMib:
             ("4Gi", 4096),  # larger GiB value
         ],
     )
-    def test_convert_memory_to_mib(self, runner, input_value, expected):
-        result = GoogleCloudBatchJobRunner._convert_memory_to_mib(runner, input_value)
+    def test_convert_memory_to_mib(self, input_value, expected):
+        result = convert_memory_to_mib(input_value)
         assert result == expected

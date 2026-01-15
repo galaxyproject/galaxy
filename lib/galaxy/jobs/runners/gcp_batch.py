@@ -26,6 +26,9 @@ from galaxy.jobs.runners import (
 from galaxy.jobs.runners.util.gcp_batch import (
     CONTAINER_SCRIPT_TEMPLATE,
     DIRECT_SCRIPT_TEMPLATE,
+    convert_cpu_to_milli,
+    convert_memory_to_mib,
+    sanitize_label_value,
 )
 
 log = logging.getLogger(__name__)
@@ -371,9 +374,9 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Set labels for tracking
         job.labels = {
             "galaxy-job-id": str(job_wrapper.job_id),
-            "galaxy-tool-id": self._sanitize_label_value(job_wrapper.tool.id if job_wrapper.tool else "unknown"),
+            "galaxy-tool-id": sanitize_label_value(job_wrapper.tool.id if job_wrapper.tool else "unknown"),
             "galaxy-runner": "gcp-batch",
-            "galaxy-handler": self._sanitize_label_value(self.app.config.server_name),
+            "galaxy-handler": sanitize_label_value(self.app.config.server_name),
         }
 
         log.debug("Finished _create_batch_job_spec for job %s", job_wrapper.get_id_tag())
@@ -441,12 +444,12 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Check for job-specific CPU requests (highest priority)
         if "requests_cpu" in job_destination.params:
             cpu_str = job_destination.params["requests_cpu"]
-            return self._convert_cpu_to_milli(cpu_str)
+            return convert_cpu_to_milli(cpu_str)
 
         # Check for job-specific CPU limits
         if "limits_cpu" in job_destination.params:
             cpu_str = job_destination.params["limits_cpu"]
-            return self._convert_cpu_to_milli(cpu_str)
+            return convert_cpu_to_milli(cpu_str)
 
         # Fall back to configured default
         default_vcpu = float(params.get("vcpu", 1.0))
@@ -457,81 +460,15 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Check for job-specific memory requests (highest priority)
         if "requests_memory" in job_destination.params:
             memory_str = job_destination.params["requests_memory"]
-            return self._convert_memory_to_mib(memory_str)
+            return convert_memory_to_mib(memory_str)
 
         # Check for job-specific memory limits
         if "limits_memory" in job_destination.params:
             memory_str = job_destination.params["limits_memory"]
-            return self._convert_memory_to_mib(memory_str)
+            return convert_memory_to_mib(memory_str)
 
         # Fall back to configured default
         return int(params.get("memory_mib", 2048))
-
-    def _convert_cpu_to_milli(self, cpu_str):
-        """
-        Convert CPU specification to milli-cores.
-        Supports formats like: "1", "1.5", "500m", "0.5"
-        """
-        if not cpu_str:
-            return 1000  # Default to 1 vCPU
-
-        cpu_str = str(cpu_str).strip()
-
-        # Handle milli-core format (e.g., "500m")
-        if cpu_str.endswith("m"):
-            try:
-                return int(cpu_str[:-1])
-            except ValueError:
-                log.warning("Invalid CPU format: %s, using default", cpu_str)
-                return 1000
-
-        # Handle decimal format (e.g., "1.5", "0.5")
-        try:
-            cpu_float = float(cpu_str)
-            return int(cpu_float * 1000)
-        except ValueError:
-            log.warning("Invalid CPU format: %s, using default", cpu_str)
-            return 1000
-
-    def _convert_memory_to_mib(self, memory_str):
-        """
-        Convert memory specification to MiB.
-        Supports formats like: "1Gi", "512Mi", "1024M", "1G", "2048"
-        """
-        if not memory_str:
-            return 2048  # Default to 2 GiB
-
-        memory_str = str(memory_str).strip()
-
-        # Handle plain numbers (assume MiB)
-        if memory_str.isdigit():
-            return int(memory_str)
-
-        # Extract number and unit
-        match = re.match(r"^(\d+(?:\.\d+)?)\s*([A-Za-z]*)$", memory_str)
-        if not match:
-            log.warning("Invalid memory format: %s, using default", memory_str)
-            return 2048
-
-        value = float(match.group(1))
-        unit = match.group(2).lower()
-
-        # Convert to MiB based on unit
-        if unit in ["", "mib", "mi"]:
-            return int(value)
-        elif unit in ["gib", "gi"]:
-            return int(value * 1024)  # GiB to MiB
-        elif unit in ["mb", "m"]:
-            return int(value * 1000 / 1024)  # MB to MiB (decimal to binary)
-        elif unit in ["gb", "g"]:
-            return int(value * 1000 * 1000 / 1024 / 1024)  # GB to MiB
-        elif unit in ["kib", "ki"]:
-            return int(value / 1024)  # KiB to MiB
-        elif unit in ["kb", "k"]:
-            return int(value * 1000 / 1024 / 1024)  # KB to MiB
-        else:
-            log.warning("Unknown memory unit: %s, treating as MiB", unit)
-            return int(value)
 
     def _create_container_execution_script(self, job_wrapper, ajs, params, container_image):
         """Create a script that runs the Galaxy job inside a container with NFS and CVMFS mounts."""
@@ -567,31 +504,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         }
 
         return DIRECT_SCRIPT_TEMPLATE.substitute(template_params)
-
-    @staticmethod
-    def _sanitize_label_value(value, max_length=63):
-        """Sanitize a value to be used as a GCP label value."""
-        if not value:
-            return "unknown"
-
-        # Convert to lowercase and replace invalid characters with dashes
-        sanitized = "".join(c.lower() if c.isalnum() else "-" for c in str(value))
-
-        # Remove consecutive dashes
-        while "--" in sanitized:
-            sanitized = sanitized.replace("--", "-")
-
-        # Ensure it starts and ends with alphanumeric characters
-        sanitized = sanitized.strip("-")
-        if not sanitized:
-            return "unknown"
-
-        # Truncate if too long
-        if len(sanitized) > max_length:
-            sanitized = sanitized[:max_length].rstrip("-")
-
-        # Ensure it's not empty after truncation
-        return sanitized if sanitized else "unknown"
 
     def _write_debug_files(self, job_wrapper, ajs, params, request, job_name):
         """Write job parameters and request object to JSON files for debugging."""
