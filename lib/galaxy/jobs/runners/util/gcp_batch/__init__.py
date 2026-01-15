@@ -5,6 +5,11 @@ from string import Template
 from galaxy.util.resources import resource_string
 
 from .helpers import (
+    DEFAULT_CPU_MILLI,
+    DEFAULT_CVMFS_DOCKER_VOLUME,
+    DEFAULT_MEMORY_MIB,
+    DEFAULT_NFS_MOUNT_PATH,
+    DEFAULT_NFS_PATH,
     convert_cpu_to_milli,
     convert_memory_to_mib,
     sanitize_label_value,
@@ -15,6 +20,11 @@ DIRECT_SCRIPT_TEMPLATE = Template(resource_string(__name__, "direct_script.sh"))
 
 __all__ = (
     "CONTAINER_SCRIPT_TEMPLATE",
+    "DEFAULT_CPU_MILLI",
+    "DEFAULT_CVMFS_DOCKER_VOLUME",
+    "DEFAULT_MEMORY_MIB",
+    "DEFAULT_NFS_MOUNT_PATH",
+    "DEFAULT_NFS_PATH",
     "DIRECT_SCRIPT_TEMPLATE",
     "convert_cpu_to_milli",
     "convert_memory_to_mib",

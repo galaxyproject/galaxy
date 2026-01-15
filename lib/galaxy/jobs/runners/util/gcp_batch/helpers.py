@@ -1,9 +1,16 @@
-"""Helper functions for GCP Batch runner."""
+"""Helper functions and constants for GCP Batch runner."""
 
 import logging
 import re
 
 log = logging.getLogger(__name__)
+
+# Default values for GCP Batch runner configuration
+DEFAULT_NFS_MOUNT_PATH = "/mnt/nfs"
+DEFAULT_NFS_PATH = "/"
+DEFAULT_MEMORY_MIB = 2048
+DEFAULT_CPU_MILLI = 1000
+DEFAULT_CVMFS_DOCKER_VOLUME = '-v "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro"'
 
 
 def convert_cpu_to_milli(cpu_str):
@@ -12,7 +19,7 @@ def convert_cpu_to_milli(cpu_str):
     Supports formats like: "1", "1.5", "500m", "0.5"
     """
     if not cpu_str:
-        return 1000  # Default to 1 vCPU
+        return DEFAULT_CPU_MILLI
 
     cpu_str = str(cpu_str).strip()
 
@@ -22,7 +29,7 @@ def convert_cpu_to_milli(cpu_str):
             return int(cpu_str[:-1])
         except ValueError:
             log.warning("Invalid CPU format: %s, using default", cpu_str)
-            return 1000
+            return DEFAULT_CPU_MILLI
 
     # Handle decimal format (e.g., "1.5", "0.5")
     try:
@@ -30,7 +37,7 @@ def convert_cpu_to_milli(cpu_str):
         return int(cpu_float * 1000)
     except ValueError:
         log.warning("Invalid CPU format: %s, using default", cpu_str)
-        return 1000
+        return DEFAULT_CPU_MILLI
 
 
 def convert_memory_to_mib(memory_str):
@@ -39,7 +46,7 @@ def convert_memory_to_mib(memory_str):
     Supports formats like: "1Gi", "512Mi", "1024M", "1G", "2048"
     """
     if not memory_str:
-        return 2048  # Default to 2 GiB
+        return DEFAULT_MEMORY_MIB
 
     memory_str = str(memory_str).strip()
 
@@ -51,7 +58,7 @@ def convert_memory_to_mib(memory_str):
     match = re.match(r"^(\d+(?:\.\d+)?)\s*([A-Za-z]*)$", memory_str)
     if not match:
         log.warning("Invalid memory format: %s, using default", memory_str)
-        return 2048
+        return DEFAULT_MEMORY_MIB
 
     value = float(match.group(1))
     unit = match.group(2).lower()

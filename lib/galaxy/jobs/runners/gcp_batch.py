@@ -25,6 +25,10 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.util.gcp_batch import (
     CONTAINER_SCRIPT_TEMPLATE,
+    DEFAULT_CVMFS_DOCKER_VOLUME,
+    DEFAULT_MEMORY_MIB,
+    DEFAULT_NFS_MOUNT_PATH,
+    DEFAULT_NFS_PATH,
     DIRECT_SCRIPT_TEMPLATE,
     convert_cpu_to_milli,
     convert_memory_to_mib,
@@ -63,14 +67,14 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "polling_interval": dict(map=int, default=30),
             # NFS volume configuration for data sharing
             "nfs_server": dict(map=str, default=None),
-            "nfs_path": dict(map=str, default="/"),
-            "nfs_mount_path": dict(map=str, default="/mnt/nfs"),
+            "nfs_path": dict(map=str, default=DEFAULT_NFS_PATH),
+            "nfs_mount_path": dict(map=str, default=DEFAULT_NFS_MOUNT_PATH),
             # Network configuration for NFS access
             "network": dict(map=str, default="default"),
             "subnet": dict(map=str, default="default"),
             # Compute resource configuration (defaults - will be overridden by job requirements)
             "vcpu": dict(map=float, default=1.0),
-            "memory_mib": dict(map=int, default=2048),
+            "memory_mib": dict(map=int, default=DEFAULT_MEMORY_MIB),
             # Job-specific resource requests (same as Kubernetes runner)
             "requests_cpu": dict(map=str, default=None),
             "requests_memory": dict(map=str, default=None),
@@ -292,14 +296,14 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             volume = batch_v1.Volume()
             volume.nfs = batch_v1.NFS()
             volume.nfs.server = params["nfs_server"]
-            volume.nfs.remote_path = params.get("nfs_path", "/")
-            volume.mount_path = params.get("nfs_mount_path", "/mnt/nfs")
+            volume.nfs.remote_path = params.get("nfs_path", DEFAULT_NFS_PATH)
+            volume.mount_path = params.get("nfs_mount_path", DEFAULT_NFS_MOUNT_PATH)
             task_spec.volumes = [volume]
             log.debug(
                 "Configured NFS volume: %s:%s -> %s for job %s",
                 params["nfs_server"],
-                params.get("nfs_path", "/"),
-                params.get("nfs_mount_path", "/mnt/nfs"),
+                params.get("nfs_path", DEFAULT_NFS_PATH),
+                params.get("nfs_mount_path", DEFAULT_NFS_MOUNT_PATH),
                 job_wrapper.get_id_tag(),
             )
 
@@ -468,23 +472,23 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             return convert_memory_to_mib(memory_str)
 
         # Fall back to configured default
-        return int(params.get("memory_mib", 2048))
+        return int(params.get("memory_mib", DEFAULT_MEMORY_MIB))
 
     def _create_container_execution_script(self, job_wrapper, ajs, params, container_image):
         """Create a script that runs the Galaxy job inside a container with NFS and CVMFS mounts."""
         # Build Docker volume arguments for CVMFS mount
-        docker_volume_args = '-v "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro"'
+        docker_volume_args = DEFAULT_CVMFS_DOCKER_VOLUME
 
         template_params = {
             "job_id_tag": job_wrapper.get_id_tag(),
             "tool_id": job_wrapper.tool.id if job_wrapper.tool else "unknown",
             "container_image": container_image,
             "nfs_server": params.get("nfs_server", "127.0.0.1"),
-            "nfs_path": params.get("nfs_path", "/"),
-            "nfs_mount_path": params.get("nfs_mount_path", "/mnt/nfs"),
+            "nfs_path": params.get("nfs_path", DEFAULT_NFS_PATH),
+            "nfs_mount_path": params.get("nfs_mount_path", DEFAULT_NFS_MOUNT_PATH),
             "job_file": ajs.job_file,
             "galaxy_slots": params.get("computed_galaxy_slots", "$(nproc)"),
-            "galaxy_memory_mb": params.get("computed_galaxy_memory_mb", params.get("memory_mib", 2048)),
+            "galaxy_memory_mb": params.get("computed_galaxy_memory_mb", params.get("memory_mib", DEFAULT_MEMORY_MIB)),
             "galaxy_user_id": params.get("galaxy_user_id", 10001),
             "galaxy_group_id": params.get("galaxy_group_id", 10001),
             "docker_volume_args": docker_volume_args,
@@ -497,10 +501,10 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         template_params = {
             "job_id_tag": job_wrapper.get_id_tag(),
             "tool_id": job_wrapper.tool.id if job_wrapper.tool else "unknown",
-            "nfs_mount_path": params.get("nfs_mount_path", "/mnt/nfs"),
+            "nfs_mount_path": params.get("nfs_mount_path", DEFAULT_NFS_MOUNT_PATH),
             "job_file": ajs.job_file,
             "galaxy_slots": params.get("computed_galaxy_slots", "$(nproc)"),
-            "galaxy_memory_mb": params.get("computed_galaxy_memory_mb", params.get("memory_mib", 2048)),
+            "galaxy_memory_mb": params.get("computed_galaxy_memory_mb", params.get("memory_mib", DEFAULT_MEMORY_MIB)),
         }
 
         return DIRECT_SCRIPT_TEMPLATE.substitute(template_params)
