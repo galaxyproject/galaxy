@@ -82,8 +82,12 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "limits_memory": dict(map=str, default=None),
             # Container execution settings
             "use_container": dict(map=bool, default=True),
-            "galaxy_user_id": dict(map=int, default=10001),
-            "galaxy_group_id": dict(map=int, default=10001),
+            "galaxy_user_id": dict(
+                map=str, valid=lambda s: s == "$uid" or isinstance(s, int) or not s or str(s).isdigit(), default=None
+            ),
+            "galaxy_group_id": dict(
+                map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or str(s).isdigit(), default=None
+            ),
             # Custom VM image (optional)
             "custom_vm_image": dict(map=str, default=None),
             # Object store fallback (for future use)
@@ -479,6 +483,16 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Build Docker volume arguments for CVMFS mount
         docker_volume_args = DEFAULT_CVMFS_DOCKER_VOLUME
 
+        # Build docker user flag only if user/group IDs are configured
+        user_id = params.get("galaxy_user_id")
+        group_id = params.get("galaxy_group_id")
+        if user_id and group_id:
+            docker_user_flag = f"--user {user_id}:{group_id}"
+        elif user_id:
+            docker_user_flag = f"--user {user_id}"
+        else:
+            docker_user_flag = ""
+
         template_params = {
             "job_id_tag": job_wrapper.get_id_tag(),
             "tool_id": job_wrapper.tool.id if job_wrapper.tool else "unknown",
@@ -489,8 +503,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "job_file": ajs.job_file,
             "galaxy_slots": params.get("computed_galaxy_slots", "$(nproc)"),
             "galaxy_memory_mb": params.get("computed_galaxy_memory_mb", params.get("memory_mib", DEFAULT_MEMORY_MIB)),
-            "galaxy_user_id": params.get("galaxy_user_id", 10001),
-            "galaxy_group_id": params.get("galaxy_group_id", 10001),
+            "docker_user_flag": docker_user_flag,
             "docker_volume_args": docker_volume_args,
         }
 
