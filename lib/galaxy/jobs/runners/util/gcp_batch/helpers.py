@@ -13,6 +13,100 @@ DEFAULT_CPU_MILLI = 1000
 DEFAULT_CVMFS_DOCKER_VOLUME = '-v "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro"'
 
 
+def parse_volume_spec(volume_spec):
+    """
+    Parse a volume specification string into a volume dictionary.
+
+    Format: "server:/remote_path:/mount_path[:r]"
+
+    Examples:
+        "10.0.0.1:/galaxy:/mnt/nfs"
+        "nfs-server:/exports/data:/data:r"
+
+    Returns a dict with keys:
+        - server: NFS server hostname/IP
+        - remote_path: path on NFS server
+        - mount_path: local mount path
+        - read_only: boolean
+
+    Returns None if the specification is invalid.
+    """
+    if not volume_spec:
+        return None
+
+    # Split on colons, but we need to handle the structure carefully
+    # Format: server:/remote_path:/mount_path[:r]
+    parts = volume_spec.split(":")
+
+    if len(parts) < 3:
+        log.warning(
+            "Invalid volume specification: %s (expected server:/remote_path:/mount_path[:r])",
+            volume_spec,
+        )
+        return None
+
+    server = parts[0].strip()
+    remote_path = parts[1].strip()
+    mount_path = parts[2].strip()
+    read_only = len(parts) > 3 and parts[3].strip().lower() in ("ro", "r", "readonly")
+
+    if not server or not remote_path or not mount_path:
+        log.warning(
+            "Invalid volume specification: %s (server, remote_path, and mount_path are required)",
+            volume_spec,
+        )
+        return None
+
+    return {
+        "server": server,
+        "remote_path": remote_path,
+        "mount_path": mount_path,
+        "read_only": read_only,
+    }
+
+
+def parse_volumes_param(volumes_param):
+    """
+    Parse the gcp_batch_volumes parameter (comma-separated volume specs).
+
+    Example:
+        "10.0.0.1:/galaxy:/mnt/nfs,cvmfs-proxy:/cvmfs:/cvmfs:ro"
+
+    Returns a list of volume dictionaries.
+    """
+    if not volumes_param:
+        return []
+
+    volumes = []
+    for spec in volumes_param.split(","):
+        spec = spec.strip()
+        if spec:
+            vol = parse_volume_spec(spec)
+            if vol:
+                volumes.append(vol)
+    return volumes
+
+
+def parse_docker_volumes_param(docker_volumes_param):
+    """
+    Parse the docker_extra_volumes parameter for additional docker -v mounts.
+
+    Example:
+        "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro,/local/path:/container/path"
+
+    Returns a string of docker -v arguments suitable for passing to docker run.
+    """
+    if not docker_volumes_param:
+        return ""
+
+    volume_args = []
+    for spec in docker_volumes_param.split(","):
+        spec = spec.strip()
+        if spec:
+            volume_args.append(f'-v "{spec}"')
+    return " ".join(volume_args)
+
+
 def convert_cpu_to_milli(cpu_str):
     """
     Convert CPU specification to milli-cores.

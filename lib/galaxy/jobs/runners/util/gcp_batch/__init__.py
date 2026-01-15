@@ -12,6 +12,9 @@ from .helpers import (
     DEFAULT_NFS_PATH,
     convert_cpu_to_milli,
     convert_memory_to_mib,
+    parse_docker_volumes_param,
+    parse_volume_spec,
+    parse_volumes_param,
     sanitize_label_value,
 )
 
@@ -28,5 +31,8 @@ __all__ = (
     "DIRECT_SCRIPT_TEMPLATE",
     "convert_cpu_to_milli",
     "convert_memory_to_mib",
+    "parse_docker_volumes_param",
+    "parse_volume_spec",
+    "parse_volumes_param",
     "sanitize_label_value",
 )
