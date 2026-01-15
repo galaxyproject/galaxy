@@ -207,6 +207,7 @@
     "vitest": "^4.0.14",
     "vitest-fail-on-console": "^0.10.1",
     "vitest-location-mock": "^1.0.4",
+    "vue-eslint-parser": "^10.2.0",
     "vue-template-compiler": "^2.7.16",
     "vue-tsc": "2.2.12",
     "xml-js": "^1.6.11",
