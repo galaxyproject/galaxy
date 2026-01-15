@@ -20,10 +20,71 @@ from fastmcp import (
 
 from galaxy.managers.agent_operations import AgentOperationsManager
 from galaxy.managers.users import UserManager
-from galaxy.webapps.galaxy.api import UrlBuilder
 from galaxy.work.context import WorkRequestContext
 
 logger = logging.getLogger(__name__)
+
+# Suppress noisy DEBUG logging from FastMCP's internal task queue
+# Note: FastMCP uses fakeredis by default for its task queue. If Galaxy is
+# configured with real Redis, FastMCP could potentially use it instead for
+# better performance in multi-worker deployments.
+logging.getLogger("fakeredis").setLevel(logging.WARNING)
+logging.getLogger("docket").setLevel(logging.WARNING)
+logging.getLogger("docket.worker").setLevel(logging.WARNING)
+
+
+def get_mcp_url_builder(fallback_base_url: str):
+    """
+    Get a URL builder for MCP context.
+
+    Tries to use the actual HTTP request if available, otherwise falls back
+    to using the configured Galaxy infrastructure URL.
+    """
+    from fastmcp.server.http import _current_http_request
+
+    from galaxy.webapps.galaxy.api import UrlBuilder
+
+    # Try to get the current HTTP request from FastMCP's context var
+    request = _current_http_request.get(None)
+    if request is not None:
+        # Use the real UrlBuilder with the actual request
+        return UrlBuilder(request)
+
+    # Fallback: create a simple URL builder using config
+    class MCPUrlBuilder:
+        """Simple URL builder for MCP context when HTTP request is not available."""
+
+        def __init__(self, base_url: str):
+            self.base_url = base_url.rstrip("/")
+
+        def __call__(self, name: str, **path_params):
+            qualified = path_params.pop("qualified", False)
+            query_params = path_params.pop("query_params", None)
+
+            # Map route names to URL patterns
+            if name == "history":
+                history_id = path_params.get("history_id", path_params.get("id", ""))
+                url = f"/api/histories/{history_id}"
+            elif name == "history_contents":
+                history_id = path_params.get("history_id", "")
+                url = f"/api/histories/{history_id}/contents"
+            elif name == "dataset":
+                dataset_id = path_params.get("id", "")
+                url = f"/api/datasets/{dataset_id}"
+            else:
+                url = f"/api/{name}"
+
+            if qualified:
+                url = f"{self.base_url}{url}"
+
+            if query_params:
+                from urllib.parse import urlencode
+
+                url = f"{url}?{urlencode(query_params)}"
+
+            return url
+
+    return MCPUrlBuilder(fallback_base_url)
 
 
 def get_mcp_app(gx_app):
@@ -42,6 +103,9 @@ def get_mcp_app(gx_app):
 
     # Create MCP server instance
     mcp = FastMCP("Galaxy")
+
+    # Get base URL for URL builder
+    base_url = getattr(gx_app.config, "galaxy_infrastructure_url", "http://localhost:8080")
 
     # Helper function to create AgentOperationsManager from API key
     def get_operations_manager(api_key: str, ctx: MCPContext) -> AgentOperationsManager:
@@ -79,11 +143,8 @@ def get_mcp_app(gx_app):
                 "You can create or view your API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        # Get the HTTP request from MCP context and create URL builder
-        request = ctx.get_http_request()
-        url_builder = UrlBuilder(request)
-
-        # Create a work context for this user with proper URL builder
+        # Create a work context for this user with URL builder for serialization
+        url_builder = get_mcp_url_builder(base_url)
         trans = WorkRequestContext(app=gx_app, user=user, url_builder=url_builder)
 
         # Return AgentOperationsManager in internal mode

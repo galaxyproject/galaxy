@@ -192,7 +192,7 @@ class AgentOperationsManager:
             "name": tool.name,
             "version": tool.version,
             "description": tool.description or "",
-            "help": str(tool.help) if tool.help else "",
+            "help": str(tool.help) if getattr(tool, "help", None) else "",
         }
 
         if io_details:
