@@ -61,7 +61,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "machine_type": dict(map=str, default="n2-standard-4"),
             "boot_disk_size_gb": dict(map=int, default=100),
             "boot_disk_type": dict(map=str, default="pd-standard"),
-            "container_image": dict(map=str, default="quay.io/galaxyproject/galaxy-min:25.1"),
             "max_retry_count": dict(map=int, default=3),
             "max_run_duration": dict(map=str, default="3600s"),
             "polling_interval": dict(map=int, default=30),
@@ -233,7 +232,6 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "machine_type",
             "boot_disk_size_gb",
             "boot_disk_type",
-            "container_image",
             "max_retry_count",
             "max_run_duration",
             "nfs_server",
@@ -260,8 +258,8 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         """Create a Google Cloud Batch job specification."""
         log.debug("Starting _create_batch_job_spec for job %s", job_wrapper.get_id_tag())
 
-        # Get container image from job wrapper if available, otherwise use params
-        container_image = self._get_container_image(ajs.job_wrapper, params)
+        # Get container image from Galaxy's container finder
+        container_image = self._get_container_image(ajs.job_wrapper)
         log.debug("Using container image: %s for job %s", container_image, job_wrapper.get_id_tag())
 
         # Get compute resources first so we can pass them to script creation
@@ -394,12 +392,11 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         log.debug("Finished _create_batch_job_spec for job %s", job_wrapper.get_id_tag())
         return job
 
-    def _get_container_image(self, job_wrapper, params):
-        """Get the container image to use for this job.
+    def _get_container_image(self, job_wrapper):
+        """Get the container image using Galaxy's container finder.
 
-        Priority order:
-        1. Tool-specific container from Galaxy's container finder
-        2. Configured container_image from job destination params
+        Uses Galaxy's standard container resolution system. Tools must have
+        container requirements configured for containerized execution.
         """
         # Use Galaxy's container finder system (same approach as Kubernetes runner)
         container = self._find_container(job_wrapper)
@@ -411,15 +408,9 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             )
             return container.container_id
 
-        # Fall back to configured container image
-        config_container = params.get("container_image")
-        if config_container:
-            log.debug("Using configured container: %s for job %s", config_container, job_wrapper.get_id_tag())
-            return config_container
-
         raise ValueError(
             f"No container image found for job {job_wrapper.get_id_tag()}. "
-            "Configure 'container_image' in job destination or ensure tool has container requirements."
+            "Ensure tool has container requirements configured."
         )
 
     def _get_job_resources(self, job_wrapper, params):
