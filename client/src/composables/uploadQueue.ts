@@ -236,6 +236,13 @@ export function useUploadQueue() {
     let processing = false;
 
     /**
+     * Helper to find an upload item by ID from the active items.
+     */
+    function findUploadItem(id: string) {
+        return uploadState.activeItems.value.find((i) => i.id === id);
+    }
+
+    /**
      * Creates a dataset collection from uploaded datasets.
      *
      * @param batchId - Batch ID in upload state
@@ -264,11 +271,11 @@ export function useUploadQueue() {
 
         // Get upload items to build collection elements
         // Try internal batch first (has full item data), fall back to state
-        const batch = batches.find((b) => b.ids[0] && batchState.uploadIds.includes(b.ids[0]));
+        const batch = batches.find((b) => b.batchId === batchId);
         const items =
             batch?.items ||
             batchState.uploadIds
-                .map((id) => uploadState.activeItems.value.find((u) => u.id === id))
+                .map((id) => findUploadItem(id))
                 .filter((item): item is NonNullable<typeof item> => item !== undefined);
 
         if (items.length === 0) {
@@ -320,7 +327,7 @@ export function useUploadQueue() {
             // Mark all batch items with error message (non-fatal)
             const batchForError = uploadState.getBatch(batchId);
             batchForError?.uploadIds.forEach((id) => {
-                const item = uploadState.activeItems.value.find((i) => i.id === id);
+                const item = findUploadItem(id);
                 if (item && !item.error) {
                     item.error = `Uploaded successfully, but collection creation failed: ${errorMsg}`;
                 }
@@ -345,8 +352,8 @@ export function useUploadQueue() {
 
         // Clear error messages from individual upload items
         batch.uploadIds.forEach((id) => {
-            const item = uploadState.activeItems.value.find((i) => i.id === id);
-            if (item && item.error?.includes("collection creation failed")) {
+            const item = findUploadItem(id);
+            if (item?.error?.includes("collection creation failed")) {
                 item.error = undefined;
             }
         });
@@ -379,8 +386,8 @@ export function useUploadQueue() {
      */
     function isBatchComplete(batch: CollectionBatch): boolean {
         return batch.ids.every((uploadId) => {
-            const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
-            return batchItem?.status === "completed" || batchItem?.status === "error";
+            const item = findUploadItem(uploadId);
+            return item?.status === "completed" || item?.status === "error";
         });
     }
 
@@ -482,7 +489,7 @@ export function useUploadQueue() {
         }
 
         const id = queue.shift()!;
-        const item = uploadState.activeItems.value.find((i) => i.id === id);
+        const item = findUploadItem(id);
 
         if (!item) {
             // Item was removed from state (e.g., user cleared it), skip to next
@@ -525,31 +532,25 @@ export function useUploadQueue() {
      * @returns Array of upload IDs for tracking
      */
     function enqueue(items: NewUploadItem[], collectionConfig?: CollectionConfig): string[] {
-        let batchId: string | undefined;
-
-        // If collection config provided, create a batch in state
-        if (collectionConfig) {
-            // Create batch first to get the ID
-            batchId = uploadState.addBatch(collectionConfig, []);
-        }
+        // Create batch first if collection config provided
+        const batchId = collectionConfig ? uploadState.addBatch(collectionConfig, []) : undefined;
 
         // Add upload items with batch ID
         const ids = items.map((item) => uploadState.addUploadItem(item, batchId));
 
-        // Update batch with upload IDs and create internal batch
-        if (batchId && collectionConfig) {
+        // Update batch with upload IDs and create internal batch for tracking
+        if (batchId) {
             const batch = uploadState.getBatch(batchId);
             if (batch) {
                 batch.uploadIds = ids;
             }
 
-            // Create internal batch for dataset ID tracking
             batches.push({
                 batchId,
                 ids,
                 items,
                 datasetIds: [],
-                collectionConfig,
+                collectionConfig: collectionConfig!,
             });
         }
 
@@ -565,9 +566,7 @@ export function useUploadQueue() {
     function cleanupOrphanedBatches(): void {
         for (let i = batches.length - 1; i >= 0; i--) {
             const batch = batches[i]!;
-            const hasActiveUploads = batch.ids.some((id) =>
-                uploadState.activeItems.value.some((item) => item.id === id),
-            );
+            const hasActiveUploads = batch.ids.some((id) => findUploadItem(id) !== undefined);
 
             if (!hasActiveUploads) {
                 batches.splice(i, 1);
@@ -588,7 +587,7 @@ export function useUploadQueue() {
 
             // Check if all uploads in batch are completed
             const allCompleted = batch.uploadIds.every((uploadId) => {
-                const upload = uploadState.activeItems.value.find((u) => u.id === uploadId);
+                const upload = findUploadItem(uploadId);
                 return upload?.status === "completed";
             });
 
@@ -597,9 +596,7 @@ export function useUploadQueue() {
                 console.log(`Recovering incomplete batch: ${batch.name}`);
 
                 // Check if we still have the upload items (they might be lost after refresh)
-                const availableItems = batch.uploadIds.filter((uploadId) =>
-                    uploadState.activeItems.value.find((u) => u.id === uploadId),
-                );
+                const availableItems = batch.uploadIds.filter((uploadId) => findUploadItem(uploadId) !== undefined);
 
                 if (availableItems.length !== batch.uploadIds.length) {
                     uploadState.setBatchError(
