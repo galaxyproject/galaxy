@@ -29,6 +29,7 @@ log = logging.getLogger(__name__)
 
 class GoogleCloudStorageFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     bucket_name: Union[str, TemplateExpansion]
+    root_path: Union[str, TemplateExpansion, None] = None
     project: Union[str, TemplateExpansion, None] = None
     anonymous: Union[bool, TemplateExpansion, None] = True
     service_account_json: Union[str, TemplateExpansion, None] = None
@@ -42,6 +43,7 @@ class GoogleCloudStorageFileSourceTemplateConfiguration(FsspecBaseFileSourceTemp
 
 class GoogleCloudStorageFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     bucket_name: str
+    root_path: Optional[str] = None
     project: Optional[str] = None
     anonymous: Optional[bool] = True
     service_account_json: Optional[str] = None
@@ -101,19 +103,29 @@ class GoogleCloudStorageFilesSource(
         return fs
 
     def _to_bucket_path(self, path: str, config: GoogleCloudStorageFileSourceConfiguration) -> str:
-        """Adapt the path to the GCS bucket format."""
+        """Adapt the path to the GCS bucket format, including root_path if configured."""
         bucket = config.bucket_name
+        root = (config.root_path or "").strip("/")
         if path.startswith("/"):
             path = path[1:]
-        return f"{bucket}/{path}" if path else bucket
+        # Build path: bucket / root_path / path
+        if root and path:
+            return f"{bucket}/{root}/{path}"
+        elif root:
+            return f"{bucket}/{root}"
+        elif path:
+            return f"{bucket}/{path}"
+        return bucket
 
     def _adapt_entry_path(self, filesystem_path: str) -> str:
-        """Remove the GCS bucket name from the filesystem path."""
+        """Remove the GCS bucket name and root_path from the filesystem path."""
         if self.template_config.bucket_name:
-            if filesystem_path == self.template_config.bucket_name:
+            bucket = self.template_config.bucket_name
+            root = (self.template_config.root_path or "").strip("/")
+            full_prefix = f"{bucket}/{root}" if root else bucket
+            if filesystem_path == full_prefix:
                 return "/"
-            bucket_prefix = f"{self.template_config.bucket_name}/"
-            return "/" + filesystem_path.removeprefix(bucket_prefix)
+            return "/" + filesystem_path.removeprefix(f"{full_prefix}/")
         return "/" + filesystem_path
 
     def _list(
