@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { mount } from "@vue/test-utils"
 import ChangesetSummaryTable from "./ChangesetSummaryTable.vue"
-import { getChangesetDetails, resetMetadataPreview, makeChangeset, type ChangesetMetadataStatus } from "./__fixtures__"
+import { getChangesetDetails, resetMetadataPreview, makeChangeset } from "./__fixtures__"
 
 // Real fixture data from API
 const fixtureChangesets = getChangesetDetails(resetMetadataPreview)
@@ -25,7 +25,6 @@ describe("ChangesetSummaryTable", () => {
                 props: { changesets: fixtureChangesets },
             })
 
-            // Fixture has changesets - verify they're displayed
             for (const cs of fixtureChangesets) {
                 const shortHash = cs.changeset_revision.substring(0, 7)
                 expect(wrapper.text()).toContain(`${cs.numeric_revision}:${shortHash}`)
@@ -38,65 +37,80 @@ describe("ChangesetSummaryTable", () => {
             })
 
             expect(wrapper.text()).toContain("Revision")
-            expect(wrapper.text()).toContain("Action")
+            expect(wrapper.text()).toContain("Change Type")
+            expect(wrapper.text()).toContain("Snapshot")
             expect(wrapper.text()).toContain("Tools")
             expect(wrapper.text()).toContain("Error")
         })
     })
 
-    describe("action display", () => {
-        it("displays all action types", () => {
+    describe("comparison_result display", () => {
+        it("displays friendly labels for comparison_result values", () => {
             const changesets = [
-                makeChangeset({ numeric_revision: 4, action: "updated" }),
-                makeChangeset({ numeric_revision: 3, action: "created" }),
-                makeChangeset({ numeric_revision: 2, action: "unchanged" }),
-                makeChangeset({ numeric_revision: 1, action: "skipped", has_tools: false }),
+                makeChangeset({ comparison_result: "initial", record_operation: null }),
+                makeChangeset({ comparison_result: "not equal and not subset", record_operation: "updated" }),
+                makeChangeset({ comparison_result: "equal", record_operation: null }),
+                makeChangeset({ comparison_result: "subset", record_operation: null }),
             ]
 
-            const wrapper = mount(ChangesetSummaryTable, {
-                props: { changesets },
-            })
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            expect(wrapper.text()).toContain("updated")
-            expect(wrapper.text()).toContain("created")
-            expect(wrapper.text()).toContain("unchanged")
-            expect(wrapper.text()).toContain("skipped")
+            // Check for friendly labels instead of raw API values
+            expect(wrapper.text()).toContain("First revision")
+            expect(wrapper.text()).toContain("Modified")
+            expect(wrapper.text()).toContain("Unchanged")
+            expect(wrapper.text()).toContain("Expanded")
         })
 
-        it("renders created action in a chip with positive color", () => {
-            const changesets = [makeChangeset({ action: "created" })]
+        it("shows dash when comparison_result is null", () => {
+            const changesets = [makeChangeset({ comparison_result: null, error: "some error" })]
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
+
+            expect(wrapper.text()).toContain("—")
+        })
+    })
+
+    describe("record_operation display", () => {
+        it("displays created in a chip with positive color", () => {
+            const changesets = [
+                makeChangeset({ comparison_result: "not equal and not subset", record_operation: "created" }),
+            ]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
             const chip = wrapper.find(".q-chip")
             expect(chip.exists()).toBe(true)
             expect(chip.text()).toContain("created")
-            // Quasar applies color as a class
             expect(chip.classes().some((c) => c.includes("positive") || c.includes("bg-positive"))).toBe(true)
         })
 
-        it("renders error action in a chip with negative color", () => {
+        it("displays updated in a chip with info color", () => {
             const changesets = [
-                makeChangeset({
-                    action: "error" as ChangesetMetadataStatus["action"],
-                    has_tools: false,
-                    error: "Something went wrong",
-                }),
+                makeChangeset({ comparison_result: "not equal and not subset", record_operation: "updated" }),
             ]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
             const chip = wrapper.find(".q-chip")
             expect(chip.exists()).toBe(true)
-            expect(chip.text()).toContain("error")
-            expect(chip.classes().some((c) => c.includes("negative") || c.includes("bg-negative"))).toBe(true)
+            expect(chip.text()).toContain("updated")
+            expect(chip.classes().some((c) => c.includes("info") || c.includes("bg-info"))).toBe(true)
+        })
+
+        it("shows dash when record_operation is null", () => {
+            const changesets = [makeChangeset({ comparison_result: "initial", record_operation: null })]
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
+
+            // Should have a dash in the snapshot column
+            const cells = wrapper.findAll("td")
+            const hasEmDash = cells.some((cell) => cell.text().includes("—"))
+            expect(hasEmDash).toBe(true)
         })
     })
 
     describe("tools indicator", () => {
-        it("shows check icon with positive color when has_tools is true", () => {
+        it("shows check icon when has_tools is true", () => {
             const changesets = [makeChangeset({ has_tools: true })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
-            // Find the tools column icon
             const icons = wrapper.findAll(".q-icon")
             const checkIcon = icons.find(
                 (icon) => icon.text().includes("check") || icon.attributes("name")?.includes("check")
@@ -104,8 +118,8 @@ describe("ChangesetSummaryTable", () => {
             expect(checkIcon).toBeTruthy()
         })
 
-        it("shows close icon with grey color when has_tools is false", () => {
-            const changesets = [makeChangeset({ action: "unchanged", has_tools: false })]
+        it("shows close icon when has_tools is false", () => {
+            const changesets = [makeChangeset({ has_tools: false })]
             const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
             const icons = wrapper.findAll(".q-icon")
@@ -118,27 +132,15 @@ describe("ChangesetSummaryTable", () => {
 
     describe("error display", () => {
         it("displays error message when present", () => {
-            const changesets = [
-                makeChangeset({
-                    action: "error" as ChangesetMetadataStatus["action"],
-                    has_tools: false,
-                    error: "Failed to parse tool XML",
-                }),
-            ]
-
-            const wrapper = mount(ChangesetSummaryTable, {
-                props: { changesets },
-            })
+            const changesets = [makeChangeset({ error: "Failed to parse tool XML" })]
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
             expect(wrapper.text()).toContain("Failed to parse tool XML")
         })
 
         it("does not render 'null' text when error is null", () => {
             const changesets = [makeChangeset({ error: null })]
-
-            const wrapper = mount(ChangesetSummaryTable, {
-                props: { changesets },
-            })
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
             expect(wrapper.text()).not.toContain("null")
         })
@@ -146,45 +148,17 @@ describe("ChangesetSummaryTable", () => {
 
     describe("edge cases", () => {
         it("renders empty table when changesets array is empty", () => {
-            const wrapper = mount(ChangesetSummaryTable, {
-                props: { changesets: [] },
-            })
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets: [] } })
 
             expect(wrapper.find("table").exists() || wrapper.find(".q-table").exists()).toBe(true)
         })
 
         it("truncates changeset hash to 7 characters", () => {
-            const changesets = [
-                makeChangeset({
-                    changeset_revision: "abcdefghijklmnop",
-                }),
-            ]
-
-            const wrapper = mount(ChangesetSummaryTable, {
-                props: { changesets },
-            })
+            const changesets = [makeChangeset({ changeset_revision: "abcdefghijklmnop" })]
+            const wrapper = mount(ChangesetSummaryTable, { props: { changesets } })
 
             expect(wrapper.text()).toContain("1:abcdefg")
             expect(wrapper.text()).not.toContain("abcdefghijklmnop")
-        })
-
-        it("displays long error messages", () => {
-            const longError =
-                "This is a very long error message that describes what went wrong during the metadata reset operation in great detail"
-
-            const changesets = [
-                makeChangeset({
-                    action: "error" as ChangesetMetadataStatus["action"],
-                    has_tools: false,
-                    error: longError,
-                }),
-            ]
-
-            const wrapper = mount(ChangesetSummaryTable, {
-                props: { changesets },
-            })
-
-            expect(wrapper.text()).toContain(longError)
         })
     })
 })

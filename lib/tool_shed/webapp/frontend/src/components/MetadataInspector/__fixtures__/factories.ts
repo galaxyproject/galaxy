@@ -18,8 +18,8 @@ export function makeChangeset(overrides: Partial<ChangesetMetadataStatus> = {}):
     return {
         changeset_revision: "abc123456789",
         numeric_revision: 1,
-        action: "updated",
-        comparison_result: null,
+        comparison_result: "not equal and not subset",
+        record_operation: "updated",
         has_tools: true,
         has_repository_dependencies: false,
         has_tool_dependencies: false,

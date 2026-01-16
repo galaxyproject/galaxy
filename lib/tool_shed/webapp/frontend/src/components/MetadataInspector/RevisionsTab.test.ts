@@ -7,7 +7,6 @@ import {
     repositoryMetadataBismark,
     makeRevision,
     type RepositoryMetadata,
-    type RepositoryRevisionMetadata,
 } from "./__fixtures__"
 
 vi.mock("./MetadataJsonViewer.vue", () => ({

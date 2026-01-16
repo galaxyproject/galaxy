@@ -6,6 +6,7 @@ from dataclasses import (
 )
 from typing import (
     Any,
+    Literal,
     Optional,
 )
 
@@ -14,10 +15,7 @@ from sqlalchemy import (
     select,
 )
 
-from tool_shed_client.schema import (
-    ChangesetMetadataStatus,
-    ResetMetadataActionT,
-)
+from tool_shed_client.schema import ChangesetMetadataStatus
 
 from galaxy import util
 from galaxy.tool_shed.metadata.metadata_generator import (
@@ -493,11 +491,11 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
 
     def create_or_update_repository_metadata_with_details(
         self, changeset_revision, metadata_dict, dry_run: bool = False
-    ) -> tuple[Optional[RepositoryMetadata], ResetMetadataActionT]:
+    ) -> tuple[Optional[RepositoryMetadata], Literal["created", "updated"]]:
         """Create or update a repository_metadata record in the tool shed.
 
-        Returns tuple of (repository_metadata, action) where action is one of:
-        "created", "updated", "unchanged"
+        Returns tuple of (repository_metadata, record_operation) where record_operation is:
+        "updated" if updating existing record, "created" if creating new record.
         """
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
@@ -527,7 +525,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         repository_metadata = repository_metadata_by_changeset_revision(
             self.app.model, self.repository.id, changeset_revision
         )
-        action: ResetMetadataActionT
+        record_operation = "updated" if repository_metadata is not None else "created"
         if repository_metadata:
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable
@@ -536,7 +534,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repository_metadata.includes_tools = includes_tools
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
             repository_metadata.includes_workflows = False
-            action = "updated"
         else:
             repository_metadata = RepositoryMetadata(
                 repository_id=self.repository.id,
@@ -549,7 +546,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 includes_tool_dependencies=includes_tool_dependencies,
                 includes_workflows=False,
             )
-            action = "created"
         assert repository_metadata
         # Always set the default values for the following columns.  When resetting all metadata
         # on a repository this will reset the values.
@@ -560,7 +556,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             session = self.sa_session()
             session.commit()
 
-        return repository_metadata, action
+        return repository_metadata, record_operation
 
     def different_revision_defines_tip_only_repository_dependency(self, rd_tup, repository_dependencies):
         """
@@ -898,7 +894,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                                     ChangesetMetadataStatus(
                                         changeset_revision=str(ctx),
                                         numeric_revision=numeric_rev,
-                                        action="skipped",
                                         comparison_result=comparison,
                                         has_tools="tools" in (self.metadata_dict or {}),
                                         has_repository_dependencies="repository_dependencies"
@@ -911,7 +906,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         elif comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
                             metadata_changeset_revision = ancestor_changeset_revision
                             metadata_dict = ancestor_metadata_dict
-                            repo_metadata, action = self.create_or_update_repository_metadata_with_details(
+                            repo_metadata, record_operation = self.create_or_update_repository_metadata_with_details(
                                 metadata_changeset_revision, metadata_dict, dry_run=dry_run
                             )
                             changeset_revisions.append(metadata_changeset_revision)
@@ -922,8 +917,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                                     ChangesetMetadataStatus(
                                         changeset_revision=str(ctx),
                                         numeric_revision=numeric_rev,
-                                        action=action,
                                         comparison_result=comparison,
+                                        record_operation=record_operation,
                                         has_tools="tools" in (metadata_dict or {}),
                                         has_repository_dependencies="repository_dependencies"
                                         in (metadata_dict or {}),
@@ -941,7 +936,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                                 ChangesetMetadataStatus(
                                     changeset_revision=str(ctx),
                                     numeric_revision=numeric_rev,
-                                    action="pending",
                                     comparison_result=self.INITIAL,
                                     has_tools="tools" in (self.metadata_dict or {}),
                                     has_repository_dependencies="repository_dependencies"
@@ -953,7 +947,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         metadata_changeset_revision = self.changeset_revision
                         metadata_dict = self.metadata_dict
                         # We're at the end of the change log.
-                        repo_metadata, action = self.create_or_update_repository_metadata_with_details(
+                        repo_metadata, record_operation = self.create_or_update_repository_metadata_with_details(
                             metadata_changeset_revision, metadata_dict, dry_run=dry_run
                         )
                         changeset_revisions.append(metadata_changeset_revision)
@@ -968,7 +962,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                                 ChangesetMetadataStatus(
                                     changeset_revision=str(ctx),
                                     numeric_revision=numeric_rev,
-                                    action=action,
+                                    comparison_result=self.NOT_EQUAL_AND_NOT_SUBSET,
+                                    record_operation=record_operation,
                                     has_tools="tools" in (metadata_dict or {}),
                                     has_repository_dependencies="repository_dependencies" in (metadata_dict or {}),
                                     has_tool_dependencies="tool_dependencies" in (metadata_dict or {}),
@@ -980,7 +975,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                     # We reach here only if self.metadata_dict is empty and ancestor_metadata_dict is not.
                     if not ctx.children():
                         # We're at the end of the change log.
-                        repo_metadata, action = self.create_or_update_repository_metadata_with_details(
+                        repo_metadata, record_operation = self.create_or_update_repository_metadata_with_details(
                             metadata_changeset_revision, metadata_dict, dry_run=dry_run
                         )
                         changeset_revisions.append(metadata_changeset_revision)
@@ -991,7 +986,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                                 ChangesetMetadataStatus(
                                     changeset_revision=str(ctx),
                                     numeric_revision=numeric_rev,
-                                    action=action,
+                                    comparison_result=self.NOT_EQUAL_AND_NOT_SUBSET,
+                                    record_operation=record_operation,
                                     has_tools="tools" in (metadata_dict or {}),
                                     has_repository_dependencies="repository_dependencies" in (metadata_dict or {}),
                                     has_tool_dependencies="tool_dependencies" in (metadata_dict or {}),
@@ -1006,7 +1002,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                             ChangesetMetadataStatus(
                                 changeset_revision=str(ctx),
                                 numeric_revision=numeric_rev,
-                                action="skipped",
                                 comparison_result=self.NO_METADATA,
                             )
                         )

@@ -956,11 +956,8 @@ export interface components {
          * @description Per-changeset detail during reset metadata operation.
          */
         ChangesetMetadataStatus: {
-            /**
-             * Action
-             * @enum {string}
-             */
-            action: "created" | "updated" | "skipped" | "unchanged" | "pending"
+            /** Record Operation - "created", "updated", or null (no DB operation) */
+            record_operation?: "created" | "updated" | null
             /** Changeset Revision */
             changeset_revision: string
             /** Comparison Result */

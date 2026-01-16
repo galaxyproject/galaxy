@@ -220,16 +220,13 @@ class ResetMetadataOnRepositoryRequest(BaseModel):
     verbose: bool = False
 
 
-ResetMetadataActionT = Literal["created", "updated", "skipped", "unchanged", "pending"]
-
-
 class ChangesetMetadataStatus(BaseModel):
     """Per-changeset detail during reset metadata operation."""
 
     changeset_revision: str
     numeric_revision: int
-    action: ResetMetadataActionT
     comparison_result: Optional[str] = None  # "initial", "equal", "subset", "not_equal_and_not_subset", "no_metadata"
+    record_operation: Optional[Literal["created", "updated"]] = None
     has_tools: bool = False
     has_repository_dependencies: bool = False
     has_tool_dependencies: bool = False

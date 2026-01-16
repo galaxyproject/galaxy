@@ -10,52 +10,52 @@
         {
             "changeset_revision": "w0w0w0w0w0w0",
             "numeric_revision": 0,
-            "action": "created",
-            "comparison_result": "no_metadata",
+            "comparison_result": "initial",
             "has_tools": true,
             "has_repository_dependencies": false,
             "has_tool_dependencies": false,
-            "error": null
+            "error": null,
+            "record_operation": null
         },
         {
             "changeset_revision": "w1w1w1w1w1w1",
             "numeric_revision": 1,
-            "action": "updated",
             "comparison_result": "not equal and not subset",
             "has_tools": true,
             "has_repository_dependencies": false,
             "has_tool_dependencies": false,
-            "error": null
+            "error": null,
+            "record_operation": "updated"
         },
         {
             "changeset_revision": "w2w2w2w2w2w2",
             "numeric_revision": 2,
-            "action": "error",
             "comparison_result": null,
             "has_tools": false,
             "has_repository_dependencies": false,
             "has_tool_dependencies": false,
-            "error": "Invalid tool config 'broken_tool.xml': Element 'tool': The attribute 'version' is required but missing."
+            "error": "Invalid tool config 'broken_tool.xml': Element 'tool': The attribute 'version' is required but missing.",
+            "record_operation": null
         },
         {
             "changeset_revision": "w3w3w3w3w3w3",
             "numeric_revision": 3,
-            "action": "skipped",
             "comparison_result": "subset",
             "has_tools": false,
             "has_repository_dependencies": false,
             "has_tool_dependencies": false,
-            "error": null
+            "error": null,
+            "record_operation": null
         },
         {
             "changeset_revision": "w4w4w4w4w4w4",
             "numeric_revision": 4,
-            "action": "updated",
             "comparison_result": "not equal and not subset",
             "has_tools": true,
             "has_repository_dependencies": false,
             "has_tool_dependencies": false,
-            "error": null
+            "error": null,
+            "record_operation": "updated"
         }
     ],
     "repository_metadata_before": {
@@ -136,7 +136,9 @@
                     "version_string_cmd": null
                 }
             ],
-            "invalid_tools": ["broken_tool.xml"]
+            "invalid_tools": [
+                "broken_tool.xml"
+            ]
         },
         "1:w1w1w1w1w1w1": {
             "id": "simwarn0000001",

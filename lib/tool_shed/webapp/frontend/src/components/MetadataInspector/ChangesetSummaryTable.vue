@@ -8,37 +8,6 @@ interface Props {
 }
 defineProps<Props>()
 
-const actionColors: Record<string, string> = {
-    created: "positive",
-    updated: "info",
-    unchanged: "grey",
-    skipped: "grey-6",
-    error: "negative",
-}
-
-const actionIcons: Record<string, string> = {
-    created: "sym_r_add_circle",
-    updated: "sym_r_edit",
-    unchanged: "sym_r_check",
-    skipped: "sym_r_skip_next",
-    error: "sym_r_error",
-}
-
-const actionDescriptions: Record<string, string> = {
-    created: "New metadata record created for this changeset",
-    updated: "Existing metadata record was updated",
-    unchanged: "Metadata matches existing record, no changes",
-    skipped: "No metadata to record (equal, subset, or initial)",
-    error: "Failed to process this changeset",
-}
-
-const headerDescriptions: Record<string, string> = {
-    revision: "Mercurial changeset revision number and hash",
-    action: "What happened to metadata for this changeset",
-    tools: "Whether this changeset contains tool definitions",
-    error: "Errors encountered processing this changeset",
-}
-
 const columns = [
     {
         name: "revision",
@@ -46,10 +15,30 @@ const columns = [
         field: (row: ChangesetMetadataStatus) => `${row.numeric_revision}:${row.changeset_revision.substring(0, 7)}`,
         align: "left" as const,
     },
-    { name: "action", label: "Action", field: "action", align: "center" as const },
+    { name: "comparison_result", label: "Change Type", field: "comparison_result", align: "left" as const },
+    { name: "record_operation", label: "Snapshot", field: "record_operation", align: "left" as const },
     { name: "tools", label: "Tools", field: "has_tools", align: "center" as const },
     { name: "error", label: "Error", field: "error", align: "left" as const },
 ]
+
+// Display labels for comparison results (friendlier than raw API values)
+const comparisonLabels: Record<string, string> = {
+    initial: "First revision",
+    equal: "Unchanged",
+    subset: "Expanded",
+    "not equal and not subset": "Modified",
+    no_metadata: "Empty",
+}
+
+// Detailed tooltips explaining what each comparison result means
+const comparisonTooltips: Record<string, string> = {
+    initial: "First changeset with tools or dependencies - starting point for metadata tracking",
+    equal: "Metadata identical to previous revision - no changes detected",
+    subset: "New tools or dependencies added, nothing removed - changes accumulate until a breaking change triggers a snapshot",
+    "not equal and not subset":
+        "Tools or dependencies were removed or modified - previous revision was saved as an installable snapshot",
+    no_metadata: "No tools or dependencies found in this changeset",
+}
 </script>
 
 <template>
@@ -62,27 +51,50 @@ const columns = [
         :pagination="{ rowsPerPage: 0 }"
         hide-pagination
     >
-        <template #header-cell="props">
+        <template #header-cell-comparison_result="props">
             <q-th :props="props">
                 {{ props.col.label }}
-                <q-tooltip v-if="headerDescriptions[props.col.name]">
-                    {{ headerDescriptions[props.col.name] }}
-                </q-tooltip>
+                <q-icon name="sym_r_help" size="xs" class="q-ml-xs cursor-help">
+                    <q-tooltip max-width="300px">
+                        How this changeset's metadata changed compared to the previous revision. Snapshots are created
+                        when tools are removed or modified, preserving installable history.
+                    </q-tooltip>
+                </q-icon>
             </q-th>
         </template>
-        <template #body-cell-action="props">
+        <template #body-cell-comparison_result="props">
+            <q-td :props="props">
+                <span v-if="props.value" class="cursor-help">
+                    {{ comparisonLabels[props.value] || props.value }}
+                    <q-tooltip v-if="comparisonTooltips[props.value]" max-width="300px">
+                        {{ comparisonTooltips[props.value] }}
+                    </q-tooltip>
+                </span>
+                <span v-else class="text-grey">—</span>
+            </q-td>
+        </template>
+        <template #header-cell-record_operation="props">
+            <q-th :props="props">
+                {{ props.col.label }}
+                <q-icon name="sym_r_help" size="xs" class="q-ml-xs cursor-help">
+                    <q-tooltip max-width="300px">
+                        Whether this revision was saved as an installable snapshot. "Created" means a new snapshot was
+                        made; "updated" means an existing snapshot was refreshed.
+                    </q-tooltip>
+                </q-icon>
+            </q-th>
+        </template>
+        <template #body-cell-record_operation="props">
             <q-td :props="props">
                 <q-chip
-                    :color="actionColors[props.value] || 'grey'"
-                    :icon="actionIcons[props.value]"
+                    v-if="props.value"
+                    :color="props.value === 'created' ? 'positive' : 'info'"
                     text-color="white"
                     size="sm"
                 >
                     {{ props.value }}
-                    <q-tooltip v-if="actionDescriptions[props.value]">
-                        {{ actionDescriptions[props.value] }}
-                    </q-tooltip>
                 </q-chip>
+                <span v-else class="text-grey">—</span>
             </q-td>
         </template>
         <template #body-cell-tools="props">

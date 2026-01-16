@@ -15,6 +15,7 @@ import columnMakerMetadata from "./repository_metadata_column_maker.json"
 import bismarkMetadata from "./repository_metadata_bismark.json"
 import resetPreview from "./reset_metadata_preview.json"
 import resetApplied from "./reset_metadata_applied.json"
+import resetBismark from "./reset_metadata_bismark.json"
 
 // Simulated fixtures for edge cases
 // TODO: Update test_shed_repositories.py::test_generate_frontend_fixtures to generate real API
@@ -23,9 +24,9 @@ import resetApplied from "./reset_metadata_applied.json"
 // - Repository with no tools (empty workflow-only or datatype-only repo)
 // - Repository with repository_dependencies (define one with deps in test_data)
 // - Repository with multiple different tool IDs (multi-tool repo)
-// - Reset response with action: "created" (first-time reset on fresh repo)
-// - Reset response with action: "skipped" (repo with skippable revisions)
-// - Reset response with action: "error" (broken tool XML)
+// - Reset response with record_operation: "created" (first-time reset on fresh repo)
+// - Reset response with comparison_result: "equal"/"subset" (repo with skippable revisions)
+// - Reset response with error (broken tool XML)
 // - Reset response with status: "warning" (partial success)
 import simulatedChangesetActions from "./simulated_changeset_actions.json"
 import simulatedMetadataNoTools from "./simulated_metadata_no_tools.json"
@@ -54,14 +55,17 @@ export const resetMetadataPreview = resetPreview as ResetMetadataOnRepositoryRes
 /** Reset metadata applied (non-dry-run) response */
 export const resetMetadataApplied = resetApplied as ResetMetadataOnRepositoryResponse
 
+/** Reset metadata dry-run preview for bismark (has tool dependencies, invalid_tools) */
+export const resetMetadataBismark = resetBismark as ResetMetadataOnRepositoryResponse
+
 // ============================================================================
 // Simulated Fixtures for Edge Case Testing
 // TODO: Replace with real API responses when test data is available
 // ============================================================================
 
 /**
- * Changeset details with all action types: created, updated, unchanged, skipped, error
- * TODO: Generate from real API by creating repos that produce each action type
+ * Changeset details with all comparison_result types: initial, equal, subset, not equal and not subset, error
+ * TODO: Generate from real API by creating repos that produce each comparison result type
  */
 export const simulatedChangesets = simulatedChangesetActions as ChangesetMetadataStatus[]
 

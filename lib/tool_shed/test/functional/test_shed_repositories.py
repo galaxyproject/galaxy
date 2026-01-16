@@ -398,7 +398,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         for detail in result["changeset_details"]:
             assert "changeset_revision" in detail
             assert "numeric_revision" in detail
-            assert detail["action"] in ["created", "updated", "skipped", "unchanged", "pending"]
+            assert "comparison_result" in detail or "error" in detail
 
     @skip_if_api_v1
     def test_reset_metadata_dry_run_and_verbose(self):
@@ -510,8 +510,9 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         The generated fixtures include:
         - repository_metadata_column_maker.json: Multi-revision repo with tools (RepositoryMetadata)
         - repository_metadata_bismark.json: Repo with invalid_tools (RepositoryMetadata)
-        - reset_metadata_preview.json: Dry-run reset response (ResetMetadataOnRepositoryResponse)
-        - reset_metadata_applied.json: Applied reset response (ResetMetadataOnRepositoryResponse)
+        - reset_metadata_preview.json: Dry-run reset response for column_maker (ResetMetadataOnRepositoryResponse)
+        - reset_metadata_applied.json: Applied reset response for column_maker (ResetMetadataOnRepositoryResponse)
+        - reset_metadata_bismark.json: Dry-run reset response for bismark (ResetMetadataOnRepositoryResponse)
         """
         populator = self.populator
         output_dir = os.environ.get("TOOL_SHED_FIXTURE_OUTPUT_DIR", tempfile.mkdtemp(prefix="ts_fixtures_"))
@@ -572,6 +573,19 @@ class TestShedRepositoriesApi(ShedApiTestCase):
 
         with open(os.path.join(output_dir, "reset_metadata_applied.json"), "w") as f:
             json.dump(apply_data, f, indent=2)
+
+        # 5. ResetMetadataOnRepositoryResponse - bismark (has invalid_tools, tool dependencies)
+        bismark_reset_response = self.api_interactor.post(
+            f"repositories/{bismark_repo.id}/reset_metadata",
+            params={"dry_run": True, "verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(bismark_reset_response)
+        bismark_reset_data = bismark_reset_response.json()
+        assert bismark_reset_data["dry_run"] is True
+        assert bismark_reset_data["changeset_details"] is not None
+
+        with open(os.path.join(output_dir, "reset_metadata_bismark.json"), "w") as f:
+            json.dump(bismark_reset_data, f, indent=2)
 
         print(f"\nFixtures written to: {output_dir}")
         print("Files generated:")

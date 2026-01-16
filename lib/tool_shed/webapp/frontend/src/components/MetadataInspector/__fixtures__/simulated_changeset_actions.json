@@ -2,51 +2,61 @@
     {
         "changeset_revision": "a1b2c3d4e5f6",
         "numeric_revision": 0,
-        "action": "created",
-        "comparison_result": "no_metadata",
+        "comparison_result": "initial",
         "has_tools": true,
         "has_repository_dependencies": false,
         "has_tool_dependencies": false,
-        "error": null
+        "error": null,
+        "record_operation": null
     },
     {
         "changeset_revision": "b2c3d4e5f6a7",
         "numeric_revision": 1,
-        "action": "updated",
         "comparison_result": "not equal and not subset",
         "has_tools": true,
         "has_repository_dependencies": false,
         "has_tool_dependencies": false,
-        "error": null
+        "error": null,
+        "record_operation": "created"
     },
     {
         "changeset_revision": "c3d4e5f6a7b8",
         "numeric_revision": 2,
-        "action": "unchanged",
-        "comparison_result": "equal",
+        "comparison_result": "not equal and not subset",
         "has_tools": true,
         "has_repository_dependencies": false,
         "has_tool_dependencies": false,
-        "error": null
+        "error": null,
+        "record_operation": "updated"
     },
     {
         "changeset_revision": "d4e5f6a7b8c9",
         "numeric_revision": 3,
-        "action": "skipped",
-        "comparison_result": "subset",
-        "has_tools": false,
+        "comparison_result": "equal",
+        "has_tools": true,
         "has_repository_dependencies": false,
         "has_tool_dependencies": false,
-        "error": null
+        "error": null,
+        "record_operation": null
     },
     {
         "changeset_revision": "e5f6a7b8c9d0",
         "numeric_revision": 4,
-        "action": "error",
+        "comparison_result": "subset",
+        "has_tools": false,
+        "has_repository_dependencies": false,
+        "has_tool_dependencies": false,
+        "error": null,
+        "record_operation": null
+    },
+    {
+        "changeset_revision": "f6a7b8c9d0e1",
+        "numeric_revision": 5,
         "comparison_result": null,
         "has_tools": false,
         "has_repository_dependencies": false,
         "has_tool_dependencies": false,
-        "error": "Failed to parse tool XML: Syntax error at line 42, column 15 - unexpected end of element"
+        "error": "Failed to parse tool XML: Syntax error at line 42, column 15 - unexpected end of element",
+        "record_operation": null
     }
 ]
