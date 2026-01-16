@@ -110,11 +110,10 @@ class GoogleCloudStorageFilesSource(
     def _adapt_entry_path(self, filesystem_path: str) -> str:
         """Remove the GCS bucket name from the filesystem path."""
         if self.template_config.bucket_name:
-            bucket_prefix = f"{self.template_config.bucket_name}/"
-            if filesystem_path.startswith(bucket_prefix):
-                return "/" + filesystem_path[len(bucket_prefix) :]
-            elif filesystem_path == self.template_config.bucket_name:
+            if filesystem_path == self.template_config.bucket_name:
                 return "/"
+            bucket_prefix = f"{self.template_config.bucket_name}/"
+            return "/" + filesystem_path.removeprefix(bucket_prefix)
         return "/" + filesystem_path
 
     def _list(
