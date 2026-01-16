@@ -6,6 +6,6 @@
   token_uri: "https://oauth2.googleapis.com/token"
   client_id: ${user.preferences['googlecloudstorage|client_id']}
   client_secret: ${user.preferences['googlecloudstorage|client_secret']}
-  access_token: ${user.preferences['googlecloudstorage|access_token']}
+  token: ${user.preferences['googlecloudstorage|access_token']}
   refresh_token: ${user.preferences['googlecloudstorage|refresh_token']}
   anonymous: true

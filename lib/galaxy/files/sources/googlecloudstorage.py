@@ -31,11 +31,11 @@ class GoogleCloudStorageFileSourceTemplateConfiguration(FsspecBaseFileSourceTemp
     bucket_name: Union[str, TemplateExpansion]
     project: Union[str, TemplateExpansion, None] = None
     anonymous: Union[bool, TemplateExpansion, None] = True
-    service_account_credentials: Union[str, TemplateExpansion, None] = None
+    service_account_json: Union[str, TemplateExpansion, None] = None
     # OAuth credentials
     client_id: Union[str, TemplateExpansion, None] = None
     client_secret: Union[str, TemplateExpansion, None] = None
-    access_token: Union[str, TemplateExpansion, None] = None
+    token: Union[str, TemplateExpansion, None] = None
     refresh_token: Union[str, TemplateExpansion, None] = None
     token_uri: Union[str, TemplateExpansion, None] = "https://oauth2.googleapis.com/token"
 
@@ -44,11 +44,11 @@ class GoogleCloudStorageFileSourceConfiguration(FsspecBaseFileSourceConfiguratio
     bucket_name: str
     project: Optional[str] = None
     anonymous: Optional[bool] = True
-    service_account_credentials: Optional[str] = None
+    service_account_json: Optional[str] = None
     # OAuth credentials
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
-    access_token: Optional[str] = None
+    token: Optional[str] = None
     refresh_token: Optional[str] = None
     token_uri: Optional[str] = "https://oauth2.googleapis.com/token"
 
@@ -77,13 +77,13 @@ class GoogleCloudStorageFilesSource(
         if config.anonymous:
             # Use token='anon' for anonymous access to public buckets
             token = "anon"
-        elif config.service_account_credentials:
+        elif config.service_account_json:
             # Path to service account JSON file
-            token = config.service_account_credentials
-        elif config.access_token:
+            token = config.service_account_json
+        elif config.token:
             # OAuth credentials passed as a dictionary
             token = {
-                "access_token": config.access_token,
+                "access_token": config.token,
                 "refresh_token": config.refresh_token,
                 "client_id": config.client_id,
                 "client_secret": config.client_secret,
