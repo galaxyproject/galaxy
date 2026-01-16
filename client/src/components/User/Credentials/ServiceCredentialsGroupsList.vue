@@ -96,11 +96,24 @@ const cardTitle = computed(() => (group: ServiceCredentialsGroupDetails) => {
 });
 
 /**
+ * Checks if the source tool for a credential group is missing/deleted.
+ * @param {ServiceCredentialsGroupDetails} group - The credential group to check.
+ * @returns {boolean} True if the tool is no longer available.
+ */
+const isToolMissing = computed(() => (group: ServiceCredentialsGroupDetails) => {
+    return !getToolForId(group.sourceId);
+});
+
+/**
  * Checks if a credential group is currently in use by any tool.
  * @param {ServiceCredentialsGroupDetails} group - The credential group to check.
  * @returns {boolean} True if the group is in use.
  */
 const isGroupInUse = computed(() => (group: ServiceCredentialsGroupDetails) => {
+    if (isToolMissing.value(group)) {
+        return false;
+    }
+
     const userToolKey = userToolsServiceCredentialsStore.getUserToolKey(group.sourceId, group.sourceVersion);
     const userToolService = userToolsServicesCurrentGroupIds.value[userToolKey];
     for (const groupId of Object.values(userToolService || {})) {
@@ -109,15 +122,6 @@ const isGroupInUse = computed(() => (group: ServiceCredentialsGroupDetails) => {
         }
     }
     return false;
-});
-
-/**
- * Checks if the source tool for a credential group is missing/deleted.
- * @param {ServiceCredentialsGroupDetails} group - The credential group to check.
- * @returns {boolean} True if the tool is no longer available.
- */
-const isToolMissing = computed(() => (group: ServiceCredentialsGroupDetails) => {
-    return !getToolForId(group.sourceId);
 });
 
 /**
