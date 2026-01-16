@@ -37,34 +37,59 @@ uv run pytest tests/seleniumtests/test_has_driver.py -v
 Run from this directory (`packages/tool_shed`):
 
 ```shell
-# Unit tests
-uv run pytest tool_shed/test/
+# Unit tests (no server needed)
+uv run pytest tests/tool_shed/
 
-# Specific test file
-uv run pytest tool_shed/test/functional/test_frontend_login.py -v
+# Functional tests (requires running shed)
+TOOL_SHED_API_VERSION=v2 uv run pytest tool_shed/test/functional/test_shed_repositories.py -v
 ```
 
-### Playwright Tests
+### Test Categories
 
-Playwright tests require a running tool shed with v2 API. In one terminal:
+| Type | Location | Server Required | Description |
+|------|----------|-----------------|-------------|
+| Unit | `tests/tool_shed/` | No | In-memory SQLite, mock app |
+| Functional | `tool_shed/test/functional/` | Yes | API + Playwright browser tests |
+
+### Quick Start: Functional Tests
+
 ```shell
-# From galaxy root
+# Terminal 1: Start shed with v2 API
 TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
-```
 
-Then run tests:
-```shell
+# Terminal 2: Run tests
 uv run pytest tool_shed/test/functional/test_frontend_login.py -v
 ```
 
-### Frontend Build
+### Detailed Documentation
 
-Before running Playwright tests, build the frontend:
+- [tool_shed/test/README.md](tool_shed/test/README.md) - Functional test guide
+- [tool_shed/test/base/README.md](tool_shed/test/base/README.md) - Test infrastructure
+- [tool_shed/test/test_data/repos/README.md](tool_shed/test/test_data/repos/README.md) - Mock repository data
+- [test/unit/tool_shed/README.md](../../test/unit/tool_shed/README.md) - Unit test guide
+
+### Component Showcase & Fixtures
+
+The component showcase (`/_component_showcase`) displays UI components with real API data from generated fixtures. These fixtures are shared between:
+- **ComponentsShowcase.vue** - Live demos at `/_component_showcase`
+- **Vitest unit tests** - Frontend component tests
+
 ```shell
-cd tool_shed/webapp/frontend
-npm install --legacy-peer-deps
-npm run build
+# Regenerate fixtures from real API responses
+TOOL_SHED_FIXTURE_OUTPUT_DIR=tool_shed/webapp/frontend/src/components/MetadataInspector/__fixtures__ \
+TOOL_SHED_API_VERSION=v2 \
+uv run pytest tool_shed/test/functional/test_shed_repositories.py::TestShedRepositoriesApi::test_generate_frontend_fixtures -v
+
+# Format generated files
+cd tool_shed/webapp/frontend && npm run format
+
+# Capture component screenshots
+TOOL_SHED_TEST_SCREENSHOTS=/tmp/screenshots \
+TOOL_SHED_API_VERSION=v2 \
+uv run pytest tool_shed/test/functional/test_component_showcase.py -v
 ```
+
+Regenerate fixtures after: schema changes, API response changes, or metadata bug fixes.
 
 ## Running the Tool Shed
 
