@@ -18,7 +18,7 @@
  * <ServiceCredentialsGroupsList :service-groups="groups" />
  */
 
-import { faKey, faPencilAlt, faTrash, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationTriangle, faKey, faPencilAlt, faTrash, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { BModal } from "bootstrap-vue";
 import { faCheck } from "font-awesome-6";
 import { storeToRefs } from "pinia";
@@ -71,7 +71,7 @@ const props = defineProps<Props>();
 
 const { confirm } = useConfirmDialog();
 
-const { getToolNameById } = useToolStore();
+const { getToolForId, getToolNameById } = useToolStore();
 
 const userToolsServiceCredentialsStore = useUserToolsServiceCredentialsStore();
 const { userToolsServicesCurrentGroupIds } = storeToRefs(userToolsServiceCredentialsStore);
@@ -112,6 +112,27 @@ const isGroupInUse = computed(() => (group: ServiceCredentialsGroupDetails) => {
 });
 
 /**
+ * Checks if the source tool for a credential group is missing/deleted.
+ * @param {ServiceCredentialsGroupDetails} group - The credential group to check.
+ * @returns {boolean} True if the tool is no longer available.
+ */
+const isToolMissing = computed(() => (group: ServiceCredentialsGroupDetails) => {
+    return !getToolForId(group.sourceId);
+});
+
+/**
+ * Gets the display name for a tool, with a fallback for missing/deleted tools.
+ * @param {ServiceCredentialsGroupDetails} group - The credential group.
+ * @returns {string} The tool name or a fallback indicator.
+ */
+const getToolDisplayName = computed(() => (group: ServiceCredentialsGroupDetails) => {
+    if (isToolMissing.value(group)) {
+        return `${group.sourceId} (deleted)`;
+    }
+    return getToolNameById(group.sourceId);
+});
+
+/**
  * Deletes a credential group after user confirmation.
  * @param {ServiceCredentialsGroupDetails} groupToDelete - The group to delete.
  * @returns {Promise<void>} Resolves when deletion is complete.
@@ -120,7 +141,9 @@ const isGroupInUse = computed(() => (group: ServiceCredentialsGroupDetails) => {
 async function deleteGroup(groupToDelete: ServiceCredentialsGroupDetails): Promise<void> {
     let message = `Are you sure you want to delete the credentials group "${groupToDelete.name}"?`;
 
-    if (isGroupInUse.value(groupToDelete)) {
+    if (isToolMissing.value(groupToDelete)) {
+        message = message.concat(` The associated tool is no longer available.`);
+    } else if (isGroupInUse.value(groupToDelete)) {
         message = message.concat(` This group is currently in use by '${getToolNameById(groupToDelete.sourceId)}'.`);
     }
 
@@ -221,23 +244,40 @@ async function onSaveChanges(): Promise<void> {
  * @returns {CardBadge[]} Array of badge configurations.
  */
 function getBadgesFor(group: ServiceCredentialsGroupDetails): CardBadge[] {
-    const badges: CardBadge[] = [
-        {
-            id: `tool-${group.sourceId}`,
-            icon: faWrench,
-            title: "This tool is using this credentials group. Click to view.",
-            label: getToolNameById(group.sourceId),
-            to: `/root?tool_id=${group.sourceId}&tool_version=${group.sourceVersion}`,
-        },
-        {
+    const toolMissing = isToolMissing.value(group);
+    const badges: CardBadge[] = [];
+
+    if (toolMissing) {
+        badges.push({
+            id: `tool-missing-${group.id}`,
+            icon: faExclamationTriangle,
+            title: "The tool associated with these credentials is no longer available. You cannot edit or use this group.",
+            label: "Tool Unavailable",
+            variant: "warning",
+        });
+    }
+
+    badges.push({
+        id: `tool-${group.sourceId}`,
+        icon: faWrench,
+        title: toolMissing
+            ? "This tool is no longer available."
+            : "This tool is using this credentials group. Click to view.",
+        label: getToolDisplayName.value(group),
+        to: toolMissing ? undefined : `/root?tool_id=${group.sourceId}&tool_version=${group.sourceVersion}`,
+    });
+
+    if (!toolMissing) {
+        badges.push({
             id: `in-use-${group.id}`,
             icon: faCheck,
             title: "This group is currently in use.",
             label: "In Use",
             variant: "success",
             visible: isGroupInUse.value(group),
-        },
-    ];
+        });
+    }
+
     return badges;
 }
 
@@ -247,6 +287,7 @@ function getBadgesFor(group: ServiceCredentialsGroupDetails): CardBadge[] {
  * @returns {CardAction[]} Array of action configurations
  */
 function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] {
+    const toolMissing = isToolMissing.value(group);
     const primaryActions: CardAction[] = [
         {
             id: `delete-${group.id}`,
@@ -259,10 +300,11 @@ function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] 
         {
             id: `edit-${group.id}`,
             label: "Edit",
-            title: "Edit this group",
+            title: !toolMissing ? "Cannot edit - tool definition not available" : "Edit this group",
             icon: faPencilAlt,
             variant: "outline-info",
             handler: () => editGroup(group),
+            disabled: toolMissing,
         },
     ];
     return primaryActions;
