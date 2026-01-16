@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faDatabase, faFile, faFolder, faLock, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faFile, faFolder, faLock, faPlus, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BPagination, BTable } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
@@ -507,14 +507,21 @@ const browserFields = [
     {
         key: "select",
         label: "",
-        thStyle: { width: "40px" },
+        thStyle: { width: "25px" },
         tdClass: "align-middle",
+    },
+    {
+        key: "permission",
+        label: "",
+        sortable: false,
+        thStyle: { width: "20px" },
+        tdClass: "align-middle text-center",
     },
     {
         key: "type",
         label: "",
         sortable: false,
-        thStyle: { width: "35px" },
+        thStyle: { width: "20px" },
         tdClass: "align-middle text-center",
     },
     {
@@ -624,6 +631,30 @@ function onErrorRetry() {
     }
 }
 
+function getPermissionIcon(entry: AnyLibraryFolderItem) {
+    if (isLibraryFile(entry)) {
+        if (entry.is_private) {
+            return faLock;
+        }
+        if (!entry.is_unrestricted) {
+            return faShieldAlt;
+        }
+    }
+    return undefined;
+}
+
+function getPermissionTitle(entry: AnyLibraryFolderItem) {
+    if (isLibraryFile(entry)) {
+        if (entry.is_private) {
+            return "This dataset is private to you.";
+        }
+        if (!entry.is_unrestricted) {
+            return "This dataset has restricted access. Only specified users can access it.";
+        }
+    }
+    return undefined;
+}
+
 // Initialize: load libraries
 onMounted(async () => {
     await loadLibraries();
@@ -723,6 +754,16 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             @click.stop />
                     </template>
 
+                    <template v-slot:cell(permission)="{ item }">
+                        <span
+                            v-if="getPermissionIcon(item.entry)"
+                            v-b-tooltip.hover
+                            class="mr-2 text-muted"
+                            :title="getPermissionTitle(item.entry)">
+                            <FontAwesomeIcon :icon="getPermissionIcon(item.entry)" />
+                        </span>
+                    </template>
+
                     <template v-slot:cell(type)="{ item }">
                         <FontAwesomeIcon
                             :icon="item.isLeaf ? faFile : faFolder"
@@ -732,12 +773,6 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <template v-slot:cell(name)="{ item }">
                         <div class="d-flex align-items-center">
                             <span>{{ item.label }}</span>
-                            <FontAwesomeIcon
-                                v-if="item.isLeaf && item.entry && item.entry.is_private"
-                                v-b-tooltip.hover
-                                :icon="faLock"
-                                class="ml-2 text-muted"
-                                title="This dataset is private" />
                         </div>
                     </template>
 
