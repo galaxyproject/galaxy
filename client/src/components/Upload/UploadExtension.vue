@@ -30,13 +30,13 @@ const details = computed(() => findExtension(props.listExtensions, props.extensi
             <FontAwesomeIcon icon="fa-search" />
         </template>
         <div class="p-2">
-            <div v-if="details && details.description">
+            <div v-if="details && details.description" v-localize>
                 {{ details.description }}
                 <div v-if="details.descriptionUrl">
                     &nbsp;(<a :href="details.descriptionUrl" target="_blank">read more</a>)
                 </div>
             </div>
-            <div v-else>There is no description available for this file extension.</div>
+            <div v-else v-localize>There is no description available for this file extension.</div>
         </div>
     </Popper>
 </template>

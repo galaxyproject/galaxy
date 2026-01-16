@@ -108,7 +108,7 @@ async function updatePanelView(panel: Panel) {
         block
         no-caret
         :disabled="loading"
-        :title="!loading ? 'Show panel options' : 'Loading panel view'"
+        :title="!loading ? localize('Show panel options') : 'Loading panel view'"
         variant="link"
         toggle-class="text-decoration-none"
         role="menu"

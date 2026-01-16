@@ -92,7 +92,7 @@ defineExpose({
         hide-footer>
         <template v-slot:modal-header>
             <div class="d-flex justify-content-between w-100">
-                <h2 class="title h-sm" tabindex="0">
+                <h2 class="title h-sm" tabindex="0" v-localize>
                     {{ options.title }}
                     <span v-if="currentHistory">
                         to <b>{{ currentHistory.name }}</b>

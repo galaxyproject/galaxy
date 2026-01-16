@@ -6,14 +6,14 @@
             :class="{ 'bordered-input': syncWithGraph && activeNodeId === index }">
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
-                    <b>{{ input.test_param.label || input.test_param.name }}</b>
+                    <b>{{ localize(input.test_param.label || input.test_param.name) }}</b>
                 </div>
                 <div class="portlet-content">
                     <FormElement
                         :id="conditionalPrefix(input, input.test_param.name)"
                         v-model="input.test_param.value"
                         :type="input.test_param.type"
-                        :help="input.test_param.help"
+                        :help="localize(input.test_param.help)"
                         :help-format="input.test_param.help_format"
                         :refresh-on-change="false"
                         :disabled="sustainConditionals"
@@ -39,9 +39,9 @@
                     @swap="(a, b) => repeatSwap(input, a, b)" />
             </div>
             <div v-else-if="input.type == 'section'">
-                <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
+                <FormCard :title="localize(input.title || input.name)" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <div v-if="input.help" class="my-2" data-description="section help">{{ input.help }}</div>
+                        <div v-if="input.help" class="my-2" data-description="section help">{{ localize(input.help) }}</div>
                         <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
                     </template>
                 </FormCard>
@@ -50,11 +50,11 @@
                 v-else
                 :id="getPrefix(input.name)"
                 v-model="input.value"
-                :title="input.label || input.name"
+                :title="localize(input.label || input.name)"
                 :type="input.type"
                 :error="input.error"
                 :warning="input.warning"
-                :help="input.help"
+                :help="localize(input.help)"
                 :help-format="input.help_format"
                 :refresh-on-change="input.refresh_on_change"
                 :attributes="input.attributes || input"

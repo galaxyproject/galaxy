@@ -45,7 +45,7 @@ const tutorialText = computed(() => {
 
 <template>
     <div v-if="trainingAvailable" class="mt-2 mb-4">
-        <Heading h2 separator bold size="sm">Tutorials</Heading>
+        <Heading h2 separator bold size="sm" v-localize>Tutorials</Heading>
 
         <p>
             {{ tutorialText }}

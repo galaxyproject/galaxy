@@ -129,14 +129,14 @@ onMounted(() => {
                 id="analysis"
                 v-b-tooltip.hover
                 class="ml-2 mr-2 p-0"
-                title="Home"
+                :title="localize('Home')"
                 aria-label="homepage"
                 :href="withPrefix(logoUrl)">
                 <img alt="logo" :src="withPrefix(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
             </BNavbarBrand>
             <span v-if="brand" class="navbar-text py-0 px-2">
-                {{ brand }}
+                {{ localize(brand) }}
             </span>
         </BNavbarNav>
         <BNavbarNav v-if="isConfigLoaded" class="mr-1">
@@ -162,7 +162,7 @@ onMounted(() => {
                 id="help"
                 icon="fa-question"
                 url="/about"
-                tooltip="Support, Contact, and Community"
+                :tooltip="localize('Support, Contact, and Community')"
                 @click="openUrl('/about')" />
             <QuotaMeter />
             <MastheadItem
@@ -170,14 +170,14 @@ onMounted(() => {
                 id="user"
                 class="loggedout-only"
                 data-description="login masthead button"
-                title="Login"
+                :title="localize('Login')"
                 @click="performLogin()" />
             <MastheadItem
                 v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
                 id="user-register"
                 class="loggedout-only"
                 data-description="register masthead button"
-                title="Register"
+                :title="localize('Register')"
                 @click="performRegistration()" />
             <MastheadDropdown
                 v-if="currentUser && !isAnonymous && !config.single_user"
@@ -185,15 +185,15 @@ onMounted(() => {
                 class="loggedin-only"
                 icon="fa-user"
                 :title="currentUser.username"
-                tooltip="User Preferences"
+                :tooltip="localize('User Preferences')"
                 :menu="[
                     {
-                        title: 'Preferences',
+                        title: localize('Preferences'),
                         icon: 'fa-gear',
                         handler: () => openUrl('/user'),
                     },
                     {
-                        title: 'Sign Out',
+                        title: localize('Sign Out'),
                         icon: 'fa-sign-out-alt',
                         handler: () => userLogout(),
                     },
@@ -205,10 +205,10 @@ onMounted(() => {
                 class="loggedin-only"
                 icon="fa-user"
                 :title="currentUser.username"
-                tooltip="User Preferences"
+                :tooltip="localize('User Preferences')"
                 :menu="[
                     {
-                        title: 'Preferences',
+                        title: localize('Preferences'),
                         icon: 'fa-gear',
                         handler: () => openUrl('/user'),
                     },

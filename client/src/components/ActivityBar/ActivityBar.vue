@@ -361,8 +361,8 @@ defineExpose({
             <SettingsPanel
                 v-else-if="isActiveSideBar('settings')"
                 :activity-bar-id="props.activityBarId"
-                :heading="props.optionsHeading"
-                :search-placeholder="props.optionsSearchPlaceholder"
+                :heading="localize(props.optionsHeading)"
+                :search-placeholder="localize(props.optionsSearchPlaceholder)"
                 @activityClicked="(id) => emit('activityClicked', id)" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
             <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>

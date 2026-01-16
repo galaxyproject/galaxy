@@ -45,7 +45,7 @@ function userTitle(title: string) {
         <nav
             :class="{ 'd-flex justify-content-between mx-3 my-2': !props.minimal }"
             aria-label="current history management">
-            <h2 v-if="!props.minimal" class="m-1 h-sm">History</h2>
+            <h2 v-if="!props.minimal" class="m-1 h-sm" v-localize>History</h2>
 
             <BButtonGroup>
                 <BButton

@@ -37,7 +37,7 @@ function onUpdateOperationStatus(updateTime: number) {
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.hover
-                    title="Select Items"
+                    :title="localize('Select Items')"
                     class="show-history-content-selectors-btn rounded-0"
                     size="sm"
                     variant="link"
@@ -49,7 +49,7 @@ function onUpdateOperationStatus(updateTime: number) {
 
                 <BButton
                     v-b-tooltip.hover
-                    title="Collapse Items"
+                    :title="localize('Collapse Items')"
                     class="rounded-0"
                     size="sm"
                     variant="link"
@@ -72,7 +72,7 @@ function onUpdateOperationStatus(updateTime: number) {
         <nav v-else-if="isMultiViewItem" class="content-operations bg-secondary">
             <BButton
                 v-b-tooltip.hover
-                title="Collapse Items"
+                :title="localize('Collapse Items')"
                 class="rounded-0"
                 size="sm"
                 variant="link"

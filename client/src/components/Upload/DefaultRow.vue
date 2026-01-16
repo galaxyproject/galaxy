@@ -214,7 +214,7 @@ initializeExplorableArchive();
             {{ info }}
         </div>
         <div v-if="fileMode == 'new'">
-            <div class="upload-text-message">
+            <div class="upload-text-message" v-localize>
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>
             <b-textarea

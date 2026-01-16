@@ -21,6 +21,8 @@ import CompositeBox from "./CompositeBox";
 import DefaultBox from "./DefaultBox";
 import RulesInput from "./RulesInput";
 
+import localize from "@/utils/localization";
+
 const props = defineProps({
     auto: {
         type: Object,
@@ -177,9 +179,9 @@ defineExpose({
         </span>
     </BAlert>
     <BTabs v-else-if="ready">
-        <BTab v-if="showRegular" title="Regular" button-id="tab-title-link-regular" :active.sync="regularTabActive">
+        <BTab v-if="showRegular" :title="localize('Regular')" button-id="tab-title-link-regular" :active.sync="regularTabActive">
         </BTab>
-        <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
+        <BTab v-if="showComposite" id="composite" :title="localize('Composite')" button-id="tab-title-link-composite">
             <CompositeBox
                 :effective-extensions="effectiveExtensions"
                 :default-db-key="defaultDbKey"
@@ -192,11 +194,11 @@ defineExpose({
         </BTab>
         <BTab
             v-if="showCollection"
-            title="Collection"
+            :title="localize('Collection')"
             button-id="tab-title-link-collection"
             :active.sync="collectionTabActive">
         </BTab>
-        <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
+        <BTab v-if="showRules" id="rule-based" :title="localize('Rule-based')" button-id="tab-title-link-rule-based">
             <RulesInput
                 :file-sources-configured="fileSourcesConfigured"
                 :ftp-upload-site="currentUserId && ftpUploadSite"
