@@ -492,7 +492,7 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             definition = credential["definition"]
             assert definition["name"] == payload["service_credential"]["name"]
             assert definition["version"] == payload["service_credential"]["version"]
-            assert definition["description"] == "[Tool definition not available]"
+            assert definition["description"] == ""
             assert definition["label"] == ""
             assert definition["optional"] is False
             assert definition["variables"] == []

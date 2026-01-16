@@ -289,7 +289,7 @@ class CredentialsService:
                     definition = CredentialsRequirement(
                         name=user_credentials.name,
                         version=user_credentials.version,
-                        description="[Tool definition not available]",
+                        description="",
                         label="",
                         optional=False,
                         variables=[],
