@@ -4,12 +4,14 @@
  */
 
 import type {
+    LibraryDatasetItem,
     LocalFileItem,
     PasteContentItem,
     PasteUrlItem,
     RemoteFileItem,
 } from "@/components/Panels/Upload/types/uploadItem";
 import type {
+    LibraryDatasetUploadItem,
     LocalFileUploadItem,
     PastedContentUploadItem,
     RemoteFileUploadItem,
@@ -86,5 +88,26 @@ export function mapToRemoteFileUpload(item: RemoteFileItem, targetHistoryId: str
         deferred: item.deferred,
         url: item.url,
         hashes: item.hashes,
+    };
+}
+
+/**
+ * Maps a library dataset item to a library dataset upload item for the upload queue
+ */
+export function mapToLibraryDatasetUpload(item: LibraryDatasetItem, targetHistoryId: string): LibraryDatasetUploadItem {
+    return {
+        uploadMode: "data-library" as const,
+        name: item.name,
+        size: item.size,
+        targetHistoryId,
+        dbkey: "?", // Library datasets use their existing dbkey
+        extension: item.extension,
+        spaceToTab: false, // Not applicable to library imports
+        toPosixLines: false, // Not applicable to library imports
+        libraryId: item.libraryId,
+        folderId: item.folderId,
+        lddaId: item.lddaId,
+        url: item.url,
+        deferred: false,
     };
 }

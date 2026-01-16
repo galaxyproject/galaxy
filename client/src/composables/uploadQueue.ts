@@ -9,6 +9,7 @@
  */
 import type { CollectionElementIdentifiers } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
+import { copyDataset } from "@/api/datasets";
 import type { FetchDataResponse } from "@/api/tools";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
@@ -201,7 +202,7 @@ export function toUploadItem(item: NewUploadItem): UploadItem {
             return createUrlUploadItem(item.url, item.targetHistoryId, baseOptions);
 
         default:
-            throw new Error(`Unknown upload mode: ${(item as NewUploadItem).uploadMode}`);
+            throw new Error(`Unsupported upload mode: ${item.uploadMode}`);
     }
 }
 
@@ -233,6 +234,12 @@ export function validateUploadItem(item: NewUploadItem): string | undefined {
         case "remote-files":
             if (!item.url || item.url.trim().length === 0) {
                 return `No URL provided for "${item.name}"`;
+            }
+            break;
+
+        case "data-library":
+            if (!item.lddaId) {
+                return `No library dataset ID provided for "${item.name}"`;
             }
             break;
 
@@ -419,52 +426,83 @@ export function useUploadQueue() {
                 throw new Error(validationError);
             }
 
-            // Convert to API format and upload
-            const uploadItem = toUploadItem(item);
-
             // Find the batch this upload belongs to
             const batch = batches.find((b) => b.ids.includes(id));
             const batchId = item.batchId;
 
-            await uploadDatasets([uploadItem], {
-                progress: (percentage) => uploadState.updateProgress(id, percentage),
-                success: (response: FetchDataResponse) => {
-                    uploadState.updateProgress(id, 100);
+            // Handle library dataset imports separately
+            if (item.uploadMode === "data-library") {
+                uploadState.updateProgress(id, 50);
 
-                    // Collect dataset IDs for collection creation
-                    if (batch && batchId && response.outputs) {
-                        // The outputs field is Record<string, unknown> but is actually an array of dataset objects
-                        const outputs = response.outputs as unknown as Array<{
-                            id: string;
-                            hid?: number;
-                            name?: string;
-                        }>;
-                        const datasetId = outputs[0]?.id;
-                        if (datasetId) {
-                            // Store in both internal batch and persisted state
-                            batch.datasetIds.push(datasetId);
-                            uploadState.addBatchDatasetId(batchId, datasetId);
-                        }
+                // Import library dataset to history
+                const response = await copyDataset(item.lddaId, item.targetHistoryId, "dataset", "library");
 
-                        // Check if all batch uploads are complete
-                        const allComplete = batch.ids.every((uploadId) => {
-                            const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
-                            return batchItem?.status === "completed" || batchItem?.status === "error";
+                uploadState.updateProgress(id, 100);
+
+                // Collect dataset ID for collection creation
+                // Response is an HDA (HistoryDatasetAssociation) which has an id field
+                if (batch && batchId && response && "id" in response && response.id) {
+                    batch.datasetIds.push(response.id);
+                    uploadState.addBatchDatasetId(batchId, response.id);
+                }
+
+                // Check if all batch uploads are complete
+                if (batch && batchId) {
+                    const allComplete = batch.ids.every((uploadId) => {
+                        const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
+                        return batchItem?.status === "completed" || batchItem?.status === "error";
+                    });
+
+                    if (allComplete) {
+                        await createCollection(batchId).catch((err) => {
+                            uploadState.setBatchError(batchId, errorMessageAsString(err));
                         });
-
-                        // If batch is complete, create collection
-                        if (allComplete) {
-                            createCollection(batchId).catch((err) => {
-                                uploadState.setBatchError(batchId, errorMessageAsString(err));
-                            });
-                        }
                     }
-                },
-                error: (err) => {
-                    // This callback is for upload-specific errors
-                    uploadState.setError(id, errorMessageAsString(err));
-                },
-            });
+                }
+            } else {
+                // Convert to API format and upload via fetch API
+                const uploadItem = toUploadItem(item);
+
+                await uploadDatasets([uploadItem], {
+                    progress: (percentage) => uploadState.updateProgress(id, percentage),
+                    success: (response: FetchDataResponse) => {
+                        uploadState.updateProgress(id, 100);
+
+                        // Collect dataset IDs for collection creation
+                        if (batch && batchId && response.outputs) {
+                            // The outputs field is Record<string, unknown> but is actually an array of dataset objects
+                            const outputs = response.outputs as unknown as Array<{
+                                id: string;
+                                hid?: number;
+                                name?: string;
+                            }>;
+                            const datasetId = outputs[0]?.id;
+                            if (datasetId) {
+                                // Store in both internal batch and persisted state
+                                batch.datasetIds.push(datasetId);
+                                uploadState.addBatchDatasetId(batchId, datasetId);
+                            }
+
+                            // Check if all batch uploads are complete
+                            const allComplete = batch.ids.every((uploadId) => {
+                                const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
+                                return batchItem?.status === "completed" || batchItem?.status === "error";
+                            });
+
+                            // If batch is complete, create collection
+                            if (allComplete) {
+                                createCollection(batchId).catch((err) => {
+                                    uploadState.setBatchError(batchId, errorMessageAsString(err));
+                                });
+                            }
+                        }
+                    },
+                    error: (err) => {
+                        // This callback is for upload-specific errors
+                        uploadState.setError(id, errorMessageAsString(err));
+                    },
+                });
+            }
         } catch (err) {
             // This catches validation errors and any unexpected errors
             uploadState.setError(id, errorMessageAsString(err));

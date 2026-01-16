@@ -67,3 +67,23 @@ export interface RemoteFileItem extends PasteUrlItem {
     size: number;
     hashes?: FetchDatasetHash[];
 }
+
+/**
+ * Library dataset upload item (used in DataLibraryUpload.vue)
+ * Note: Library datasets are already on the server, so no upload options are needed
+ */
+export interface LibraryDatasetItem extends IdentifiableUploadItem {
+    libraryId: string;
+    folderId: string;
+    lddaId: string;
+    url: string;
+    name: string;
+    extension: string; // Read-only, from library dataset
+    size: number; // raw_size from API
+    created?: string;
+    updated?: string;
+    dateUploaded?: string;
+    isUnrestricted?: boolean;
+    isPrivate?: boolean;
+    tags?: string[];
+}

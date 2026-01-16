@@ -48,8 +48,26 @@ export interface RemoteFileUploadItem extends UploadItemCommon {
     url: string;
 }
 
+/** Upload item from a Data Library dataset */
+export interface LibraryDatasetUploadItem extends UploadItemCommon {
+    uploadMode: "data-library";
+    /** ID of the library containing this dataset */
+    libraryId: string;
+    /** ID of the folder containing this dataset */
+    folderId: string;
+    /** LibraryDatasetDatasetAssociation ID */
+    lddaId: string;
+    /** API URL for dataset retrieval */
+    url: string;
+}
+
 /** Union of all new upload item types (before state tracking is added) */
-export type NewUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem | RemoteFileUploadItem;
+export type NewUploadItem =
+    | LocalFileUploadItem
+    | PastedContentUploadItem
+    | UrlUploadItem
+    | RemoteFileUploadItem
+    | LibraryDatasetUploadItem;
 
 /** Internal state tracking for an upload */
 export interface UploadState {
