@@ -6,6 +6,7 @@ import type { CompositeDataElement, HdasUploadTarget } from "@/api/tools";
 
 import { createTusUpload } from "./tusUpload";
 import {
+    type ApiUploadItem,
     buildLegacyPayload,
     buildUploadPayload,
     cleanUrlFilename,
@@ -18,7 +19,6 @@ import {
     parseContentToUploadItems,
     stripGalaxyFilePrefix,
     submitUpload,
-    type UploadItem,
     uploadItemDefaults,
 } from "./upload";
 
@@ -477,14 +477,17 @@ describe("buildUploadPayload", () => {
     test("throws on mixed history IDs", () => {
         const file1 = createMockFile("file1.txt");
         const file2 = createMockFile("file2.txt");
-        const items: UploadItem[] = [createFileUploadItem(file1, "history1"), createFileUploadItem(file2, "history2")];
+        const items: ApiUploadItem[] = [
+            createFileUploadItem(file1, "history1"),
+            createFileUploadItem(file2, "history2"),
+        ];
 
         expect(() => buildUploadPayload(items)).toThrow("All upload items must target the same history.");
     });
 
     test("builds payload with file upload items", () => {
         const mockFile = createMockFile("test.txt");
-        const items: UploadItem[] = [createFileUploadItem(mockFile, "historyId")];
+        const items: ApiUploadItem[] = [createFileUploadItem(mockFile, "historyId")];
 
         const result = buildUploadPayload(items);
 
@@ -500,7 +503,7 @@ describe("buildUploadPayload", () => {
     test("builds composite payload", () => {
         const file1 = createMockFile("file1.txt");
         const file2 = createMockFile("file2.txt");
-        const items: UploadItem[] = [
+        const items: ApiUploadItem[] = [
             createFileUploadItem(file1, "historyId"),
             createFileUploadItem(file2, "historyId"),
         ];
@@ -517,19 +520,19 @@ describe("buildUploadPayload", () => {
 
     test("validates empty file data", () => {
         const emptyFile = new File([], "empty.txt");
-        const items: UploadItem[] = [createFileUploadItem(emptyFile, "historyId")];
+        const items: ApiUploadItem[] = [createFileUploadItem(emptyFile, "historyId")];
 
         expect(() => buildUploadPayload(items)).toThrow("File data is empty for upload item: empty.txt");
     });
 
     test("validates empty pasted content", () => {
-        const items: UploadItem[] = [createPastedUploadItem("", "historyId", { name: "empty" })];
+        const items: ApiUploadItem[] = [createPastedUploadItem("", "historyId", { name: "empty" })];
 
         expect(() => buildUploadPayload(items)).toThrow("No content for pasted upload item: empty");
     });
 
     test("validates invalid URL", () => {
-        const items: UploadItem[] = [createUrlUploadItem("not-a-valid-url", "historyId")];
+        const items: ApiUploadItem[] = [createUrlUploadItem("not-a-valid-url", "historyId")];
 
         expect(() => buildUploadPayload(items)).toThrow("Invalid URL: not-a-valid-url");
     });

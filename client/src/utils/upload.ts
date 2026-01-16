@@ -45,6 +45,7 @@ import {
     type UrlDataElement,
 } from "@/api/tools";
 import type { UploadRowModel } from "@/components/Upload/model";
+import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { isUrl } from "@/utils/url";
@@ -138,7 +139,7 @@ export interface UrlUploadItem extends UploadItemCommon {
 }
 
 /** Discriminated union of all upload item types */
-export type UploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem;
+export type ApiUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlUploadItem;
 
 // ============================================================================
 // Payload Types
@@ -411,6 +412,48 @@ export function createUrlUploadItem(
 }
 
 /**
+ * Converts a UI upload item to an API-ready upload item.
+ *
+ * This bridges the gap between:
+ * - NewUploadItem: UI-friendly format with camelCase (persisted in localStorage)
+ * - ApiUploadItem: API-ready format with snake_case (sent to server)
+ *
+ * @param item - The UI upload item to convert
+ * @returns API-ready upload item
+ * @throws Error if item has invalid uploadMode or missing required data
+ */
+export function toApiUploadItem(item: NewUploadItem): ApiUploadItem {
+    const baseOptions = {
+        name: item.name,
+        size: item.size,
+        dbkey: item.dbkey,
+        ext: item.extension,
+        space_to_tab: item.spaceToTab,
+        to_posix_lines: item.toPosixLines,
+        deferred: item.deferred,
+        hashes: item.hashes,
+    };
+
+    switch (item.uploadMode) {
+        case "local-file":
+            if (!item.fileData) {
+                throw new Error(`No file data for upload item: ${item.name}`);
+            }
+            return createFileUploadItem(item.fileData, item.targetHistoryId, baseOptions);
+
+        case "paste-content":
+            return createPastedUploadItem(item.content, item.targetHistoryId, baseOptions);
+
+        case "paste-links":
+        case "remote-files":
+            return createUrlUploadItem(item.url, item.targetHistoryId, baseOptions);
+
+        default:
+            throw new Error(`Unsupported upload mode: ${item.uploadMode}`);
+    }
+}
+
+/**
  * Parses text content that may contain URLs (one per line) or plain text.
  * Returns appropriate upload items based on the content.
  *
@@ -438,7 +481,7 @@ export function parseContentToUploadItems(
     content: string,
     historyId: string,
     options: Partial<Omit<UploadItemCommon, "historyId" | "name" | "size">> = {},
-): UploadItem[] {
+): ApiUploadItem[] {
     const trimmedContent = content.trim();
     if (!trimmedContent || trimmedContent.length === 0) {
         throw new Error("Content not available.");
@@ -469,7 +512,7 @@ export function parseContentToUploadItems(
  * Builds an API-conforming data element from an upload item.
  * Returns the element ready for the API payload.
  */
-function buildDataElement(item: UploadItem): ApiDataElement {
+function buildDataElement(item: ApiUploadItem): ApiDataElement {
     const base = {
         dbkey: item.dbkey,
         ext: item.ext,
@@ -519,7 +562,7 @@ function buildDataElement(item: UploadItem): ApiDataElement {
  * Validates that an upload item has content.
  * @throws Error if the item has no content
  */
-function validateItemContent(item: UploadItem): void {
+function validateItemContent(item: ApiUploadItem): void {
     switch (item.src) {
         case "files":
             if (!item.fileData) {
@@ -553,7 +596,7 @@ function validateItemContent(item: UploadItem): void {
  * @returns API-ready payload for submitUpload
  * @throws Error if no valid items are provided or validation fails
  */
-export function buildUploadPayload(items: UploadItem[], options: BuildPayloadOptions = {}): UploadPayload {
+export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayloadOptions = {}): UploadPayload {
     const { composite = false } = options;
 
     if (items.length === 0) {
@@ -779,7 +822,7 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
  * await uploadDatasets(items, { composite: true });
  * ```
  */
-export async function uploadDatasets(items: UploadItem[], config: UploadDatasetsConfig = {}): Promise<void> {
+export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatasetsConfig = {}): Promise<void> {
     const { composite = false, chunkSize, success, error, warning, progress } = config;
 
     try {
@@ -826,7 +869,10 @@ export type LegacyUploadItem = UploadRowModel;
  * Converts a legacy upload item to the new UploadItem format.
  * @deprecated Use UploadItem types directly
  */
-export function fromLegacyUploadItem(legacy: LegacyUploadItem, historyId: string): UploadItem | UploadItem[] | null {
+export function fromLegacyUploadItem(
+    legacy: LegacyUploadItem,
+    historyId: string,
+): ApiUploadItem | ApiUploadItem[] | null {
     const baseOptions = {
         name: legacy.fileName || DEFAULT_FILE_NAME,
         dbkey: legacy.dbKey || uploadItemDefaults.dbkey,
@@ -882,10 +928,10 @@ export function fromLegacyUploadItem(legacy: LegacyUploadItem, historyId: string
  * Converts an array of legacy upload items to the new UploadItem format.
  * @deprecated Use UploadItem types directly
  */
-export function fromLegacyUploadItems(legacyItems: LegacyUploadItem[], historyId: string): UploadItem[] {
+export function fromLegacyUploadItems(legacyItems: LegacyUploadItem[], historyId: string): ApiUploadItem[] {
     return legacyItems
         .flatMap((item) => fromLegacyUploadItem(item, historyId))
-        .filter((item): item is UploadItem => item !== null);
+        .filter((item): item is ApiUploadItem => item !== null);
 }
 
 /**

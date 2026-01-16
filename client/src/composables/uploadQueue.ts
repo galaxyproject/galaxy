@@ -15,8 +15,7 @@ import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
-import type { UploadItem } from "@/utils/upload";
-import { createFileUploadItem, createPastedUploadItem, createUrlUploadItem, uploadDatasets } from "@/utils/upload";
+import { toApiUploadItem, uploadDatasets } from "@/utils/upload";
 
 /**
  * Collection configuration for batch uploads that will be combined
@@ -34,6 +33,8 @@ export interface CollectionConfig extends CollectionCreationInput {
  * after all uploads complete successfully.
  */
 interface CollectionBatch {
+    /** Batch ID used in the persisted upload state */
+    batchId: string;
     /** Upload item IDs belonging to this batch */
     ids: string[];
     /** Original upload items (needed for building collection elements) */
@@ -161,48 +162,6 @@ function buildCollectionElements(
         }
 
         return pairs;
-    }
-}
-
-/**
- * Converts a UI upload item to an API-ready UploadItem.
- *
- * This bridges the gap between:
- * - NewUploadItem: UI-friendly format with camelCase (persisted in localStorage)
- * - UploadItem: API-ready format with snake_case (sent to server)
- *
- * @param item - The UI upload item to convert
- * @returns API-ready upload item
- * @throws Error if item has invalid uploadMode or missing required data
- */
-export function toUploadItem(item: NewUploadItem): UploadItem {
-    const baseOptions = {
-        name: item.name,
-        size: item.size,
-        dbkey: item.dbkey,
-        ext: item.extension,
-        space_to_tab: item.spaceToTab,
-        to_posix_lines: item.toPosixLines,
-        deferred: item.deferred,
-        hashes: item.hashes,
-    };
-
-    switch (item.uploadMode) {
-        case "local-file":
-            if (!item.fileData) {
-                throw new Error(`No file data for upload item: ${item.name}`);
-            }
-            return createFileUploadItem(item.fileData, item.targetHistoryId, baseOptions);
-
-        case "paste-content":
-            return createPastedUploadItem(item.content, item.targetHistoryId, baseOptions);
-
-        case "paste-links":
-        case "remote-files":
-            return createUrlUploadItem(item.url, item.targetHistoryId, baseOptions);
-
-        default:
-            throw new Error(`Unsupported upload mode: ${item.uploadMode}`);
     }
 }
 
@@ -400,8 +359,122 @@ export function useUploadQueue() {
     }
 
     /**
+     * Stores a dataset ID in both the internal batch and persisted state.
+     *
+     * @param batch - Internal batch tracking object
+     * @param datasetId - Dataset ID to store
+     */
+    function collectDatasetId(batch: CollectionBatch | undefined, datasetId: string) {
+        if (batch) {
+            batch.datasetIds.push(datasetId);
+            uploadState.addBatchDatasetId(batch.batchId, datasetId);
+        }
+    }
+
+    /**
+     * Checks if all uploads in a batch have completed (success or error).
+     *
+     * @param batch - Internal batch tracking object
+     * @returns True if all uploads are complete
+     */
+    function isBatchComplete(batch: CollectionBatch): boolean {
+        return batch.ids.every((uploadId) => {
+            const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
+            return batchItem?.status === "completed" || batchItem?.status === "error";
+        });
+    }
+
+    /**
+     * Checks batch completion status and triggers collection creation if ready.
+     *
+     * @param batch - Internal batch tracking object
+     */
+    async function checkAndCompleteBatch(batch?: CollectionBatch): Promise<void> {
+        if (!batch) {
+            return;
+        }
+
+        if (isBatchComplete(batch)) {
+            await createCollection(batch.batchId).catch((err) => {
+                uploadState.setBatchError(batch.batchId, errorMessageAsString(err));
+            });
+        }
+    }
+
+    /**
+     * Processes a library dataset upload by importing it to the target history.
+     *
+     * @param id - Upload item ID
+     * @param item - Upload item with library dataset details
+     * @param batch - Internal batch tracking object (if part of a batch)
+     */
+    async function processLibraryDatasetUpload(
+        id: string,
+        item: NewUploadItem,
+        batch?: CollectionBatch,
+    ): Promise<void> {
+        if (item.uploadMode !== "data-library") {
+            throw new Error("Invalid upload mode for library dataset upload");
+        }
+
+        uploadState.updateProgress(id, 50);
+
+        // Import library dataset to history
+        const response = await copyDataset(item.lddaId, item.targetHistoryId, "dataset", "library");
+
+        uploadState.updateProgress(id, 100);
+
+        // Collect dataset ID for collection creation
+        // Response is an HDA (HistoryDatasetAssociation) which has an id field
+        if (response && "id" in response && response.id) {
+            collectDatasetId(batch, response.id);
+        }
+
+        // Check if batch is ready for collection creation
+        await checkAndCompleteBatch(batch);
+    }
+
+    /**
+     * Processes a regular upload (file, URL, or pasted content) via the upload API.
+     *
+     * @param id - Upload item ID
+     * @param item - Upload item to process
+     * @param batch - Internal batch tracking object (if part of a batch)
+     */
+    async function processRegularUpload(id: string, item: NewUploadItem, batch?: CollectionBatch): Promise<void> {
+        const uploadItem = toApiUploadItem(item);
+
+        await uploadDatasets([uploadItem], {
+            progress: (percentage) => uploadState.updateProgress(id, percentage),
+            success: (response: FetchDataResponse) => {
+                uploadState.updateProgress(id, 100);
+
+                // Collect dataset IDs for collection creation
+                if (batch && response.outputs) {
+                    // The outputs field is Record<string, unknown> but is actually an array of dataset objects
+                    const outputs = response.outputs as unknown as Array<{
+                        id: string;
+                        hid?: number;
+                        name?: string;
+                    }>;
+                    const datasetId = outputs[0]?.id;
+                    if (datasetId) {
+                        collectDatasetId(batch, datasetId);
+                    }
+
+                    // Check if batch is ready for collection creation
+                    checkAndCompleteBatch(batch);
+                }
+            },
+            error: (err) => {
+                uploadState.setError(id, errorMessageAsString(err));
+            },
+        });
+    }
+
+    /**
      * Processes the next upload in the queue.
-     * Handles upload submission with progress tracking and error handling.
+     * Orchestrates upload execution by delegating to specialized handlers.
      */
     async function processNext(): Promise<void> {
         if (processing || queue.length === 0) {
@@ -428,80 +501,12 @@ export function useUploadQueue() {
 
             // Find the batch this upload belongs to
             const batch = batches.find((b) => b.ids.includes(id));
-            const batchId = item.batchId;
 
-            // Handle library dataset imports separately
+            // Delegate to appropriate upload handler based on upload mode
             if (item.uploadMode === "data-library") {
-                uploadState.updateProgress(id, 50);
-
-                // Import library dataset to history
-                const response = await copyDataset(item.lddaId, item.targetHistoryId, "dataset", "library");
-
-                uploadState.updateProgress(id, 100);
-
-                // Collect dataset ID for collection creation
-                // Response is an HDA (HistoryDatasetAssociation) which has an id field
-                if (batch && batchId && response && "id" in response && response.id) {
-                    batch.datasetIds.push(response.id);
-                    uploadState.addBatchDatasetId(batchId, response.id);
-                }
-
-                // Check if all batch uploads are complete
-                if (batch && batchId) {
-                    const allComplete = batch.ids.every((uploadId) => {
-                        const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
-                        return batchItem?.status === "completed" || batchItem?.status === "error";
-                    });
-
-                    if (allComplete) {
-                        await createCollection(batchId).catch((err) => {
-                            uploadState.setBatchError(batchId, errorMessageAsString(err));
-                        });
-                    }
-                }
+                await processLibraryDatasetUpload(id, item, batch);
             } else {
-                // Convert to API format and upload via fetch API
-                const uploadItem = toUploadItem(item);
-
-                await uploadDatasets([uploadItem], {
-                    progress: (percentage) => uploadState.updateProgress(id, percentage),
-                    success: (response: FetchDataResponse) => {
-                        uploadState.updateProgress(id, 100);
-
-                        // Collect dataset IDs for collection creation
-                        if (batch && batchId && response.outputs) {
-                            // The outputs field is Record<string, unknown> but is actually an array of dataset objects
-                            const outputs = response.outputs as unknown as Array<{
-                                id: string;
-                                hid?: number;
-                                name?: string;
-                            }>;
-                            const datasetId = outputs[0]?.id;
-                            if (datasetId) {
-                                // Store in both internal batch and persisted state
-                                batch.datasetIds.push(datasetId);
-                                uploadState.addBatchDatasetId(batchId, datasetId);
-                            }
-
-                            // Check if all batch uploads are complete
-                            const allComplete = batch.ids.every((uploadId) => {
-                                const batchItem = uploadState.activeItems.value.find((i) => i.id === uploadId);
-                                return batchItem?.status === "completed" || batchItem?.status === "error";
-                            });
-
-                            // If batch is complete, create collection
-                            if (allComplete) {
-                                createCollection(batchId).catch((err) => {
-                                    uploadState.setBatchError(batchId, errorMessageAsString(err));
-                                });
-                            }
-                        }
-                    },
-                    error: (err) => {
-                        // This callback is for upload-specific errors
-                        uploadState.setError(id, errorMessageAsString(err));
-                    },
-                });
+                await processRegularUpload(id, item, batch);
             }
         } catch (err) {
             // This catches validation errors and any unexpected errors
@@ -531,7 +536,7 @@ export function useUploadQueue() {
         // Add upload items with batch ID
         const ids = items.map((item) => uploadState.addUploadItem(item, batchId));
 
-        // Update batch with upload IDs
+        // Update batch with upload IDs and create internal batch
         if (batchId && collectionConfig) {
             const batch = uploadState.getBatch(batchId);
             if (batch) {
@@ -540,6 +545,7 @@ export function useUploadQueue() {
 
             // Create internal batch for dataset ID tracking
             batches.push({
+                batchId,
                 ids,
                 items,
                 datasetIds: [],
@@ -558,11 +564,7 @@ export function useUploadQueue() {
      */
     function cleanupOrphanedBatches(): void {
         for (let i = batches.length - 1; i >= 0; i--) {
-            const batch = batches[i];
-            if (!batch) {
-                continue;
-            }
-
+            const batch = batches[i]!;
             const hasActiveUploads = batch.ids.some((id) =>
                 uploadState.activeItems.value.some((item) => item.id === id),
             );
