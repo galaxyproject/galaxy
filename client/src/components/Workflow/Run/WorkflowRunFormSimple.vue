@@ -2,7 +2,7 @@
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormCheckbox, BFormInput, BModal, BOverlay } from "bootstrap-vue";
+import { BAlert, BFormInput, BModal, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -33,6 +33,7 @@ import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -498,11 +499,10 @@ onBeforeMount(() => {
                 <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-3 rounded-bottom">
                     <!-- Send to new history -->
                     <div class="settings-row">
-                        <BFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target" switch>
-                            <HelpText
-                                uri="galaxy.workflows.runtimeSettings.sendToNewHistory"
-                                text="Send results to a new history" />
-                        </BFormCheckbox>
+                        <GCheckbox id="send-to-new-history" v-model="sendToNewHistory" toggle>
+                            Send results to a new history
+                            <HelpText uri="galaxy.workflows.runtimeSettings.sendToNewHistory" info-icon />
+                        </GCheckbox>
                         <div v-if="sendToNewHistory" class="settings-detail">
                             <BFormInput
                                 v-model="newHistoryName"
@@ -514,34 +514,29 @@ onBeforeMount(() => {
 
                     <!-- Use cached jobs -->
                     <div class="settings-row">
-                        <BFormCheckbox v-model="useCachedJobs" switch>
-                            <HelpText
-                                uri="galaxy.workflows.runtimeSettings.useCachedJobs"
-                                text="Re-use jobs with identical parameters" />
-                        </BFormCheckbox>
+                        <GCheckbox v-model="useCachedJobs" toggle>
+                            Re-use jobs with identical parameters
+                            <HelpText uri="galaxy.workflows.runtimeSettings.useCachedJobs" info-icon />
+                        </GCheckbox>
                     </div>
 
                     <!-- Send notification -->
                     <div class="settings-row">
-                        <BFormCheckbox
+                        <GCheckbox
                             v-model="sendNotificationOnComplete"
-                            switch
+                            toggle
                             data-test-id="send-notification-checkbox">
-                            <HelpText
-                                uri="galaxy.workflows.runtimeSettings.sendNotification"
-                                text="Notify me when complete" />
-                        </BFormCheckbox>
+                            Notify me when complete
+                            <HelpText uri="galaxy.workflows.runtimeSettings.sendNotification" info-icon />
+                        </GCheckbox>
                     </div>
 
                     <!-- Export on completion -->
                     <div v-if="hasWritableFileSources" class="settings-row">
-                        <div class="d-flex align-items-center">
-                            <BFormCheckbox :key="exportCheckboxKey" v-model="exportEnabled" switch>
-                                <HelpText
-                                    uri="galaxy.workflows.runtimeSettings.exportOnComplete"
-                                    text="Export results when complete" />
-                            </BFormCheckbox>
-                        </div>
+                        <GCheckbox :key="exportCheckboxKey" v-model="exportEnabled" toggle>
+                            Export results when complete
+                            <HelpText uri="galaxy.workflows.runtimeSettings.exportOnComplete" info-icon />
+                        </GCheckbox>
                         <div v-if="exportOnCompleteConfig" class="settings-detail">
                             <span class="export-summary">
                                 <span class="text-muted">
@@ -563,11 +558,10 @@ onBeforeMount(() => {
                     <!-- Storage options -->
                     <template v-if="isConfigLoaded && config.object_store_allows_id_selection">
                         <div class="settings-row">
-                            <BFormCheckbox v-model="splitObjectStore" switch>
-                                <HelpText
-                                    uri="galaxy.workflows.runtimeSettings.splitObjectStore"
-                                    text="Send outputs and intermediate to different storage" />
-                            </BFormCheckbox>
+                            <GCheckbox v-model="splitObjectStore" toggle>
+                                Send outputs and intermediate to different storage
+                                <HelpText uri="galaxy.workflows.runtimeSettings.splitObjectStore" info-icon />
+                            </GCheckbox>
                         </div>
                         <div class="settings-row">
                             <WorkflowStorageConfiguration

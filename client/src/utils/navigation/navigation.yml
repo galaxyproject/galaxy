@@ -843,7 +843,7 @@ workflow_run:
     new_history_badge: '[data-description="new history badge"]'
     history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
-    runtime_setting_target: '.workflow-run-settings-target'
+    runtime_setting_target: '[data-test-id="send-to-new-history-label"]'
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input

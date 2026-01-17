@@ -937,12 +937,9 @@ steps: {}
         self.screenshot("workflow_run_settings_panel_open")
 
         # Find and click the send notification checkbox
-        # For Bootstrap Vue switch checkbox, click the parent label to trigger Vue reactivity
+        # GCheckbox root element is a clickable label
         notification_checkbox = self.driver.find_element(By.CSS_SELECTOR, "[data-test-id='send-notification-checkbox']")
-        # Find the parent custom-control div and click the label within it
-        parent_control = notification_checkbox.find_element(By.XPATH, "./..")
-        label = parent_control.find_element(By.CSS_SELECTOR, "label.custom-control-label")
-        label.click()
+        notification_checkbox.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_run_on_complete_notification_enabled")
 
