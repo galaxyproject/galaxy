@@ -41,7 +41,7 @@ dependencies = [
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "gravity @ git+https://github.com/nsoranzo/gravity.git@python3.14",  # Python 3.14 support
+    "gravity>=1.2.0",  # Python 3.14 support
     "gunicorn",
     "gxformat2>=0.21.0",
     "h5grove>=1.2.1",

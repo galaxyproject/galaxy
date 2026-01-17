@@ -19,7 +19,7 @@ import yaml
 from boltons.iterutils import remap
 
 try:
-    from gravity.util import settings_to_sample
+    from gravity.settings import settings_to_sample
 except ImportError:
     settings_to_sample = None
 
