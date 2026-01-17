@@ -673,7 +673,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/:formId",
                         component: UserPreferencesForm,
-                        props: true,
+                        props: (route) => ({
+                            formId: route.params.formId,
+                            id: route.query.id,
+                        }),
                         redirect: redirectAnon(),
                     },
                     {
