@@ -97,6 +97,13 @@ Deprecation Notices
   * `Galaxy Monitoring with Telegraf and Grafana <https://training.galaxyproject.org/training-material/topics/admin/tutorials/monitoring/tutorial.html>`__
   * `Galaxy Monitoring with gxadmin <https://training.galaxyproject.org/training-material/topics/admin/tutorials/gxadmin/tutorial.html>`__
 
+**Deprecation of Python 3.9 support in Galaxy release 26.0**
+  Since Python 3.9 reached its end-of-life in October 2025, support for it will
+  be removed in Galaxy 26.0.
+  Administrators should upgrade their Python environment to version 3.10 or
+  higher to avoid security vulnerabilities and ensure a smooth transition to
+  Galaxy 26.0 and beyond.
+
 Release Team
 ===========================================================
 
