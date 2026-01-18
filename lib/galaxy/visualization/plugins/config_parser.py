@@ -32,9 +32,6 @@ class VisualizationsConfigParser:
             -- what information needs to be added to the query string
     """
 
-    #: what are the allowed href targets when clicking on a visualization anchor
-    VALID_RENDER_TARGETS = ["galaxy_main", "_top", "_blank"]
-
     def __init__(self):
         # what parsers should be used for sub-components
         self.data_source_parser = DataSourceParser()
@@ -114,15 +111,6 @@ class VisualizationsConfigParser:
         link_text = xml_tree.find("link_text")
         if link_text is not None and link_text.text:
             returned["link_text"] = link_text
-
-        # render_target: where in the browser to open the rendered visualization
-        # defaults to: galaxy_main
-        render_target = xml_tree.find("render_target")
-        if (render_target is not None and render_target.text) and (render_target.text in self.VALID_RENDER_TARGETS):
-            returned["render_target"] = render_target.text
-        else:
-            returned["render_target"] = "galaxy_main"
-        # consider unifying the above into its own element and parsing method
 
         # load optional custom configuration specifiers
         if (specs_section := xml_tree.find("specs")) is not None:
