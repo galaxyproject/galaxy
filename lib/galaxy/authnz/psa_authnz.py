@@ -753,6 +753,9 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
     if not trans:
         log.debug("OIDC sync_user_profile skipped: no Galaxy transaction available.")
         return
+    if trans.app.config.enable_account_interface:
+        log.debug("OIDC sync_user_profile skipped: account interface enabled.")
+        return
     manager = getattr(trans.app, "user_manager", None) or user_managers.UserManager(trans.app)
     updates: list[str] = []
     # Update email and keep private role in sync

@@ -155,17 +155,16 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def update_email(
         self, trans, user: User, new_email: str, *, commit: bool = True, send_activation_email: bool = True
-    ) -> Optional[str]:
+    ) -> None:
         """
         Update a user's email address, keeping the private role in sync and honoring activation settings.
-        Returns an optional informational message (activation email sent notice), or None if unchanged.
         Raises RequestParameterInvalidException on validation errors.
         """
         message = validate_email(trans, new_email, user)
         if message:
             raise exceptions.RequestParameterInvalidException(message)
         if user.email == new_email:
-            return None
+            return
         private_role = trans.app.security_agent.get_private_user_role(user)
         private_role.name = new_email
         private_role.description = f"Private role for {new_email}"
@@ -174,22 +173,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session.add_all([user, private_role])
         if trans.app.config.user_activation_on:
             user.active = False
-            if send_activation_email:
-                if self.send_activation_email(trans, user.email, user.username):
-                    message = (
-                        "The login information has been updated with the changes.<br>"
-                        "Verification email has been sent to your new email address. Please verify it by clicking "
-                        "the activation link in the email.<br>"
-                        "Please check your spam/trash folder in case you cannot find the message."
-                    )
-                else:
-                    message = "Unable to send activation email, please contact your local Galaxy administrator."
-                    if trans.app.config.error_email_to is not None:
-                        message += f" Contact: {trans.app.config.error_email_to}"
-                    raise exceptions.InternalServerError(message)
+            if send_activation_email and not self.send_activation_email(trans, user.email, user.username):
+                error_message = "Unable to send activation email, please contact your local Galaxy administrator."
+                if trans.app.config.error_email_to is not None:
+                    error_message += f" Contact: {trans.app.config.error_email_to}"
+                raise exceptions.InternalServerError(error_message)
         if commit:
             session.commit()
-        return message
 
     def update_username(self, trans, user: User, new_username: str, *, commit: bool = True) -> None:
         """

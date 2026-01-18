@@ -1,4 +1,5 @@
 import base64
+import json
 import secrets
 import uuid
 from collections import defaultdict
@@ -36,6 +37,7 @@ from galaxy.authnz.psa_authnz import (
     AUTH_PIPELINE,
     decode_access_token,
     PSAAuthnz,
+    sync_user_profile,
 )
 
 
@@ -367,3 +369,38 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
         app_config=mock_app.config,
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
+
+
+def test_sync_user_profile_skips_when_account_interface_enabled():
+    manager = MagicMock()
+    session = MagicMock()
+    app_config = SimpleNamespace(enable_account_interface=True)
+    app = SimpleNamespace(config=app_config, user_manager=manager)
+    trans = SimpleNamespace(app=app, sa_session=session)
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans})
+    user = SimpleNamespace(id=1, preferences={})
+    details = {"email": "new@example.com", "username": "newname"}
+
+    sync_user_profile(strategy=strategy, details=details, user=user)
+
+    manager.update_email.assert_not_called()
+    manager.update_username.assert_not_called()
+    session.commit.assert_not_called()
+
+
+def test_sync_user_profile_updates_when_account_interface_disabled():
+    manager = MagicMock()
+    session = MagicMock()
+    app_config = SimpleNamespace(enable_account_interface=False)
+    app = SimpleNamespace(config=app_config, user_manager=manager)
+    trans = SimpleNamespace(app=app, sa_session=session)
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans})
+    user = SimpleNamespace(id=2, preferences={})
+    details = {"email": "new@example.com", "username": "newname"}
+
+    sync_user_profile(strategy=strategy, details=details, user=user)
+
+    manager.update_email.assert_called_once_with(trans, user, "new@example.com", commit=False, send_activation_email=False)
+    manager.update_username.assert_called_once_with(trans, user, "newname", commit=False)
+    assert json.loads(user.preferences["profile_updates"]) == ["email", "username"]
+    assert session.commit.call_count == 2
