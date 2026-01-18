@@ -104,7 +104,7 @@ plyr:
     version: 0.0.4
 polaris:
     package: "@galaxyproject/polaris"
-    version: 0.0.3
+    version: 0.0.5
 rerunio:
     package: "@galaxyproject/rerunio"
     version: 0.0.0
