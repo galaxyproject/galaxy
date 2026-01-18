@@ -133,7 +133,7 @@ class VisualizationsConfigParser:
             returned["tags"] = ListParser(tag_section)
 
         # load tracks specifiers (allow 'groups' section for backward compatibility)
-        if (tracks_section := xml_tree.find("tracks") or xml_tree.find("groups")) is not None:
+        if (tracks_section := xml_tree.find("tracks")) is not None:
             returned["tracks"] = ListParser(tracks_section)
 
         # load settings specifiers
