@@ -154,7 +154,7 @@ onMounted(async () => {
     <div class="d-flex flex-column">
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <Heading h2 size="sm">
+        <Heading h2 size="sm" v-localize>
             Manage your user preferences on this page, including email address, password, and other settings.
         </Heading>
 
@@ -179,76 +179,76 @@ onMounted(async () => {
                     v-if="isConfigLoaded && !config.single_user"
                     id="edit-preferences-permissions"
                     :icon="faUsers"
-                    title="Set Dataset Permissions for New Histories"
-                    description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
+                    :title="localize('Set Dataset Permissions for New Histories')"
+                    :description="localize('Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.')"
                     to="/user/permissions" />
 
                 <UserPreferencesElement
                     id="edit-preferences-api-key"
                     :icon="faKey"
-                    title="Manage Galaxy API Key"
-                    description="Access your current Galaxy API key or create a new one."
+                    :title="localize('Manage Galaxy API Key')"
+                    :description="localize('Access your current Galaxy API key or create a new one.')"
                     to="/user/api_key" />
 
                 <UserPreferencesElement
                     id="edit-preferences-credentials"
                     :icon="faKey"
-                    title="Manage Your Tools Credentials"
-                    description="Manage your tools credentials groups for accessing external services."
+                    :title="localize('Manage Your Tools Credentials')"
+                    :description="localize('Manage your tools credentials groups for accessing external services.')"
                     to="/user/credentials" />
 
                 <UserPreferencesElement
                     id="edit-preferences-notifications"
                     :icon="faBell"
-                    title="Manage Notifications"
-                    description="Manage your notification settings."
+                    :title="localize('Manage Notifications')"
+                    :description="localize('Manage your notification settings.')"
                     to="/user/notifications/preferences" />
 
                 <UserPreferencesElement
                     v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
                     id="manage-third-party-identities"
                     :icon="faIdCard"
-                    title="Manage Third-Party Identities"
-                    description="Connect or disconnect access to your third-party identities."
+                    :title="localize('Manage Third-Party Identities')"
+                    :description="localize('Connect or disconnect access to your third-party identities.')"
                     to="/user/external_ids" />
 
                 <UserPreferencesElement
                     id="edit-preferences-custom-builds"
                     :icon="faCubes"
-                    title="Manage Custom Builds"
-                    description="Add or remove custom builds using history datasets."
+                    :title="localize('Manage Custom Builds')"
+                    :description="localize('Add or remove custom builds using history datasets.')"
                     to="/custom_builds" />
 
                 <UserPreferencesElement
                     v-if="hasThemes"
                     id="edit-preferences-theme"
                     :icon="faPalette"
-                    title="Pick a Color Theme"
-                    description="Click here to change the user interface color theme."
+                    :title="localize('Pick a Color Theme')"
+                    :description="localize('Click here to change the user interface color theme.')"
                     @click="toggleThemeModal" />
 
                 <UserPreferencesElement
                     v-if="isConfigLoaded && !config.single_user"
                     id="edit-preferences-make-data-private"
                     :icon="faLock"
-                    title="Make All Data Private"
-                    description="Click here to make all data private."
+                    :title="localize('Make All Data Private')"
+                    :description="localize('Click here to make all data private.')"
                     @click="makeDataPrivate" />
 
                 <UserPreferencesElement
                     v-if="isConfigLoaded && config.enable_beacon_integration"
                     id="edit-preferences-beacon"
                     :icon="faBroadcastTower"
-                    title="Manage Beacon"
-                    description="Contribute variants to Beacon"
+                    :title="localize('Manage Beacon')"
+                    :description="localize('Contribute variants to Beacon')"
                     @click="toggleBeaconModal" />
 
                 <UserPreferencesElement
                     v-if="isConfigLoaded && config.object_store_allows_id_selection"
                     id="manage-preferred-object-store"
                     :icon="faHdd"
-                    title="Manage Your Preferred Galaxy Storage"
-                    description="Select a Preferred Galaxy storage for the outputs of new jobs."
+                    :title="localize('Manage Your Preferred Galaxy Storage')"
+                    :description="localize('Select a Preferred Galaxy storage for the outputs of new jobs.')"
                     @click="togglePreferredStorageModal" />
 
                 <UserPreferencesElement
@@ -256,8 +256,8 @@ onMounted(async () => {
                     id="manage-object-stores"
                     class="manage-object-stores"
                     :icon="faHdd"
-                    title="Manage Your Galaxy Storage"
-                    description="Add, remove, or update your personally configured Galaxy storage."
+                    :title="localize('Manage Your Galaxy Storage')"
+                    :description="localize('Add, remove, or update your personally configured Galaxy storage.')"
                     to="/object_store_instances/index" />
 
                 <UserPreferencesElement
@@ -265,8 +265,8 @@ onMounted(async () => {
                     id="manage-file-sources"
                     class="manage-file-sources"
                     :icon="faFile"
-                    title="Manage Your Repositories"
-                    description="Add, remove, or update your personally configured location to find files from and write files to."
+                    :title="localize('Manage Your Repositories')"
+                    :description="localize('Add, remove, or update your personally configured location to find files from and write files to.')"
                     to="/file_source_instances/index" />
             </div>
 
@@ -276,8 +276,8 @@ onMounted(async () => {
                     id="delete-account"
                     danger-zone
                     :icon="faRadiation"
-                    title="Delete Account"
-                    description="Click here to delete your account."
+                    :title="localize('Delete Account')"
+                    :description="localize('Click here to delete your account.')"
                     @click="toggleUserDeletion" />
 
                 <UserPreferencesElement
@@ -285,8 +285,8 @@ onMounted(async () => {
                     id="edit-preferences-sign-out"
                     danger-zone
                     :icon="faSignOut"
-                    title="Sign Out of All Sessions"
-                    description="Click here to sign out of all sessions."
+                    :title="localize('Sign Out of All Sessions')"
+                    :description="localize('Click here to sign out of all sessions.')"
                     @click="signOut" />
             </div>
 

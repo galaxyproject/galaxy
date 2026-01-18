@@ -14,13 +14,13 @@ const emit = defineEmits<{
     <div class="ui-form-element section-row">
         <div class="ui-form-title">
             <span class="ui-form-title-text">
-                <label for="tool-form-tags">Output Tags</label>
+                <label for="tool-form-tags" v-localize>Output Tags</label>
             </span>
         </div>
         <div id="tool-form-tags" class="ui-form-field">
             <StatelessTags :value="props.tags" placeholder="Add tags" @input="emit('update:tags', $event)" />
         </div>
-        <span class="ui-form-info form-text text-muted">
+        <span class="ui-form-info form-text text-muted" v-localize>
             Enter tags to apply to the output datasets in your history (e.g., 'sample1'). Tags starting with '#' (e.g.,
             '#sample1') will propagate to datasets derived from these outputs. Tags help you organize and search your
             history.
