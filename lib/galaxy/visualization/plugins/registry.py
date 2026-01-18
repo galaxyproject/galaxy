@@ -55,7 +55,7 @@ class VisualizationsRegistry:
         :param  app:        the application (and its configuration) using this manager
         """
         self.app = weakref.ref(app)
-        self.config_parser = config_parser.VisualizationsConfigParser()
+        self.config_parser = config_parser.PluginConfigParser()
         self.base_url = self.BASE_URL
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins: dict[str, VisualizationPlugin] = {}
