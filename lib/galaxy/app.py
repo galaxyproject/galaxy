@@ -861,16 +861,19 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
-        # Initialize workflow completion monitoring
+        # Initialize workflow completion monitoring (manager is always available,
+        # but monitor only runs on workflow scheduler processes)
         self.workflow_completion_manager = WorkflowCompletionManager(self)
         self.workflow_completion_hook_registry = WorkflowCompletionHookRegistry(self)
-        self.workflow_completion_monitor = WorkflowCompletionMonitor(
-            self,
-            self.workflow_completion_manager,
-            self.workflow_completion_hook_registry,
-        )
-        self.application_stack.register_postfork_function(self.workflow_completion_monitor.start)
-        self.haltables.append(("WorkflowCompletionMonitor", self.workflow_completion_monitor.shutdown_monitor))
+        self.workflow_completion_monitor: Optional[WorkflowCompletionMonitor] = None
+        if self.workflow_scheduling_manager._is_workflow_handler():
+            self.workflow_completion_monitor = WorkflowCompletionMonitor(
+                self,
+                self.workflow_completion_manager,
+                self.workflow_completion_hook_registry,
+            )
+            self.application_stack.register_postfork_function(self.workflow_completion_monitor.start)
+            self.haltables.append(("WorkflowCompletionMonitor", self.workflow_completion_monitor.shutdown_monitor))
 
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)

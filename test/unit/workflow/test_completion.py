@@ -1,16 +1,21 @@
 """Unit tests for workflow completion detection logic."""
 
+from typing import cast
 from unittest.mock import (
     MagicMock,
 )
 
 import pytest
 
+from galaxy import model
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
+from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.schema.invocation import (
     InvocationState,
     InvocationStepState,
 )
 from galaxy.schema.schema import JobState
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.workflow.completion import (
     are_all_jobs_successful,
     compute_job_state_summary,
@@ -230,3 +235,108 @@ class TestTerminalStates:
     def test_successful_states_subset_of_terminal(self):
         """Successful states should be a subset of terminal states."""
         assert SUCCESSFUL_JOB_STATES.issubset(TERMINAL_JOB_STATES)
+
+
+class TestWorkflowCompletionManagerHandlerFiltering:
+    """Tests for WorkflowCompletionManager.poll_pending_completions handler filtering."""
+
+    def test_poll_pending_completions_filters_by_handler(self):
+        """poll_pending_completions should only return invocations for the specified handler."""
+        app = MockApp()
+        session = app.model.context
+
+        # Create a user and workflow (required for invocations)
+        user = model.User(email="test@test.com", password="password")
+        session.add(user)
+
+        stored_workflow = model.StoredWorkflow()
+        stored_workflow.user = user
+        workflow = model.Workflow()
+        stored_workflow.latest_workflow = workflow
+        workflow.stored_workflow = stored_workflow
+        session.add(stored_workflow)
+        session.flush()
+
+        # Create invocations with different handlers and SCHEDULED state
+        inv1 = model.WorkflowInvocation()
+        inv1.workflow = workflow
+        inv1.state = InvocationState.SCHEDULED.value
+        inv1.handler = "handler_a"
+
+        inv2 = model.WorkflowInvocation()
+        inv2.workflow = workflow
+        inv2.state = InvocationState.SCHEDULED.value
+        inv2.handler = "handler_a"
+
+        inv3 = model.WorkflowInvocation()
+        inv3.workflow = workflow
+        inv3.state = InvocationState.SCHEDULED.value
+        inv3.handler = "handler_b"
+
+        session.add_all([inv1, inv2, inv3])
+        session.commit()
+
+        # Create the completion manager and test filtering
+        completion_manager = WorkflowCompletionManager(cast(MinimalManagerApp, app))
+
+        # Poll with handler_a - should return 2 invocations
+        handler_a_pending = completion_manager.poll_pending_completions(handler="handler_a")
+        assert len(handler_a_pending) == 2
+        assert inv1.id in handler_a_pending
+        assert inv2.id in handler_a_pending
+        assert inv3.id not in handler_a_pending
+
+        # Poll with handler_b - should return only 1 invocation
+        handler_b_pending = completion_manager.poll_pending_completions(handler="handler_b")
+        assert len(handler_b_pending) == 1
+        assert inv3.id in handler_b_pending
+
+        # Poll with a non-existent handler - should return empty
+        other_pending = completion_manager.poll_pending_completions(handler="nonexistent_handler")
+        assert len(other_pending) == 0
+
+        # Poll without handler filtering - should return all 3
+        all_pending = completion_manager.poll_pending_completions(handler=None)
+        assert len(all_pending) == 3
+
+    def test_poll_pending_completions_excludes_non_scheduled_invocations(self):
+        """poll_pending_completions should only return SCHEDULED invocations."""
+        app = MockApp()
+        session = app.model.context
+
+        user = model.User(email="test2@test.com", password="password")
+        session.add(user)
+
+        stored_workflow = model.StoredWorkflow()
+        stored_workflow.user = user
+        workflow = model.Workflow()
+        stored_workflow.latest_workflow = workflow
+        workflow.stored_workflow = stored_workflow
+        session.add(stored_workflow)
+        session.flush()
+
+        # Create invocations with different states, same handler
+        inv_scheduled = model.WorkflowInvocation()
+        inv_scheduled.workflow = workflow
+        inv_scheduled.state = InvocationState.SCHEDULED.value
+        inv_scheduled.handler = "handler_a"
+
+        inv_new = model.WorkflowInvocation()
+        inv_new.workflow = workflow
+        inv_new.state = InvocationState.NEW.value
+        inv_new.handler = "handler_a"
+
+        inv_ready = model.WorkflowInvocation()
+        inv_ready.workflow = workflow
+        inv_ready.state = InvocationState.READY.value
+        inv_ready.handler = "handler_a"
+
+        session.add_all([inv_scheduled, inv_new, inv_ready])
+        session.commit()
+
+        completion_manager = WorkflowCompletionManager(cast(MinimalManagerApp, app))
+
+        # Only the SCHEDULED invocation should be returned
+        pending = completion_manager.poll_pending_completions(handler="handler_a")
+        assert len(pending) == 1
+        assert inv_scheduled.id in pending

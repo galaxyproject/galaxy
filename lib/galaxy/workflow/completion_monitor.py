@@ -77,10 +77,13 @@ class WorkflowCompletionMonitor(Monitors):
         Single iteration of the monitoring loop.
 
         Polls for pending completions and processes each one.
+        Only monitors invocations assigned to this handler.
         """
         try:
             # Find SCHEDULED invocations without completion records
-            pending_ids = self.completion_manager.poll_pending_completions()
+            # Only poll invocations assigned to this handler
+            handler = self.app.config.server_name
+            pending_ids = self.completion_manager.poll_pending_completions(handler=handler)
 
             if pending_ids:
                 log.debug(
