@@ -154,9 +154,6 @@ class DataSourceParser:
     # these are the allowed classes to associate visualizations with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
     ALLOWED_MODEL_CLASSES = ["Visualization", "HistoryDatasetAssociation", "LibraryDatasetDatasetAssociation"]
-    # these are the allowed object attributes to use in data source tests
-    #   any attribute element not in this list will throw a parsing ParsingExcepion
-    ALLOWED_DATA_SOURCE_ATTRIBUTES = ["datatype"]
 
     def parse(self, xml_tree):
         """
@@ -173,11 +170,6 @@ class DataSourceParser:
         # tests (optional, 0 or more) - data for boolean test: 'is the visualization usable by this object?'
         # when no tests are given, default to isinstance( object, model_class )
         returned["tests"] = self.parse_tests(xml_tree.findall("test"))
-
-        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_class, tests
-        returned["to_params"] = {}
-        if to_params := self.parse_to_params(xml_tree.findall("to_param")):
-            returned["to_params"] = to_params
 
         return returned
 
@@ -227,9 +219,6 @@ class DataSourceParser:
             # collect expected test result
             test_result = test_result.strip()
 
-            # result type should tell the registry how to convert the result before the test
-            test_result_type = test_elem.get("result_type", "string")
-
             # allow_uri_if_protocol indicates that the visualization can work with deferred data_sources which source URI
             # matches any of the given protocols in this list. This is useful for visualizations that can work with URIs.
             # Can only be used with isinstance tests. By default, an empty list means that the visualization doesn't support
@@ -242,43 +231,11 @@ class DataSourceParser:
                     "attr": test_attr,
                     "type": test_type,
                     "result": test_result,
-                    "result_type": test_result_type,
                     "allow_uri_if_protocol": allow_uri_if_protocol,
                 }
             )
 
         return tests
-
-    def parse_to_params(self, xml_tree_list):
-        """
-        Given a list of `to_param` elements, returns a dictionary that allows
-        the registry to convert the data_source into one or more appropriate
-        params for the visualization.
-        """
-        to_param_dict: dict[str, Any] = {}
-        if not xml_tree_list:
-            return to_param_dict
-
-        for element in xml_tree_list:
-            # param_name required
-            param_name = element.text
-            if not param_name:
-                raise ParsingException("to_param requires text (the param name)")
-
-            param = {}
-            # assign is a shortcut param_attr that assigns a value to a param (as text)
-            assign = element.get("assign")
-            if assign is not None:
-                param["assign"] = assign
-
-            # param_attr is the attribute of the object that the visualization will be applied to
-            param_attr = element.get("param_attr")
-            if param_attr is not None:
-                param["param_attr"] = param_attr
-            if param:
-                to_param_dict[param_name] = param
-
-        return to_param_dict
 
 
 class ListParser(list):
