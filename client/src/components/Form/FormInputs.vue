@@ -6,7 +6,7 @@
             :class="{ 'bordered-input': syncWithGraph && activeNodeId === index }">
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
-                    <b>{{ localize(input.test_param.label || input.test_param.name) }}</b>
+                    <b v-localize>{{ input.test_param.label || input.test_param.name }}</b>
                 </div>
                 <div class="portlet-content">
                     <FormElement

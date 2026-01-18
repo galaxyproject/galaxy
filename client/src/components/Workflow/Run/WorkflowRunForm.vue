@@ -20,7 +20,7 @@
                 </b-button>
                 <ButtonSpinner
                     id="run-workflow"
-                    title="localize('Run Workflow')"
+                    :title="localize('Run Workflow')"
                     :tooltip="runButtonTooltip"
                     :disabled="!canRunOnHistory || hasCredentialErrors"
                     :wait="showExecuting"
