@@ -107,11 +107,6 @@ class VisualizationsConfigParser:
         # entry_point: how will this plugin render/load? mako, script tag, or static html file?
         returned["entry_point"] = self.parse_entry_point(xml_tree)
 
-        # link_text: the string to use for the text of any links/anchors to this visualization
-        link_text = xml_tree.find("link_text")
-        if link_text is not None and link_text.text:
-            returned["link_text"] = link_text
-
         # load optional custom configuration specifiers
         if (specs_section := xml_tree.find("specs")) is not None:
             returned["specs"] = DictParser(specs_section)
