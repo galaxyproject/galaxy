@@ -149,8 +149,8 @@ markdown-it-py==4.0.0 ; python_full_version >= '3.11'
 markupsafe==3.0.3
 mcp==1.25.0
 mdurl==0.1.2
-mercurial==7.1.2 ; python_version < '3.14'
-mercurial==7.2rc0 ; python_version >= '3.14'
+mercurial==7.1.2 ; python_full_version < '3.14'
+mercurial==7.2rc0 ; python_full_version >= '3.14'
 mistralai==1.9.11
 mistune==3.1.4
 more-itertools==10.8.0
