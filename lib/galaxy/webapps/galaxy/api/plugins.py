@@ -308,11 +308,13 @@ class FastAPIPlugins:
             result: dict[str, Any] = {"hdas": []}
             for hda in history.contents_iter(types=["dataset"], deleted=False, visible=True):
                 if registry.get_visualization(trans, id, hda):
-                    result["hdas"].append({
-                        "id": trans.security.encode_id(hda.id),
-                        "hid": hda.hid,
-                        "name": hda.name,
-                    })
+                    result["hdas"].append(
+                        {
+                            "id": trans.security.encode_id(hda.id),
+                            "hid": hda.hid,
+                            "name": hda.name,
+                        }
+                    )
             result["hdas"].sort(key=lambda h: h["hid"], reverse=True)
             return result
         else:
