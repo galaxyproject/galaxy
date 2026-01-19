@@ -52,8 +52,8 @@ from galaxy.webapps.galaxy.api import (
     DependsOnUser,
     Router,
 )
-from galaxy.work.context import SessionRequestContext
 from galaxy.webapps.galaxy.fast_app import limiter
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
