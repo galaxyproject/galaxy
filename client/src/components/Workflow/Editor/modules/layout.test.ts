@@ -7,6 +7,17 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { createMockStepPosition, createTestStep } from "../test_fixtures";
 import { AUTO_LAYOUT_ORPHAN_EDGE_WARNING_PREFIX, autoLayout } from "./layout";
 
+type LayoutResult = Awaited<ReturnType<typeof autoLayout>>;
+
+/** Asserts target step is positioned to the right of source step (proves edge exists in graph) */
+function expectStepToRightOf(result: LayoutResult, targetStepId: number, sourceStepId: number) {
+    const sourcePos = result?.steps.find((s) => s.id === String(sourceStepId));
+    const targetPos = result?.steps.find((s) => s.id === String(targetStepId));
+    expect(sourcePos, `Step ${sourceStepId} not in layout result`).toBeDefined();
+    expect(targetPos, `Step ${targetStepId} not in layout result`).toBeDefined();
+    expect(targetPos!.x).toBeGreaterThan(sourcePos!.x);
+}
+
 describe("layout.ts", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
@@ -71,6 +82,9 @@ describe("layout.ts", () => {
 
             expect(result).toBeDefined();
             expect(result?.steps).toHaveLength(2);
+
+            // Connected step should be to the right of source (proves conditional edge was included)
+            expectStepToRightOf(result, conditionalStep.id, paramStep.id);
         });
 
         it("handles multiple conditional steps", async () => {
@@ -111,6 +125,10 @@ describe("layout.ts", () => {
 
             expect(result).toBeDefined();
             expect(result?.steps).toHaveLength(3);
+
+            // Both conditional steps should be to the right of source
+            expectStepToRightOf(result, cond1.id, sourceStep.id);
+            expectStepToRightOf(result, cond2.id, sourceStep.id);
         });
     });
 
@@ -192,6 +210,9 @@ describe("layout.ts", () => {
             expect(result).toBeDefined();
             // No warning should be logged for valid edges
             expect(warnSpy).not.toHaveBeenCalled();
+
+            // Valid edge was used in layout
+            expectStepToRightOf(result, step1.id, step0.id);
         });
     });
 });
