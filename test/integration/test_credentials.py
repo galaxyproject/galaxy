@@ -1,5 +1,4 @@
 from typing import Optional
-from unittest.mock import patch
 
 from galaxy.model.db.user import get_user_by_email
 from galaxy.security.vault import UserVaultWrapper
@@ -470,8 +469,18 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         assert len(credentials_list) == 1
         user_credentials_id = credentials_list[0]["id"]
 
-        # Mock the toolbox.get_tool method to simulate the tool being unavailable
-        with patch.object(self._app.toolbox, "get_tool", return_value=None):
+        # Save the tool reference before removing it
+        tool = self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL)
+        assert tool is not None, f"Tool {CREDENTIALS_TEST_TOOL} should be available before removal"
+
+        try:
+            # Remove the tool to simulate it being unavailable
+            # Use remove_from_panel=False to keep restoration simple
+            self._app.toolbox.remove_tool_by_id(CREDENTIALS_TEST_TOOL, remove_from_panel=False)
+
+            # Verify tool is actually removed
+            assert self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL) is None
+
             # Test 1: List credentials with include_definition=True
             response = self._get("/api/users/current/credentials?include_definition=true")
             self._assert_status_code_is(response, 200)
@@ -511,6 +520,10 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
             assert "definition" not in credential_no_def
             assert credential_no_def["id"] == user_credentials_id
             assert len(credential_no_def["groups"]) > 0
+        finally:
+            # Restore the tool to avoid affecting other tests
+            if tool is not None:
+                self._app.toolbox.register_tool(tool)
 
     def _provide_user_credentials(self, payload=None, status_code=200):
         payload = payload or self._build_credentials_payload()
