@@ -336,7 +336,6 @@ defineExpose<UploadMethodComponent>({ startUpload });
     border: 2px dashed $border-color;
     border-radius: $border-radius-large;
     text-align: center;
-    transition: all 0.3s ease;
     background-color: $gray-100;
     flex: 1;
     display: flex;
