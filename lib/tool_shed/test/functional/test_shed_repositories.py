@@ -587,6 +587,27 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         with open(os.path.join(output_dir, "reset_metadata_bismark.json"), "w") as f:
             json.dump(bismark_reset_data, f, indent=2)
 
+        # 6. ResetMetadataOnRepositoryResponse - unchanged (has "equal" comparison_result)
+        # This repo has identical tool XML in revisions 1 and 2, producing comparison_result: "equal"
+        unchanged_repo = populator.setup_test_data_repo("column_maker_unchanged")
+        unchanged_reset_response = self.api_interactor.post(
+            f"repositories/{unchanged_repo.id}/reset_metadata",
+            params={"dry_run": True, "verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(unchanged_reset_response)
+        unchanged_reset_data = unchanged_reset_response.json()
+        assert unchanged_reset_data["dry_run"] is True
+        assert unchanged_reset_data["changeset_details"] is not None
+        # Verify we got an "equal" comparison - this is the whole point of this fixture
+        has_equal = any(
+            d.get("comparison_result") == "equal"
+            for d in unchanged_reset_data["changeset_details"]
+        )
+        assert has_equal, "column_maker_unchanged should produce 'equal' comparison_result"
+
+        with open(os.path.join(output_dir, "reset_metadata_unchanged.json"), "w") as f:
+            json.dump(unchanged_reset_data, f, indent=2)
+
         print(f"\nFixtures written to: {output_dir}")
         print("Files generated:")
         for f in sorted(os.listdir(output_dir)):

@@ -1,401 +1,248 @@
 {
-  "0:cc2edd54ae89": {
-    "model_class": "RepositoryMetadata",
-    "id": "adb5f5c93f827949",
-    "repository_id": "adb5f5c93f827949",
-    "numeric_revision": 0,
-    "changeset_revision": "cc2edd54ae89",
-    "malicious": false,
-    "downloadable": true,
-    "missing_test_components": false,
-    "has_repository_dependencies": false,
-    "includes_datatypes": false,
-    "includes_tools": true,
-    "includes_tool_dependencies": false,
-    "includes_tools_for_display_in_tool_panel": true,
-    "includes_workflows": false,
-    "repository": {
-      "model_class": "Repository",
-      "id": "adb5f5c93f827949",
-      "name": "columnmakerwwez6rxeb1",
-      "type": "unrestricted",
-      "remote_repository_url": null,
-      "homepage_url": null,
-      "description": "columnmakers2hdlpscge",
-      "user_id": "adb5f5c93f827949",
-      "private": false,
-      "deleted": false,
-      "times_downloaded": 0,
-      "deprecated": false,
-      "create_time": "2026-01-16T03:50:29.359235",
-      "update_time": "2026-01-16T03:50:29.359275",
-      "owner": "user--bx--psu--edu"
-    },
-    "repository_dependencies": [],
-    "tools": [
-      {
-        "add_to_tool_panel": true,
-        "description": "an expression on every row",
-        "guid": "127.0.0.1:8037/repos/user--bx--psu--edu/columnmakerwwez6rxeb1/Add_a_column1/1.1.0",
-        "id": "Add_a_column1",
-        "name": "Compute",
-        "profile": 16.01,
-        "requirements": [],
-        "tests": [
-          {
-            "inputs": [
-              [
-                "cond",
-                "c3-c2"
-              ],
-              [
-                "input",
-                "1.bed"
-              ],
-              [
-                "round",
-                "no"
-              ]
-            ],
-            "name": "Test-1",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.bed",
-              "value"
-            ]
-          },
-          {
-            "inputs": [
-              [
-                "cond",
-                "c4*1"
-              ],
-              [
-                "input",
-                "1.interval"
-              ],
-              [
-                "round",
-                "no"
-              ]
-            ],
-            "name": "Test-2",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.interval",
-              "value"
-            ]
-          },
-          {
-            "inputs": [
-              [
-                "cond",
-                "c4*1"
-              ],
-              [
-                "input",
-                "1.interval"
-              ],
-              [
-                "round",
-                "yes"
-              ]
-            ],
-            "name": "Test-3",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.interval",
-              "value"
-            ]
-          }
+    "0:643520a77a40": {
+        "model_class": "RepositoryMetadata",
+        "id": "adb5f5c93f827949",
+        "repository_id": "adb5f5c93f827949",
+        "numeric_revision": 0,
+        "changeset_revision": "643520a77a40",
+        "malicious": false,
+        "downloadable": true,
+        "missing_test_components": false,
+        "has_repository_dependencies": false,
+        "includes_datatypes": false,
+        "includes_tools": true,
+        "includes_tool_dependencies": false,
+        "includes_tools_for_display_in_tool_panel": true,
+        "includes_workflows": false,
+        "repository": {
+            "model_class": "Repository",
+            "id": "adb5f5c93f827949",
+            "name": "columnmakerppzswkws00",
+            "type": "unrestricted",
+            "remote_repository_url": null,
+            "homepage_url": null,
+            "description": "columnmaker14579jin5p",
+            "user_id": "adb5f5c93f827949",
+            "private": false,
+            "deleted": false,
+            "times_downloaded": 0,
+            "deprecated": false,
+            "create_time": "2026-01-16T16:22:15.505227",
+            "update_time": "2026-01-16T16:22:15.505235",
+            "owner": "user--bx--psu--edu"
+        },
+        "repository_dependencies": [],
+        "tools": [
+            {
+                "add_to_tool_panel": true,
+                "description": "an expression on every row",
+                "guid": "127.0.0.1:8063/repos/user--bx--psu--edu/columnmakerppzswkws00/Add_a_column1/1.1.0",
+                "id": "Add_a_column1",
+                "name": "Compute",
+                "profile": 16.01,
+                "requirements": [],
+                "tests": [
+                    {
+                        "inputs": [
+                            ["cond", "c3-c2"],
+                            ["input", "1.bed"],
+                            ["round", "no"]
+                        ],
+                        "name": "Test-1",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.bed", "value"]
+                    },
+                    {
+                        "inputs": [
+                            ["cond", "c4*1"],
+                            ["input", "1.interval"],
+                            ["round", "no"]
+                        ],
+                        "name": "Test-2",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.interval", "value"]
+                    },
+                    {
+                        "inputs": [
+                            ["cond", "c4*1"],
+                            ["input", "1.interval"],
+                            ["round", "yes"]
+                        ],
+                        "name": "Test-3",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.interval", "value"]
+                    }
+                ],
+                "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmp9ief1drh/tmp99nh5qe_/database/files/000/repo_1/column_maker/column_maker.xml",
+                "tool_type": "default",
+                "version": "1.1.0",
+                "version_string_cmd": null
+            }
         ],
-        "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpv2bfuhm1/tmp05naw5r0/database/files/000/repo_1/column_maker/column_maker.xml",
-        "tool_type": "default",
-        "version": "1.1.0",
-        "version_string_cmd": null
-      }
-    ],
-    "invalid_tools": []
-  },
-  "1:8393d72576d7": {
-    "model_class": "RepositoryMetadata",
-    "id": "529fd61ab1c6cc36",
-    "repository_id": "adb5f5c93f827949",
-    "numeric_revision": 1,
-    "changeset_revision": "8393d72576d7",
-    "malicious": false,
-    "downloadable": true,
-    "missing_test_components": false,
-    "has_repository_dependencies": false,
-    "includes_datatypes": false,
-    "includes_tools": true,
-    "includes_tool_dependencies": false,
-    "includes_tools_for_display_in_tool_panel": true,
-    "includes_workflows": false,
-    "repository": {
-      "model_class": "Repository",
-      "id": "adb5f5c93f827949",
-      "name": "columnmakerwwez6rxeb1",
-      "type": "unrestricted",
-      "remote_repository_url": null,
-      "homepage_url": null,
-      "description": "columnmakers2hdlpscge",
-      "user_id": "adb5f5c93f827949",
-      "private": false,
-      "deleted": false,
-      "times_downloaded": 0,
-      "deprecated": false,
-      "create_time": "2026-01-16T03:50:29.359235",
-      "update_time": "2026-01-16T03:50:29.359275",
-      "owner": "user--bx--psu--edu"
+        "invalid_tools": []
     },
-    "repository_dependencies": [],
-    "tools": [
-      {
-        "add_to_tool_panel": true,
-        "description": "an expression on every row",
-        "guid": "127.0.0.1:8037/repos/user--bx--psu--edu/columnmakerwwez6rxeb1/Add_a_column1/1.2.0",
-        "id": "Add_a_column1",
-        "name": "Compute",
-        "profile": 16.01,
-        "requirements": [],
-        "tests": [
-          {
-            "inputs": [
-              [
-                "cond",
-                "c3-c2"
-              ],
-              [
-                "input",
-                "1.bed"
-              ],
-              [
-                "round",
-                "no"
-              ]
-            ],
-            "name": "Test-1",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.bed",
-              "value"
-            ]
-          },
-          {
-            "inputs": [
-              [
-                "cond",
-                "c4*1"
-              ],
-              [
-                "input",
-                "1.interval"
-              ],
-              [
-                "round",
-                "no"
-              ]
-            ],
-            "name": "Test-2",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.interval",
-              "value"
-            ]
-          },
-          {
-            "inputs": [
-              [
-                "cond",
-                "c4*1"
-              ],
-              [
-                "input",
-                "1.interval"
-              ],
-              [
-                "round",
-                "yes"
-              ]
-            ],
-            "name": "Test-3",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.interval",
-              "value"
-            ]
-          }
+    "1:e48c35ff4cf5": {
+        "model_class": "RepositoryMetadata",
+        "id": "529fd61ab1c6cc36",
+        "repository_id": "adb5f5c93f827949",
+        "numeric_revision": 1,
+        "changeset_revision": "e48c35ff4cf5",
+        "malicious": false,
+        "downloadable": true,
+        "missing_test_components": false,
+        "has_repository_dependencies": false,
+        "includes_datatypes": false,
+        "includes_tools": true,
+        "includes_tool_dependencies": false,
+        "includes_tools_for_display_in_tool_panel": true,
+        "includes_workflows": false,
+        "repository": {
+            "model_class": "Repository",
+            "id": "adb5f5c93f827949",
+            "name": "columnmakerppzswkws00",
+            "type": "unrestricted",
+            "remote_repository_url": null,
+            "homepage_url": null,
+            "description": "columnmaker14579jin5p",
+            "user_id": "adb5f5c93f827949",
+            "private": false,
+            "deleted": false,
+            "times_downloaded": 0,
+            "deprecated": false,
+            "create_time": "2026-01-16T16:22:15.505227",
+            "update_time": "2026-01-16T16:22:15.505235",
+            "owner": "user--bx--psu--edu"
+        },
+        "repository_dependencies": [],
+        "tools": [
+            {
+                "add_to_tool_panel": true,
+                "description": "an expression on every row",
+                "guid": "127.0.0.1:8063/repos/user--bx--psu--edu/columnmakerppzswkws00/Add_a_column1/1.2.0",
+                "id": "Add_a_column1",
+                "name": "Compute",
+                "profile": 16.01,
+                "requirements": [],
+                "tests": [
+                    {
+                        "inputs": [
+                            ["cond", "c3-c2"],
+                            ["input", "1.bed"],
+                            ["round", "no"]
+                        ],
+                        "name": "Test-1",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.bed", "value"]
+                    },
+                    {
+                        "inputs": [
+                            ["cond", "c4*1"],
+                            ["input", "1.interval"],
+                            ["round", "no"]
+                        ],
+                        "name": "Test-2",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.interval", "value"]
+                    },
+                    {
+                        "inputs": [
+                            ["cond", "c4*1"],
+                            ["input", "1.interval"],
+                            ["round", "yes"]
+                        ],
+                        "name": "Test-3",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.interval", "value"]
+                    }
+                ],
+                "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmp9ief1drh/tmp99nh5qe_/database/files/000/repo_1/column_maker/column_maker.xml",
+                "tool_type": "default",
+                "version": "1.2.0",
+                "version_string_cmd": null
+            }
         ],
-        "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpv2bfuhm1/tmp05naw5r0/database/files/000/repo_1/column_maker/column_maker.xml",
-        "tool_type": "default",
-        "version": "1.2.0",
-        "version_string_cmd": null
-      }
-    ],
-    "invalid_tools": []
-  },
-  "2:32b34682c29e": {
-    "model_class": "RepositoryMetadata",
-    "id": "d9abeb98649a6a7e",
-    "repository_id": "adb5f5c93f827949",
-    "numeric_revision": 2,
-    "changeset_revision": "32b34682c29e",
-    "malicious": false,
-    "downloadable": true,
-    "missing_test_components": false,
-    "has_repository_dependencies": false,
-    "includes_datatypes": false,
-    "includes_tools": true,
-    "includes_tool_dependencies": false,
-    "includes_tools_for_display_in_tool_panel": true,
-    "includes_workflows": false,
-    "repository": {
-      "model_class": "Repository",
-      "id": "adb5f5c93f827949",
-      "name": "columnmakerwwez6rxeb1",
-      "type": "unrestricted",
-      "remote_repository_url": null,
-      "homepage_url": null,
-      "description": "columnmakers2hdlpscge",
-      "user_id": "adb5f5c93f827949",
-      "private": false,
-      "deleted": false,
-      "times_downloaded": 0,
-      "deprecated": false,
-      "create_time": "2026-01-16T03:50:29.359235",
-      "update_time": "2026-01-16T03:50:29.359275",
-      "owner": "user--bx--psu--edu"
+        "invalid_tools": []
     },
-    "repository_dependencies": [],
-    "tools": [
-      {
-        "add_to_tool_panel": true,
-        "description": "an expression on every row",
-        "guid": "127.0.0.1:8037/repos/user--bx--psu--edu/columnmakerwwez6rxeb1/Add_a_column1/1.3.0",
-        "id": "Add_a_column1",
-        "name": "Compute",
-        "profile": 16.01,
-        "requirements": [],
-        "tests": [
-          {
-            "inputs": [
-              [
-                "cond",
-                "c3-c2"
-              ],
-              [
-                "input",
-                "1.bed"
-              ],
-              [
-                "round",
-                "no"
-              ]
-            ],
-            "name": "Test-1",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.bed",
-              "value"
-            ]
-          },
-          {
-            "inputs": [
-              [
-                "cond",
-                "c4*1"
-              ],
-              [
-                "input",
-                "1.interval"
-              ],
-              [
-                "round",
-                "no"
-              ]
-            ],
-            "name": "Test-2",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.interval",
-              "value"
-            ]
-          },
-          {
-            "inputs": [
-              [
-                "cond",
-                "c4*1"
-              ],
-              [
-                "input",
-                "1.interval"
-              ],
-              [
-                "round",
-                "yes"
-              ]
-            ],
-            "name": "Test-3",
-            "outputs": [
-              [
-                "name",
-                "value"
-              ]
-            ],
-            "required_files": [
-              "1.interval",
-              "value"
-            ]
-          }
+    "2:0d8be17370d9": {
+        "model_class": "RepositoryMetadata",
+        "id": "d9abeb98649a6a7e",
+        "repository_id": "adb5f5c93f827949",
+        "numeric_revision": 2,
+        "changeset_revision": "0d8be17370d9",
+        "malicious": false,
+        "downloadable": true,
+        "missing_test_components": false,
+        "has_repository_dependencies": false,
+        "includes_datatypes": false,
+        "includes_tools": true,
+        "includes_tool_dependencies": false,
+        "includes_tools_for_display_in_tool_panel": true,
+        "includes_workflows": false,
+        "repository": {
+            "model_class": "Repository",
+            "id": "adb5f5c93f827949",
+            "name": "columnmakerppzswkws00",
+            "type": "unrestricted",
+            "remote_repository_url": null,
+            "homepage_url": null,
+            "description": "columnmaker14579jin5p",
+            "user_id": "adb5f5c93f827949",
+            "private": false,
+            "deleted": false,
+            "times_downloaded": 0,
+            "deprecated": false,
+            "create_time": "2026-01-16T16:22:15.505227",
+            "update_time": "2026-01-16T16:22:15.505235",
+            "owner": "user--bx--psu--edu"
+        },
+        "repository_dependencies": [],
+        "tools": [
+            {
+                "add_to_tool_panel": true,
+                "description": "an expression on every row",
+                "guid": "127.0.0.1:8063/repos/user--bx--psu--edu/columnmakerppzswkws00/Add_a_column1/1.3.0",
+                "id": "Add_a_column1",
+                "name": "Compute",
+                "profile": 16.01,
+                "requirements": [],
+                "tests": [
+                    {
+                        "inputs": [
+                            ["cond", "c3-c2"],
+                            ["input", "1.bed"],
+                            ["round", "no"]
+                        ],
+                        "name": "Test-1",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.bed", "value"]
+                    },
+                    {
+                        "inputs": [
+                            ["cond", "c4*1"],
+                            ["input", "1.interval"],
+                            ["round", "no"]
+                        ],
+                        "name": "Test-2",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.interval", "value"]
+                    },
+                    {
+                        "inputs": [
+                            ["cond", "c4*1"],
+                            ["input", "1.interval"],
+                            ["round", "yes"]
+                        ],
+                        "name": "Test-3",
+                        "outputs": [["name", "value"]],
+                        "required_files": ["1.interval", "value"]
+                    }
+                ],
+                "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmp9ief1drh/tmp99nh5qe_/database/files/000/repo_1/column_maker/column_maker.xml",
+                "tool_type": "default",
+                "version": "1.3.0",
+                "version_string_cmd": null
+            }
         ],
-        "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpv2bfuhm1/tmp05naw5r0/database/files/000/repo_1/column_maker/column_maker.xml",
-        "tool_type": "default",
-        "version": "1.3.0",
-        "version_string_cmd": null
-      }
-    ],
-    "invalid_tools": []
-  }
+        "invalid_tools": []
+    }
 }

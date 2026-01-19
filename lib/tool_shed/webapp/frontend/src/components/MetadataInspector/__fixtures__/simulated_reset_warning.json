@@ -136,9 +136,7 @@
                     "version_string_cmd": null
                 }
             ],
-            "invalid_tools": [
-                "broken_tool.xml"
-            ]
+            "invalid_tools": ["broken_tool.xml"]
         },
         "1:w1w1w1w1w1w1": {
             "id": "simwarn0000001",

@@ -24,6 +24,7 @@ import {
     repositoryMetadataBismark,
     resetMetadataPreview,
     resetMetadataBismark,
+    resetMetadataUnchanged,
     getChangesetDetails,
     getFirstRevision,
     makeChangeset,
@@ -75,6 +76,7 @@ const changesetsAllResults = [
 
 const changesetsFromColumnMaker = getChangesetDetails(resetMetadataPreview)
 const changesetsFromBismark = getChangesetDetails(resetMetadataBismark)
+const changesetsFromUnchanged = getChangesetDetails(resetMetadataUnchanged)
 
 const sampleRevisionData = getFirstRevision(repositoryMetadataColumnMaker)
 
@@ -176,6 +178,13 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
                 description="Real API response from bismark test repo - has tool dependencies and invalid_tools"
             >
                 <ChangesetSummaryTable :changesets="changesetsFromBismark" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example
+                title="unchanged revisions (API fixture)"
+                description="Real API response showing 'Unchanged' change type - identical tool metadata between revisions"
+            >
+                <ChangesetSummaryTable :changesets="changesetsFromUnchanged" />
             </component-showcase-example>
             <q-separator />
             <component-showcase-example title="empty" description="No changesets">
