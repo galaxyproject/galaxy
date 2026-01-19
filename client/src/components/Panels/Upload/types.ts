@@ -7,6 +7,7 @@ export type UploadMode =
     | "remote-files"
     | "data-library"
     | "explore-zip"
+    | "data-source-tools"
     | "import-history"
     | "import-workflow";
 

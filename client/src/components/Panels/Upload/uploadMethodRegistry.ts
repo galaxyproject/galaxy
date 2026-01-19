@@ -1,6 +1,7 @@
 import {
     faClipboard,
     faCloud,
+    faCloudDownloadAlt,
     faDatabase,
     faDesktop,
     faFileArchive,
@@ -67,6 +68,15 @@ export const uploadMethodRegistry: Record<UploadMode, UploadMethodConfig> = {
         headerAction: "Extract from Archive",
         requiresTargetHistory: true,
         component: defineAsyncComponent(() => import("./methods/ExploreZipUpload.vue")),
+    },
+    "data-source-tools": {
+        id: "data-source-tools",
+        name: "Data Source Tools",
+        description: "Use Galaxy's data source tools to import data from various external sources",
+        icon: faCloudDownloadAlt,
+        headerAction: "Use Data Source Tools",
+        requiresTargetHistory: false,
+        component: defineAsyncComponent(() => import("./methods/DataSourceToolsUpload.vue")),
     },
     "import-history": {
         id: "import-history",
