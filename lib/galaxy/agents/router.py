@@ -22,6 +22,7 @@ from .base import (
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
+from .visualization_context import is_visualization_query
 
 log = logging.getLogger(__name__)
 
@@ -133,6 +134,17 @@ class QueryRouterAgent(BaseGalaxyAgent):
         """Fallback routing when AI router fails - uses intent-based heuristics."""
         query_lower = query.lower()
 
+        # Check for visualization keywords first - these should go to orchestrator
+        visualizations = (context or {}).get("visualizations")
+        if is_visualization_query(query, visualizations):
+            return RoutingDecision(
+                primary_agent=AgentType.ORCHESTRATOR,
+                secondary_agents=[],
+                complexity="simple",
+                confidence="high",
+                reasoning="Query relates to data visualization, routing to orchestrator for visualization suggestions.",
+            )
+
         # Define keyword sets for different intents
         intent_keywords = {
             AgentType.ERROR_ANALYSIS: (
@@ -151,14 +163,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
             ),
             AgentType.CUSTOM_TOOL: (
                 [
-                    "create",
-                    "build",
-                    "make",
-                    "wrap",
                     "custom tool",
                     "new tool",
-                    "yaml",
+                    "tool wrapper",
                     "xml definition",
+                    "tool yaml",
+                    "galaxy tool",
                 ],
                 1.0,
             ),
@@ -290,9 +300,10 @@ For specific tools, please also cite the individual tool publications.""",
 
         Available agents:
         - error_analysis: For debugging, troubleshooting, job failures
-        - custom_tool: For creating new tools, tool development
-        - orchestrator: For general queries, multi-step tasks
+        - custom_tool: For creating new Galaxy tools (XML/YAML tool definitions)
+        - orchestrator: For visualizations, charts, plots, viewing data, and general queries
 
+        IMPORTANT: For visualization questions (charts, plots, graphs, viewing data), always route to orchestrator.
 
         Respond in this exact format:
         ROUTE_TO: [agent_name]

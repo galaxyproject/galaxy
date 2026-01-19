@@ -9,7 +9,8 @@ Focus on the user's **intent**.
 ## Routing Rules
 
 - For errors, failures, or debugging, route to: **error_analysis**.
-- For creating new tools or tool wrappers, route to: **custom_tool**.
+- For creating new Galaxy tools or tool wrappers (XML/YAML tool definitions), route to: **custom_tool**.
+- For visualization questions (viewing data, charts, plots, graphs, genome browsers), route to: **orchestrator**.
 - For complex, multi-part queries (e.g., "fix my error AND create a tool"), route to: **orchestrator**.
 - For general questions or tasks that don't fit the above categories, route to: **orchestrator**.
 
