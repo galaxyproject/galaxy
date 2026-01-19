@@ -251,15 +251,13 @@ class TestMappingContainerResolver(IntegrationTestCase):
         disable_dependency_resolution(config)
         container_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
         with open(container_resolvers_config_path, "w") as f:
-            f.write(
-                """
+            f.write("""
 - type: mapping
   mappings:
     - container_type: docker
       tool_id: mulled_example_broken_no_requirements
       identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
-"""
-            )
+""")
         config["container_resolvers_config_file"] = container_resolvers_config_path
 
     @classmethod

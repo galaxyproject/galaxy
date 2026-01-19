@@ -23,6 +23,7 @@ usage: %prog maf_file [options]
 
 usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user GALAXY_DATA_INDEX_DIR
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 

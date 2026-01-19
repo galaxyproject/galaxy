@@ -9,6 +9,7 @@ Error handler middleware
 When an exception is thrown from the wrapper application, this logs
 the exception and displays an error page.
 """
+
 import logging
 import sys
 import traceback
@@ -421,12 +422,9 @@ def handle_exception(
         extra_data = ""
         reported = True
     else:
-        msg = (
-            error_message
-            or """
+        msg = error_message or """
         An error occurred.
         """
-        )
         extra = "<p><b>The error has been logged to our team.</b>"
         if "sentry_event_id" in environ:
             extra += " If you want to contact us about this error, please reference the following<br><br>"

@@ -106,11 +106,9 @@ def _build_tag(tag, hide_attributes):
     tag_help.write(text)
     if best_practices := _get_bp_link(annotation_el):
         tag_help.write("\n\n### Best Practices\n")
-        tag_help.write(
-            f"""
+        tag_help.write(f"""
 Find the Intergalactic Utilities Commission suggested best practices for this
-element [here]({best_practices})."""
-        )
+element [here]({best_practices}).""")
     tag_help.write(_build_attributes_table(tag, attributes, hide_attributes))
 
     return tag_help.getvalue()

@@ -4,6 +4,7 @@ Generic POST/create script
 
 usage: create.py key url [key=value ...]
 """
+
 import sys
 
 from common import submit

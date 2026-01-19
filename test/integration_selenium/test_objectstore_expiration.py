@@ -17,8 +17,7 @@ if TYPE_CHECKING:
         SeleniumSessionDatasetPopulator,
     )
 
-OBJECT_STORES_CONFIG = string.Template(
-    """
+OBJECT_STORES_CONFIG = string.Template("""
 type: distributed
 backends:
   - id: default
@@ -58,8 +57,7 @@ backends:
     - type: job_work
       path: "${temp_directory}/job_working_directory2"
     object_expires_after_days: ${mid_term_expiration_days}
-"""
-)
+""")
 
 AvailableObjectStoreIDs = Literal["default", "short_term", "mid_term"]
 

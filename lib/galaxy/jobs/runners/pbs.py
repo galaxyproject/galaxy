@@ -355,7 +355,7 @@ class PBSJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         """
         new_watched = []
         # reduce pbs load by batching status queries
-        (failures, statuses) = self.check_all_jobs()
+        failures, statuses = self.check_all_jobs()
         for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
             galaxy_job_id = pbs_job_state.job_wrapper.get_id_tag()

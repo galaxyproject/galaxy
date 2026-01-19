@@ -213,7 +213,7 @@ class NotificationManager:
         for user in users:
             try:
                 if self._is_user_subscribed_to_notification(user, notification):
-                    settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
+                    settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
                     self._send_via_channels(notification, user, settings.channels)
             except Exception as e:
                 log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
@@ -236,7 +236,7 @@ class NotificationManager:
         if self._is_urgent(notification):
             # Urgent notifications are always sent
             return True
-        category_settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
+        category_settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
@@ -560,7 +560,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         unique_user_ids.update(user_ids_from_groups_and_roles)
 
         stmt = select(User).where(User.id.in_(unique_user_ids))
-        return self.sa_session.scalars(stmt).all()  # type:ignore[return-value]
+        return self.sa_session.scalars(stmt).all()  # type: ignore[return-value]
 
     def _get_all_user_ids_from_roles_query(self, role_ids: set[int]) -> Select:
         stmt = (
@@ -724,7 +724,7 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     }
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = MessageNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
+        content = MessageNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         content.message = self.markdown_to[template_format](content.message)
         return content
 
@@ -736,7 +736,7 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
+        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
 
     def get_subject(self) -> str:

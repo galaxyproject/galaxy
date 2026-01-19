@@ -1202,12 +1202,10 @@ LegacyJobStateQueryParam = Annotated[
     bool,
     Query(
         title="Replace with job state",
-        description=(
-            """Populate the invocation step state with the job state instead of the invocation step state.
+        description=("""Populate the invocation step state with the job state instead of the invocation step state.
         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
         Partially scheduled steps may provide incomplete information and the listed steps outputs
-        are not the mapped over step outputs but the individual job outputs."""
-        ),
+        are not the mapped over step outputs but the individual job outputs."""),
     ),
 ]
 

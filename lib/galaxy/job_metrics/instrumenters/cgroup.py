@@ -93,9 +93,7 @@ if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" -a ! -f "{cgroup_mount}/cgroup.
         echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
     done;
 fi
-""".replace(
-    "\n", " "
-).strip()
+""".replace("\n", " ").strip()
 CGROUPSV2_TEMPLATE = r"""
 if [ -e "/proc/$$/cgroup" -a -f "{cgroup_mount}/cgroup.controllers" ]; then
     cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '($1=="0") {{print $3}}');
@@ -103,9 +101,7 @@ if [ -e "/proc/$$/cgroup" -a -f "{cgroup_mount}/cgroup.controllers" ]; then
         echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
     done;
 fi
-""".replace(
-    "\n", " "
-).strip()
+""".replace("\n", " ").strip()
 
 
 Metric = namedtuple("Metric", ("key", "subkey", "value"))

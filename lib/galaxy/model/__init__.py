@@ -2301,13 +2301,11 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def set_final_state(self, final_state):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
-        statement = text(
-            """
+        statement = text("""
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
-        """
-        )
+        """)
         sa_session = required_object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
@@ -2337,18 +2335,15 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = [
-            text(
-                """
+            text("""
             UPDATE dataset
             SET
                 state = :state,
                 update_time = :update_time
             WHERE
                 dataset.job_id = :job_id
-        """
-            ),
-            text(
-                """
+        """),
+            text("""
             UPDATE history_dataset_association
             SET
                 info = :info,
@@ -2357,10 +2352,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             WHERE
                 history_dataset_association.dataset_id = dataset.id
                 AND dataset.job_id = :job_id;
-        """
-            ),
-            text(
-                """
+        """),
+            text("""
             UPDATE library_dataset_dataset_association
             SET
                 info = :info,
@@ -2369,8 +2362,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             WHERE
                 library_dataset_dataset_association.dataset_id = dataset.id
                 AND dataset.job_id = :job_id;
-        """
-            ),
+        """),
         ]
         sa_session = required_object_session(self)
         update_time = now()
@@ -6456,10 +6448,8 @@ class LibraryDataset(Base, Serializable):
     )
     expired_datasets: Mapped[list["LibraryDatasetDatasetAssociation"]] = relationship(
         foreign_keys=[id, library_dataset_dataset_association_id],
-        primaryjoin=(
-            "and_(LibraryDataset.id == LibraryDatasetDatasetAssociation.library_dataset_id, \
-             not_(LibraryDataset.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.id))"
-        ),
+        primaryjoin=("and_(LibraryDataset.id == LibraryDatasetDatasetAssociation.library_dataset_id, \
+             not_(LibraryDataset.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.id))"),
         viewonly=True,
         uselist=True,
     )
@@ -6710,8 +6700,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         # sets the update_time for all continaing folders up the tree
         ldda = self
 
-        sql = text(
-            """
+        sql = text("""
                 WITH RECURSIVE parent_folders_of(folder_id) AS
                     (SELECT folder_id
                     FROM library_dataset
@@ -6727,8 +6716,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
                     WHERE id = :ldda_id)
                 WHERE exists (SELECT 1 FROM parent_folders_of
                     WHERE library_folder.id = parent_folders_of.folder_id)
-            """
-        )
+            """)
 
         with required_object_session(self).bind.connect() as conn, conn.begin():
             ret = conn.execute(sql, {"library_dataset_id": ldda.library_dataset_id, "ldda_id": ldda.id})
@@ -6779,7 +6767,7 @@ class LibraryInfoAssociation(Base, RepresentById):
         primaryjoin=(
             lambda: and_(
                 LibraryInfoAssociation.library_id == Library.id,
-                not_(LibraryInfoAssociation.deleted),  # type:ignore[arg-type]
+                not_(LibraryInfoAssociation.deleted),  # type: ignore[arg-type]
             )
         ),
     )
@@ -7826,7 +7814,7 @@ class HistoryDatasetCollectionAssociation(
     def to_dict(self, view="collection"):
         original_dict_value = super().to_dict(view=view)
         if view == "dbkeysandextensions":
-            (dbkeys, extensions, *_) = self.dataset_dbkeys_and_extensions_summary
+            dbkeys, extensions, *_ = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
                 extension=extensions.pop() if len(extensions) == 1 else "auto",
@@ -8472,7 +8460,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
             .where(StoredWorkflow.id == self.id)
         )
         rows = sa_session.execute(stmt).all()
-        rows_as_dict = dict(r for r in rows if r[0] is not None)  # type:ignore[arg-type, var-annotated]
+        rows_as_dict = dict(r for r in rows if r[0] is not None)  # type: ignore[arg-type, var-annotated]
         return InvocationsStateCounts(rows_as_dict)
 
     def to_dict(self, view="collection", value_mapper=None):
@@ -9902,7 +9890,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         if "workflow_step_index_path" in message_dict and message_dict["workflow_step_index_path"] is not None:
             message_dict["workflow_step_index_path"] = message_dict["workflow_step_index_path"]
         self.messages.append(
-            WorkflowInvocationMessage(  # type:ignore[abstract]
+            WorkflowInvocationMessage(  # type: ignore[abstract]
                 workflow_invocation_id=self.id,
                 **message_dict,
             )
@@ -10604,7 +10592,7 @@ class MetadataFile(Base, StorableObject, Serializable):
             object_store = da.dataset.object_store
             store_by = object_store.get_store_by(da.dataset)
             if store_by == "id" and self.id is None:
-                self.flush()  # type:ignore[unreachable]
+                self.flush()  # type: ignore[unreachable]
             identifier = getattr(self, store_by)
             alt_name = f"metadata_{identifier}.dat"
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
@@ -10788,11 +10776,11 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]  # needed for social-auth-core Mixin class attributes
-    handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
-    secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
-    issued: Mapped[Optional[int]]  # type:ignore[assignment]
-    lifetime: Mapped[Optional[int]]  # type:ignore[assignment]
-    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))  # type:ignore[assignment]
+    handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    issued: Mapped[Optional[int]]  # type: ignore[assignment]
+    lifetime: Mapped[Optional[int]]  # type: ignore[assignment]
+    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10849,8 +10837,8 @@ class PSACode(Base, CodeMixin, RepresentById):
     __table_args__ = (UniqueConstraint("code", "email"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))  # type:ignore[assignment]
-    code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
+    email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))  # type: ignore[assignment]
+    code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10876,9 +10864,9 @@ class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = "psa_nonce"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
-    timestamp: Mapped[Optional[int]]  # type:ignore[assignment]
-    salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))  # type:ignore[assignment]
+    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    timestamp: Mapped[Optional[int]]  # type: ignore[assignment]
+    salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10912,10 +10900,10 @@ class PSAPartial(Base, PartialMixin, RepresentById):
     __tablename__ = "psa_partial"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
-    data: Mapped[Optional[str]] = mapped_column(TEXT)  # type:ignore[assignment]
-    next_step: Mapped[Optional[int]]  # type:ignore[assignment]
-    backend: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
+    token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
+    data: Mapped[Optional[str]] = mapped_column(TEXT)  # type: ignore[assignment]
+    next_step: Mapped[Optional[int]]  # type: ignore[assignment]
+    backend: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -10955,14 +10943,14 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type:ignore[assignment]
-    provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type:ignore[assignment]
-    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(  # type:ignore[assignment, unused-ignore]
+    uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
+    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(  # type: ignore[assignment, unused-ignore]
         MutableJSONType
     )
     lifetime: Mapped[Optional[int]]
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
-    user: Mapped[Optional["User"]] = relationship(  # type:ignore[assignment, unused-ignore]
+    user: Mapped[Optional["User"]] = relationship(  # type: ignore[assignment, unused-ignore]
         back_populates="social_auth"
     )
 
@@ -12606,14 +12594,14 @@ mapper_registry.map_imperatively(
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
 
-History.average_rating = column_property(  # type:ignore[assignment]
+History.average_rating = column_property(  # type: ignore[assignment]
     select(func.avg(HistoryRatingAssociation.rating))
     .where(HistoryRatingAssociation.history_id == History.id)
     .scalar_subquery(),
     deferred=True,
 )
 
-History.users_shared_with_count = column_property(  # type:ignore[assignment]
+History.users_shared_with_count = column_property(  # type: ignore[assignment]
     select(func.count(HistoryUserShareAssociation.id))
     .where(History.id == HistoryUserShareAssociation.history_id)
     .scalar_subquery(),
@@ -12625,21 +12613,21 @@ Page.average_rating = column_property(
     deferred=True,
 )
 
-StoredWorkflow.average_rating = column_property(  # type:ignore[assignment]
+StoredWorkflow.average_rating = column_property(  # type: ignore[assignment]
     select(func.avg(StoredWorkflowRatingAssociation.rating))
     .where(StoredWorkflowRatingAssociation.stored_workflow_id == StoredWorkflow.id)
     .scalar_subquery(),
     deferred=True,
 )
 
-Visualization.average_rating = column_property(  # type:ignore[assignment]
+Visualization.average_rating = column_property(  # type: ignore[assignment]
     select(func.avg(VisualizationRatingAssociation.rating))
     .where(VisualizationRatingAssociation.visualization_id == Visualization.id)
     .scalar_subquery(),
     deferred=True,
 )
 
-Workflow.step_count = column_property(  # type:ignore[assignment]
+Workflow.step_count = column_property(  # type: ignore[assignment]
     select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(), deferred=True
 )
 

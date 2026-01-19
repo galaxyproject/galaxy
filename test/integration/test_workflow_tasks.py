@@ -183,8 +183,7 @@ input_data:
             self.dataset_collection_populator.create_list_in_history(history_id=history_id, wait=True).json()
             new_history = self.dataset_populator.copy_history(history_id=history_id).json()
             copied_collection = self.dataset_populator.get_history_collection_details(new_history["id"])
-            workflow_id = self.workflow_populator.upload_yaml_workflow(
-                """class: GalaxyWorkflow
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""class: GalaxyWorkflow
 inputs:
   input:
     type: collection
@@ -198,8 +197,7 @@ steps:
 outputs:
   extracted_dataset:
     outputSource: extract_dataset/output
-"""
-            )
+""")
             inputs = {"input": {"src": "hdca", "id": copied_collection["id"]}}
             workflow_request = {"history": f"hist_id={new_history['id']}", "inputs_by": "name", "inputs": inputs}
             invocation = self.workflow_populator.invoke_workflow_raw(

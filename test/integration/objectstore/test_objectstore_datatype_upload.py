@@ -38,8 +38,7 @@ IRODS_OBJECT_STORE_ZONE = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_
 # Run test for only the first 10 test files
 TEST_CASES = dict(list(TEST_CASES.items())[0:10])
 SINGLE_TEST_CASE = dict(list(TEST_CASES.items())[0:1])
-DISTRIBUTED_OBJECT_STORE_CONFIG = string.Template(
-    """
+DISTRIBUTED_OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="distributed">
     <backends>
         <backend id="files1" type="disk" weight="1">
@@ -54,10 +53,8 @@ DISTRIBUTED_OBJECT_STORE_CONFIG = string.Template(
         </backend>
     </backends>
 </object_store>
-"""
-)
-DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG = string.Template(
-    """
+""")
+DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="distributed">
     <backends>
         <backend id="files1" type="disk" weight="1">
@@ -76,10 +73,8 @@ DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG = string.Template(
         </backend>
     </backends>
 </object_store>
-"""
-)
-IRODS_OBJECT_STORE_CONFIG = string.Template(
-    """<object_store type="irods">
+""")
+IRODS_OBJECT_STORE_CONFIG = string.Template("""<object_store type="irods">
     <auth username="${username}" password="${password}"/>
     <resource name="${resource}"/>
     <zone name="${zone}"/>
@@ -88,8 +83,7 @@ IRODS_OBJECT_STORE_CONFIG = string.Template(
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_irods"/>
     <extra_dir type="temp" path="${temp_directory}/tmp_irods"/>
 </object_store>
-"""
-)
+""")
 
 
 def check_container_active(container_name):

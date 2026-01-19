@@ -3,6 +3,7 @@
 Classes encapsulating decypher tool.
 James E Johnson - University of Minnesota
 """
+
 from __future__ import print_function
 
 import os

@@ -46,8 +46,7 @@ class KubeSetupConfigTuple(Config):
 
 
 def persistent_volume(path: str, persistent_volume_name: str) -> KubeSetupConfigTuple:
-    volume_yaml = string.Template(
-        """
+    volume_yaml = string.Template("""
 kind: PersistentVolume
 apiVersion: v1
 metadata:
@@ -71,16 +70,14 @@ spec:
           operator: NotIn
           values:
             - 'i-do-not-exist'
-    """
-    ).substitute(path=path, persistent_volume_name=persistent_volume_name)
+    """).substitute(path=path, persistent_volume_name=persistent_volume_name)
     with tempfile.NamedTemporaryFile(suffix="_persistent_volume.yml", mode="w", delete=False) as volume:
         volume.write(volume_yaml)
     return KubeSetupConfigTuple(path=volume.name)
 
 
 def persistent_volume_claim(persistent_volume_name: str, persistent_volum_claim_name: str) -> KubeSetupConfigTuple:
-    peristent_volume_claim_yaml = string.Template(
-        """
+    peristent_volume_claim_yaml = string.Template("""
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -93,18 +90,14 @@ spec:
     requests:
       storage: 2Gi
   storageClassName: manual
-"""
-    ).substitute(
-        persistent_volume_name=persistent_volume_name, persistent_volume_claim_name=persistent_volum_claim_name
-    )
+""").substitute(persistent_volume_name=persistent_volume_name, persistent_volume_claim_name=persistent_volum_claim_name)
     with tempfile.NamedTemporaryFile(suffix="_persistent_volume_claim.yml", mode="w", delete=False) as volume_claim:
         volume_claim.write(peristent_volume_claim_yaml)
     return KubeSetupConfigTuple(path=volume_claim.name)
 
 
 def job_config(jobs_directory: str) -> Config:
-    job_conf_template = string.Template(
-        """<job_conf>
+    job_conf_template = string.Template("""<job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
         <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
@@ -144,8 +137,7 @@ def job_config(jobs_directory: str) -> Config:
         <tool id="create_2" destination="k8s_destination_walltime_short"/>
     </tools>
 </job_conf>
-"""
-    )
+""")
     job_conf_str = job_conf_template.substitute(
         jobs_directory=jobs_directory,
         tool_directory=TOOL_DIR,

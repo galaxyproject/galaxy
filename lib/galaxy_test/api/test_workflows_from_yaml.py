@@ -208,8 +208,7 @@ $graph:
         assert content == "hello world\nhello world\nhello world\nhello world\n"
 
     def test_pause(self):
-        workflow_id = self._upload_yaml_workflow(
-            """
+        workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   test_input:
@@ -227,13 +226,11 @@ steps:
     tool_id: cat1
     in:
       input1: the_pause
-"""
-        )
+""")
         self.workflow_populator.dump_workflow(workflow_id)
 
     def test_implicit_connections(self):
-        workflow_id = self._upload_yaml_workflow(
-            """
+        workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -257,8 +254,7 @@ steps:
     state:
       input1:
         $link: test_input
-"""
-        )
+""")
         self.workflow_populator.dump_workflow(workflow_id)
 
     def test_conditional_ints(self, history_id):

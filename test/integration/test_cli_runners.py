@@ -68,8 +68,7 @@ def stop_ssh_docker(container_name, remote_connection):
 
 
 def cli_job_config(remote_connection, shell_plugin="ParamikoShell", job_plugin="Slurm"):
-    job_conf_template = string.Template(
-        """<job_conf>
+    job_conf_template = string.Template("""<job_conf>
     <plugins>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" workers="1"/>
     </plugins>
@@ -87,8 +86,7 @@ def cli_job_config(remote_connection, shell_plugin="ParamikoShell", job_plugin="
         </destination>
     </destinations>
 </job_conf>
-"""
-    )
+""")
     job_conf_str = job_conf_template.substitute(
         shell_plugin=shell_plugin, job_plugin=job_plugin, **remote_connection._asdict()
     )

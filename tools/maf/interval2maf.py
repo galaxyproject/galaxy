@@ -24,6 +24,7 @@ usage: %prog maf_file [options]
    -l, --indexLocation=l: Override default maf_index.loc file
    -z, --mafIndexFile=z: Directory of local maf index file ( maf_index.loc or maf_pairwise.loc )
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 

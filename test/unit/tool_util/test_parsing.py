@@ -452,26 +452,22 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert xrefs == [{"value": "bwa", "type": "bio.tools"}]
 
     def test_exit_code(self):
-        tool_source = self._get_tool_source(
-            source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="exit_code">
                 ls
             </command>
         </tool>
-        """
-        )
+        """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         assert len(regexes) == 0, regexes
 
-        tool_source = self._get_tool_source(
-            source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="aggressive">
                 ls
             </command>
         </tool>
-        """
-        )
+        """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         # error:, exception: various memory exception...

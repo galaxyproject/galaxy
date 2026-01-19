@@ -167,12 +167,10 @@ class TestToolEvaluator(TestCase, UsesApp):
 
     def __test_arbitrary_path_rewriting(self):
         self.job.parameters = [JobParameter(name="index_path", value='"/old/path/human"')]
-        xml = XML(
-            """<param name="index_path" type="select">
+        xml = XML("""<param name="index_path" type="select">
             <option value="/old/path/human">Human</option>
             <option value="/old/path/mouse">Mouse</option>
-        </param>"""
-        )
+        </param>""")
         parameter = SelectToolParameter(cast("Tool", self.tool), xml)
 
         def get_field_by_name_for_value(name, value, trans, other_values):

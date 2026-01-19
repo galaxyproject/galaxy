@@ -52,7 +52,7 @@ def init_database(engine: "Engine") -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def init_object_store() -> None:
-    m.Dataset.object_store = MockObjectStore()  # type:ignore[assignment]
+    m.Dataset.object_store = MockObjectStore()  # type: ignore[assignment]
 
 
 @pytest.fixture(autouse=True, scope="module")

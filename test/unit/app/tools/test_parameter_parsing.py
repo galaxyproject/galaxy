@@ -71,93 +71,75 @@ class TestParameterParsing(BaseParameterTestCase):
     """
 
     def test_parse_help_and_label(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="texti" value="mydefault" label="x" help="y" />
-        """
-        )
+        """)
         assert param.label == "x"
         assert param.help == "y"
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="texti" value="mydefault">
                 <label>x2</label>
                 <help>y2</help>
             </param>
-        """
-        )
+        """)
         assert param.label == "x2"
         assert param.help == "y2"
 
     def test_parse_sanitizers(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="texti" value="mydefault">
               <sanitizer invalid_char="">
                 <valid initial="string.digits"><add value=","/> </valid>
               </sanitizer>
             </param>
-        """
-        )
+        """)
         sanitizer = param.sanitizer
         assert sanitizer is not None
         assert sanitizer.sanitize_param("a") == ""
         assert sanitizer.sanitize_param(",") == ","
 
     def test_parse_optional(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="texti" value="mydefault">
                 <validator type="empty_field" />
             </param>
-        """
-        )
+        """)
         assert param.optional is False
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="texti" value="mydefault" optional="true" />
-        """
-        )
+        """)
         assert param.optional is True
 
     def test_parse_validators(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="texti" value="mydefault">
                 <validator type="unspecified_build" message="no genome?" />
             </param>
-        """
-        )
+        """)
         assert param.validators[0].message == "no genome?"
 
     def test_text_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="texti" value="mydefault" />
-        """
-        )
+        """)
         assert param.value == "mydefault"
         assert param.type == "text"
         assert not param.area
 
     def test_text_area_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="text" name="textarea" area="true" />
-        """
-        )
+        """)
         assert param.value is None
         assert param.type == "text"
         assert param.area
 
     def test_integer_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="integer" name="intp" min="8" max="9" value="9" />
-        """
-        )
+        """)
         assert param.name == "intp"
         assert param.value == "9"
         assert param.type == "integer"
@@ -166,11 +148,9 @@ class TestParameterParsing(BaseParameterTestCase):
             param.validate(10)
 
     def test_float_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="float" name="floatp" min="7.8" max="9.5" value="9" />
-        """
-        )
+        """)
         assert param.name == "floatp"
         assert param.value == "9"
         assert param.type == "float"
@@ -179,78 +159,62 @@ class TestParameterParsing(BaseParameterTestCase):
             param.validate(10.0)
 
     def test_boolean_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="boolean" name="boolp" />
-        """
-        )
+        """)
         assert param.name == "boolp"
         assert param.truevalue == "true"
         assert param.falsevalue == "false"
         assert param.type == "boolean"
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="boolean" name="boolp" truevalue="t" falsevalue="f" />
-        """
-        )
+        """)
         assert param.truevalue == "t"
         assert param.falsevalue == "f"
 
     def test_file_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="file" name="filep" />
-        """
-        )
+        """)
         assert param.name == "filep"
         assert param.type == "file"
 
     def test_ftpfile_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param type="ftpfile" name="ftpfilep" />
-        """
-        )
+        """)
         assert param.name == "ftpfilep"
         assert param.type == "ftpfile"
 
     def test_hidden(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="hiddenp" type="hidden" value="a hidden value" />
-        """
-        )
+        """)
         assert param.name == "hiddenp"
         assert param.type == "hidden"
         assert param.value == "a hidden value"
 
     def test_base_url(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="urlp" type="baseurl" value="http://twitter.com/" />
-        """
-        )
+        """)
         assert param.name == "urlp"
         assert param.type == "baseurl"
         assert param.value == "http://twitter.com/"
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="urlp" type="baseurl" />
-        """
-        )
+        """)
         assert param.value == ""
 
     def test_select_static(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="selectp" type="select" multiple="true">
                 <option value="a">A</option>
                 <option value="b" selected="true">B</option>
             </param>
-        """
-        )
+        """)
         assert param.display is None
         assert param.multiple is True
         assert param.name == "selectp"
@@ -271,12 +235,10 @@ class TestParameterParsing(BaseParameterTestCase):
         assert options[1][2]
 
     def test_select_dynamic(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="selectp" type="select" dynamic_options="cow" display="checkboxes" separator="moo">
             </param>
-        """
-        )
+        """)
         assert param.multiple is False
         assert param.options is None
         assert param.dynamic_options == "cow"
@@ -288,14 +250,12 @@ class TestParameterParsing(BaseParameterTestCase):
         assert param.separator == "moo"
 
     def test_select_options_from(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="selectp" type="select">
                 <options from_data_table="cow">
                 </options>
             </param>
-        """
-        )
+        """)
         assert param.dynamic_options is None
         assert param.is_dynamic
 
@@ -304,110 +264,89 @@ class TestParameterParsing(BaseParameterTestCase):
         assert param.options.missing_tool_data_table_name == "cow"
 
     def test_genome_build(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="genomep" type="genomebuild">
             </param>
-        """
-        )
+        """)
         assert param.type == "genomebuild"
         assert param.name == "genomep"
         assert param.static_options
 
     def test_column_params(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="col1" type="data_column" data_ref="input1">
             </param>
-        """
-        )
+        """)
         assert param.data_ref == "input1"
         assert param.usecolnames is False
         assert param.optional is False
         assert param.numerical is False
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="col1" type="data_column" data_ref="input1" use_header_names="true" numerical="true" force_select="false">
             </param>
-        """
-        )
+        """)
         assert param.data_ref == "input1"
         assert param.usecolnames is True
         assert param.optional is True
         assert param.numerical is True
 
     def test_data_param_no_validation(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="input" type="data">
             </param>
-        """
-        )
+        """)
         assert len(param.validators) == 1
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="input" type="data" no_validation="true">
             </param>
-        """
-        )
+        """)
         assert len(param.validators) == 0
 
     def test_data_param_dynamic_options(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="input" type="data" />
-        """
-        )
+        """)
         assert param.options is None
         assert param.options_filter_attribute is None
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="input" type="data">
                 <options from_data_table="cow">
                 </options>
             </param>
-        """
-        )
+        """)
         assert param.options is not None
         assert param.options_filter_attribute is None
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="input" type="data">
                 <options from_data_table="cow" options_filter_attribute="cow">
                 </options>
             </param>
-        """
-        )
+        """)
         assert param.options is not None
         assert param.options_filter_attribute == "cow"
 
     def test_conversions(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="input" type="data" />
-        """
-        )
+        """)
         assert param.conversions == []
 
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="input" type="data">
                 <conversion name="foo" type="txt" />
                 <conversion name="foo2" type="bam" />
             </param>
-        """
-        )
+        """)
         assert param.conversions[0][0] == "foo"
         assert param.conversions[0][1] == "txt"
         assert param.conversions[1][0] == "foo2"
         assert param.conversions[1][1] == "bam"
 
     def test_drilldown(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
               <options>
                <option name="Heading 1" value="heading1">
@@ -421,8 +360,7 @@ class TestParameterParsing(BaseParameterTestCase):
                <option name="Option 5" value="option5"/>
               </options>
             </param>
-        """
-        )
+        """)
         assert param.type == "drill_down"
         assert param.name == "some_name"
         assert param.options
@@ -443,20 +381,16 @@ class TestParameterParsing(BaseParameterTestCase):
         assert len(option5["options"]) == 0
 
     def test_tool_collection(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="datac" type="data_collection" collection_type="list,list:paired" format="txt">
             </param>
-        """
-        )
+        """)
         assert param.type == "data_collection"
         assert param.collection_types == ["list", "list:paired"]
 
     def test_data_allow_uri_if_protocol(self):
-        param = self._parameter_for(
-            xml="""
+        param = self._parameter_for(xml="""
             <param name="deferred" type="data" allow_uri_if_protocol="https,s3">
             </param>
-        """
-        )
+        """)
         assert param.allow_uri_if_protocol == ["https", "s3"]

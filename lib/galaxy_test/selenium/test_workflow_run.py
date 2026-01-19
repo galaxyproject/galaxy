@@ -399,8 +399,7 @@ SRR5681005\tinput\t\t
     @selenium_test
     @managed_history
     def test_runtime_parameters_simple_optional(self):
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs: {}
 steps:
@@ -408,8 +407,7 @@ steps:
     tool_id: expression_null_handling_integer
     runtime_inputs:
       - int_input
-"""
-        )
+""")
         self.tool_parameter_div("int_input")
         self._set_num_lines_to_3("int_input")
         self.screenshot("workflow_run_optional_runtime_parameters_modified")
@@ -473,8 +471,7 @@ steps:
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -486,8 +483,7 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-"""
-        )
+""")
         self.workflow_run_ensure_expanded()
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
@@ -569,8 +565,7 @@ steps:
     @selenium_test
     @managed_history
     def test_execution_with_text_default_value_connected_to_restricted_select(self):
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   text_param:
@@ -584,8 +579,7 @@ steps:
     in:
       select_ex:
         source: text_param
-"""
-        )
+""")
         element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
         assert element.text == "Ex2"
         self.workflow_run_submit()
@@ -634,8 +628,7 @@ steps:
     @selenium_test
     @managed_history
     def test_workflow_run_button_disabled_when_required_input_missing(self):
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   text_param:
@@ -646,8 +639,7 @@ inputs:
   collection_param:
     type: data_collection
 steps: {}
-"""
-        )
+""")
         workflow_run = self.components.workflow_run
         # None of the required parameters are present
         workflow_run.run_workflow_disabled.wait_for_present()

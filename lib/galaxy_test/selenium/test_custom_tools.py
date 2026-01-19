@@ -88,16 +88,13 @@ inputs:
 type: data
 
 """
-        tool_yaml_three = (
-            """
+        tool_yaml_three = """
 outputs:
 - name: output1
   type: data
 format_source: datasets
 from_work_dir: output.txt
 """
-            ""
-        )
         # Try finding Monaco editor and replace skeleton content
         self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to initialize
         # Use the stable .monaco-editor container, not .view-line which gets re-rendered

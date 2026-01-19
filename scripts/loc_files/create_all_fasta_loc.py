@@ -245,7 +245,7 @@ def __main__():
         default="True",
         help="Copy over text from all_fasta.loc.sample file (false if set to append)",
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     exemptions = [e.strip() for e in options.exemptions.split(",")]
     fasta_exts = [x.strip() for x in options.fasta_exts.split(",")]

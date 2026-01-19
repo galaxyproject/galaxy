@@ -434,12 +434,9 @@ I ran a cool analysis with two inputs of types ${galaxy history_dataset_type(his
 """
         self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
         _, export_markdown, _ = self._ready_export(example)
-        assert (
-            export_markdown
-            == """
+        assert export_markdown == """
 I ran a cool analysis with two inputs of types fasta and fastqsanger.
 """
-        )
 
     def test_export_replaces_embedded_history_dataset_name(self):
         hda = self._new_hda()
@@ -452,22 +449,17 @@ I ran a cool analysis with two inputs of types ${galaxy history_dataset_name(his
 """
         self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
         _, export_markdown, _ = self._ready_export(example)
-        assert (
-            export_markdown
-            == """
+        assert export_markdown == """
 I ran a cool analysis with two inputs of types foo bar and cow dog.
 """
-        )
 
     def test_export_replaces_embedded_generate_time(self):
         example = """
 I ran a cool analysis at ${galaxy generate_time()}.
 """
         _, export_markdown, _ = self._ready_export(example)
-        assert export_markdown.startswith(
-            """
-I ran a cool analysis at 2"""
-        )
+        assert export_markdown.startswith("""
+I ran a cool analysis at 2""")
 
     def test_export_replaces_embedded_invocation_time(self):
         invocation = self._new_invocation()
@@ -476,22 +468,17 @@ I ran a cool analysis at 2"""
 I ran a cool analysis at ${galaxy invocation_time(invocation_id=1)}.
 """
         _, export_markdown, _ = self._ready_export(example)
-        assert export_markdown.startswith(
-            """
-I ran a cool analysis at 2"""
-        )
+        assert export_markdown.startswith("""
+I ran a cool analysis at 2""")
 
     def test_export_replaces_embedded_galaxy_version(self):
         example = """
 I ran a cool analysis with Galaxy ${galaxy generate_galaxy_version()}.
 """
         _, export_markdown, _ = self._ready_export(example)
-        assert (
-            export_markdown
-            == """
+        assert export_markdown == """
 I ran a cool analysis with Galaxy 19.09.
 """
-        )
 
     def test_export_replaces_embedded_access_link(self):
         self.trans.app.config.instance_access_url = "http://mycoolgalaxy.org"
@@ -499,12 +486,9 @@ I ran a cool analysis with Galaxy 19.09.
 I ran a cool analysis at ${galaxy instance_access_link()}.
 """
         _, export_markdown, _ = self._ready_export(example)
-        assert (
-            export_markdown
-            == """
+        assert export_markdown == """
 I ran a cool analysis at [http://mycoolgalaxy.org](http://mycoolgalaxy.org).
 """
-        )
 
     def _ready_export(self, example: str):
         return ready_galaxy_markdown_for_export(self.trans, example)

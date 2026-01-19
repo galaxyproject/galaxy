@@ -992,8 +992,7 @@ class Registry:
 
     def to_xml_file(self, path):
         if not self._registry_xml_string:
-            registry_string_template = Template(
-                """<?xml version="1.0"?>
+            registry_string_template = Template("""<?xml version="1.0"?>
             <datatypes>
               <registration converters_path="$converters_path" display_path="$display_path">
                 $datatype_elems
@@ -1002,8 +1001,7 @@ class Registry:
                 $sniffer_elems
               </sniffers>
             </datatypes>
-            """
-            )
+            """)
             converters_path = self.converters_path_attr or ""
             display_path = self.display_path_attr or ""
             datatype_elems = "".join(galaxy.util.xml_to_string(elem) for elem in self.datatype_elems)

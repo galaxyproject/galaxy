@@ -79,13 +79,11 @@ def test_parse_xml_enoent():
 
 
 def test_clean_multiline_string():
-    x = util.clean_multiline_string(
-        """
+    x = util.clean_multiline_string("""
         a
         b
         c
-"""
-    )
+""")
     assert x == "a\nb\nc\n"
 
 

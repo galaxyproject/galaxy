@@ -503,7 +503,7 @@ class DefaultToolAction(ToolAction):
                 incoming[f"{name}|__identifier__"] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
-        (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
+        chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
 
         if db_dataset:
             inp_data.update({"chromInfo": db_dataset})

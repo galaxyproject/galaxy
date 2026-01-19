@@ -96,7 +96,7 @@ class SharableModelManager(
         # ... effectively a good fit to have this here, but not semantically
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        return item.user == user  # type:ignore[attr-defined]
+        return item.user == user  # type: ignore[attr-defined]
 
     def is_accessible(self, item, user: Optional[User], **kwargs: Any) -> bool:
         """

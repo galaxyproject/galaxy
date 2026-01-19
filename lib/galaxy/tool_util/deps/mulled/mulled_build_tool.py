@@ -8,6 +8,7 @@ Build mulled images for requirements defined in a tool:
     mulled-build-tool build path/to/tool_file.xml
 
 """
+
 from typing import (
     List,
     TYPE_CHECKING,

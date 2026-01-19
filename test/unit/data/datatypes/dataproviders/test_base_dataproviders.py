@@ -138,13 +138,11 @@ class Test_BaseDataProvider(BaseTestCase):
 
     def test_stringio(self):
         """should work with StringIO"""
-        contents = clean_multiline_string(
-            """
+        contents = clean_multiline_string("""
             One
             Two
             Three
-        """
-        )
+        """)
         source = StringIO(contents)
         provider = self.provider_class(source)
         data = list(provider)
@@ -154,7 +152,7 @@ class Test_BaseDataProvider(BaseTestCase):
 
     def test_file(self):
         """should work with files"""
-        (contents, provider, data) = self.contents_provider_and_data()
+        contents, provider, data = self.contents_provider_and_data()
         assert data == self.parses_default_content_as()
         # provider should call close on file
         assert hasattr(provider.source, "read")
@@ -171,7 +169,7 @@ class Test_FilteredDataProvider(Test_BaseDataProvider):
 
     def test_counters(self):
         """should count: lines read, lines that passed the filter, lines returned"""
-        (contents, provider, data) = self.contents_provider_and_data()
+        contents, provider, data = self.contents_provider_and_data()
         self.assertCounters(provider, 3, 3, 3)
 
     def test_filter_fn(self):
@@ -184,7 +182,7 @@ class Test_FilteredDataProvider(Test_BaseDataProvider):
                 return None
             return string
 
-        (contents, provider, data) = self.contents_provider_and_data(filter_fn=filter_ts)
+        contents, provider, data = self.contents_provider_and_data(filter_fn=filter_ts)
         self.assertCounters(provider, 3, 1, 1)
 
 
@@ -193,56 +191,56 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
 
     def test_offset_1(self):
         """when offset is 1, should skip first"""
-        (contents, provider, data) = self.contents_provider_and_data(offset=1)
+        contents, provider, data = self.contents_provider_and_data(offset=1)
         assert data == self.parses_default_content_as()[1:]
         self.assertCounters(provider, 3, 3, 2)
 
     def test_offset_all(self):
         """when offset >= num lines, should return empty list"""
-        (contents, provider, data) = self.contents_provider_and_data(offset=4)
+        contents, provider, data = self.contents_provider_and_data(offset=4)
         assert data == []
         self.assertCounters(provider, 3, 3, 0)
 
     def test_offset_none(self):
         """when offset is 0, should return all"""
-        (contents, provider, data) = self.contents_provider_and_data(offset=0)
+        contents, provider, data = self.contents_provider_and_data(offset=0)
         assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     def test_offset_negative(self):
         """when offset is negative, should return all"""
-        (contents, provider, data) = self.contents_provider_and_data(offset=-1)
+        contents, provider, data = self.contents_provider_and_data(offset=-1)
         assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     def test_limit_1(self):
         """when limit is one, should return first"""
-        (contents, provider, data) = self.contents_provider_and_data(limit=1)
+        contents, provider, data = self.contents_provider_and_data(limit=1)
         assert data == self.parses_default_content_as()[:1]
         self.assertCounters(provider, 1, 1, 1)
 
     def test_limit_all(self):
         """when limit >= num lines, should return all"""
-        (contents, provider, data) = self.contents_provider_and_data(limit=4)
+        contents, provider, data = self.contents_provider_and_data(limit=4)
         assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     def test_limit_zero(self):
         """when limit >= num lines, should return empty list"""
-        (contents, provider, data) = self.contents_provider_and_data(limit=0)
+        contents, provider, data = self.contents_provider_and_data(limit=0)
         assert data == []
         self.assertCounters(provider, 0, 0, 0)
 
     def test_limit_none(self):
         """when limit is None, should return all"""
-        (contents, provider, data) = self.contents_provider_and_data(limit=None)
+        contents, provider, data = self.contents_provider_and_data(limit=None)
         assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     # TODO: somehow re-use tmpfile here
     def test_limit_with_offset(self):
         def limit_offset_combo(limit, offset, data_should_be, read, valid, returned):
-            (contents, provider, data) = self.contents_provider_and_data(limit=limit, offset=offset)
+            contents, provider, data = self.contents_provider_and_data(limit=limit, offset=offset)
             assert data == data_should_be
             # self.assertCounters(provider, read, valid, returned)
 
@@ -269,7 +267,7 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
                     return None
                 return string
 
-            (contents, provider, data) = self.contents_provider_and_data(limit=limit, offset=offset, filter_fn=only_ts)
+            contents, provider, data = self.contents_provider_and_data(limit=limit, offset=offset, filter_fn=only_ts)
             assert data == data_should_be
             # self.assertCounters(provider, read, valid, returned)
 

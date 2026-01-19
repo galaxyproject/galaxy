@@ -14,8 +14,7 @@ def get_from_url_option():
     )
 
     return DynamicOptions(
-        XML(
-            """
+        XML("""
 <options from_url="https://usegalaxy.org/api/genomes/dm6" request_method="POST">
     <request_headers type="json">
         {"x-api-key": "${__user__.extra_preferences.resource_api_key if $__user__ else "anon"}"}
@@ -31,8 +30,7 @@ def get_from_url_option():
         }
     }]]></postprocess_expression>
 </options>
-"""
-        ),
+"""),
         tool_param,
     )
 

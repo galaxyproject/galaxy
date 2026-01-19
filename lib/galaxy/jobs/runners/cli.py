@@ -236,7 +236,7 @@ class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             }
             reported_jobstate = job_interface.parse_failure_reason(cmd_out.stdout, external_job_id)
             if reported_jobstate in jobstate_map:
-                (ajs.fail_message, logmsg) = jobstate_map.get(reported_jobstate)
+                ajs.fail_message, logmsg = jobstate_map.get(reported_jobstate)
                 ajs.runner_state = reported_jobstate
                 log.info(logmsg)
 

@@ -131,7 +131,7 @@ class PlaywrightShedBrowser(ShedBrowser):
         input_s = form.locator(f"select[name='{control_name}']")
         if input_i.count():
             if control_name in ["redirect"]:
-                input_i.input_value = value  # type:ignore[assignment, unused-ignore]
+                input_i.input_value = value  # type: ignore[assignment, unused-ignore]
             else:
                 if isinstance(value, bool):
                     if value and not input_i.is_checked():
@@ -141,9 +141,9 @@ class PlaywrightShedBrowser(ShedBrowser):
                 else:
                     input_i.fill(value)
         if input_t.count():
-            input_t.fill(value)  # type:ignore[arg-type, unused-ignore]
+            input_t.fill(value)  # type: ignore[arg-type, unused-ignore]
         if input_s.count():
-            input_s.select_option(value)  # type:ignore[arg-type, unused-ignore]
+            input_s.select_option(value)  # type: ignore[arg-type, unused-ignore]
 
     def edit_repository_categories(self, categories_to_add: list[str], categories_to_remove: list[str]) -> None:
         multi_select = "form[name='categories'] select[name='category_id']"

@@ -30,6 +30,7 @@
 
 Covers the ``blastxml`` format and the BLAST databases.
 """
+
 import logging
 import os
 from collections.abc import Callable

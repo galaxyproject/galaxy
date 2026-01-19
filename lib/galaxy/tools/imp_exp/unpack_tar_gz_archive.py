@@ -90,5 +90,5 @@ if __name__ == "__main__":
         help="Source and destination dir values are base64 encoded.",
     )
     parser.add_option("--file-sources", type=str, help="file sources json")
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     main(options, args)

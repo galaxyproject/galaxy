@@ -169,8 +169,7 @@ steps:
     @pytest.mark.require_new_history
     @skip_without_tool("multi_data_optional")
     def test_index_workflow_filter_implicit_jobs(self, history_id):
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   input_datasets: collection
@@ -179,8 +178,7 @@ steps:
     tool_id: multi_data_optional
     in:
       input1: input_datasets
-"""
-        )
+""")
         hdca_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         inputs = {
