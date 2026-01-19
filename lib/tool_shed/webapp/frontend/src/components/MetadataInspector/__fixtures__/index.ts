@@ -17,6 +17,7 @@ import resetPreview from "./reset_metadata_preview.json"
 import resetApplied from "./reset_metadata_applied.json"
 import resetBismark from "./reset_metadata_bismark.json"
 import resetUnchanged from "./reset_metadata_unchanged.json"
+import resetSubset from "./reset_metadata_subset.json"
 
 // Simulated fixtures for edge cases
 // TODO: Update test_shed_repositories.py::test_generate_frontend_fixtures to generate real API
@@ -26,7 +27,6 @@ import resetUnchanged from "./reset_metadata_unchanged.json"
 // - Repository with repository_dependencies (define one with deps in test_data)
 // - Repository with multiple different tool IDs (multi-tool repo)
 // - Reset response with record_operation: "created" (first-time reset on fresh repo)
-// - Reset response with comparison_result: "subset" (repo with additive-only changes)
 // - Reset response with error (broken tool XML)
 // - Reset response with status: "warning" (partial success)
 import simulatedChangesetActions from "./simulated_changeset_actions.json"
@@ -61,6 +61,9 @@ export const resetMetadataBismark = resetBismark as ResetMetadataOnRepositoryRes
 
 /** Reset metadata dry-run preview showing "equal" comparison_result (unchanged revisions) */
 export const resetMetadataUnchanged = resetUnchanged as ResetMetadataOnRepositoryResponse
+
+/** Reset metadata dry-run preview showing "subset" comparison_result (additive changes only) */
+export const resetMetadataSubset = resetSubset as ResetMetadataOnRepositoryResponse
 
 // ============================================================================
 // Simulated Fixtures for Edge Case Testing

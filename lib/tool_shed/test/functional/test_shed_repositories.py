@@ -608,6 +608,28 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         with open(os.path.join(output_dir, "reset_metadata_unchanged.json"), "w") as f:
             json.dump(unchanged_reset_data, f, indent=2)
 
+        # 7. ResetMetadataOnRepositoryResponse - subset (has "subset" comparison_result)
+        # This repo adds a new tool in revision 2 without changing existing tool,
+        # so revision 1's metadata is a subset of revision 2's metadata
+        subset_repo = populator.setup_test_data_repo("column_maker_subset")
+        subset_reset_response = self.api_interactor.post(
+            f"repositories/{subset_repo.id}/reset_metadata",
+            params={"dry_run": True, "verbose": True},
+        )
+        api_asserts.assert_status_code_is_ok(subset_reset_response)
+        subset_reset_data = subset_reset_response.json()
+        assert subset_reset_data["dry_run"] is True
+        assert subset_reset_data["changeset_details"] is not None
+        # Verify we got a "subset" comparison - this is the whole point of this fixture
+        has_subset = any(
+            d.get("comparison_result") == "subset"
+            for d in subset_reset_data["changeset_details"]
+        )
+        assert has_subset, "column_maker_subset should produce 'subset' comparison_result"
+
+        with open(os.path.join(output_dir, "reset_metadata_subset.json"), "w") as f:
+            json.dump(subset_reset_data, f, indent=2)
+
         print(f"\nFixtures written to: {output_dir}")
         print("Files generated:")
         for f in sorted(os.listdir(output_dir)):

@@ -25,6 +25,7 @@ import {
     resetMetadataPreview,
     resetMetadataBismark,
     resetMetadataUnchanged,
+    resetMetadataSubset,
     getChangesetDetails,
     getFirstRevision,
     makeChangeset,
@@ -77,6 +78,7 @@ const changesetsAllResults = [
 const changesetsFromColumnMaker = getChangesetDetails(resetMetadataPreview)
 const changesetsFromBismark = getChangesetDetails(resetMetadataBismark)
 const changesetsFromUnchanged = getChangesetDetails(resetMetadataUnchanged)
+const changesetsFromSubset = getChangesetDetails(resetMetadataSubset)
 
 const sampleRevisionData = getFirstRevision(repositoryMetadataColumnMaker)
 
@@ -185,6 +187,13 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
                 description="Real API response showing 'Unchanged' change type - identical tool metadata between revisions"
             >
                 <ChangesetSummaryTable :changesets="changesetsFromUnchanged" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example
+                title="subset (API fixture)"
+                description="Real API response showing 'Additive' change type - new tool added without modifying existing"
+            >
+                <ChangesetSummaryTable :changesets="changesetsFromSubset" />
             </component-showcase-example>
             <q-separator />
             <component-showcase-example title="empty" description="No changesets">

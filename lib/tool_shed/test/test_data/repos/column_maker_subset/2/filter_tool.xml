@@ -1,0 +1,16 @@
+<tool id="Filter1" name="Filter" version="1.0.0">
+  <description>data on any column using simple expressions</description>
+  <command interpreter="python">
+    filter.py $input $out_file1 "$cond" ${input.metadata.columns} "${input.metadata.column_types}"
+  </command>
+  <inputs>
+    <param name="cond" size="40" type="text" value="c1=='chr22'" label="With following condition"/>
+    <param format="tabular" name="input" type="data" label="Filter" help="Dataset missing? See TIP below"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <help>
+Filters rows in a dataset based on a condition.
+</help>
+</tool>

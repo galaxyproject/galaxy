@@ -1,0 +1,310 @@
+{
+  "status": "ok",
+  "repository_status": [
+    "columnmakersubsettai2mft3j2 : Would reset metadata on repository columnmakersubsettai2mft3j2 owned by user--bx--psu--edu"
+  ],
+  "start_time": "2026-01-19 11:38:27",
+  "stop_time": "2026-01-19 11:39:27",
+  "dry_run": true,
+  "changeset_details": [
+    {
+      "changeset_revision": "ec0f37870b72",
+      "numeric_revision": 0,
+      "comparison_result": "initial",
+      "record_operation": null,
+      "has_tools": true,
+      "has_repository_dependencies": false,
+      "has_tool_dependencies": false,
+      "error": null
+    },
+    {
+      "changeset_revision": "43e9417e906a",
+      "numeric_revision": 1,
+      "comparison_result": "subset",
+      "record_operation": null,
+      "has_tools": true,
+      "has_repository_dependencies": false,
+      "has_tool_dependencies": false,
+      "error": null
+    },
+    {
+      "changeset_revision": "de2a03511575",
+      "numeric_revision": 2,
+      "comparison_result": "not equal and not subset",
+      "record_operation": "updated",
+      "has_tools": true,
+      "has_repository_dependencies": false,
+      "has_tool_dependencies": false,
+      "error": null
+    }
+  ],
+  "repository_metadata_before": {
+    "0:ec0f37870b72": {
+      "id": "f356c15ec7800da0",
+      "repository": {
+        "id": "2234cb1fd1df4331",
+        "name": "columnmakersubsettai2mft3j2",
+        "owner": "user--bx--psu--edu",
+        "type": "unrestricted",
+        "remote_repository_url": null,
+        "homepage_url": null,
+        "description": "columnmakersubsetap56xn09ig",
+        "user_id": "adb5f5c93f827949",
+        "private": false,
+        "deleted": false,
+        "times_downloaded": 0,
+        "deprecated": false,
+        "create_time": "2026-01-19T16:38:00.985469",
+        "update_time": "2026-01-19T16:38:00.985486"
+      },
+      "repository_dependencies": [],
+      "tools": [
+        {
+          "description": "an expression on every row",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Add_a_column1/1.0.0",
+          "id": "Add_a_column1",
+          "name": "Compute",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/column_maker.xml",
+          "tool_type": "default",
+          "version": "1.0.0"
+        }
+      ],
+      "invalid_tools": [],
+      "repository_id": "2234cb1fd1df4331",
+      "numeric_revision": 0,
+      "changeset_revision": "ec0f37870b72",
+      "malicious": false,
+      "downloadable": true,
+      "missing_test_components": false,
+      "has_repository_dependencies": false,
+      "includes_tools": true,
+      "includes_tools_for_display_in_tool_panel": true,
+      "includes_tool_dependencies": false,
+      "includes_datatypes": false,
+      "includes_workflows": false
+    },
+    "1:43e9417e906a": {
+      "id": "22d3c31104d9102b",
+      "repository": {
+        "id": "2234cb1fd1df4331",
+        "name": "columnmakersubsettai2mft3j2",
+        "owner": "user--bx--psu--edu",
+        "type": "unrestricted",
+        "remote_repository_url": null,
+        "homepage_url": null,
+        "description": "columnmakersubsetap56xn09ig",
+        "user_id": "adb5f5c93f827949",
+        "private": false,
+        "deleted": false,
+        "times_downloaded": 0,
+        "deprecated": false,
+        "create_time": "2026-01-19T16:38:00.985469",
+        "update_time": "2026-01-19T16:38:00.985486"
+      },
+      "repository_dependencies": [],
+      "tools": [
+        {
+          "description": "an expression on every row",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Add_a_column1/1.0.0",
+          "id": "Add_a_column1",
+          "name": "Compute",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/column_maker.xml",
+          "tool_type": "default",
+          "version": "1.0.0"
+        },
+        {
+          "description": "data on any column using simple expressions",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Filter1/1.0.0",
+          "id": "Filter1",
+          "name": "Filter",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/filter_tool.xml",
+          "tool_type": "default",
+          "version": "1.0.0"
+        }
+      ],
+      "invalid_tools": [],
+      "repository_id": "2234cb1fd1df4331",
+      "numeric_revision": 1,
+      "changeset_revision": "43e9417e906a",
+      "malicious": false,
+      "downloadable": true,
+      "missing_test_components": false,
+      "has_repository_dependencies": false,
+      "includes_tools": true,
+      "includes_tools_for_display_in_tool_panel": true,
+      "includes_tool_dependencies": false,
+      "includes_datatypes": false,
+      "includes_workflows": false
+    },
+    "2:de2a03511575": {
+      "id": "92c548528a9a67cb",
+      "repository": {
+        "id": "2234cb1fd1df4331",
+        "name": "columnmakersubsettai2mft3j2",
+        "owner": "user--bx--psu--edu",
+        "type": "unrestricted",
+        "remote_repository_url": null,
+        "homepage_url": null,
+        "description": "columnmakersubsetap56xn09ig",
+        "user_id": "adb5f5c93f827949",
+        "private": false,
+        "deleted": false,
+        "times_downloaded": 0,
+        "deprecated": false,
+        "create_time": "2026-01-19T16:38:00.985469",
+        "update_time": "2026-01-19T16:38:00.985486"
+      },
+      "repository_dependencies": [],
+      "tools": [
+        {
+          "description": "an expression on every row",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Add_a_column1/1.1.0",
+          "id": "Add_a_column1",
+          "name": "Compute",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/column_maker.xml",
+          "tool_type": "default",
+          "version": "1.1.0"
+        },
+        {
+          "description": "data on any column using simple expressions",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Filter1/1.0.0",
+          "id": "Filter1",
+          "name": "Filter",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/filter_tool.xml",
+          "tool_type": "default",
+          "version": "1.0.0"
+        }
+      ],
+      "invalid_tools": [],
+      "repository_id": "2234cb1fd1df4331",
+      "numeric_revision": 2,
+      "changeset_revision": "de2a03511575",
+      "malicious": false,
+      "downloadable": true,
+      "missing_test_components": false,
+      "has_repository_dependencies": false,
+      "includes_tools": true,
+      "includes_tools_for_display_in_tool_panel": true,
+      "includes_tool_dependencies": false,
+      "includes_datatypes": false,
+      "includes_workflows": false
+    }
+  },
+  "repository_metadata_after": {
+    "-1:43e9417e906a": {
+      "id": "22d3c31104d9102b",
+      "repository": {
+        "id": "2234cb1fd1df4331",
+        "name": "columnmakersubsettai2mft3j2",
+        "owner": "user--bx--psu--edu",
+        "type": "unrestricted",
+        "remote_repository_url": null,
+        "homepage_url": null,
+        "description": "columnmakersubsetap56xn09ig",
+        "user_id": "adb5f5c93f827949",
+        "private": false,
+        "deleted": false,
+        "times_downloaded": 0,
+        "deprecated": false,
+        "create_time": "2026-01-19T16:38:00.985469",
+        "update_time": "2026-01-19T16:38:00.985486"
+      },
+      "repository_dependencies": [],
+      "tools": [
+        {
+          "description": "an expression on every row",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Add_a_column1/1.0.0",
+          "id": "Add_a_column1",
+          "name": "Compute",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/column_maker.xml",
+          "tool_type": "default",
+          "version": "1.0.0"
+        },
+        {
+          "description": "data on any column using simple expressions",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Filter1/1.0.0",
+          "id": "Filter1",
+          "name": "Filter",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/filter_tool.xml",
+          "tool_type": "default",
+          "version": "1.0.0"
+        }
+      ],
+      "invalid_tools": [],
+      "repository_id": "2234cb1fd1df4331",
+      "numeric_revision": 1,
+      "changeset_revision": "43e9417e906a",
+      "malicious": false,
+      "downloadable": true,
+      "missing_test_components": false,
+      "has_repository_dependencies": false,
+      "includes_tools": true,
+      "includes_tools_for_display_in_tool_panel": true,
+      "includes_tool_dependencies": false,
+      "includes_datatypes": false,
+      "includes_workflows": false
+    },
+    "-1:de2a03511575": {
+      "id": "92c548528a9a67cb",
+      "repository": {
+        "id": "2234cb1fd1df4331",
+        "name": "columnmakersubsettai2mft3j2",
+        "owner": "user--bx--psu--edu",
+        "type": "unrestricted",
+        "remote_repository_url": null,
+        "homepage_url": null,
+        "description": "columnmakersubsetap56xn09ig",
+        "user_id": "adb5f5c93f827949",
+        "private": false,
+        "deleted": false,
+        "times_downloaded": 0,
+        "deprecated": false,
+        "create_time": "2026-01-19T16:38:00.985469",
+        "update_time": "2026-01-19T16:38:00.985486"
+      },
+      "repository_dependencies": [],
+      "tools": [
+        {
+          "description": "an expression on every row",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Add_a_column1/1.1.0",
+          "id": "Add_a_column1",
+          "name": "Compute",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/column_maker.xml",
+          "tool_type": "default",
+          "version": "1.1.0"
+        },
+        {
+          "description": "data on any column using simple expressions",
+          "guid": "127.0.0.1:8014/repos/user--bx--psu--edu/columnmakersubsettai2mft3j2/Filter1/1.0.0",
+          "id": "Filter1",
+          "name": "Filter",
+          "requirements": [],
+          "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmpd1yfawms/tmpknujwebp/database/files/000/repo_5/column_maker_subset/filter_tool.xml",
+          "tool_type": "default",
+          "version": "1.0.0"
+        }
+      ],
+      "invalid_tools": [],
+      "repository_id": "2234cb1fd1df4331",
+      "numeric_revision": 2,
+      "changeset_revision": "de2a03511575",
+      "malicious": false,
+      "downloadable": true,
+      "missing_test_components": false,
+      "has_repository_dependencies": false,
+      "includes_tools": true,
+      "includes_tools_for_display_in_tool_panel": true,
+      "includes_tool_dependencies": false,
+      "includes_datatypes": false,
+      "includes_workflows": false
+    }
+  }
+}
