@@ -16,6 +16,8 @@ import { AxisAlignedBoundingBox, type Rectangle, rectDistance } from "./geometry
 
 const elk = new ELK();
 
+export const AUTO_LAYOUT_ORPHAN_EDGE_WARNING_PREFIX = "Auto Layout: skipping edge";
+
 interface OptionObject {
     [key: string]: OptionValue | OptionObject;
 }
@@ -152,7 +154,7 @@ export async function autoLayout(id: string, steps: { [index: string]: Step }, c
 
         if (!sourceExists || !targetExists) {
             console.warn(
-                `Auto Layout: skipping edge with non-existent port(s): source=${sourcePortId} (${sourceExists}), target=${targetPortId} (${targetExists})`,
+                `${AUTO_LAYOUT_ORPHAN_EDGE_WARNING_PREFIX} with non-existent port(s): source=${sourcePortId} (${sourceExists}), target=${targetPortId} (${targetExists})`,
             );
             return false;
         }

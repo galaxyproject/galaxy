@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createTestStep } from "@/components/Workflow/Editor/test_fixtures";
 import {
     getCombinedStepInputs,
     type InputTerminalSource,
@@ -35,6 +36,10 @@ const workflowStepOne: NewStep = { ...workflowStepZero, input_connections: stepI
 describe("Connection Store", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     it("adds step", () => {
@@ -74,6 +79,10 @@ describe("getCombinedStepInputs", () => {
         setActivePinia(createPinia());
     });
 
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     const regularInput: InputTerminalSource = {
         name: "input_dataset",
         label: "Input Dataset",
@@ -83,26 +92,19 @@ describe("getCombinedStepInputs", () => {
         input_type: "dataset",
     };
 
-    const stepWithRegularInputs: NewStep = {
-        id: 0,
-        input_connections: {},
+    const stepWithRegularInputs = createTestStep(0, {
         inputs: [regularInput],
-        name: "tool step",
         outputs: [],
-        post_job_actions: {},
-        tool_state: {},
-        type: "tool",
-        workflow_outputs: [],
-    };
+    });
 
-    const stepWithWhen: NewStep = {
-        ...stepWithRegularInputs,
-        id: 1,
+    const stepWithWhen = createTestStep(1, {
+        inputs: [regularInput],
+        outputs: [],
         when: "${check_value}",
-        input_connections: {
+        inputConnections: {
             check_value: { output_name: "output", id: 0 },
         },
-    };
+    });
 
     it("returns only regular inputs when step has no extra inputs", () => {
         const stepStore = useWorkflowStepStore("mock-workflow");
