@@ -2,15 +2,15 @@
 import { faLink, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormInput, BTable } from "bootstrap-vue";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { useUploadQueue } from "@/composables/uploadQueue";
-import { useUploadStagingStore } from "@/stores/uploadStagingStore";
 import { mapToPasteUrlUpload } from "@/utils/upload/itemMappers";
 import { extractNameFromUrl, isValidUrl, validateUrl } from "@/utils/url";
 
@@ -44,7 +44,6 @@ const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
-const stagingStore = useUploadStagingStore();
 
 const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
@@ -64,23 +63,7 @@ function createPasteUrlItem(id: number, url: string, name: string): PasteUrlItem
 const urlItems = ref<PasteUrlItem[]>([]);
 const urlText = ref("");
 const showInputArea = ref(true);
-
-onMounted(() => {
-    const staged = stagingStore.getItems<PasteUrlItem>(props.method.id);
-    if (staged.length) {
-        urlItems.value = staged;
-        nextId = Math.max(...staged.map((i) => i.id)) + 1;
-        showInputArea.value = false;
-    }
-});
-
-watch(
-    urlItems,
-    (items) => {
-        stagingStore.setItems(props.method.id, items);
-    },
-    { deep: true },
-);
+const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems);
 
 const placeholder = "https://example.org/data1.txt\nhttps://example.org/data2.txt";
 
@@ -200,7 +183,7 @@ function startUpload() {
 
     // Reset state
     urlItems.value = [];
-    stagingStore.clearItems(props.method.id);
+    clearStaging();
     urlText.value = "";
     showInputArea.value = true;
     resetCollection();

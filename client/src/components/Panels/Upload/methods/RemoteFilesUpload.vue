@@ -16,9 +16,9 @@ import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUrlTracker } from "@/composables/urlTracker";
-import { useUploadStagingStore } from "@/stores/uploadStagingStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { mapToRemoteFileUpload } from "@/utils/upload/itemMappers";
 import { USER_FILE_PREFIX } from "@/utils/url";
@@ -59,7 +59,8 @@ const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
-const stagingStore = useUploadStagingStore();
+const remoteFileItems = ref<RemoteFileItem[]>([]);
+const { clear: clearStaging } = useUploadStaging<RemoteFileItem>(props.method.id, remoteFileItems);
 
 const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
@@ -82,24 +83,6 @@ function createRemoteFileItem(id: number, selectionItem: SelectionItem): RemoteF
 }
 
 const showBrowser = ref(true);
-const remoteFileItems = ref<RemoteFileItem[]>([]);
-
-onMounted(() => {
-    const staged = stagingStore.getItems<RemoteFileItem>(props.method.id);
-    if (staged.length) {
-        remoteFileItems.value = staged;
-        nextId = Math.max(...staged.map((i) => i.id)) + 1;
-        showBrowser.value = false;
-    }
-});
-
-watch(
-    remoteFileItems,
-    (items) => {
-        stagingStore.setItems(props.method.id, items);
-    },
-    { deep: true },
-);
 
 const selectionModel = ref<Model>(new Model({ multiple: true }));
 const selectionCount = ref(0);
@@ -533,7 +516,7 @@ function startUpload() {
 
     // Reset state
     remoteFileItems.value = [];
-    stagingStore.clearItems(props.method.id);
+    clearStaging();
     showBrowser.value = true;
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
