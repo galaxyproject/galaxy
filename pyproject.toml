@@ -57,7 +57,8 @@ dependencies = [
     "Mako",
     "Markdown",
     "MarkupSafe",
-    "mercurial>=6.8.2",  # Python 3.13 support
+    "mercurial>=6.8.2 ; python_version<'3.14'",  # Python 3.13 support
+    "mercurial>=7.2rc0 ; python_version>='3.14'",  # Python 3.14 support
     "mrcfile",
     "more-itertools",
     "msal",
