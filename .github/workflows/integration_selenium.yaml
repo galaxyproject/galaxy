@@ -50,7 +50,7 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -64,12 +64,12 @@ jobs:
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Cache galaxy venv
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration-selenium
       - name: Restore client cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
@@ -80,12 +80,12 @@ jobs:
         with:
           flags: integration-selenium
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Integration Selenium test results (${{ matrix.python-version }})
           path: 'galaxy root/run_integration_tests.html'
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Integration Selenium debug info (${{ matrix.python-version }})

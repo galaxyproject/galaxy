@@ -22,13 +22,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.13']
+        python-version: ['3.9', '3.14']
     env:
       LINT_PATH: 'lib/galaxy/dependencies/pinned-lint-requirements.txt'
       TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
       CORE_PATH: 'lib/galaxy/dependencies/pinned-requirements.txt'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
@@ -48,7 +48,5 @@ jobs:
         run: tox -e lint_docstring_include_list
       - name: Run mypy checks
         run: tox -e mypy
-      - uses: psf/black@stable
-        with:
-          version: ">=25.1.0"
-      - uses: isort/isort-action@v1
+      - name: Run format checks
+        run: tox -e format

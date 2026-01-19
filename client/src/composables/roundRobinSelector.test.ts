@@ -1,11 +1,11 @@
-import { jest } from "@jest/globals";
 import { mount } from "@vue/test-utils";
 import type { MaybeRefOrGetter } from "@vueuse/core";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, nextTick, ref } from "vue";
 
 import { useRoundRobinSelector } from "@/composables/roundRobinSelector";
 
-jest.useFakeTimers();
+vi.useFakeTimers();
 
 function mountWithComposable<T>(items: MaybeRefOrGetter<T[]>, pollInterval = 1000) {
     const exposed = {
@@ -28,13 +28,13 @@ function mountWithComposable<T>(items: MaybeRefOrGetter<T[]>, pollInterval = 100
 }
 
 function advanceTimersAndTick(ms: number) {
-    jest.advanceTimersByTime(ms);
+    vi.advanceTimersByTime(ms);
     return nextTick();
 }
 
 describe("useRoundRobinSelector", () => {
     afterEach(() => {
-        jest.clearAllTimers();
+        vi.clearAllTimers();
     });
 
     it("initializes with the first item", async () => {

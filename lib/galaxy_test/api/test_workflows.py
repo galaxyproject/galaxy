@@ -3566,6 +3566,52 @@ steps:
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
 
+    @skip_without_tool("cat")
+    def test_workflow_invocation_report_invalid_hdca_id(self):
+        """Test that an invalid HDCA id is reported in errors."""
+        workflow_with_unknown_directive = """
+class: GalaxyWorkflow
+name: Workflow With Unknown Directive
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+report:
+  markdown: |
+    ## Test Report
+
+    ```galaxy
+    history_dataset_collection_display(history_dataset_collection_id=1000000)
+    ```
+"""
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(workflow_with_unknown_directive, test_data=test_data, history_id=history_id)
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            # Fetch the report - errors should be collected in the response
+            report_response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}/report")
+            self._assert_status_code_is(report_response, 200)
+            response_json = report_response.json()
+            # Check that errors were collected
+            assert "errors" in response_json
+            assert response_json["errors"] is not None
+            assert len(response_json["errors"]) > 0
+            # Verify the error message mentions the actual error
+            error_entry = response_json["errors"][0]
+            assert "error" in error_entry
+            assert "History dataset collection association not found" in error_entry["error"]
+
     @skip_without_tool("cat1")
     def test_export_invocation_bco(self):
         with self.dataset_populator.test_history() as history_id:
@@ -3585,6 +3631,54 @@ steps:
             crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=True)
             workflow = crate.mainEntity
             assert workflow
+
+    @skip_without_tool("cat1")
+    def test_reimport_invocation_with_files(self):
+        """Test that reimporting an invocation with include_files=True preserves dataset state and content."""
+        with self.dataset_populator.test_history() as history_id:
+            # Run a simple workflow
+            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id=summary.workflow_id, invocation_id=invocation_id
+            )
+
+            # Export the invocation with files included
+            store_path = self.workflow_populator.download_invocation_to_store(
+                invocation_id, include_files=True, extension="tgz"
+            )
+
+            # Create a new history and import the invocation
+            with self.dataset_populator.test_history() as new_history_id:
+                imported_invocations = self.workflow_populator.create_invocation_from_store(
+                    history_id=new_history_id, store_path=store_path
+                )
+                assert len(imported_invocations) == 1
+                imported_invocation_id = imported_invocations[0]["id"]
+
+                # Get the full invocation details including outputs
+                imported_invocation = self.workflow_populator.get_invocation(imported_invocation_id)
+
+                # Verify the imported invocation has output datasets
+                assert "outputs" in imported_invocation
+                assert "wf_output_1" in imported_invocation["outputs"]
+                output_id = imported_invocation["outputs"]["wf_output_1"]["id"]
+
+                # Get the imported dataset and verify it has state 'ok'
+                dataset_details = self.dataset_populator.get_history_dataset_details(
+                    new_history_id, dataset_id=output_id
+                )
+                assert (
+                    dataset_details["state"] == "ok"
+                ), f"Expected dataset state 'ok', got '{dataset_details['state']}'"
+
+                # Verify the content is correct
+                output_content = self.dataset_populator.get_history_dataset_content(
+                    new_history_id, dataset_id=output_id
+                )
+                assert (
+                    output_content.strip() == "hello world"
+                ), f"Expected content 'hello world', got '{output_content.strip()}'"
 
     @skip_without_tool("__MERGE_COLLECTION__")
     def test_merge_collection_scheduling(self, history_id):
@@ -3936,8 +4030,112 @@ steps:
                     "details": "Subworkflow has disconnected required input.",
                     "reason": "unexpected_failure",
                     "workflow_step_id": 0,
+                    "workflow_step_index_path": [0],
                 }
             ]
+
+    def test_run_subworkflow_with_required_input_with_default_unconnected(self):
+        """Test subworkflow with required parameter input that has default value but is unconnected.
+
+        This test verifies that a subworkflow can run successfully when:
+        1. Parent workflow has a subworkflow step
+        2. Subworkflow has a parameter input with:
+           - optional: false (required)
+           - default: "default_value"
+        3. The parameter input is NOT connected from parent workflow
+        4. The default value should be used automatically
+
+        Before the fix, this would fail with "Subworkflow has disconnected required input."
+        After the fix, the workflow runs successfully using the default value.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  parent_input:
+    type: data
+steps:
+  subworkflow_step:
+    in:
+      subworkflow_data_input: parent_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        subworkflow_data_input:
+          type: data
+        subworkflow_text_param:
+          type: text
+          optional: false
+          default: "default_value"
+      outputs:
+        workflow_output:
+          outputSource: cat/out_file1
+      steps:
+        cat:
+          tool_id: cat1
+          in:
+            input1: subworkflow_data_input
+test_data:
+  parent_input:
+    value: 1.bed
+    type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+
+    def test_subworkflow_validation_error_step_path(self):
+        """Test that validation errors from subworkflows include the full step path."""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  some_file:
+    type: data
+steps:
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        subworkflow_input:
+          type: data
+      steps:
+        first_step:
+          tool_id: cat1
+          in:
+            input1: subworkflow_input
+        conditional_step:
+          tool_id: cat1
+          in:
+            input1: subworkflow_input
+          when: $("not_a_boolean")
+    in:
+      subworkflow_input: some_file
+""",
+                test_data="""
+some_file:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "when_not_boolean"
+            assert message["details"] == "Type is: str"
+            # Validate the complete workflow_step_index_path
+            # workflow_step_index_path tracks the path of subworkflow steps from parent to the subworkflow containing the error
+            # workflow_step_id is the ID of the actual failing step within that subworkflow
+            assert message["workflow_step_index_path"] == [1]
+            # Verify workflow_step_id points to the conditional_step (step 2 in the subworkflow)
+            assert message["workflow_step_id"] == 2
 
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
@@ -3996,6 +4194,44 @@ steps:
             job_metrics = self._get(f"invocations/{summary.invocation_id}/metrics").json()
             galaxy_slots = [m for m in job_metrics if m["name"] == "galaxy_slots"]
             assert len(galaxy_slots) == 1
+
+    def test_invocation_job_metrics_with_subworkflow(self):
+        """Test that subworkflow job metrics are included in parent invocation metrics."""
+        with self.dataset_populator.test_history() as history_id:
+            # WORKFLOW_NESTED_SIMPLE structure:
+            # Step 0: first_cat (cat1)
+            # Step 1: nested_workflow -> random_lines (random_lines1)
+            # Step 2: second_cat (cat1)
+            summary = self._run_workflow(
+                WORKFLOW_NESTED_SIMPLE, test_data={"outer_input": "hello world"}, history_id=history_id
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id=summary.workflow_id, invocation_id=summary.invocation_id
+            )
+
+            job_metrics = self._get(f"invocations/{summary.invocation_id}/metrics").json()
+
+            # Verify we have metrics from all tools including subworkflow
+            tool_ids = {m["tool_id"] for m in job_metrics}
+            assert "cat1" in tool_ids, "Should have metrics from cat1 tool"
+            assert "random_lines1" in tool_ids, "Should have metrics from subworkflow's random_lines1 tool"
+
+            # Verify subworkflow metrics use hierarchical indexing
+            # Note: WORKFLOW_NESTED_SIMPLE has input steps, so:
+            # Parent: Step 0=outer_input, 1=first_cat, 2=nested_workflow, 3=second_cat
+            # Subworkflow: Step 0=inner_input, 1=random_lines
+            # Therefore random_lines should be indexed as "2.1"
+            subworkflow_metrics = [m for m in job_metrics if m["tool_id"] == "random_lines1"]
+            assert len(subworkflow_metrics) > 0, "Should have at least one metric from subworkflow"
+            for metric in subworkflow_metrics:
+                assert metric["step_index"] == "2.1", "Subworkflow metrics should use hierarchical index '2.1'"
+
+            # Verify all metrics have required fields
+            for metric in job_metrics:
+                assert "job_id" in metric
+                assert "tool_id" in metric
+                assert "step_index" in metric
+                assert "name" in metric
 
     def test_invocation_job_metrics_map_over(self):
         with self.dataset_populator.test_history() as history_id:
@@ -5527,6 +5763,192 @@ test_data:
                 wait=True,
                 assert_ok=True,
             )
+
+    def test_run_subworkflow_with_optional_parent_input_connected_but_not_provided(self):
+        """Test subworkflow when parent's optional input is connected but not provided.
+
+        This test verifies the fix for a bug where:
+        1. Parent workflow has an OPTIONAL input
+        2. That optional input IS CONNECTED to the subworkflow's input
+        3. But NO DATA is provided for the parent's optional input
+        4. Subworkflow has DELAYED SCHEDULING (via $link)
+
+        After the fix, the parent's optional input outputs are pre-populated with NO_REPLACEMENT
+        before the subworkflow executes, allowing it to properly handle the missing value.
+
+        This is different from the case where subworkflow inputs are completely
+        unconnected, which was fixed in 2022.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            # Workflow with OPTIONAL input that IS CONNECTED to subworkflow
+            # input data is not provided
+            workflow = """
+class: GalaxyWorkflow
+inputs:
+  parent_required:
+    type: data
+  parent_optional:
+    type: data
+    optional: true
+steps:
+  nested_workflow:
+    in:
+      required_input: parent_required
+      optional_input: parent_optional
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        required_input: data
+        optional_input:
+          type: data
+          optional: true
+      steps:
+        expression:
+          tool_id: expression_parse_int
+          state:
+            input1: 1
+        head:
+          tool_id: head
+          in:
+            input: required_input
+          state:
+            lineNum:
+              $link: expression/out1
+        count_multi_file:
+          tool_id: count_multi_file
+          in:
+            input1:
+            - optional_input
+            - head/out_file1
+test_data:
+  parent_required:
+    value: 1.bed
+    type: File
+"""
+
+            # After the fix, this should now succeed
+            summary = self._run_workflow(
+                workflow,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+
+            # Check parent invocation
+            parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+
+            # Get the subworkflow invocation
+            subworkflow_step = None
+            for step in parent_invocation["steps"]:
+                if step.get("subworkflow_invocation_id"):
+                    subworkflow_step = step
+                    break
+
+            assert subworkflow_step is not None, "No subworkflow step found"
+
+            subworkflow_invocation_id = subworkflow_step["subworkflow_invocation_id"]
+            subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
+
+            # The subworkflow should have succeeded
+            assert (
+                subworkflow_invocation["state"] == "scheduled"
+            ), f"Expected subworkflow to succeed, got state: {subworkflow_invocation['state']}"
+
+            # Should not have error messages
+            messages = subworkflow_invocation.get("messages", [])
+            assert len(messages) == 0, f"Expected no error messages, got: {messages}"
+
+    def test_run_subworkflow_with_boolean_parameter_in_when_condition(self):
+        """Test boolean false parameter passed to subworkflow with when condition.
+
+        This test verifies that boolean parameters (especially false) are properly
+        passed from parent to subworkflow when the subworkflow has:
+        1. Delayed scheduling (via $link)
+        2. A when condition that uses the boolean parameter
+
+        Previously, false values were converted to None in the when expression evaluation,
+        causing "when_not_boolean" errors.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            workflow = """
+class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  some_file:
+    type: data
+steps:
+  nested_workflow:
+    in:
+      subworkflow_should_run: should_run
+      subworkflow_file: some_file
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        subworkflow_should_run: boolean
+        subworkflow_file: data
+      steps:
+        expression:
+          tool_id: expression_forty_two
+          state: {}
+        conditional_step:
+          tool_id: cheetah_casting
+          in:
+            subworkflow_should_run: subworkflow_should_run
+          state:
+            floattest: 3.14
+            inttest:
+              $link: expression/out1
+          when: $(inputs.subworkflow_should_run)
+test_data:
+  some_file:
+    value: 1.bed
+    type: File
+  should_run:
+    value: false
+    type: raw
+"""
+            summary = self._run_workflow(workflow, history_id=history_id, wait=True, assert_ok=True)
+
+            # Verify parent workflow executed successfully
+            parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert parent_invocation["state"] == "scheduled"
+
+            # Find the subworkflow step and get its invocation
+            subworkflow_step = None
+            for step in parent_invocation["steps"]:
+                if step.get("subworkflow_invocation_id"):
+                    subworkflow_step = step
+                    break
+
+            assert subworkflow_step is not None, "No subworkflow step found"
+            subworkflow_invocation_id = subworkflow_step["subworkflow_invocation_id"]
+            subworkflow_invocation = self.workflow_populator.get_invocation(
+                subworkflow_invocation_id, step_details=True
+            )
+
+            # The subworkflow should have succeeded
+            assert (
+                subworkflow_invocation["state"] == "scheduled"
+            ), f"Expected subworkflow to succeed, got state: {subworkflow_invocation['state']}"
+
+            # Should not have error messages (previously failed with "when_not_boolean")
+            messages = subworkflow_invocation.get("messages", [])
+            assert len(messages) == 0, f"Expected no error messages, got: {messages}"
+
+            # Find the conditional step in the subworkflow and verify it was skipped
+            # (when condition was false, so step should not execute)
+            conditional_step = None
+            for step in subworkflow_invocation["steps"]:
+                if step.get("workflow_step_label") == "conditional_step":
+                    conditional_step = step
+                    break
+
+            assert conditional_step is not None, "Conditional step not found in subworkflow"
+            # The step should have been skipped because should_run=false
+            assert len(conditional_step["jobs"]) == 0 or all(
+                j["state"] == "skipped" for j in conditional_step["jobs"]
+            ), "Expected conditional step to be skipped when should_run=false"
 
     def test_run_with_non_optional_data_unspecified_fails_invocation(self):
         with self.dataset_populator.test_history() as history_id:
@@ -8581,6 +9003,104 @@ outer_input:
         r = self._post("workflows", files={"archive_file": io.StringIO(malformated_yaml)})
         assert r.status_code == 400
 
+    @skip_without_tool("cat1")
+    def test_copy_inputs_to_history_with_tags(self):
+        """Test that tags are copied when workflow inputs are copied to a new history."""
+        workflow = """
+class: GalaxyWorkflow
+inputs:
+  input_dataset: data
+  input_collection: collection
+steps:
+  cat_dataset:
+    tool_id: cat1
+    in:
+      input1: input_dataset
+  cat_collection:
+    tool_id: cat1
+    in:
+      input1: input_collection
+"""
+        with self.dataset_populator.test_history() as history_id:
+            # Create a tagged dataset
+            hda = self.dataset_populator.new_dataset(history_id, content="dataset content\n", wait=True)
+            dataset_tags = ["tag1", "tag2", "input:dataset"]
+            self.dataset_populator.update_dataset(hda["id"], {"tags": dataset_tags})
+
+            # Create a tagged dataset collection
+            hdca_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["collection item 1\n", "collection item 2\n"], wait=True
+            )
+            hdca_data = hdca_response.json()
+            # The response has the collection info in 'outputs' array for fetch API
+            hdca_id = hdca_data["outputs"][0]["id"] if "outputs" in hdca_data else hdca_data["id"]
+            collection_tags = ["tag3", "tag4", "input:collection"]
+            # Tag the collection using the dataset_populator abstraction
+            self.dataset_populator.update_dataset_collection(hdca_id, {"tags": collection_tags})
+
+            # Run workflow in new history
+            new_history_name = self.dataset_populator.get_random_name()
+            inputs = {
+                "input_dataset": {"src": "hda", "id": hda["id"]},
+                "input_collection": {"src": "hdca", "id": hdca_id},
+            }
+            workflow_request = {
+                "new_history_name": new_history_name,
+                "inputs": json.dumps(inputs),
+                "inputs_by": "name",
+            }
+
+            workflow_id = self.workflow_populator.upload_yaml_workflow(workflow)
+            invocation_response = self.workflow_populator.invoke_workflow(workflow_id, request=workflow_request)
+            if invocation_response.status_code != 200:
+                error_msg = (
+                    f"Workflow invocation failed with {invocation_response.status_code}: {invocation_response.text}"
+                )
+                raise AssertionError(error_msg)
+            response_data = invocation_response.json()
+            invocation_id = response_data["id"]
+            new_history_id = response_data["history_id"]
+
+            # Wait for workflow to complete
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=new_history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation_id,
+                assert_ok=True,
+            )
+
+            # Get all contents from the new history to find the copied inputs (with tags)
+            history_contents_response = self._get(f"histories/{new_history_id}/contents?v=dev&view=detailed&keys=tags")
+            history_contents_response.raise_for_status()
+            history_contents = history_contents_response.json()
+
+            all_datasets = [item for item in history_contents if item["history_content_type"] == "dataset"]
+            datasets_info = [(item["name"], item.get("tags", [])) for item in all_datasets]
+
+            # Find copied dataset (should have the same content but be in new history with tags)
+            copied_datasets_with_tags = [
+                item
+                for item in history_contents
+                if item["history_content_type"] == "dataset"
+                and item.get("tags")
+                and set(item["tags"]) == set(dataset_tags)
+            ]
+            assert (
+                len(copied_datasets_with_tags) > 0
+            ), f"Should find copied dataset with tags {dataset_tags} in new history. Found datasets: {datasets_info}"
+
+            # Find copied collection (should have the same content but be in new history with tags)
+            copied_collections_with_tags = [
+                item
+                for item in history_contents
+                if item["history_content_type"] == "dataset_collection"
+                and item.get("tags")
+                and set(item["tags"]) == set(collection_tags)
+            ]
+            assert (
+                len(copied_collections_with_tags) > 0
+            ), f"Should find copied collection with tags {collection_tags} in new history"
+
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
     require_admin_user = True
@@ -8854,3 +9374,83 @@ steps:
             assert (
                 cached_grep_input_id != grep_input_id
             ), "Cached run should have copied the implicitly converted dataset to the new history"
+
+    @skip_without_tool("__SAMPLE_SHEET_TO_TABULAR__")
+    def test_run_workflow_use_cached_job_with_sample_sheet(self):
+        """Test that use_cached_job works correctly with sample sheet collections.
+
+        Uses sample_sheet_to_tabular tool which actually consumes the sample sheet
+        collection and its metadata, rather than just mapping over it.
+        """
+        wf = """class: GalaxyWorkflow
+inputs:
+  sample_sheet_input:
+    type: collection
+    collection_type: sample_sheet
+steps:
+  sample_sheet_to_tabular:
+    tool_id: __SAMPLE_SHEET_TO_TABULAR__
+    in:
+      input: sample_sheet_input
+"""
+        with self.dataset_populator.test_history() as history_id:
+            # Create a sample sheet collection
+            contents = [
+                ("sample1", "1 2 3"),
+                ("sample2", "4 5 6"),
+            ]
+            sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+            payload = dict(
+                name="test sample sheet",
+                instance_type="history",
+                history_id=history_id,
+                element_identifiers=sample_sheet_identifiers,
+                collection_type="sample_sheet",
+                column_definitions=[
+                    {"type": "int", "name": "replicate", "default_value": 0, "optional": False},
+                    {"type": "string", "name": "treatment", "default_value": "control", "optional": False},
+                ],
+                rows={"sample1": [1, "treatment"], "sample2": [2, "control"]},
+            )
+            create_response = self._post("dataset_collections", payload, json=True)
+            self._assert_status_code_is(create_response, 200)
+            sample_sheet_hdca = create_response.json()
+
+            # Upload workflow
+            workflow_id = self.workflow_populator.upload_yaml_workflow(
+                name="Sample Sheet Cached Job Test", yaml_content=wf
+            )
+
+            # First invocation - run without cache
+            workflow_request: dict[str, Any] = {
+                "inputs": json.dumps({"sample_sheet_input": {"src": "hdca", "id": sample_sheet_hdca["id"]}}),
+                "history": f"hist_id={history_id}",
+                "inputs_by": "name",
+            }
+            first_invocation_summary = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request
+            ).json()
+            first_invocation = self.workflow_populator.get_invocation(first_invocation_summary["id"], step_details=True)
+            first_job_id = first_invocation["steps"][1]["jobs"][0]["id"]
+
+            # Verify first invocation job completed successfully
+            first_job_details = self.dataset_populator.get_job_details(first_job_id, full=True).json()
+            assert first_job_details["state"] == "ok"
+            assert not first_job_details["copied_from_job_id"]
+
+            # Second invocation - run with cached jobs
+            workflow_request["use_cached_job"] = True
+            second_invocation_summary = self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id, request=workflow_request
+            ).json()
+            second_invocation = self.workflow_populator.get_invocation(
+                second_invocation_summary["id"], step_details=True
+            )
+            second_job_id = second_invocation["steps"][1]["jobs"][0]["id"]
+
+            # Verify second invocation used cached job
+            second_job_details = self.dataset_populator.get_job_details(second_job_id, full=True).json()
+            assert second_job_details["state"] == "ok"
+            assert (
+                second_job_details["copied_from_job_id"] == first_job_id
+            ), "Job should be cached from first invocation"

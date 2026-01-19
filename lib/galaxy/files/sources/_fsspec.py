@@ -5,6 +5,7 @@ import os
 from typing import (
     Annotated,
     Any,
+    cast,
     ClassVar,
     Optional,
     TypeVar,
@@ -12,7 +13,6 @@ from typing import (
 
 from fsspec import AbstractFileSystem
 from pydantic import Field
-from typing_extensions import cast
 
 from galaxy.exceptions import (
     AuthenticationRequired,
@@ -297,9 +297,13 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """Handle standard directory listing without query filtering."""
         entries_list = []
         entries: list[dict] = fs.ls(path, detail=True)
+        # Normalize path for comparison (remove trailing slash)
+        normalized_path = path.rstrip("/")
         for entry in entries:
             entry_path = entry.get("name", entry.get("path", ""))
-            if entry_path:  # Only process entries with valid paths
+            # Skip entries that match the directory being listed (some fsspec implementations
+            # include the directory itself in the listing results)
+            if entry_path and entry_path.rstrip("/") != normalized_path:
                 entries_list.append(self._info_to_entry(entry))
         return entries_list
 

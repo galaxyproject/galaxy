@@ -1,6 +1,7 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { createPinia } from "pinia";
+import { describe, expect, it, vi } from "vitest";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -13,8 +14,9 @@ const localVue = getLocalVue();
 const expectedOptions = [
     "Show Histories Side-by-Side",
     "Resume Paused Jobs",
-    "Copy this History",
-    "Delete this History",
+    "Copy History",
+    "Copy Datasets",
+    "Delete History",
     "Export Tool References",
     "Export History to File",
     "Archive History",
@@ -24,12 +26,7 @@ const expectedOptions = [
 ];
 
 // options enabled for logged-out users
-const anonymousOptions = [
-    "Resume Paused Jobs",
-    "Delete this History",
-    "Export Tool References",
-    "Export History to File",
-];
+const anonymousOptions = ["Resume Paused Jobs", "Delete History", "Export Tool References", "Export History to File"];
 
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
@@ -47,7 +44,7 @@ async function createWrapper(propsData: object, userData?: any) {
     userStore.currentUser = { ...userStore.currentUser, ...userData };
 
     const historyStore = useHistoryStore();
-    jest.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");
+    vi.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");
 
     return wrapper;
 }

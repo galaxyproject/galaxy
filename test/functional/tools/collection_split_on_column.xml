@@ -1,5 +1,6 @@
 <tool id="collection_split_on_column" name="collection_split_on_column" version="0.1.0">
   <command>
+    cp $input1 do_not_collect_me.txt;
     mkdir outputs; cd outputs; awk '{ print \$2 > (\$1 ".Tabular") }' $input1
   </command>
   <inputs>

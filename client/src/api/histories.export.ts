@@ -80,6 +80,7 @@ export async function reimportHistoryFromRecord(record: ExportRecord) {
         body: {
             store_content_uri: record.importUri,
             model_store_format: record.modelStoreFormat,
+            discarded_data: "forbid",
         },
     });
 

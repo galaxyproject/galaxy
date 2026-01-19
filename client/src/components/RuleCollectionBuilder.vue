@@ -608,6 +608,7 @@
 import HotTable from "@handsontable/vue";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import { mapActions } from "pinia";
 import _ from "underscore";
 import Vue from "vue";
 
@@ -619,7 +620,6 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import GButton from "./BaseComponents/GButton.vue";
 import ColumnSelector from "@/components/RuleBuilder/ColumnSelector.vue";
@@ -1327,6 +1327,7 @@ export default {
         }
     },
     methods: {
+        ...mapActions(useHistoryStore, ["startWatchingHistory"]),
         restoreRules(event) {
             const json = JSON.parse(event);
             this.rules = json.rules;
@@ -1445,7 +1446,7 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            startWatchingHistory();
+            this.startWatchingHistory();
             this.waitOnJob(response);
         },
         waitOnJob(response) {
@@ -1461,7 +1462,7 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    startWatchingHistory();
+                    this.startWatchingHistory();
                     this.$emit("onCreate", jobResponse.data);
                     if (this.oncreate) {
                         // legacy non-event handling

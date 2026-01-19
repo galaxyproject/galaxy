@@ -10,14 +10,16 @@ TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
 Start the HMR dev server.
 
 ```shell
-yarn run dev
+pnpm dev
 ```
 
 If you want to target an external V2 tool shed API run
 
 ```shell
-TOOL_SHED_URL=https://testtoolshed.g2.bx.psu.edu CHANGE_ORIGIN=true yarn vite dev
+TOOL_SHED_URL=https://testtoolshed.g2.bx.psu.edu CHANGE_ORIGIN=true pnpm vite dev
 ```
+
+To login when targeting an external backend, you need to get the `session_csrf_token` cookie set first. Visit `/backend_session` in your browser before logging in - this proxies to the backend's root route which sets the required cookie.
 
 Note that you still need a local backend to generate the graphql schema.
 

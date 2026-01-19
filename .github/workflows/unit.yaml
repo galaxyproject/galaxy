@@ -22,9 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.13']
+        python-version: ['3.9', '3.14']
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -48,7 +48,7 @@ jobs:
         with:
           flags: py-unit
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Unit test results (${{ matrix.python-version }})

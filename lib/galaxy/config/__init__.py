@@ -282,7 +282,10 @@ class BaseAppConfiguration(HasDynamicProperties):
         https://docs.sqlalchemy.org/en/14/changelog/changelog_14.html#change-3687655465c25a39b968b4f5f6e9170b
         """
         old_dialect, new_dialect = "postgres", "postgresql"
-        old_prefixes = (f"{old_dialect}:", f"{old_dialect}+")  # check for postgres://foo and postgres+driver//foo
+        old_prefixes = (
+            f"{old_dialect}:",
+            f"{old_dialect}+",
+        )  # check for postgres://foo and postgres+driver//foo
         offset = len(old_dialect)
         keys = ("database_connection", "install_database_connection")
         for key in keys:
@@ -318,7 +321,10 @@ class BaseAppConfiguration(HasDynamicProperties):
                 self.config_file = os.path.join(self.root, self.global_conf["__file__"])
 
             if self.config_file is None:
-                log.warning("No Galaxy config file found, running from current working directory: %s", os.getcwd())
+                log.warning(
+                    "No Galaxy config file found, running from current working directory: %s",
+                    os.getcwd(),
+                )
             else:
                 try:
                     self.global_conf_parser.read(self.config_file)
@@ -516,7 +522,10 @@ class BaseAppConfiguration(HasDynamicProperties):
             if path:
                 path = os.path.join(parent_path, path)  # resolve path
             else:
-                log.warning("Trying to resolve path for the '%s' option but it's empty/None", key)
+                log.warning(
+                    "Trying to resolve path for the '%s' option but it's empty/None",
+                    key,
+                )
 
             setattr(self, key, path)  # update property
             _cache[key] = path  # cache it!
@@ -823,7 +832,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         except FileNotFoundError:
             log.debug("No extra version JSON file detected at %s", json_file)
         except ValueError:
-            log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
+            log.error(
+                "Error loading Galaxy extra version JSON file %s - details not loaded.",
+                json_file,
+            )
         else:
             self.version_extra = extra_info
 
@@ -918,7 +930,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = self._in_data_dir(kwargs.get("jobs_directory", self.job_working_directory))
-        if self.preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
+        if self.preserve_python_environment not in [
+            "legacy_only",
+            "legacy_and_local",
+            "always",
+        ]:
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
         self.nodejs_path = kwargs.get("nodejs_path")
@@ -981,7 +997,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         )
         # Searching data libraries
         self.ftp_upload_dir_template = kwargs.get(
-            "ftp_upload_dir_template", f"${{ftp_upload_dir}}{os.path.sep}${{ftp_upload_dir_identifier}}"
+            "ftp_upload_dir_template",
+            f"${{ftp_upload_dir}}{os.path.sep}${{ftp_upload_dir_identifier}}",
         )
         # Support older library-specific path paste option but just default to the new
         # allow_path_paste value.
@@ -998,11 +1015,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # specify a local mapping file to adapt and extend the default one.
         if "conda_mapping_files" not in kwargs:
             _default_mapping = self._in_root_dir(
-                os.path.join("lib", "galaxy", "tool_util", "deps", "resolvers", "default_conda_mapping.yml")
+                os.path.join(
+                    "lib",
+                    "galaxy",
+                    "tool_util",
+                    "deps",
+                    "resolvers",
+                    "default_conda_mapping.yml",
+                )
             )
             # dependency resolution options are consumed via config_dict - so don't populate
             # self, populate config_dict
-            self.config_dict["conda_mapping_files"] = [self.local_conda_mapping_file, _default_mapping]
+            self.config_dict["conda_mapping_files"] = [
+                self.local_conda_mapping_file,
+                _default_mapping,
+            ]
 
         if kwargs.get("conda_auto_init") is None:
             self.config_dict["conda_auto_init"] = running_from_source
@@ -1105,9 +1132,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self._process_celery_config()
 
-        # load in the chat_prompts if openai api key is configured
-        if self.ai_api_key:
+        # load in the chat_prompts if AI is configured (old key & base URL, or inference_services)
+        if self.ai_api_key or self.ai_api_base_url or getattr(self, "inference_services", None):
             self._load_chat_prompts()
+            self._load_agent_config()
 
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
@@ -1145,7 +1173,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Interactive tools proxy mapping
         if self.interactivetoolsproxy_map is None:
             self.interactivetools_map = "sqlite:///" + self._in_root_dir(
-                kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
+                kwargs.get(
+                    "interactivetools_map",
+                    self._in_data_dir("interactivetools_map.sqlite"),
+                )
             )
         else:
             self.interactivetools_map = None  # overridden by `self.interactivetoolsproxy_map`
@@ -1294,6 +1325,50 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             log.warning(f"Chat prompts file not found at {chat_prompts_path}")
 
+    def _load_agent_config(self):
+        """Load agent configuration with defaults."""
+        # Set default agent configuration if not present
+        if not hasattr(self, "agents"):
+            self.agents: dict = {}
+
+        # Default agent configurations
+        default_agents = {
+            "router": {
+                "enabled": True,
+                "model": "openai:gpt-4",
+                "temperature": 0.3,
+                "max_tokens": 1000,
+            },
+            "error_analysis": {
+                "enabled": True,
+                "model": "openai:gpt-4",
+                "temperature": 0.2,
+                "max_tokens": 2000,
+            },
+            "dataset_analyzer": {
+                "enabled": False,  # Beta feature
+                "model": "openai:gpt-4",
+                "temperature": 0.3,
+                "max_tokens": 1500,
+            },
+            "custom_tool": {
+                "enabled": True,
+                "model": "openai:gpt-4",
+                "temperature": 0.4,
+                "max_tokens": 2000,
+            },
+        }
+
+        # Merge with any existing config
+        for agent_type, default_config in default_agents.items():
+            if agent_type not in self.agents:
+                self.agents[agent_type] = default_config
+            else:
+                # Fill in missing keys with defaults
+                for key, value in default_config.items():
+                    if key not in self.agents[agent_type]:
+                        self.agents[agent_type][key] = value
+
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:
             # If the result_backend is not set, use a SQLite database in the data directory
@@ -1413,7 +1488,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Check that required files exist
         tool_configs = self.tool_configs
         for path in tool_configs:
-            if not os.path.exists(path) and path not in (self.shed_tool_config_file, self.migrated_tools_config):
+            if not os.path.exists(path) and path not in (
+                self.shed_tool_config_file,
+                self.migrated_tools_config,
+            ):
                 raise ConfigurationError(f"Tool config file not found: {path}")
         for datatypes_config in listify(self.datatypes_config):
             if not os.path.isfile(datatypes_config):
@@ -1432,7 +1510,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         celery_enabled = self.enable_celery_tasks
         try:
             fetch_disabled = self.celery_conf["task_routes"]["galaxy.fetch_data"] == DISABLED_FLAG
-        except (TypeError, KeyError):  # celery_conf is None or sub-dictionary is none or either key is not present
+        except (
+            TypeError,
+            KeyError,
+        ):  # celery_conf is None or sub-dictionary is none or either key is not present
             fetch_disabled = False
         return celery_enabled and not fetch_disabled
 

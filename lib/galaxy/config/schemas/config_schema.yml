@@ -1834,7 +1834,7 @@ mapping:
 
       citation_bibtex:
         type: str
-        default: "@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}"
+        default: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
         required: false
         per_host: true
         desc: |
@@ -2815,12 +2815,12 @@ mapping:
           Show the site's welcome page (see welcome_url) alongside the login page
           (even if require_login is true).
 
-      prefer_custos_login:
+      prefer_oidc_login:
         type: bool
         default: false
         required: False
         desc: |
-          Controls the order of the login page to prefer Custos-based login and registration.
+          Controls the order of the login page to prefer OIDC-based login and registration.
 
       allow_local_account_creation:
         type: bool
@@ -2829,7 +2829,7 @@ mapping:
         deprecated_alias: allow_user_creation
         desc: |
           Allow unregistered users to create new local (non-OIDC) accounts (otherwise, they will have to
-          be created by an admin). This option will be overridden to false in case disable_local_accounts 
+          be created by an admin). This option will be overridden to false in case disable_local_accounts
           is set to true.
 
       disable_local_accounts:
@@ -2837,8 +2837,8 @@ mapping:
         default: false
         required: true
         desc: |
-          Disable local accounts. If this option is set to true, at least one OIDC provider needs 
-          to be configured and will serve as the account provider. If this option is set to true, 
+          Disable local accounts. If this option is set to true, at least one OIDC provider needs
+          to be configured and will serve as the account provider. If this option is set to true,
           allow_local_account creation will be overridden with false.
 
       allow_user_deletion:
@@ -4078,7 +4078,15 @@ mapping:
         required: false
         deprecated_alias: openai_model
         desc: |
-          AI model to enable the wizard.
+          AI model to enable the wizard. Global fallback for all AI agents.
+
+      inference_services:
+        type: any
+        required: false
+        desc: |
+          Configuration for AI inference services used by agents. Supports per-agent model, temperature, and token settings.
+          Agents inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
+          Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 } }
 
       enable_tool_recommendations:
         type: bool

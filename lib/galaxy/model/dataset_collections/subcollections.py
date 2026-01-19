@@ -1,5 +1,4 @@
 from typing import (
-    List,
     TYPE_CHECKING,
     Union,
 )
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
     )
 
 
-SplitReturnType = List[Union["DatasetCollectionElement", "PromoteCollectionElementToCollectionAdapter"]]
+SplitReturnType = list[Union["DatasetCollectionElement", "PromoteCollectionElementToCollectionAdapter"]]
 
 
 def split_dataset_collection_instance(

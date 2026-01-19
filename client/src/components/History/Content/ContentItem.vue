@@ -16,6 +16,7 @@ import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import DATASET_STATES from "@/utils/datasetStates";
 import { clearDrag } from "@/utils/setDrag";
 
 import { getContentItemState, type State, STATES } from "./model/states";
@@ -174,6 +175,8 @@ const itemUrls = computed<ItemUrls>(() => {
     let display = `/datasets/${id}`;
     if (props.item.extension == "tool_markdown") {
         display = `/datasets/${id}/report`;
+    } else if (!DATASET_STATES.OK_STATES.includes(state.value)) {
+        display = `/datasets/${id}/details`;
     }
     return {
         display: display,
@@ -374,7 +377,7 @@ function unexpandedClick(event: Event) {
                             :spin="contentState.spin"
                             :title="item.populated_state_message || contentState.text" />
                     </span>
-                    <span class="id hid">{{ id }}:</span>
+                    <span class="id hid">{{ id }}: </span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="ml-auto align-self-start btn-group p-1">

@@ -1,13 +1,13 @@
 import axios from "axios";
 
-import { getRootFromIndexLink } from "@/onload";
+import { getAppRoot } from "@/onload/loadConfig";
 
-const getUrl = (path) => getRootFromIndexLink() + path;
+const getUrl = (path) => getAppRoot() + path;
 
 export async function disconnectIdentity(doomed) {
     if (doomed) {
         let url;
-        if (doomed.provider === "custos" || doomed.provider === "cilogon") {
+        if (doomed.provider === "cilogon") {
             url = getUrl(`authnz/${doomed.provider}/disconnect/${doomed.email}`);
         } else {
             url = getUrl(`authnz/${doomed.provider}/disconnect/`);

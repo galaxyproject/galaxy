@@ -4,6 +4,7 @@ import pytest
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections.types.sample_sheet_util import (
+    column_definitions_compatible as real_column_definitions_compatible,
     validate_column_definitions as real_validate_column_definitions,
     validate_row as real_validate_row,
 )
@@ -21,6 +22,11 @@ def validate_column_definitions(column_definitions: Any):
     # for testing allow various incompatible data structures to be sent in to assure
     # they fail properly.
     real_validate_column_definitions(column_definitions)
+
+
+def column_definitions_compatible(collection_columns: Any, required_columns: Any) -> bool:
+    # for testing allow various incompatible data structures to be sent in
+    return real_column_definitions_compatible(collection_columns, required_columns)
 
 
 def test_sample_sheet_validation_skipped_on_empty_definitions():
@@ -51,27 +57,6 @@ def test_sample_sheet_validation_string_type():
 
     with pytest.raises(RequestParameterInvalidException):
         validate_row([1], [{"type": "string", "name": "condition", "default_value": "none", "optional": False}])
-
-    # restrict characters that might interfere with CSV/TSV serialization
-    with pytest.raises(RequestParameterInvalidException):
-        validate_row(
-            ["sample1\t"], [{"type": "string", "name": "condition", "default_value": "none", "optional": False}]
-        )
-
-    with pytest.raises(RequestParameterInvalidException):
-        validate_row(
-            ['sample1"'], [{"type": "string", "name": "condition", "default_value": "none", "optional": False}]
-        )
-
-    with pytest.raises(RequestParameterInvalidException):
-        validate_row(
-            ["sample1'"], [{"type": "string", "name": "condition", "default_value": "none", "optional": False}]
-        )
-
-    # but allow simple spaces even though we don't allow tabs/newlines in the sheet.
-    validate_row(
-        ["sample1 is cool"], [{"type": "string", "name": "condition", "default_value": "none", "optional": False}]
-    )
 
 
 def test_sample_sheet_validation_boolean_type():
@@ -203,3 +188,109 @@ def test_column_definitions_do_not_allow_special_characters_in_column_name():
 
     with pytest.raises(RequestParameterInvalidException):
         validate_column_definitions(column_definitions)
+
+
+# Tests for column_definitions_compatible function
+
+
+def test_column_definitions_compatible_missing_required_column():
+    """Collection without required column is incompatible."""
+    required_cols = [{"name": "treatment", "type": "string", "optional": False}]
+    collection_cols = [{"name": "replicate", "type": "int", "optional": False}]
+    assert column_definitions_compatible(collection_cols, required_cols) is False
+
+
+def test_column_definitions_compatible_collection_has_no_columns():
+    """Collection with no columns can't satisfy requirements."""
+    required_cols = [{"name": "treatment", "type": "string", "optional": False}]
+    assert column_definitions_compatible(None, required_cols) is False
+    assert column_definitions_compatible([], required_cols) is False
+
+
+def test_column_definitions_compatible_exact_match():
+    """Collection with exact same columns is compatible."""
+    cols = [
+        {"name": "treatment", "type": "string", "optional": False},
+        {"name": "replicate", "type": "int", "optional": False},
+    ]
+    assert column_definitions_compatible(cols, cols) is True
+
+
+def test_column_definitions_compatible_superset_not_allowed():
+    """Collection with extra columns beyond required is incompatible.
+
+    This maybe (probably?) should be allowed - this test is verifying current behavior not
+    defining the spec per se.
+    """
+    required_cols = [{"name": "treatment", "type": "string", "optional": False}]
+    collection_cols = [
+        {"name": "treatment", "type": "string", "optional": False},
+        {"name": "replicate", "type": "int", "optional": False},
+        {"name": "batch", "type": "string", "optional": True},
+    ]
+    assert column_definitions_compatible(collection_cols, required_cols) is False
+
+
+def test_column_definitions_compatible_type_mismatch():
+    """Column with wrong type is incompatible."""
+    required_cols = [{"name": "replicate", "type": "int", "optional": False}]
+    collection_cols = [{"name": "replicate", "type": "string", "optional": False}]
+    assert column_definitions_compatible(collection_cols, required_cols) is False
+
+
+def test_column_definitions_compatible_multiple_columns():
+    """All required columns must be present with correct types."""
+    required_cols = [
+        {"name": "treatment", "type": "string", "optional": False},
+        {"name": "replicate", "type": "int", "optional": False},
+    ]
+    # Missing replicate
+    collection_cols_1 = [{"name": "treatment", "type": "string", "optional": False}]
+    assert column_definitions_compatible(collection_cols_1, required_cols) is False
+
+    # Has both with correct types
+    collection_cols_2 = [
+        {"name": "treatment", "type": "string", "optional": False},
+        {"name": "replicate", "type": "int", "optional": False},
+    ]
+    assert column_definitions_compatible(collection_cols_2, required_cols) is True
+
+    # Has both but replicate has wrong type
+    collection_cols_3 = [
+        {"name": "treatment", "type": "string", "optional": False},
+        {"name": "replicate", "type": "float", "optional": False},
+    ]
+    assert column_definitions_compatible(collection_cols_3, required_cols) is False
+
+
+def test_column_definitions_compatible_ignores_validators():
+    """Validators/restrictions are not compared - only name and type matter*.
+
+    * Optional probably should matter but I don't think it does currently.
+    """
+    required_cols = [
+        {
+            "name": "treatment",
+            "type": "string",
+            "optional": False,
+            "restrictions": ["control", "treated"],
+            "validators": [{"type": "length", "min": 5}],
+        }
+    ]
+    # Collection has same column but no restrictions/validators
+    collection_cols = [{"name": "treatment", "type": "string", "optional": False}]
+    assert column_definitions_compatible(collection_cols, required_cols) is True
+
+
+def test_column_definitions_compatible_order_must_match():
+    """Columns must appear in the same order."""
+    required_cols = [
+        {"name": "treatment", "type": "string", "optional": False},
+        {"name": "replicate", "type": "int", "optional": False},
+    ]
+    # Same columns but different order
+    collection_cols = [
+        {"name": "replicate", "type": "int", "optional": False},
+        {"name": "treatment", "type": "string", "optional": False},
+    ]
+    assert column_definitions_compatible(collection_cols, required_cols) is False

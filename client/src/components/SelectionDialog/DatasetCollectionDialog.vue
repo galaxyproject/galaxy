@@ -13,12 +13,14 @@ interface HistoryItem {
     name: string;
     created_time: string;
     hid: number;
+    collection_type?: string;
 }
 
 interface Props {
     callback?: (results: SelectionItem) => void;
     history: string;
     modalStatic?: boolean;
+    collectionTypes?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -56,7 +58,13 @@ function load() {
     axios
         .get(url)
         .then((response) => {
-            const collection_instances = response.data.sort((a: HistoryItem, b: HistoryItem) => b.hid - a.hid);
+            let collection_instances = response.data.sort((a: HistoryItem, b: HistoryItem) => b.hid - a.hid);
+            if (props.collectionTypes?.length) {
+                collection_instances = collection_instances.filter(
+                    (item: HistoryItem) =>
+                        item.collection_type && props.collectionTypes!.includes(item.collection_type),
+                );
+            }
             items.value = collection_instances.map((item: HistoryItem) => {
                 return {
                     id: item.id,

@@ -2465,7 +2465,7 @@
 :Description:
     The BibTeX citation for Galaxy, to be displayed in the History
     Tool Reference List
-:Default: ``@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}``
+:Default: ``@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}``
 :Type: str
 
 
@@ -3817,11 +3817,11 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
-``prefer_custos_login``
+``prefer_oidc_login``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Controls the order of the login page to prefer Custos-based login
+    Controls the order of the login page to prefer OIDC-based login
     and registration.
 :Default: ``false``
 :Type: bool
@@ -5506,9 +5506,23 @@
 ~~~~~~~~~~~~
 
 :Description:
-    AI model to enable the wizard.
+    AI model to enable the wizard. Global fallback for all AI agents.
 :Default: ``gpt-4o``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``inference_services``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configuration for AI inference services used by agents. Supports
+    per-agent model, temperature, and token settings. Agents inherit
+    from 'default' configuration, which itself falls back to global
+    ai_model/ai_api_key settings. Example: inference_services: {
+    default: { model: gpt-4o-mini, temperature: 0.7 } }
+:Default: ``None``
+:Type: any
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5891,3 +5905,6 @@
     is ``true``. Runs in a Celery task.
 :Default: ``86400``
 :Type: int
+
+
+

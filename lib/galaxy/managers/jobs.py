@@ -11,7 +11,6 @@ from typing import (
     Any,
     cast,
     Optional,
-    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -69,6 +68,7 @@ from galaxy.model import (
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
+    WorkflowInvocationToSubworkflowInvocationAssociation,
     WorkflowStep,
     YIELD_PER_ROWS,
 )
@@ -825,6 +825,8 @@ class JobSearch:
                     e.history_dataset_association_id.isnot(None),
                 ),
                 or_(b.deleted == false(), c.deleted == false()),
+                # Exclude HDAs where _state is set (_state is NULL when metadata is OK)
+                c._state.is_(None),
             )
         )
         return stmt
@@ -944,7 +946,11 @@ class JobSearch:
         signature_elements_select = signature_elements_select.join(
             _hda_cte_ref, _hda_cte_ref.id == _leaf_cte_ref.hda_id
         )
-        signature_elements_select = signature_elements_select.where(_hdca_target_cte_ref.id == v)
+        signature_elements_select = signature_elements_select.where(
+            _hdca_target_cte_ref.id == v,
+            # Exclude leaf HDAs where _state is set (_state is NULL when metadata is OK)
+            _hda_cte_ref._state.is_(None),
+        )
         signature_elements_cte = signature_elements_select.cte(
             safe_label_or_none(f"signature_elements_{k}_{value_index}")
         )
@@ -1182,7 +1188,11 @@ class JobSearch:
             _leaf_target_dce_ref = _dce_target_level_list[-1]
             reference_dce_signature_elements_select = reference_dce_signature_elements_select.join(
                 _hda_target_ref, _hda_target_ref.id == _leaf_target_dce_ref.hda_id
-            ).where(_dce_target_root_ref.id == v)
+            ).where(
+                _dce_target_root_ref.id == v,
+                # Exclude leaf HDAs where _state is set (_state is NULL when metadata is OK)
+                _hda_target_ref._state.is_(None),
+            )
             reference_dce_signature_elements_cte = reference_dce_signature_elements_select.cte(
                 safe_label_or_none(f"ref_dce_sig_els_{k}_{value_index}")
             )
@@ -1436,6 +1446,8 @@ class JobSearch:
                     a.name == k,
                     dce_left.element_identifier == dce_right.element_identifier,
                     hda_left.dataset_id == hda_right.dataset_id,  # Direct dataset_id comparison
+                    # Exclude HDAs where _state is set (_state is NULL when metadata is OK)
+                    hda_right._state.is_(None),
                 )
             )
             used_ids.append(labeled_col)
@@ -1468,25 +1480,29 @@ def view_show_job(trans, job: Job, full: bool) -> dict:
 
 
 def invocation_job_source_iter(sa_session, invocation_id):
-    # TODO: Handle subworkflows.
     join = model.WorkflowInvocationStep.table.join(model.WorkflowInvocation)
     statement = (
         select(
             model.WorkflowInvocationStep.job_id,
             model.WorkflowInvocationStep.implicit_collection_jobs_id,
             model.WorkflowInvocationStep.state,
+            model.WorkflowInvocationStep.subworkflow_invocation_id,
         )
         .select_from(join)
         .where(model.WorkflowInvocation.id == invocation_id)
     )
     for row in sa_session.execute(statement):
-        if row[0]:
+        if row[0]:  # job_id
             yield ("Job", row[0], row[2])
-        if row[1]:
+        if row[1]:  # implicit_collection_jobs_id
             yield ("ImplicitCollectionJobs", row[1], row[2])
+        if row[3]:  # subworkflow_invocation_id
+            # Recursively handle subworkflow
+            yield from invocation_job_source_iter(sa_session, row[3])
 
 
-def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
+def _get_direct_job_metrics(sa_session: galaxy_scoped_session, invocation_id: int):
+    """Get job metrics for direct jobs in this invocation (not subworkflows)."""
     single_job_stmnt = (
         select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
@@ -1517,10 +1533,98 @@ def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation
     )
     # should be sa_session.execute(single_job_stmnt.union(collection_job_stmnt)).all() but that returns
     # columns instead of the job metrics ORM instance.
-    return sorted(
-        (*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()),
-        key=lambda row: row[0],
+    return [*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()]
+
+
+def _get_job_metrics_recursive(
+    sa_session: galaxy_scoped_session,
+    invocation_id: int,
+    parent_step_prefix: Optional[str] = None,
+):
+    """
+    Recursively get job metrics including subworkflows.
+
+    Args:
+        sa_session: Database session
+        invocation_id: Invocation to get metrics for
+        parent_step_prefix: String prefix for hierarchical indexing (e.g., "1" or "1.2") or None
+
+    Returns:
+        List of tuples: (step_index, job_id, tool_id, step_label, JobMetricNumeric)
+        where step_index is int for top-level or str for subworkflow steps
+    """
+    # Get direct job metrics
+    direct_metrics = _get_direct_job_metrics(sa_session, invocation_id)
+
+    # If we're processing a subworkflow, apply hierarchical indexing
+    if parent_step_prefix is not None:
+        direct_metrics = [
+            (f"{parent_step_prefix}.{step_order_index}", job_id, tool_id, step_label, metric)
+            for (step_order_index, job_id, tool_id, step_label, metric) in direct_metrics
+        ]
+
+    all_metrics = list(direct_metrics)
+
+    # Find and process subworkflow invocations
+    subworkflow_query = (
+        select(
+            WorkflowStep.order_index,
+            WorkflowStep.label,
+            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id,
+        )
+        .select_from(WorkflowInvocationToSubworkflowInvocationAssociation)
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id,
+                WorkflowInvocationStep.workflow_step_id
+                == WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id,
+                WorkflowInvocationStep.workflow_invocation_id
+                == WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id,
+            ),
+        )
+        .join(
+            WorkflowStep,
+            WorkflowStep.id == WorkflowInvocationStep.workflow_step_id,
+        )
+        .where(WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == invocation_id)
     )
+
+    for row in sa_session.execute(subworkflow_query):
+        step_order_index, _, subworkflow_inv_id = row
+        # Build hierarchical prefix
+        if parent_step_prefix is not None:
+            # Nested subworkflow: e.g., "1.2" + ".0" = "1.2.0"
+            step_prefix = f"{parent_step_prefix}.{step_order_index}"
+        else:
+            # Top-level subworkflow: e.g., "1"
+            step_prefix = str(step_order_index)
+
+        # Recursive call
+        subworkflow_metrics = _get_job_metrics_recursive(
+            sa_session,
+            subworkflow_inv_id,
+            parent_step_prefix=step_prefix,
+        )
+        all_metrics.extend(subworkflow_metrics)
+
+    return all_metrics
+
+
+def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
+    all_metrics = _get_job_metrics_recursive(sa_session, invocation_id)
+    # Sort by step_index with custom key to handle both int and str
+    # For strings like "1.0", split and convert to tuple of ints for proper sorting
+
+    def sort_key(row):
+        step_index = row[0]
+        if isinstance(step_index, int):
+            return (step_index,)  # Single-element tuple for top-level
+        else:
+            # Convert "1.0" -> (1, 0) for proper hierarchical sorting
+            return tuple(int(x) for x in step_index.split("."))
+
+    return sorted(all_metrics, key=sort_key)
 
 
 def fetch_job_states(sa_session, job_source_ids, job_source_types):
@@ -1990,7 +2094,7 @@ class JobSubmitter:
 
     def dereference(
         self, trans: WorkRequestContext, tool: Tool, request: QueueJobs, tool_request: ToolRequest
-    ) -> Tuple[RequestInternalDereferencedToolState, list[DereferencedDatasetPair]]:
+    ) -> tuple[RequestInternalDereferencedToolState, list[DereferencedDatasetPair]]:
         new_hdas: list[DereferencedDatasetPair] = []
 
         def dereference_collection_callback(data_request: DataRequestCollectionUri) -> DataRequestInternalHdca:

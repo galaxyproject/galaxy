@@ -64,14 +64,20 @@ class UninitializedTree(BaseTree):
 class Tree(BaseTree):
     children_known = True
 
-    def __init__(self, children, collection_type_description, when_values=None):
+    def __init__(
+        self, children, collection_type_description, when_values=None, columns_metadata=None, column_definitions=None
+    ):
         super().__init__(collection_type_description)
         self.children = children
         self.when_values = when_values
+        # columns_metadata is a dict mapping element_identifier to columns data
+        self.columns_metadata = columns_metadata or {}
+        self.column_definitions = column_definitions
 
     @staticmethod
     def for_dataset_collection(dataset_collection, collection_type_description):
         children = []
+        columns_metadata = {}
         for element in dataset_collection.elements:
             if collection_type_description.has_subcollections():
                 child_collection = element.child_collection
@@ -84,7 +90,15 @@ class Tree(BaseTree):
                 children.append((element.element_identifier, tree))
             else:
                 children.append((element.element_identifier, leaf))
-        return Tree(children, collection_type_description)
+            # Capture columns metadata from sample sheet collections
+            if element.columns is not None:
+                columns_metadata[element.element_identifier] = element.columns
+        return Tree(
+            children,
+            collection_type_description,
+            columns_metadata=columns_metadata,
+            column_definitions=dataset_collection.column_definitions,
+        )
 
     def walk_collections(self, hdca_dict):
         return self._walk_collections(dict_map(lambda hdca: hdca.collection, hdca_dict))
@@ -142,11 +156,22 @@ class Tree(BaseTree):
         for identifier, structure in self.children:
             new_children.append((identifier, structure.multiply(other_structure)))
 
-        return Tree(new_children, new_collection_type)
+        # Preserve columns_metadata and column_definitions when multiplying
+        return Tree(
+            new_children,
+            new_collection_type,
+            columns_metadata=self.columns_metadata.copy(),
+            column_definitions=self.column_definitions,
+        )
 
     def clone(self):
         cloned_children = [(_[0], _[1].clone()) for _ in self.children]
-        return Tree(cloned_children, self.collection_type_description)
+        return Tree(
+            cloned_children,
+            self.collection_type_description,
+            columns_metadata=self.columns_metadata.copy(),
+            column_definitions=self.column_definitions,
+        )
 
     def __str__(self):
         return f"Tree[collection_type={self.collection_type_description},children=({','.join(f'{identifier_and_element[0]}={identifier_and_element[1]}' for identifier_and_element in self.children)})]"

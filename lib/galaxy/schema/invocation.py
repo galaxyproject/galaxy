@@ -116,6 +116,10 @@ class CancelReason(str, Enum):
 
 class InvocationMessageBase(GenericModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
+    workflow_step_index_path: Optional[list[int]] = Field(
+        None,
+        description="Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).",
+    )
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
@@ -464,7 +468,7 @@ class InvocationReport(Model, WithModelClass):
     generate_time: Optional[str] = schema.GenerateTimeField
     generate_version: Optional[str] = schema.GenerateVersionField
 
-    errors: Optional[dict[str, Any]] = Field(
+    errors: Optional[list[dict[str, Any]]] = Field(
         default=None,
         title="Errors",
         description="Errors associated with the invocation.",

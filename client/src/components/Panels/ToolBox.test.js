@@ -1,18 +1,17 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import toolsList from "@/components/ToolsView/testData/toolsList";
 import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel";
-import { useConfig } from "@/composables/config";
+import { setMockConfig } from "@/composables/__mocks__/config";
 
 import { createSortedResultPanel, filterTools } from "./utilities";
 
-jest.mock("composables/config");
-useConfig.mockReturnValue({
-    config: {
-        toolbox_auto_sort: true,
-    },
-    isConfigLoaded: true,
+vi.mock("@/composables/config");
+
+setMockConfig({
+    toolbox_auto_sort: true,
 });
 
 describe("ToolBox", () => {

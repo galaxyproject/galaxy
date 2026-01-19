@@ -34,7 +34,7 @@ const jobDetails = ref<JobDetails>();
 const jobProblems = ref<JobInputSummary>();
 const dataset = ref<HDADetailed>();
 
-const showWizard = computed(() => isConfigLoaded && config.value?.llm_api_configured && !isAnonymous.value);
+const showWizard = computed(() => isConfigLoaded.value && config.value?.llm_api_configured && !isAnonymous.value);
 
 async function getDatasetDetails() {
     datasetLoading.value = true;

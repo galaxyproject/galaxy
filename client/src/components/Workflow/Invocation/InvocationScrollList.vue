@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faClock } from "@fortawesome/free-regular-svg-icons";
 import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -124,6 +125,8 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
                 :title-n-lines="2"
                 title-size="text"
                 :update-time="invocation.create_time"
+                update-time-title="Invoked"
+                :update-time-icon="faClock"
                 @title-click="workflowName(invocation.workflow_id)"
                 @click="() => cardClicked(invocation)">
                 <template v-slot:description>

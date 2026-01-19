@@ -1626,3 +1626,46 @@ class Prm(Text):
         False
         """
         return file_prefix.startswith("RBT_PARAMETER_FILE_V1.00")
+
+
+@build_sniff_from_prefix
+class SourmashSignature(Json):
+    """Sourmash signature format for MinHash sketches"""
+
+    file_ext = "sig"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Sourmash signature file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is a sourmash signature
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.sig')
+        >>> SourmashSignature().sniff(fname)
+        True
+        """
+        if self._looks_like_json(file_prefix):
+            return self._looks_like_sourmash(file_prefix)
+        return False
+
+    def _looks_like_sourmash(self, file_prefix: FilePrefix, load_size: int = 5000) -> bool:
+        """Check for sourmash-specific JSON structure"""
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+                # Sourmash signatures contain specific keys such as sourmash_signature
+                if '"sourmash_signature"' in segment_str or '"class": "sourmash_signature"' in segment_str:
+                    return True
+                # Also check for signature-specific fields
+                if '"signatures"' in segment_str and '"ksize"' in segment_str:
+                    return True
+        except Exception:
+            pass
+        return False

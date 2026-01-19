@@ -289,7 +289,7 @@ def encode_test(
                 test_collection = cast(JsonTestCollectionDefDict, value)
                 return adapt_collections(test_collection).model_dump()
         elif isinstance(parameter, SelectParameterModel):
-            if parameter.multiple and value is not None:
+            if parameter.multiple and value is not None and isinstance(value, (str,)):
                 return [v.strip() for v in value.split(",")]
             else:
                 return VISITOR_NO_REPLACEMENT
@@ -359,7 +359,7 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             if not parameter.multiple:
                 tool_state[parameter_name] = parameter.default_value
             else:
-                tool_state[parameter_name] = None
+                tool_state[parameter_name] = parameter.default_values
     elif isinstance(parameter, DrillDownParameterModel):
         if parameter_name not in tool_state:
             if parameter.multiple:

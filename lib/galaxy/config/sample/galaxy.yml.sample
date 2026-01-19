@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -1518,7 +1518,7 @@ galaxy:
 
   # The BibTeX citation for Galaxy, to be displayed in the History Tool
   # Reference List
-  #citation_bibtex: '@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}'
+  #citation_bibtex: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
 
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
@@ -2111,9 +2111,9 @@ galaxy:
   # page (even if require_login is true).
   #show_welcome_with_login: false
 
-  # Controls the order of the login page to prefer Custos-based login
+  # Controls the order of the login page to prefer OIDC-based login
   # and registration.
-  #prefer_custos_login: false
+  #prefer_oidc_login: false
 
   # Allow unregistered users to create new local (non-OIDC) accounts
   # (otherwise, they will have to be created by an admin). This option
@@ -2955,8 +2955,15 @@ galaxy:
   # AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
   #ai_api_base_url: null
 
-  # AI model to enable the wizard.
+  # AI model to enable the wizard. Global fallback for all AI agents.
   #ai_model: gpt-4o
+
+  # Configuration for AI inference services used by agents. Supports
+  # per-agent model, temperature, and token settings. Agents inherit
+  # from 'default' configuration, which itself falls back to global
+  # ai_model/ai_api_key settings. Example: inference_services: {
+  # default: { model: gpt-4o-mini, temperature: 0.7 } }
+  #inference_services: null
 
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
@@ -3127,3 +3134,4 @@ galaxy:
   # default) if enable_failed_jobs_working_directory_cleanup is
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
+

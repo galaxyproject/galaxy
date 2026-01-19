@@ -130,6 +130,7 @@ export function useHistoryCardActions(
             body: {
                 model_store_format: hti.export_record_data?.model_store_format,
                 store_content_uri: hti.export_record_data?.target_uri,
+                discarded_data: "forbid",
             },
         });
 

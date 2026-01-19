@@ -6,12 +6,12 @@ import Vue from "vue";
 
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useUrlTracker } from "@/composables/urlTracker";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Model } from "./model";
 import { Services } from "./services";
-import { UrlTracker } from "./utilities";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
@@ -61,7 +61,7 @@ const undoShow = ref(false);
 
 const services = new Services();
 const model = new Model({ multiple: props.multiple, format: props.format });
-let urlTracker = new UrlTracker(getHistoryUrl());
+const urlTracker = useUrlTracker<string>({ root: getHistoryUrl() });
 
 /** Specifies data columns to be shown in the dialog's table */
 const fields = [
@@ -151,15 +151,18 @@ function onUpload() {
 }
 
 /** Performs server request to retrieve data records **/
-function load(url: string = "") {
-    url = urlTracker.getUrl(url);
+function load(url?: string) {
+    if (url) {
+        urlTracker.forward(url);
+    }
+    const currentUrl = urlTracker.current.value;
     filter.value = "";
     optionsShow.value = false;
-    undoShow.value = !urlTracker.atRoot();
+    undoShow.value = !urlTracker.isAtRoot.value;
     services
-        .get(url)
+        .get(currentUrl)
         .then((incoming) => {
-            if (props.library && urlTracker.atRoot()) {
+            if (props.library && urlTracker.isAtRoot.value) {
                 incoming.unshift({
                     label: "Data Libraries",
                     url: `${getAppRoot()}api/libraries`,
@@ -183,7 +186,7 @@ onMounted(() => {
 watch(
     () => history,
     () => {
-        urlTracker = new UrlTracker(getHistoryUrl());
+        urlTracker.reset(getHistoryUrl());
         load();
     },
 );

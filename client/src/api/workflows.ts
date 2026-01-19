@@ -3,7 +3,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { GalaxyApi } from "./client";
 
-export type Creator = components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"];
+export type Creator = components["schemas"]["Person"] | components["schemas"]["CreatorOrganization"];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 export type WorkflowStepTyped = StoredWorkflowDetailed["steps"][number];
 

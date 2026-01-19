@@ -63,6 +63,10 @@ from .parameter_validators import (
     RegexParameterValidatorModel,
     StaticValidatorModel,
 )
+from .sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+)
 from .tool_source import (
     DrillDownOptionsDict,
     JsonTestCollectionDefDict,
@@ -402,7 +406,7 @@ class DataRequestHdca(LegacyRequestModelAttributes):
     id: StrictStr
 
 
-class DatasetHash(StrictModel):
+class FileHash(StrictModel):
     hash_function: Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
     hash_value: StrictStr
 
@@ -416,7 +420,7 @@ class BaseDataRequest(StrictModel):
     created_from_basename: Optional[StrictStr] = None
     info: Optional[StrictStr] = None
     tags: Optional[List[str]] = None
-    hashes: Optional[List[DatasetHash]] = None
+    hashes: Optional[List[FileHash]] = None
     space_to_tab: bool = False
     to_posix_lines: bool = False
 
@@ -498,6 +502,9 @@ class DataRequestCollectionUri(StrictModel):
     deferred: StrictBool = False
     name: Optional[StrictStr] = None
     src: None = Field(None, exclude=True)
+    # Sample sheet metadata
+    column_definitions: Optional[SampleSheetColumnDefinitions] = None
+    rows: Optional[Dict[str, SampleSheetRow]] = None
 
 
 _DataRequest = Annotated[
@@ -1175,6 +1182,7 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def default_value(self) -> Optional[str]:
+        assert not self.multiple
         if self.options:
             for option in self.options:
                 if option.selected:
@@ -1183,6 +1191,13 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             if not self.optional:
                 return self.options[0].value
 
+        return None
+
+    @property
+    def default_values(self) -> Optional[List[str]]:
+        assert self.multiple
+        if self.options:
+            return [option.value for option in self.options if option.selected]
         return None
 
     @property
@@ -1429,7 +1444,7 @@ DiscriminatorType = Union[bool, str]
 
 
 def cond_test_parameter_default_value(
-    test_parameter: Union["BooleanParameterModel", "SelectParameterModel"],
+    test_parameter: Union[BooleanParameterModel, "SelectParameterModel"],
 ) -> Optional[DiscriminatorType]:
     default_value: Optional[DiscriminatorType] = None
     if isinstance(test_parameter, BooleanParameterModel):

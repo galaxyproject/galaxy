@@ -14,7 +14,14 @@ const installableColor = computed(() => (props.downloadable ? "green" : "red"))
 const props = defineProps<RepositoryHealthProps>()
 </script>
 <template>
-    <q-fab class="q-px-sm" color="secondary" text-color="primary" icon="troubleshoot" direction="down">
+    <q-fab
+        class="q-px-sm"
+        color="secondary"
+        text-color="primary"
+        icon="troubleshoot"
+        direction="down"
+        aria-label="Repository health"
+    >
         <q-fab-action color="secondary" text-color="black" icon="download" label="Downlodable">
             <q-badge :color="installableColor" rounded floating />
         </q-fab-action>

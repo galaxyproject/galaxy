@@ -1,13 +1,13 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
 import { Model } from "./model";
 import { Services } from "./services";
-import { UrlTracker } from "./utilities";
 
 import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-jest.mock("app");
+vi.mock("app");
 
 const mockOptions = {
     callback: () => {},
@@ -51,27 +51,6 @@ describe("model.js", () => {
         expect(model.count()).toBe(1);
         result = model.finalize();
         expect(result[0]).toBe("tag_2");
-    });
-});
-
-describe("utilities.js/UrlTracker", () => {
-    it("Test url tracker", () => {
-        const urlTracker = new UrlTracker("url_initial");
-        let url = urlTracker.getUrl();
-        expect(url).toBe("url_initial");
-        expect(urlTracker.atRoot()).toBe(true);
-        url = urlTracker.getUrl("url_1");
-        expect(url).toBe("url_1");
-        expect(urlTracker.atRoot()).toBe(false);
-        url = urlTracker.getUrl("url_2");
-        expect(url).toBe("url_2");
-        expect(urlTracker.atRoot()).toBe(false);
-        url = urlTracker.getUrl();
-        expect(url).toBe("url_1");
-        expect(urlTracker.atRoot()).toBe(false);
-        url = urlTracker.getUrl();
-        expect(url).toBe("url_initial");
-        expect(urlTracker.atRoot()).toBe(true);
     });
 });
 
@@ -130,10 +109,8 @@ describe("DataDialog.vue", () => {
     */
 
     it("loads correctly, embeds a SelectionDialog", () => {
-        const localVue = createLocalVue();
         wrapper = shallowMount(DataDialog, {
             propsData: mockOptions,
-            localVue,
             stubs: {
                 Icon: true,
             },

@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { HttpResponse } from "@/api/client/__mocks__/index";
@@ -11,7 +12,8 @@ import { HttpResponse } from "@/api/client/__mocks__/index";
 import MountTarget from "./LoginForm.vue";
 
 const localVue = getLocalVue(true);
-const testingPinia = createTestingPinia({ stubActions: false });
+const router = injectTestRouter(localVue);
+const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
 const { server, http } = useServerMock();
 
@@ -26,6 +28,7 @@ async function mountLoginForm() {
             sessionCsrfToken: "sessionCsrfToken",
         },
         localVue,
+        router,
         stubs: {
             ExternalLogin: true,
         },
@@ -42,7 +45,7 @@ describe("LoginForm", () => {
         axiosMock = new MockAdapter(axios);
         server.use(
             http.get("/api/configuration", ({ response }) => {
-                return response.untyped(HttpResponse.json({ oidc: { cilogon: false, custos: false } }));
+                return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
             }),
         );
     });
@@ -110,7 +113,7 @@ describe("LoginForm", () => {
         const provider_label = "Provider";
 
         const originalLocation = window.location;
-        jest.spyOn(window, "location", "get").mockImplementation(() => ({
+        const locationSpy = vi.spyOn(window, "location", "get").mockImplementation(() => ({
             ...originalLocation,
             search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
         }));
@@ -150,5 +153,22 @@ describe("LoginForm", () => {
         const postedURL = axiosMock.history.post?.[0]?.url;
         expect(postedURL).toBe("/user/login");
         await flushPromises();
+
+        locationSpy.mockRestore();
+    });
+
+    it("renders message from query params", async () => {
+        const originalHref = window.location.href;
+        window.location.href = `${window.location.origin}/login/start?message=auth-error&status=info`;
+
+        const wrapper = await mountLoginForm();
+        await flushPromises();
+
+        const alert = wrapper.find(".alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toContain("auth-error");
+        expect(alert.classes()).toContain("alert-info");
+
+        window.location.href = originalHref;
     });
 });

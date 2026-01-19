@@ -182,8 +182,6 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     InvocationsStateCounts,
     JobState,
-    SampleSheetColumnDefinitions,
-    SampleSheetRow,
     ToolRequestState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
@@ -191,6 +189,10 @@ from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.tool_util.output_checker import AnyJobMessage
+from galaxy.tool_util_models.sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+)
 from galaxy.util import (
     directory_hash_id,
     enum_values,
@@ -552,6 +554,7 @@ class WorkerProcess(Base, UsesCreateAndUpdateTime):
     hostname: Mapped[Optional[str]] = mapped_column(String(255))
     pid: Mapped[Optional[int]]
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    app_type: Mapped[Optional[str]]
 
 
 def cached_id(galaxy_model_object):
@@ -826,6 +829,11 @@ class UserObjectstoreUsage(BaseModel):
     total_disk_usage: float
 
 
+class UserWorkflowMenuEntry(BaseModel):
+    id: str
+    name: str
+
+
 class User(Base, Dictifiable, RepresentById):
     """
     Data for a Galaxy user or admin and relations to their
@@ -858,7 +866,6 @@ class User(Base, Dictifiable, RepresentById):
     addresses: Mapped[list["UserAddress"]] = relationship(
         back_populates="user", order_by=lambda: desc(UserAddress.update_time)
     )
-    custos_auth: Mapped[list["CustosAuthnzToken"]] = relationship(back_populates="user")
     chat_exchanges: Mapped[list["ChatExchange"]] = relationship(back_populates="user")
     default_permissions: Mapped[list["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[list["UserGroupAssociation"]] = relationship(back_populates="user")
@@ -1086,38 +1093,50 @@ WHERE user_id = :user_id and quota_source_label = :label
 
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
-    def adjust_total_disk_usage(self, amount, quota_source_label):
+    def adjust_total_disk_usage(self, amount, quota_source_label, preserve_update_time: bool = False):
         assert amount is not None
         if amount != 0:
             if quota_source_label is None:
-                self.disk_usage = (self.disk_usage or 0) + amount
+                if preserve_update_time:
+                    # Use explicit SQL UPDATE to preserve update_time (avoids triggering onupdate=now)
+                    session = required_object_session(self)
+                    session.execute(
+                        update(User)
+                        .where(User.id == self.id)
+                        .values(
+                            disk_usage=User.disk_usage + amount,
+                            update_time=self.update_time,
+                        )
+                    )
+                else:
+                    self.disk_usage = (self.disk_usage or 0) + amount
             else:
                 # else would work on newer sqlite - 3.24.0
-                engine = required_object_session(self).bind
-                if "sqlite" in engine.dialect.name:
+                sa_session = required_object_session(self)
+                assert sa_session.bind is not None
+                if "sqlite" in sa_session.bind.dialect.name:
                     # hacky alternative for older sqlite
-                    statement = """
+                    sql = """
 WITH new (user_id, quota_source_label) AS ( VALUES(:user_id, :label) )
 INSERT OR REPLACE INTO user_quota_source_usage (id, user_id, quota_source_label, disk_usage)
 SELECT old.id, new.user_id, new.quota_source_label, COALESCE(old.disk_usage + :amount, :amount)
 FROM new LEFT JOIN user_quota_source_usage AS old ON new.user_id = old.user_id AND NEW.quota_source_label = old.quota_source_label;
 """
                 else:
-                    statement = """
+                    sql = """
 INSERT INTO user_quota_source_usage(user_id, disk_usage, quota_source_label)
 VALUES(:user_id, :amount, :label)
 ON CONFLICT
     ON constraint uqsu_unique_label_per_user
     DO UPDATE SET disk_usage = user_quota_source_usage.disk_usage + :amount
 """
-                statement = text(statement)
+                statement = text(sql)
                 params = {
                     "user_id": self.id,
                     "amount": int(amount),
                     "label": quota_source_label,
                 }
-                with engine.connect() as conn, conn.begin():
-                    conn.execute(statement, params)
+                sa_session.execute(statement, params)
 
     def _get_social_auth(self, provider_backend):
         if not self.social_auth:
@@ -1127,30 +1146,13 @@ ON CONFLICT
                 return auth
         return None
 
-    def _get_custos_auth(self, provider_backend):
-        if not self.custos_auth:
-            return None
-        for auth in self.custos_auth:
-            if auth.provider == provider_backend and auth.refresh_token:
-                return auth
-        return None
-
     def get_oidc_tokens(self, provider_backend):
         tokens = {"id": None, "access": None, "refresh": None}
-        auth = self._get_social_auth(provider_backend)
-        if auth:
+        if auth := self._get_social_auth(provider_backend):
             tokens["access"] = auth.extra_data.get("access_token", None)
             tokens["refresh"] = auth.extra_data.get("refresh_token", None)
             tokens["id"] = auth.extra_data.get("id_token", None)
             return tokens
-
-        # no social auth found, check custos auth
-        auth = self._get_custos_auth(provider_backend)
-        if auth:
-            tokens["access"] = auth.access_token
-            tokens["refresh"] = auth.refresh_token
-            tokens["id"] = auth.id_token
-
         return tokens
 
     @property
@@ -1563,10 +1565,15 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
     metric_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
 
 
+InpDataDictT = dict[str, Optional["DatasetInstance"]]
+OutDataDictT = dict[str, "DatasetInstance"]
+OutCollectionsDictT = dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
+
+
 class IoDicts(NamedTuple):
-    inp_data: dict[str, Optional["DatasetInstance"]]
-    out_data: dict[str, "DatasetInstance"]
-    out_collections: dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
+    inp_data: InpDataDictT
+    out_data: OutDataDictT
+    out_collections: OutCollectionsDictT
 
 
 class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
@@ -7384,7 +7391,11 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         minimize_copies=False,
         copy_hid=True,
     ):
-        new_collection = DatasetCollection(collection_type=self.collection_type, element_count=self.element_count)
+        new_collection = DatasetCollection(
+            collection_type=self.collection_type,
+            element_count=self.element_count,
+            column_definitions=self.column_definitions,
+        )
         for element in self.elements:
             element.copy_to_collection(
                 new_collection,
@@ -7422,7 +7433,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 else:
                     element.hda = replacement.hda.copy(copy_hid=False, flush=False)
                     history.stage_addition(element.hda)
-            if replacement.child_collection:
+            elif replacement.child_collection:
                 if element.child_collection:
                     element.child_collection.replace_elements_with_copies(
                         replacement.child_collection.elements, history=history
@@ -7432,7 +7443,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                         flush=False, element_destination=history
                     )
             else:
-                raise ValueError("Cannot replace {type(replacement.element_object)}")
+                raise ValueError(f"Cannot replace {type(replacement.element_object)}")
 
     def replace_failed_elements(self, replacements):
         stmt = self._build_nested_collection_attributes_stmt(
@@ -8183,6 +8194,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             collection=collection,
             element_index=self.element_index,
             element_identifier=self.element_identifier,
+            columns=self.columns,
         )
         return new_element
 
@@ -9875,15 +9887,18 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         return inputs, inputs_by
 
     def add_message(self, message: "InvocationMessageUnion"):
+
+        message_dict = message.dict(
+            exclude_unset=True,
+            exclude={"history_id"},  # history_id comes in through workflow_invocation and isn't persisted in database
+        )
+        # Convert workflow_step_index_path list to JSON string for database storage
+        if "workflow_step_index_path" in message_dict and message_dict["workflow_step_index_path"] is not None:
+            message_dict["workflow_step_index_path"] = message_dict["workflow_step_index_path"]
         self.messages.append(
             WorkflowInvocationMessage(  # type:ignore[abstract]
                 workflow_invocation_id=self.id,
-                **message.dict(
-                    exclude_unset=True,
-                    exclude={
-                        "history_id"
-                    },  # history_id comes in through workflow_invocation and isn't persisted in database
-                ),
+                **message_dict,
             )
         )
 
@@ -9963,6 +9978,7 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"))
     hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"))
     hdca_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_collection_association.id"))
+    workflow_step_index_path: Mapped[Optional[list[int]]] = mapped_column(JSON)
 
     workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="messages", lazy=True)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(foreign_keys=workflow_step_id, lazy=True)
@@ -10066,6 +10082,16 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     )
     order_index: Mapped[int] = column_property(
         select(WorkflowStep.order_index).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
+    )
+    subworkflow_invocation_id: Mapped[Optional[int]] = column_property(
+        select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id)
+        .where(
+            and_(
+                WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == workflow_invocation_id,
+                WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id == workflow_step_id,
+            )
+        )
+        .scalar_subquery(),
     )
 
     dict_collection_visible_keys = [
@@ -10935,7 +10961,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     )
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session = None
+    sa_session: ClassVar[Optional[Session]] = None
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider
@@ -11074,25 +11100,6 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         cls.sa_session.add(instance)
         cls.sa_session.commit()
         return instance
-
-
-class CustosAuthnzToken(Base, RepresentById):
-    __tablename__ = "custos_authnz_token"
-    __table_args__ = (
-        UniqueConstraint("user_id", "external_user_id", "provider"),
-        UniqueConstraint("external_user_id", "provider"),
-    )
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), nullable=True)
-    external_user_id: Mapped[Optional[str]] = mapped_column(String(255))
-    provider: Mapped[Optional[str]] = mapped_column(String(255))
-    access_token: Mapped[Optional[str]] = mapped_column(Text)
-    id_token: Mapped[Optional[str]] = mapped_column(Text)
-    refresh_token: Mapped[Optional[str]] = mapped_column(Text)
-    expiration_time: Mapped[datetime] = mapped_column(nullable=True)
-    refresh_expiration_time: Mapped[datetime] = mapped_column(nullable=True)
-    user: Mapped["User"] = relationship("User", back_populates="custos_auth")
 
 
 class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
@@ -12628,19 +12635,6 @@ Visualization.average_rating = column_property(  # type:ignore[assignment]
 
 Workflow.step_count = column_property(  # type:ignore[assignment]
     select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(), deferred=True
-)
-
-WorkflowInvocationStep.subworkflow_invocation_id = column_property(
-    select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id)
-    .where(
-        and_(
-            WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id
-            == WorkflowInvocationStep.workflow_invocation_id,
-            WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id
-            == WorkflowInvocationStep.workflow_step_id,
-        )
-    )
-    .scalar_subquery(),
 )
 
 # Set up proxy so that this syntax is possible:

@@ -31,7 +31,7 @@ async function ruleBasedCollectionCreatorModal(elements, elementsType, importTyp
         };
     });
 
-    const module = await import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue");
+    const module = await import("@/components/RuleCollectionBuilder.vue");
     const ruleCollectionBuilderInstance = Vue.extend(module.default);
     const vm = document.createElement("div");
 

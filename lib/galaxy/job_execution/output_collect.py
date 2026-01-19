@@ -125,6 +125,15 @@ def collect_dynamic_outputs(
         destination = unnamed_output_dict["destination"]
         elements = unnamed_output_dict["elements"]
 
+        # If rows are specified at the collection level, add them to individual elements
+        # This is a defensive check in case rows weren't already distributed in data_fetch.py
+        if "rows" in unnamed_output_dict:
+            rows_dict = unnamed_output_dict["rows"]
+            for element in elements:
+                element_name = element.get("name")
+                if element_name and element_name in rows_dict and "row" not in element:
+                    element["row"] = rows_dict[element_name]
+
         assert "type" in destination
         destination_type = destination["type"]
         assert destination_type in ["library_folder", "hdca", "hdas"]

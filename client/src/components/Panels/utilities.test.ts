@@ -1,6 +1,7 @@
 // eslint-disable-next-line simple-import-sort/imports
 import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
+import { describe, expect, it } from "vitest";
 
 import {
     createSortedResultPanel,

@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -24,19 +25,19 @@ const alertMessages = {
 };
 
 // Mock the workflow store to return the expected workflow data given the stored workflow ID
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule = await vi.importActual("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
             ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation((workflowId) => {
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation((workflowId) => {
                 if (["unowned-workflow", "nonexistant-workflow"].includes(workflowId)) {
                     return undefined;
                 }
                 return workflowData;
             }),
-            fetchWorkflowForInstanceId: jest.fn().mockImplementation((workflowId) => {
+            fetchWorkflowForInstanceId: vi.fn().mockImplementation((workflowId) => {
                 if (workflowId === "unowned-workflow") {
                     throw new Error(alertMessages.unOwned);
                 }
@@ -57,7 +58,7 @@ describe("WorkflowInvocationOverview.vue for a valid/invalid workflow", () => {
         const wrapper = shallowMount(WorkflowInvocationOverview, {
             propsData,
             localVue,
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
         await flushPromises();
         return wrapper;

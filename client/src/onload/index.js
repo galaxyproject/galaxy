@@ -1,28 +1,20 @@
-// Bootstrap overwrites .tooltip() method
+// index.ts
 import "bootstrap";
-// Galaxy core styles
 import "@/style/scss/base.scss";
-// Set up webpack's public path; nothing to import but the module has side
-// effects fixing webpack globals.
-import "./publicPath";
 // Default Font
 import "@fontsource/atkinson-hyperlegible";
 import "@fontsource/atkinson-hyperlegible/700.css";
 
-// Client-side configuration variables (based on environment)
 import config from "config";
 
 import { overrideProductionConsole } from "./console";
+import { getAppRoot, loadConfig } from "./loadConfig";
 
 overrideProductionConsole();
 
-// Module exports appear as objects on window.config in the browser
-export { getRootFromIndexLink } from "./getRootFromIndexLink";
-export { addInitialization, clearInitQueue, initializations$, prependInitialization } from "./initQueue";
-export { config$, getAppRoot, get as getConfig, set as setConfig } from "./loadConfig";
-export { standardInit } from "./standardInit";
+export { getAppRoot, loadConfig };
 
-if (!config.testBuild === true) {
+if (!config.testBuild) {
     console.log(`Galaxy Client '${config.name}' build, dated ${config.buildTimestamp}`);
-    console.debug("Full configuration:", config);
+    console.debug("Full environment configuration:", config);
 }

@@ -50,6 +50,7 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.files.uris import stream_url_to_str
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import (
     deletable,
@@ -2124,6 +2125,32 @@ class WorkflowContentsManager(UsesAnnotations):
                 trs_url=trs_url,
                 trs_server=trs_server,
                 archive_source="trs_url",
+            ),
+        )
+        return created_workflow.stored_workflow
+
+    def get_or_create_workflow_from_url(self, trans: ProvidesUserContext, url: str) -> StoredWorkflow:
+        """Fetch and import a workflow from an arbitrary URL.
+
+        Supports various URL schemes including http://, https://, and base64://.
+        """
+        user_id = trans.user and trans.user.id
+        assert user_id, "Cannot create workflow for anonymous user"
+
+        # Fetch the workflow content from the URL
+        file_sources = trans.app.file_sources
+        workflow_content = stream_url_to_str(url, file_sources=file_sources)
+
+        # Parse the workflow content
+        as_dict = yaml.safe_load(workflow_content)
+        raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
+
+        # Create the workflow
+        created_workflow = self.build_workflow_from_raw_description(
+            trans,
+            raw_workflow_description,
+            WorkflowCreateOptions(
+                archive_source="url",
             ),
         )
         return created_workflow.stored_workflow

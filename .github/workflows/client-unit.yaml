@@ -1,0 +1,37 @@
+name: Client Unit Testing
+on:
+  push:
+    paths:
+      - 'client/**'
+      - '.github/workflows/client-unit.yaml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/client-unit.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  client-unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'client/.node_version')" >> $GITHUB_OUTPUT
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+        working-directory: client
+      - name: Pre-build (icons and plugins)
+        run: node scripts/build.mjs
+        working-directory: client
+      - name: Run Vitest Unit Tests
+        run: pnpm test
+        working-directory: client

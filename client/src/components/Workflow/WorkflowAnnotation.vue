@@ -17,14 +17,14 @@ import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vu
 
 interface Props {
     workflowId: string;
-    invocationUpdateTime?: string;
+    invocationCreateTime?: string;
     historyId: string;
     showDetails?: boolean;
     hideHr?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    invocationUpdateTime: undefined,
+    invocationCreateTime: undefined,
 });
 
 const { workflow, owned } = useWorkflowInstance(props.workflowId);
@@ -34,7 +34,7 @@ const description = computed(() => {
 });
 
 const timeElapsed = computed(() => {
-    return props.invocationUpdateTime || workflow.value?.update_time;
+    return props.invocationCreateTime || workflow.value?.update_time;
 });
 
 const workflowTags = computed(() => {
@@ -49,11 +49,11 @@ const workflowTags = computed(() => {
                 <i v-if="timeElapsed" data-description="workflow annotation time info">
                     <FontAwesomeIcon :icon="faClock" class="mr-1" />
                     <span v-localize>
-                        {{ props.invocationUpdateTime ? "invoked" : "edited" }}
+                        {{ props.invocationCreateTime ? "invoked" : "edited" }}
                     </span>
                     <UtcDate :date="timeElapsed" mode="elapsed" data-description="workflow annotation date" />
                 </i>
-                <span v-if="invocationUpdateTime" class="d-flex flex-gapx-1 align-items-center">
+                <span v-if="invocationCreateTime" class="d-flex flex-gapx-1 align-items-center">
                     <FontAwesomeIcon :icon="faHdd" />History:
 
                     <span class="history-link-wrapper">

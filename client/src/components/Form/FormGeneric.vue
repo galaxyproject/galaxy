@@ -25,8 +25,6 @@
 </template>
 
 <script>
-import { IconDefinition } from "font-awesome-6";
-
 import { visitInputs } from "@/components/Form/utilities";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider";
 import { withPrefix } from "@/utils/redirect";
@@ -54,7 +52,7 @@ export default {
             default: null,
         },
         icon: {
-            type: IconDefinition,
+            type: Object,
             default: null,
         },
         submitIcon: {

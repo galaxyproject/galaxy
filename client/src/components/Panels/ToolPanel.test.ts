@@ -1,12 +1,11 @@
-import "jest-location-mock";
-
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -36,15 +35,10 @@ const TEST_PANELS_URI = "/api/tool_panels";
 const DEFAULT_VIEW_ID = "default";
 const PANEL_VIEW_ERR_MSG = "Error loading panel view";
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
-        config: {},
-        isConfigLoaded: true,
-    })),
-}));
+vi.mock("@/composables/config");
 
-jest.mock("@/composables/userLocalStorage", () => ({
-    useUserLocalStorage: jest.fn(() => ref(DEFAULT_VIEW_ID)),
+vi.mock("@/composables/userLocalStorage", () => ({
+    useUserLocalStorage: vi.fn(() => ref(DEFAULT_VIEW_ID)),
 }));
 
 describe("ToolPanel", () => {
@@ -62,7 +56,7 @@ describe("ToolPanel", () => {
             throw new Error(`View with key ${viewKey} not found in viewsList`);
         }
         // ref and useUserLocalStorage are already imported at the top
-        (useUserLocalStorage as jest.Mock).mockImplementation(() => ref(viewKey));
+        vi.mocked(useUserLocalStorage).mockImplementation(() => ref(viewKey));
         return { viewKey, view };
     }
 

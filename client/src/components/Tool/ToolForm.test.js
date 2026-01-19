@@ -1,12 +1,13 @@
-import "tests/jest/mockHelpPopovers";
+import "@tests/vitest/mockHelpPopovers";
 
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue, suppressBootstrapVueWarnings } from "tests/jest/helpers";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
@@ -40,9 +41,9 @@ describe("ToolForm", () => {
             }),
         );
 
-        // the PersonViewer component uses a BPopover that doesn't work with jsdom properly. It would be
+        // the PersonViewer component uses a BPopover that doesn't work in the test environment. It would be
         // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
-        // stub out the Popover piece I think.
+        // stub out the Popover piece.
         suppressBootstrapVueWarnings();
 
         axiosMock = new MockAdapter(axios);

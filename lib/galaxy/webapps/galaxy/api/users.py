@@ -10,7 +10,6 @@ from typing import (
     Annotated,
     Any,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -92,9 +91,7 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import UserIdPathParam
 from galaxy.webapps.galaxy.services.users import UsersService
-
-if TYPE_CHECKING:
-    from galaxy.work.context import SessionRequestContext
+from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -171,7 +168,7 @@ class FastAPIUsers:
     )
     def recalculate_disk_usage(
         self,
-        trans: "SessionRequestContext" = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ):
         """This route will be removed in a future version.
 
@@ -193,7 +190,7 @@ class FastAPIUsers:
     def recalculate_disk_usage_by_user_id(
         self,
         user_id: UserIdPathParam,
-        trans: "SessionRequestContext" = DependsOnTrans,
+        trans: SessionRequestContext = DependsOnTrans,
     ):
         result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
@@ -350,15 +347,14 @@ class FastAPIUsers:
         "/api/users/{user_id}/beacon",
         name="get_beacon_settings",
         summary="Return information about beacon share settings",
+        unstable=True,
     )
     def get_beacon(
         self,
         user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> UserBeaconSetting:
-        """
-        **Warning**: This endpoint is experimental and might change or disappear in future versions.
-        """
+        """Return information about beacon share settings."""
         user = self.service.get_user(trans, user_id)
 
         enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
@@ -369,6 +365,7 @@ class FastAPIUsers:
         "/api/users/{user_id}/beacon",
         name="set_beacon_settings",
         summary="Change beacon setting",
+        unstable=True,
     )
     def set_beacon(
         self,
@@ -376,9 +373,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         payload: UserBeaconSetting = Body(...),
     ) -> UserBeaconSetting:
-        """
-        **Warning**: This endpoint is experimental and might change or disappear in future versions.
-        """
+        """Change beacon setting."""
         user = self.service.get_user(trans, user_id)
 
         user.preferences["beacon_enabled"] = payload.enabled
@@ -823,7 +818,12 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "username": username,
         }
         is_galaxy_app = trans.webapp.name == "galaxy"
-        if (trans.app.config.enable_account_interface and not trans.app.config.use_remote_user) or not is_galaxy_app:
+        allow_profile_edit = (
+            trans.app.config.enable_account_interface
+            and not trans.app.config.use_remote_user
+            and not trans.app.config.disable_local_accounts
+        )
+        if allow_profile_edit or not is_galaxy_app:
             inputs.append(
                 {
                     "id": "email_input",
@@ -839,7 +839,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 }
             )
         if is_galaxy_app:
-            if trans.app.config.enable_account_interface and not trans.app.config.use_remote_user:
+            if allow_profile_edit:
                 inputs.append(
                     {
                         "id": "name_input",

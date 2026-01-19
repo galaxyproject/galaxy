@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -84,26 +85,28 @@ const invocationJobsSummaryById = {
     },
 };
 
+// Mock functions that we'll export for assertions
+const mockFetchInvocationById = vi.fn().mockImplementation((fetchParams) => {
+    if (fetchParams.id === "error-invocation") {
+        throw new Error("User does not own specified item.");
+    }
+});
+const mockFetchInvocationJobsSummaryForId = vi.fn();
+
 // Mock the invocation store to return the expected invocation data given the invocation ID
-jest.mock("@/stores/invocationStore", () => {
-    const originalModule = jest.requireActual("@/stores/invocationStore");
-    const mockFetchInvocationById = jest.fn().mockImplementation((fetchParams) => {
-        if (fetchParams.id === "error-invocation") {
-            throw new Error("User does not own specified item.");
-        }
-    });
-    const mockFetchInvocationJobsSummaryForId = jest.fn();
+vi.mock("@/stores/invocationStore", async () => {
+    const originalModule = await vi.importActual("@/stores/invocationStore");
     return {
         ...originalModule,
         useInvocationStore: () => ({
-            ...originalModule.useInvocationStore(),
-            getInvocationById: jest.fn().mockImplementation((invocationId) => {
+            ...(originalModule as any).useInvocationStore(),
+            getInvocationById: vi.fn().mockImplementation((invocationId) => {
                 return invocationById[invocationId];
             }),
-            getInvocationJobsSummaryById: jest.fn().mockImplementation((invocationId) => {
+            getInvocationJobsSummaryById: vi.fn().mockImplementation((invocationId) => {
                 return invocationJobsSummaryById[invocationId];
             }),
-            getInvocationStepJobsSummaryById: jest.fn().mockImplementation(() => {
+            getInvocationStepJobsSummaryById: vi.fn().mockImplementation(() => {
                 return [
                     {
                         id: "job-id",
@@ -118,19 +121,17 @@ jest.mock("@/stores/invocationStore", () => {
             fetchInvocationById: mockFetchInvocationById,
             fetchInvocationJobsSummaryForId: mockFetchInvocationJobsSummaryForId,
         }),
-        mockFetchInvocationById,
-        mockFetchInvocationJobsSummaryForId,
     };
 });
 
 // Mock the workflow store to return a workflow for `getStoredWorkflowByInstanceId`
-jest.mock("@/stores/workflowStore", () => {
-    const originalModule = jest.requireActual("@/stores/workflowStore");
+vi.mock("@/stores/workflowStore", async () => {
+    const originalModule = await vi.importActual("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
-            ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation(() => {
+            ...(originalModule as any).useWorkflowStore(),
+            getStoredWorkflowByInstanceId: vi.fn().mockImplementation(() => {
                 return {
                     id: "workflow-id",
                     name: "Test Workflow",
@@ -148,7 +149,7 @@ jest.mock("@/stores/workflowStore", () => {
  * @returns The mounted wrapper
  */
 async function mountWorkflowInvocationState(invocationId: string, isFullPage = false) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     setActivePinia(pinia);
 
     const wrapper = shallowMount(WorkflowInvocationState as object, {
@@ -164,6 +165,11 @@ async function mountWorkflowInvocationState(invocationId: string, isFullPage = f
 }
 
 describe("WorkflowInvocationState check invocation and job terminal states", () => {
+    beforeEach(() => {
+        mockFetchInvocationById.mockClear();
+        mockFetchInvocationJobsSummaryForId.mockClear();
+    });
+
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState(invocationData.id);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
@@ -273,12 +279,10 @@ function isInvocationAndJobTerminal(wrapper: Wrapper<Vue>): boolean {
 
 /** Asserts that the invocation was fetched in the store the given number of times */
 function assertInvocationFetched(count = 1) {
-    const { mockFetchInvocationById } = jest.requireMock("@/stores/invocationStore");
     expect(mockFetchInvocationById).toHaveBeenCalledTimes(count);
 }
 
 /** Asserts that the jobs summary was fetched in the store the given number of times */
 function assertJobsSummaryFetched(count = 1) {
-    const { mockFetchInvocationJobsSummaryForId } = jest.requireMock("@/stores/invocationStore");
     expect(mockFetchInvocationJobsSummaryForId).toHaveBeenCalledTimes(count);
 }

@@ -11,7 +11,7 @@ jobs:
     outputs:
       commit-id: ${{ steps.client-commit.outputs.commit }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -21,15 +21,17 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.node-version.outputs.version }}
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: 'galaxy root/package.json'
       - name: get client commit
         id: client-commit
         shell: bash
         run: echo "commit=$(git rev-parse HEAD 2>/dev/null)" >> $GITHUB_OUTPUT
         working-directory: 'galaxy root'
       - name: cache client build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache
         with:
           key: galaxy-static-${{ steps.client-commit.outputs.commit }}
@@ -38,5 +40,6 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         env:
           GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR: 1
+          NODE_OPTIONS: --max-old-space-size=4096
         run: make client
         working-directory: 'galaxy root'

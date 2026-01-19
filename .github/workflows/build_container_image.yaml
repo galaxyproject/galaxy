@@ -14,7 +14,7 @@ jobs:
     name: Build container image for GHCR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
@@ -75,10 +75,16 @@ jobs:
     name: Build container image for Galaxy repos
     runs-on: ubuntu-latest
     if: github.repository_owner == 'galaxyproject'
+    outputs:
+      tag: ${{ steps.branch.outputs.name }}
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
       - name: Set outputs
         id: commit
@@ -94,6 +100,11 @@ jobs:
             echo "name=${GITHUB_REF#refs/heads/release_}-auto" >> $GITHUB_OUTPUT
           fi
         shell: bash
+      - name: Get the current Galaxy version
+        id: version
+        run: |
+          version=$(python3 -c "import lib.galaxy.version; print(lib.galaxy.version.VERSION)")
+          echo "version=$version" >> $GITHUB_OUTPUT
       - name: Build container image
         run: docker build . --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg IMAGE_TAG=${{ steps.branch.outputs.name }} -t galaxy/galaxy-min:${{ steps.branch.outputs.name }} -t quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }} -f .k8s_ci.Dockerfile
       - name: Create auto-expiring one for per-commit auto repository
@@ -122,3 +133,136 @@ jobs:
         with:
           args: push galaxy/galaxy-min:${{ steps.branch.outputs.name }}
 
+  smoke-test:
+    name: Try installing the new image
+    runs-on: ubuntu-latest
+    needs: [ build ]
+    steps:
+      - name: Start k8s locally
+        uses: jupyterhub/action-k3s-helm@v4
+        with:
+          k3s-version: v1.32.0+k3s1  # releases:  https://github.com/k3s-io/k3s/tags
+          metrics-enabled: false
+          traefik-enabled: false
+      - name: Verify function of k8s, kubectl, and helm
+        run: |
+          echo "kubeconfig: $KUBECONFIG"
+          kubectl version
+          kubectl get pods --all-namespaces
+          helm version
+          helm list
+      - name: Add the Galaxy Helm repository
+        run: helm repo add galaxy https://github.com/CloudVE/helm-charts/raw/master
+      - name: Install the Galaxy dependencies
+        run: |
+          helm install galaxy-deps galaxy/galaxy-deps \
+          --namespace galaxy-deps \
+          --create-namespace \
+          --set cvmfs.cvmfscsi.cache.alien.enabled=false \
+          --wait \
+          --timeout=1200s
+      - name: Install Galaxy using the image we just pushed
+        run: |
+          helm install galaxy galaxy/galaxy \
+          --namespace galaxy \
+          --create-namespace \
+          --set persistence.accessMode="ReadWriteOnce" \
+          --set resources.requests.memory=0Mi,resources.requests.cpu=0m \
+          --set image.tag=${{ needs.build.outputs.tag }} \
+          --set webHandlers.startupProbe.initialDelaySeconds=120 \
+          --set webHandlers.startupProbe.periodSeconds=15 \
+          --set webHandlers.startupProbe.failureThreshold=72 \
+          --wait \
+          --timeout=1200s
+      - name: Debug deployment on failure
+        if: failure()
+        run: |
+          echo "=== Deployment failed, gathering debug information ==="
+
+          echo "=== All pods in galaxy namespace ==="
+          kubectl get pods -n galaxy -o wide
+
+          echo "=== All pods in galaxy-deps namespace ==="
+          kubectl get pods -n galaxy-deps -o wide
+
+          echo "=== CSI Drivers ==="
+          kubectl get csidriver
+
+          echo "=== Storage Classes ==="
+          kubectl get sc
+
+          echo "=== PVCs in galaxy namespace ==="
+          kubectl get pvc -n galaxy
+
+          echo "=== PVCs in galaxy-deps namespace ==="
+          kubectl get pvc -n galaxy-deps
+
+          echo "=== Recent events in galaxy namespace ==="
+          kubectl get events -n galaxy --sort-by='.lastTimestamp' | tail -50
+
+          echo "=== Recent events in galaxy-deps namespace ==="
+          kubectl get events -n galaxy-deps --sort-by='.lastTimestamp' | tail -50
+
+          echo "=== Describe pending/failed pods in galaxy namespace ==="
+          for pod in $(kubectl get pods -n galaxy --field-selector=status.phase!=Running,status.phase!=Succeeded -o name 2>/dev/null); do
+            echo "--- Describing $pod ---"
+            kubectl describe -n galaxy $pod
+          done
+
+          echo "=== Describe pending/failed pods in galaxy-deps namespace ==="
+          for pod in $(kubectl get pods -n galaxy-deps --field-selector=status.phase!=Running,status.phase!=Succeeded -o name 2>/dev/null); do
+            echo "--- Describing $pod ---"
+            kubectl describe -n galaxy-deps $pod
+          done
+      - name: Check the version
+        run: |
+          kubectl get svc -n galaxy
+          kubectl describe svc -n galaxy galaxy-nginx
+          address=$(kubectl get svc -n galaxy galaxy-nginx -o jsonpath="http://{.spec.clusterIP}:{.spec.ports[0].port}/galaxy/api/version")
+          echo "Address is $address"
+          appVersion=${{ needs.build.outputs.version }}
+          apiVersion=$(curl $address | jq -r '"\(.version_major).\(.version_minor)"')
+          echo "appVersion: $appVersion"
+          echo "apiVersion: $apiVersion"
+          if [ "$appVersion" != "$apiVersion" ]; then
+            exit 1
+          fi
+
+  pr:
+    name: Create a PR to update the Galaxy Helm chart when a release is tagged
+    runs-on: ubuntu-latest
+    needs: [smoke-test, build]
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout Galaxy Helm chart
+        uses: actions/checkout@v6
+        with:
+          repository: galaxyproject/galaxy-helm
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Update Chart.yaml appVersion
+        run: |
+          sed -i "s/^appVersion:.*/appVersion: \"${{ needs.build.outputs.version }}\"/" galaxy/Chart.yaml
+
+      - name: Update values.yaml image.tag
+        run: |
+          sed -i "s/^  tag:.*/  tag: \"${{ needs.build.outputs.tag }}\"/" galaxy/values.yaml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GALAXY_HELM_PULL_REQUEST_TOKEN }}
+          commit-message: "Update Galaxy to version ${{ needs.build.outputs.version }}"
+          title: "Update Galaxy to version ${{ needs.build.outputs.version }}"
+          body: |
+            This PR updates the Galaxy Helm chart to use the new Galaxy release.
+
+            Changes:
+            - appVersion: ${{ needs.build.outputs.version }}
+            - image.tag: ${{ needs.build.outputs.tag }}
+
+            Triggered by: ${{ github.ref }}
+          branch: update-galaxy-${{ needs.build.outputs.version }}
+          delete-branch: true
+          labels: patch

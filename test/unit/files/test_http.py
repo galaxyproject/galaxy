@@ -134,3 +134,14 @@ def test_file_source_http_without_stock_specific():
         assert file_source_pair.file_source.id == "test1"
 
         assert_realizes_as(file_sources, test_url, "hello specific world 2", user_context=user_context)
+
+
+def test_file_source_http_with_spaces_in_url_error():
+    """Test that URLs with unencoded spaces give a helpful error (issue #21221)."""
+    test_url = "https://example.com/Markers File.csv"
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+
+    with pytest.raises(ValueError, match="URL contains unencoded characters"):
+        file_source_pair = file_sources.get_file_source_path(test_url)
+        file_source_pair.file_source.realize_to(file_source_pair.path, "/tmp/test", user_context=user_context)

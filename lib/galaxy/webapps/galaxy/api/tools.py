@@ -343,8 +343,7 @@ class FetchTools:
         trans: ProvidesUserContext = DependsOnTrans,
         tool_landing_request: CreateToolLandingRequestPayload = Body(...),
     ) -> ToolLandingRequest:
-        tool_id = tool_landing_request.tool_id
-        if tool_id in PROTECTED_TOOLS:
+        if (tool_id := tool_landing_request.tool_id) in PROTECTED_TOOLS:
             raise exceptions.RequestParameterInvalidException(
                 f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
             )

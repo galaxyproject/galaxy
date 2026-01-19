@@ -37,11 +37,11 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
-    "fastapi>=0.111.0,!=0.119.*,!=0.120.*,!=0.121.0,!=0.121.1",  # https://github.com/fastapi/fastapi/pull/13918
+    "fastapi>=0.124.0",  # https://github.com/fastapi/fastapi/pull/14453
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "gravity>=1.1.1",
+    "gravity @ git+https://github.com/nsoranzo/gravity.git@python3.14",  # Python 3.14 support
     "gunicorn",
     "gxformat2>=0.21.0",
     "h5grove>=1.2.1",
@@ -75,10 +75,11 @@ dependencies = [
     "pulsar-galaxy-lib>=0.15.10",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
+    "pydantic-ai>=0.1.16",  # AI agent framework
     "PyJWT",
     "pykwalify",
     "pylibmagic",
-    "pyparsing",
+    "pyparsing>=3.0.0",
     "pypng",
     "pysam>=0.21",  # for Python 3.11 support on macOS
     "python-dateutil",
@@ -125,6 +126,7 @@ test = [
     "boto3",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
+    "gcsfs",
     "lxml!=4.2.2",
     "onedatafilerestclient==21.2.5.2",
     "pkce",
@@ -216,8 +218,7 @@ select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
 # G* are TODOs
-# UP006 and UP035 are PEP 585 type annotations
-ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004", "UP006", "UP035"]
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 
 [tool.ruff.lint.flake8-comprehensions]
 allow-dict-calls-with-keyword-arguments = true
@@ -241,17 +242,19 @@ keep-runtime-typing = true
 "lib/galaxy/schema/drs/*" = ["UP"]
 "lib/tool_shed_client/schema/trs.py" = ["UP"]
 "lib/tool_shed_client/schema/trs_service_info.py" = ["UP"]
-# Don't check some pyupgrade rules on packages for Pulsar, which need to stay compatible with Python 3.7
-"lib/galaxy/exceptions/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"lib/galaxy/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"scripts/check_python.py" = ["UP006", "UP007", "UP010", "UP032", "UP033", "UP035", "UP036"]
-"test/unit/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"test/unit/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"test/unit/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
-"test/unit/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036"]
+# Don't check some pyupgrade rules on packages for Pulsar, which need to stay compatible with Python 3.8
+"lib/galaxy/exceptions/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/tool_util_models/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"lib/galaxy/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"scripts/check_python.py" = ["UP006", "UP007", "UP010", "UP032", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/job_metrics/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/objectstore/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/tool_util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/tool_util_models/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
+"test/unit/util/*" = ["UP006", "UP007", "UP033", "UP035", "UP036", "UP045"]
 
 [tool.uv]
 constraint-dependencies = [

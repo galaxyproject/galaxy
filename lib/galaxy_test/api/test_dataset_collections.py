@@ -4,7 +4,7 @@ from io import BytesIO
 from pathlib import Path
 from urllib.parse import quote
 
-from galaxy.schema.schema import SampleSheetColumnDefinitions
+from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import galaxy_root_path
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import (
@@ -16,6 +16,7 @@ from galaxy_test.base.decorators import requires_new_user
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    skip_without_tool,
 )
 from ._framework import ApiTestCase
 
@@ -331,7 +332,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
             rows={"sample1": [42]},
         )
         create_response = self._post("dataset_collections", payload, json=True)
-        print(create_response.json())
         self._check_create_response(create_response)
         dataset_collection = create_response.json()
         assert dataset_collection["collection_type"] == "sample_sheet:paired"
@@ -426,6 +426,154 @@ class TestDatasetCollectionsApi(ApiTestCase):
         row_1 = sheet_row_1_element["columns"]
         assert row_1[0] == 45
         # TODO: test case where column definition does not match supplied data
+
+    @skip_without_tool("cat1")
+    def test_sample_sheet_map_over_preserves_columns(self, history_id):
+        """Test that mapping cat1 over a sample sheet preserves columns metadata."""
+        # Create a sample sheet collection with columns metadata
+        contents = [
+            ("sample1", "content1"),
+            ("sample2", "content2"),
+            ("sample3", "content3"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="test sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[
+                {"type": "int", "name": "replicate", "optional": False},
+                {"type": "string", "name": "condition", "optional": False},
+            ],
+            rows={
+                "sample1": [1, "control"],
+                "sample2": [2, "treatment"],
+                "sample3": [3, "control"],
+            },
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        sample_sheet = self._check_create_response(create_response)
+        hdca_id = sample_sheet["id"]
+
+        # Verify the input sample sheet has columns metadata
+        input_elements = sample_sheet["elements"]
+        assert len(input_elements) == 3
+        assert input_elements[0]["columns"] == [1, "control"]
+        assert input_elements[1]["columns"] == [2, "treatment"]
+        assert input_elements[2]["columns"] == [3, "control"]
+
+        # Run cat1 on the sample sheet collection in batch mode (mapping over it)
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        run = self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_history_jobs(history_id)
+
+        # Get the implicit output collection
+        implicit_collections = run["implicit_collections"]
+        assert len(implicit_collections) == 1, f"Expected 1 implicit collection, got {len(implicit_collections)}"
+        output_collection = implicit_collections[0]
+
+        # Fetch the full collection details including elements
+        collection_details = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=output_collection["id"]
+        )
+        assert collection_details["column_definitions"] == sample_sheet["column_definitions"]
+
+        # Verify that the output collection preserved the columns metadata
+        output_elements = collection_details["elements"]
+        assert len(output_elements) == 3, f"Expected 3 output elements, got {len(output_elements)}"
+
+        # Check that columns metadata was preserved for each element
+        self._assert_has_keys(output_elements[0], "columns")
+        assert output_elements[0]["columns"] == [
+            1,
+            "control",
+        ], f"Expected [1, 'control'], got {output_elements[0]['columns']}"
+        assert output_elements[0]["element_identifier"] == "sample1"
+
+        self._assert_has_keys(output_elements[1], "columns")
+        assert output_elements[1]["columns"] == [
+            2,
+            "treatment",
+        ], f"Expected [2, 'treatment'], got {output_elements[1]['columns']}"
+        assert output_elements[1]["element_identifier"] == "sample2"
+
+        self._assert_has_keys(output_elements[2], "columns")
+        assert output_elements[2]["columns"] == [
+            3,
+            "control",
+        ], f"Expected [3, 'control'], got {output_elements[2]['columns']}"
+        assert output_elements[2]["element_identifier"] == "sample3"
+
+    def test_copy_sample_sheet_collection(self, history_id):
+        """Test that copying a sample sheet collection preserves columns metadata."""
+        # Create a sample sheet collection with columns metadata
+        contents = [
+            ("sample1", "content1"),
+            ("sample2", "content2"),
+        ]
+        sample_sheet_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents)
+        payload = dict(
+            name="original sample sheet",
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=sample_sheet_identifiers,
+            collection_type="sample_sheet",
+            column_definitions=[
+                {"type": "int", "name": "replicate", "optional": False},
+                {"type": "string", "name": "condition", "optional": False},
+            ],
+            rows={
+                "sample1": [1, "control"],
+                "sample2": [2, "treatment"],
+            },
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        original_collection = self._check_create_response(create_response)
+        original_hdca_id = original_collection["id"]
+
+        # Verify the original sample sheet has columns metadata
+        original_elements = original_collection["elements"]
+        assert len(original_elements) == 2
+        assert original_elements[0]["columns"] == [1, "control"]
+        assert original_elements[1]["columns"] == [2, "treatment"]
+
+        # Copy the collection using the new copy_collection method
+        copy_response = self.dataset_collection_populator.copy_collection(
+            history_id, original_hdca_id, copy_elements=True, wait=False
+        )
+        copied_collection = copy_response.json()
+
+        # Fetch the full details of the copied collection
+        copied_collection_details = self.dataset_populator.get_history_collection_details(
+            history_id, content_id=copied_collection["id"]
+        )
+
+        # Verify the copied collection has the same columns metadata
+        copied_elements = copied_collection_details["elements"]
+        assert len(copied_elements) == 2, f"Expected 2 elements, got {len(copied_elements)}"
+
+        # Check that columns metadata was preserved for each element
+        self._assert_has_keys(copied_elements[0], "columns")
+        assert copied_elements[0]["columns"] == [
+            1,
+            "control",
+        ], f"Expected [1, 'control'], got {copied_elements[0]['columns']}"
+        assert copied_elements[0]["element_identifier"] == "sample1"
+
+        self._assert_has_keys(copied_elements[1], "columns")
+        assert copied_elements[1]["columns"] == [
+            2,
+            "treatment",
+        ], f"Expected [2, 'treatment'], got {copied_elements[1]['columns']}"
+        assert copied_elements[1]["element_identifier"] == "sample2"
+
+        # Verify column definitions are preserved
+        assert copied_collection_details["column_definitions"] == original_collection["column_definitions"]
+        assert copied_collection_details["collection_type"] == "sample_sheet"
 
     def test_workbook_download(self):
         xlsx_file = self.dataset_collection_populator.download_workbook(

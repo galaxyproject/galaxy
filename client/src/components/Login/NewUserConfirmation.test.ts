@@ -1,27 +1,44 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import MountTarget from "./NewUserConfirmation.vue";
 
 const localVue = getLocalVue(true);
 
 const originalLocation = window.location;
-jest.spyOn(window, "location", "get").mockImplementation(() => ({
-    ...originalLocation,
-    search: "?provider=test_provider&provider_token=sample_token",
-}));
 
 describe("NewUserConfirmation", () => {
     let wrapper: Wrapper<Vue>;
     let axiosMock: MockAdapter;
 
     beforeEach(() => {
+        // Mock window.location.search
+        Object.defineProperty(window, "location", {
+            configurable: true,
+            value: {
+                ...originalLocation,
+                search: "?provider=test_provider&provider_token=sample_token",
+            },
+        });
+
         axiosMock = new MockAdapter(axios);
+        // Match any POST request
+        axiosMock.onPost(/.*/).reply(200, {});
+
         wrapper = mount(MountTarget as object, {
             propsData: {},
             localVue,
+        });
+    });
+
+    afterEach(() => {
+        // Restore original location
+        Object.defineProperty(window, "location", {
+            configurable: true,
+            value: originalLocation,
         });
     });
 

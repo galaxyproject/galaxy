@@ -40,6 +40,7 @@ from galaxy.model import (
     User,
     UserAddress,
     UserQuotaUsage,
+    UserWorkflowMenuEntry,
 )
 from galaxy.model.db.user import (
     _cleanup_nonprivate_user_roles,
@@ -660,21 +661,18 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         self.add_view(
             "detailed",
             [
-                # 'update_time',
-                # 'create_time',
+                "active",
+                "deleted",
                 "is_admin",
-                "total_disk_usage",
                 "nice_total_disk_usage",
-                "quota_percent",
+                "preferences",
+                "preferred_object_store_id",
+                "purged",
                 "quota",
                 "quota_bytes",
-                "deleted",
-                "purged",
-                # 'active',
-                "preferences",
-                # all annotations
-                # 'annotations'
-                "preferred_object_store_id",
+                "quota_percent",
+                "stored_workflow_menu_entries",
+                "total_disk_usage",
             ],
             include_keys_from="summary",
         )
@@ -688,12 +686,14 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "id": self.serialize_id,
                 "create_time": self.serialize_date,
                 "update_time": self.serialize_date,
+                "active": lambda i, k, **c: bool(i.active),
                 "is_admin": lambda i, k, **c: self.user_manager.is_admin(i),
                 "preferences": lambda i, k, **c: self.user_manager.preferences(i),
                 "total_disk_usage": lambda i, k, **c: float(i.total_disk_usage),
                 "quota_percent": lambda i, k, **c: self.user_manager.quota(i),
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
                 "quota_bytes": lambda i, k, **c: self.user_manager.quota_bytes(i),
+                "stored_workflow_menu_entries": lambda i, k, **c: self.serialize_workflow_menu_entries(i),
             }
         )
 
@@ -729,6 +729,22 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             quota=quota,
             quota_bytes=quota_bytes,
         )
+
+    def serialize_workflow_menu_entries(self, user: model.User) -> list[UserWorkflowMenuEntry]:
+        stored_workflow_menu_index = {}
+        stored_workflow_menu_entries: list[UserWorkflowMenuEntry] = []
+        for menu_item in getattr(user, "stored_workflow_menu_entries", []):
+            encoded_id = self.app.security.encode_id(menu_item.stored_workflow_id)
+            if encoded_id not in stored_workflow_menu_index:
+                stored_workflow_menu_index[encoded_id] = True
+                encoded_name = util.unicodify(menu_item.stored_workflow.name)
+                stored_workflow_menu_entries.append(
+                    UserWorkflowMenuEntry(
+                        id=encoded_id,
+                        name=encoded_name,
+                    )
+                )
+        return stored_workflow_menu_entries
 
 
 class UserDeserializer(base.ModelDeserializer):
@@ -782,8 +798,7 @@ class CurrentUserSerializer(UserSerializer):
         usage = 0
         percent = None
 
-        history = trans.history
-        if history:
+        if hasattr(trans, "history") and trans.history:
             usage = self.app.quota_agent.get_usage(trans, history=trans.history)
             percent = self.app.quota_agent.get_percent(trans=trans, usage=usage)
 

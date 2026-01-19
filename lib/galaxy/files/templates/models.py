@@ -36,6 +36,7 @@ FileSourceTemplateType = Literal[
     "posix",
     "s3fs",
     "azure",
+    "azureflat",
     "onedata",
     "webdav",
     "dropbox",
@@ -46,6 +47,7 @@ FileSourceTemplateType = Literal[
     "rspace",
     "dataverse",
     "huggingface",
+    "omero",
 ]
 
 
@@ -170,6 +172,24 @@ class AzureFileSourceConfiguration(StrictModel):
     container_name: str
     account_key: str
     namespace_type: str = "hierarchical"
+    writable: bool = False
+
+
+class AzureFlatFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["azureflat"]
+    account_name: Union[str, TemplateExpansion]
+    container_name: Union[str, TemplateExpansion, None] = None
+    account_key: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class AzureFlatFileSourceConfiguration(StrictModel):
+    type: Literal["azureflat"]
+    account_name: str
+    container_name: Optional[str] = None
+    account_key: str
     writable: bool = False
 
 
@@ -311,12 +331,33 @@ class HuggingFaceFileSourceConfiguration(StrictModel):
     endpoint: Optional[str] = None
 
 
+class OmeroFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["omero"]
+    username: Union[str, TemplateExpansion]
+    password: Union[str, TemplateExpansion]
+    host: Union[str, TemplateExpansion]
+    port: Union[int, TemplateExpansion] = 4064
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class OmeroFileSourceConfiguration(StrictModel):
+    type: Literal["omero"]
+    username: str
+    password: str
+    host: str
+    port: int = 4064
+    writable: bool = False
+
+
 FileSourceTemplateConfiguration = Annotated[
     Union[
         PosixFileSourceTemplateConfiguration,
         S3FSFileSourceTemplateConfiguration,
         FtpFileSourceTemplateConfiguration,
         AzureFileSourceTemplateConfiguration,
+        AzureFlatFileSourceTemplateConfiguration,
         OnedataFileSourceTemplateConfiguration,
         WebdavFileSourceTemplateConfiguration,
         DropboxFileSourceTemplateConfiguration,
@@ -327,6 +368,7 @@ FileSourceTemplateConfiguration = Annotated[
         RSpaceFileSourceTemplateConfiguration,
         DataverseFileSourceTemplateConfiguration,
         HuggingFaceFileSourceTemplateConfiguration,
+        OmeroFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -337,6 +379,7 @@ FileSourceConfiguration = Annotated[
         S3FSFileSourceConfiguration,
         FtpFileSourceConfiguration,
         AzureFileSourceConfiguration,
+        AzureFlatFileSourceConfiguration,
         OnedataFileSourceConfiguration,
         WebdavFileSourceConfiguration,
         DropboxFileSourceConfiguration,
@@ -347,6 +390,7 @@ FileSourceConfiguration = Annotated[
         RSpaceFileSourceConfiguration,
         DataverseFileSourceConfiguration,
         HuggingFaceFileSourceConfiguration,
+        OmeroFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -415,6 +459,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "posix": PosixFileSourceConfiguration,
     "s3fs": S3FSFileSourceConfiguration,
     "azure": AzureFileSourceConfiguration,
+    "azureflat": AzureFlatFileSourceConfiguration,
     "onedata": OnedataFileSourceConfiguration,
     "webdav": WebdavFileSourceConfiguration,
     "dropbox": DropboxFileSourceConfiguration,
@@ -425,6 +470,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "rspace": RSpaceFileSourceConfiguration,
     "dataverse": DataverseFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
+    "omero": OmeroFileSourceConfiguration,
 }
 
 

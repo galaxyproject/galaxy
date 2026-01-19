@@ -71,8 +71,7 @@ class UsesShed(UsesShedApi):
     @classmethod
     def configure_shed_and_conda(cls, config):
         cls.configure_shed(config)
-        cls.conda_tmp_prefix = tempfile.mkdtemp()
-        cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
+        cls.conda_tmp_prefix = cls._test_driver.mkdtemp()
         config["conda_auto_init"] = True
         config["conda_auto_install"] = True
         config["conda_prefix"] = os.environ.get("GALAXY_TEST_CONDA_PREFIX") or os.path.join(

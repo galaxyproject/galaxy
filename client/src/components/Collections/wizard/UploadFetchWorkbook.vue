@@ -2,6 +2,8 @@
 import { BCardGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { withPrefix } from "@/utils/redirect";
+
 import type { ParsedFetchWorkbookForCollectionCollectionType, RulesCreatingWhat } from "./types";
 
 import CardDownloadWorkbook from "./CardDownloadWorkbook.vue";
@@ -25,7 +27,7 @@ const emit = defineEmits(["workbookContents"]);
 const generateWorkbookHref = computed(() => {
     let type;
     if (props.creatingWhat === "datasets") {
-        type = "dataset";
+        type = "datasets";
     } else if (props.includeCollectionName) {
         type = "collections";
     } else {
@@ -36,7 +38,7 @@ const generateWorkbookHref = computed(() => {
     if (type === "collection" || type === "collections") {
         url = `${url}&collection_type=${props.collectionType}`;
     }
-    return url;
+    return withPrefix(url);
 });
 </script>
 

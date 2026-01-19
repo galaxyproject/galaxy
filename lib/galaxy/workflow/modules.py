@@ -1029,13 +1029,6 @@ class InputModule(WorkflowModule):
                     step_outputs["input_ds_copy"] = new_hdca
                 else:
                     raise Exception("Unknown history content encountered")
-        # If coming from UI - we haven't registered invocation inputs yet,
-        # so do that now so dependent steps can be recalculated. In the future
-        # everything should come in from the API and this can be eliminated.
-        if not invocation.has_input_for_step(step.id):
-            content = next(iter(step_outputs.values()))
-            if content and content is not NO_REPLACEMENT:
-                invocation.add_input(content, step.id)
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
 
@@ -1167,8 +1160,7 @@ class InputDataCollectionModule(InputModule):
                 fields=fields,
             )
             collection_type_description.validate()
-        column_definitions = state.get("column_definitions")
-        if column_definitions:
+        if column_definitions := state.get("column_definitions"):
             validate_column_definitions(column_definitions)
         return None
 
@@ -2065,7 +2057,7 @@ class ToolModule(WorkflowModule):
         if self.tool and self.tool.raw_help and self.tool.raw_help.format == "restructuredtext":
             host_url = self.trans.url_builder("/")
             static_path = self.trans.url_builder(static_path) if static_path else ""
-            return self.tool.help.render(host_url=host_url, static_path=static_path)
+            return self.tool.render_help(host_url=host_url, static_path=static_path)
 
     # ---- Configuration time -----------------------------------------------
 

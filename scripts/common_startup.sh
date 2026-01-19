@@ -11,7 +11,7 @@ COPY_SAMPLE_FILES=1
 SET_VENV=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
 INSTALL_PREBUILT_CLIENT=${GALAXY_INSTALL_PREBUILT_CLIENT:-0}
-: "${YARN_INSTALL_OPTS:=--network-timeout 300000 --check-files}"
+: "${PNPM_INSTALL_OPTS:=--frozen-lockfile}"
 : "${GALAXY_CONDA_PYTHON_VERSION:=3.9}"
 
 for arg in "$@"; do
@@ -185,7 +185,6 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
 fi
 
 : "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
-: "${PYPI_INDEX_URL:=https://pypi.python.org/simple}"
 : "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
 
 requirement_args="-r requirements.txt"
@@ -197,10 +196,13 @@ fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then
     if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        if ! python -m pip --version >/dev/null; then
+            python -m ensurepip
+        fi
         ${PIP_CMD} install "pip>=${MIN_PIP_VERSION}" wheel
     fi
     # shellcheck disable=SC2086
-    ${PIP_CMD} install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    ${PIP_CMD} install $requirement_args --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
     set_galaxy_config_file_var
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
@@ -208,7 +210,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
             ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
     fi
 fi
 
@@ -238,28 +240,21 @@ fi
 
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
-    # Ensure dependencies are installed
-    INSTALL_YARN=0
-    if ! command -v yarn >/dev/null; then
-        INSTALL_YARN=1
-    else
-        # Check that yarn is the "classic" version
-        YARN_VERSION=$(yarn --version)
-        # If the substring of YARN_VERSION obtained by removing the "1." prefix
-        # is equal to YARN_VERSION, then this is not yarn version 1 and we need
-        # to reinstall it.
-        [ "${YARN_VERSION#1.}" = "$YARN_VERSION" ] && INSTALL_YARN=1
+    # Ensure pnpm is installed
+    INSTALL_PNPM=0
+    if ! command -v pnpm >/dev/null; then
+        INSTALL_PNPM=1
     fi
-    if [ $INSTALL_YARN -eq 1 ]; then
+    if [ $INSTALL_PNPM -eq 1 ]; then
         if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-            echo "Installing yarn into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" 'yarn<2'
+            echo "Installing pnpm into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" pnpm
         elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
-            echo "Installing yarn into $VIRTUAL_ENV with corepack."
-            corepack enable yarn
+            echo "Installing pnpm into $VIRTUAL_ENV with corepack."
+            corepack enable pnpm
         else
-            echo "Installing yarn locally with npm."
-            npm install yarn
+            echo "Installing pnpm locally with npm."
+            npm install -g pnpm
         fi
     fi
     # We need GALAXY_CONFIG_FILE here, ensure it's set.
@@ -271,8 +266,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         # If we have not opted to use a prebuilt client, then build client.
         cd client
         # shellcheck disable=SC2086
-        if yarn install $YARN_INSTALL_OPTS; then
-            if ! (export GALAXY_PLUGIN_PATH="$GALAXY_PLUGIN_PATH"; yarn run build-production-maps;) then
+        if pnpm install $PNPM_INSTALL_OPTS; then
+            if ! (export GALAXY_PLUGIN_PATH="$GALAXY_PLUGIN_PATH"; pnpm run build-production-maps;) then
                 echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
                 exit 1
             fi
@@ -284,8 +279,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         # Install prebuilt client
         # shellcheck disable=SC2086
-        if yarn install $YARN_INSTALL_OPTS; then
-            if ! (yarn run stage) then
+        if pnpm install $PNPM_INSTALL_OPTS; then
+            if ! (pnpm run stage) then
                 echo "ERROR: Galaxy prebuilt client install failed. See ./client/README.md for more information, including how to get help."
                 exit 1
             fi

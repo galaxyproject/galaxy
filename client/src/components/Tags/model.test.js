@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, it } from "vitest";
+
 import { createTag, diffTags, VALID_TAG_RE } from "./model";
 
 describe("Tags/model.js", () => {

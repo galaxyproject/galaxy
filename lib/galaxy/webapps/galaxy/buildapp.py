@@ -193,7 +193,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # The following are routes that are handled completely on the clientside.
     # The following routes don't bootstrap any information, simply provide the
     # base analysis interface at which point the application takes over.
-
+    webapp.add_client_route("/")
+    webapp.add_client_route("/index")
     webapp.add_client_route("/about")
     webapp.add_client_route("/admin")
     webapp.add_client_route("/admin/data_tables")
@@ -233,6 +234,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
+    webapp.add_client_route("/chatgxy")
     webapp.add_client_route("/user")
     webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
@@ -279,11 +281,13 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/permissions")
     webapp.add_client_route("/histories/view")
     webapp.add_client_route("/histories/view_multiple")
+    webapp.add_client_route("/datasets/copy")
     webapp.add_client_route("/datasets/list")
     webapp.add_client_route("/datasets/{dataset_id}/edit")
     webapp.add_client_route("/datasets/{dataset_id}/error")
     webapp.add_client_route("/datasets/{dataset_id}/details")
     webapp.add_client_route("/datasets/{dataset_id}/preview")
+    webapp.add_client_route("/datasets/{dataset_id}/raw")
     webapp.add_client_route("/datasets/{dataset_id}/report")
     webapp.add_client_route("/datasets/{dataset_id}/show_params")
     webapp.add_client_route("/datasets/{dataset_id}/visualize")

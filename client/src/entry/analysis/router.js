@@ -5,6 +5,7 @@ import { getGalaxyInstance } from "@/app";
 import { HistoryExport } from "@/components/HistoryExport/index";
 import { APIKey } from "@/components/User/APIKey";
 import { ExternalIdentities } from "@/components/User/ExternalIdentities";
+import { hasSingleOidcProfile } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import AdminRoutes from "@/entry/analysis/routes/admin-routes";
 import LibraryRoutes from "@/entry/analysis/routes/library-routes";
 import StorageRoutes from "@/entry/analysis/routes/storage-routes";
@@ -17,12 +18,14 @@ import { patchRouterPush } from "./router-push";
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
+import ChatGXY from "@/components/ChatGXY.vue";
 import CitationsList from "@/components/Citation/CitationsList.vue";
 import ClientError from "@/components/ClientError.vue";
 import CollectionEditView from "@/components/Collections/common/CollectionEditView.vue";
 import DisplayCollectionAsSheet from "@/components/Collections/common/DisplayCollectionAsSheet.vue";
 import ListWizard from "@/components/Collections/ListWizard.vue";
 import RulesStandalone from "@/components/Collections/RulesStandalone.vue";
+import DatasetCopy from "@/components/Dataset/DatasetCopy.vue";
 import DatasetList from "@/components/Dataset/DatasetList.vue";
 import DatasetView from "@/components/Dataset/DatasetView.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
@@ -76,6 +79,7 @@ import CustomBuilds from "@/components/User/CustomBuilds.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
+import UserOidcProfile from "@/components/User/UserOidcProfile.vue";
 import UserPreferences from "@/components/User/UserPreferences.vue";
 import UserPreferencesForm from "@/components/User/UserPreferencesForm.vue";
 import DisplayApplication from "@/components/Visualizations/DisplayApplication.vue";
@@ -263,6 +267,10 @@ export function getRouter(Galaxy) {
                         path: "collection/:collectionId/sheet",
                         component: DisplayCollectionAsSheet,
                         props: true,
+                    },
+                    {
+                        path: "datasets/copy",
+                        component: DatasetCopy,
                     },
                     {
                         path: "datasets/list",
@@ -547,6 +555,11 @@ export function getRouter(Galaxy) {
                         component: TourList,
                     },
                     {
+                        path: "chatgxy",
+                        component: ChatGXY,
+                        redirect: redirectAnon(),
+                    },
+                    {
                         path: "wizard",
                         component: GalaxyWizard,
                     },
@@ -621,6 +634,17 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
+                        path: "user/oidc-profile",
+                        component: UserOidcProfile,
+                        redirect:
+                            redirectIf(
+                                !Galaxy.config.enable_oidc ||
+                                    Galaxy.config.enable_account_interface ||
+                                    !hasSingleOidcProfile(Galaxy.config.oidc),
+                                "/user",
+                            ) || redirectAnon(),
+                    },
+                    {
                         path: "user/external_ids",
                         component: ExternalIdentities,
                         redirect: redirectIf(Galaxy.config.fixed_delegated_auth, "/") || redirectAnon(),
@@ -649,7 +673,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/:formId",
                         component: UserPreferencesForm,
-                        props: true,
+                        props: (route) => ({
+                            formId: route.params.formId,
+                            id: route.query.id,
+                        }),
                         redirect: redirectAnon(),
                     },
                     {

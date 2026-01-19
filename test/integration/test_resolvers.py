@@ -1,7 +1,6 @@
 """Integration tests for dependency resolution."""
 
 import os
-from tempfile import mkdtemp
 from typing import ClassVar
 
 from galaxy_test.base.populators import DatasetPopulator
@@ -19,8 +18,7 @@ class TestCondaResolutionIntegration(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.conda_tmp_prefix = mkdtemp()
-        cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
+        cls.conda_tmp_prefix = cls._test_driver.mkdtemp()
         config["use_cached_dependency_manager"] = True
         config["conda_auto_init"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, "conda")

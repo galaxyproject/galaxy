@@ -34,8 +34,7 @@ def validate_and_normalize_targets(trans, payload, set_internal_fields=True):
       as needed for each upload.
     """
     targets = payload.get("targets", [])
-    landing_uuid = payload.get("landing_uuid")
-    if landing_uuid:
+    if landing_uuid := payload.get("landing_uuid"):
         payload["landing_uuid"] = str(landing_uuid)
 
     for target in targets:

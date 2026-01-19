@@ -1,16 +1,15 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { getLocalVue } from "tests/jest/helpers";
-
-import { withPrefix } from "@/utils/redirect";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import MountTarget from "./ChangePassword.vue";
 
-jest.mock("utils/redirect");
-
-const mockSafePath = jest.fn();
-(withPrefix as jest.Mock).mockImplementation(mockSafePath);
+const mockSafePath = vi.fn();
+vi.mock("utils/redirect", () => ({
+    withPrefix: mockSafePath,
+}));
 
 const localVue = getLocalVue(true);
 

@@ -232,12 +232,14 @@ def test_fill_defaults():
     with_defaults = fill_state_for({}, "parameters/gx_select_optional")
     assert with_defaults["parameter"] is None
 
-    # Not ideal but matching current behavior
     with_defaults = fill_state_for({}, "parameters/gx_select_multiple")
-    assert with_defaults["parameter"] is None
+    assert with_defaults["parameter"] == []
 
     with_defaults = fill_state_for({}, "parameters/gx_select_multiple_optional")
-    assert with_defaults["parameter"] is None
+    assert with_defaults["parameter"] == []
+
+    with_defaults = fill_state_for({}, "parameters/gx_select_multiple_one_default")
+    assert with_defaults["parameter"] == ["--ex3"]
 
     # Do not fill in dynamic defaults... these require a Galaxy runtime.
     with_defaults = fill_state_for({}, "remove_value", partial=True)

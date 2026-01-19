@@ -87,6 +87,17 @@ F9 = _encode_image(
     ),
     format="PNG",
 )
+F10 = _encode_image(
+    numpy.array(
+        [
+            [True, True, True],
+            [True, False, True],
+            [True, True, True],
+        ],
+        dtype=bool,
+    ),
+    format="TIFF",
+)
 
 
 def _test_file_list():
@@ -102,6 +113,7 @@ def _test_file_list():
         (F7, ".tiff"),
         (F8, ".tiff"),
         (F9, ".png"),
+        (F10, ".tiff"),
     ]:
         with tempfile.NamedTemporaryFile(mode="wb", suffix=ext, delete=False) as out:
             if ext == ".txt.gz":
@@ -112,7 +124,7 @@ def _test_file_list():
 
 
 def generate_tests(multiline=False):
-    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     tests: List[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {"lines_diff": 0, "sort": True}, None)]
@@ -130,7 +142,7 @@ def generate_tests(multiline=False):
 
 
 def generate_tests_sim_size():
-    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     # tests for equal files
     tests: List[TestDef] = [
         (f1, f1, None, None),  # pass default values
@@ -156,7 +168,7 @@ def generate_tests_sim_size():
 
 
 def generate_tests_image_diff():
-    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     metrics = ["mae", "mse", "rms", "fro", "iou"]
     # tests for equal files (uint8, PNG)
     tests: List[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
@@ -164,6 +176,8 @@ def generate_tests_image_diff():
     tests += [(f7, f7, {"metric": metric}, None) for metric in metrics]
     # tests for equal files (float, TIFF)
     tests += [(f8, f8, {"metric": metric}, None) for metric in metrics]
+    # tests for equal files (bool, TIFF)
+    tests += [(f10, f10, {"metric": metric}, None) for metric in metrics]
     # tests for pairs of different files
     tests += [(f6, f8, {"metric": metric}, AssertionError) for metric in metrics]  # uint8 vs float
     tests += [(f7, f8, {"metric": metric}, AssertionError) for metric in metrics]  # uint8 vs float

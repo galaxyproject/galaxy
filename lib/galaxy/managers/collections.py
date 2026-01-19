@@ -137,6 +137,8 @@ class DatasetCollectionManager:
             collection_type_description = structure.collection_type_description
             dataset_collection = DatasetCollection(populated=False)
             dataset_collection.collection_type = collection_type_description.collection_type
+            # Preserve column_definitions from input structure for sample sheets
+            dataset_collection.column_definitions = structure.column_definitions
             elements = []
             for index, (identifier, substructure) in enumerate(structure.children):
                 # TODO: Open question - populate these now or later?
@@ -158,11 +160,17 @@ class DatasetCollectionManager:
                             substructure, allow_uninitialized_element=allow_uninitialized_element
                         )
 
+                # Preserve columns metadata from input structure for sample sheets
+                columns = None
+                if structure.columns_metadata and identifier in structure.columns_metadata:
+                    columns = structure.columns_metadata[identifier]
+
                 element = model.DatasetCollectionElement(
                     collection=dataset_collection,
                     element=element,
                     element_identifier=identifier,
                     element_index=index,
+                    columns=columns,
                 )
                 elements.append(element)
             dataset_collection.element_count = len(elements)

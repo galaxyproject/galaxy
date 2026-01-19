@@ -1,23 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
-<%def name="init()">
-<%
-    self.has_left_panel=False
-    self.active_view="user"
-    self.message_box_visible=False
-%>
-</%def>
-
 <%namespace file="/message.mako" import="render_msg" />
-
-<%def name="center_panel()">
-    ${body()}
-</%def>
-
-<%def name="javascripts()">
-    ${parent.javascripts()}
-</%def>
 
 <%def name="body()">
     <div style="${ 'margin: 1em;' if context.get( 'use_panels', True ) else '' }">

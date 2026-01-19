@@ -512,7 +512,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
 class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def __init__(self, trans, extra_rendering_data=None):
-        extra_rendering_data = extra_rendering_data or {}
+        extra_rendering_data = extra_rendering_data if extra_rendering_data is not None else {}
         self.trans = trans
         self.extra_rendering_data = extra_rendering_data
 

@@ -241,9 +241,8 @@ class JobsService(ServiceBase):
     def create(self, trans: ProvidesHistoryContext, job_request: JobRequest) -> JobCreateResponse:
         tool_run_reference = ToolRunReference(job_request.tool_id, job_request.tool_uuid, job_request.tool_version)
         tool = validate_tool_for_running(trans, tool_run_reference)
-        history_id = job_request.history_id
         target_history = None
-        if history_id is not None:
+        if (history_id := job_request.history_id) is not None:
             target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         inputs = job_request.inputs
         strict = job_request.strict

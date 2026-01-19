@@ -476,7 +476,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
 
 <style lang="scss" scoped>
 @import "./_form-elements.scss";
-@import "base.scss";
+@import "@/style/scss/base.scss";
 
 // Workflow Run Form
 .workflow-run-element {

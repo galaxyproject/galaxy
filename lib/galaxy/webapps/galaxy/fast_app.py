@@ -9,6 +9,12 @@ from fastapi import (
     Request,
 )
 from fastapi.openapi.constants import REF_TEMPLATE
+from slowapi import (
+    _rate_limit_exceeded_handler,
+    Limiter,
+)
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from starlette.middleware.cors import CORSMiddleware
 from tuspyserver import create_tus_router
 
@@ -89,6 +95,14 @@ api_tags_metadata = [
         "description": "Operations with remote dataset sources.",
     },
     {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
+    {
+        "name": "ai",
+        "description": "**BETA**: AI agent operations. This API is experimental and may change without notice.",
+    },
+    {
+        "name": "chat",
+        "description": "**BETA**: Chat interface for AI agents. This API is experimental and may change without notice.",
+    },
 ]
 
 
@@ -189,6 +203,8 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     app = get_fastapi_instance(root_path=root_path)
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
     if gx_app.config.use_access_logging_middleware:
         add_raw_context_middlewares(app)
     else:
@@ -205,6 +221,18 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
         return parent_app
     return app
 
+
+def galaxy_rate_limit_key(request: Request) -> str:
+    api_key = request.headers.get("x-api-key") or request.query_params.get("key")
+    if api_key:
+        return f"api_key:{api_key}"
+    session_key = request.cookies.get("galaxysession")
+    if session_key:
+        return f"session:{session_key}"
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=galaxy_rate_limit_key)
 
 __all__ = (
     "add_galaxy_middleware",

@@ -478,6 +478,7 @@ class FastAPIJobs:
         "/api/jobs/{job_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
+        unstable=True,
     )
     def parameters_display_by_job(
         self,
@@ -485,11 +486,7 @@ class FastAPIJobs:
         hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
+        """Resolve parameters as a list for nested display."""
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
         return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
@@ -499,6 +496,7 @@ class FastAPIJobs:
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
         deprecated=True,
+        unstable=True,
     )
     def parameters_display_by_dataset(
         self,
@@ -506,11 +504,7 @@ class FastAPIJobs:
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
+        """Resolve parameters as a list for nested display."""
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
         return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 

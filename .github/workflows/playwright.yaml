@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -63,17 +63,20 @@ jobs:
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Cache galaxy venv
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-playwright
+      - name: Install dependencies
+        run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
+        working-directory: 'galaxy root'
       - name: Install Playwright
         run: |
-          pip install playwright
+          . .venv/bin/activate
           playwright install chromium --with-deps
         working-directory: 'galaxy root'
       - name: Restore client cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
@@ -84,12 +87,12 @@ jobs:
         with:
           flags: playwright
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Playwright test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_playwright_tests.html'
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Playwright debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})

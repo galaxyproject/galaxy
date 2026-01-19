@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { keyedColorScheme } from "@/utils/color";
 
 describe("Color Utilities", () => {

@@ -1,6 +1,131 @@
 
-:orphan:
+===========================================================
+25.1 Galaxy Release (December 2025)
+===========================================================
 
+.. include:: _header.rst
+
+Please see the `25.1 user release notes <25.1_announce_user.html>`__ for a summary of new user features.
+The `GitHub Release Notes <https://github.com/galaxyproject/galaxy/releases/tag/v25.1.0>`__ provide a comprehensive overview of all changes.
+
+Get Galaxy
 ===========================================================
-25.1 Galaxy Release
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_25.1 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_25.1 && git pull --ff-only origin release_25.1
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+
+Admin Notes
 ===========================================================
+
+**Database Migrations will require stopping the Galaxy instance**
+  This release includes database migrations that require the Galaxy instance to be stopped
+  before applying the update. Please plan accordingly to minimize downtime for users.
+
+Configuration Changes
+===========================================================
+
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.allow_local_account_creation
+-  mapping.galaxy.mapping.citation_bibtex
+-  mapping.galaxy.mapping.disable_local_accounts
+-  mapping.galaxy.mapping.enable_tool_generated_tours
+-  mapping.galaxy.mapping.oidc_auth_pipeline
+-  mapping.galaxy.mapping.oidc_auth_pipeline_extra
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.allow_user_creation
+-  mapping.galaxy.mapping.enable_tool_document_cache
+
+
+Deprecation Notices
+===========================================================
+
+**Deprecation of the Trackster Visualization in Galaxy release 26.0**
+  The legacy Trackster genome browser visualization has been deprecated and
+  `will be completely removed in Galaxy 26.0 <https://github.com/galaxyproject/galaxy/pull/20974>`__. This includes
+  the removal of special handling for Trackster across tool execution, toolbox filtering, visualization
+  framework features, controller endpoints, client code, and other conditional logic. With the removal of
+  Trackster, the era of Mako-based visualizations served from controller endpoints ends.
+  Galaxy now provides the modern IGV (Integrative Genomics Viewer) as the primary genome browser
+  visualization, offering superior functionality and performance for genomic data exploration.
+
+**Deprecation of Mako-based visualizations in Galaxy release 26.0**
+  With the removal of Trackster in 26.0, the remaining legacy Mako-based visualization framework
+  and controller endpoints are deprecated and
+  `will be completely removed in Galaxy 26.0 <https://github.com/galaxyproject/galaxy/pull/21133>`__.
+  Any remaining Mako-based visualizations should be migrated to the modern script-based visualization
+  plugin framework. Users and administrators are encouraged to transition to supported visualization
+  plugins to ensure continued functionality and access to new features.
+
+**Deprecation of the Galaxy Reports application in Galaxy release 26.0**
+  The standalone Galaxy Reports application, which provides administrative usage statistics and
+  analytics for Galaxy instances, is deprecated and will be removed in Galaxy 26.0.
+  The Reports app was a separate web application that connected to the Galaxy database to display
+  information about jobs, workflows, users, and system usage. Administrators currently using the
+  Reports app should plan to migrate to alternative monitoring and analytics solutions before
+  Galaxy 26.0 is released next year. The following GTN tutorials provide guidance on alternative
+  monitoring approaches:
+
+  * `Galaxy Monitoring with Telegraf and Grafana <https://training.galaxyproject.org/training-material/topics/admin/tutorials/monitoring/tutorial.html>`__
+  * `Galaxy Monitoring with gxadmin <https://training.galaxyproject.org/training-material/topics/admin/tutorials/gxadmin/tutorial.html>`__
+
+**Deprecation of Python 3.9 support in Galaxy release 26.0**
+  Since Python 3.9 reached its end-of-life in October 2025, support for it will
+  be removed in Galaxy 26.0.
+  Administrators should upgrade their Python environment to version 3.10 or
+  higher to avoid security vulnerabilities and ensure a smooth transition to
+  Galaxy 26.0 and beyond.
+
+Release Team
+===========================================================
+
+Release manager:  `Ahmed Awan <https://github.com/ahmedhamidawan>`__, `Aysam Guerler <https://github.com/guerler>`__
+
+Release testing:
+
+* `Tyler Collins <https://github.com/tcollins2011>`__
+* `Arash Kadkhodaei <https://github.com/arash77>`__
+* `John Chilton <https://github.com/jmchilton>`__
+* `Keith Suderman <https://github.com/ksuderman>`__
+* `Aysam Guerler <https://github.com/guerler>`__
+* `Alireza Heidari <https://github.com/itisAliRH>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+
+Communications:
+
+* `Natalie Whitaker-Allen <https://github.com/natalie-wa>`__
+* `Scott Cain <https://github.com/scottcain>`__
+
+A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
+
+----
+
+.. include:: _thanks.rst

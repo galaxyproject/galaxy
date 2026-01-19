@@ -44,19 +44,19 @@ hyphyvision:
     version: 0.0.3
 igv:
     package: "@galaxyproject/igv"
-    version: 0.0.21
+    version: 0.0.25
 jupyterlite:
     package: "@galaxyproject/jupyterlite"
-    version: 0.0.17
+    version: 0.0.30
 kepler:
     package: "@galaxyproject/kepler"
     version: 0.0.3
 locuszoom:
     package: "@galaxyproject/locuszoom"
-    version: 0.0.6
+    version: 0.0.7
 molstar:
     package: "@galaxyproject/molstar"
-    version: 0.0.2
+    version: 0.0.4
 mvpapp:
     package: "@galaxyproject/mvpapp"
     version: 0.0.2
@@ -68,7 +68,7 @@ niivue:
     version: 0.0.17
 nora:
     package: "@galaxyproject/nora"
-    version: 1.2.2
+    version: 1.2.4
 openlayers:
     package: "@galaxyproject/openlayers"
     version: 0.0.6
@@ -83,7 +83,7 @@ phylocanvas:
     version: 0.0.11
 plotly:
     package: "@galaxyproject/plotly"
-    version: 0.0.25
+    version: 0.0.28
 plotly_box:
     package: "@galaxyproject/plotly_box"
     version: 0.0.0
@@ -120,6 +120,9 @@ unipept:
 venn:
     package: "@galaxyproject/venn"
     version: 0.0.8
+vintent:
+    package: "@galaxyproject/vintent"
+    version: 0.0.0
 vitessce:
     package: "@galaxyproject/vitessce"
     version: 0.0.5

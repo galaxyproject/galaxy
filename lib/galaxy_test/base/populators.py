@@ -94,7 +94,6 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.schema import (
     CreateToolLandingRequestPayload,
     CreateWorkflowLandingRequestPayload,
-    SampleSheetColumnDefinitions,
     ToolLandingRequest,
     WorkflowLandingRequest,
 )
@@ -115,6 +114,7 @@ from galaxy.tool_util.verify.wait import (
 )
 from galaxy.tool_util_models import UserToolSource
 from galaxy.tool_util_models.dynamic_tool_models import DynamicUnprivilegedToolCreatePayload
+from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
@@ -681,13 +681,19 @@ class BaseDatasetPopulator(BasePopulator):
         return create_response
 
     def create_contents_from_store(
-        self, history_id: str, store_dict: Optional[dict[str, Any]] = None, store_path: Optional[str] = None
+        self,
+        history_id: str,
+        store_dict: Optional[dict[str, Any]] = None,
+        store_path: Optional[str] = None,
+        discarded_data: Optional[str] = None,
     ) -> list[dict[str, Any]]:
         if store_dict is not None:
             assert isinstance(store_dict, dict)
         if store_path is not None:
             assert isinstance(store_path, str)
         payload = _store_payload(store_dict=store_dict, store_path=store_path)
+        if discarded_data is not None:
+            payload["discarded_data"] = discarded_data
         create_response = self.create_contents_from_store_raw(history_id, payload)
         create_response.raise_for_status()
         return create_response.json()
@@ -875,6 +881,9 @@ class BaseDatasetPopulator(BasePopulator):
 
         def _wait_for_purge():
             dataset_response = self._get(dataset_url)
+            # Accept 404 as an intermediate state - dataset will return 200 with purged=True later
+            if dataset_response.status_code == 404:
+                return None
             dataset_response.raise_for_status()
             dataset = dataset_response.json()
             return dataset.get("purged") or None
@@ -916,13 +925,13 @@ class BaseDatasetPopulator(BasePopulator):
 
     def create_landing_raw(self, payload: BaseModel, landing_type: Literal["file", "data", "tool"]) -> Response:
         create_url = f"{landing_type}_landings"
-        json = payload.model_dump(mode="json")
+        json = payload.model_dump(mode="json", by_alias=True)
         create_response = self._post(create_url, json, json=True, anon=True)
         return create_response
 
     def create_workflow_landing(self, payload: CreateWorkflowLandingRequestPayload) -> WorkflowLandingRequest:
         create_url = "workflow_landings"
-        json = payload.model_dump(mode="json")
+        json = payload.model_dump(mode="json", by_alias=True)
         create_response = self._post(create_url, json, json=True, anon=True)
         api_asserts.assert_status_code_is(create_response, 200)
         assert create_response.headers["access-control-allow-origin"]
@@ -2253,7 +2262,7 @@ class BaseWorkflowPopulator(BasePopulator):
         store_dict: Optional[dict[str, Any]] = None,
         store_path: Optional[str] = None,
         model_store_format: Optional[str] = None,
-    ) -> Response:
+    ) -> list[dict[str, Any]]:
         create_response = self.create_invocation_from_store_raw(
             history_id, store_dict=store_dict, store_path=store_path, model_store_format=model_store_format
         )
@@ -3371,6 +3380,10 @@ class BaseDatasetCollectionPopulator:
         return hdca_id
 
     def create_list_of_pairs_in_history(self, history_id, **kwds):
+        upload_kwds = {}
+        if "name" in kwds:
+            upload_kwds["name"] = kwds.pop("name")
+
         return self.upload_collection(
             history_id,
             "list:paired",
@@ -3383,6 +3396,7 @@ class BaseDatasetCollectionPopulator:
                     ],
                 }
             ],
+            **upload_kwds,
         )
 
     def create_list_of_list_in_history(self, history_id: str, **kwds):
@@ -3441,6 +3455,20 @@ class BaseDatasetCollectionPopulator:
     def create_list_in_history(self, history_id: str, wait: bool = False, **kwds):
         payload = self.create_list_payload(history_id, instance_type="history", **kwds)
         return self.__create(payload, wait=wait)
+
+    def copy_collection(self, history_id: str, hdca_id: str, copy_elements: bool = True, wait: bool = False):
+        """Copy an existing dataset collection to a history."""
+        payload = {
+            "source": "hdca",
+            "content": hdca_id,
+            "type": "dataset_collection",
+            "copy_elements": copy_elements,
+        }
+        copy_response = self.dataset_populator._post(
+            f"histories/{history_id}/contents/dataset_collections", payload, json=True
+        )
+        api_asserts.assert_status_code_is_ok(copy_response)
+        return copy_response
 
     def upload_collection(self, history_id: str, collection_type, elements, wait: bool = False, **kwds):
         payload = self.__create_payload_fetch(history_id, collection_type, contents=elements, **kwds)
@@ -4022,8 +4050,7 @@ class DescribeFailure:
         return self
 
     def with_error_containing(self, message: str) -> Self:
-        actual_text = self._response.text
-        if message not in actual_text:
+        if message not in (actual_text := self._response.text):
             if self._tool_request:
                 state_message = self._tool_request["state_message"]
                 if message not in state_message:
@@ -4181,8 +4208,7 @@ class DescribeToolExecution:
     def assert_has_n_jobs(self, n: int) -> Self:
         self._assert_executed_ok()
         jobs = self._jobs
-        num_jobs = len(jobs)
-        if num_jobs != n:
+        if (num_jobs := len(jobs)) != n:
             raise AssertionError(f"Expected tool execution to produce {n} jobs but it produced {num_jobs}")
         return self
 

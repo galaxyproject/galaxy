@@ -13,6 +13,7 @@ import {
     isDCE,
     isHDCA,
     isHistoryItem,
+    type SampleSheetColumnDefinition,
 } from "@/api";
 import type { CollectionType } from "@/api/datasetCollections";
 import type { HistoryContentType } from "@/api/datasets";
@@ -374,8 +375,8 @@ function handleIncoming(incoming: Record<string, unknown> | Record<string, unkno
         }
         if (
             values.some((v) => {
-                const { historyContentType, collectionType } = getElementAttributes(v);
-                return !canAcceptSrc(historyContentType, collectionType);
+                const { historyContentType, collectionType, columnDefinitions } = getElementAttributes(v);
+                return !canAcceptSrc(historyContentType, collectionType, columnDefinitions);
             })
         ) {
             return false;
@@ -545,11 +546,13 @@ function getElementAttributes(element: HistoryOrCollectionItem): {
     newSrc: string;
     datasetCollectionDataset: HDAObject | undefined;
     collectionType?: string;
+    columnDefinitions?: SampleSheetColumnDefinition[] | null;
 } {
     let historyContentType: HistoryContentType;
     let newSrc: string;
     let datasetCollectionDataset: HDAObject | undefined;
     let collectionType: string | undefined;
+    let columnDefinitions: SampleSheetColumnDefinition[] | null | undefined;
     if (isDCE(element)) {
         if (isDatasetElement(element)) {
             historyContentType = "dataset";
@@ -561,11 +564,18 @@ function getElementAttributes(element: HistoryOrCollectionItem): {
             // we already know it is a collection element by this point
             if (isCollectionElement(element)) {
                 collectionType = element.object.collection_type;
+                // Cast needed: schema has two structurally identical SampleSheetColumnDefinition types
+                columnDefinitions = element.object.column_definitions as
+                    | SampleSheetColumnDefinition[]
+                    | null
+                    | undefined;
             }
         }
     } else {
         historyContentType = element.history_content_type;
         collectionType = "collection_type" in element && element.collection_type ? element.collection_type : undefined;
+        columnDefinitions =
+            "column_definitions" in element ? (element.column_definitions as SampleSheetColumnDefinition[]) : undefined;
         newSrc =
             "src" in element && typeof element.src === "string"
                 ? element.src
@@ -573,10 +583,44 @@ function getElementAttributes(element: HistoryOrCollectionItem): {
                   ? SOURCE.COLLECTION
                   : SOURCE.DATASET;
     }
-    return { historyContentType, newSrc, datasetCollectionDataset, collectionType };
+    return { historyContentType, newSrc, datasetCollectionDataset, collectionType, columnDefinitions };
 }
 
-function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", collectionType?: string) {
+/**
+ * Check if collection's column definitions exactly match required column definitions.
+ * Requires same number of columns, same names in same order, and matching types.
+ */
+function columnDefinitionsCompatible(
+    collectionColumns: SampleSheetColumnDefinition[] | null | undefined,
+    requiredColumns: SampleSheetColumnDefinition[] | undefined,
+): boolean {
+    if (!requiredColumns || requiredColumns.length === 0) {
+        return true;
+    }
+    if (!collectionColumns) {
+        return false;
+    }
+    // Must have same number of columns
+    if (collectionColumns.length !== requiredColumns.length) {
+        return false;
+    }
+    // Check each column matches in order
+    for (let i = 0; i < requiredColumns.length; i++) {
+        if (collectionColumns[i]!.name !== requiredColumns[i]!.name) {
+            return false;
+        }
+        if (collectionColumns[i]!.type !== requiredColumns[i]!.type) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function canAcceptSrc(
+    historyContentType: "dataset" | "dataset_collection",
+    collectionType?: string,
+    columnDefinitions?: SampleSheetColumnDefinition[] | null,
+) {
     if (historyContentType === "dataset") {
         // HDA can only be fed into data parameters, not collection parameters
         if (props.type === "data") {
@@ -604,9 +648,25 @@ function canAcceptSrc(historyContentType: "dataset" | "dataset_collection", coll
             return true;
         } else {
             if (props.collectionTypes.includes(collectionType as CollectionType)) {
+                // Check column_definitions compatibility for sample sheets
+                if (
+                    props.extendedCollectionType?.columnDefinitions &&
+                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
+                ) {
+                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
+                    return false;
+                }
                 return true;
             }
             if (props.collectionTypes.some((element) => collectionType.endsWith(element))) {
+                // Check column_definitions compatibility for sample sheets
+                if (
+                    props.extendedCollectionType?.columnDefinitions &&
+                    !columnDefinitionsCompatible(columnDefinitions, props.extendedCollectionType.columnDefinitions)
+                ) {
+                    $emit("alert", "dataset collection has incompatible column definitions for this parameter.");
+                    return false;
+                }
                 return true;
             } else {
                 $emit(
@@ -683,12 +743,12 @@ function onDragEnter(evt: DragEvent) {
         for (const item of eventData) {
             if (isHistoryOrCollectionItem(item)) {
                 const extensions = getExtensionsForItem(item);
-                const { historyContentType, collectionType } = getElementAttributes(item);
+                const { historyContentType, collectionType, columnDefinitions } = getElementAttributes(item);
 
                 if (extensions && !canAcceptDatatype(extensions)) {
                     highlightingState = "warning";
                     $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
-                } else if (!canAcceptSrc(historyContentType, collectionType)) {
+                } else if (!canAcceptSrc(historyContentType, collectionType, columnDefinitions)) {
                     highlightingState = "warning";
                     // `canAcceptSrc` already alerts if false so no need to alert again
                 }

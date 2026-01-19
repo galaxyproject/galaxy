@@ -21,7 +21,7 @@
                     <span v-html="config.message_box_content"></span>
                 </Alert>
                 <Alert
-                    v-if="config.show_inactivity_warning && config.inactivity_box_content"
+                    v-if="showInactivityWarning && config.inactivity_box_content"
                     id="inactivebox"
                     class="rounded-0 m-0 p-2"
                     variant="warning">
@@ -61,10 +61,10 @@ import { useRouteQueryBool } from "@/composables/route";
 import { setToastComponentRef } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
-import { startWatchingHistory } from "@/watch/watchHistoryProvided";
 
 import { WindowManager } from "./window-manager";
 
@@ -106,6 +106,8 @@ export default {
         setGlobalUploadModal(uploadModal);
 
         const embedded = useRouteQueryBool("embed");
+        const historyStore = useHistoryStore();
+        historyStore.startWatchingHistory();
 
         watch(
             () => embedded.value,
@@ -156,6 +158,9 @@ export default {
         };
     },
     computed: {
+        showInactivityWarning() {
+            return this.config.user_activation_on && this.Galaxy?.user?.id && !this.Galaxy.user.get("active");
+        },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {
@@ -196,8 +201,6 @@ export default {
             if (this.Galaxy.config.enable_notification_system) {
                 this.startWatchingNotifications();
             }
-            // start watching the history with continuous queries
-            startWatchingHistory();
         }
     },
     created() {
@@ -225,5 +228,5 @@ export default {
 </script>
 
 <style lang="scss">
-@import "@/style/scss/custom_theme_variables.scss";
+@import "../../style/scss/custom_theme_variables.scss";
 </style>
