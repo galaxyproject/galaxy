@@ -2,7 +2,7 @@
 import { faCloudUploadAlt, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BTable } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useFileDrop } from "@/composables/fileDrop";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
@@ -11,6 +11,7 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadQueue } from "@/composables/uploadQueue";
+import { useUploadStagingStore } from "@/stores/uploadStagingStore";
 import { mapToLocalFileUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
@@ -43,6 +44,22 @@ const uploadQueue = useUploadQueue();
 const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
 
 const selectedFiles = ref<LocalFileItem[]>([]);
+const stagingStore = useUploadStagingStore();
+
+onMounted(() => {
+    const staged = stagingStore.getItems<LocalFileItem>(props.method.id);
+    if (staged.length) {
+        selectedFiles.value = [...staged];
+    }
+});
+
+watch(
+    selectedFiles,
+    (items) => {
+        stagingStore.setItems(props.method.id, items);
+    },
+    { deep: true },
+);
 const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
@@ -155,6 +172,7 @@ function startUpload() {
 
     uploadQueue.enqueue(uploads, collectionConfig);
     selectedFiles.value = [];
+    stagingStore.clearItems(props.method.id);
     resetCollection();
 }
 

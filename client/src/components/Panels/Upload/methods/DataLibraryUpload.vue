@@ -19,6 +19,7 @@ import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUrlTracker } from "@/composables/urlTracker";
+import { useUploadStagingStore } from "@/stores/uploadStagingStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { mapToLibraryDatasetUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
@@ -47,6 +48,7 @@ const uploadQueue = useUploadQueue();
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
+const stagingStore = useUploadStagingStore();
 
 const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
@@ -101,6 +103,23 @@ function createLibraryDatasetItem(item: AnyLibraryFolderItem, libraryId: string,
 
 const showBrowser = ref(true);
 const libraryDatasetItems = ref<LibraryDatasetItem[]>([]);
+
+onMounted(() => {
+    const staged = stagingStore.getItems<LibraryDatasetItem>(props.method.id);
+    if (staged.length) {
+        libraryDatasetItems.value = staged;
+        nextId = Math.max(...staged.map((i) => i.id)) + 1;
+        showBrowser.value = false;
+    }
+});
+
+watch(
+    libraryDatasetItems,
+    (items) => {
+        stagingStore.setItems(props.method.id, items);
+    },
+    { deep: true },
+);
 
 const selectionModel = ref<Model>(new Model({ multiple: true }));
 const selectionCount = ref(0);
@@ -472,6 +491,7 @@ function startUpload() {
 
     // Reset state
     libraryDatasetItems.value = [];
+    stagingStore.clearItems(props.method.id);
     showBrowser.value = true;
     resetCollection();
     selectionModel.value = new Model({ multiple: true });
@@ -655,9 +675,11 @@ function getPermissionTitle(entry: AnyLibraryFolderItem) {
     return undefined;
 }
 
-// Initialize: load libraries
+// Initialize: load libraries (only if not showing staged items)
 onMounted(async () => {
-    await loadLibraries();
+    if (showBrowser.value) {
+        await loadLibraries();
+    }
 });
 
 defineExpose<UploadMethodComponent>({ startUpload });

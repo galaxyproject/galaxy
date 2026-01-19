@@ -2,7 +2,7 @@
 import { faChevronDown, faChevronRight, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BTable } from "bootstrap-vue";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
@@ -10,6 +10,7 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadQueue } from "@/composables/uploadQueue";
+import { useUploadStagingStore } from "@/stores/uploadStagingStore";
 import { mapToPasteContentUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
@@ -43,6 +44,7 @@ const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
+const stagingStore = useUploadStagingStore();
 
 const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
@@ -60,6 +62,22 @@ function createPasteContentItem(id: number, name: string): PasteContentItem {
 }
 
 const pasteItems = ref<PasteContentItem[]>([createPasteContentItem(nextId++, "Pasted Dataset 1")]);
+
+onMounted(() => {
+    const staged = stagingStore.getItems<PasteContentItem>(props.method.id);
+    if (staged.length) {
+        pasteItems.value = staged;
+        nextId = Math.max(...staged.map((i) => i.id)) + 1;
+    }
+});
+
+watch(
+    pasteItems,
+    (value) => {
+        stagingStore.setItems(props.method.id, value);
+    },
+    { deep: true },
+);
 
 const hasItems = computed(() => pasteItems.value.some((item) => item.content.trim().length > 0));
 
@@ -179,6 +197,7 @@ function startUpload() {
 
     // Reset to single empty item
     pasteItems.value = [createPasteContentItem(nextId++, "Pasted Dataset 1")];
+    stagingStore.clearItems(props.method.id);
     resetCollection();
 }
 
