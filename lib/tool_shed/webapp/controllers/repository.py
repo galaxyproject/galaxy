@@ -6,8 +6,6 @@ import tempfile
 from datetime import date
 
 from mercurial import (
-    cmdutil,
-    commands,
     mdiff,
     patch,
 )
@@ -75,14 +73,14 @@ malicious_error_can_push = "  Correct this changeset as soon as possible, it pot
 
 
 def get_mercurial_default_options_dict(command):
-    """Borrowed from repoman - get default parameters for a mercurial command."""
-    possible = cmdutil.findpossible(command, commands.table)
-    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
-    if type(possible) is tuple:
-        possible = possible[0]
-    if len(possible) != 1:
-        raise Exception(f'unable to find mercurial command "{command}"')
-    return {r[1].replace(b"-", b"_"): r[2] for r in next(iter(possible.values()))[1][1]}
+    """Get default parameters for a mercurial command."""
+    # Use mdiff.diffopts defaults directly instead of introspecting command table
+    # (the old cmdutil.findpossible API was removed in Mercurial 7.2)
+    if command == b"diff":
+        # Convert byte keys to strings but preserve value types (int, bool)
+        # as mdiff.diffopts expects properly typed values
+        return {(k.decode("utf-8") if isinstance(k, bytes) else k): v for k, v in mdiff.diffopts.defaults.items()}
+    raise Exception(f'unable to find mercurial command "{command}"')
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
@@ -2366,10 +2364,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             ctx_child = None
         diffs = []
+        # Get default diff options with string keys and properly typed values
         options_dict = get_mercurial_default_options_dict(b"diff")
-        # Not quite sure if the following settings make any difference, but with a combination of them and the size check on each
-        # diff, we don't run out of memory when viewing the changelog of the cisortho2 repository on the test tool shed.
-        options_dict = {util.unicodify(k): util.unicodify(v) for k, v in options_dict.items()}
         options_dict["maxfile"] = basic_util.MAXDIFFSIZE
         options_dict["maxtotal"] = basic_util.MAXDIFFSIZE
         diffopts = mdiff.diffopts(**options_dict)
