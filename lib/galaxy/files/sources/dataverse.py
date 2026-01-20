@@ -106,6 +106,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         - doi:10.70122/FK2/AVNCLL (persistent ID)
         - doi:10.70122/FK2/DIG2DG/AVNCLL (persistent ID)
         - doi:10.70122/FK2/DIG2DG/id:12345 (database ID)
+        - doi:10.5072/FK2/doi:10.70122/AVNCLL (persistent ID)
         - perma:BSC/3ST00L/id:9056 (database ID)
         """
         if not source_path.startswith("/"):
@@ -126,8 +127,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
                 f"Invalid source path: '{source_path}'. Expected format: '/<dataset_id>/<file_identifier>'."
             )
 
-        file_id_part = parts[-1]
-        dataset_id = "/".join(parts[:-1])
+        dataset_id, file_id_part = self._split_dataset_and_file_pid(parts)
 
         # The file identifier can be either:
         # - A persistent ID suffix (e.g., 'AVNCLL' -> full ID is 'doi:10.70122/FK2/DIG2DG/AVNCLL')
@@ -135,10 +135,45 @@ class DataverseRDMFilesSource(RDMFilesSource):
         if file_id_part.startswith("id:"):
             # Database ID format - keep the 'id:' prefix as the file identifier
             file_id = file_id_part
+        elif re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:.*", file_id_part):
+            # Full persistent identifier (e.g. doi:, hdl:, ark:, or custom PID providers).
+            # Files in Dataverse may have their own independent persistent IDs that are
+            # not hierarchically related to the dataset persistent ID.
+            file_id = file_id_part
         else:
-            # Persistent ID format - construct full persistent ID
+            # Dataset-scoped persistent ID suffix - construct full persistent ID
             file_id = f"{dataset_id}/{file_id_part}"
         return ContainerAndFileIdentifier(container_id=dataset_id, file_identifier=file_id)
+
+    @staticmethod
+    def _split_dataset_and_file_pid(parts: list[str]) -> tuple[str, str]:
+        """
+        Split a Dataverse source path into dataset ID and file identifier parts.
+
+        Dataverse file-level persistent IDs may themselves contain slashes and are not
+        necessarily hierarchically related to the dataset persistent ID. For example:
+
+            /doi:10.57745/I8EUTL/doi:10.57745/L7SOAJ
+
+        In this case:
+            dataset_id = doi:10.57745/I8EUTL
+            file_id     = doi:10.57745/L7SOAJ
+
+        This helper detects such cases by recognizing URI-scheme prefixes in path segments
+        and grouping them accordingly.
+        """
+        # Default: last segment is the file identifier
+        file_id_part = parts[-1]
+        dataset_id = "/".join(parts[:-1])
+
+        # Heuristic: if the penultimate segment starts a URI scheme (e.g. doi:, hdl:, ark:),
+        # then the file persistent ID spans the last two segments.
+        pid_scheme_re = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
+        if len(parts) >= 3 and pid_scheme_re.match(parts[-2]):
+            file_id_part = f"{parts[-2]}/{parts[-1]}"
+            dataset_id = "/".join(parts[:-2])
+
+        return dataset_id, file_id_part
 
     def get_container_id_from_path(self, source_path: str) -> str:
         return self.parse_path(source_path, container_id_only=True).container_id
