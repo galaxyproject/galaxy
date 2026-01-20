@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { computed } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import type { UserNotification } from "@/api/notifications";
 import type { CardAction } from "@/components/Common/GCard.types";
@@ -32,8 +33,30 @@ const props = defineProps<{
 const emit = defineEmits(["select"]);
 
 const notificationsStore = useNotificationsStore();
+const router = useRouter();
 
-const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: false });
+
+function handleMessageClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    const anchor = target.closest("a");
+
+    if (anchor) {
+        const href = anchor.getAttribute("href");
+        if (href) {
+            // Check if this is an internal link (same origin or relative path)
+            try {
+                const url = new URL(href, window.location.origin);
+                if (url.origin === window.location.origin) {
+                    event.preventDefault();
+                    router.push(url.pathname + url.search + url.hash);
+                }
+            } catch {
+                // If URL parsing fails, let the browser handle it
+            }
+        }
+    }
+}
 
 const title = computed(() => {
     if (props.notification.category === "new_shared_item") {
@@ -154,7 +177,10 @@ function markNotificationAsSeen() {
                 >{{ " " }}<span> with you.</span>
             </template>
             <template v-else>
-                <span class="notification-message" v-html="renderMarkdown(props.notification.content.message)" />
+                <span
+                    class="notification-message"
+                    @click="handleMessageClick"
+                    v-html="renderMarkdown(props.notification.content.message)" />
             </template>
         </template>
     </GCard>
