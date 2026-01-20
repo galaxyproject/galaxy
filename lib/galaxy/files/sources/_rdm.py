@@ -23,13 +23,13 @@ log = logging.getLogger(__name__)
 
 
 class RDMFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    token: Union[str, TemplateExpansion]
-    public_name: Union[str, TemplateExpansion]
+    token: Optional[Union[str, TemplateExpansion]] = None
+    public_name: Optional[Union[str, TemplateExpansion]] = None
 
 
 class RDMFileSourceConfiguration(BaseFileSourceConfiguration):
-    token: str
-    public_name: str
+    token: Optional[str] = None
+    public_name: Optional[str] = None
 
 
 class ContainerAndFileIdentifier(NamedTuple):
