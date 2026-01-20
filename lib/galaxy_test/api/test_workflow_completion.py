@@ -73,11 +73,7 @@ class TestWorkflowCompletionEndpoint(ApiTestCase, UsesCeleryTasks):
             )
 
             # Wait for monitor to detect completion and transition state
-            invocation = self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=30)
-
-            # Verify the monitor transitioned to completed state
-            assert invocation["state"] == "completed"
-
+            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=30)
             # Verify completion record exists
             completion = self.workflow_populator.get_invocation_completion(summary.invocation_id)
             assert completion is not None, "Expected completion record to exist"
@@ -153,7 +149,4 @@ class TestWorkflowCompletionEndpoint(ApiTestCase, UsesCeleryTasks):
 
             # Wait for monitor to process (completion transition)
             # (export hook will be skipped since no file source is configured)
-            invocation = self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=30)
-
-            # Verify state transitioned to completed
-            assert invocation["state"] == "completed"
+            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=30)

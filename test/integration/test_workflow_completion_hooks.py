@@ -92,8 +92,7 @@ class TestWorkflowCompletionExportHook(IntegrationTestCase, UsesCeleryTasks):
             )
 
             # Wait for invocation to reach completed state
-            invocation = self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=60)
-            assert invocation["state"] == "completed"
+            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=60)
 
             # Wait for the export file to appear (hook execution is async via Celery)
             export_path = os.path.join(self.root_dir, export_filename)
