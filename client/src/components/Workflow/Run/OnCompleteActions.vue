@@ -5,21 +5,13 @@ import { computed, reactive, ref, watch } from "vue";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 
-import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
+import ExportOnCompleteWizard, { type WriteStoreToPayload } from "./ExportOnCompleteWizard.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 
-interface ExportConfig {
-    target_uri: string;
-    format: string;
-    include_files: boolean;
-    include_hidden: boolean;
-    include_deleted: boolean;
-}
-
 interface OnCompleteAction {
     send_notification?: Record<string, never>;
-    export_to_file_source?: ExportConfig;
+    export_to_file_source?: WriteStoreToPayload;
 }
 
 interface Props {
@@ -45,11 +37,11 @@ const state = reactive({
     exportEnabled: false,
     exportConfig: {
         target_uri: "",
-        format: "rocrate.zip",
+        model_store_format: "rocrate.zip",
         include_files: true,
         include_hidden: false,
         include_deleted: false,
-    } as ExportConfig,
+    } as WriteStoreToPayload,
 });
 
 // Initialize state from value prop (Vue 2 style v-model)
@@ -88,7 +80,7 @@ function emitOnComplete() {
     emit("input", actions);
 }
 
-function onExportConfigured(config: ExportConfig) {
+function onExportConfigured(config: WriteStoreToPayload) {
     state.exportConfig = config;
     state.exportEnabled = true;
     showExportWizard.value = false;
@@ -102,7 +94,7 @@ function clearExport() {
     state.exportEnabled = false;
     state.exportConfig = {
         target_uri: "",
-        format: "rocrate.zip",
+        model_store_format: "rocrate.zip",
         include_files: true,
         include_hidden: false,
         include_deleted: false,
@@ -152,7 +144,7 @@ const exportSummary = computed(() => {
                             <FileSourceNameSpan :uri="exportSummary.target_uri" class="text-primary" />
                             <br />
                             <small class="text-muted">
-                                Format: {{ exportSummary.format }}
+                                Format: {{ exportSummary.model_store_format }}
                                 <span v-if="exportSummary.include_files">, with files</span>
                             </small>
                         </div>

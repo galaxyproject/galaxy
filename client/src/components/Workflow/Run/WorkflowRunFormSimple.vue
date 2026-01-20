@@ -27,7 +27,7 @@ import { invokeWorkflow } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
-import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
+import ExportOnCompleteWizard, { type WriteStoreToPayload } from "./ExportOnCompleteWizard.vue";
 import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
 import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
@@ -88,13 +88,7 @@ const checkInputMatching = ref(props.requestState !== undefined);
 const sendNotificationOnComplete = ref(false);
 const showExportWizard = ref(false);
 const exportCheckboxKey = ref(0);
-const exportOnCompleteConfig = ref<{
-    target_uri: string;
-    format: string;
-    include_files: boolean;
-    include_hidden: boolean;
-    include_deleted: boolean;
-} | null>(null);
+const exportOnCompleteConfig = ref<WriteStoreToPayload | null>(null);
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
 

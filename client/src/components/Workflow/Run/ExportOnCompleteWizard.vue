@@ -3,6 +3,7 @@ import { BButton, BCard, BCardGroup, BCardTitle, BFormCheckbox, BFormGroup, BFor
 import { computed, ref } from "vue";
 
 import type { FilterFileSourcesOptions } from "@/api/remoteFiles";
+import type { components } from "@/api/schema";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { borderVariant } from "@/components/Common/Wizard/utils";
 import { useFileSources } from "@/composables/fileSources";
@@ -15,13 +16,8 @@ import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue"
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-export interface ExportOnCompleteConfig {
-    target_uri: string;
-    format: string;
-    include_files: boolean;
-    include_hidden: boolean;
-    include_deleted: boolean;
-}
+export type WriteStoreToPayload = components["schemas"]["WriteStoreToPayload"];
+type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 
 interface ExportFormat {
     id: string;
@@ -30,7 +26,7 @@ interface ExportFormat {
 }
 
 interface Props {
-    initialConfig?: Partial<ExportOnCompleteConfig> & { fileName?: string; directory?: string };
+    initialConfig?: Partial<WriteStoreToPayload> & { fileName?: string; directory?: string };
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,7 +34,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "configured", config: ExportOnCompleteConfig): void;
+    (e: "configured", config: WriteStoreToPayload): void;
     (e: "cancel"): void;
 }>();
 
@@ -48,7 +44,7 @@ const { hasWritable: hasWritableFileSources } = useFileSources(defaultExportFilt
 // Internal state for the wizard UI
 const directory = ref(props.initialConfig.directory || "");
 const fileName = ref(props.initialConfig.fileName || "galaxy-workflow-export");
-const format = ref(props.initialConfig.format || "rocrate.zip");
+const modelStoreFormat = ref<ModelStoreFormat>(props.initialConfig.model_store_format || "rocrate.zip");
 const includeFiles = ref(props.initialConfig.include_files ?? true);
 const includeHidden = ref(props.initialConfig.include_hidden ?? false);
 const includeDeleted = ref(props.initialConfig.include_deleted ?? false);
@@ -70,7 +66,7 @@ This is a simple format suitable for backup and transfer.`,
     },
 ];
 
-const selectedFormat = computed(() => exportFormats.find((f) => f.id === format.value) || exportFormats[0]);
+const selectedFormat = computed(() => exportFormats.find((f) => f.id === modelStoreFormat.value) || exportFormats[0]);
 
 const directoryDescription = computed(() => localize("Select a 'repository' to export the workflow results to."));
 const nameDescription = computed(() => localize("Give the exported file a name."));
@@ -99,11 +95,11 @@ const wizard = useWizard({
 function onSubmit() {
     // Construct full target_uri from directory + filename + format
     const dir = directory.value.endsWith("/") ? directory.value : `${directory.value}/`;
-    const fullTargetUri = `${dir}${fileName.value}.${format.value}`;
+    const fullTargetUri = `${dir}${fileName.value}.${modelStoreFormat.value}`;
 
     emit("configured", {
         target_uri: fullTargetUri,
-        format: format.value,
+        model_store_format: modelStoreFormat.value,
         include_files: includeFiles.value,
         include_hidden: includeHidden.value,
         include_deleted: includeDeleted.value,
@@ -130,8 +126,8 @@ function onCancel() {
                         :key="fmt.id"
                         :data-export-format="fmt.id"
                         class="wizard-selection-card"
-                        :border-variant="borderVariant(format === fmt.id)"
-                        @click="format = fmt.id">
+                        :border-variant="borderVariant(modelStoreFormat === fmt.id)"
+                        @click="modelStoreFormat = fmt.id as ModelStoreFormat">
                         <BCardTitle>
                             <b>{{ fmt.title }}</b>
                         </BCardTitle>
@@ -167,7 +163,7 @@ function onCancel() {
                                 placeholder="Name"
                                 required
                                 data-test-id="export-file-name-input" />
-                            <span class="ml-2 text-muted">.{{ format }}</span>
+                            <span class="ml-2 text-muted">.{{ modelStoreFormat }}</span>
                         </div>
                     </BFormGroup>
                 </template>
@@ -198,7 +194,7 @@ function onCancel() {
                         <FileSourceNameSpan v-if="directory" :uri="directory" class="text-primary" />
                         <span v-else class="text-muted">Not selected</span>
                     </div>
-                    <div v-if="fileName"><strong>File name:</strong> {{ fileName }}.{{ format }}</div>
+                    <div v-if="fileName"><strong>File name:</strong> {{ fileName }}.{{ modelStoreFormat }}</div>
                     <div>
                         <strong>Options:</strong>
                         <span v-if="includeFiles">Include files</span>
