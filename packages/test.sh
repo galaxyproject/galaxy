@@ -3,7 +3,10 @@
 set -ex
 
 PACKAGE_LIST_FILE=packages_by_dep_dag.txt
-: "${PIP_EXTRA_ARGS:=--index-url https://wheels.galaxyproject.org/simple --extra-index-url https://pypi.python.org/simple}"
+# uv's default index strategy (first-match) won't check other indexes once a package is found,
+# unlike pip which merges all indexes. Use unsafe-best-match to get pip-like behavior and
+# allow wheels.galaxyproject.org wheels to be preferred over PyPI source distributions.
+: "${PIP_EXTRA_ARGS:=--index-strategy unsafe-best-match --extra-index-url https://wheels.galaxyproject.org/simple}"
 FOR_PULSAR=0
 SKIP_PACKAGES=(
     web_client
