@@ -67,7 +67,7 @@ def main():
         help="verbose mode, print the name of each repository",
         default=False,
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     try:
         ini_file = args[0]
     except IndexError:

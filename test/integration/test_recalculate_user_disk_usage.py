@@ -6,8 +6,7 @@ from galaxy_test.driver.integration_util import IntegrationTestCase
 from .objectstore._base import BaseObjectStoreIntegrationTestCase
 from .objectstore.test_selection_with_resource_parameters import DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE
 
-SIMPLE_DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
-    """<?xml version="1.0"?>
+SIMPLE_DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
     <backends>
         <backend id="default" type="disk" weight="1" name="Default Store">
@@ -23,8 +22,7 @@ SIMPLE_DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
         </backend>
     </backends>
 </object_store>
-"""
-)
+""")
 
 
 class RecalculateDiskUsage:

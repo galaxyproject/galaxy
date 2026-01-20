@@ -4,6 +4,7 @@
 Reads a list of block numbers and a maf. Produces a new maf containing the
 blocks specified by number.
 """
+
 from __future__ import print_function
 
 import sys

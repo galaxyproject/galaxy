@@ -66,7 +66,7 @@ def evaluate(config, input):
     )
     input_str = f"{json.dumps(new_input)}\n\n"
     input_bytes = input_str.encode("utf-8")
-    (stdoutdata, stderrdata) = sp.communicate(input_bytes)
+    stdoutdata, stderrdata = sp.communicate(input_bytes)
     if sp.returncode != 0:
         message = f"Expression engine returned non-zero exit code on evaluation of\n{json.dumps(new_input, indent=4)}{stdoutdata}{stderrdata}"
         raise Exception(message)

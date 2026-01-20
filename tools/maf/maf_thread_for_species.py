@@ -7,6 +7,7 @@ which are adjacent after the unwanted species have been dropped.
 
 usage: %prog input_maf output_maf species1,species2
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 

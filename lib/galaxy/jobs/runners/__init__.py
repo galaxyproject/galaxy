@@ -148,7 +148,7 @@ class BaseJobRunner:
         while self._should_stop is False:
             with self.app.model.session():  # Create a Session instance and ensure it's closed.
                 try:
-                    (method, arg) = self.work_queue.get(timeout=1)
+                    method, arg = self.work_queue.get(timeout=1)
                 except Empty:
                     continue
                 if method is STOP_SIGNAL:

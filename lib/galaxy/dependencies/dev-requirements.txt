@@ -13,7 +13,7 @@ axe-selenium-python==2.1.6
 babel==2.17.0
 backports-asyncio-runner==1.2.0 ; python_full_version < '3.11'
 backports-tarfile==1.2.0 ; python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x'
-black==25.12.0
+black==26.1.0
 boto3==1.42.19
 botocore==1.42.19
 build==1.4.0

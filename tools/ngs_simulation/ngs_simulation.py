@@ -16,6 +16,7 @@ usage: %prog [options]
    -m, --output_summary=m: File name for output summary of all simulations
    -f, --new_file_path=f: Directory for summary output files
 """
+
 # removed output of all simulation results on request (not working)
 #   -r, --sim_results=r: Output all tabular simulation results (number of polymorphisms times number of detection thresholds)
 #   -o, --output=o: Base name for summary output for each run
@@ -187,15 +188,12 @@ def __main__():
             output.close()
 
     # Parameters (heteroplasmy, error threshold, colours)
-    r(
-        """
+    r("""
     het=c(%s)
     err=c(%s)
     grade = (0:32)/32
     hues = rev(gray(grade))
-    """
-        % (",".join(str(p) for p in polymorphisms), ",".join(str(d) for d in detection_threshes))
-    )
+    """ % (",".join(str(p) for p in polymorphisms), ",".join(str(d) for d in detection_threshes)))
 
     # Suppress warnings
     r("options(warn=-1)")
@@ -228,80 +226,62 @@ def __main__():
         r('write.table(summary(ngsum), file="%s", quote=FALSE, sep="\t", row.names=FALSE)' % options.output_summary)
 
     # Summary objects (these could be printed)
-    r(
-        """
+    r("""
     tr_pos <- tapply(allsum$fprate,list(allsum$hetcol,allsum$errcol), mean)
     tr_neg <- tapply(allsum$FN,list(allsum$hetcol,allsum$errcol), mean)
     cat('\nFalse Positive Rate Summary\n\t', file='%s', append=T, sep='\t')
     write.table(format(tr_pos, digits=4), file='%s', append=T, quote=F, sep='\t')
     cat('\nFalse Negative Rate Summary\n\t', file='%s', append=T, sep='\t')
     write.table(format(tr_neg, digits=4), file='%s', append=T, quote=F, sep='\t')
-    """
-        % tuple([options.output_summary] * 4)
-    )
+    """ % tuple([options.output_summary] * 4))
 
     # Setup graphs
-    r(
-        """
+    r("""
     png('%s', width=800, height=500, units='px', res=250)
     layout(matrix(data=c(1,2,1,3,1,4), nrow=2, ncol=3), widths=c(4,6,2), heights=c(1,10,10))
-    """
-        % options.output_png
-    )
+    """ % options.output_png)
 
     # Main title
     genome = ""
     if options.genome:
         genome = "%s: " % options.genome
-    r(
-        """
+    r("""
     par(mar=c(0,0,0,0))
     plot(1, type='n', axes=F, xlab='', ylab='')
     text(1,1,paste('%sVariation in False Positives and Negatives (', %s, ' simulations, coverage ', %s,')', sep=''), font=2, family='sans', cex=0.7)
-    """
-        % (genome, options.num_sims, options.avg_coverage)
-    )
+    """ % (genome, options.num_sims, options.avg_coverage))
 
     # False positive boxplot
-    r(
-        """
+    r("""
     par(mar=c(5,4,2,2), las=1, cex=0.35)
     boxplot(allsum$fprate ~ allsum$errcol, horizontal=T, ylim=rev(range(allsum$fprate)), cex.axis=0.85)
     title(main='False Positives', xlab='false positive rate', ylab='')
-    """
-    )
+    """)
 
     # False negative heatmap (note zlim command!)
     num_polys = len(polymorphisms)
     num_dets = len(detection_threshes)
-    r(
-        """
+    r("""
     par(mar=c(5,4,2,1), las=1, cex=0.35)
     image(1:%s, 1:%s, tr_neg, zlim=c(0,1), col=hues, xlab='', ylab='', axes=F, border=1)
     axis(1, at=1:%s, labels=rownames(tr_neg), lwd=1, cex.axis=0.85, axs='i')
     axis(2, at=1:%s, labels=colnames(tr_neg), lwd=1, cex.axis=0.85)
     title(main='False Negatives', xlab='minor allele frequency', ylab='detection threshold')
-    """
-        % (num_polys, num_dets, num_polys, num_dets)
-    )
+    """ % (num_polys, num_dets, num_polys, num_dets))
 
     # Scale alongside
-    r(
-        """
+    r("""
     par(mar=c(2,2,2,3), las=1)
     image(1, grade, matrix(grade, ncol=length(grade), nrow=1), col=hues, xlab='', ylab='', xaxt='n', las=1, cex.axis=0.85)
     title(main='Key', cex=0.35)
     mtext('false negative rate', side=1, cex=0.35)
-    """
-    )
+    """)
 
     # Close graphics
-    r(
-        """
+    r("""
     layout(1)
     dev.off()
-    """
-    )
+    """)
 
 
 if __name__ == "__main__":

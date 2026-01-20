@@ -2,6 +2,7 @@
 """
 Read a maf and output intervals for specified list of species.
 """
+
 from __future__ import print_function
 
 import os

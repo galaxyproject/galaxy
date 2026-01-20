@@ -54,8 +54,7 @@ def test_loader_simple():
     Test simple macro replacement.
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs" />
     <macros>
@@ -63,8 +62,7 @@ def test_loader_simple():
             <inputs />
         </macro>
     </macros>
-</tool>"""
-        )
+</tool>""")
         xml = tool_dir.load(preprocess=False)
         assert xml.find("inputs") is None
         xml = tool_dir.load(preprocess=True)
@@ -88,8 +86,7 @@ def test_loader_external():
 def test_loader_unnamed_yield():
     # Test macros with unnamed yield statements.
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs">
         <input name="first_input" />
@@ -112,8 +109,7 @@ def test_loader_unnamed_yield():
             </inputs>
         </macro>
     </macros>
-</tool>"""
-        )
+</tool>""")
         xml = tool_dir.load()
         assert xml.find("/inputs[1]/input").get("name") == "first_input"
         assert xml.find("/inputs[2]/input").get("name") == "second_input"
@@ -125,8 +121,7 @@ def test_loader_unnamed_yield_nested():
     Test nested macro with yield statements
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <macro name="paired_options">
@@ -151,8 +146,7 @@ def test_loader_unnamed_yield_nested():
         </expand>
     </inputs>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         # assert the both yields in the inner macro (paired_options) are expanded
         assert xml.find('/inputs/conditional[@name="library"]/when[@value="paired"]/param[@name="test"]') is not None
@@ -167,8 +161,7 @@ def test_loader_recursive():
     Test recursive macro applications.
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs">
         <input name="first_input" />
@@ -185,8 +178,7 @@ def test_loader_recursive():
             <input name="second_input" />
         </macro>
     </macros>
-</tool>"""
-        )
+</tool>""")
         xml = tool_dir.load()
         assert xml.find("/inputs/input[1]").get("name") == "first_input"
         assert xml.find("/inputs/input[2]").get("name") == "second_input"
@@ -198,8 +190,7 @@ def test_loader_recursive2():
     Test recursive macro applications.
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs">
         <input name="first_input" />
@@ -219,8 +210,7 @@ def test_loader_recursive2():
             <input name="second_input" />
         </macro>
     </macros>
-</tool>"""
-        )
+</tool>""")
         xml = tool_dir.load()
         assert xml.find("/inputs/input[1]").get("name") == "first_input"
         assert xml.find("/inputs/input[2]").get("name") == "second_input"
@@ -232,8 +222,7 @@ def test_loader_toplevel_yield():
     test expansion of top level (ie child of <macro>) yields
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool id="issue_647">
     <macros>
         <macro name="a">
@@ -246,8 +235,7 @@ def test_loader_toplevel_yield():
             <param name="b" type="text" value="b" label="b" />
         </expand>
     </inputs>
-</tool>"""
-        )
+</tool>""")
         xml = tool_dir.load()
         assert xml.find("/inputs/param[1]").get("name") == "a1"
         assert xml.find("/inputs/param[2]").get("name") == "b"
@@ -258,8 +246,7 @@ def test_loader_shortcut():
     Test <xml> is shortcut for macro type="xml"
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs" />
     <macros>
@@ -267,16 +254,14 @@ def test_loader_shortcut():
             <inputs />
         </xml>
     </macros>
-</tool>"""
-        )
+</tool>""")
         xml = tool_dir.load()
         assert xml.find("inputs") is not None
 
 
 def test_loader_template():
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <command interpreter="python">tool_wrapper.py
     #include source=$tool_params
@@ -285,8 +270,7 @@ def test_loader_template():
         <template name="tool_params">-a 1 -b 2</template>
     </macros>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         params_dict = template_macro_params(xml.getroot())
         assert params_dict["tool_params"] == "-a 1 -b 2"
@@ -294,8 +278,7 @@ def test_loader_template():
 
 def test_loader_token_text():
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <token name="@CITATION@">The citation.</token>
@@ -305,8 +288,7 @@ def test_loader_token_text():
         <tag />
     </another>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         help_el = xml.find("help")
         assert help_el.text == "The citation.", help_el.text
@@ -314,8 +296,7 @@ def test_loader_token_text():
 
 def test_loader_token_nested():
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <token name="@WIZARD@">Ab@HELPER@ra</token>
@@ -327,8 +308,7 @@ def test_loader_token_nested():
         <tag />
     </another>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         help_el = xml.find("help")
         assert help_el.text == "Abracadabra", help_el.text
@@ -339,8 +319,7 @@ def test_loader_token_cycle():
     test if cycles in nested tokens are detected
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <token name="@A@">a @ROSE@</token>
@@ -352,8 +331,7 @@ def test_loader_token_cycle():
         <tag />
     </another>
 </tool>
-"""
-        )
+""")
         try:
             tool_dir.load()
         except Exception as e:
@@ -367,8 +345,7 @@ def test_loader_token_attribute_name():
     test the repacement of an attribute name by a token
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <token name="__ATTR_NAME">name</token>
@@ -377,8 +354,7 @@ def test_loader_token_attribute_name():
         <tag __ATTR_NAME="blah" />
     </another>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         assert xml.find('/another/tag[@name="blah"]') is not None
 
@@ -388,8 +364,7 @@ def test_loader_token_attribute_value():
     test the repacement of an attribute value by a token
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <token name="@TAG_VAL@">The value.</token>
@@ -398,16 +373,14 @@ def test_loader_token_attribute_value():
         <tag value="@TAG_VAL@" />
     </another>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         assert xml.find('/another/tag[@value="The value."]') is not None
 
 
 def test_loader_token_empty():
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <token name="@TAG_VAL@"><![CDATA[]]></token>
@@ -416,8 +389,7 @@ def test_loader_token_empty():
         <tag value="@TAG_VAL@" />
     </another>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         assert xml.find('/another/tag[@value=""]') is not None
 
@@ -427,8 +399,7 @@ def test_loader_macro_token_quote():
     Test macros XML macros with $$ expansions in attributes
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs" bar="hello" />
     <expand macro="inputs" bar="my awesome" />
@@ -439,8 +410,7 @@ def test_loader_macro_token_quote():
         </xml>
     </macros>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         input_els = xml.findall("inputs")
         assert len(input_els) == 3
@@ -454,8 +424,7 @@ def test_loader_macro_token():
     Test macros XML macros with @ expansions in text
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs" foo="hello" />
     <expand macro="inputs" foo="world" />
@@ -466,8 +435,7 @@ def test_loader_macro_token():
         </xml>
     </macros>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         input_els = xml.findall("inputs")
         assert len(input_els) == 3
@@ -481,8 +449,7 @@ def test_loader_macro_token_recursive():
     Test macros XML macros with @ expansions and recursive
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <expand macro="inputs" foo="hello" />
     <expand macro="inputs" foo="world" />
@@ -496,8 +463,7 @@ def test_loader_macro_token_recursive():
         </xml>
     </macros>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
         input_els = xml.findall("inputs")
         assert len(input_els) == 3
@@ -513,8 +479,7 @@ def test_loader_macro_named_yield():
     - unnamed yields are replaced by all non-token elements of the expand tag
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <xml name="test">
@@ -541,12 +506,9 @@ def test_loader_macro_named_yield():
         <sub_of_expand_2/>
     </expand>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
-        assert (
-            xml_to_string(xml, pretty=True)
-            == """<?xml version="1.0" ?>
+        assert xml_to_string(xml, pretty=True) == """<?xml version="1.0" ?>
 <tool>
     <macros/>
     <A>
@@ -562,7 +524,6 @@ def test_loader_macro_named_yield():
         <more_content_of_token2/>
     </B>
 </tool>"""
-        )
 
 
 def test_loader_macro_multiple_toplevel_yield():
@@ -570,8 +531,7 @@ def test_loader_macro_multiple_toplevel_yield():
     test replacement of multiple top level yield
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <xml name="test">
@@ -596,12 +556,9 @@ def test_loader_macro_multiple_toplevel_yield():
         <sub_of_expand_2/>
     </expand>
 </tool>
-"""
-        )
+""")
         xml = tool_dir.load()
-        assert (
-            xml_to_string(xml, pretty=True)
-            == """<?xml version="1.0" ?>
+        assert xml_to_string(xml, pretty=True) == """<?xml version="1.0" ?>
 <tool>
     <macros/>
     <blah/>
@@ -614,7 +571,6 @@ def test_loader_macro_multiple_toplevel_yield():
     <content_of_token2/>
     <more_content_of_token2/>
 </tool>"""
-        )
 
 
 def test_loader_macro_recursive_named_yield():
@@ -627,8 +583,7 @@ def test_loader_macro_recursive_named_yield():
     - replacing unnamed yield gives the only non-token element of the expand
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <xml name="test">
@@ -650,13 +605,10 @@ def test_loader_macro_recursive_named_yield():
         </token>
         <T/>
     </expand>
-</tool>"""
-        )
+</tool>""")
 
         xml = tool_dir.load()
-        assert (
-            xml_to_string(xml, pretty=True)
-            == """<?xml version="1.0" ?>
+        assert xml_to_string(xml, pretty=True) == """<?xml version="1.0" ?>
 <tool>
     <macros/>
     <A>
@@ -667,7 +619,6 @@ def test_loader_macro_recursive_named_yield():
         </T1>
     </A>
 </tool>"""
-        )
 
 
 def test_loader_specify_nested_macro_by_token():
@@ -677,16 +628,14 @@ def test_loader_specify_nested_macro_by_token():
     of the outer macro
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <import>external.xml</import>
     </macros>
     <expand macro="testp" token_name="a"/>
     <expand macro="testp" token_name="b"/>
-</tool>"""
-        )
+</tool>""")
         tool_dir.write(
             """
 <macros>
@@ -726,8 +675,7 @@ def test_loader_circular_macros():
     check the cycles in nested macros are detected
     """
     with TestToolDirectory() as tool_dir:
-        tool_dir.write(
-            """
+        tool_dir.write("""
 <tool>
     <macros>
         <xml name="a">
@@ -742,8 +690,7 @@ def test_loader_circular_macros():
         </xml>
     </macros>
     <expand macro="a"/>
-</tool>"""
-        )
+</tool>""")
         try:
             tool_dir.load()
         except AssertionError as a:

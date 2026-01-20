@@ -657,8 +657,7 @@ async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
     return None
 
 
-search_description_template = Template(
-    """A mix of free text and GitHub-style tags used to filter the index operation.
+search_description_template = Template("""A mix of free text and GitHub-style tags used to filter the index operation.
 
 ## Query Structure
 
@@ -683,8 +682,7 @@ ${tags}
 Free text search terms will be searched against the following attributes of the
 ${model_name}s: ${freetext}.
 
-"""
-)
+""")
 
 
 class IndexQueryTag(NamedTuple):

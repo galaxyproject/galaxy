@@ -816,7 +816,7 @@ AdaptedDataCollectionRequest = Annotated[
     ],
     Field(discriminator="adapter_type"),
 ]
-AdaptedDataCollectionRequestTypeAdapter = TypeAdapter(AdaptedDataCollectionRequest)  # type:ignore[var-annotated]
+AdaptedDataCollectionRequestTypeAdapter = TypeAdapter(AdaptedDataCollectionRequest)  # type: ignore[var-annotated]
 
 
 class DatasetCollectionElementReference(StrictModel):
@@ -856,7 +856,7 @@ AdaptedDataCollectionRequestInternal = Annotated[
 ]
 AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(
     AdaptedDataCollectionRequestInternal
-)  # type:ignore[var-annotated]
+)  # type: ignore[var-annotated]
 
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):

@@ -32,7 +32,7 @@ def main():
     # Process arguments.
     parser = optparse.OptionParser()
     parser.add_option("-F", "--format", dest="input_format")
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
     in_fname, out_fname = args
     input_format = options.input_format.lower()
 

@@ -475,8 +475,7 @@ class TestLandingApi(ApiTestCase):
         """Test that executing a workflow from landing request preserves sample sheet metadata in output."""
         with self.dataset_populator.test_history() as history_id:
             # Create a simple workflow that maps cat1 over a collection input
-            workflow_id = self.workflow_populator.upload_yaml_workflow(
-                """
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   input_collection:
@@ -487,8 +486,7 @@ steps:
     tool_id: cat1
     in:
       input1: input_collection
-"""
-            )
+""")
 
             # Create request state with sample sheet collection
             input_b64_1 = b64encode(b"sample1 data").decode("utf-8")
@@ -599,8 +597,7 @@ steps:
                 "sample2": [2, "treatment"],
             }
 
-            workflow_id = self.workflow_populator.upload_yaml_workflow(
-                """
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   input_collection:
@@ -611,8 +608,7 @@ steps:
     tool_id: cat1
     in:
       input1: input_collection
-"""
-            )
+""")
 
             # Create paired elements (forward/reverse for each sample)
             forward_b64_1 = b64encode(b"sample1 forward data").decode("utf-8")

@@ -66,7 +66,7 @@ class EnvPlugin(InstrumentPlugin):
                 message = message_template % job_id
                 log.debug(message)
                 break
-            (var, value) = m.groups()
+            var, value = m.groups()
             if not variables or var in variables:
                 properties[var] = value
             env_string = env_string[m.end() :]

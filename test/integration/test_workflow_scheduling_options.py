@@ -62,8 +62,7 @@ class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.Integration
         config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
 
     def test_collection_explicit_and_implicit(self):
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   - type: input_collection
@@ -79,8 +78,7 @@ steps:
     state:
       input1:
         $link: 2/out1
-"""
-        )
+""")
         with self.dataset_populator.test_history() as history_id:
             fetch_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]

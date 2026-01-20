@@ -26,7 +26,7 @@ def main():
     parser.add_option(
         "-o", "--output", dest="output", action="store", help="path to the new merged galaxy.ini.new file"
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     for option in ["sample", "config"]:
         if getattr(options, option) is None:

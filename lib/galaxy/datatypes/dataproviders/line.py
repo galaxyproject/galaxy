@@ -163,7 +163,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         """
         # composition - not inheritance
         # TODO: not a fan of this:
-        (filter_fn, limit, offset) = (kwargs.pop("filter_fn", None), kwargs.pop("limit", None), kwargs.pop("offset", 0))
+        filter_fn, limit, offset = (kwargs.pop("filter_fn", None), kwargs.pop("limit", None), kwargs.pop("offset", 0))
         line_provider = FilteredLineDataProvider(source, **kwargs)
         super().__init__(line_provider, filter_fn=filter_fn, limit=limit, offset=offset)
 

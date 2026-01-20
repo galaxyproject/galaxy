@@ -17,6 +17,7 @@ defaults logging to a single file with the following:
 galaxy-main -d --server-name handler0 --daemon-log-file=handler0-daemon.log --pid-file handler0.pid --log-file handler0.log
 
 """
+
 import functools
 import logging
 import os

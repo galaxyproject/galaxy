@@ -200,7 +200,7 @@ class TestWorkflowProgress(TestCase):
         session.commit()
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
-        (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]
+        subworkflow_step, subworkflow_invocation_step = remaining_steps[0]
         subworkflow_progress = progress.subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
         subworkflow = subworkflow_step.subworkflow
         assert subworkflow_progress.workflow_invocation == subworkflow_invocation

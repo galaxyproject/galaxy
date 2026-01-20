@@ -1319,7 +1319,7 @@ def read_config():
     parser.set_defaults(pelinker_fname=def_pelinker_fname)
 
     # we parse the cmd line
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     # we put the result in a dict
     global config

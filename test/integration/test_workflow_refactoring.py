@@ -294,8 +294,7 @@ class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, U
         # test parameters used in PJA without being used in tool state.
         # These will work fine with the simplified workflow UI, but should probably
         # be formalized and assigned a unique label and informative annotation.
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -307,8 +306,7 @@ steps:
     outputs:
       out_file1:
         rename: "${pja_only_param} name"
-"""
-        )
+""")
         actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
@@ -317,8 +315,7 @@ steps:
 
     def test_refactoring_legacy_parameters_without_tool_state_dry_run(self):
         # same as above but dry run...
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -330,8 +327,7 @@ steps:
     outputs:
       out_file1:
         rename: "${pja_only_param} name"
-"""
-        )
+""")
         actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
@@ -343,8 +339,7 @@ steps:
 
     def test_refactoring_legacy_parameters_without_tool_state_relabel(self):
         # same thing as above, but apply relabeling and ensure PJA gets updated.
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -356,8 +351,7 @@ steps:
     outputs:
       out_file1:
         rename: "${pja_only_param} name"
-"""
-        )
+""")
         actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param", "label": "new_label"},
         ]
@@ -511,8 +505,7 @@ steps:
         assert message.input_name == "num_lines"
 
     def test_tool_version_upgrade_no_state_change(self):
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   the_step:
@@ -520,8 +513,7 @@ steps:
     tool_version: '0.1'
     state:
       inttest: 0
-"""
-        )
+""")
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
         actions: ActionsJson = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
@@ -535,8 +527,7 @@ steps:
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
     def test_tool_version_upgrade_keeps_when_expression(self):
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   the_bool:
@@ -550,8 +541,7 @@ steps:
     state:
       inttest: 0
     when: $(inputs.when)
-"""
-        )
+""")
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
         actions: ActionsJson = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
@@ -564,8 +554,7 @@ steps:
         assert step.when_expression
 
     def test_tool_version_upgrade_state_added(self):
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   the_step:
@@ -573,8 +562,7 @@ steps:
     tool_version: '0.1'
     state:
       inttest: 0
-"""
-        )
+""")
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
         actions: ActionsJson = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}, "tool_version": "0.2"},

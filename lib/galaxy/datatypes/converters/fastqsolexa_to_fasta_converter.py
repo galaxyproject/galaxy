@@ -13,6 +13,7 @@ the order should be:
 Usage:
 %python fastqsolexa_to_fasta_converter.py <your_fastqsolexa_filename> <output_seq_filename> <output_score_filename>
 """
+
 import sys
 
 

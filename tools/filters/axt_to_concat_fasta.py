@@ -2,6 +2,7 @@
 """
 Adapted from bx/scripts/axt_to_concat_fasta.py
 """
+
 from __future__ import print_function
 
 import sys

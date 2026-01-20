@@ -66,7 +66,7 @@ class FilterFactory:
         """
         if ":" in filter_name:
             # Should be a submodule of filters (e.g. examples:restrict_development_tools)
-            (module_name, function_name) = filter_name.rsplit(":", 1)
+            module_name, function_name = filter_name.rsplit(":", 1)
             function = self._import_filter(module_name, function_name)
         else:
             # No module found, just load a function from this file or

@@ -41,7 +41,7 @@ class StoreExportTracker:
             export_association: StoreExportAssociation = self.session.execute(stmt).scalars().one()
         except NoResultFound:
             raise ObjectNotFound("Cannot set export metadata. Reason: Export association not found")
-        export_association.export_metadata = export_metadata.model_dump_json()  # type:ignore[assignment]
+        export_association.export_metadata = export_metadata.model_dump_json()  # type: ignore[assignment]
         self.session.commit()
 
     def get_export_association(self, export_association_id: int) -> StoreExportAssociation:
@@ -72,4 +72,4 @@ class StoreExportTracker:
             stmt = stmt.offset(offset)
         if limit:
             stmt = stmt.limit(limit)
-        return self.session.execute(stmt).scalars()  # type:ignore[return-value]
+        return self.session.execute(stmt).scalars()  # type: ignore[return-value]

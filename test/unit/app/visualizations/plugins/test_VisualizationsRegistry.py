@@ -134,8 +134,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
 
     def test_script_entry(self):
         """"""
-        script_entry_config = clean_multiline_string(
-            """\
+        script_entry_config = clean_multiline_string("""\
         <?xml version="1.0" encoding="UTF-8"?>
         <visualization name="js-test">
             <data_sources>
@@ -145,8 +144,7 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
             </data_sources>
             <entry_point container="mycontainer" src="mysrc" css="mycss"></entry_point>
         </visualization>
-        """
-        )
+        """)
 
         mock_app_dir = galaxy_mock.MockDir(
             {

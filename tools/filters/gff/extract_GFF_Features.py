@@ -5,6 +5,7 @@ Extract features from GFF file.
 
 usage: %prog input1 out_file1 column features
 """
+
 from __future__ import print_function
 
 import sys

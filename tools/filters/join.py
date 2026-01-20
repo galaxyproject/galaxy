@@ -6,6 +6,7 @@ Script to Join Two Files on specified columns.
 Takes two tab delimited files, two column numbers (base 1) and outputs a new tab delimited file with lines joined by tabs.
 User can also opt to have have non-joining rows of file1 echoed.
 """
+
 from __future__ import print_function
 
 import json

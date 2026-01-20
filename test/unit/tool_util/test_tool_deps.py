@@ -218,12 +218,10 @@ blast/2.24
         )
         mapping_file = os.path.join(temp_directory, "mapping")
         with open(mapping_file, "w") as f:
-            f.write(
-                """
+            f.write("""
 - from: blast+
   to: blast
-"""
-            )
+""")
 
         resolver = ModuleDependencyResolver(
             _SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file
@@ -247,16 +245,14 @@ blast/2.24
         )
         mapping_file = os.path.join(temp_directory, "mapping")
         with open(mapping_file, "w") as f:
-            f.write(
-                """
+            f.write("""
 - from:
     name: blast
     unversioned: true
   to:
     name: blast
     version: 2.24
-"""
-            )
+""")
 
         resolver = ModuleDependencyResolver(
             _SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file
@@ -285,8 +281,7 @@ blast/2.24.0-mpi
         )
         mapping_file = os.path.join(temp_directory, "mapping")
         with open(mapping_file, "w") as f:
-            f.write(
-                """
+            f.write("""
 - from:
     name: blast+
     version: 2.24
@@ -298,8 +293,7 @@ blast/2.24.0-mpi
     version: 2.22
   to:
     version: 2.22.0-mpi
-"""
-            )
+""")
 
         resolver = ModuleDependencyResolver(
             _SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file
@@ -473,8 +467,7 @@ Mothur/1.38.1.1
         )
         mapping_file = os.path.join(temp_directory, "mapping")
         with open(mapping_file, "w") as f:
-            f.write(
-                """
+            f.write("""
 - from:
     name: blast+
     unversioned: true
@@ -486,8 +479,7 @@ Mothur/1.38.1.1
     version: 1.38
   to:
     version: 1.38.1.1
-"""
-            )
+""")
 
         resolver = LmodDependencyResolver(
             _SimpleDependencyManager(),
@@ -665,45 +657,37 @@ def __test_base_path():
 
 
 def test_parse():
-    with __parse_resolvers(
-        """<dependency_resolvers>
+    with __parse_resolvers("""<dependency_resolvers>
   <tool_shed_packages />
   <galaxy_packages />
 </dependency_resolvers>
-"""
-    ) as dependency_resolvers:
+""") as dependency_resolvers:
         assert "ToolShed" in dependency_resolvers[0].__class__.__name__
         assert "Galaxy" in dependency_resolvers[1].__class__.__name__
 
-    with __parse_resolvers(
-        """<dependency_resolvers>
+    with __parse_resolvers("""<dependency_resolvers>
   <galaxy_packages />
   <tool_shed_packages />
 </dependency_resolvers>
-"""
-    ) as dependency_resolvers:
+""") as dependency_resolvers:
         assert "Galaxy" in dependency_resolvers[0].__class__.__name__
         assert "ToolShed" in dependency_resolvers[1].__class__.__name__
 
-    with __parse_resolvers(
-        """<dependency_resolvers>
+    with __parse_resolvers("""<dependency_resolvers>
   <galaxy_packages />
   <tool_shed_packages />
   <galaxy_packages versionless="true" />
 </dependency_resolvers>
-"""
-    ) as dependency_resolvers:
+""") as dependency_resolvers:
         assert not dependency_resolvers[0].versionless
         assert dependency_resolvers[2].versionless
 
-    with __parse_resolvers(
-        """<dependency_resolvers>
+    with __parse_resolvers("""<dependency_resolvers>
   <galaxy_packages />
   <tool_shed_packages />
   <galaxy_packages base_path="/opt/galaxy/legacy/"/>
 </dependency_resolvers>
-"""
-    ) as dependency_resolvers:
+""") as dependency_resolvers:
         # Unspecified base_paths are both default_base_paths
         assert dependency_resolvers[0].base_path == dependency_resolvers[1].base_path
         # Can specify custom base path...
@@ -713,30 +697,24 @@ def test_parse():
 
 
 def test_uses_tool_shed_dependencies():
-    with __dependency_manager(
-        """<dependency_resolvers>
+    with __dependency_manager("""<dependency_resolvers>
   <galaxy_packages />
 </dependency_resolvers>
-"""
-    ) as dm:
+""") as dm:
         assert not dm.uses_tool_shed_dependencies()
 
-    with __dependency_manager(
-        """<dependency_resolvers>
+    with __dependency_manager("""<dependency_resolvers>
   <tool_shed_packages />
 </dependency_resolvers>
-"""
-    ) as dm:
+""") as dm:
         assert dm.uses_tool_shed_dependencies()
 
 
 def test_config_module_defaults():
-    with __parse_resolvers(
-        """<dependency_resolvers>
+    with __parse_resolvers("""<dependency_resolvers>
   <modules prefetch="false" />
 </dependency_resolvers>
-"""
-    ) as dependency_resolvers:
+""") as dependency_resolvers:
         module_resolver = dependency_resolvers[0]
         assert module_resolver.module_checker.__class__.__name__ == "AvailModuleChecker"
 
@@ -753,12 +731,10 @@ def test_config_module_defaults():
 
 def test_config_modulepath():
     # Test reads and splits MODULEPATH if modulepath is not specified.
-    with __parse_resolvers(
-        """<dependency_resolvers>
+    with __parse_resolvers("""<dependency_resolvers>
   <modules find_by="directory" modulepath="/opt/modules/modulefiles:/usr/local/modules/modulefiles" />
 </dependency_resolvers>
-"""
-    ) as dependency_resolvers:
+""") as dependency_resolvers:
         assert dependency_resolvers[0].module_checker.directories == [
             "/opt/modules/modulefiles",
             "/usr/local/modules/modulefiles",
@@ -768,12 +744,10 @@ def test_config_modulepath():
 def test_config_MODULEPATH():
     # Test reads and splits MODULEPATH if modulepath is not specified.
     with modify_environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
-        with __parse_resolvers(
-            """<dependency_resolvers>
+        with __parse_resolvers("""<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
-"""
-        ) as dependency_resolvers:
+""") as dependency_resolvers:
             assert dependency_resolvers[0].module_checker.directories == [
                 "/opt/modules/modulefiles",
                 "/usr/local/modules/modulefiles",
@@ -784,22 +758,18 @@ def test_config_MODULESHOME():
     # Test fallbacks to read MODULESHOME if modulepath is not specified and
     # neither is MODULEPATH.
     with modify_environ({"MODULESHOME": "/opt/modules"}, keys_to_remove=["MODULEPATH"]):
-        with __parse_resolvers(
-            """<dependency_resolvers>
+        with __parse_resolvers("""<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
-"""
-        ) as dependency_resolvers:
+""") as dependency_resolvers:
             assert dependency_resolvers[0].module_checker.directories == ["/opt/modules/modulefiles"]
 
 
 def test_config_module_directory_searcher():
-    with __parse_resolvers(
-        """<dependency_resolvers>
+    with __parse_resolvers("""<dependency_resolvers>
   <modules find_by="directory" modulepath="/opt/Modules/modulefiles" />
 </dependency_resolvers>
-"""
-    ) as dependency_resolvers:
+""") as dependency_resolvers:
         module_resolver = dependency_resolvers[0]
         assert module_resolver.module_checker.directories == ["/opt/Modules/modulefiles"]
 

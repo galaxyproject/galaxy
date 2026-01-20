@@ -3,23 +3,19 @@ import yaml
 from galaxy.tool_util.parser.yaml import to_test_assert_list
 
 # Legacy style
-ASSERT_THAT_LIST = yaml.safe_load(
-    """
+ASSERT_THAT_LIST = yaml.safe_load("""
 - that: "has_text"
   text: "Number of input reads |\t1051466"
 - that: "has_text"
   text: "Uniquely mapped reads number |\t871202"
-"""
-)
+""")
 # New list of assertion style
-ASSERT_LIST = yaml.safe_load(
-    """
+ASSERT_LIST = yaml.safe_load("""
 - has_text:
     text: "Number of input reads |\t1051466"
 - has_text:
     text: "Uniquely mapped reads number |\t871202"
-"""
-)
+""")
 # Singleton assertion
 SIMPLE_ASSERT = {"has_text": {"text": "Number of input reads |\t1051466"}}
 
@@ -40,8 +36,7 @@ def test_assert_legacy_same_as_new_list_style():
     assert to_test_assert_list(ASSERT_THAT_LIST) == to_test_assert_list(ASSERT_THAT_LIST)
 
 
-NESTED_ASSERT_LIST = yaml.safe_load(
-    """
+NESTED_ASSERT_LIST = yaml.safe_load("""
 - has_archive_member:
     path: ".*"
     asserts:
@@ -49,8 +44,7 @@ NESTED_ASSERT_LIST = yaml.safe_load(
           text: "a text"
       - has_text:
           text: "another text"
-"""
-)
+""")
 
 
 def test_nested_asserts():

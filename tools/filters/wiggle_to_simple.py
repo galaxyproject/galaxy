@@ -4,6 +4,7 @@ Read a wiggle track and print out a series of lines containing
 "chrom position score". Ignores track lines, handles bed, variableStep
 and fixedStep wiggle lines.
 """
+
 from __future__ import print_function
 
 import sys

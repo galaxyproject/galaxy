@@ -47,9 +47,9 @@ try:
     )
     from jinja2.nativetypes import NativeEnvironment
 except ImportError:
-    NativeEnvironment = None  # type:ignore[assignment, misc, unused-ignore]
-    StrictUndefined = None  # type:ignore[assignment, misc, unused-ignore]
-    UndefinedError = None  # type:ignore[assignment, misc, unused-ignore]
+    NativeEnvironment = None  # type: ignore[assignment, misc, unused-ignore]
+    StrictUndefined = None  # type: ignore[assignment, misc, unused-ignore]
+    UndefinedError = None  # type: ignore[assignment, misc, unused-ignore]
 
 from galaxy.exceptions import (
     ObjectNotFound,

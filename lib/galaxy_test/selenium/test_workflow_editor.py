@@ -329,8 +329,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_data_column_input_editing(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 steps:
   column_param_list:
@@ -338,8 +337,7 @@ steps:
     state:
       col: ["1","2","3"]
       col_names: ["a", "b", "c"]
-      """
-        )
+      """)
         editor = self.components.workflow_editor
         node = editor.node._(label="column_param_list")
         node.title.wait_for_and_click()
@@ -387,8 +385,7 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_non_data_connections(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -401,8 +398,7 @@ steps:
   cat1:
     # regression test, ensures connecting works in the presence of data input terminals
     tool_id: cat1
-"""
-        )
+""")
         self.screenshot("workflow_editor_parameter_connection_simple")
         self.assert_connected("input_int#output", "tool_exec#inttest")
 
@@ -473,16 +469,14 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_connecting_display_in_upload_false_connections(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 steps:
   step1:
     tool_id: test_sam_to_bam_conversions
   step2:
     tool_id: test_sam_to_bam_conversions
-        """
-        )
+        """)
 
         self.workflow_editor_connect("step1#qname_input_sorted_bam_output", "step2#input5")
         self.assert_connected("step1#qname_input_sorted_bam_output", "step2#input5")
@@ -809,8 +803,7 @@ steps:
         embedded_workflow = yaml.safe_load(WORKFLOW_WITH_OLD_TOOL_VERSION)
         # Create invalid tool state
         embedded_workflow["steps"]["mul_versions"]["state"]["inttest"] = "Invalid"
-        outer_workflow = yaml.safe_load(
-            """
+        outer_workflow = yaml.safe_load("""
 class: GalaxyWorkflow
 inputs:
   outer_input: data
@@ -819,8 +812,7 @@ steps:
     run: {}
     in:
       input1: outer_input
-        """
-        )
+        """)
         outer_workflow["steps"]["nested_workflow"]["run"] = embedded_workflow
         workflow_populator.upload_yaml_workflow(json.dumps(outer_workflow), exact_tools=True)
         self.workflow_index_open()
@@ -843,8 +835,7 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs: []
 steps:
@@ -854,8 +845,7 @@ steps:
     label: checksum
     in:
       input: create_2/out_file1
-"""
-        )
+""")
         editor = self.components.workflow_editor
         self.assert_connected("create_2#out_file1", "checksum#input")
         node = editor.node._(label="create_2")
@@ -881,8 +871,7 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs: []
 steps:
@@ -895,8 +884,7 @@ steps:
     label: metadata_bam
     in:
       input_bam: create_2/out_file1
-"""
-        )
+""")
         self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
         editor = self.components.workflow_editor
         node = editor.node._(label="create_2")
@@ -906,8 +894,7 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype_in_subworkflow(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs: []
 steps:
@@ -926,8 +913,7 @@ steps:
             outputSource: create_2/out_file1
   metadata_bam:
     tool_id: metadata_bam
-"""
-        )
+""")
         editor = self.components.workflow_editor
         node = editor.node._(label="nested_workflow")
         node.wait_for_and_click()
@@ -941,8 +927,7 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_subworkflow(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs: []
 steps:
@@ -953,8 +938,7 @@ steps:
         steps:
           - tool_id: create_2
             label: create_2
-"""
-        )
+""")
         editor = self.components.workflow_editor
         node = editor.node._(label="nested_workflow")
         node.wait_for_and_click()
@@ -1014,8 +998,7 @@ steps:
         workflow_populator = self.workflow_populator
         child_workflow_name = self._get_random_name()
         workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
-        parent_workflow_id = workflow_populator.upload_yaml_workflow(
-            """class: GalaxyWorkflow
+        parent_workflow_id = workflow_populator.upload_yaml_workflow("""class: GalaxyWorkflow
 inputs:
   input_collection:
     type: collection
@@ -1026,8 +1009,7 @@ steps:
     label: multiple_versions
     state:
       foo: bar
-        """
-        )
+        """)
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
@@ -1170,8 +1152,7 @@ steps:
     @selenium_test
     def test_missing_tools(self):
         workflow_populator = self.workflow_populator
-        workflow_populator.upload_yaml_workflow(
-            """
+        workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   - id: input1
@@ -1180,8 +1161,7 @@ steps:
     label: first_cat
     state:
       foo: bar
-"""
-        )
+""")
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Tool is not installed")
@@ -1245,14 +1225,12 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_insert_input_handling(self):
-        self.open_in_workflow_editor(
-            """class: GalaxyWorkflow
+        self.open_in_workflow_editor("""class: GalaxyWorkflow
 inputs: []
 steps:
   build_list:
     tool_id: __BUILD_LIST__
-        """
-        )
+        """)
         editor = self.components.workflow_editor
         node = editor.node._(label="build_list")
         node.wait_for_and_click()
@@ -1338,8 +1316,7 @@ steps:
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_map_over_output_indicator(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   list:
@@ -1351,8 +1328,7 @@ inputs:
 steps:
   filter:
     tool_id: __FILTER_FROM_FILE__
-"""
-        )
+""")
         self.assert_node_output_is("filter#output_filtered", "any")
         self.workflow_editor_connect("list#output", "filter#input")
         self.assert_node_output_is("filter#output_filtered", "list")

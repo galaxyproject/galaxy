@@ -24,15 +24,13 @@ def test_from_directory():
     with open(os.path.join(dir_1, "foo.json"), "w") as f:
         json.dump(EXAMPLE_1, f)
     with open(os.path.join(dir_2, "seqanalysis.yml"), "w") as f:
-        f.write(
-            """
+        f.write("""
 name: Sequence Analysis
 type: generic
 items:
 - type: workflow
   id: 12345abcd
-"""
-        )
+""")
 
     config_param = f"{os.path.abspath(dir_1)},{os.path.abspath(dir_2)}"
     try:

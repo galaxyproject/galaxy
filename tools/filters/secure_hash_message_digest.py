@@ -3,6 +3,7 @@
 """
 A script for calculating secure hashes / message digests.
 """
+
 import hashlib
 import optparse
 from collections import OrderedDict
@@ -24,7 +25,7 @@ def __main__():
     )
     parser.add_option("-i", "--input", dest="input", action="store", type="string", help="Input filename")
     parser.add_option("-o", "--output", dest="output", action="store", type="string", help="Output filename")
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     algorithms = OrderedDict()
     for algorithm in options.algorithms:

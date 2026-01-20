@@ -67,7 +67,7 @@ def __main__():
     parser.add_option("-p", "--params", dest="params", help="Parameter setting to use (pre_set or full)")
     parser.add_option("-j", "--jarBin", dest="jarBin", default="", help="The path to where jars are stored")
     parser.add_option("-f", "--jarFile", dest="jarFile", help="The file name of the jar file to use")
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     # make temp directory for srma
     tmp_dir = tempfile.mkdtemp()

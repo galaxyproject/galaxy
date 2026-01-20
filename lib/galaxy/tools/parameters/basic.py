@@ -2257,7 +2257,7 @@ class DataToolParameter(BaseDataToolParameter):
                     )
                 match = dataset_matcher.hda_match(value_to_check)
                 if match and match.implicit_conversion:
-                    value_to_check.implicit_conversion = True  # type:ignore[attr-defined]
+                    value_to_check.implicit_conversion = True  # type: ignore[attr-defined]
             elif isinstance(value_to_check, HistoryDatasetCollectionAssociation):
                 if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset collection has been deleted.", self.name)

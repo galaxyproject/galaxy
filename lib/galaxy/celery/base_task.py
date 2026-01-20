@@ -94,7 +94,7 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
         if not result:
             sched_time = now + datetime.timedelta(seconds=task_interval_secs)
             upsert_stmt = (
-                ps_insert(CeleryUserRateLimit)  # type:ignore[attr-defined]
+                ps_insert(CeleryUserRateLimit)  # type: ignore[attr-defined]
                 .values(user_id=user_id, last_scheduled_time=now)
                 .returning(CeleryUserRateLimit.last_scheduled_time)
                 .on_conflict_do_update(index_elements=["user_id"], set_=dict(last_scheduled_time=sched_time))
