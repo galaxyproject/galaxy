@@ -6,6 +6,10 @@ import type { FilterFileSourcesOptions } from "@/api/remoteFiles";
 import type { components } from "@/api/schema";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { borderVariant } from "@/components/Common/Wizard/utils";
+import {
+    AVAILABLE_INVOCATION_EXPORT_PLUGINS,
+    type InvocationExportPlugin,
+} from "@/components/Workflow/Invocation/Export/Plugins";
 import { useFileSources } from "@/composables/fileSources";
 import { useMarkdown } from "@/composables/markdown";
 import localize from "@/utils/localization";
@@ -18,12 +22,6 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 export type WriteStoreToPayload = components["schemas"]["WriteStoreToPayload"];
 type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
-
-interface ExportFormat {
-    id: string;
-    title: string;
-    markdownDescription: string;
-}
 
 interface Props {
     initialConfig?: Partial<WriteStoreToPayload> & { fileName?: string; directory?: string };
@@ -49,24 +47,15 @@ const includeFiles = ref(props.initialConfig.include_files ?? true);
 const includeHidden = ref(props.initialConfig.include_hidden ?? false);
 const includeDeleted = ref(props.initialConfig.include_deleted ?? false);
 
-const exportFormats: ExportFormat[] = [
-    {
-        id: "rocrate.zip",
-        title: "RO-Crate (ZIP)",
-        markdownDescription: `**Research Object Crate (RO-Crate)** is a community standard for packaging research data with their metadata.
-
-This format preserves the complete workflow run including inputs, outputs, and provenance information.`,
-    },
-    {
-        id: "tar.gz",
-        title: "Galaxy Archive (tar.gz)",
-        markdownDescription: `**Galaxy Archive** format packages the workflow invocation in a compressed tar archive.
-
-This is a simple format suitable for backup and transfer.`,
-    },
+// Use RO-Crate and default-file plugins for export-on-complete (exclude BCO)
+const exportPlugins: InvocationExportPlugin[] = [
+    AVAILABLE_INVOCATION_EXPORT_PLUGINS.get("ro-crate")!,
+    AVAILABLE_INVOCATION_EXPORT_PLUGINS.get("default-file")!,
 ];
 
-const selectedFormat = computed(() => exportFormats.find((f) => f.id === modelStoreFormat.value) || exportFormats[0]);
+const selectedPlugin = computed(
+    () => exportPlugins.find((p) => p.exportParams.modelStoreFormat === modelStoreFormat.value) || exportPlugins[0],
+);
 
 const directoryDescription = computed(() => localize("Select a 'repository' to export the workflow results to."));
 const nameDescription = computed(() => localize("Give the exported file a name."));
@@ -122,16 +111,16 @@ function onCancel() {
             <div v-if="wizard.isCurrent('select-format')">
                 <BCardGroup deck>
                     <BCard
-                        v-for="fmt in exportFormats"
-                        :key="fmt.id"
-                        :data-export-format="fmt.id"
+                        v-for="plugin in exportPlugins"
+                        :key="plugin.id"
+                        :data-export-format="plugin.exportParams.modelStoreFormat"
                         class="wizard-selection-card"
-                        :border-variant="borderVariant(modelStoreFormat === fmt.id)"
-                        @click="modelStoreFormat = fmt.id as ModelStoreFormat">
+                        :border-variant="borderVariant(modelStoreFormat === plugin.exportParams.modelStoreFormat)"
+                        @click="modelStoreFormat = plugin.exportParams.modelStoreFormat">
                         <BCardTitle>
-                            <b>{{ fmt.title }}</b>
+                            <b>{{ plugin.title }}</b>
                         </BCardTitle>
-                        <div v-html="renderMarkdown(fmt.markdownDescription)" />
+                        <div v-html="renderMarkdown(plugin.markdownDescription)" />
                     </BCard>
                 </BCardGroup>
             </div>
@@ -188,7 +177,7 @@ function onCancel() {
 
                 <div class="summary">
                     <h5>Summary</h5>
-                    <div><strong>Format:</strong> {{ selectedFormat?.title }}</div>
+                    <div><strong>Format:</strong> {{ selectedPlugin?.title }}</div>
                     <div>
                         <strong>Destination:</strong>
                         <FileSourceNameSpan v-if="directory" :uri="directory" class="text-primary" />
