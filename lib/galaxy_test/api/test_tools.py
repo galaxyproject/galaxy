@@ -778,6 +778,89 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert run_response.status_code == 400
             assert run_response.json()["err_msg"] == "Dataset collection has no element_index with key 100."
 
+    @skip_without_tool("__CONVERT_SAMPLE_SHEET__")
+    def test_convert_sample_sheet_to_list(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            # Create sample_sheet collection with column_definitions and rows
+            create_response = self.dataset_collection_populator.create_sample_sheet(
+                history_id,
+                contents=[("sample1", "content1"), ("sample2", "content2")],
+                column_definitions=[
+                    {"type": "int", "name": "replicate", "optional": False},
+                    {"type": "string", "name": "treatment", "optional": False},
+                ],
+                rows={"sample1": [1, "control"], "sample2": [2, "treatment"]},
+            )
+            self._assert_status_code_is(create_response, 200)
+            sample_sheet_hdca = create_response.json()
+            assert sample_sheet_hdca["collection_type"] == "sample_sheet"
+            assert sample_sheet_hdca["column_definitions"] is not None
+
+            # Run convert sample sheet tool
+            inputs = {"input": {"src": "hdca", "id": sample_sheet_hdca["id"]}}
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            response = self._run("__CONVERT_SAMPLE_SHEET__", history_id, inputs, assert_ok=True)
+
+            # Verify output is a list collection without sample sheet metadata
+            output_collections = response["output_collections"]
+            assert len(output_collections) == 1
+            self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            converted_hdca = self.dataset_populator.get_history_collection_details(
+                history_id, hid=output_collections[0]["hid"]
+            )
+            assert converted_hdca["collection_type"] == "list"
+            assert converted_hdca.get("column_definitions") is None
+            assert len(converted_hdca["elements"]) == 2
+            element_identifiers = [e["element_identifier"] for e in converted_hdca["elements"]]
+            assert "sample1" in element_identifiers
+            assert "sample2" in element_identifiers
+
+    @skip_without_tool("__CONVERT_SAMPLE_SHEET__")
+    def test_convert_sample_sheet_paired_to_list_paired(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            # Create sample_sheet:paired collection
+            pair_identifiers = self.dataset_collection_populator.pair_identifiers(history_id, ["forward", "reverse"])
+            element_identifiers = [
+                {
+                    "name": "sample1",
+                    "collection_type": "paired",
+                    "src": "new_collection",
+                    "element_identifiers": pair_identifiers,
+                }
+            ]
+            create_response = self.dataset_collection_populator.create_sample_sheet(
+                history_id,
+                contents=element_identifiers,
+                column_definitions=[{"type": "int", "name": "replicate", "default_value": 0, "optional": False}],
+                rows={"sample1": [42]},
+                collection_type="sample_sheet:paired",
+            )
+            self._assert_status_code_is(create_response, 200)
+            sample_sheet_hdca = create_response.json()
+            assert sample_sheet_hdca["collection_type"] == "sample_sheet:paired"
+            assert sample_sheet_hdca["column_definitions"] is not None
+
+            # Run convert sample sheet tool
+            inputs = {"input": {"src": "hdca", "id": sample_sheet_hdca["id"]}}
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            response = self._run("__CONVERT_SAMPLE_SHEET__", history_id, inputs, assert_ok=True)
+
+            # Verify output is a list:paired collection without sample sheet metadata
+            output_collections = response["output_collections"]
+            assert len(output_collections) == 1
+            self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            converted_hdca = self.dataset_populator.get_history_collection_details(
+                history_id, hid=output_collections[0]["hid"]
+            )
+            assert converted_hdca["collection_type"] == "list:paired"
+            assert converted_hdca.get("column_definitions") is None
+            assert len(converted_hdca["elements"]) == 1
+            # Verify nested paired structure is preserved
+            element = converted_hdca["elements"][0]
+            assert element["element_type"] == "dataset_collection"
+            assert element["object"]["collection_type"] == "paired"
+            assert len(element["object"]["elements"]) == 2
+
     @skip_without_tool("__FILTER_FAILED_DATASETS__")
     def test_filter_failed_list(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:

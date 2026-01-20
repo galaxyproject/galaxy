@@ -3607,6 +3607,47 @@ class BaseDatasetCollectionPopulator:
         element_identifiers = [hda_to_identifier(i, hda) for (i, hda) in enumerate(hdas)]
         return element_identifiers
 
+    def create_sample_sheet(
+        self,
+        history_id: str,
+        contents: list,
+        column_definitions: list,
+        rows: dict,
+        name: str = "test sample sheet",
+        collection_type: str = "sample_sheet",
+    ):
+        """Create a sample_sheet collection with metadata.
+
+        Args:
+            history_id: The history ID to create the collection in.
+            contents: A list of 2-tuples of form (name, dataset_content) for flat sample sheets,
+                      or a list of element identifiers dicts for nested collections.
+            column_definitions: List of column definition dicts.
+            rows: Dict mapping element identifiers to row values.
+            name: Name for the collection.
+            collection_type: The collection type (sample_sheet, sample_sheet:paired, etc).
+
+        Returns:
+            Response from creating the collection.
+        """
+        # For flat sample sheets, create element identifiers from contents
+        if contents and isinstance(contents[0], tuple):
+            element_identifiers = self.list_identifiers(history_id, contents)
+        else:
+            # Assume contents is already element_identifiers for nested collections
+            element_identifiers = contents
+
+        payload = dict(
+            name=name,
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=element_identifiers,
+            collection_type=collection_type,
+            column_definitions=column_definitions,
+            rows=rows,
+        )
+        return self._create_collection(payload)
+
     def __create(self, payload, wait=False):
         # Create a collection - either from existing datasets using collection creation API
         # or from direct uploads with the fetch API. Dispatch on "targets" keyword in payload

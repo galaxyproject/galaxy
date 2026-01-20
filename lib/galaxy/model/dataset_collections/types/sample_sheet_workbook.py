@@ -618,5 +618,24 @@ def _list_to_sample_sheet_collection_type(input_collection_type: str) -> SampleS
         )
 
 
+def _sample_sheet_to_list_collection_type(input_collection_type: str) -> str:
+    """Convert sample_sheet collection types to corresponding list collection types.
+
+    Converts sample_sheet types to list types (e.g., sample_sheet:paired -> list:paired).
+    """
+    if input_collection_type == "sample_sheet":
+        return "list"
+    elif input_collection_type == "sample_sheet:paired":
+        return "list:paired"
+    elif input_collection_type == "sample_sheet:paired_or_unpaired":
+        return "list:paired_or_unpaired"
+    elif input_collection_type == "sample_sheet:record":
+        return "list:record"
+    else:
+        raise RequestParameterInvalidException(
+            f"Invalid collection type for sample sheet conversion: {input_collection_type}"
+        )
+
+
 def _prefix_column_to_column_target(column_header: FetchPrefixColumn) -> ColumnTarget:
     return target_model_by_type(column_header.type)
