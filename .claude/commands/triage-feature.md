@@ -11,7 +11,7 @@ Parse the issue number and work level from $ARGUMENTS. Work levels control triag
 
 You will be supplied a Github issue number for a feature request to triage. A Galaxy developer will be assigned the issue but your job is to structure the conversation around the feature.
 
-Fetch the issue "gh view issue" and write the issue contents to ``FEATURE_<#>.md``.
+Fetch the issue using "gh issue view <number>" and write the issue contents to ``FEATURE_<#>.md``.
 
 In serial launch subagents to perform actions to help in the triage process. As the agent responsible for the triage process - please read the artifacts generated from subagents and direct the process as it makes sense. Your job is direct the process though - do not try to implement the feature or do research yourself.
 

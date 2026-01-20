@@ -11,7 +11,7 @@ Parse the issue number and work level from $ARGUMENTS. Work levels control triag
 
 You will be supplied a Github issue number to triage. A Galaxy developer will be assigned the issue but your job is to structure the conversation around the issue.
 
-Fetch the issue "gh view issue" and write the issue contents to ``ISSUE_<#>.md``.
+Fetch the issue using "gh issue view <number>" and write the issue contents to ``ISSUE_<#>.md``.
 
 Galaxy versions look like 24.1, 26.2, etc.. and these correspond to branches such as release_24.1, release_26.2, etc.. Be sure you're on the target branch before continuing.
 
