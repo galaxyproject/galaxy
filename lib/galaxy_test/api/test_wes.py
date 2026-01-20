@@ -755,33 +755,39 @@ steps:
         dataset = self.dataset_populator.new_dataset(history_id, content="test data")
         return self._ds_entry(dataset)
 
-    def _wes_post(self, endpoint: str, authenticated: bool = True, **kwargs: Any) -> requests.Response:
+    def _wes_post(
+        self,
+        endpoint: str,
+        data: Optional[dict[str, Any]] = None,
+        files: Optional[dict[str, Any]] = None,
+        authenticated: bool = True,
+    ) -> requests.Response:
         """Make POST request to WES API endpoint.
 
         Args:
-            endpoint: API endpoint path
+            endpoint: API endpoint path (e.g., "ga4gh/wes/v1/runs")
+            data: Form data to send
+            files: Files to upload
             authenticated: If True, includes API key header (default: True)
-            **kwargs: Additional arguments to pass to requests.post()
         """
-        api_url = self._url_join(endpoint)
-        headers = kwargs.pop("headers", {})
-        if authenticated:
-            headers["x-api-key"] = self.galaxy_interactor.api_key
-        return requests.post(api_url, headers=headers, **kwargs)
+        url = self._url_join(endpoint)
+        return self._post(url, data=data, files=files, anon=not authenticated)
 
-    def _wes_get(self, endpoint: str, authenticated: bool = True, **kwargs: Any) -> requests.Response:
+    def _wes_get(
+        self,
+        endpoint: str,
+        params: Optional[dict[str, Any]] = None,
+        authenticated: bool = True,
+    ) -> requests.Response:
         """Make GET request to WES API endpoint.
 
         Args:
-            endpoint: API endpoint path
+            endpoint: API endpoint path (e.g., "ga4gh/wes/v1/runs")
+            params: Query parameters
             authenticated: If True, includes API key header (default: True)
-            **kwargs: Additional arguments to pass to requests.get()
         """
-        api_url = self._url_join(endpoint)
-        headers = kwargs.pop("headers", {})
-        if authenticated:
-            headers["x-api-key"] = self.galaxy_interactor.api_key
-        return requests.get(api_url, headers=headers, **kwargs)
+        url = self._url_join(endpoint)
+        return self._get(url, data=params, anon=not authenticated)
 
     def _submit_wes_workflow(
         self,
@@ -918,15 +924,6 @@ steps:
             job_id: Job ID
             output_type: "stdout" or "stderr" (default: "stdout")
         """
-        api_key = self.galaxy_interactor.api_key
-        headers = {}
-        if api_key:
-            headers["x-api-key"] = api_key
-
-        endpoint = f"api/jobs/{job_id}/{output_type}"
-        response = requests.get(
-            urljoin(self.url, endpoint),
-            headers=headers,
-        )
+        response = self._get(f"jobs/{job_id}/{output_type}")
         self._assert_status_code_is(response, 200)
         return response.text
