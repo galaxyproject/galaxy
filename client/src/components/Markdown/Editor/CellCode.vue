@@ -4,14 +4,13 @@
 
 <script setup>
 import ace from "ace-builds";
-import { debounce } from "lodash";
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-
 // Static imports for ace modes and themes - Vite requires static analysis for ?url imports
 import modeJsonUrl from "ace-builds/src-noconflict/mode-json?url";
 import modeMarkdownUrl from "ace-builds/src-noconflict/mode-markdown?url";
 import modePythonUrl from "ace-builds/src-noconflict/mode-python?url";
 import themeGithubLightUrl from "ace-builds/src-noconflict/theme-github_light_default?url";
+import { debounce } from "lodash";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const modeUrls = {
     json: modeJsonUrl,
