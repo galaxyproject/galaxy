@@ -4,6 +4,7 @@ from typing import (
     Annotated,
     Any,
     Generic,
+    Literal,
     Optional,
     Union,
 )
@@ -17,7 +18,6 @@ from pydantic import (
     UUID4,
 )
 from typing_extensions import (
-    Literal,
     TypeAliasType,
 )
 

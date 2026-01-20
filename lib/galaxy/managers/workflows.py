@@ -9,6 +9,7 @@ from typing import (
     NamedTuple,
     Optional,
     TYPE_CHECKING,
+    TypeAlias,
     Union,
 )
 
@@ -40,9 +41,6 @@ from sqlalchemy.orm import (
     aliased,
     joinedload,
     subqueryload,
-)
-from typing_extensions import (
-    TypeAlias,
 )
 
 from galaxy import (

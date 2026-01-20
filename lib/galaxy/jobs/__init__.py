@@ -15,7 +15,10 @@ import shutil
 import sys
 import time
 import traceback
-from collections.abc import Iterable
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from dataclasses import (
     dataclass,
     field,
@@ -23,7 +26,6 @@ from dataclasses import (
 from json import loads
 from typing import (
     Any,
-    Callable,
     cast,
     Optional,
     TYPE_CHECKING,

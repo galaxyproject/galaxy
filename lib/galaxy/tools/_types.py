@@ -22,10 +22,9 @@ provide strong traditional typing semantics.
 
 from typing import (
     Any,
+    Literal,
     Union,
 )
-
-from typing_extensions import Literal
 
 # Input dictionary from the API, may include map/reduce instructions. Objects are referenced by "src"
 # dictionaries and encoded IDS.

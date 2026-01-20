@@ -37,10 +37,10 @@ A method that requires a user but not a history should declare its
 # more checks against this issue.
 import abc
 import string
+from collections.abc import Callable
 from json import dumps
 from typing import (
     Any,
-    Callable,
     cast,
     Literal,
     Optional,

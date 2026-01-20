@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import (
+    Literal,
     Optional,
     Union,
 )
@@ -9,7 +10,6 @@ from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,

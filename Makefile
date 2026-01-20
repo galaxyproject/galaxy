@@ -62,8 +62,8 @@ format:  ## Format Python code base
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
 
-pyupgrade:  ## Convert older code patterns to Python 3.8/3.9 idiomatic ones
-	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY38_PYUPGRADE_PATHS))' | xargs pyupgrade --py39-plus
+pyupgrade:  ## Convert older code patterns to Python 3.8/3.10 idiomatic ones
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY38_PYUPGRADE_PATHS))' | xargs pyupgrade --py310-plus
 	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY38_PYUPGRADE_PATHS))' | xargs auto-walrus
 	ack --type=python -f $(PY38_PYUPGRADE_PATHS) | xargs pyupgrade --py38-plus
 

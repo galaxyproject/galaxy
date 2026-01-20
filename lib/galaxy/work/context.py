@@ -1,11 +1,10 @@
 import abc
 from typing import (
     Any,
+    Literal,
     Optional,
     TYPE_CHECKING,
 )
-
-from typing_extensions import Literal
 
 from galaxy.managers.context import ProvidesHistoryContext
 

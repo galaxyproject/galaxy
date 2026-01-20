@@ -1,7 +1,7 @@
 """Pytest-specific utility functions and decorators for selenium unit tests."""
 
+from collections.abc import Callable
 from typing import (
-    Callable,
     TypeVar,
     Union,
 )

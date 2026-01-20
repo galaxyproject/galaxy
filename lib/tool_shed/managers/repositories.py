@@ -5,10 +5,10 @@ Manager and Serializer for TS repositories.
 import json
 import logging
 from collections import namedtuple
+from collections.abc import Callable
 from time import strftime
 from typing import (
     Any,
-    Callable,
     cast,
     Optional,
     Union,

@@ -1,8 +1,8 @@
 # Contains parameters that are used in Display Applications
 import mimetypes
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import (
-    Callable,
     Optional,
     TYPE_CHECKING,
     Union,

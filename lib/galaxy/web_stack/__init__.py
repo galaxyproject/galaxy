@@ -5,8 +5,8 @@ import multiprocessing
 import os
 import sys
 import threading
+from collections.abc import Callable
 from typing import (
-    Callable,
     Optional,
     TYPE_CHECKING,
 )

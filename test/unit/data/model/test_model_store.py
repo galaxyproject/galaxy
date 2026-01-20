@@ -660,23 +660,12 @@ def validate_invocation_collection_crate_directory(crate_directory):
 
 
 def validate_with_roc_validator(crate_directory, profile):
-    # roc-validator changed the ValidationSettings argument data_path to rocrate_uri in
-    # v5.0.0+, but also dropped support for Python 3.9
-    if sys.version_info >= (3, 10):
-        settings = services.ValidationSettings(
-            rocrate_uri=crate_directory,
-            profile_identifier=profile,
-            requirement_severity=models.Severity.REQUIRED,
-            abort_on_first=False,  # do not stop on first issue
-        )
-    else:
-        settings = services.ValidationSettings(
-            data_path=crate_directory,
-            profile_identifier=profile,
-            requirement_severity=models.Severity.REQUIRED,
-            abort_on_first=False,  # do not stop on first issue
-            http_cache_timeout=0,  # do not use cache
-        )
+    settings = services.ValidationSettings(
+        rocrate_uri=crate_directory,
+        profile_identifier=profile,
+        requirement_severity=models.Severity.REQUIRED,
+        abort_on_first=False,  # do not stop on first issue
+    )
 
     result = services.validate(settings)
 

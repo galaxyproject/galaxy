@@ -9,11 +9,13 @@ import os
 import re
 import string
 import subprocess
-from collections.abc import Iterable
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from itertools import islice
 from typing import (
     Any,
-    Callable,
     Optional,
 )
 

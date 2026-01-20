@@ -6,11 +6,11 @@ from argparse import (
     ArgumentParser,
     Namespace,
 )
+from collections.abc import Callable
 from io import StringIO
 from textwrap import TextWrapper
 from typing import (
     Any,
-    Callable,
     NamedTuple,
     Optional,
 )

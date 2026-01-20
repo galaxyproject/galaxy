@@ -8,10 +8,10 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import (
     Any,
-    Callable,
     Optional,
     TYPE_CHECKING,
     Union,

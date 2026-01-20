@@ -1,9 +1,11 @@
 import os
 import uuid
-from collections.abc import Iterator
+from collections.abc import (
+    Callable,
+    Iterator,
+)
 from contextlib import contextmanager
 from typing import (
-    Callable,
     Optional,
 )
 

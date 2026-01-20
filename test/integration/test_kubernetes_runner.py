@@ -11,12 +11,12 @@ import subprocess
 import tempfile
 import time
 from typing import (
+    Literal,
     Optional,
     overload,
 )
 
 import pytest
-from typing_extensions import Literal
 
 from galaxy.model import Job
 from galaxy.tool_util.verify.wait import timeout_type

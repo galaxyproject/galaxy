@@ -3,6 +3,7 @@ from enum import Enum
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -17,7 +18,6 @@ from pydantic import (
     TypeAdapter,
     UUID4,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import Model

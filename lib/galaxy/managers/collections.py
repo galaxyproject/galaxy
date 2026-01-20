@@ -1,6 +1,7 @@
 import logging
 from typing import (
     Any,
+    Literal,
     Optional,
     overload,
     TYPE_CHECKING,
@@ -12,7 +13,6 @@ from sqlalchemy.orm import (
     joinedload,
     Query,
 )
-from typing_extensions import Literal
 
 from galaxy import model
 from galaxy.datatypes.registry import Registry

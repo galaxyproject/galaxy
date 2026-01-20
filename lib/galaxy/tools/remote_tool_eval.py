@@ -3,8 +3,8 @@ import os
 import shutil
 import tempfile
 import traceback
+from collections.abc import Callable
 from typing import (
-    Callable,
     NamedTuple,
 )
 

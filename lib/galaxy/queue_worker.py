@@ -135,7 +135,7 @@ class ControlTask:
                     while self.response is self._response:
                         self.connection.drain_events(timeout=timeout)
                 return self.response
-        except socket.timeout:
+        except TimeoutError:
             log.exception("Error waiting for task: '%s' sent with routing key '%s'", payload, routing_key)
         except Exception:
             log.exception("Error queueing async task: '%s'. for %s", payload, routing_key)

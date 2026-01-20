@@ -1,9 +1,9 @@
 import importlib
 import logging
+from collections.abc import Callable
 from inspect import getfullargspec
 from types import ModuleType
 from typing import (
-    Callable,
     TYPE_CHECKING,
     Union,
 )

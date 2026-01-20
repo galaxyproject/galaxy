@@ -4,6 +4,7 @@ from typing import (
     Annotated,
     Any,
     Generic,
+    Literal,
     Optional,
     Union,
 )
@@ -12,9 +13,6 @@ from pydantic import (
     ConfigDict,
     Field,
     RootModel,
-)
-from typing_extensions import (
-    Literal,
 )
 
 from galaxy.schema.fields import (

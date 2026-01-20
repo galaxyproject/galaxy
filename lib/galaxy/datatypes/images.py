@@ -10,6 +10,7 @@ import struct
 from collections.abc import Iterator
 from typing import (
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -18,7 +19,6 @@ import mrcfile
 import numpy as np
 import png
 import tifffile
-from typing_extensions import Literal
 
 try:
     import PIL
