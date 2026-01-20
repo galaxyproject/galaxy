@@ -51,7 +51,7 @@ class RDMRepositoryInteractor:
     """
 
     def __init__(self, repository_url: str, plugin: "RDMFilesSource"):
-        self._repository_url = repository_url
+        self._repository_url = self._strip_last_slash(repository_url)
         self._plugin = plugin
 
     @property
@@ -137,6 +137,12 @@ class RDMRepositoryInteractor:
         The file will be downloaded to the file system at the given file_path.
         """
         raise NotImplementedError()
+
+    def _strip_last_slash(self, url: str) -> str:
+        """Utility method to strip the last slash from a URL if present."""
+        if url.endswith("/"):
+            return url[:-1]
+        return url
 
 
 class RDMFilesSource(BaseFilesSource[RDMFileSourceTemplateConfiguration, RDMFileSourceConfiguration]):
