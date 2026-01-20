@@ -35,7 +35,8 @@
                     trim
                     @keyup.enter="addPath"
                     @keydown.191.capture.prevent.stop="addPath"
-                    @keydown.8.capture="removeLastPath" />
+                    @keydown.8.capture="removeLastPath"
+                    @blur="handleBlur" />
             </b-breadcrumb-item>
         </b-breadcrumb>
 
@@ -139,11 +140,22 @@ export default {
         },
         addPath({ key }) {
             if ((key === "Enter" || key === "/") && this.isValidName) {
-                const newFolder = this.currentDirectoryName;
-                this.pathChunks.push({ pathChunk: newFolder, editable: true });
-                this.currentDirectoryName = "";
+                this.addDirectoryToPath();
+            }
+        },
+        handleBlur() {
+            if (this.currentDirectoryName && this.isValidName) {
+                this.addDirectoryToPath();
+            } else {
+                // If the input was touched let's propagate the change either way.
                 this.updateURL();
             }
+        },
+        addDirectoryToPath() {
+            const newFolder = this.currentDirectoryName;
+            this.pathChunks.push({ pathChunk: newFolder, editable: true });
+            this.currentDirectoryName = "";
+            this.updateURL();
         },
         updateURL(isReset = false) {
             let url = undefined;
