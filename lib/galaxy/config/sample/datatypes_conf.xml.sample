@@ -599,8 +599,8 @@
     <datatype extension="odgi" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs self index used by odgi." display_in_upload="true"/>
     <datatype extension="vg" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" description="Genomic variation graphs." display_in_upload="true"/>
     <datatype extension="hal" type="galaxy.datatypes.binary:Binary" subclass="true" description="Hierarchical Alignment Format" display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/hal"/>
-    <datatype extension="pg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Pairwise genome alignment graph." display_in_upload="true"/>
-    <datatype extension="hg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Hierarchical multi-genome alignment graph." display_in_upload="true"/>
+    <datatype extension="hal.pg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Pairwise genome alignment graph." display_in_upload="true"/>
+    <datatype extension="hal.hg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Hierarchical multi-genome alignment graph." display_in_upload="true"/>
     <datatype extension="xg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs with vg index." display_in_upload="true"/>
     <datatype extension="gam" type="galaxy.datatypes.binary:Binary" subclass="true" description="Binary file storing sequencing read alignments to genome variation graphs, used by the VG toolkit." display_in_upload="true" description_url="https://github.com/vgteam/vg/wiki/File-Formats#gam-graph-alignment--map-vgs-bam"/>
     <datatype extension="protobuf2" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
