@@ -521,7 +521,7 @@ onBeforeMount(() => {
                     </div>
 
                     <!-- Send notification -->
-                    <div class="settings-row">
+                    <div v-if="isConfigLoaded && config.enable_notification_system" class="settings-row">
                         <GCheckbox
                             v-model="sendNotificationOnComplete"
                             toggle

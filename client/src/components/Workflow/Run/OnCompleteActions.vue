@@ -2,6 +2,7 @@
 import { BButton, BFormCheckbox, BFormGroup, BModal } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
+import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 
 import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
@@ -30,7 +31,12 @@ const emit = defineEmits<{
     (e: "input", value: OnCompleteAction[]): void;
 }>();
 
+const { config, isConfigLoaded } = useConfig(true);
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
+
+const notificationSystemEnabled = computed(
+    () => isConfigLoaded.value && config.value?.enable_notification_system === true,
+);
 
 const showExportWizard = ref(false);
 
@@ -116,7 +122,7 @@ const exportSummary = computed(() => {
         <template v-slot:body>
             <p class="text-muted">Configure actions to run automatically when this workflow invocation completes.</p>
 
-            <BFormGroup>
+            <BFormGroup v-if="notificationSystemEnabled">
                 <BFormCheckbox v-model="state.sendNotification" switch data-test-id="send-notification-checkbox">
                     <span class="font-weight-bold">Send notification</span>
                     <br />
