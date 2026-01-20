@@ -1,27 +1,20 @@
 <script setup lang="ts">
-import { BButton, BCard, BCardGroup, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import type { FilterFileSourcesOptions } from "@/api/remoteFiles";
-import type { components } from "@/api/schema";
+import type { ModelStoreFormat } from "@/api";
+import type { WriteStoreToPayload } from "@/api/exports";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
-import { borderVariant } from "@/components/Common/Wizard/utils";
 import {
     AVAILABLE_INVOCATION_EXPORT_PLUGINS,
     type InvocationExportPlugin,
 } from "@/components/Workflow/Invocation/Export/Plugins";
-import { useFileSources } from "@/composables/fileSources";
-import { useMarkdown } from "@/composables/markdown";
-import localize from "@/utils/localization";
 
+import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
+import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
+import ExportRemoteSourceSelector from "@/components/Common/ExportRemoteSourceSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
-import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
-
-const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
-
-export type WriteStoreToPayload = components["schemas"]["WriteStoreToPayload"];
-type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 
 interface Props {
     initialConfig?: Partial<WriteStoreToPayload> & { fileName?: string; directory?: string };
@@ -35,9 +28,6 @@ const emit = defineEmits<{
     (e: "configured", config: WriteStoreToPayload): void;
     (e: "cancel"): void;
 }>();
-
-const defaultExportFilterOptions: FilterFileSourcesOptions = { exclude: ["rdm"] };
-const { hasWritable: hasWritableFileSources } = useFileSources(defaultExportFilterOptions);
 
 // Internal state for the wizard UI
 const directory = ref(props.initialConfig.directory || "");
@@ -56,9 +46,6 @@ const exportPlugins: InvocationExportPlugin[] = [
 const selectedPlugin = computed(
     () => exportPlugins.find((p) => p.exportParams.modelStoreFormat === modelStoreFormat.value) || exportPlugins[0],
 );
-
-const directoryDescription = computed(() => localize("Select a 'repository' to export the workflow results to."));
-const nameDescription = computed(() => localize("Give the exported file a name."));
 
 const wizard = useWizard({
     "select-format": {
@@ -98,6 +85,10 @@ function onSubmit() {
 function onCancel() {
     emit("cancel");
 }
+
+function onFormatChange(format: string) {
+    modelStoreFormat.value = format as ModelStoreFormat;
+}
 </script>
 
 <template>
@@ -109,69 +100,31 @@ function onCancel() {
             container-component="div"
             @submit="onSubmit">
             <div v-if="wizard.isCurrent('select-format')">
-                <BCardGroup deck>
-                    <BCard
-                        v-for="plugin in exportPlugins"
-                        :key="plugin.id"
-                        :data-export-format="plugin.exportParams.modelStoreFormat"
-                        class="wizard-selection-card"
-                        :border-variant="borderVariant(modelStoreFormat === plugin.exportParams.modelStoreFormat)"
-                        @click="modelStoreFormat = plugin.exportParams.modelStoreFormat">
-                        <BCardTitle>
-                            <b>{{ plugin.title }}</b>
-                        </BCardTitle>
-                        <div v-html="renderMarkdown(plugin.markdownDescription)" />
-                    </BCard>
-                </BCardGroup>
+                <ExportFormatSelector
+                    :model-value="modelStoreFormat"
+                    :plugins="exportPlugins"
+                    @update:model-value="onFormatChange" />
             </div>
 
             <div v-if="wizard.isCurrent('select-destination')">
-                <p v-if="!hasWritableFileSources" class="text-warning">
-                    No writable file sources are configured. Please contact your administrator.
-                </p>
-                <template v-else>
-                    <BFormGroup
-                        id="fieldset-directory"
-                        label-for="directory"
-                        :description="directoryDescription"
-                        class="mt-3">
-                        <FilesInput
-                            id="directory"
-                            v-model="directory"
-                            mode="directory"
-                            :require-writable="true"
-                            :filter-options="defaultExportFilterOptions"
-                            data-test-id="export-destination-input" />
-                    </BFormGroup>
-
-                    <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
-                        <div class="d-flex align-items-center">
-                            <BFormInput
-                                id="name"
-                                v-model="fileName"
-                                placeholder="Name"
-                                required
-                                data-test-id="export-file-name-input" />
-                            <span class="ml-2 text-muted">.{{ modelStoreFormat }}</span>
-                        </div>
-                    </BFormGroup>
-                </template>
+                <ExportRemoteSourceSelector
+                    :directory="directory"
+                    :file-name="fileName"
+                    :file-extension="modelStoreFormat"
+                    resource-name="workflow results"
+                    :show-file-name="true"
+                    @update:directory="directory = $event"
+                    @update:file-name="fileName = $event" />
             </div>
 
             <div v-if="wizard.isCurrent('configure-options')">
-                <BFormGroup label="Dataset files included in the export:">
-                    <BFormCheckbox v-model="includeFiles" switch data-test-id="include-files-checkbox">
-                        Include Active Files
-                    </BFormCheckbox>
-
-                    <BFormCheckbox v-model="includeDeleted" switch data-test-id="include-deleted-checkbox">
-                        Include Deleted (not purged)
-                    </BFormCheckbox>
-
-                    <BFormCheckbox v-model="includeHidden" switch data-test-id="include-hidden-checkbox">
-                        Include Hidden
-                    </BFormCheckbox>
-                </BFormGroup>
+                <ExportIncludeOptions
+                    :include-files="includeFiles"
+                    :include-deleted="includeDeleted"
+                    :include-hidden="includeHidden"
+                    @update:include-files="includeFiles = $event"
+                    @update:include-deleted="includeDeleted = $event"
+                    @update:include-hidden="includeHidden = $event" />
 
                 <hr />
 
@@ -200,15 +153,6 @@ function onCancel() {
 </template>
 
 <style scoped lang="scss">
-.wizard-selection-card {
-    cursor: pointer;
-    transition: border-color 0.15s ease-in-out;
-
-    &:hover {
-        border-color: var(--bs-primary);
-    }
-}
-
 .summary {
     background-color: var(--bs-light);
     padding: 1rem;

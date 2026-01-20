@@ -2,16 +2,23 @@
 import { BButton, BFormCheckbox, BFormGroup, BModal } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
+import type { WriteStoreToPayload } from "@/api/exports";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 
-import ExportOnCompleteWizard, { type WriteStoreToPayload } from "./ExportOnCompleteWizard.vue";
+import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 
 interface OnCompleteAction {
     send_notification?: Record<string, never>;
     export_to_file_source?: WriteStoreToPayload;
+}
+
+interface ComponentState {
+    sendNotification: boolean;
+    exportEnabled: boolean;
+    exportConfig: WriteStoreToPayload;
 }
 
 interface Props {
@@ -32,16 +39,18 @@ const notificationSystemEnabled = computed(
 
 const showExportWizard = ref(false);
 
-const state = reactive({
+const defaultExportConfig: WriteStoreToPayload = {
+    target_uri: "",
+    model_store_format: "rocrate.zip",
+    include_files: true,
+    include_hidden: false,
+    include_deleted: false,
+};
+
+const state = reactive<ComponentState>({
     sendNotification: false,
     exportEnabled: false,
-    exportConfig: {
-        target_uri: "",
-        model_store_format: "rocrate.zip",
-        include_files: true,
-        include_hidden: false,
-        include_deleted: false,
-    } as WriteStoreToPayload,
+    exportConfig: { ...defaultExportConfig },
 });
 
 // Initialize state from value prop (Vue 2 style v-model)
@@ -92,13 +101,7 @@ function openExportWizard() {
 
 function clearExport() {
     state.exportEnabled = false;
-    state.exportConfig = {
-        target_uri: "",
-        model_store_format: "rocrate.zip",
-        include_files: true,
-        include_hidden: false,
-        include_deleted: false,
-    };
+    state.exportConfig = { ...defaultExportConfig };
 }
 
 const exportSummary = computed(() => {

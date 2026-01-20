@@ -6,6 +6,7 @@ import { BAlert, BFormInput, BModal, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
+import type { WriteStoreToPayload } from "@/api/exports";
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
 import type { ToolIdentifier } from "@/api/tools";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
@@ -27,7 +28,7 @@ import { invokeWorkflow } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
-import ExportOnCompleteWizard, { type WriteStoreToPayload } from "./ExportOnCompleteWizard.vue";
+import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
 import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
 import WorkflowRunGraph from "./WorkflowRunGraph.vue";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";

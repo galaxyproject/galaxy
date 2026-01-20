@@ -2,6 +2,10 @@ import { GalaxyApi, type ObjectExportTaskResponse } from "@/api";
 import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import type { components } from "./schema";
+
+export type WriteStoreToPayload = components["schemas"]["WriteStoreToPayload"];
+
 /**
  * Gets a list of recent export records for the current user.
  * This includes exports to remote file sources (not short-term storage downloads).
