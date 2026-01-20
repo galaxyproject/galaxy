@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import (
     Any,
     cast,
+    Literal,
     Union,
 )
 
@@ -18,7 +19,6 @@ from pydantic.json_schema import (
     GenerateJsonSchema as GenerateJsonSchema,
     JsonSchemaValue as JsonSchemaValue,
 )
-from typing_extensions import Literal
 
 
 def get_definitions(

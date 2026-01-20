@@ -1,4 +1,5 @@
 from typing import (
+    Literal,
     Optional,
     Union,
 )
@@ -8,7 +9,6 @@ from pydantic import (
     Field,
     RootModel,
 )
-from typing_extensions import Literal
 
 
 class BaseComment(BaseModel):

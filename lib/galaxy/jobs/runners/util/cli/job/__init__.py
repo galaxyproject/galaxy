@@ -7,8 +7,7 @@ from abc import (
     abstractmethod,
 )
 from enum import Enum
-
-from typing_extensions import TypeAlias
+from typing import TypeAlias
 
 try:
     from galaxy.model import Job

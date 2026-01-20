@@ -6,11 +6,13 @@ import io
 import logging
 import os
 import unicodedata
-from collections.abc import Mapping
+from collections.abc import (
+    Callable,
+    Mapping,
+)
 from math import inf
 from typing import (
     Any,
-    Callable,
     Optional,
     TYPE_CHECKING,
 )

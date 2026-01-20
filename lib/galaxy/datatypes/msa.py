@@ -2,8 +2,8 @@ import abc
 import logging
 import os
 import re
+from collections.abc import Callable
 from typing import (
-    Callable,
     Optional,
 )
 

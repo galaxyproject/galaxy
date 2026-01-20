@@ -32,9 +32,9 @@ Covers the ``blastxml`` format and the BLAST databases.
 """
 import logging
 import os
+from collections.abc import Callable
 from time import sleep
 from typing import (
-    Callable,
     Optional,
 )
 

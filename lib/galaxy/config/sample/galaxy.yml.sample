@@ -47,6 +47,11 @@ gravity:
   # is ``supervisor``.
   # memory_limit:
 
+  # Memory usage throttle limit (in GB), processes exceeding the limit are throttled and put under heavy reclaim pressure.
+  # If set, this is the default value for all services. Setting ``memory_high`` on an individual service overrides this
+  # value. Ignored if ``process_manager`` is ``supervisor``.
+  # memory_high:
+
   # Specify Galaxy config file (galaxy.yml), if the Gravity config is separate from the Galaxy config. Assumed to be the
   # same file as the Gravity config if a ``galaxy`` key exists at the root level, otherwise, this option is required.
   # galaxy_config_file:
@@ -67,6 +72,11 @@ gravity:
   # If not specified defaults to ``<galaxy_data_dir>/gravity/log``.
   # log_dir:
 
+  # Run Galaxy processes in the specified journal namespace (sets the value of ``LogNamespace=`` in the systemd service
+  # units). This allows you to keep Galaxy log messages separate in the system journal from other log messages. Ignored if
+  # ``process_manager`` is not ``systemd``. See ``systemd.exec(5)`` for details.
+  # log_namespace:
+
   # Set to Galaxy's virtualenv directory.
   # If not specified, Gravity assumes all processes are on PATH. This option is required in most circumstances when using
   # the ``systemd`` process manager.
@@ -74,9 +84,7 @@ gravity:
 
   # Select the application server.
   # ``gunicorn`` is the default application server.
-  # ``unicornherder`` is a production-oriented manager for (G)unicorn servers that automates zero-downtime Galaxy server restarts,
-  # similar to uWSGI Zerg Mode used in the past.
-  # Valid options are: gunicorn, unicornherder
+  # Valid options are: gunicorn
   # app_server: gunicorn
 
   # Override the default instance name.
@@ -107,8 +115,8 @@ gravity:
     # extra_args:
 
     # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
-    # Consumes less memory when multiple processes are configured. Default is ``false`` if using unicornherder, else ``true``.
-    # preload:
+    # Consumes less memory when multiple processes are configured.
+    # preload: true
 
     # umask under which service should be executed
     # umask:
@@ -126,6 +134,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -170,6 +183,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -223,6 +241,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -286,6 +309,11 @@ gravity:
     # ``supervisor``.
     # memory_limit:
 
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
+
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
     # environment: {}
@@ -337,6 +365,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -2111,19 +2144,19 @@ galaxy:
   # page (even if require_login is true).
   #show_welcome_with_login: false
 
-  # Controls the order of the login page to prefer OIDC-based login
-  # and registration.
+  # Controls the order of the login page to prefer OIDC-based login and
+  # registration.
   #prefer_oidc_login: false
 
   # Allow unregistered users to create new local (non-OIDC) accounts
   # (otherwise, they will have to be created by an admin). This option
-  # will be overridden to false in case disable_local_accounts  is set
-  # to true.
+  # will be overridden to false in case disable_local_accounts is set to
+  # true.
   #allow_local_account_creation: true
 
   # Disable local accounts. If this option is set to true, at least one
-  # OIDC provider needs  to be configured and will serve as the account
-  # provider. If this option is set to true,  allow_local_account
+  # OIDC provider needs to be configured and will serve as the account
+  # provider. If this option is set to true, allow_local_account
   # creation will be overridden with false.
   #disable_local_accounts: false
 

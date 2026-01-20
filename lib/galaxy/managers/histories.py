@@ -9,6 +9,7 @@ import logging
 from typing import (
     Any,
     cast,
+    Literal,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -25,7 +26,6 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.orm import aliased
-from typing_extensions import Literal
 
 from galaxy import model
 from galaxy.exceptions import (

@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9']
+        python-version: ['3.10']
     services:
       postgres:
         image: postgres:17
@@ -71,6 +71,7 @@ jobs:
       - name: Restore client cache
         uses: actions/cache@v5
         with:
+          fail-on-cache-miss: true
           key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
           path: 'galaxy root/static'
       - name: Run tests

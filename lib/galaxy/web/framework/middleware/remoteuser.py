@@ -67,7 +67,7 @@ class RemoteUser:
         if self.display_servers and "REMOTE_ADDR" in environ:
             try:
                 host = socket.gethostbyaddr(environ["REMOTE_ADDR"])[0]
-            except (OSError, socket.herror, socket.gaierror, socket.timeout):
+            except (OSError, socket.herror, socket.gaierror):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:

@@ -2,11 +2,11 @@ import asyncio
 import logging
 from typing import (
     Any,
+    Literal,
     Optional,
 )
 
 import aiohttp
-from typing_extensions import Literal
 
 log = logging.getLogger()
 

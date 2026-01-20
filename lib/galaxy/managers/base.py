@@ -30,10 +30,10 @@ import builtins
 import datetime
 import logging
 import re
+from collections.abc import Callable
 from functools import partial
 from typing import (
     Any,
-    Callable,
     Generic,
     NamedTuple,
     Optional,

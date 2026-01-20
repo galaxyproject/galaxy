@@ -23,6 +23,12 @@ tool_shed:
   # without authentication.
   #config_hg_for_dev: null
 
+  # The base URL of the Tool Shed server used for generating clone URLs
+  # and repository hostnames. If set, this value will be used instead of
+  # deriving the URL from the incoming request.
+  # Example: https://toolshed.g2.bx.psu.edu
+  #tool_shed_url: null
+
   # Where Tool Shed repositories are stored.
   #file_path: database/community_files
 

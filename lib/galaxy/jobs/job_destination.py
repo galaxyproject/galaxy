@@ -1,4 +1,3 @@
-import sys
 from dataclasses import (
     dataclass,
     field,
@@ -14,10 +13,8 @@ if TYPE_CHECKING:
     from galaxy.jobs import ResubmitConfigDict
     from galaxy.model import Job
 
-dataclass_kwargs = {"kw_only": True} if sys.version_info >= (3, 10) else {}
 
-
-@dataclass(**dataclass_kwargs, eq=False)
+@dataclass(kw_only=True, eq=False)
 class JobDestination:
     """
     Provides details about where a job runs

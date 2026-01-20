@@ -3,9 +3,9 @@ Contains functionality needed in every web interface
 """
 
 import logging
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
 )
 
 from webob.exc import (

@@ -1,11 +1,9 @@
 import json
 import logging
 import os
+from collections.abc import Callable
 from io import StringIO
 from time import strftime
-from typing import (
-    Callable,
-)
 
 from webob.compat import cgi_FieldStorage
 

@@ -26,11 +26,11 @@ jobs:
       matrix:
         db: ['postgresql', 'sqlite']
         postgresql-version: ['17']
-        python-version: ['3.9']
+        python-version: ['3.10']
         include:
           - db: postgresql
             postgresql-version: '9.6'
-            python-version: '3.9'
+            python-version: '3.10'
     services:
       postgres:
         image: postgres:${{ matrix.postgresql-version }}

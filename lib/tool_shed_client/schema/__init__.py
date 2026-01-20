@@ -1,5 +1,6 @@
 from typing import (
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -11,7 +12,6 @@ from pydantic import (
     RootModel,
 )
 from typing_extensions import (
-    Literal,
     TypedDict,
 )
 

@@ -15,10 +15,9 @@ from typing import (
     Any,
     cast,
     get_args,
+    Literal,
     Optional,
 )
-
-from typing_extensions import Literal
 
 from galaxy.model import (
     DatasetCollectionElement,

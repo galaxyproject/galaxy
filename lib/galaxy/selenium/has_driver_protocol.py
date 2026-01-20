@@ -5,10 +5,10 @@ allowing NavigatesGalaxy to work with either backend via composition.
 """
 
 from abc import abstractmethod
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 from typing import (
     Any,
-    Callable,
     Generic,
     Literal,
     Optional,

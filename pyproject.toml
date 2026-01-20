@@ -10,7 +10,7 @@ maintainers = [
 ]
 license = {file = "LICENSE.txt"}
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "a2wsgi",
     "aiofiles",
@@ -41,7 +41,7 @@ dependencies = [
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
-    "gravity @ git+https://github.com/nsoranzo/gravity.git@python3.14",  # Python 3.14 support
+    "gravity>=1.2.0",  # Python 3.14 support
     "gunicorn",
     "gxformat2>=0.21.0",
     "h5grove>=1.2.1",
@@ -57,7 +57,8 @@ dependencies = [
     "Mako",
     "Markdown",
     "MarkupSafe",
-    "mercurial>=6.8.2",  # Python 3.13 support
+    "mercurial>=6.8.2 ; python_version<'3.14'",  # Python 3.13 support
+    "mercurial>=7.2rc0 ; python_version>='3.14'",  # Python 3.14 support
     "mrcfile",
     "more-itertools",
     "msal",
@@ -190,7 +191,6 @@ typecheck = [
 
 [tool.black]
 line-length = 120
-target-version = ['py39']
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
@@ -203,7 +203,6 @@ extend-exclude = '''
 isort = true
 
 [tool.ruff]
-target-version = "py39"
 exclude = [
     "lib/tool_shed/test/test_data/repos"
 ]
@@ -219,7 +218,8 @@ select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
 # G* are TODOs
-ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
+# UP007, UP045: Python >=3.10 type annotation improvements, to be revisited later
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004", "UP007", "UP045"]
 
 [tool.ruff.lint.flake8-comprehensions]
 allow-dict-calls-with-keyword-arguments = true

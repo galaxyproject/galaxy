@@ -9,13 +9,54 @@ echo '5' > 5 &&
 echo 'p1.forward' > p1.forward &&
 echo 'p1.reverse' > p1.reverse &&
 echo 'p2.forward' > p2.forward &&
-echo 'p2.reverse' > p2.reverse 
+echo 'p2.reverse' > p2.reverse
+#for $r in $repeat
+    #if $r.cond.select == "a" and $r.cond.inner_cond.inner_select == "2"
+        && echo "$r.cond.inner_cond.text" >> repeat_cond.txt
+    #end if
+#end for
     ]]></command>
     <inputs>
         <param name="produce_out_1" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Do Filter 1" />
         <param name="filter_text_1" type="text" value="1" />
         <param name="produce_collection" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Collection Filter" />
         <param name="produce_paired_collection" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Paired Collection Filter" />
+        <repeat name="repeat" title="repeat">
+            <conditional name="cond">
+                <param name="select" type="select" label="select">
+                    <option value="a"></option>
+                    <option value="b"></option>
+                </param>
+                <when value="a">
+                    <conditional name="inner_cond">
+                        <param name="inner_select" type="select" label="select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </param>
+                        <when value="1">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                        <when value="2">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                    </conditional>
+                </when>
+                <when value="b">
+                    <conditional name="inner_cond">
+                        <param name="inner_select" type="select" label="select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </param>
+                        <when value="1">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                        <when value="2">
+                            <param name="text" type="text" value="" label="text"/>
+                        </when>
+                    </conditional>
+                </when>
+            </conditional>
+        </repeat>
     </inputs>
     <outputs>
         <data name="out_1" format="txt" from_work_dir="1">
@@ -34,6 +75,9 @@ echo 'p2.reverse' > p2.reverse
             <discover_datasets pattern="(?P&lt;identifier_0&gt;p[12])\.(?P&lt;identifier_1&gt;.*)" ext="txt" visible="true" />
             <filter>produce_paired_collection is True</filter>
         </collection>
+        <data name="repeat_cond_output" format="txt" from_work_dir="repeat_cond.txt">
+            <filter>any( [ r["cond"]["select"] == "a" and r["cond"]["inner_cond"]["inner_select"] == "2" for r in repeat ] )</filter>
+        </data>
     </outputs>
     <tests>
         <test expect_num_outputs="2">
@@ -98,6 +142,15 @@ echo 'p2.reverse' > p2.reverse
             <param name="filter_text_1" value="foo" />
             <param name="produce_collection" value="true" />
             <param name="produce_paired_collection" value="true" />
+            <repeat name="repeat">
+                <conditional name="cond">
+                    <param name="select" value="b"/>
+                    <conditional name="inner_cond">
+                        <param name="inner_select" value="1"/>
+                        <param name="text" value="b1"/>
+                    </conditional>
+                </conditional>
+            </repeat>
             <output name="out_1">
                 <assert_contents>
                     <has_line line="1" />
@@ -146,6 +199,22 @@ echo 'p2.reverse' > p2.reverse
                     </element>
                 </element>
             </output_collection>
+        </test>
+        <test expect_num_outputs="1">
+            <repeat name="repeat">
+                <conditional name="cond">
+                    <param name="select" value="a"/>
+                    <conditional name="inner_cond">
+                        <param name="inner_select" value="2"/>
+                        <param name="text" value="a2"/>
+                    </conditional>
+                </conditional>
+            </repeat>
+            <output name="repeat_cond_output">
+                <assert_contents>
+                    <has_line line="a2" />
+                </assert_contents>
+            </output>
         </test>
     </tests>
 </tool>

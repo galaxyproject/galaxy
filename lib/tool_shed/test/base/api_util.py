@@ -1,15 +1,15 @@
 import os
 import re
+from collections.abc import Callable
 from functools import wraps
 from typing import (
     Any,
-    Callable,
+    Literal,
     Optional,
 )
 from urllib.parse import urljoin
 
 import requests
-from typing_extensions import Literal
 
 from galaxy_test.base.api_asserts import (
     assert_has_keys,

@@ -32,10 +32,12 @@ from typing import (
     cast,
     ClassVar,
     Generic,
+    Literal,
     NamedTuple,
     Optional,
     overload,
     TYPE_CHECKING,
+    TypeAlias,
     TypeVar,
     Union,
 )
@@ -132,10 +134,8 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     deprecated,
-    Literal,
     NotRequired,
     Protocol,
-    TypeAlias,
     TypedDict,
 )
 
@@ -7221,6 +7221,12 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     def expire_populated_state(self):
         required_object_session(self).expire(self, ("populated_state",))
+        # Clear the cached populated_optimized value so it will be recomputed
+        # on the next access with fresh database state. This prevents a race
+        # condition where the cached value becomes stale while nested
+        # collections are being populated.
+        if hasattr(self, "_populated_optimized"):
+            delattr(self, "_populated_optimized")
 
     @property
     def allow_implicit_mapping(self):

@@ -6,11 +6,11 @@ from argparse import (
     ArgumentParser,
     Namespace,
 )
+from collections.abc import Callable
 from io import StringIO
 from textwrap import TextWrapper
 from typing import (
     Any,
-    Callable,
     NamedTuple,
     Optional,
 )
@@ -19,7 +19,7 @@ import yaml
 from boltons.iterutils import remap
 
 try:
-    from gravity.util import settings_to_sample
+    from gravity.settings import settings_to_sample
 except ImportError:
     settings_to_sample = None
 

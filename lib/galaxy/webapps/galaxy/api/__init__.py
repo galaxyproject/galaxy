@@ -3,13 +3,16 @@ This module *does not* contain API routes. It exclusively contains dependencies 
 """
 
 import inspect
-from collections.abc import AsyncGenerator
+from collections.abc import (
+    AsyncGenerator,
+    Callable,
+)
 from enum import Enum
 from string import Template
 from typing import (
     Any,
-    Callable,
     cast,
+    Literal,
     NamedTuple,
     Optional,
     TypeVar,
@@ -56,7 +59,6 @@ from starlette.routing import (
     NoMatchFound,
 )
 from starlette.types import Scope
-from typing_extensions import Literal
 
 try:
     from starlette_context import context as request_context

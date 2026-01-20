@@ -8,6 +8,7 @@ import tarfile
 import tempfile
 from collections import defaultdict
 from collections.abc import (
+    Callable,
     Iterable,
     Iterator,
 )
@@ -22,7 +23,6 @@ from tempfile import mkdtemp
 from types import TracebackType
 from typing import (
     Any,
-    Callable,
     cast,
     Literal,
     Optional,

@@ -12,7 +12,7 @@ SET_VENV=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
 INSTALL_PREBUILT_CLIENT=${GALAXY_INSTALL_PREBUILT_CLIENT:-0}
 : "${PNPM_INSTALL_OPTS:=--frozen-lockfile}"
-: "${GALAXY_CONDA_PYTHON_VERSION:=3.9}"
+: "${GALAXY_CONDA_PYTHON_VERSION:=3.10}"
 
 for arg in "$@"; do
     if [ "$arg" = "--skip-venv" ]; then
@@ -37,7 +37,7 @@ RMFILES="
     lib/pkg_resources.pyc
 "
 
-MIN_PYTHON_VERSION=3.9
+MIN_PYTHON_VERSION=3.10
 MIN_PIP_VERSION=20.3
 
 # return true if $1 is in $2 else false

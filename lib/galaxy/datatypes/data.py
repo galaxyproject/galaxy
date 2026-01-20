@@ -6,21 +6,21 @@ import shutil
 import string
 import tempfile
 from collections.abc import (
+    Callable,
     Generator,
     Iterable,
 )
 from inspect import isclass
 from typing import (
     Any,
-    Callable,
     IO,
+    Literal,
     Optional,
     TYPE_CHECKING,
     Union,
 )
 
 from markupsafe import escape
-from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes.metadata import (

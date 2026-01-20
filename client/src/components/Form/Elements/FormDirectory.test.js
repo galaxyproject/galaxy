@@ -23,7 +23,7 @@ async function init(wrapper, data) {
     expect(filesDialogComponent.exists()).toBe(true);
     filesDialogComponent.vm.callback({ url: data.url });
     // HACK: URL implementation in test environment is not the same as global node
-    wrapper.vm.pathChunks = data.pathChunks;
+    wrapper.vm.pathChunks = [...data.pathChunks];
     await flushPromises();
     await validateLatestEmittedPath(wrapper, data.url);
 }
@@ -174,5 +174,21 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         // the init function itself validates that the emits and path display
         // retain special characters in the url
         await init(wrapper, testingDataWithSpecialChars);
+    });
+
+    it("should save on blur", async () => {
+        await init(wrapper, testingData);
+        // enter a new path chunk
+        const input = wrapper.find("#path-input-breadcrumb");
+        await input.setValue(validPath);
+        expect(input.element.value).toBe(validPath);
+
+        await input.trigger("blur");
+        await flushPromises();
+
+        expect(spyOnAddPath).toHaveBeenCalled();
+        expect(input.element.value).toBe("");
+        expect(wrapper.findAll("li.breadcrumb-item").length).toBe(testingData.expectedNumberOfPaths + 1);
+        await validateLatestEmittedPath(wrapper, `${testingData.url}/${validPath}`);
     });
 });
