@@ -9706,6 +9706,18 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             output_values.append(output_value.serialize(id_encoder, serialization_options))
         invocation_attrs["output_values"] = output_values
 
+        subworkflow_invocations = []
+        for subworkflow_invocation_assoc in self.subworkflow_invocations:
+            subworkflow_invocations.append(
+                {
+                    "order_index": subworkflow_invocation_assoc.workflow_step.order_index,
+                    "subworkflow_invocation": subworkflow_invocation_assoc.subworkflow_invocation.serialize(
+                        id_encoder, serialization_options, for_link=True
+                    ),
+                }
+            )
+        invocation_attrs["subworkflow_invocations"] = subworkflow_invocations
+
         serialization_options.attach_identifier(id_encoder, self, invocation_attrs)
         return invocation_attrs
 

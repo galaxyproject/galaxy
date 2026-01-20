@@ -1273,6 +1273,29 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             if object_key in invocation_attrs:
                 object_import_tracker.invocations_by_key[invocation_attrs[object_key]] = imported_invocation
 
+        # Second pass: link subworkflow invocations after all invocations are imported
+        for invocation_attrs in invocations_attrs:
+            if object_key not in invocation_attrs:
+                continue
+            parent_invocation = object_import_tracker.invocations_by_key.get(invocation_attrs[object_key])
+            if not parent_invocation:
+                continue
+            for subworkflow_invocation_attrs in invocation_attrs.get("subworkflow_invocations", []):
+                subworkflow_invocation_link = subworkflow_invocation_attrs.get("subworkflow_invocation", {})
+                subworkflow_invocation_key = subworkflow_invocation_link.get(object_key)
+                if not subworkflow_invocation_key:
+                    continue
+                subworkflow_invocation = object_import_tracker.invocations_by_key.get(subworkflow_invocation_key)
+                if not subworkflow_invocation:
+                    continue
+                order_index = subworkflow_invocation_attrs.get("order_index")
+                workflow_step = parent_invocation.workflow.step_by_index(order_index)
+                assoc = model.WorkflowInvocationToSubworkflowInvocationAssociation()
+                assoc.workflow_invocation_id = parent_invocation.id
+                assoc.subworkflow_invocation_id = subworkflow_invocation.id
+                assoc.workflow_step = workflow_step
+                self._session_add(assoc)
+
     def _import_jobs(self, object_import_tracker: "ObjectImportTracker", history: Optional[model.History]) -> None:
         self._flush()
         object_key = self.object_key
@@ -2342,6 +2365,14 @@ class DirectoryModelExportStore(ModelExportStore):
                     assoc.dataset_collection, include_hidden=include_hidden, include_deleted=include_deleted
                 )
 
+        # Recursively export subworkflow invocations
+        for subworkflow_invocation_assoc in workflow_invocation.subworkflow_invocations:
+            subworkflow_invocation = subworkflow_invocation_assoc.subworkflow_invocation
+            if subworkflow_invocation:
+                self.export_workflow_invocation(
+                    subworkflow_invocation, include_hidden=include_hidden, include_deleted=include_deleted
+                )
+
     def add_job_output_dataset_associations(
         self, job_id: int, name: str, dataset_instance: model.DatasetInstance
     ) -> None:
@@ -2574,7 +2605,7 @@ class WriteCrates:
 
     def _generate_markdown_readme(self) -> str:
         markdown_parts: list[str] = []
-        if self._is_single_invocation_export():
+        if self._is_invocation_export():
             invocation = self.included_invocations[0]
             name = invocation.workflow.name
             create_time = invocation.create_time
@@ -2586,11 +2617,13 @@ class WriteCrates:
 
         return "\n".join(markdown_parts)
 
-    def _is_single_invocation_export(self) -> bool:
-        return len(self.included_invocations) == 1
+    def _is_invocation_export(self) -> bool:
+        # Maybe we need to have more complicated logic here to discriminate a history export from a workflow invocation export.
+        # But for now we only populate included_invocations when exporting a workflow invocation, so this is fine.
+        return bool(self.included_invocations)
 
     def _init_crate(self) -> ROCrate:
-        is_invocation_export = self._is_single_invocation_export()
+        is_invocation_export = self._is_invocation_export()
         if is_invocation_export:
             invocation_crate_builder = WorkflowRunCrateProfileBuilder(self)
             return invocation_crate_builder.build_crate()
