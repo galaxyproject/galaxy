@@ -54,13 +54,6 @@ const targetUri = computed(() => {
     return props.exportRecord.importUri || "Unknown destination";
 });
 
-const shortTargetUri = computed(() => {
-    const uri = targetUri.value;
-    // Extract just the filename from the URI
-    const parts = uri.split("/");
-    return parts[parts.length - 1] || uri;
-});
-
 const primaryActions = computed(() => {
     const actions: CardAction[] = [];
 
@@ -142,7 +135,7 @@ function onGoToObject() {
             title: 'Export to File Source',
         }">
         <template v-slot:description>
-            <p class="text-muted mb-2"><strong>Destination:</strong> {{ shortTargetUri }}</p>
+            <p class="text-muted mb-2"><strong>Destination:</strong> {{ targetUri }}</p>
             <p v-if="exportRecord.modelStoreFormat" class="text-muted mb-2">
                 <strong>Format:</strong> {{ exportRecord.modelStoreFormat }}
             </p>
@@ -152,7 +145,7 @@ function onGoToObject() {
             </BAlert>
             <BAlert v-if="exportRecord.isReady" variant="success" show>
                 <FontAwesomeIcon :icon="faCheckCircle" />
-                <span>Export completed successfully to {{ shortTargetUri }}</span>
+                <span>Export completed successfully</span>
             </BAlert>
             <BAlert v-if="exportRecord.hasFailed" variant="danger" show>
                 <FontAwesomeIcon :icon="faExclamationTriangle" />
