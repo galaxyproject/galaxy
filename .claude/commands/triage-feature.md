@@ -13,7 +13,9 @@ You will be supplied a Github issue number for a feature request to triage. A Ga
 
 Fetch the issue using "gh issue view <number>" and write the issue contents to ``FEATURE_<#>.md``.
 
-In serial launch subagents to perform actions to help in the triage process. As the agent responsible for the triage process - please read the artifacts generated from subagents and direct the process as it makes sense. Your job is direct the process though - do not try to implement the feature or do research yourself.
+Write all triage artifacts to the current working directory.
+
+Launch subagents to perform actions to help in the triage process. Run independent tasks in parallel where possible (e.g., demand research and code research can run concurrently since they only need the original issue), but tasks that depend on artifacts from earlier subagents must wait (e.g., implementation planning needs to read the research documents first). As the agent responsible for the triage process - please read the artifacts generated from subagents and direct the process as it makes sense. Your job is to direct the process though - do not try to implement the feature or do research yourself.
 
 When to launch subagents and what they should do are as follows:
 
