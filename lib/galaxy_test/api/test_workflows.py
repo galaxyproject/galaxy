@@ -2105,8 +2105,8 @@ steps:
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request).json()[
             "id"
         ]
-        invocation = self._invocation_details(workflow_id, invocation_id)
-        assert invocation["state"] in ("scheduled", "completed"), invocation
+        invocation = self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
+        assert invocation["state"] == "completed", invocation
 
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collections(self) -> None:

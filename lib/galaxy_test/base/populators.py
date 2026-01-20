@@ -2662,12 +2662,55 @@ class BaseWorkflowPopulator(BasePopulator):
     def wait_for_invocation_and_jobs(
         self, history_id: str, workflow_id: str, invocation_id: str, assert_ok: bool = True
     ) -> None:
+        """Wait for invocation to be scheduled and all jobs to complete.
+
+        .. deprecated::
+            Use :meth:`wait_for_invocation_and_completion` for new tests,
+            which waits for the invocation to reach the 'completed' state.
+        """
         state = self.wait_for_invocation(workflow_id, invocation_id, assert_ok=assert_ok)
         if assert_ok:
             assert state in ("scheduled", "completed"), state
         time.sleep(0.5)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(0.5)
+
+    def get_invocation_completion(self, invocation_id: str) -> Optional[dict[str, Any]]:
+        """Get completion record for an invocation.
+
+        Returns the completion record if it exists, or None if the invocation
+        has not yet completed.
+        """
+        response = self._get(f"invocations/{invocation_id}/completion")
+        api_asserts.assert_status_code_is(response, 200)
+        result = response.json()
+        return result if result else None
+
+    def wait_for_invocation_and_completion(
+        self,
+        invocation_id: str,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
+        assert_ok: bool = True,
+    ) -> dict[str, Any]:
+        """Wait for invocation to reach 'completed' state and return invocation details.
+
+        This waits for the workflow completion monitor to process the invocation
+        and transition it to the 'completed' state. Use this instead of
+        wait_for_invocation_and_jobs for new tests.
+
+        Returns the invocation dict with state='completed'.
+        """
+
+        def check_completed():
+            invocation = self.get_invocation(invocation_id)
+            if invocation["state"] == "completed":
+                return invocation
+            elif assert_ok and invocation["state"] in ("failed", "cancelled"):
+                raise AssertionError(f"Invocation reached terminal state: {invocation['state']}")
+            return None
+
+        invocation = wait_on(check_completed, "invocation to reach completed state", timeout=timeout)
+        return invocation
 
     def index(
         self,

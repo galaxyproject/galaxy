@@ -6,8 +6,8 @@ workflow invocations to a configured file source.
 """
 
 import os
+import time
 import zipfile
-from tempfile import mkdtemp
 
 from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
@@ -15,6 +15,7 @@ from galaxy_test.base.populators import (
     wait_on,
     WorkflowPopulator,
 )
+from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
@@ -43,9 +44,8 @@ class TestWorkflowCompletionExportHook(IntegrationTestCase, UsesCeleryTasks):
         super().handle_galaxy_config_kwds(config)
         UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
-        # Set up temp directory for file source
-        temp_dir = os.path.realpath(mkdtemp())
-        cls._test_driver.temp_directories.append(temp_dir)
+        # Set up temp directory for file source using test driver's mkdtemp
+        temp_dir = os.path.realpath(cls._test_driver.mkdtemp())
         cls.root_dir = os.path.join(temp_dir, "root")
         os.makedirs(cls.root_dir, exist_ok=True)
 
@@ -61,9 +61,6 @@ class TestWorkflowCompletionExportHook(IntegrationTestCase, UsesCeleryTasks):
         config["library_import_dir"] = None
         config["user_library_import_dir"] = None
 
-        # Speed up monitor for faster tests
-        config["workflow_completion_monitor_sleep"] = 1.0
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -71,31 +68,13 @@ class TestWorkflowCompletionExportHook(IntegrationTestCase, UsesCeleryTasks):
 
     def test_export_to_file_source_on_completion(self):
         """Test that export_to_file_source hook exports invocation when workflow completes."""
-        # Define a simple workflow
-        workflow = """
-class: GalaxyWorkflow
-name: Completion Export Test Workflow
-inputs:
-  input_data:
-    type: data
-steps:
-  cat_step:
-    tool_id: cat
-    in:
-      input1: input_data
-outputs:
-  output_data:
-    outputSource: cat_step/out_file1
-"""
-        # Define the export filename
         export_filename = "test_export.rocrate.zip"
         target_uri = f"gxfiles://completion_export_test/{export_filename}"
 
         with self.dataset_populator.test_history() as history_id:
-            # Run workflow with on_complete export action
             summary = self.workflow_populator.run_workflow(
-                workflow,
-                test_data={"input_data": "hello world"},
+                WORKFLOW_SIMPLE_CAT_TWICE,
+                test_data={"input1": "hello world"},
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
@@ -112,12 +91,8 @@ outputs:
                 },
             )
 
-            # Wait for invocation to reach completed state (monitor has processed it)
-            def check_completed():
-                invocation = self._get_invocation(summary.invocation_id)
-                return invocation if invocation["state"] == "completed" else None
-
-            invocation = wait_on(check_completed, "invocation to reach completed state", timeout=60)
+            # Wait for invocation to reach completed state
+            invocation = self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=60)
             assert invocation["state"] == "completed"
 
             # Wait for the export file to appear (hook execution is async via Celery)
@@ -135,7 +110,6 @@ outputs:
             # Verify the zip contains expected rocrate metadata
             with zipfile.ZipFile(export_path, "r") as zf:
                 names = zf.namelist()
-                # RO-Crate should have ro-crate-metadata.json
                 assert "ro-crate-metadata.json" in names, f"Missing ro-crate-metadata.json in {names}"
 
     def test_export_with_multiple_outputs(self):
@@ -144,17 +118,16 @@ outputs:
 class: GalaxyWorkflow
 name: Multi-Output Completion Export Test
 inputs:
-  input_data:
-    type: data
+  input1: data
 steps:
   cat1:
-    tool_id: cat
+    tool_id: cat1
     in:
-      input1: input_data
+      input1: input1
   cat2:
-    tool_id: cat
+    tool_id: cat1
     in:
-      input1: input_data
+      input1: input1
 outputs:
   output1:
     outputSource: cat1/out_file1
@@ -167,7 +140,7 @@ outputs:
         with self.dataset_populator.test_history() as history_id:
             summary = self.workflow_populator.run_workflow(
                 workflow,
-                test_data={"input_data": "test data content"},
+                test_data={"input1": "test data content"},
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
@@ -185,11 +158,7 @@ outputs:
             )
 
             # Wait for completion
-            def check_completed():
-                invocation = self._get_invocation(summary.invocation_id)
-                return invocation if invocation["state"] == "completed" else None
-
-            wait_on(check_completed, "invocation to complete", timeout=60)
+            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=60)
 
             # Wait for export
             export_path = os.path.join(self.root_dir, export_filename)
@@ -210,52 +179,23 @@ outputs:
 
     def test_no_export_without_on_complete(self):
         """Test that no export happens when on_complete is not specified."""
-        workflow = """
-class: GalaxyWorkflow
-name: No Export Test
-inputs:
-  input_data:
-    type: data
-steps:
-  cat_step:
-    tool_id: cat
-    in:
-      input1: input_data
-outputs:
-  output_data:
-    outputSource: cat_step/out_file1
-"""
-        # Use a unique filename that shouldn't be created
         export_filename = "should_not_exist.rocrate.zip"
         export_path = os.path.join(self.root_dir, export_filename)
 
         with self.dataset_populator.test_history() as history_id:
             summary = self.workflow_populator.run_workflow(
-                workflow,
-                test_data={"input_data": "hello world"},
+                WORKFLOW_SIMPLE_CAT_TWICE,
+                test_data={"input1": "hello world"},
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
-                # No on_complete specified
             )
 
             # Wait for completion
-            def check_completed():
-                invocation = self._get_invocation(summary.invocation_id)
-                return invocation if invocation["state"] == "completed" else None
-
-            wait_on(check_completed, "invocation to complete", timeout=60)
+            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=60)
 
             # Give a moment for any erroneous export to happen
-            import time
-
             time.sleep(2)
 
             # Verify no export file was created
             assert not os.path.exists(export_path), f"Export file should not exist: {export_path}"
-
-    def _get_invocation(self, invocation_id: str) -> dict:
-        """Get invocation details."""
-        response = self._get(f"invocations/{invocation_id}")
-        response.raise_for_status()
-        return response.json()

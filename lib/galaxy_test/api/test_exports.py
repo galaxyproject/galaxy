@@ -12,23 +12,8 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
+from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from ._framework import ApiTestCase
-
-# Simple workflow for testing
-SIMPLE_WORKFLOW = """
-class: GalaxyWorkflow
-name: Simple Export Test Workflow
-inputs:
-  input1: data
-outputs:
-  output1:
-    outputSource: cat/out_file1
-steps:
-  cat:
-    tool_id: cat1
-    in:
-      input1: input1
-"""
 
 
 class TestExportsEndpoint(ApiTestCase, UsesCeleryTasks):
@@ -97,7 +82,7 @@ class TestExportsEndpoint(ApiTestCase, UsesCeleryTasks):
         """Test that exports endpoint returns invocation exports via prepare_store_download."""
         with self.dataset_populator.test_history() as history_id:
             summary = self.workflow_populator.run_workflow(
-                SIMPLE_WORKFLOW,
+                WORKFLOW_SIMPLE_CAT_TWICE,
                 test_data={"input1": "hello world"},
                 history_id=history_id,
                 wait=True,
