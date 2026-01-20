@@ -39,10 +39,6 @@ from .test_workflow_editor import CHIPSEQ_COLUMNS
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
     ensure_registered = True
 
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        config["simplified_workflow_run_ui"] = "prefer"
-
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
@@ -53,7 +49,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_tab_disabled.wait_for_absent()
         invocations.export_tab.wait_for_and_click()
         self.screenshot("invocation_export_formats")
-        invocations.export_output_format(type="ro-crate").wait_for_and_click()
+        invocations.export_output_format(type="rocrate.zip").wait_for_and_click()
         invocations.wizard_next_button.wait_for_and_click()
         download_option = invocations.export_destination(destination="download")
         download_option.wait_for_present()
@@ -79,7 +75,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_tab_disabled.wait_for_absent()
         invocations.export_tab.wait_for_and_click()
         self.screenshot("invocation_export_formats")
-        invocations.export_output_format(type="default-file").wait_for_and_click()
+        invocations.export_output_format(type="tgz").wait_for_and_click()
         invocations.wizard_next_button.wait_for_and_click()
         download_option = invocations.export_destination(destination="download")
         download_option.wait_for_present()
