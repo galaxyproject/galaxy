@@ -106,7 +106,7 @@ def _parse_gxworkflow_uri(workflow_url: str) -> tuple[str, bool]:
     """Parse a gxworkflow:// URI to extract workflow ID and instance flag.
 
     Format: gxworkflow://<encoded_workflow_id>[?instance=<false|true>]
-    - encoded_workflow_id: Base62-encoded Galaxy workflow ID
+    - encoded_workflow_id: Encoded Galaxy workflow ID
     - instance: Optional parameter (defaults to False)
       - False: Load the StoredWorkflow (workflow definition)
       - True: Load the Workflow (active workflow instance)
@@ -200,7 +200,7 @@ def _load_workflow_content(
         # Handle other URL schemes (http, https, base64, file, etc.)
         try:
             # Fetch workflow content from URL
-            # validate_uri_access is called by stream_url_to_str for security
+            # validate_non_local is called via HTTPFilesSource for security
             workflow_content = stream_url_to_str(workflow_url, trans.app.file_sources)
         except exceptions.AuthenticationRequired as e:
             raise e
