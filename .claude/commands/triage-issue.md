@@ -17,8 +17,8 @@ Classification signals:
 Once classified, inform the user of your classification and reasoning in one sentence.
 
 Then read the appropriate command file and execute its instructions:
-- For bugs: Read `.claude/commands/bug-triage.md` and follow those instructions
-- For features: Read `.claude/commands/feature-triage.md` and follow those instructions
+- For bugs: Read `.claude/commands/triage-bug.md` and follow those instructions
+- For features: Read `.claude/commands/triage-feature.md` and follow those instructions
 
 Pass through the original issue number and work level to the triage workflow.
 
