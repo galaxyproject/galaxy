@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import type { UploadMode } from "@/components/Panels/Upload/types";
+import type { UploadMethod } from "@/components/Panels/Upload/types";
 import type {
     LibraryDatasetItem,
     LocalFileItem,
@@ -17,21 +17,21 @@ import type {
  */
 export type StagedUploadItem = LocalFileItem | PasteContentItem | PasteUrlItem | RemoteFileItem | LibraryDatasetItem;
 
-export type StagedUploadItemsByMode = Partial<Record<UploadMode, StagedUploadItem[]>>;
+export type StagedUploadItemsByMode = Partial<Record<UploadMethod, StagedUploadItem[]>>;
 
 export const useUploadStagingStore = defineStore("uploadStagingStore", () => {
     const itemsByMode = ref<StagedUploadItemsByMode>({});
 
-    function getItems<T extends StagedUploadItem = StagedUploadItem>(mode: UploadMode): T[] {
+    function getItems<T extends StagedUploadItem = StagedUploadItem>(mode: UploadMethod): T[] {
         return (itemsByMode.value[mode] ?? []) as T[];
     }
 
-    function setItems<T extends StagedUploadItem>(mode: UploadMode, items: T[]) {
+    function setItems<T extends StagedUploadItem>(mode: UploadMethod, items: T[]) {
         // always store a new array reference so reactivity triggers
         itemsByMode.value[mode] = [...items];
     }
 
-    function clearItems(mode: UploadMode) {
+    function clearItems(mode: UploadMethod) {
         delete itemsByMode.value[mode];
     }
 

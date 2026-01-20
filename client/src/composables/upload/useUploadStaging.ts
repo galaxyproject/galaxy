@@ -1,6 +1,6 @@
 import { onMounted, type Ref, watch } from "vue";
 
-import type { UploadMode } from "@/components/Panels/Upload/types";
+import type { UploadMethod } from "@/components/Panels/Upload/types";
 import { type StagedUploadItem, useUploadStagingStore } from "@/stores/uploadStagingStore";
 
 interface UseUploadStagingReturn {
@@ -16,7 +16,7 @@ interface UseUploadStagingReturn {
  * - Provide a single clear() helper for post-upload cleanup
  */
 export function useUploadStaging<T extends StagedUploadItem>(
-    mode: UploadMode,
+    mode: UploadMethod,
     items: Ref<T[]>,
 ): UseUploadStagingReturn {
     const stagingStore = useUploadStagingStore();

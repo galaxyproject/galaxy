@@ -11,9 +11,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { defineAsyncComponent } from "vue";
 
-import type { UploadMethodConfig, UploadMode } from "./types";
+import type { UploadMethod, UploadMethodConfig } from "./types";
 
-export const uploadMethodRegistry: Record<UploadMode, UploadMethodConfig> = {
+export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
     "local-file": {
         id: "local-file",
         name: "Upload from Computer",
@@ -98,7 +98,7 @@ export const uploadMethodRegistry: Record<UploadMode, UploadMethodConfig> = {
     },
 };
 
-export function getUploadMethod(id: UploadMode): UploadMethodConfig | undefined {
+export function getUploadMethod(id: UploadMethod): UploadMethodConfig | undefined {
     return uploadMethodRegistry[id];
 }
 

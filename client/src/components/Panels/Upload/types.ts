@@ -1,6 +1,6 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-export type UploadMode =
+export type UploadMethod =
     | "local-file"
     | "paste-content"
     | "paste-links"
@@ -12,7 +12,7 @@ export type UploadMode =
     | "import-workflow";
 
 export interface UploadMethodConfig {
-    id: UploadMode;
+    id: UploadMethod;
     name: string;
     description: string;
     icon: IconDefinition;

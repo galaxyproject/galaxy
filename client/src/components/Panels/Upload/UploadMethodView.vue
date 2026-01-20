@@ -6,7 +6,7 @@ import { useRouter } from "vue-router/composables";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
-import type { UploadMethodComponent, UploadMode } from "./types";
+import type { UploadMethod, UploadMethodComponent } from "./types";
 import { getUploadMethod } from "./uploadMethodRegistry";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -14,7 +14,7 @@ import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
 interface Props {
-    methodId: UploadMode;
+    methodId: UploadMethod;
 }
 
 const props = defineProps<Props>();

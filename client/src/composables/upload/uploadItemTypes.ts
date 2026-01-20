@@ -4,14 +4,14 @@
  */
 
 import type { FetchDatasetHash } from "@/api/tools";
-import type { UploadMode } from "@/components/Panels/Upload/types";
+import type { UploadMethod } from "@/components/Panels/Upload/types";
 
 /** Upload lifecycle status */
 export type UploadStatus = "queued" | "uploading" | "processing" | "completed" | "error";
 
 /** Common properties shared by all upload item types */
 interface UploadItemCommon {
-    uploadMode: UploadMode;
+    uploadMode: UploadMethod;
     name: string;
     size: number;
     targetHistoryId: string;
