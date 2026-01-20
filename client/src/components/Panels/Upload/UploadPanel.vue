@@ -13,8 +13,8 @@ import { useUploadState } from "./uploadState";
 
 import UploadProgressIndicator from "./UploadProgressIndicator.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
-import ButtonPlain from "@/components/Common/ButtonPlain.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
+import GCard from "@/components/Common/GCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
@@ -108,24 +108,16 @@ function openGuidedMode() {
                 :prop-total-count="allUploadMethods.length"
                 :prop-busy="false">
                 <template v-slot:item="{ item: method }">
-                    <ButtonPlain
-                        class="upload-method-item rounded p-3 mb-2"
+                    <GCard
+                        clickable
+                        container-class="mb-2"
+                        :title="method.name"
+                        title-size="text"
+                        :full-description="true"
+                        :description="method.description"
+                        :title-icon="{ icon: method.icon, class: 'text-primary', size: 'lg' }"
                         :data-method-id="method.id"
-                        @click="selectUploadMethod(method)">
-                        <div class="d-flex align-items-start">
-                            <div class="upload-method-icon mr-3">
-                                <FontAwesomeIcon :icon="method.icon" size="2x" class="text-primary" />
-                            </div>
-                            <div class="text-left flex-grow-1">
-                                <div class="upload-method-title font-weight-bold mb-1">
-                                    {{ method.name }}
-                                </div>
-                                <div class="upload-method-description text-muted small">
-                                    {{ method.description }}
-                                </div>
-                            </div>
-                        </div>
-                    </ButtonPlain>
+                        @click="selectUploadMethod(method)" />
                 </template>
             </ScrollList>
         </ActivityPanel>
@@ -155,22 +147,5 @@ function openGuidedMode() {
     height: 100%;
     display: flex;
     flex-direction: column;
-}
-
-.upload-method-item {
-    width: 100%;
-    border: 1px solid $gray-300;
-    transition: all 0.2s ease;
-    background-color: white;
-
-    &:hover {
-        background-color: $gray-100;
-        border-color: $brand-primary;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    &:active {
-        transform: translateY(1px);
-    }
 }
 </style>
