@@ -13,6 +13,7 @@ from urllib.parse import (
     urlparse,
 )
 
+import yaml
 from fastapi import UploadFile
 from sqlalchemy import (
     literal,
@@ -237,15 +238,20 @@ def _determine_workflow_type(workflow_dict: dict[str, Any]) -> str:
     Raises:
         exceptions.MessageException: If workflow type cannot be determined
     """
-    # Check for Format2 indicators
-    if "class" in workflow_dict and workflow_dict["class"] == "GalaxyWorkflow":
-        return "gx_workflow_format2"
-
+    # Check for Format2 indicators - either already parsed or in yaml_content
+    check_dict = workflow_dict
     if "yaml_content" in workflow_dict:
+        try:
+            check_dict = yaml.safe_load(workflow_dict["yaml_content"])
+        except yaml.YAMLError:
+            # If YAML parsing fails, assume Format2 (will fail later with better error)
+            return "gx_workflow_format2"
+
+    if check_dict.get("class") == "GalaxyWorkflow":
         return "gx_workflow_format2"
 
     # Check for native Galaxy workflow format
-    if "steps" in workflow_dict or "workflow" in workflow_dict:
+    if "steps" in check_dict or "workflow" in check_dict:
         return "gx_workflow_ga"
 
     raise exceptions.MessageException(
