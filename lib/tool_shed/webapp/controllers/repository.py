@@ -4,6 +4,7 @@ import os
 import string
 import tempfile
 from datetime import date
+from typing import Any
 
 from mercurial import (
     mdiff,
@@ -72,11 +73,11 @@ malicious_error = "  This changeset cannot be downloaded because it potentially 
 malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
 
 
-def get_mercurial_default_options_dict(command):
+def get_mercurial_default_options_dict(command: str) -> dict[str, Any]:
     """Get default parameters for a mercurial command."""
     # Use mdiff.diffopts defaults directly instead of introspecting command table
     # (the old cmdutil.findpossible API was removed in Mercurial 7.2)
-    if command == b"diff":
+    if command == "diff":
         # Convert byte keys to strings but preserve value types (int, bool)
         # as mdiff.diffopts expects properly typed values
         return {(k.decode("utf-8") if isinstance(k, bytes) else k): v for k, v in mdiff.diffopts.defaults.items()}
@@ -2365,7 +2366,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             ctx_child = None
         diffs = []
         # Get default diff options with string keys and properly typed values
-        options_dict = get_mercurial_default_options_dict(b"diff")
+        options_dict = get_mercurial_default_options_dict("diff")
         options_dict["maxfile"] = basic_util.MAXDIFFSIZE
         options_dict["maxtotal"] = basic_util.MAXDIFFSIZE
         diffopts = mdiff.diffopts(**options_dict)
