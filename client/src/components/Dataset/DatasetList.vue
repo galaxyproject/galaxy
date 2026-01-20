@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BTable } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -10,9 +10,9 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
+import GTable from "@/components/Common/GTable.vue";
 import DatasetName from "@/components/Dataset/DatasetName.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -28,27 +28,30 @@ const sortDesc = ref(true);
 const sortBy = ref("update_time");
 const rows = ref<HDASummary[]>([]);
 const messageVariant = ref("danger");
-const fields = ref([
+const fields = [
     {
         key: "name",
+        label: "Name",
         sortable: true,
     },
     {
         key: "tags",
+        label: "Tags",
         sortable: false,
     },
     {
-        label: "History",
         key: "history_id",
+        label: "History",
         sortable: true,
     },
     {
         key: "extension",
+        label: "Extension",
         sortable: true,
     },
     {
-        label: "Updated",
         key: "update_time",
+        label: "Updated",
         sortable: true,
     },
     {
@@ -56,7 +59,7 @@ const fields = ref([
         label: "",
         sortable: false,
     },
-]);
+];
 
 const showNotFound = computed(() => {
     return !loading.value && rows.value.length === 0 && query;
@@ -152,10 +155,10 @@ function onQuery(q: string) {
     load();
 }
 
-function onSort(props: { sortBy: string; sortDesc: boolean }) {
+function onSort(event: { sortBy: string; sortDesc: boolean }) {
     offset.value = 0;
-    sortBy.value = props.sortBy;
-    sortDesc.value = props.sortDesc;
+    sortBy.value = event.sortBy;
+    sortDesc.value = event.sortDesc;
 
     load();
 }
@@ -189,13 +192,25 @@ onMounted(() => {
 
         <DelayedInput class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
 
-        <BTable
+        <GTable
             id="dataset-table"
             striped
             no-sort-reset
             no-local-sorting
             :fields="fields"
             :items="rows"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
+            :loading="loading"
+            loading-message="Loading datasets"
+            :empty-state="{
+                message: showNotFound
+                    ? `No matching entries found for: ${query}`
+                    : showNotAvailable
+                      ? 'No datasets found.'
+                      : 'Loading...',
+                variant: 'info',
+            }"
             @sort-changed="onSort">
             <template v-slot:cell(name)="row">
                 <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyDataset" />
@@ -217,14 +232,6 @@ onMounted(() => {
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
-        </BTable>
-
-        <LoadingSpan v-if="loading" message="Loading datasets" />
-
-        <BAlert v-if="showNotFound" variant="info" show>
-            No matching entries found for: <span class="font-weight-bold">{{ query }}</span>
-        </BAlert>
-
-        <BAlert v-if="showNotAvailable" variant="info" show> No datasets found. </BAlert>
+        </GTable>
     </div>
 </template>
