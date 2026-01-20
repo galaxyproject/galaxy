@@ -207,10 +207,10 @@ function onCancel() {
                     </div>
                 </div>
             </div>
+            <template v-slot:cancel-button>
+                <BButton variant="secondary" @click="onCancel">Cancel</BButton>
+            </template>
         </GenericWizard>
-        <div class="mt-3 text-right">
-            <BButton variant="secondary" @click="onCancel">Cancel</BButton>
-        </div>
     </div>
 </template>
 
