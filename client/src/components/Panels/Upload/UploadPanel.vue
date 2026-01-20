@@ -12,7 +12,6 @@ import { getAllUploadMethods } from "./uploadMethodRegistry";
 import { useUploadState } from "./uploadState";
 
 import UploadProgressIndicator from "./UploadProgressIndicator.vue";
-import GModal from "@/components/BaseComponents/GModal.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import GCard from "@/components/Common/GCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -23,8 +22,6 @@ const { hasUploads } = useUploadState();
 
 const router = useRouter();
 const query = ref("");
-const showGuidedModal = ref(false);
-const showAdvancedModal = ref(false);
 
 const allUploadMethods = getAllUploadMethods();
 
@@ -63,11 +60,11 @@ function showProgressDetails() {
 }
 
 function openAdvancedMode() {
-    showAdvancedModal.value = true;
+    router.push("/upload/advanced");
 }
 
 function openGuidedMode() {
-    showGuidedModal.value = true;
+    router.push("/upload/guided");
 }
 </script>
 
@@ -121,22 +118,6 @@ function openGuidedMode() {
                 </template>
             </ScrollList>
         </ActivityPanel>
-
-        <GModal :show.sync="showGuidedModal" title="Guided Import Wizard" fullscreen>
-            <div class="guided-wizard-content">
-                <h4>TODO</h4>
-                <p>This wizard will help you choose the best method to import your data into Galaxy.</p>
-                <!-- TODO: Add wizard steps here -->
-            </div>
-        </GModal>
-
-        <GModal :show.sync="showAdvancedModal" title="Advanced Import" fullscreen>
-            <div class="advanced-import-content">
-                <h4>TODO</h4>
-                <p>Access all import options and advanced settings in one place.</p>
-                <!-- TODO: Add advanced import interface here -->
-            </div>
-        </GModal>
     </div>
 </template>
 

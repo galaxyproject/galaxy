@@ -67,6 +67,8 @@ import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUser
 import PageView from "@/components/Page/PageView.vue";
 import PageForm from "@/components/PageDisplay/PageForm.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
+import UploadAdvancedView from "@/components/Panels/Upload/UploadAdvancedView.vue";
+import UploadGuidedView from "@/components/Panels/Upload/UploadGuidedView.vue";
 import UploadIndex from "@/components/Panels/Upload/UploadIndex.vue";
 import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
 import UploadProgress from "@/components/Panels/Upload/UploadProgress.vue";
@@ -247,6 +249,14 @@ export function getRouter(Galaxy) {
                     {
                         path: "upload/progress",
                         component: UploadProgress,
+                    },
+                    {
+                        path: "upload/guided",
+                        component: UploadGuidedView,
+                    },
+                    {
+                        path: "upload/advanced",
+                        component: UploadAdvancedView,
                     },
                     {
                         path: "upload/:methodId",
