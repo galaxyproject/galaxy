@@ -6,6 +6,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from starlette.datastructures import URL
+
 from galaxy.managers.context import ProvidesHistoryContext
 
 if TYPE_CHECKING:
@@ -104,6 +106,11 @@ class GalaxyAbstractRequest:
     @abc.abstractmethod
     def get_cookie(self, name):
         """Return cookie."""
+
+    @property
+    @abc.abstractmethod
+    def url(self) -> URL:
+        """Full URL of the request."""
 
 
 class GalaxyAbstractResponse:

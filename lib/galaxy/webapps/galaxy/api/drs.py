@@ -13,14 +13,9 @@ from starlette.responses import FileResponse
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.schema.drs import (
-    DrsObject,
-    Organization,
-    Service,
-    ServiceType,
-)
-from galaxy.version import VERSION
+from galaxy.schema.drs import DrsObject
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
+from galaxy.webapps.galaxy.services.ga4gh import build_service_info
 from . import (
     depends,
     DependsOnTrans,
@@ -44,36 +39,14 @@ class DrsApi:
     config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
 
     @router.get("/ga4gh/drs/v1/service-info", public=True)
-    def service_info(self, request: Request) -> Service:
-        components = request.url.components
-        hostname = components.hostname
-        assert hostname
-        default_organization_id = ".".join(reversed(hostname.split(".")))
-        config = self.config
-        organization_id = config.ga4gh_service_id or default_organization_id
-        organization_name = config.organization_name or organization_id
-        organization_url = config.organization_url or f"{components.scheme}://{components.netloc}"
-
-        organization = Organization(
-            url=organization_url,
-            name=organization_name,
-        )
-        service_type = ServiceType(
-            group="org.ga4gh",
+    def service_info(self, request: Request):
+        return build_service_info(
+            config=self.config,
+            request_url=str(request.url),
             artifact="drs",
-            version="1.2.0",
-        )
-        extra_kwds = {}
-        if environment := config.ga4gh_service_environment:
-            extra_kwds["environment"] = environment
-        return Service(
-            id=organization_id + ".drs",
-            name=DRS_SERVICE_NAME,
-            description=DRS_SERVICE_DESCRIPTION,
-            organization=organization,
-            type=service_type,
-            version=VERSION,
-            **extra_kwds,
+            service_name=DRS_SERVICE_NAME,
+            service_description=DRS_SERVICE_DESCRIPTION,
+            artifact_version="1.2.0",
         )
 
     @router.get("/ga4gh/drs/v1/objects/{object_id}", public=True)
