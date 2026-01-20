@@ -458,6 +458,73 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                 vault_ref = self._get_vault_ref(payload, group["id"], secret["name"])
                 self._check_vault_entry_exists(test_user_email, vault_ref, should_exist=False)
 
+    @skip_without_tool(CREDENTIALS_TEST_TOOL)
+    def test_list_credentials_with_missing_tool(self):
+        # Create credentials for the test tool
+        payload = self._build_credentials_payload()
+        self._provide_user_credentials(payload)
+
+        # Verify credentials exist normally
+        credentials_list = self._check_credentials_exist()
+        assert len(credentials_list) == 1
+        user_credentials_id = credentials_list[0]["id"]
+
+        # Save the tool reference before removing it
+        tool = self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL)
+        assert tool is not None, f"Tool {CREDENTIALS_TEST_TOOL} should be available before removal"
+
+        try:
+            # Remove the tool to simulate it being unavailable
+            # Use remove_from_panel=False to keep restoration simple
+            self._app.toolbox.remove_tool_by_id(CREDENTIALS_TEST_TOOL, remove_from_panel=False)
+
+            # Verify tool is actually removed
+            assert self._app.toolbox.get_tool(CREDENTIALS_TEST_TOOL) is None
+
+            # Test 1: List credentials with include_definition=True
+            response = self._get("/api/users/current/credentials?include_definition=true")
+            self._assert_status_code_is(response, 200)
+            credentials_with_definition = response.json()
+
+            assert len(credentials_with_definition) == 1
+            credential = credentials_with_definition[0]
+
+            # Check that the credential still has basic information
+            assert credential["id"] == user_credentials_id
+            assert credential["source_id"] == CREDENTIALS_TEST_TOOL
+            assert credential["source_type"] == "tool"
+
+            # Check that the fallback definition was provided
+            assert "definition" in credential
+            definition = credential["definition"]
+            assert definition["name"] == payload["service_credential"]["name"]
+            assert definition["version"] == payload["service_credential"]["version"]
+            assert definition["description"] == ""
+            assert definition["label"] == ""
+            assert definition["optional"] is False
+            assert definition["variables"] == []
+            assert definition["secrets"] == []
+
+            # Verify that groups are still present and accessible
+            assert len(credential["groups"]) > 0
+
+            # Test 2: List credentials without include_definition
+            response = self._get("/api/users/current/credentials")
+            self._assert_status_code_is(response, 200)
+            credentials_without_definition = response.json()
+
+            assert len(credentials_without_definition) == 1
+            credential_no_def = credentials_without_definition[0]
+
+            # Should not have definition field when not requested
+            assert "definition" not in credential_no_def
+            assert credential_no_def["id"] == user_credentials_id
+            assert len(credential_no_def["groups"]) > 0
+        finally:
+            # Restore the tool to avoid affecting other tests
+            if tool is not None:
+                self._app.toolbox.register_tool(tool)
+
     def _provide_user_credentials(self, payload=None, status_code=200):
         payload = payload or self._build_credentials_payload()
         response = self._post("/api/users/current/credentials", data=payload, json=True)

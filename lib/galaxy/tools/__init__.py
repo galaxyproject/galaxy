@@ -62,6 +62,7 @@ from galaxy.model import (
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
@@ -4797,6 +4798,66 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
         )
 
 
+class ConvertSampleSheetTool(DatabaseOperationTool):
+    """Convert a sample sheet collection back to its corresponding non-sample-sheet type.
+
+    This tool strips the sample sheet metadata (column_definitions and row columns)
+    and converts the collection type from sample_sheet variants to list variants.
+    """
+
+    tool_type = "convert_sample_sheet"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        has_collection = incoming["input"]
+        if hasattr(has_collection, "element_type"):
+            # It is a DCE
+            collection = has_collection.element_object
+        else:
+            # It is an HDCA
+            collection = has_collection.collection
+
+        input_collection_type = collection.collection_type
+        output_collection_type = _sample_sheet_to_list_collection_type(input_collection_type)
+
+        new_elements: dict[str, Any] = {}
+        copied_datasets = []
+
+        def copy_elements(source_collection, target_dict):
+            for dce in source_collection.elements:
+                element_identifier = dce.element_identifier
+                dce_object = dce.element_object
+                if dce.is_collection:
+                    # Handle nested collections (e.g., paired within sample_sheet:paired)
+                    sub_collection: dict[str, Any] = {}
+                    sub_collection["src"] = "new_collection"
+                    sub_collection["collection_type"] = dce_object.collection_type
+                    sub_elements = {}
+                    for sub_dce in dce_object.elements:
+                        sub_element_identifier = sub_dce.element_identifier
+                        sub_dce_object = sub_dce.element_object
+                        copied_dataset = sub_dce_object.copy(copy_tags=sub_dce_object.tags, flush=False)
+                        sub_elements[sub_element_identifier] = copied_dataset
+                        copied_datasets.append(copied_dataset)
+                    sub_collection["elements"] = sub_elements
+                    target_dict[element_identifier] = sub_collection
+                else:
+                    copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+                    target_dict[element_identifier] = copied_dataset
+                    copied_datasets.append(copied_dataset)
+
+        copy_elements(collection, new_elements)
+        self._add_datasets_to_history(history, copied_datasets)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())),
+            "output",
+            collection_type=output_collection_type,
+            elements=new_elements,
+            propagate_hda_tags=False,
+        )
+
+
 # Populate tool_type to ToolClass mappings
 TOOL_CLASSES: list[type[Tool]] = [
     Tool,
@@ -4816,6 +4877,7 @@ TOOL_CLASSES: list[type[Tool]] = [
     BuildListCollectionTool,
     ExtractDatasetCollectionTool,
     DataDestinationTool,
+    ConvertSampleSheetTool,
 ]
 tool_types = {tool_class.tool_type: tool_class for tool_class in TOOL_CLASSES}
 
