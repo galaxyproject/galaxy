@@ -13,6 +13,7 @@ from typing_extensions import TypedDict
 
 from galaxy.exceptions import (
     AuthenticationRequired,
+    MessageException,
     ObjectNotFound,
 )
 from galaxy.files.models import (
@@ -336,14 +337,14 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         collection_payload = self._prepare_collection_data(title, public_name, user_email)
         collection = self._create_collection(":root", collection_payload, context)
         if not collection or "data" not in collection or "alias" not in collection["data"]:
-            raise Exception("Could not create collection in Dataverse or response has an unexpected format.")
+            raise MessageException("Could not create collection in Dataverse or response has an unexpected format.")
         collection_alias = collection["data"]["alias"]
 
         # Prepare and create the dataset
         dataset_payload = self._prepare_dataset_data(title, public_name, user_email)
         dataset = self._create_dataset(collection_alias, dataset_payload, context)
         if not dataset or "data" not in dataset:
-            raise Exception("Could not create dataset in Dataverse or response has an unexpected format.")
+            raise MessageException("Could not create dataset in Dataverse or response has an unexpected format.")
 
         dataset["data"]["name"] = title
         return dataset["data"]
@@ -421,14 +422,18 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                     f"Authentication required to download file from '{download_file_content_url}'. "
                     f"Please provide a valid API token in your user preferences."
                 )
-            # TODO: We can only download files from published datasets for now
-            if e.code in [403, 404]:
+            if e.code == 403:
+                # Permission denied: dataset may be unpublished or user lacks access rights
+                raise ObjectNotFound(
+                    f"Access forbidden when downloading file from '{download_file_content_url}'. "
+                    f"You may not have permission to access this file, or the dataset is not published."
+                )
+            if e.code == 404:
                 raise ObjectNotFound(
                     f"File not found at '{download_file_content_url}'. "
                     f"Please make sure the dataset and file exist and are published."
                 )
-            else:
-                raise
+            raise
 
     def _get_datasets_from_response(self, response: dict) -> list[RemoteDirectory]:
         rval: list[RemoteDirectory] = []
@@ -494,7 +499,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             error_message = self._get_response_error_message(response)
             if response.status_code == 403:
                 self._raise_auth_required(error_message)
-            raise Exception(
+            raise MessageException(
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
 
