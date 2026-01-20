@@ -11,11 +11,13 @@ Parse the issue number and work level from $ARGUMENTS. Work levels control triag
 
 You will be supplied a Github issue number to triage. A Galaxy developer will be assigned the issue but your job is to structure the conversation around the issue.
 
-Fetch the issue "gh view issue" and write the issue contents to ``ISSUE_<#>.md``.
+Fetch the issue using "gh issue view <number>" and write the issue contents to ``ISSUE_<#>.md``.
+
+Write all triage artifacts to the current working directory.
 
 Galaxy versions look like 24.1, 26.2, etc.. and these correspond to branches such as release_24.1, release_26.2, etc.. Be sure you're on the target branch before continuing.
 
-In serial launch subagents to perform actions to help in the triage process. As the agent responsible for the triage process - please read the artifacts generated from subagents and direct the process as it makes sense. Your job is direct the process though - do not try to fix the issue or do research yourself.
+Launch subagents to perform actions to help in the triage process. Run independent tasks in parallel where possible (e.g., code research and importance assessment can run concurrently since they only need the original issue), but tasks that depend on artifacts from earlier subagents must wait (e.g., history research and planning need to read the code research document first). As the agent responsible for the triage process - please read the artifacts generated from subagents and direct the process as it makes sense. Your job is to direct the process though - do not try to fix the issue or do research yourself.
 
 When to launch subagents and what they should do are as follows:
 
