@@ -3,6 +3,7 @@ Image classes
 """
 
 import base64
+import io
 import json
 import logging
 import math
@@ -18,6 +19,7 @@ from typing import (
 import mrcfile
 import numpy as np
 import png
+import pydicom
 import tifffile
 
 try:
@@ -225,10 +227,12 @@ class Png(Image):
             dataset.metadata.num_unique_values = len(unique_values)
 
 
+@build_sniff_from_prefix
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
     display_behavior = "download"  # TIFF files trigger browser downloads
+
     MetadataElement(
         name="offsets",
         desc="Offsets File",
@@ -238,6 +242,27 @@ class Tiff(Image):
         visible=False,
         optional=True,
     )
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determine if the file is in TIFF format by checking the file header.
+
+        For a successful check, the first 4 bytes must be the TIFF magic number. See [1] for a list of magic numbers.
+
+        Manual checking of the file header, as opposed to trying to read the file with tifffile, is required due to an
+        ambiguity with DICOM files. This is because the DICOM standard allows *any content* for the first 128 bytes of
+        the file, followed by the DICOM prefix (see §7.1 in [2] for details).
+
+        [1] https://gist.github.com/leommoore/f9e57ba2aa4bf197ebc5
+        [2] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
+        """
+        return file_prefix.contents_header_bytes[:4] in (
+            b"\x4d\x4d\x00\x2a",  # TIFF format (Motorola - big endian)
+            b"\x49\x49\x2a\x00",  # TIFF format (Intel - little endian)
+        ) and (
+            len(file_prefix.contents_header_bytes) < 132  # file is too short to be a DICOM
+            or file_prefix.contents_header_bytes[128:132] != b"DICM"  # file does not contain the DICOM prefix
+        )
 
     def set_meta(
         self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
@@ -385,19 +410,14 @@ class Tiff(Image):
 
             yield segment
 
-    def sniff(self, filename: str) -> bool:
-        with tifffile.TiffFile(filename):
-            return True
-
 
 class OMETiff(Tiff):
     file_ext = "ome.tiff"
 
-    def sniff(self, filename: str) -> bool:
-        with tifffile.TiffFile(filename) as tif:
-            if tif.is_ome:
-                return True
-        return False
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        buf = io.BytesIO(file_prefix.contents_header_bytes)
+        with tifffile.TiffFile(buf) as tif:
+            return tif.is_ome
 
 
 class OMEZarr(data.ZarrDirectory):
@@ -517,6 +537,117 @@ class Pdf(Image):
         """Determine if the file is in pdf format."""
         with open(filename, "rb") as fh:
             return fh.read(4) == b"%PDF"
+
+
+@build_sniff_from_prefix
+class Dicom(Image):
+    """
+    DICOM medical imaging format (.dcm)
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('ct_image.dcm')
+    >>> Dicom().sniff(fname)
+    True
+    """
+
+    MetadataElement(
+        name="is_tiled",
+        desc="Is this a WSI DICOM?",
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    edam_format = "format_3548"
+    file_ext = "dcm"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determine if the file is in DICOM format according to §7.1 in [1].
+
+        [1] https://dicom.nema.org/medical/dicom/current/output/html/part10.html
+        """
+        return len(file_prefix.contents_header_bytes) >= 132 and file_prefix.contents_header_bytes[128:132] == b"DICM"
+
+    def get_mime(self) -> str:
+        """
+        Returns the mime type of the datatype.
+        """
+        return "application/dicom"
+
+    def set_meta(
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
+        """
+        Populate the metadata of the DICOM file using the pydicom library.
+
+        The following metadata fields are populated, if possible:
+        - `width`
+        - `height`
+        - `channels`
+        - `dtype`
+        - `num_unique_values` in some cases
+        - `is_tiled`
+
+        Currently, `frames` and `depth` are not populated. This is because "frames" in DICOM are a generic entity,
+        that can be used for different purposes, including slices in 3-D images, frames in temporal sequences, and
+        tiles of a mosaic or pyramid (WSI DICOM). Distinguishing these cases is not straight-forward (and, as a
+        consequence, neither is determining the `axes` of the image). This can be implemented in the future.
+        """
+        try:
+            dcm = pydicom.dcmread(dataset.get_file_name(), stop_before_pixels=True)
+        except pydicom.errors.InvalidDicomError:
+            return  # Ignore errors if metadata cannot be read
+
+        # Determine the number of channels (0 if no channel info is present)
+        dataset.metadata.channels = dcm.get("SamplesPerPixel", 0)
+
+        # Determine if the DICOM file is tiled (likely WSI DICOM)
+        dataset.metadata.is_tiled = hasattr(dcm, "TotalPixelMatrixColumns") and hasattr(dcm, "TotalPixelMatrixRows")
+
+        # Determine the width and height of the dataset. If the DICOM file is not tiled, the width and height
+        # directly. For tiled DICOM, these values correspond to the size of the tiles.
+        if dataset.metadata.is_tiled:
+            dataset.metadata.width = dcm.TotalPixelMatrixColumns
+            dataset.metadata.height = dcm.TotalPixelMatrixRows
+        else:
+            dataset.metadata.width = dcm.get("Columns")
+            dataset.metadata.height = dcm.get("Rows")
+
+        # Try to infer the `dtype` from metadata
+        if dcm.BitsAllocated == 1:
+            dataset.metadata.dtype = "bool"  # 1bit
+        else:
+            dtype_lut = [
+                ["uint8", "int8"],
+                ["uint16", "int16"],
+                ["uint32", "int32"],
+            ]
+            dtype_lut_pos = (
+                round(math.log2(dcm.BitsAllocated) - 3),  # 8bit -> 0, 16bit -> 1, 32bit -> 2
+                dcm.PixelRepresentation,
+            )
+            if 0 <= dtype_lut_pos[0] < len(dtype_lut):
+                dataset.metadata.dtype = dtype_lut[dtype_lut_pos[0]][dtype_lut_pos[1]]
+            else:
+                dataset.metadata.dtype = None  # unknown `dtype`
+
+        # Try to infer `num_unique_values` from metadata
+        try:
+            if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.4":  # https://www.dicomlibrary.com/dicom/sop
+
+                # The DICOM file contains segmentation, count +1 for the image background
+                dataset.metadata.num_unique_values = 1 + len(dcm.SegmentSequence)
+
+            else:
+
+                # Otherwise, `num_unique_values` is not available from metadata
+                dataset.metadata.num_unique_values = None
+
+        except AttributeError:
+
+            # Ignore errors if metadata cannot be read
+            dataset.metadata.num_unique_values = None
 
 
 @build_sniff_from_prefix
