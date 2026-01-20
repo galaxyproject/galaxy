@@ -199,7 +199,7 @@ proto-plus==1.27.0
 protobuf==6.33.4
 prov==1.5.1
 psutil==7.2.1
-pulsar-galaxy-lib==0.15.13
+pulsar-galaxy-lib==0.15.14
 py-key-value-aio==0.3.0
 py-key-value-shared==0.3.0
 pyasn1==0.6.2
