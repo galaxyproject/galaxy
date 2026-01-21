@@ -183,7 +183,6 @@
     "@vue/test-utils": "^1.3.6",
     "@vue/tsconfig": "^0.4.0",
     "autoprefixer": "10.4.16",
-    "axios-mock-adapter": "^1.22.0",
     "buffer": "^6.0.3",
     "cpy-cli": "^5.0.0",
     "eslint": "^8.52.0",
