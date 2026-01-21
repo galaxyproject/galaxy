@@ -208,7 +208,6 @@
                     ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
-                    :highlight-id="highlightId"
                     :scroll-to-id="scrollToId"
                     :initial-position="{ x: 50, y: 50 }"
                     @scrollTo="scrollToId = null"
@@ -713,7 +712,6 @@ export default {
             insertedStateMessages: [],
             refactorActions: [],
             scrollToId: null,
-            highlightId: null,
             highlightAttribute: null,
             messageTitle: null,
             messageBody: null,
@@ -1060,10 +1058,10 @@ export default {
             this.onHighlight(stepId);
         },
         onHighlight(stepId) {
-            this.highlightId = stepId;
+            // TODO: Implement highlighting via the`moveToAndHighlightRegion` method in WorkflowGraph
         },
         onUnhighlight(stepId) {
-            this.highlightId = null;
+            // TODO: implement unhighlighting if needed, otherwise remove this method
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);

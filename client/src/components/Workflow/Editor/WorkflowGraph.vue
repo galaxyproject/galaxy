@@ -31,7 +31,6 @@ const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo", "
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
-    highlightId: { type: Number as PropType<number | null>, default: null },
     scrollToId: { type: Number as PropType<number | null>, default: null },
     readonly: { type: Boolean, default: false },
     initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
