@@ -1,14 +1,12 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import toolsList from "@/components/ToolsView/testData/toolsList.json";
 import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel.json";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -68,30 +66,49 @@ describe("ToolPanel", () => {
      * @returns wrapper
      */
     async function createWrapper(errorView: string = "", failDefault: boolean = false) {
-        const axiosMock = new MockAdapter(axios);
-        axiosMock
-            .onGet(`/api/tools?in_panel=False`)
-            .replyOnce(200, toolsList)
-            .onGet(TEST_PANELS_URI)
-            .reply(200, { default_panel_view: DEFAULT_VIEW_ID, views: viewsList });
-
-        if (errorView) {
-            axiosMock.onGet(`/api/tool_panels/${errorView}`).reply(400, { err_msg: PANEL_VIEW_ERR_MSG });
-            if (errorView !== DEFAULT_VIEW_ID && !failDefault) {
-                axiosMock.onGet(`/api/tool_panels/${DEFAULT_VIEW_ID}`).reply(200, toolsListInPanel);
-            } else if (failDefault) {
-                axiosMock.onGet(`/api/tool_panels/${DEFAULT_VIEW_ID}`).reply(400, { err_msg: PANEL_VIEW_ERR_MSG });
-            }
-        } else {
-            // mock response for all panel views
-            axiosMock.onGet(/\/api\/tool_panels\/.*/).reply(200, toolsListInPanel);
-        }
-
         server.use(
+            http.untyped.get("/api/tools", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("in_panel") === "False") {
+                    return HttpResponse.json(toolsList);
+                }
+                return HttpResponse.json([]);
+            }),
+            http.untyped.get(TEST_PANELS_URI, () => {
+                return HttpResponse.json({ default_panel_view: DEFAULT_VIEW_ID, views: viewsList });
+            }),
             http.get("/api/users/{user_id}", ({ response }) => {
                 return response(200).json(getFakeRegisteredUser());
             }),
         );
+
+        if (errorView) {
+            server.use(
+                http.untyped.get(`/api/tool_panels/${errorView}`, () => {
+                    return HttpResponse.json({ err_msg: PANEL_VIEW_ERR_MSG }, { status: 400 });
+                }),
+            );
+            if (errorView !== DEFAULT_VIEW_ID && !failDefault) {
+                server.use(
+                    http.untyped.get(`/api/tool_panels/${DEFAULT_VIEW_ID}`, () => {
+                        return HttpResponse.json(toolsListInPanel);
+                    }),
+                );
+            } else if (failDefault) {
+                server.use(
+                    http.untyped.get(`/api/tool_panels/${DEFAULT_VIEW_ID}`, () => {
+                        return HttpResponse.json({ err_msg: PANEL_VIEW_ERR_MSG }, { status: 400 });
+                    }),
+                );
+            }
+        } else {
+            // mock response for all panel views
+            server.use(
+                http.untyped.get(/\/api\/tool_panels\/.*/, () => {
+                    return HttpResponse.json(toolsListInPanel);
+                }),
+            );
+        }
 
         // setting this because for the default view, we just show "Tools" as the name
         // even though the backend returns "Full Tool Panel"

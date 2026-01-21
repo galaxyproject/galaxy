@@ -1,11 +1,11 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import DatasetInformation from "./DatasetInformation.vue";
 
@@ -13,6 +13,7 @@ const HDA_ID = "FOO_HDA_ID";
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
+const { server, http } = useServerMock();
 
 interface DatasetResponse {
     id: string;
@@ -45,16 +46,14 @@ const datasetResponse: DatasetResponse = {
 
 describe("DatasetInformation/DatasetInformation", () => {
     let wrapper: Wrapper<Vue>;
-    let axiosMock: MockAdapter;
     let datasetInfoTable: Wrapper<Vue>;
 
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
+        server.use(
+            http.untyped.get(/api\/configuration\/decode\/.*/, () => {
+                return HttpResponse.json({ decoded_id: 123 });
+            }),
+        );
 
         const pinia = createTestingPinia({ createSpy: vi.fn });
 

@@ -1,10 +1,9 @@
 import { mount, type Wrapper } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import raw from "@/components/providers/test/json/Dataset.json";
 
 import paramResponse from "./parameters-response.json";
@@ -21,21 +20,20 @@ const DatasetProvider: any = {
     },
 };
 const pinia = createPinia();
+const { server, http } = useServerMock();
 
 describe("JobParameters/JobParameters.vue", () => {
     const linkParam = paramResponse.parameters.find((element) => Array.isArray(element.value)) ?? {
         text: "Test Parameter not found",
         value: "NOT FOUND",
     };
-    let axiosMock: MockAdapter;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/jobs/${JOB_ID}/parameters_display`).reply(200, paramResponse);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
+        server.use(
+            http.untyped.get(`/api/jobs/${JOB_ID}/parameters_display`, () => {
+                return HttpResponse.json(paramResponse);
+            }),
+        );
     });
 
     it("should render job parameters", async () => {

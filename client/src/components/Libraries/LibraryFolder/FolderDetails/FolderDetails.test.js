@@ -1,13 +1,15 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import apiResponse from "./response.test.json";
 
 import FolderDetails from "./FolderDetails.vue";
+
+const { server, http } = useServerMock();
 
 const LIBRARY_ID = "lib_test_id";
 const FOLDER_ID = "folder_test_id";
@@ -39,12 +41,10 @@ async function mountFolderDetailsWrapper(localVue) {
     return wrapper;
 }
 describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
-    const axiosMock = new MockAdapter(axios);
     let wrapper;
     const localVue = getLocalVue();
 
     beforeEach(async () => {
-        axiosMock.reset();
         wrapper = await mountFolderDetailsWrapper(localVue);
     });
 
@@ -58,8 +58,11 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     });
 
     it("Should display the modal dialog with both tables when the button is clicked", async () => {
-        // Using replyOnce to make sure we made only one request
-        axiosMock.onGet(API_URL).replyOnce(200, apiResponse);
+        server.use(
+            http.untyped.get(API_URL, () => {
+                return HttpResponse.json(apiResponse);
+            }),
+        );
 
         expectModalToBeHidden();
 
@@ -73,7 +76,11 @@ describe("Libraries/LibraryFolder/FolderDetails/FolderDetails.vue", () => {
     });
 
     it("Should display error when the library details cannot be retrieved", async () => {
-        axiosMock.onGet(API_URL).networkError();
+        server.use(
+            http.untyped.get(API_URL, () => {
+                return HttpResponse.error();
+            }),
+        );
 
         await openDetailsModal();
 

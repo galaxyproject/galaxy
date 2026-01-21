@@ -1,14 +1,16 @@
 import { createLocalVue, mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import { BAlert, BTable } from "bootstrap-vue";
 import flushPromises from "flush-promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
 import SelectionDialog from "./SelectionDialog.vue";
 
 vi.mock("app");
+
+const { server, http } = useServerMock();
 
 const mockOptions = {
     callback: () => {},
@@ -19,23 +21,23 @@ const mockOptions = {
 describe("DatasetCollectionDialog.vue", () => {
     let wrapper;
     let localVue;
-    let axiosMock;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
         localVue = createLocalVue();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
         // Initially in loading state.
         const collectionsResponse = [{ id: "f2db41e1fa331b3e", name: "Awesome Collection", hid: 1 }];
-        axiosMock
-            .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
-            .reply(200, collectionsResponse);
+        server.use(
+            http.untyped.get(`/api/histories/${mockOptions.history}/contents`, ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("type") === "dataset_collection") {
+                    return HttpResponse.json(collectionsResponse);
+                }
+                return HttpResponse.json([]);
+            }),
+        );
 
         wrapper = mount(DatasetCollectionDialog, {
             propsData: mockOptions,
@@ -52,10 +54,11 @@ describe("DatasetCollectionDialog.vue", () => {
     });
 
     it("error message set on dataset collection fetch problems", async () => {
-        expect(wrapper.findComponent(BAlert).exists()).toBe(false);
-        axiosMock
-            .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
-            .reply(403, { err_msg: "Bad error" });
+        server.use(
+            http.untyped.get(`/api/histories/${mockOptions.history}/contents`, () => {
+                return HttpResponse.json({ err_msg: "Bad error" }, { status: 403 });
+            }),
+        );
         wrapper = mount(DatasetCollectionDialog, {
             propsData: mockOptions,
             localVue: localVue,

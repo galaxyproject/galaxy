@@ -1,10 +1,10 @@
 // test response
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import testToolsListResponse from "../testData/toolsList";
 import testToolsListInPanelResponse from "../testData/toolsListInPanel";
@@ -12,16 +12,25 @@ import testToolsListInPanelResponse from "../testData/toolsListInPanel";
 import ToolsJson from "./ToolsJson.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 describe("ToolSchemaJson/ToolsView.vue", () => {
     let wrapper;
-    let axiosMock;
     const defaultSchemaElementTag = "application/ld+json";
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/tools?in_panel=False&tool_help=True").reply(200, testToolsListResponse);
-        axiosMock.onGet("/api/tool_panels/default").reply(200, testToolsListInPanelResponse);
+        server.use(
+            http.untyped.get("/api/tools", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("in_panel") === "False" && url.searchParams.get("tool_help") === "True") {
+                    return HttpResponse.json(testToolsListResponse);
+                }
+                return HttpResponse.json([]);
+            }),
+            http.untyped.get("/api/tool_panels/default", () => {
+                return HttpResponse.json(testToolsListInPanelResponse);
+            }),
+        );
         wrapper = shallowMount(ToolsJson, { localVue });
         await flushPromises();
     });

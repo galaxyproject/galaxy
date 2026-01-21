@@ -1,27 +1,30 @@
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import mockInvocationData from "@/components/Workflow/test/json/invocation.json";
 
 import { invocationsProvider } from "./InvocationsProvider";
 
+const { server, http } = useServerMock();
+
 describe("invocationsProvider", () => {
-    let axiosMock;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     describe("fetching invocations without an error", () => {
         it("should make an API call and fire callback", async () => {
-            axiosMock
-                .onGet("/prefix/api/invocations", { params: { limit: 50, offset: 0, include_terminal: false } })
-                .reply(200, [mockInvocationData], { total_matches: "1" });
+            server.use(
+                http.untyped.get("/prefix/api/invocations", ({ request }) => {
+                    const url = new URL(request.url);
+                    if (
+                        url.searchParams.get("limit") === "50" &&
+                        url.searchParams.get("offset") === "0" &&
+                        url.searchParams.get("include_terminal") === "false"
+                    ) {
+                        return HttpResponse.json([mockInvocationData], {
+                            headers: { total_matches: "1" },
+                        });
+                    }
+                    return HttpResponse.json([]);
+                }),
+            );
 
             const ctx = {
                 root: "/prefix/",
