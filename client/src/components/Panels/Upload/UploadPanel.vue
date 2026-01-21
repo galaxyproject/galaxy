@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { faCompass, faSlidersH } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -58,39 +55,11 @@ function selectUploadMethod(method: UploadMethodConfig) {
 function showProgressDetails() {
     router.push("/upload/progress");
 }
-
-function openAdvancedMode() {
-    router.push("/upload/advanced");
-}
-
-function openGuidedMode() {
-    router.push("/upload/guided");
-}
 </script>
 
 <template>
     <div class="upload-panel-wrapper">
         <ActivityPanel title="Import Data" data-description="beta upload panel">
-            <template v-slot:header-buttons>
-                <BButton
-                    v-b-tooltip.hover.bottom.noninteractive
-                    title="Import data using a guided wizard"
-                    variant="link"
-                    size="sm"
-                    @click="openGuidedMode">
-                    <FontAwesomeIcon :icon="faCompass" fixed-width />
-                    Guided
-                </BButton>
-                <BButton
-                    v-b-tooltip.hover.bottom.noninteractive
-                    title="Advanced mode"
-                    variant="link"
-                    size="sm"
-                    @click="openAdvancedMode">
-                    <FontAwesomeIcon :icon="faSlidersH" fixed-width />
-                    Advanced
-                </BButton>
-            </template>
             <template v-slot:header>
                 <UploadProgressIndicator v-if="hasUploads" @show-details="showProgressDetails" />
                 <DelayedInput :delay="100" class="my-2" placeholder="Search upload methods" @change="query = $event" />
