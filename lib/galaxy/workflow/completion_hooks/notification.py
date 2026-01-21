@@ -28,8 +28,8 @@ class SendNotificationHook(WorkflowCompletionHook):
     Hook that sends a notification when a workflow completes.
 
     Uses Galaxy's notification system to notify the user that their
-    workflow has completed. The notification includes the workflow name,
-    completion status, and a summary of job states.
+    workflow has completed. The notification includes the workflow name
+    and a summary of job states.
     """
 
     name = "send_notification"
@@ -56,12 +56,10 @@ class SendNotificationHook(WorkflowCompletionHook):
         workflow_name = self._get_workflow_name(invocation)
 
         # Build notification content
-        status = "successfully" if completion.all_jobs_ok else "with errors"
-        subject = f"Workflow '{workflow_name}' completed {status}"
+        subject = f"Workflow '{workflow_name}' completed"
         message = self._build_message(completion, workflow_name)
 
-        # Determine notification variant based on success
-        variant = NotificationVariant.info if completion.all_jobs_ok else NotificationVariant.warning
+        variant = NotificationVariant.info
 
         # Create the notification request
         notification_data = NotificationCreateData(
@@ -136,13 +134,7 @@ class SendNotificationHook(WorkflowCompletionHook):
 
         lines = [
             f"Your workflow **{workflow_name}** has completed.",
-            "",
         ]
-
-        if completion.all_jobs_ok:
-            lines.append("All jobs completed successfully.")
-        else:
-            lines.append("Some jobs encountered errors.")
 
         if summary:
             lines.extend(["", "**Job Summary:**", ""])

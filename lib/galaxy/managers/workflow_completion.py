@@ -20,7 +20,6 @@ from galaxy.model import (
 from galaxy.schema.invocation import InvocationState
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.workflow.completion import (
-    are_all_jobs_successful,
     compute_job_state_summary,
     is_invocation_complete,
 )
@@ -33,8 +32,7 @@ class WorkflowCompletionManager:
     Manages workflow completion detection and recording.
 
     This manager checks workflow invocations for completion (all jobs in terminal
-    states) and records completion details including job state summaries and
-    success status.
+    states) and records completion details including job state summaries.
     """
 
     def __init__(self, app: MinimalManagerApp):
@@ -88,18 +86,11 @@ class WorkflowCompletionManager:
 
         # Record completion
         job_summary = compute_job_state_summary(invocation)
-        all_ok = are_all_jobs_successful(job_summary)
-        log.debug(
-            "Invocation %d job_summary=%s, all_ok=%s",
-            invocation_id,
-            job_summary,
-            all_ok,
-        )
+        log.debug("Invocation %d job_summary=%s", invocation_id, job_summary)
 
         completion = WorkflowInvocationCompletion(
             workflow_invocation_id=invocation.id,
             job_state_summary=job_summary,
-            all_jobs_ok=all_ok,
             hooks_executed=[],
         )
 
@@ -108,11 +99,7 @@ class WorkflowCompletionManager:
 
         session.add(completion)
         session.commit()
-        log.info(
-            "Recorded completion for invocation %d (all_jobs_ok=%s)",
-            invocation_id,
-            all_ok,
-        )
+        log.info("Recorded completion for invocation %d", invocation_id)
 
         return completion
 

@@ -34,14 +34,6 @@ TERMINAL_JOB_STATES = frozenset(
     ]
 )
 
-# Job states that indicate successful completion (no errors)
-SUCCESSFUL_JOB_STATES = frozenset(
-    [
-        JobState.OK.value,
-        JobState.SKIPPED.value,
-    ]
-)
-
 
 def is_job_terminal(job) -> bool:
     """Check if a job is in a terminal state."""
@@ -166,27 +158,3 @@ def compute_job_state_summary(invocation: "WorkflowInvocation") -> dict[str, int
 
     collect_jobs(invocation)
     return summary
-
-
-def are_all_jobs_successful(job_state_summary: dict[str, int]) -> bool:
-    """
-    Check if all jobs in a summary completed successfully.
-
-    A job is considered successful if it's in OK or SKIPPED state.
-
-    Args:
-        job_state_summary: A dictionary mapping job states to counts.
-
-    Returns:
-        True if all jobs are in successful states, False otherwise.
-    """
-    for state_str in job_state_summary.keys():
-        # Check if this state is a successful state
-        try:
-            state = JobState(state_str)
-            if state not in SUCCESSFUL_JOB_STATES:
-                return False
-        except ValueError:
-            # Unknown state, consider it not successful
-            return False
-    return True

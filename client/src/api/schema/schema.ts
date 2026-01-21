@@ -24694,11 +24694,6 @@ export interface components {
          */
         WorkflowInvocationCompletionResponse: {
             /**
-             * All Jobs OK
-             * @description Whether all jobs completed successfully (OK or SKIPPED states).
-             */
-            all_jobs_ok: boolean;
-            /**
              * Completion Time
              * Format: date-time
              * @description The time when the workflow invocation completed.

@@ -734,11 +734,6 @@ class WorkflowInvocationCompletionResponse(Model):
         title="Job State Summary",
         description="Summary of job states, mapping state names to counts.",
     )
-    all_jobs_ok: bool = Field(
-        ...,
-        title="All Jobs OK",
-        description="Whether all jobs completed successfully (OK or SKIPPED states).",
-    )
     hooks_executed: list[str] = Field(
         default_factory=list,
         title="Hooks Executed",

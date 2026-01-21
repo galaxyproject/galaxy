@@ -17,12 +17,10 @@ from galaxy.schema.invocation import (
 from galaxy.schema.schema import JobState
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.workflow.completion import (
-    are_all_jobs_successful,
     compute_job_state_summary,
     is_invocation_complete,
     is_job_terminal,
     is_step_complete,
-    SUCCESSFUL_JOB_STATES,
     TERMINAL_JOB_STATES,
 )
 
@@ -204,26 +202,6 @@ class TestComputeJobStateSummary:
         assert summary == {"ok": 2, "error": 1}
 
 
-class TestAreAllJobsSuccessful:
-    """Tests for are_all_jobs_successful function."""
-
-    def test_all_ok_jobs_is_successful(self):
-        """Summary with only OK jobs is successful."""
-        assert are_all_jobs_successful({"ok": 5}) is True
-
-    def test_ok_and_skipped_is_successful(self):
-        """Summary with OK and SKIPPED jobs is successful."""
-        assert are_all_jobs_successful({"ok": 3, "skipped": 2}) is True
-
-    def test_error_jobs_is_not_successful(self):
-        """Summary with error jobs is not successful."""
-        assert are_all_jobs_successful({"ok": 3, "error": 1}) is False
-
-    def test_empty_summary_is_successful(self):
-        """Empty summary (no jobs) is considered successful."""
-        assert are_all_jobs_successful({}) is True
-
-
 class TestTerminalStates:
     """Tests for terminal state constants."""
 
@@ -231,10 +209,6 @@ class TestTerminalStates:
         """Terminal states should be string values."""
         for state in TERMINAL_JOB_STATES:
             assert isinstance(state, str)
-
-    def test_successful_states_subset_of_terminal(self):
-        """Successful states should be a subset of terminal states."""
-        assert SUCCESSFUL_JOB_STATES.issubset(TERMINAL_JOB_STATES)
 
 
 class TestWorkflowCompletionManagerHandlerFiltering:

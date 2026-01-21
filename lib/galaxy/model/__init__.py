@@ -10025,8 +10025,6 @@ class WorkflowInvocationCompletion(Base, RepresentById):
     completion_time: Mapped[datetime] = mapped_column(default=now)
     # Summary of final job states: {"ok": 5, "error": 1, "skipped": 2}
     job_state_summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
-    # Whether all jobs completed successfully (no errors)
-    all_jobs_ok: Mapped[bool] = mapped_column(default=False)
     # Hooks that have been executed (for idempotency)
     hooks_executed: Mapped[Optional[list[str]]] = mapped_column(JSON)
 

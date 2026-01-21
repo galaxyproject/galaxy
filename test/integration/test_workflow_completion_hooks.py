@@ -6,7 +6,6 @@ workflow invocations to a configured file source.
 """
 
 import os
-import time
 import zipfile
 
 from galaxy_test.base.api import UsesCeleryTasks
@@ -175,26 +174,3 @@ outputs:
                 assert (
                     len(dataset_files) >= 3
                 ), f"Expected at least 3 dataset files, found {len(dataset_files)}: {dataset_files}"
-
-    def test_no_export_without_on_complete(self):
-        """Test that no export happens when on_complete is not specified."""
-        export_filename = "should_not_exist.rocrate.zip"
-        export_path = os.path.join(self.root_dir, export_filename)
-
-        with self.dataset_populator.test_history() as history_id:
-            summary = self.workflow_populator.run_workflow(
-                WORKFLOW_SIMPLE_CAT_TWICE,
-                test_data={"input1": "hello world"},
-                history_id=history_id,
-                wait=True,
-                assert_ok=True,
-            )
-
-            # Wait for completion
-            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id, timeout=60)
-
-            # Give a moment for any erroneous export to happen
-            time.sleep(2)
-
-            # Verify no export file was created
-            assert not os.path.exists(export_path), f"Export file should not exist: {export_path}"

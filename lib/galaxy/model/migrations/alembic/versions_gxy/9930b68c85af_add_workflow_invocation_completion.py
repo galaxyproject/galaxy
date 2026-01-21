@@ -7,7 +7,6 @@ Create Date: 2026-01-03 12:00:00.000000
 """
 
 from sqlalchemy import (
-    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -46,7 +45,6 @@ def upgrade():
         ),
         Column("completion_time", DateTime),
         Column("job_state_summary", JSON),
-        Column("all_jobs_ok", Boolean, default=False),
         Column("hooks_executed", JSON),
     )
     # Add column to workflow_invocation for per-invocation completion actions

@@ -116,9 +116,8 @@ class WorkflowCompletionMonitor(Monitors):
 
         if completion:
             log.info(
-                "Workflow invocation %d completed (all_jobs_ok=%s)",
+                "Workflow invocation %d completed",
                 invocation_id,
-                completion.all_jobs_ok,
             )
             self._queue_completion_hooks(completion)
 

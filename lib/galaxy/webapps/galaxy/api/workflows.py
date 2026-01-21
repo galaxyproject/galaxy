@@ -1826,6 +1826,5 @@ class FastAPIInvocations:
         return WorkflowInvocationCompletionResponse(
             completion_time=completion.completion_time,
             job_state_summary=completion.job_state_summary or {},
-            all_jobs_ok=completion.all_jobs_ok,
             hooks_executed=completion.hooks_executed or [],
         )
