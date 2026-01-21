@@ -1,11 +1,10 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
-import localize from "@/utils/localization";
 
 import type {
     FieldAlignment,
@@ -95,6 +94,21 @@ interface Props {
      */
     loadingMessage?: string;
 
+    /** Whether to show overlay loading (for sorting/filtering operations)
+     * @default false
+     */
+    overlayLoading?: boolean;
+
+    /** Whether to show load-more loading indicator at bottom (for pagination/scroll)
+     * @default false
+     */
+    loadMoreLoading?: boolean;
+
+    /** Load-more loading message
+     * @default "Loading more..."
+     */
+    loadMoreMessage?: string;
+
     /** Empty state configuration
      * @default { message: "No data available" }
      */
@@ -137,6 +151,9 @@ const props = withDefaults(defineProps<Props>(), {
     noSortReset: false,
     loading: false,
     loadingMessage: "Loading...",
+    overlayLoading: false,
+    loadMoreLoading: false,
+    loadMoreMessage: "Loading more...",
     emptyState: () => ({ message: "No data available" }),
     containerClass: "",
     tableClass: "",
@@ -332,118 +349,117 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
         </div>
 
         <!-- Table wrapper -->
-        <div :id="`g-table-wrapper-${props.id}`" class="g-table-wrapper">
-            <table
-                :id="`g-table-${props.id}`"
-                class="g-table table"
-                :class="[
-                    { 'table-striped': striped },
-                    { 'table-hover': hover },
-                    { 'table-bordered': bordered },
-                    tableClass,
-                ]">
-                <thead>
-                    <tr>
-                        <!-- Select all checkbox column -->
-                        <th v-if="selectable && showSelectAll" class="g-table-select-column">
-                            <BFormCheckbox
-                                :id="getElementId(props.id, 'select-all')"
-                                v-b-tooltip.hover.noninteractive
-                                :checked="allSelected"
-                                :indeterminate="someSelected"
-                                title="Select all"
-                                @change="onSelectAll" />
-                        </th>
-                        <th v-else-if="selectable" class="g-table-select-column"></th>
+        <BOverlay :show="overlayLoading" rounded="sm" class="g-table-wrapper-overlay">
+            <div :id="`g-table-wrapper-${props.id}`" class="g-table-wrapper">
+                <table
+                    :id="`g-table-${props.id}`"
+                    class="g-table table"
+                    :class="[
+                        { 'table-striped': striped },
+                        { 'table-hover': hover },
+                        { 'table-bordered': bordered },
+                        tableClass,
+                    ]">
+                    <thead>
+                        <tr>
+                            <!-- Select all checkbox column -->
+                            <th v-if="selectable && showSelectAll" class="g-table-select-column">
+                                <BFormCheckbox
+                                    :id="getElementId(props.id, 'select-all')"
+                                    v-b-tooltip.hover.noninteractive
+                                    :checked="allSelected"
+                                    :indeterminate="someSelected"
+                                    title="Select all"
+                                    @change="onSelectAll" />
+                            </th>
+                            <th v-else-if="selectable" class="g-table-select-column"></th>
 
-                        <!-- Field columns -->
-                        <th
-                            v-for="field in props.fields"
-                            :id="getFieldId(props.id, field.key)"
-                            :key="field.key"
-                            :class="[
-                                field.headerClass,
-                                getAlignmentClass(field.align),
-                                { 'g-table-sortable': field.sortable },
-                                { 'g-table-sorted': localSortBy === field.key },
-                                { 'hide-on-small': field.hideOnSmall },
-                            ]"
-                            :style="field.width ? { width: field.width } : undefined"
-                            @click="onHeaderClick(field)">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <slot :name="`head(${field.key})`" :field="field">
-                                    <span>{{ field.label || field.key }}</span>
+                            <!-- Field columns -->
+                            <th
+                                v-for="field in props.fields"
+                                :id="getFieldId(props.id, field.key)"
+                                :key="field.key"
+                                :class="[
+                                    field.headerClass,
+                                    getAlignmentClass(field.align),
+                                    { 'g-table-sortable': field.sortable },
+                                    { 'g-table-sorted': localSortBy === field.key },
+                                    { 'hide-on-small': field.hideOnSmall },
+                                ]"
+                                :style="field.width ? { width: field.width } : undefined"
+                                @click="onHeaderClick(field)">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <slot :name="`head(${field.key})`" :field="field">
+                                        <span>{{ field.label || field.key }}</span>
+                                    </slot>
+                                    <FontAwesomeIcon
+                                        v-if="field.sortable && getSortIcon(field)"
+                                        :icon="getSortIcon(field)"
+                                        :class="{ 'text-muted': localSortBy !== field.key }"
+                                        class="ml-1" />
+                                </div>
+                            </th>
+
+                            <!-- Actions column header (if slot provided) -->
+                            <th v-if="$slots.actions || $scopedSlots.actions" class="g-table-actions-column">
+                                <slot name="head(actions)">Actions</slot>
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody v-if="sortedItems.length > 0">
+                        <tr
+                            v-for="(item, index) in sortedItems"
+                            :id="getRowId(props.id, index)"
+                            :key="index"
+                            :class="{
+                                'g-table-row-clickable': clickableRows,
+                                'g-table-row-selected': isRowSelected(index),
+                            }"
+                            @click="onRowClick(item, index, $event)">
+                            <!-- Selection checkbox column -->
+                            <td v-if="selectable" class="g-table-select-column">
+                                <BFormCheckbox
+                                    :id="`${getRowId(props.id, index)}-select`"
+                                    v-b-tooltip.hover.noninteractive
+                                    :checked="isRowSelected(index)"
+                                    title="Select row"
+                                    @click.stop
+                                    @change="onRowSelect(item, index)" />
+                            </td>
+
+                            <!-- Data columns -->
+                            <td
+                                v-for="field in props.fields"
+                                :id="getCellId(props.id, field.key, index)"
+                                :key="field.key"
+                                :class="[
+                                    field.cellClass,
+                                    field.class,
+                                    getAlignmentClass(field.align),
+                                    { 'hide-on-small': field.hideOnSmall },
+                                ]">
+                                <slot :name="`cell(${field.key})`" :value="item[field.key]" :item="item" :index="index">
+                                    <!-- eslint-disable-next-line vue/no-v-html -->
+                                    <span v-if="field.html" v-html="getCellValue(item, field)"></span>
+                                    <span v-else>{{ getCellValue(item, field) }}</span>
                                 </slot>
-                                <FontAwesomeIcon
-                                    v-if="field.sortable && getSortIcon(field)"
-                                    :icon="getSortIcon(field)"
-                                    :class="{ 'text-muted': localSortBy !== field.key }"
-                                    class="ml-1" />
-                            </div>
-                        </th>
-                    </tr>
-                </thead>
+                            </td>
 
-                <tbody v-if="!loading && sortedItems.length > 0">
-                    <tr
-                        v-for="(item, index) in sortedItems"
-                        :id="getRowId(props.id, index)"
-                        :key="index"
-                        :class="{
-                            'g-table-row-clickable': clickableRows,
-                            'g-table-row-selected': isRowSelected(index),
-                        }"
-                        @click="onRowClick(item, index, $event)">
-                        <!-- Selection checkbox column -->
-                        <td v-if="selectable" class="g-table-select-column">
-                            <BFormCheckbox
-                                :id="`${getRowId(props.id, index)}-select`"
-                                v-b-tooltip.hover.noninteractive
-                                :checked="isRowSelected(index)"
-                                title="Select row"
-                                @click.stop
-                                @change="onRowSelect(item, index)" />
-                        </td>
+                            <!-- Actions column -->
+                            <td v-if="$slots.actions || $scopedSlots.actions" class="g-table-actions-column">
+                                <slot name="actions" :item="item" :index="index"></slot>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
-                        <!-- Data columns -->
-                        <td
-                            v-for="field in props.fields"
-                            :id="getCellId(props.id, field.key, index)"
-                            :key="field.key"
-                            :class="[
-                                field.cellClass,
-                                field.class,
-                                getAlignmentClass(field.align),
-                                { 'hide-on-small': field.hideOnSmall },
-                            ]">
-                            <slot :name="`cell(${field.key})`" :value="item[field.key]" :item="item" :index="index">
-                                <!-- eslint-disable-next-line vue/no-v-html -->
-                                <span v-if="field.html" v-html="getCellValue(item, field)"></span>
-                                <span v-else>{{ getCellValue(item, field) }}</span>
-                            </slot>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Loading state -->
-            <div v-if="loading" class="g-table-loading text-center py-4">
-                <LoadingSpan :message="props.loadingMessage" />
+                <!-- Load more loading indicator -->
+                <div v-if="loadMoreLoading && sortedItems.length > 0" class="g-table-load-more py-3 text-center">
+                    <LoadingSpan :message="props.loadMoreMessage" />
+                </div>
             </div>
-
-            <!-- Empty state -->
-            <div
-                v-else-if="sortedItems.length === 0"
-                class="g-table-empty text-center py-4"
-                :class="props.emptyState.variant ? `text-${props.emptyState.variant}` : ''">
-                <slot name="empty">
-                    <BAlert :variant="props.emptyState.variant || 'info'" show>
-                        <FontAwesomeIcon v-if="props.emptyState.icon" :icon="props.emptyState.icon" class="mr-2" />
-                        {{ localize(props.emptyState.message) }}
-                    </BAlert>
-                </slot>
-            </div>
-        </div>
+        </BOverlay>
     </div>
 </template>
 
@@ -452,6 +468,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 @import "@/style/scss/_breakpoints.scss";
 
 .g-table-container {
+    width: 100%;
+}
+
+.g-table-wrapper-overlay {
+    position: relative;
     width: 100%;
 }
 
@@ -513,6 +534,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
         text-align: center;
     }
 
+    .g-table-actions-column {
+        width: 60px;
+        text-align: center;
+    }
+
     @media (max-width: $breakpoint-sm) {
         .hide-on-small {
             display: none;
@@ -526,5 +552,9 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.g-table-load-more {
+    border-top: 1px solid $brand-secondary;
 }
 </style>
