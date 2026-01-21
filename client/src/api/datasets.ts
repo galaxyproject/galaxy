@@ -56,17 +56,21 @@ export async function undeleteDataset(datasetId: string) {
     return data;
 }
 
-export async function purgeDataset(datasetId: string) {
+export async function deleteDataset(datasetId: string, purge: boolean = false) {
     const { data, error } = await GalaxyApi().DELETE("/api/datasets/{dataset_id}", {
         params: {
             path: { dataset_id: datasetId },
-            query: { purge: true },
+            query: { purge },
         },
     });
     if (error) {
         rethrowSimple(error);
     }
     return data;
+}
+
+export async function purgeDataset(datasetId: string) {
+    return deleteDataset(datasetId, true);
 }
 
 type CopyDatasetParamsType = GalaxyApiPaths["/api/histories/{history_id}/contents/{type}s"]["post"]["parameters"];
