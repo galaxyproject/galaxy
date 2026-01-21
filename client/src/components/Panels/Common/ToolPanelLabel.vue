@@ -53,12 +53,11 @@ function onKeydown(event: KeyboardEvent) {
     <div
         v-b-tooltip.topright.hover.noninteractive
         :class="['tool-panel-label', 'tool-panel-divider', { 'tool-panel-label-clickable': isCollapsible }]"
-        tabindex="0"
+        :tabindex="isCollapsible ? 0 : undefined"
         :title="description"
         :role="isCollapsible ? 'button' : undefined"
         :aria-expanded="isCollapsible ? !isCollapsed : undefined"
-        @click="onToggle"
-        @keydown="onKeydown">
+        v-on="isCollapsible ? { click: onToggle, keydown: onKeydown } : {}">
         <span class="tool-panel-label-divider-text tool-panel-divider-text">
             <FontAwesomeIcon
                 v-if="isCollapsible"
