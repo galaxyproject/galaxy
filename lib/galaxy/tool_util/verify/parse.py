@@ -72,15 +72,16 @@ def parse_tool_test_descriptions(
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         validation_exception: Optional[Exception] = None
         request_and_schema: Optional[TestRequestAndSchema] = None
-        try:
-            tool_parameter_bundle = input_models_for_tool_source(tool_source)
-            validated_test_case = case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
-            request_and_schema = TestRequestAndSchema(
-                validated_test_case.tool_state,
-                tool_parameter_bundle,
-            )
-        except Exception as e:
-            validation_exception = e
+        if validate_on_load:
+            try:
+                tool_parameter_bundle = input_models_for_tool_source(tool_source)
+                validated_test_case = case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
+                request_and_schema = TestRequestAndSchema(
+                    validated_test_case.tool_state,
+                    tool_parameter_bundle,
+                )
+            except Exception as e:
+                validation_exception = e
 
         if validation_exception and validate_on_load:
             tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
