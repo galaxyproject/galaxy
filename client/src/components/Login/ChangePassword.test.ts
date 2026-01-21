@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,6 +13,7 @@ vi.mock("utils/redirect", () => ({
 }));
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
 
 interface PostRequest {
@@ -40,6 +41,7 @@ describe("ChangePassword", () => {
                 messageVariant: "message_variant",
             },
             localVue,
+            router,
         });
     });
 
