@@ -34,6 +34,11 @@ const isSelected = computed(() => props.currentPanelView === props.panelView.id)
         @click="emit('onSelect', props.panelView)">
         <FontAwesomeIcon :icon="icon" class="mr-1" fixed-width />
         <span v-localize>{{ panelView.name }}</span>
-        <FontAwesomeIcon v-if="isSelected" :icon="faCheck" class="ml-1" fixed-width />
+        <FontAwesomeIcon
+            v-if="isSelected"
+            :icon="faCheck"
+            class="ml-1"
+            data-description="panel view item icon"
+            fixed-width />
     </BDropdownItem>
 </template>

@@ -11,10 +11,15 @@ import { PANEL_LABEL_IDS } from "../panelViews";
 import ToolPanelLinks from "./ToolPanelLinks.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
-const props = defineProps<{
-    definition: ToolSectionLabel;
-    collapsed?: boolean;
-}>();
+const props = withDefaults(
+    defineProps<{
+        definition: ToolSectionLabel;
+        collapsed?: boolean;
+    }>(),
+    {
+        collapsed: undefined,
+    },
+);
 
 const emit = defineEmits<{
     (e: "toggle", labelId: string): void;

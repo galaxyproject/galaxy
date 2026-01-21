@@ -59,17 +59,19 @@ const toolStore = useToolStore();
 
 const elems = computed(() => {
     if (toolSection.value.elems !== undefined && toolSection.value.elems.length > 0) {
-        return toolSection.value.elems;
+        return toolSection.value.elems.filter((el) => el !== null && el !== undefined);
     }
     if (toolSection.value.tools !== undefined && toolSection.value.tools.length > 0) {
-        return toolSection.value.tools.map((toolId) => {
-            const tool = toolStore.getToolForId(toolId as string);
-            if (!tool && typeof toolId !== "string") {
-                return toolId as ToolSectionLabel;
-            } else {
-                return tool;
-            }
-        });
+        return toolSection.value.tools
+            .map((toolId) => {
+                const tool = toolStore.getToolForId(toolId as string);
+                if (!tool && typeof toolId !== "string") {
+                    return toolId as ToolSectionLabel;
+                } else {
+                    return tool;
+                }
+            })
+            .filter((el) => el !== null && el !== undefined);
     }
     return [];
 });
@@ -161,6 +163,9 @@ function onLabelToggle(labelId: string) {
 function toggleMenu(nextState = !opened.value) {
     opened.value = nextState;
 }
+function getCollapsedState(id: string): boolean | undefined {
+    return typeof props.collapsedLabels[id] === "boolean" ? props.collapsedLabels[id] : undefined;
+}
 </script>
 
 <template>
@@ -197,13 +202,13 @@ function toggleMenu(nextState = !opened.value) {
                 <template v-for="[key, el] in sortedElements">
                     <ToolPanelLabel
                         v-if="toolSectionLabel.text || el.model_class === 'ToolSectionLabel'"
-                        :key="key"
+                        :key="`label-${key}`"
                         :definition="el"
-                        :collapsed="props.collapsedLabels[el.id]"
+                        :collapsed="getCollapsedState(el.id)"
                         @toggle="onLabelToggle" />
                     <Tool
                         v-else
-                        :key="key"
+                        :key="`tool-${key}`"
                         class="ml-2"
                         :tool="el"
                         :tool-key="toolKey"
@@ -221,7 +226,7 @@ function toggleMenu(nextState = !opened.value) {
         <ToolPanelLabel
             v-if="toolSectionLabel.text"
             :definition="toolSectionLabel"
-            :collapsed="props.collapsedLabels[toolSectionLabel.id]"
+            :collapsed="getCollapsedState(toolSectionLabel.id)"
             @toggle="onLabelToggle" />
         <Tool
             v-else
