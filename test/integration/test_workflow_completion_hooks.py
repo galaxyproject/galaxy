@@ -15,60 +15,32 @@ from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
+from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-def get_simple_file_source_config(root_dir: str) -> str:
-    """Generate a simple posix file source config without role/group restrictions."""
-    return f"""
-- type: posix
-  id: completion_export_test
-  label: Completion Export Test
-  doc: File source for workflow completion export tests
-  root: {root_dir}
-  writable: true
-"""
-
-
-class TestWorkflowCompletionExportHook(IntegrationTestCase, UsesCeleryTasks):
+class TestWorkflowCompletionExportHook(PosixFileSourceSetup, IntegrationTestCase, UsesCeleryTasks):
     """Integration tests for the export_to_file_source completion hook."""
 
     dataset_populator: DatasetPopulator
     workflow_populator: WorkflowPopulator
     framework_tool_and_types = True
-    root_dir: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
-        # Set up temp directory for file source using test driver's mkdtemp
-        temp_dir = os.path.realpath(cls._test_driver.mkdtemp())
-        cls.root_dir = os.path.join(temp_dir, "root")
-        os.makedirs(cls.root_dir, exist_ok=True)
-
-        # Create file sources config
-        file_sources_config = get_simple_file_source_config(cls.root_dir)
-        file_sources_config_file = os.path.join(temp_dir, "file_sources_conf.yml")
-        with open(file_sources_config_file, "w") as f:
-            f.write(file_sources_config)
-        config["file_sources_config_file"] = file_sources_config_file
-
-        # Disable stock file source plugins
-        config["ftp_upload_dir"] = None
-        config["library_import_dir"] = None
-        config["user_library_import_dir"] = None
-
     def setUp(self):
         super().setUp()
+        self._write_file_fixtures()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     def test_export_to_file_source_on_completion(self):
         """Test that export_to_file_source hook exports invocation when workflow completes."""
         export_filename = "test_export.rocrate.zip"
-        target_uri = f"gxfiles://completion_export_test/{export_filename}"
+        target_uri = f"gxfiles://posix_test/{export_filename}"
 
         with self.dataset_populator.test_history() as history_id:
             summary = self.workflow_populator.run_workflow(
@@ -133,7 +105,7 @@ outputs:
     outputSource: cat2/out_file1
 """
         export_filename = "multi_output_export.rocrate.zip"
-        target_uri = f"gxfiles://completion_export_test/{export_filename}"
+        target_uri = f"gxfiles://posix_test/{export_filename}"
 
         with self.dataset_populator.test_history() as history_id:
             summary = self.workflow_populator.run_workflow(

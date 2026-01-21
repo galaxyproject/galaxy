@@ -19,10 +19,7 @@ from galaxy.model import (
 )
 from galaxy.schema.invocation import InvocationState
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.workflow.completion import (
-    compute_job_state_summary,
-    is_invocation_complete,
-)
+from galaxy.workflow.completion import compute_job_state_summary
 
 log = logging.getLogger(__name__)
 
@@ -79,7 +76,7 @@ class WorkflowCompletionManager:
             return None
 
         # Check if complete
-        complete = is_invocation_complete(invocation)
+        complete = invocation.is_complete
         log.debug("Invocation %d is_complete=%s", invocation_id, complete)
         if not complete:
             return None
