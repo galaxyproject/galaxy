@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
@@ -35,14 +36,20 @@ const props = defineProps<{
     creator?: any;
     datatypesMapper: DatatypesMapperModel;
 }>();
+
+const { confirm } = useConfirmDialog();
+
 const stores = useWorkflowStores();
 const { stepStore, stateStore } = stores;
 const { hasActiveOutputs } = storeToRefs(stepStore);
+
 const { untypedParameters, unlabeledOutputs, untypedParameterWarnings, disconnectedInputs, missingMetadata } =
     props.lintData;
+
 const showRefactor = computed(
     () => !untypedParameterWarnings.value.length || !disconnectedInputs.value.length || !unlabeledOutputs.value.length,
 );
+
 const checkAnnotation = computed(() => Boolean(props.annotation));
 const checkAnnotationLength = computed(() => Boolean(!props.annotation || props.annotation.length <= 250));
 const annotationLengthSuccessMessage = computed(() =>
@@ -74,35 +81,38 @@ const emit = defineEmits<{
 function onAttributes(highlight: string) {
     emit("onAttributes", { highlight: "highlight" });
 }
-function onFixUntypedParameter(item: LintState) {
-    if (
-        confirm(
-            "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?",
-        )
-    ) {
+
+async function onFixUntypedParameter(item: LintState) {
+    const confirmed = await confirm(
+        "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?",
+        "Fix Untyped Parameter",
+    );
+
+    if (confirmed) {
         emit("onRefactor", [fixUntypedParameter(item)]);
     } else {
         emit("onScrollTo", item.stepId);
     }
 }
-function onFixDisconnectedInput(item: LintState) {
-    if (
-        confirm(
-            "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?",
-        )
-    ) {
+
+async function onFixDisconnectedInput(item: LintState) {
+    const confirmed = await confirm(
+        "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?",
+        "Fix Disconnected Input",
+    );
+    if (confirmed) {
         emit("onRefactor", [fixDisconnectedInput(item)]);
     } else {
         emit("onScrollTo", item.stepId);
     }
 }
 
-function onFixUnlabeledOutputs(item: LintState) {
-    if (
-        confirm(
-            "This issue can be fixed automatically by removing all unlabeled workflow outputs. Do you want to proceed?",
-        )
-    ) {
+async function onFixUnlabeledOutputs(item: LintState) {
+    const confirmed = await confirm(
+        "This issue can be fixed automatically by removing all unlabeled workflow outputs. Do you want to proceed?",
+        "Fix Unlabeled Outputs",
+    );
+    if (confirmed) {
         emit("onRefactor", [fixUnlabeledOutputs()]);
     } else {
         emit("onScrollTo", item.stepId);
