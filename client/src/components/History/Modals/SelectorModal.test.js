@@ -55,8 +55,8 @@ describe("History SelectorModal.vue", () => {
     async function mountWith(props) {
         server.use(
             http.get("/api/histories", ({ response, query }) => {
-                const offset = Number(query.get("offset")) ?? 0;
-                const limit = Number(query.get("limit")) ?? 10;
+                const offset = Number(query.get("offset")) || 0;
+                const limit = Number(query.get("limit")) || 10;
                 return response(200).json(allHistories.slice(offset, offset + limit));
             }),
             http.get("/api/histories/count", ({ response }) => {
@@ -66,8 +66,8 @@ describe("History SelectorModal.vue", () => {
 
         const pinia = createPinia();
         wrapper = mount(SelectorModal, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
             pinia,
             stubs: {
                 icon: { template: "<div></div>" },

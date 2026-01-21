@@ -60,11 +60,11 @@ describe("ToolForm", () => {
         axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, []);
 
         wrapper = mount(ToolForm, {
-            propsData: {
+            props: {
                 id: "tool_id",
                 version: "version",
             },
-            localVue,
+            global: localVue,
             stubs: {
                 UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
                 FormDisplay: true,

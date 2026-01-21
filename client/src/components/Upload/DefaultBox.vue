@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Vue, { computed, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { computed, type Ref, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import type { HDASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
@@ -162,7 +162,7 @@ function eventAnnounce(index: string, file: UploadFile) {
         fileSize: file.size,
         fileUri: file.uri,
     };
-    Vue.set(uploadItems.value, index, uploadModel);
+    uploadItems.value[index] = uploadModel;
 }
 
 /** Populates and opens collection builder with uploaded files, or emits uploads */
@@ -239,7 +239,7 @@ function eventRemove(index: string) {
         } else {
             counterAnnounce.value--;
         }
-        Vue.delete(uploadItems.value, index);
+        delete uploadItems.value[index];
         queue.value.remove(index);
     }
 }
@@ -553,11 +553,11 @@ defineExpose({
         </div>
         <CollectionCreatorIndex
             v-if="isCollection && historyId"
+            v-model:show="collectionModalShow"
             :history-id="historyId"
             :collection-type="collectionType"
             :extended-collection-type="{}"
             :selected-items="selectedItemsForModal"
-            :show.sync="collectionModalShow"
             default-hide-source-items />
     </div>
 </template>

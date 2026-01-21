@@ -4,7 +4,7 @@ import { faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import type { WorkflowInvocation } from "@/api/invocations";
 import { getData } from "@/components/Grid/configs/invocations";
@@ -102,6 +102,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
 
 <template>
     <ScrollList
+        v-model:prop-scroll-top="scrollListScrollTop"
         :loader="loadInvocations"
         :item-key="(invocation) => invocation.id"
         :in-panel="props.inPanel"
@@ -110,8 +111,7 @@ function getInvocationBadges(invocation: WorkflowInvocation) {
         adjust-for-total-count-changes
         name="invocation"
         name-plural="invocations"
-        :load-disabled="!currentUser || currentUser.isAnonymous"
-        :prop-scroll-top.sync="scrollListScrollTop">
+        :load-disabled="!currentUser || currentUser.isAnonymous">
         <template v-slot:item="{ item: invocation }">
             <GCard
                 :id="`invocation-${invocation.id}`"

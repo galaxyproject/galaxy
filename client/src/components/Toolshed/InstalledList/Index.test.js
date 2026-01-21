@@ -37,13 +37,13 @@ describe("InstalledList", () => {
     it("test installed list", async () => {
         const localVue = getLocalVue();
         const wrapper = mount(Index, {
-            propsData: {
+            props: {
                 filter: "",
             },
             stubs: {
                 RepositoryDetails: true,
             },
-            localVue,
+            global: localVue,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading installed repositories...");
         await wrapper.vm.$nextTick();

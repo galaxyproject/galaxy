@@ -2,8 +2,8 @@
 import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
-import Vue, { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { type components, GalaxyApi } from "@/api";
 import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
@@ -82,7 +82,7 @@ function convertUTCtoLocal(utcTimeString: string) {
 
 function addActionLink() {
     if (!broadcastData.value.content.action_links) {
-        Vue.set(broadcastData.value.content, "action_links", []);
+        broadcastData.value.content.action_links = [];
     }
 
     broadcastData.value.content.action_links?.push({

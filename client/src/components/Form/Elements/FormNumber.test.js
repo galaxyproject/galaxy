@@ -10,8 +10,8 @@ const localVue = getLocalVue();
 describe("FormInput", () => {
     const mountFormNumber = async (props) =>
         await mount(FormNumber, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
         });
 
     const getInput = async (wrapper) => await wrapper.find("input[type='number']");
@@ -31,7 +31,7 @@ describe("FormInput", () => {
 
             const inputRange = await getInputRange(wrapper);
             expect(inputRange.exists()).toBe(shoudExist);
-            wrapper.destroy();
+            wrapper.unmount();
         };
 
         const props = { value: 50, type: "float" };
@@ -59,7 +59,7 @@ describe("FormInput", () => {
             const alert = await getAlert(wrapper);
             expect(alert.exists()).toBeTruthy();
             expect(alert.text().includes(`${number} is out`)).toBeTruthy();
-            wrapper.destroy();
+            wrapper.unmount();
         };
 
         const numberBiggerThanRange = [110, Number.MAX_VALUE];
@@ -87,7 +87,7 @@ describe("FormInput", () => {
 
             const alert = await getAlert(wrapper);
             expect(alert.exists()).toBeTruthy();
-            wrapper.destroy();
+            wrapper.unmount();
         };
 
         const props = { value: 50, type: "integer", min: 10, max: 100 };

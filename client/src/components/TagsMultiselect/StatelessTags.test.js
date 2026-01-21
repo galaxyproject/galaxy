@@ -11,8 +11,8 @@ const localVue = getLocalVue();
 
 const mountWithProps = (props) => {
     return mount(StatelessTags, {
-        propsData: props,
-        localVue,
+        props: props,
+        global: localVue,
     });
 };
 

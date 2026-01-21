@@ -61,7 +61,7 @@ describe("usePopper", () => {
     test("should destroy Popper instance on unmount", () => {
         const wrapper = createTestComponent();
         const popperInstance = createPopper.mock.results[0].value;
-        wrapper.destroy();
+        wrapper.unmount();
         expect(popperInstance.destroy).toHaveBeenCalled();
     });
 

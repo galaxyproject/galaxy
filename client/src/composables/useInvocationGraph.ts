@@ -8,7 +8,7 @@ import {
     faSpinner,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import { computed, type Ref, ref, set } from "vue";
+import { computed, type Ref, ref } from "vue";
 
 import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
@@ -193,7 +193,7 @@ export function useInvocationGraph(
 
             // add the graph step to the steps object if it doesn't exist yet
             if (!steps.value[i]) {
-                set(steps.value, i, graphStepFromWfStep);
+                steps.value[i] = graphStepFromWfStep;
             }
         }
 
@@ -244,7 +244,7 @@ export function useInvocationGraph(
                     }
                     // now store the job states for this step in the graph step, if they changed since the last time
                     if (JSON.stringify(graphStep.jobs) !== JSON.stringify(invocationStepSummary.states)) {
-                        set(graphStep, "jobs", invocationStepSummary.states);
+                        graphStep.jobs = invocationStepSummary.states;
                     }
                 } else {
                     // TODO: There is no summary for this step's `job_id`; what does this mean?
@@ -321,19 +321,19 @@ export function useInvocationGraph(
             if (inputItem.src === "hda") {
                 const hda = await fetchDatasetDetails({ id: inputItem.id });
                 // TODO: There is a type mismatch for `hda.state` and `GraphStep["state"]`
-                set(graphStep, "state", getContentItemState(hda));
-                set(graphStep, "nodeText", `${hda.hid}: <b>${hda.name}</b>`);
+                graphStep.state = getContentItemState(hda) as GraphStep["state"];
+                graphStep.nodeText = `${hda.hid}: <b>${hda.name}</b>`;
             } else {
                 const hdca = await fetchCollectionSummary({ hdca_id: inputItem.id });
                 // TODO: Same type mismatch as above
-                set(graphStep, "state", getContentItemState(hdca));
-                set(graphStep, "nodeText", `${hdca.hid}: <b>${hdca.name}</b>`);
+                graphStep.state = getContentItemState(hdca) as GraphStep["state"];
+                graphStep.nodeText = `${hdca.hid}: <b>${hdca.name}</b>`;
             }
         } else if (inputParam) {
             if (typeof inputParam.parameter_value === "boolean") {
-                set(graphStep, "nodeText", inputParam.parameter_value);
+                graphStep.nodeText = inputParam.parameter_value;
             } else {
-                set(graphStep, "nodeText", `<b>${inputParam.parameter_value}</b>`);
+                graphStep.nodeText = `<b>${inputParam.parameter_value}</b>`;
             }
         }
         setHeaderClass(graphStep);

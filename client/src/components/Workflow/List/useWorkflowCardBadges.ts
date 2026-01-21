@@ -1,7 +1,7 @@
 import { faLayerGroup, faList, faSpinner, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { WorkflowSummary } from "@/api/workflows";
 import type { CardBadge } from "@/components/Common/GCard.types";

@@ -88,7 +88,9 @@ watchImmediate(
         </BAlert>
         <Multiselect
             v-else
+            id="license-selector"
             v-model="currentLicense"
+            name="license-selector"
             data-description="license select"
             track-by="licenseId"
             :options="licenseOptions"

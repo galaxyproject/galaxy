@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
+import { computed, onMounted, type Ref, ref, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
@@ -226,7 +226,7 @@ watch(historyItems, (newHistoryItems) => {
     // Re-hide invisible history items when `historyItems` changes
     for (const newHistoryItem of newHistoryItems) {
         if (invisibleHistoryItems.value[newHistoryItem.hid]) {
-            VueSet(invisibleHistoryItems.value, newHistoryItem.hid, false);
+            invisibleHistoryItems.value[newHistoryItem.hid] = false;
         }
     }
 });
@@ -332,7 +332,7 @@ function reloadContents() {
 }
 
 function setInvisible(item: HistoryItemSummary) {
-    VueSet(unref(invisibleHistoryItems), item.hid, true);
+    unref(invisibleHistoryItems)[item.hid] = true;
 }
 
 function onTagChange(item: HistoryItemSummary, newTags: string[]) {
@@ -419,14 +419,14 @@ const {
             <FilterMenu
                 v-if="filterable"
                 :key="props.history.id"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 class="content-operations-filters mx-3"
                 name="History Items"
                 placeholder="search datasets"
                 :filter-class="filterClass"
-                :filter-text.sync="filterText"
                 :loading="isLoading"
-                :search-error="searchError"
-                :show-advanced.sync="showAdvanced" />
+                :search-error="searchError" />
 
             <section v-if="!showAdvanced">
                 <HistoryDetails :history="history" :writeable="canEditHistory" :summarized="detailsSummarized" />
@@ -434,27 +434,28 @@ const {
                 <HistoryMessages v-if="!isMultiViewItem" :history="history" :current-user="currentUser" />
 
                 <HistoryCounter
+                    v-model:filter-text="filterText"
                     :history="history"
                     :is-watching="isWatching"
                     :last-checked="lastCheckedTime"
                     :show-controls="canEditHistory"
                     :owned-by-current-user="userOwnsHistory(currentUser, history)"
-                    :filter-text.sync="filterText"
                     :hide-reload="isMultiViewItem"
                     @reloadContents="reloadContents" />
 
                 <HistoryOperations
+                    v-model:operation-running="operationRunning"
                     :history="history"
                     :editable="canEditHistory"
                     :is-multi-view-item="isMultiViewItem"
                     :show-selection="showSelection"
                     :expanded-count="expandedCount"
                     :has-matches="hasMatches(historyItems)"
-                    :operation-running.sync="operationRunning"
                     @update:show-selection="setShowSelection"
                     @collapse-all="collapseAll">
                     <template v-slot:selection-operations>
                         <HistorySelectionOperations
+                            v-model:operation-running="operationRunning"
                             :history="history"
                             :is-multi-view-item="isMultiViewItem"
                             :filter-text="filterText"
@@ -462,7 +463,6 @@ const {
                             :selection-size="selectionSize"
                             :is-query-selection="isQuerySelection"
                             :total-items-in-query="totalMatchesCount"
-                            :operation-running.sync="operationRunning"
                             @update:show-selection="setShowSelection"
                             @operation-error="onOperationError"
                             @hide-selection="onHideSelection"

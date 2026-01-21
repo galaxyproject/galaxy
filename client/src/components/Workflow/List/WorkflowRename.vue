@@ -28,7 +28,7 @@ async function onRename(newName: string) {
     try {
         await updateWorkflow(props.id, { name: newName });
         Toast.success("Workflow renamed");
-    } catch (e) {
+    } catch {
         Toast.error("Failed to rename workflow");
     } finally {
         emit("close");

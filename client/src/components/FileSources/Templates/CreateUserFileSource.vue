@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import { FileSourcesValidFilters, templateTypes } from "@/api/fileSources";
 import { Toast } from "@/composables/toast";
@@ -17,13 +17,14 @@ const breadcrumbItems = [
 
 const userStore = useUserStore();
 const router = useRouter();
+const route = useRoute();
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 
 const currentListView = computed(() => userStore.currentListViewPreferences.fileSourceOptions || "grid");
 const templates = computed(() => fileSourceTemplatesStore.latestTemplates);
 
 function handleOAuth2Redirect() {
-    const { error } = router.currentRoute.query;
+    const { error } = route.query || {};
 
     if (error) {
         if (error === "access_denied") {

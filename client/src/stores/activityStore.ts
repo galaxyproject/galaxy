@@ -2,7 +2,7 @@
  * Stores the Activity Bar state
  */
 import { useDebounceFn, watchImmediate } from "@vueuse/core";
-import { computed, type Ref, ref, set } from "vue";
+import { computed, type Ref, ref } from "vue";
 
 import { useHashedUserId } from "@/composables/hashedUserIdFromUserStore";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -144,7 +144,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         let meta = activityMeta.value[activityId];
 
         if (!meta) {
-            set(activityMeta.value, activityId, defaultActivityMeta());
+            activityMeta.value[activityId] = defaultActivityMeta();
             meta = ensureDefined(activityMeta.value[activityId]);
         }
 
@@ -155,11 +155,11 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         let meta = activityMeta.value[activityId];
 
         if (!meta) {
-            set(activityMeta.value, activityId, defaultActivityMeta());
+            activityMeta.value[activityId] = defaultActivityMeta();
             meta = ensureDefined(activityMeta.value[activityId]);
         }
 
-        set(meta, metaKey, value);
+        meta[metaKey] = value;
     }
 
     watchImmediate(

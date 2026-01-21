@@ -8,8 +8,8 @@ const localVue = getLocalVue();
 
 async function mountComponent(propsData: { item: { name: string; state: string } }) {
     return shallowMount(DatasetName as object, {
-        propsData,
-        localVue,
+        props: propsData,
+        global: localVue,
     });
 }
 

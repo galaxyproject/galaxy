@@ -135,12 +135,12 @@
         </b-modal>
         <CollectionCreatorIndex
             v-if="collectionModalType"
+            v-model:show="collectionModalShow"
             :history-id="history.id"
             :collection-type="collectionModalType"
             :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
-            :show.sync="collectionModalShow"
             hide-on-create
             default-hide-source-items
             @created-collection="createdCollection" />

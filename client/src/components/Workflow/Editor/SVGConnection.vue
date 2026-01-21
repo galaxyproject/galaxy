@@ -78,9 +78,9 @@ const inputIsMappedOver = computed(
 const outputIsOptional = computed(() => {
     return Boolean(
         stepStore.getStep(props.connection.output.stepId)?.when ||
-            stepStore
-                .getStep(props.connection.output.stepId)
-                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional),
+        stepStore
+            .getStep(props.connection.output.stepId)
+            ?.outputs.find((output) => output.name === props.connection.output.name && output.optional),
     );
 });
 

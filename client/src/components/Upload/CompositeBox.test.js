@@ -8,7 +8,7 @@ const localVue = getLocalVue();
 
 function getWrapper() {
     return mount(mountTarget, {
-        propsData: {
+        props: {
             defaultDbKey: "?",
             effectiveExtensions: [
                 {
@@ -33,7 +33,7 @@ function getWrapper() {
             historyId: "historyId",
             listDbKeys: [],
         },
-        localVue,
+        global: localVue,
     });
 }
 

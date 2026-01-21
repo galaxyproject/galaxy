@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BAlert, BButton, BCard, BFormCheckbox, BOverlay, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
@@ -346,13 +346,13 @@ watch(operationMessage, () => {
             </div>
             <FilterMenu
                 v-if="filterClass"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 :class="{ 'py-2': !embedded }"
                 :name="gridConfig.plural"
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="filterClass"
-                :filter-text.sync="filterText"
                 :loading="initDataLoading || resultsLoading"
-                :show-advanced.sync="showAdvanced"
                 view="compact" />
         </div>
         <LoadingSpan v-if="initDataLoading" />

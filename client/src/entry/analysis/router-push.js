@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "@/app";
+import { eventBus } from "@/utils/eventBus";
 import { addSearchParams } from "@/utils/url";
 
 /**
@@ -41,7 +42,7 @@ export function patchRouterPush(VueRouter) {
             return;
         }
         // always emit event, even when a duplicate route is pushed
-        this.app.$emit("router-push");
+        eventBus.emit("router-push");
         // avoid console warning when user clicks to revisit same route
         return originalPush.call(this, location).catch((err) => {
             if (err.name !== "NavigationDuplicated") {

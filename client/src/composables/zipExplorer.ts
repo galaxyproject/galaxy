@@ -334,7 +334,7 @@ export async function isRemoteZipFile(url: string): Promise<boolean> {
 
         // Check for ZIP magic number: 0x50 0x4B 0x03 0x04
         return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
-    } catch (err) {
+    } catch {
         return false;
     }
 }
@@ -346,7 +346,7 @@ export function isValidUrl(inputUrl?: string | null): boolean {
     try {
         const url = new URL(inputUrl);
         return url.protocol === "http:" || url.protocol === "https:";
-    } catch (_) {
+    } catch {
         return false;
     }
 }

@@ -37,7 +37,7 @@ describe("ToolCard", () => {
         const pinia = createPinia();
 
         wrapper = mount(ToolCard, {
-            propsData: {
+            props: {
                 id: "identifier",
                 version: "version",
                 title: "title",
@@ -60,7 +60,7 @@ describe("ToolCard", () => {
             stubs: {
                 ToolSourceMenuItem: { template: "<div></div>" },
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         userStore = useUserStore();

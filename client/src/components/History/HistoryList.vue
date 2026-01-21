@@ -23,7 +23,7 @@ import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@for
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import {
     type AnyHistoryEntry,
@@ -589,13 +589,13 @@ onMounted(async () => {
 
             <FilterMenu
                 id="history-list-filter"
+                v-model:filter-text="filterText"
+                v-model:show-advanced="showAdvanced"
                 name="history-list-filter"
                 :filter-class="historyListFilters"
-                :filter-text.sync="filterText"
                 :loading="loading || overlay"
                 view="compact"
-                :placeholder="searchPlaceHolder"
-                :show-advanced.sync="showAdvanced" />
+                :placeholder="searchPlaceHolder" />
 
             <ListHeader
                 ref="listHeader"

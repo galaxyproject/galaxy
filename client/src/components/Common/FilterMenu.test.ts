@@ -97,14 +97,14 @@ describe("FilterMenu", () => {
 
     function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
         wrapper = mount(FilterMenu as object, {
-            propsData: {
+            props: {
                 name: name,
                 placeholder: placeholder,
                 filterClass: filterClass,
                 filterText: "",
                 showAdvanced: false,
             },
-            localVue,
+            global: localVue,
             stubs: {
                 icon: { template: "<div></div>" },
             },

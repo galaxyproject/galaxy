@@ -13,7 +13,7 @@ const localVue = getLocalVue();
 
 const mockPush = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
@@ -21,8 +21,8 @@ vi.mock("vue-router/composables", () => ({
 
 function mountTarget(props = {}) {
     return mount(PageForm, {
-        localVue,
-        propsData: props,
+        global: localVue,
+        props: props,
         stubs: {
             FontAwesomeIcon: true,
             BButton: true,

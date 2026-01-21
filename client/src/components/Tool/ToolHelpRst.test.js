@@ -29,10 +29,10 @@ const expectedHelpText = `
 describe("ToolHelp RST", () => {
     it("modifies help text", () => {
         const wrapper = mount(ToolHelpRst, {
-            propsData: {
+            props: {
                 content: inputHelpText,
             },
-            localVue,
+            global: localVue,
         });
 
         const help = wrapper.find(".form-help");

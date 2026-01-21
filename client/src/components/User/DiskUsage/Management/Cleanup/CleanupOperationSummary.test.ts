@@ -74,8 +74,8 @@ async function mountCleanupOperationSummaryWith(
     refreshDelay = 0,
 ) {
     const wrapper = mount(CleanupOperationSummary as object, {
-        propsData: { operation, refreshOperationId, refreshDelay },
-        localVue,
+        props: { operation, refreshOperationId, refreshDelay },
+        global: localVue,
     });
     await flushPromises();
     vi.runAllTimers();

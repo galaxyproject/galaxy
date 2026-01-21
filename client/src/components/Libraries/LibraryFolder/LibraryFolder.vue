@@ -1,10 +1,10 @@
 <template>
     <div>
         <FolderTopBar
+            v-model:include-deleted="includeDeleted"
             :search-text="searchText"
             :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
-            :include-deleted.sync="includeDeleted"
             :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"
@@ -20,9 +20,9 @@
         <b-table
             id="folder_list_body"
             ref="folder_content_table"
+            v-model:busy="isBusy"
             striped
             hover
-            :busy.sync="isBusy"
             :fields="fields"
             :items="folderContents"
             :per-page="perPage"
@@ -243,19 +243,21 @@
 
                 <b-col cols="1.5">
                     <table>
-                        <tr>
-                            <td class="m-0 p-0">
-                                <b-form-input
-                                    id="paginationPerPage"
-                                    v-model="perPage"
-                                    class="pagination-input-field"
-                                    autocomplete="off"
-                                    type="number" />
-                            </td>
-                            <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
-                            </td>
-                        </tr>
+                        <tbody>
+                            <tr>
+                                <td class="m-0 p-0">
+                                    <b-form-input
+                                        id="paginationPerPage"
+                                        v-model="perPage"
+                                        class="pagination-input-field"
+                                        autocomplete="off"
+                                        type="number" />
+                                </td>
+                                <td class="text-muted ml-1 paginator-text">
+                                    <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </b-col>
             </b-row>

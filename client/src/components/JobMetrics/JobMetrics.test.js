@@ -22,10 +22,10 @@ describe("JobMetrics/JobMetrics.vue", () => {
     it("should not render a div if no plugins found in store", async () => {
         const wrapper = mount(JobMetrics, {
             pinia: createTestingPinia({ createSpy: vi.fn }),
-            propsData: {
+            props: {
                 jobId: "9000",
             },
-            localVue,
+            global: localVue,
         });
 
         await wrapper.vm.$nextTick();
@@ -56,9 +56,9 @@ describe("JobMetrics/JobMetrics.vue", () => {
         setActivePinia(pinia);
 
         const wrapper = mount(JobMetrics, {
-            localVue,
+            global: localVue,
             pinia,
-            propsData: {
+            props: {
                 jobId: JOB_ID,
             },
         });

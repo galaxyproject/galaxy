@@ -83,17 +83,17 @@ describe("DirectoryPathEditableBreadcrumb", () => {
         const pinia = createPinia();
 
         wrapper = mount(FormDirectory, {
-            propsData: {
+            props: {
                 value: null,
             },
-            localVue: localVue,
+            global: localVue,
             pinia,
         });
         await flushPromises();
     });
     afterEach(async () => {
         if (wrapper) {
-            wrapper.destroy();
+            wrapper.unmount();
         }
         wrapper = undefined;
     });

@@ -3,7 +3,7 @@ import { faInbox, faInfoCircle, faSave } from "@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 import type { MessageNotificationCreateRequest } from "@/api/notifications";

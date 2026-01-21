@@ -11,16 +11,16 @@ describe("FormBoolean", () => {
 
     beforeEach(() => {
         wrapper = mount(FormBoolean, {
-            propsData: {
+            props: {
                 value: false,
             },
-            localVue,
+            global: localVue,
         });
     });
 
     it("check initial value and value change", async () => {
-        const input = wrapper.find("input");
         const switchComponent = wrapper.findComponent(".custom-switch");
+        const input = wrapper.find("input[type='checkbox']");
         expect(switchComponent.props().value).toBe(false);
         await wrapper.setProps({ value: "true" });
         expect(wrapper.emitted().input[0][0]).toBe(true);

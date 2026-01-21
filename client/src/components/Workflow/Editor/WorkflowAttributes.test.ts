@@ -36,7 +36,7 @@ describe("WorkflowAttributes", () => {
         untypedParameters.getParameter("workflow_parameter_1");
 
         const wrapper = mount(WorkflowAttributes as object, {
-            propsData: {
+            props: {
                 id: "workflow_id",
                 name: TEST_NAME,
                 tags: ["workflow_tag_0", "workflow_tag_1"],
@@ -48,7 +48,7 @@ describe("WorkflowAttributes", () => {
             stubs: {
                 LicenseSelector: true,
             },
-            localVue,
+            global: localVue,
             pinia,
         });
 

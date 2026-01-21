@@ -1,6 +1,5 @@
-// index.ts
-import { createPinia, PiniaVuePlugin } from "pinia";
-import Vue from "vue";
+import { configureCompat, createApp } from "@vue/compat";
+import { createPinia } from "pinia";
 
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
@@ -10,7 +9,13 @@ import { getRouter } from "./router";
 
 import App from "./App.vue";
 
-Vue.use(PiniaVuePlugin);
+// Configure compat mode
+configureCompat({
+    MODE: 2,
+    GLOBAL_SET: true, // Enable Vue.set for libraries that need it
+    GLOBAL_DELETE: true, // Enable Vue.delete for libraries that need it
+});
+
 const pinia = createPinia();
 
 window.addEventListener("load", async () => {
@@ -24,11 +29,14 @@ window.addEventListener("load", async () => {
     await initSentry(Galaxy, router);
     await initWebhooks(Galaxy);
 
-    // Mount application
-    new Vue({
-        el: "#app",
-        render: (h) => h(App),
-        router,
-        pinia,
-    });
+    // When initializing the primary app we bind the routing back to Galaxy for
+    // external use (e.g. gtn webhook) -- longer term we discussed plans to
+    // parameterize webhooks and initialize them explicitly with state.
+    Galaxy.router = router;
+
+    // Mount application with Vue 3 createApp
+    const app = createApp(App);
+    app.use(router);
+    app.use(pinia);
+    app.mount("#app");
 });

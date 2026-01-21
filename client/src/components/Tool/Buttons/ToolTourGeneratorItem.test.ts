@@ -88,7 +88,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
         })();
 
         wrapper = mount(ToolTourGeneratorItem as object, {
-            propsData: {
+            props: {
                 toolId: TEST_TOOL_ID,
                 toolVersion: TEST_TOOL_VERSION,
             },
@@ -100,7 +100,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
     });
 
     afterEach(() => {
-        wrapper.destroy();
+        wrapper.unmount();
         server.resetHandlers();
         currentItemState.value = null;
         setTourMock.mockClear();

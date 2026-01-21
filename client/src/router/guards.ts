@@ -1,8 +1,12 @@
-import type { NavigationGuardNext, Route } from "vue-router";
+import type { NavigationGuardNext, RouteLocationNormalized } from "vue-router";
 
 import { useUserStore } from "@/stores/userStore";
 
-export async function requireAuth(to: Route, from: Route, next: NavigationGuardNext) {
+export async function requireAuth(
+    to: RouteLocationNormalized,
+    from: RouteLocationNormalized,
+    next: NavigationGuardNext,
+) {
     const userStore = useUserStore();
     await userStore.loadUser(false);
 

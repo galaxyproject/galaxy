@@ -31,12 +31,12 @@ const anonymousOptions = ["Resume Paused Jobs", "Delete History", "Export Tool R
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
 
-async function createWrapper(propsData: object, userData?: any) {
+async function createWrapper(props: object, userData?: any) {
     const pinia = createPinia();
 
     const wrapper = shallowMount(HistoryOptions as object, {
         propsData,
-        localVue,
+        global: localVue,
         pinia,
     });
 

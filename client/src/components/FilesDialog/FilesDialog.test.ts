@@ -119,8 +119,8 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
 
     const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const wrapper = mount(FilesDialog as object, {
-        localVue,
-        propsData: { ...props, modalStatic: true },
+        global: localVue,
+        props: { ...props, modalStatic: true },
         pinia: testingPinia,
     });
 

@@ -1,6 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { type PropType, ref } from "vue";
+import { vi } from "vitest";
+import { ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
 import {
@@ -49,7 +49,7 @@ const mountComponent = (
     },
 ) => {
     return shallowMount(PersistentTaskProgressMonitorAlert as object, {
-        propsData: {
+        props: {
             ...props,
         },
     });

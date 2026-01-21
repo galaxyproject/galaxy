@@ -11,11 +11,11 @@ describe("FormCheck", () => {
 
     beforeEach(() => {
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 value: null,
                 options: [],
             },
-            localVue,
+            global: localVue,
         });
     });
 

@@ -38,7 +38,7 @@ async function mountSelectionOperationsWrapper(config) {
 
     const pinia = createPinia();
     const wrapper = shallowMount(SelectionOperations, {
-        propsData: {
+        props: {
             history: FAKE_HISTORY,
             filterText: "",
             contentSelection: new Map(),
@@ -47,7 +47,7 @@ async function mountSelectionOperationsWrapper(config) {
             totalItemsInQuery: 5,
             isMultiViewItem: false,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
     await flushPromises();

@@ -26,7 +26,9 @@
             <b-row>
                 <b-col id="installed-builds" class="mb-4">
                     <Multiselect
+                        id="installed-builds"
                         v-model="selectedInstalledBuilds"
+                        name="installed-builds"
                         multiple
                         taggable
                         label="label"
@@ -141,7 +143,7 @@ chr5    152537259</pre
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";

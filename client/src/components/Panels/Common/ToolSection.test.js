@@ -23,12 +23,12 @@ function sectionIsOpened(wrapper) {
 describe("ToolSection", () => {
     test("test tool section", () => {
         const wrapper = mount(ToolSection, {
-            propsData: {
+            props: {
                 category: {
                     name: "name",
                 },
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         const nameElement = wrapper.findAll(".name");
@@ -39,7 +39,7 @@ describe("ToolSection", () => {
 
     test("test tool section title", async () => {
         const wrapper = mount(ToolSection, {
-            propsData: {
+            props: {
                 category: {
                     title: "tool_section",
                     elems: [
@@ -52,7 +52,7 @@ describe("ToolSection", () => {
                     ],
                 },
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         expect(sectionIsOpened(wrapper)).toBe(false);
@@ -69,7 +69,7 @@ describe("ToolSection", () => {
 
     test("test tool slider state", async () => {
         const wrapper = mount(ToolSection, {
-            propsData: {
+            props: {
                 category: {
                     title: "tool_section",
                     elems: [
@@ -83,7 +83,7 @@ describe("ToolSection", () => {
                 },
                 queryFilter: "test",
             },
-            localVue,
+            global: localVue,
             pinia,
         });
         expect(sectionIsOpened(wrapper)).toBe(true);

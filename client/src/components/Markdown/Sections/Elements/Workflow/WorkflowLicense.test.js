@@ -30,9 +30,9 @@ describe("Workflow License", () => {
             ),
         );
         return mount(WorkflowLicense, {
-            localVue,
+            global: localVue,
             pinia,
-            propsData: { workflowId: "workflow_id" },
+            props: { workflowId: "workflow_id" },
         });
     }
 
