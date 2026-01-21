@@ -141,33 +141,33 @@ function onRefactor() {
                     understand the purpose and usage of the workflow."
             :warning-message="bestPracticeWarningAnnotation"
             attribute-link="Describe your Workflow."
-            @onClick="onAttributes('annotation')" />
+            @onClickAttribute="onAttributes('annotation')" />
         <LintSection
             :okay="checkAnnotationLength"
             :success-message="annotationLengthSuccessMessage"
             :warning-message="bestPracticeWarningAnnotationLength"
             attribute-link="Shorten your Workflow Description."
-            @onClick="onAttributes('annotation')" />
+            @onClickAttribute="onAttributes('annotation')" />
         <LintSection
             :okay="checkReadme"
             success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
             :warning-message="bestPracticeWarningReadme"
             attribute-link="Provide Readme for your Workflow."
-            @onClick="onAttributes('readme')" />
+            @onClickAttribute="onAttributes('readme')" />
         <LintSection
             data-description="linting has creator"
             :okay="checkCreator"
             success-message="This workflow defines creator information."
             :warning-message="bestPracticeWarningCreator"
             attribute-link="Provide Creator Details."
-            @onClick="onAttributes('creator')" />
+            @onClickAttribute="onAttributes('creator')" />
         <LintSection
             data-description="linting has license"
             :okay="checkLicense"
             success-message="This workflow defines a license."
             :warning-message="bestPracticeWarningLicense"
             attribute-link="Specify a License."
-            @onClick="onAttributes('license')" />
+            @onClickAttribute="onAttributes('license')" />
         <LintSection
             data-description="linting formal inputs"
             success-message="Workflow parameters are using formal input parameters."
