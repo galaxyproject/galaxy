@@ -49,7 +49,7 @@ describe("LoginForm", () => {
             http.get("/api/configuration", ({ response }) => {
                 return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
             }),
-            http.untyped.post("/user/login", async ({ request }) => {
+            http.untyped.post(/.*\/user\/login.*/, async ({ request }) => {
                 const url = request.url;
                 const data = (await request.json()) as Record<string, unknown>;
                 postRequests.push({ url, data });
@@ -117,11 +117,13 @@ describe("LoginForm", () => {
         const provider_id = "test_provider";
         const provider_label = "Provider";
 
-        const originalLocation = window.location;
-        const locationSpy = vi.spyOn(window, "location", "get").mockImplementation(() => ({
-            ...originalLocation,
-            search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
-        }));
+        // Mock window.location.search by overriding the property
+        const originalSearch = window.location.search;
+        Object.defineProperty(window.location, "search", {
+            configurable: true,
+            writable: true,
+            value: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
+        });
 
         const wrapper = await mountLoginForm();
 
@@ -157,7 +159,12 @@ describe("LoginForm", () => {
         expect(postRequests[0]?.data.password).toBe("test_pwd");
         expect(postRequests[0]?.url).toContain("/user/login");
 
-        locationSpy.mockRestore();
+        // Restore original search
+        Object.defineProperty(window.location, "search", {
+            configurable: true,
+            writable: true,
+            value: originalSearch,
+        });
     });
 
     it("renders message from query params", async () => {
