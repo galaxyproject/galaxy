@@ -1,13 +1,11 @@
 import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
 import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolCard from "./ToolCard.vue";
@@ -23,16 +21,18 @@ const localVue = getLocalVue();
 
 describe("ToolCard", () => {
     let wrapper;
-    let axiosMock;
     let userStore;
 
     beforeEach(async () => {
         // some child component must be bypassing useConfig - so we need to explicitly
         // stup the API endpoint also. If you can drop this without request problems in log,
         // this hack can be removed.
-        server.use(expectConfigurationRequest(http, {}));
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/webhooks`).reply(200, []);
+        server.use(
+            expectConfigurationRequest(http, {}),
+            http.untyped.get("/api/webhooks", () => {
+                return HttpResponse.json([]);
+            }),
+        );
 
         const pinia = createPinia();
 

@@ -3,11 +3,9 @@ import "@tests/vitest/mockHelpPopovers";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
@@ -23,7 +21,6 @@ const pinia = createPinia();
 
 describe("ToolForm", () => {
     let wrapper;
-    let axiosMock;
     let userStore;
     let historyStore;
 
@@ -39,25 +36,35 @@ describe("ToolForm", () => {
                     }),
                 );
             }),
+            http.untyped.get("/api/tools/tool_id/build", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("tool_version") === "version") {
+                    return HttpResponse.json({
+                        id: "tool_id",
+                        name: "tool_name",
+                        version: "version",
+                        inputs: [],
+                        help: "help_text",
+                        help_format: "restructuredtext",
+                        creator: [
+                            { class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" },
+                        ],
+                    });
+                }
+                return HttpResponse.json({});
+            }),
+            http.untyped.get("/api/webhooks", () => {
+                return HttpResponse.json([]);
+            }),
+            http.untyped.get("/api/tools/tool_id/citations", () => {
+                return HttpResponse.json([]);
+            }),
         );
 
         // the PersonViewer component uses a BPopover that doesn't work in the test environment. It would be
         // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
         // stub out the Popover piece.
         suppressBootstrapVueWarnings();
-
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, {
-            id: "tool_id",
-            name: "tool_name",
-            version: "version",
-            inputs: [],
-            help: "help_text",
-            help_format: "restructuredtext",
-            creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
-        });
-        axiosMock.onGet(`/api/webhooks`).reply(200, []);
-        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, []);
 
         wrapper = mount(ToolForm, {
             propsData: {
@@ -77,11 +84,6 @@ describe("ToolForm", () => {
         historyStore = useHistoryStore();
         historyStore.setHistories([{ id: "fakeHistory" }]);
         historyStore.setCurrentHistoryId("fakeHistory");
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-        axiosMock.reset();
     });
 
     it("shows props", async () => {
