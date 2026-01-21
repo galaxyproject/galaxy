@@ -7,8 +7,6 @@ from __future__ import annotations
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -79,11 +77,11 @@ class RunSummary(RunStatus):
         None,
         description='When the run stopped executing (completed, failed, or cancelled), in ISO 8601 format "%Y-%m-%dT%H:%M:%SZ"',
     )
-    tags: Dict[str, str] = Field(..., description="Arbitrary key/value tags added by the client during run creation")
+    tags: dict[str, str] = Field(..., description="Arbitrary key/value tags added by the client during run creation")
 
 
 class RunRequest(BaseModel):
-    workflow_params: Optional[Dict[str, Any]] = Field(
+    workflow_params: Optional[dict[str, Any]] = Field(
         None,
         description="REQUIRED\nThe workflow run parameterizations (JSON encoded), including input and output file locations",
     )
@@ -94,8 +92,8 @@ class RunRequest(BaseModel):
     workflow_type_version: str = Field(
         ..., description="REQUIRED\nThe workflow descriptor type version, must be one supported by this WES instance"
     )
-    tags: Optional[Dict[str, str]] = None
-    workflow_engine_parameters: Optional[Dict[str, str]] = None
+    tags: Optional[dict[str, str]] = None
+    workflow_engine_parameters: Optional[dict[str, str]] = None
     workflow_engine: Optional[str] = Field(
         None,
         description="The workflow engine, must be one supported by this WES instance. Required if workflow_engine_version is provided.",
@@ -112,7 +110,7 @@ class RunRequest(BaseModel):
 
 class Log(BaseModel):
     name: Optional[str] = Field(None, description="The task or workflow name")
-    cmd: Optional[List[str]] = Field(None, description="The command line that was executed")
+    cmd: Optional[list[str]] = Field(None, description="The command line that was executed")
     start_time: Optional[str] = Field(
         None, description='When the command started executing, in ISO 8601 format "%Y-%m-%dT%H:%M:%SZ"'
     )
@@ -129,7 +127,7 @@ class Log(BaseModel):
         description="A URL to retrieve standard error logs of the workflow run or task.  This URL may change between status requests, or may not be available until the task or workflow has finished execution.  Should be available using the same credentials used to access the WES endpoint.",
     )
     exit_code: Optional[int] = Field(None, description="Exit code of the program")
-    system_logs: Optional[List[str]] = Field(
+    system_logs: Optional[list[str]] = Field(
         None,
         description="System logs are any logs the system decides are relevant,\nwhich are not tied directly to a workflow.\nContent is implementation specific: format, size, etc.\n\nSystem logs may be collected here to provide convenient access.\n\nFor example, the system may include an error message that caused\na SYSTEM_ERROR state (e.g. disk is full), etc.",
     )
@@ -144,14 +142,14 @@ class DefaultWorkflowEngineParameter(BaseModel):
 
 
 class WorkflowTypeVersion(BaseModel):
-    workflow_type_version: Optional[List[str]] = Field(
+    workflow_type_version: Optional[list[str]] = Field(
         None, description="an array of one or more acceptable types for the `workflow_type`"
     )
 
 
 class TaskLog(Log):
     id: str = Field(..., description="A unique identifier which may be used to reference the task")
-    system_logs: Optional[List[str]] = Field(
+    system_logs: Optional[list[str]] = Field(
         None,
         description="System logs are any logs the system decides are relevant,\nwhich are not tied directly to a task.\nContent is implementation specific: format, size, etc.\n\nSystem logs may be collected here to provide convenient access.\n\nFor example, the system may include the name of the host\nwhere the task is executing, an error message that caused\na SYSTEM_ERROR state (e.g. disk is full), etc.",
     )
@@ -163,13 +161,13 @@ class TaskLog(Log):
 
 
 class WorkflowEngineVersion(BaseModel):
-    workflow_engine_version: Optional[List[str]] = Field(
+    workflow_engine_version: Optional[list[str]] = Field(
         None, description="An array of one or more acceptable engines versions for the `workflow_engine`"
     )
 
 
 class RunListResponse(BaseModel):
-    runs: Optional[List[Union[RunStatus, RunSummary]]] = Field(
+    runs: Optional[list[Union[RunStatus, RunSummary]]] = Field(
         None,
         description="A list of workflow runs that the service has executed or is executing. The list is filtered to only include runs that the caller has permission to see.",
     )
@@ -241,15 +239,15 @@ class RunLog(BaseModel):
         None,
         description="A reference to the complete url which may be used to obtain a paginated list of task logs for this workflow",
     )
-    task_logs: Optional[List[Union[Log, TaskLog]]] = Field(
+    task_logs: Optional[list[Union[Log, TaskLog]]] = Field(
         None,
         description="The logs, and other key info like timing and exit code, for each step in the workflow run. This field is deprecated and the `task_logs_url` should be used to retrieve a paginated list of steps from the workflow run. This field will be removed in the next major version of the  specification (2.0.0)",
     )
-    outputs: Optional[Dict[str, Any]] = Field(None, description="The outputs from the workflow run.")
+    outputs: Optional[dict[str, Any]] = Field(None, description="The outputs from the workflow run.")
 
 
 class TaskListResponse(BaseModel):
-    task_logs: Optional[List[TaskLog]] = Field(
+    task_logs: Optional[list[TaskLog]] = Field(
         None, description="The logs, and other key info like timing and exit code, for each step in the workflow run."
     )
     next_page_token: Optional[str] = Field(
@@ -259,20 +257,20 @@ class TaskListResponse(BaseModel):
 
 
 class ServiceInfo(Service):
-    workflow_type_versions: Dict[str, WorkflowTypeVersion]
-    supported_wes_versions: List[str] = Field(
+    workflow_type_versions: dict[str, WorkflowTypeVersion]
+    supported_wes_versions: list[str] = Field(
         ..., description="The version(s) of the WES schema supported by this service"
     )
-    supported_filesystem_protocols: List[str] = Field(
+    supported_filesystem_protocols: list[str] = Field(
         ...,
         description="The filesystem protocols supported by this service, currently these may include common protocols using the terms 'http', 'https', 'sftp', 's3', 'gs', 'file', or 'synapse', but others  are possible and the terms beyond these core protocols are currently not fixed.   This section reports those protocols (either common or not) supported by this WES service.",
     )
-    workflow_engine_versions: Dict[str, WorkflowEngineVersion]
-    default_workflow_engine_parameters: List[DefaultWorkflowEngineParameter] = Field(
+    workflow_engine_versions: dict[str, WorkflowEngineVersion]
+    default_workflow_engine_parameters: list[DefaultWorkflowEngineParameter] = Field(
         ...,
         description="Each workflow engine can present additional parameters that can be sent to the workflow engine. This message will list the default values, and their types for each workflow engine.",
     )
-    system_state_counts: Dict[str, int] = Field(
+    system_state_counts: dict[str, int] = Field(
         ...,
         description="The system statistics, key is the statistic, value is the count of runs in that state. See the State enum for the possible keys.",
     )
@@ -280,4 +278,4 @@ class ServiceInfo(Service):
         ...,
         description="A web page URL with human-readable instructions on how to get an authorization token for use with a specific WES endpoint.",
     )
-    tags: Dict[str, str]
+    tags: dict[str, str]

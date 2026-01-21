@@ -7,7 +7,6 @@ from typing import (
     cast,
     Optional,
     Protocol,
-    Type,
     TypeVar,
 )
 
@@ -92,7 +91,7 @@ class KeysetPagination:
     def decode_token(
         self,
         encoded: Optional[str],
-        token_class: Type[T],
+        token_class: type[T],
     ) -> Optional[T]:
         """Decode token using provided token class.
 

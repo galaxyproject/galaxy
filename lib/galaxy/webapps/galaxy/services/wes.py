@@ -5,7 +5,6 @@ import logging
 from dataclasses import dataclass
 from typing import (
     Any,
-    List,
     Optional,
 )
 from urllib.parse import (
@@ -755,7 +754,7 @@ class WesService(ServiceBase):
         invocation_id: int,
         last_token: Optional[TaskKeysetToken],
         limit: int,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Fetch paginated task rows using composite keyset pagination.
 
         Uses (step_order, job_index) as composite keyset for cursor-based pagination.
@@ -795,7 +794,7 @@ class WesService(ServiceBase):
     def _load_task_objects(
         self,
         trans: ProvidesUserContext,
-        task_rows: List[dict],
+        task_rows: list[dict],
     ) -> tuple[dict, dict]:
         """Batch load Step and Job objects for task rows.
 
