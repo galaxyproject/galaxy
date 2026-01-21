@@ -43,7 +43,9 @@
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
-                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
+                <SearchPanel
+                    v-if="isActiveSideBar('workflow-editor-search')"
+                    @result-clicked="(data) => onHighlightRegion(data.bounds)" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
@@ -62,8 +64,7 @@
                             showAttributes(e);
                         }
                     "
-                    @onHighlight="onHighlight"
-                    @onUnhighlight="onUnhighlight"
+                    @onHighlightRegion="(bounds) => onHighlightRegion(bounds, false)"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
@@ -624,13 +625,19 @@ export default {
             ),
         );
 
-        function onSearchResultClicked(searchData) {
-            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        const scrollToId = ref(null);
+
+        function onHighlightRegion(bounds, moveTo = true) {
+            workflowGraph.value.highlightGraphRegion(bounds, moveTo);
+        }
+
+        function onScrollTo(stepId) {
+            scrollToId.value = stepId;
         }
 
         function onToolClick(toolId) {
             stateStore.activeNodeId = toolId;
-            this.onScrollTo(toolId);
+            onScrollTo(toolId);
         }
 
         return {
@@ -640,7 +647,6 @@ export default {
             parameters,
             credentialSteps,
             workflowGraph,
-            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,
@@ -701,6 +707,9 @@ export default {
             faWrench,
             showDropdown: false,
             lintData,
+            onHighlightRegion,
+            onScrollTo,
+            scrollToId,
         };
     },
     data() {
@@ -711,7 +720,6 @@ export default {
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
-            scrollToId: null,
             highlightAttribute: null,
             messageTitle: null,
             messageBody: null,
@@ -1052,16 +1060,6 @@ export default {
         },
         onLabel(nodeId, newLabel) {
             this.stepActions.setLabel(this.steps[nodeId], newLabel);
-        },
-        onScrollTo(stepId) {
-            this.scrollToId = stepId;
-            this.onHighlight(stepId);
-        },
-        onHighlight(stepId) {
-            // TODO: Implement highlighting via the`moveToAndHighlightRegion` method in WorkflowGraph
-        },
-        onUnhighlight(stepId) {
-            // TODO: implement unhighlighting if needed, otherwise remove this method
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);

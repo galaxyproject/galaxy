@@ -165,17 +165,19 @@ const { comments } = storeToRefs(commentStore);
 
 const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
 
-function moveToAndHighlightRegion(bounds: Rectangle) {
+function highlightGraphRegion(bounds: Rectangle, moveToPosition: boolean = true) {
     const centerPosition = { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
     areaHighlight.value?.show(bounds);
-    moveTo(centerPosition);
+    if (moveToPosition) {
+        moveTo(centerPosition);
+    }
 }
 
 defineExpose({
     fitWorkflow,
     setZoom,
     moveTo,
-    moveToAndHighlightRegion,
+    highlightGraphRegion,
 });
 </script>
 

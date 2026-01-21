@@ -14,6 +14,8 @@ export interface LintState {
     inputName?: string;
     autofix?: boolean;
     data?: Record<string, string>;
+    /** Whether to highlight an input or output terminal */
+    highlightType?: "input" | "output";
 }
 
 export const bestPracticeWarningAnnotation =
@@ -44,6 +46,8 @@ export function getDisconnectedInputs(
                     warningLabel: inputLabel,
                     inputName: inputSource.name,
                     autofix: !inputTerminal.multiple,
+                    highlightType: "input",
+                    name: inputSource.name,
                 });
             }
         });
@@ -116,6 +120,8 @@ export function getUnlabeledOutputs(steps: Steps) {
                     stepLabel: step.label || step.content_id || step.name,
                     warningLabel: workflowOutput.output_name,
                     autofix: true,
+                    highlightType: "output",
+                    name: workflowOutput.output_name,
                 });
             }
         }

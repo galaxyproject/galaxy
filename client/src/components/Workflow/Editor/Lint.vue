@@ -9,6 +9,7 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
+import type { Rectangle } from "./modules/geometry";
 import type { LintState } from "./modules/linting";
 import {
     bestPracticeWarningAnnotation,
@@ -41,7 +42,7 @@ const props = defineProps<{
 const { confirm } = useConfirmDialog();
 
 const stores = useWorkflowStores();
-const { stepStore, stateStore } = stores;
+const { stepStore, stateStore, searchStore } = stores;
 const { hasActiveOutputs } = storeToRefs(stepStore);
 
 const { untypedParameters, unlabeledOutputs, untypedParameterWarnings, disconnectedInputs, missingMetadata } =
@@ -75,8 +76,7 @@ const emit = defineEmits<{
             | ReturnType<typeof fixAllIssues>,
     ): void;
     (e: "onScrollTo", stepId: Number): void;
-    (e: "onHighlight", stepId: Number): void;
-    (e: "onUnhighlight", stepId: Number): void;
+    (e: "onHighlightRegion", bounds: Rectangle): void;
 }>();
 
 function onAttributes(highlight: string) {
@@ -126,11 +126,10 @@ function openAndFocus(item: LintState) {
 }
 
 function onHighlight(item: LintState) {
-    emit("onHighlight", item.stepId);
-}
-
-function onUnhighlight(item: LintState) {
-    emit("onUnhighlight", item.stepId);
+    const bounds = searchStore.getBoundsForItemCached(item.stepId, item.highlightType || "step", item.name);
+    if (bounds) {
+        emit("onHighlightRegion", bounds);
+    }
 }
 
 function onRefactor() {
@@ -187,7 +186,6 @@ function onRefactor() {
                 and executing the workflow via the API more robust:"
             :warning-items="untypedParameterWarnings"
             @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
             @onClick="onFixUntypedParameter" />
         <LintSection
             data-description="linting connected"
@@ -196,7 +194,6 @@ function onRefactor() {
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
             :warning-items="disconnectedInputs"
             @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
             @onClick="onFixDisconnectedInput" />
         <LintSection
             data-description="linting input metadata"
@@ -204,7 +201,6 @@ function onRefactor() {
             warning-message="Some workflow inputs are missing labels and/or annotations:"
             :warning-items="missingMetadata"
             @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
             @onClick="openAndFocus" />
         <LintSection
             data-description="linting output labels"
@@ -213,7 +209,6 @@ function onRefactor() {
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
             :warning-items="unlabeledOutputs"
             @onMouseOver="onHighlight"
-            @onMouseLeave="onUnhighlight"
             @onClick="onFixUnlabeledOutputs" />
         <GCard v-if="!hasActiveOutputs">
             <div>
