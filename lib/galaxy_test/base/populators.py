@@ -2556,7 +2556,12 @@ class BaseWorkflowPopulator(BasePopulator):
                 # Wait for workflow to become fully scheduled and then for all jobs
                 # complete.
                 if wait:
-                    workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
+                    if assert_ok:
+                        workflow_populator.wait_for_invocation_and_completion(invocation_id)
+                    else:
+                        workflow_populator.wait_for_workflow(
+                            workflow_id, invocation_id, history_id, assert_ok=assert_ok
+                        )
                 jobs.extend(self.dataset_populator.invocation_jobs(invocation_id))
 
         return RunJobsSummary(

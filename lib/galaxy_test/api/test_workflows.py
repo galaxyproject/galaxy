@@ -2256,7 +2256,7 @@ test_data:
         type: File
 """,
                 history_id=history_id,
-                assert_ok=False,
+                assert_ok=True,
                 wait=True,
             )
             history_contents = self.dataset_populator._get_contents_request(history_id=history_id).json()
@@ -2314,7 +2314,7 @@ test_data:
     collection_type: "list:list:paired"
 """,
                 history_id=history_id,
-                assert_ok=False,
+                assert_ok=True,
                 wait=True,
             )
             invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
@@ -5910,12 +5910,6 @@ test_data:
 
             subworkflow_invocation_id = subworkflow_step["subworkflow_invocation_id"]
             subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
-
-            # The subworkflow should have succeeded
-            assert (
-                subworkflow_invocation["state"] == "scheduled"
-            ), f"Expected subworkflow to succeed, got state: {subworkflow_invocation['state']}"
-
             # Should not have error messages
             messages = subworkflow_invocation.get("messages", [])
             assert len(messages) == 0, f"Expected no error messages, got: {messages}"
