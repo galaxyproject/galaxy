@@ -1,22 +1,31 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./WorkflowDisplay.vue";
 
 const localVue = getLocalVue(true);
+const { server, http } = useServerMock();
 
-let axiosMock;
+let getRequests = [];
+
+beforeEach(() => {
+    getRequests = [];
+});
 
 function mountDefault() {
-    axiosMock = new MockAdapter(axios);
     const data = {
         name: "workflow_name",
     };
-    axiosMock.onGet(`/api/workflows/workflow_id/download?style=preview`).reply(200, data);
+    server.use(
+        http.untyped.get("/api/workflows/workflow_id/download", ({ request }) => {
+            getRequests.push({ url: request.url });
+            return HttpResponse.json(data);
+        }),
+    );
     return mount(MountTarget, {
         propsData: {
             workflowId: "workflow_id",
@@ -28,11 +37,14 @@ function mountDefault() {
 }
 
 function mountError(errContent) {
-    axiosMock = new MockAdapter(axios);
     const data = {
         err_msg: errContent,
     };
-    axiosMock.onGet(`/api/workflows/workflow_id/download?style=preview`).reply(400, data);
+    server.use(
+        http.untyped.get("/api/workflows/workflow_id/download", () => {
+            return HttpResponse.json(data, { status: 400 });
+        }),
+    );
     return mount(MountTarget, {
         propsData: {
             workflowId: "workflow_id",
@@ -53,8 +65,9 @@ describe("WorkflowDisplay", () => {
         expect(downloadUrl.attributes("href")).toBe("/api/workflows/workflow_id/download?format=json-download");
         const importUrl = wrapper.find("[data-description='workflow import']");
         expect(importUrl.attributes("href")).toBe("/workflow/imp?id=workflow_id");
-        const dataRequest = axiosMock.history.get[0].url;
-        expect(dataRequest).toBe("/api/workflows/workflow_id/download?style=preview");
+        expect(getRequests.length).toBe(1);
+        expect(getRequests[0].url).toContain("/api/workflows/workflow_id/download");
+        expect(getRequests[0].url).toContain("style=preview");
     });
 
     it("error message as object", async () => {
