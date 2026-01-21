@@ -1958,9 +1958,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def workflow_run_ensure_expanded(self):
         workflow_run = self.components.workflow_run
+        # Wait for the form to load first - both forms have the run_workflow button
+        workflow_run.run_workflow.wait_for_visible()
         if workflow_run.expanded_form.is_absent:
             workflow_run.runtime_setting_button.wait_for_and_click()
-            workflow_run.expand_form_link.wait_for_and_click()
+            # Wait for the settings panel slideDown animation (0.2s) to complete
+            self.sleep_for(self.wait_types.UX_RENDER)
+            expand_link = workflow_run.expand_form_link.wait_for_clickable()
+            # Use ActionChains for Selenium - regular click doesn't work reliably
+            # on GButton components due to internal tooltip element.
+            # Playwright doesn't have this issue and doesn't support ActionChains.
+            if self.backend_type == "selenium":
+                ac = self.action_chains()
+                ac.move_to_element(expand_link).click().perform()
+            else:
+                expand_link.click()
             workflow_run.expanded_form.wait_for_visible()
 
     def workflow_create_new(
