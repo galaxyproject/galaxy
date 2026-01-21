@@ -5,6 +5,9 @@ This hook sends a notification to the user when their workflow completes.
 """
 
 import logging
+
+__all__ = ("SendNotificationHook",)
+
 from typing import TYPE_CHECKING
 
 from galaxy.schema.notifications import (
@@ -32,7 +35,7 @@ class SendNotificationHook(WorkflowCompletionHook):
     and a summary of job states.
     """
 
-    name = "send_notification"
+    plugin_type = "send_notification"
 
     def execute(self, completion: "WorkflowInvocationCompletion") -> None:
         """

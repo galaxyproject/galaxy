@@ -26,7 +26,7 @@ class WorkflowCompletionHook(ABC):
 
     To implement a hook:
     1. Extend this class
-    2. Set a unique `name` attribute
+    2. Set a unique `plugin_type` attribute
     3. Implement the `execute()` method
     4. Optionally override `is_applicable()` to add conditions
 
@@ -34,8 +34,8 @@ class WorkflowCompletionHook(ABC):
     for the same completion (e.g., after a Celery task retry).
     """
 
-    # Unique identifier for this hook - must be set by subclasses
-    name: str = "base"
+    # Plugin type identifier for automatic discovery - must be set by subclasses
+    plugin_type: str
 
     def __init__(self, app: MinimalManagerApp):
         """

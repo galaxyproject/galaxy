@@ -6,6 +6,9 @@ file source (e.g., remote storage).
 """
 
 import logging
+
+__all__ = ("ExportToFileSourceHook",)
+
 from typing import (
     Any,
     Optional,
@@ -52,7 +55,7 @@ class ExportToFileSourceHook(WorkflowCompletionHook):
     }
     """
 
-    name = "export_to_file_source"
+    plugin_type = "export_to_file_source"
 
     def execute(self, completion: "WorkflowInvocationCompletion") -> None:
         """

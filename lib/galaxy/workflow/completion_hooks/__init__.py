@@ -8,7 +8,10 @@ a workflow invocation completes.
 To add a new hook:
 1. Create a new module in this package
 2. Define a class that extends WorkflowCompletionHook
-3. Register it in WorkflowCompletionHookRegistry._load_hooks()
+3. Set a unique `plugin_type` class attribute
+4. Export the class via `__all__`
+
+Hooks are automatically discovered via the plugin_type attribute.
 """
 
 import logging
@@ -17,10 +20,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import galaxy.workflow.completion_hooks
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util import plugin_config
 from galaxy.workflow.completion_hooks.base import WorkflowCompletionHook
-from galaxy.workflow.completion_hooks.export import ExportToFileSourceHook
-from galaxy.workflow.completion_hooks.notification import SendNotificationHook
 
 if TYPE_CHECKING:
     from galaxy.model import WorkflowInvocationCompletion
@@ -55,11 +58,8 @@ class WorkflowCompletionHookRegistry:
 
     def _load_hooks(self) -> None:
         """Load and instantiate all available hooks."""
-        # Register all available hooks
-        self.hooks = {
-            "export_to_file_source": ExportToFileSourceHook,
-            "send_notification": SendNotificationHook,
-        }
+        # Auto-discover hooks via plugin_type attribute
+        self.hooks = plugin_config.plugins_dict(galaxy.workflow.completion_hooks, "plugin_type")
 
         # Instantiate all hooks
         for hook_name, hook_class in self.hooks.items():
