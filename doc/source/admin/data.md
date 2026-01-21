@@ -528,7 +528,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define eLabFTW Instances as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_elabftw.yaml
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_elabftw.yml
 :language: yaml
 ```
 
@@ -536,7 +536,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define InvenioRDM Servers as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_invenio.yaml
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_invenio.yml
 :language: yaml
 ```
 
@@ -544,7 +544,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Zenodo as File Source
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_zenodo.yaml
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_zenodo.yml
 :language: yaml
 ```
 
@@ -552,7 +552,7 @@ and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define RSpace Instances as File Sources
 
-```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_rspace.yaml
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_rspace.yml
 :language: yaml
 ```
 
