@@ -30,18 +30,17 @@
         </a>
         <ToolFavoriteButton
             v-if="showFavoriteAction"
+            :id="tool.id"
             :class="['tool-favorite-button', { 'tool-favorite-button-hover': showFavoriteOnHover }]"
             :data-tool-id="tool.id"
-            :id="tool.id"
             color="grey" />
     </div>
 </template>
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-import { computed } from "vue";
 import { storeToRefs } from "pinia";
+import Vue, { computed } from "vue";
 
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";

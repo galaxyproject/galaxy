@@ -26,9 +26,7 @@ const collapsibleLabelIds = new Set([FAVORITES_RESULTS_LABEL_ID, FAVORITES_LABEL
 const description = computed(() => props.definition.description || undefined);
 const isFavoritesDivider = computed(() => favoritesLabelIds.has(props.definition.id));
 const isRecentLabel = computed(() => props.definition.id === RECENT_TOOLS_LABEL_ID);
-const isCollapsible = computed(
-    () => collapsibleLabelIds.has(props.definition.id) && props.collapsed !== undefined,
-);
+const isCollapsible = computed(() => collapsibleLabelIds.has(props.definition.id) && props.collapsed !== undefined);
 const isCollapsed = computed(() => props.collapsed ?? false);
 const toggleIcon = computed(() => (isCollapsed.value ? faChevronRight : faChevronDown));
 

@@ -4,11 +4,11 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import toolsList from "@/components/ToolsView/testData/toolsList.json";
+import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel.json";
 import { setMockConfig } from "@/composables/__mocks__/config";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
-import toolsList from "@/components/ToolsView/testData/toolsList.json";
-import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel.json";
 
 import ToolBox from "./ToolBox.vue";
 
@@ -142,17 +142,17 @@ describe("ToolBox search", () => {
         const labels = wrapper.findAll(".tool-panel-label").wrappers.map((item) => item.text());
         expect(labels).toEqual(["Favorites", "Search results"]);
 
-        const toolIds = wrapper.findAll('a[data-tool-id]').wrappers.map((item) => item.attributes("data-tool-id"));
+        const toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"]);
 
         expect(wrapper.find('.tool-favorite-button[data-tool-id="__FILTER_EMPTY_DATASETS__"]').exists()).toBe(true);
-        expect(
-            wrapper.find('.tool-favorite-button-hover[data-tool-id="__FILTER_EMPTY_DATASETS__"]').exists(),
-        ).toBe(false);
+        expect(wrapper.find('.tool-favorite-button-hover[data-tool-id="__FILTER_EMPTY_DATASETS__"]').exists()).toBe(
+            false,
+        );
         expect(wrapper.find('.tool-favorite-button[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists()).toBe(true);
-        expect(
-            wrapper.find('.tool-favorite-button-hover[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists(),
-        ).toBe(true);
+        expect(wrapper.find('.tool-favorite-button-hover[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists()).toBe(
+            true,
+        );
     });
 
     it("collapses favorite results during search in My panel", async () => {
@@ -228,7 +228,7 @@ describe("ToolBox search", () => {
         const labels = wrapper.findAll(".tool-panel-label").wrappers.map((item) => item.text());
         expect(labels).toEqual(["Favorites", "Recent tools"]);
 
-        const toolIds = wrapper.findAll('a[data-tool-id]').wrappers.map((item) => item.attributes("data-tool-id"));
+        const toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
         expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__", "__FILTER_EMPTY_DATASETS__"]);
         expect(wrapper.find('.tool-favorite-button[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
 

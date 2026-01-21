@@ -167,11 +167,7 @@ function toggleMenu(nextState = !opened.value) {
     <div v-if="isSection && hasElements" class="tool-panel-section">
         <div
             v-b-tooltip.topright.hover.noninteractive
-            :class="[
-                'toolSectionTitle',
-                `tool-menu-section-${sectionName}`,
-                'tool-panel-divider',
-            ]"
+            :class="['toolSectionTitle', `tool-menu-section-${sectionName}`, 'tool-panel-divider']"
             :title="title">
             <a
                 class="title-link tool-panel-divider-link"

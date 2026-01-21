@@ -6,13 +6,13 @@ import axios, { type AxiosResponse } from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
-import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
 import {
     MY_PANEL_VIEW_DESCRIPTION,
     MY_PANEL_VIEW_ID,
     MY_PANEL_VIEW_NAME,
     MY_PANEL_VIEW_TYPE,
 } from "@/components/Panels/panelViews";
+import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
 import { parseHelpForSummary } from "@/components/ToolsList/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -336,11 +336,7 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function setPanel(panelView: string) {
         try {
-            if (
-                panelView === MY_PANEL_VIEW_ID &&
-                defaultPanelView.value &&
-                panelView !== defaultPanelView.value
-            ) {
+            if (panelView === MY_PANEL_VIEW_ID && defaultPanelView.value && panelView !== defaultPanelView.value) {
                 await fetchToolSections(defaultPanelView.value);
             }
             await fetchToolSections(panelView);

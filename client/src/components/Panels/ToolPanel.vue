@@ -8,11 +8,12 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import { MY_PANEL_VIEW_ID } from "./panelViews";
+
 import LoadingSpan from "../LoadingSpan.vue";
 import ActivityPanel from "./ActivityPanel.vue";
 import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
-import { MY_PANEL_VIEW_ID } from "./panelViews";
 import ToolBox from "./ToolBox.vue";
 
 const toolStore = useToolStore();

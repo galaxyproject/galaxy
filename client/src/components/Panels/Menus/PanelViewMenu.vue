@@ -71,7 +71,9 @@ const toolPanelHeader = computed(() => {
     }
 });
 
-const headingClass = computed(() => (currentPanelView.value !== "default" && !isMyToolsView.value ? "font-italic" : ""));
+const headingClass = computed(() =>
+    currentPanelView.value !== "default" && !isMyToolsView.value ? "font-italic" : "",
+);
 const showPanelIcon = computed(() => !!panelIcon.value && !loading.value && !isMyToolsView.value);
 
 const groupedPanelViews = computed(() => {
@@ -143,12 +145,7 @@ async function updatePanelView(panel: Panel) {
                         class="mr-1"
                         :icon="panelIcon"
                         data-description="panel view header icon" />
-                    <Heading
-                        id="toolbox-heading"
-                        :class="headingClass"
-                        h2
-                        inline
-                        size="sm">
+                    <Heading id="toolbox-heading" :class="headingClass" h2 inline size="sm">
                         <span v-if="loading && panelName">
                             <LoadingSpan :message="toolPanelHeader" />
                         </span>
