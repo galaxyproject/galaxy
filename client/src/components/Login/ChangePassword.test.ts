@@ -26,7 +26,7 @@ let postRequests: PostRequest[] = [];
 describe("ChangePassword", () => {
     let wrapper: Wrapper<Vue>;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         postRequests = [];
         server.use(
             http.untyped.post(/.*/, async ({ request }) => {
@@ -35,6 +35,9 @@ describe("ChangePassword", () => {
                 return HttpResponse.json({});
             }),
         );
+        // Navigate to a different route to avoid NavigationDuplicated error
+        // when the component calls router.push("/") on successful submit
+        await router.push("/change-password").catch(() => {});
         wrapper = mount(MountTarget as object, {
             propsData: {
                 messageText: "message_text",

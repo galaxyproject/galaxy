@@ -21,8 +21,12 @@ let originalSearch: string;
 describe("NewUserConfirmation", () => {
     let wrapper: Wrapper<Vue>;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         postRequests = [];
+
+        // Navigate to a different route to avoid NavigationDuplicated error
+        // when the component calls router.push("/") on successful submit
+        await router.push("/new-user-confirmation").catch(() => {});
 
         // Mock window.location.search
         originalSearch = window.location.search;
