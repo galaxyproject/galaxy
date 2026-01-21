@@ -647,11 +647,13 @@ class JobSearch:
         history_id: Union[int, None],
     ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
-        job_ids_materialized_cte = stmt.cte("job_ids_cte")
-        outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
-        stmt = select(*outer_select_columns).select_from(job_ids_materialized_cte)
+        job_ids_cte = stmt.cte("job_ids_cte")
+        if self.use_materialized_hint:
+            job_ids_cte = job_ids_cte.prefix_with("MATERIALIZED")
+        outer_select_columns = [job_ids_cte.c[col.name] for col in stmt.selected_columns]
+        stmt = select(*outer_select_columns).select_from(job_ids_cte)
         stmt = (
-            stmt.join(model.Job, model.Job.id == job_ids_materialized_cte.c.job_id)
+            stmt.join(model.Job, model.Job.id == job_ids_cte.c.job_id)
             .join(model.History, model.Job.history_id == model.History.id)
             .where(
                 and_(
