@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -8,28 +8,28 @@ import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import MountTarget from "./NewUserConfirmation.vue";
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
-
-const originalLocation = window.location;
 
 interface PostRequest {
     url: string;
 }
 
 let postRequests: PostRequest[] = [];
+let originalSearch: string;
 
 describe("NewUserConfirmation", () => {
     let wrapper: Wrapper<Vue>;
 
     beforeEach(() => {
         postRequests = [];
+
         // Mock window.location.search
-        Object.defineProperty(window, "location", {
+        originalSearch = window.location.search;
+        Object.defineProperty(window.location, "search", {
             configurable: true,
-            value: {
-                ...originalLocation,
-                search: "?provider=test_provider&provider_token=sample_token",
-            },
+            writable: true,
+            value: "?provider=test_provider&provider_token=sample_token",
         });
 
         server.use(
@@ -42,14 +42,16 @@ describe("NewUserConfirmation", () => {
         wrapper = mount(MountTarget as object, {
             propsData: {},
             localVue,
+            router,
         });
     });
 
     afterEach(() => {
-        // Restore original location
-        Object.defineProperty(window, "location", {
+        // Restore original search
+        Object.defineProperty(window.location, "search", {
             configurable: true,
-            value: originalLocation,
+            writable: true,
+            value: originalSearch,
         });
     });
 
