@@ -14,6 +14,7 @@ from urllib.parse import (
 
 import yaml
 from fastapi import UploadFile
+from gxformat2.yaml import ordered_load
 from sqlalchemy import (
     literal,
     select,
@@ -212,13 +213,11 @@ def _load_workflow_content(
 
     assert isinstance(workflow_content, str)
 
-    # Parse as JSON or YAML
+    # Parse as JSON or YAML using ordered_load (handles both, preserves key ordering)
     try:
-        return json.loads(workflow_content)
-    except json.JSONDecodeError:
-        # Try as YAML-like dict string - Galaxy's normalize_workflow_format
-        # will handle YAML parsing
-        return {"yaml_content": workflow_content}
+        return ordered_load(workflow_content)
+    except yaml.YAMLError as e:
+        raise exceptions.MessageException(f"Invalid workflow content: {str(e)}")
 
 
 def _determine_workflow_type(workflow_dict: dict[str, Any]) -> str:
@@ -237,20 +236,12 @@ def _determine_workflow_type(workflow_dict: dict[str, Any]) -> str:
     Raises:
         exceptions.MessageException: If workflow type cannot be determined
     """
-    # Check for Format2 indicators - either already parsed or in yaml_content
-    check_dict = workflow_dict
-    if "yaml_content" in workflow_dict:
-        try:
-            check_dict = yaml.safe_load(workflow_dict["yaml_content"])
-        except yaml.YAMLError:
-            # If YAML parsing fails, assume Format2 (will fail later with better error)
-            return "gx_workflow_format2"
-
-    if check_dict.get("class") == "GalaxyWorkflow":
+    # Check for Format2 indicator
+    if workflow_dict.get("class") == "GalaxyWorkflow":
         return "gx_workflow_format2"
 
     # Check for native Galaxy workflow format
-    if "steps" in check_dict or "workflow" in check_dict:
+    if "steps" in workflow_dict or "workflow" in workflow_dict:
         return "gx_workflow_ga"
 
     raise exceptions.MessageException(

@@ -48,6 +48,7 @@ TaskIdParam = Annotated[
     Path(
         title="Task ID",
         description="Task identifier: step order_index, or order_index.job_index for collection mapping jobs",
+        examples=["0", "2.5"],
     ),
 ]
 PageTokenParam: str = Query(None, title="Page Token", description="Token for pagination")
