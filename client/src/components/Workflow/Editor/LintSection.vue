@@ -5,6 +5,9 @@ import { computed } from "vue";
 
 import { dataAttributes, type LintState } from "./modules/linting";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GCard from "@/components/Common/GCard.vue";
+
 interface Props {
     successMessage: string;
     warningMessage: string;
@@ -31,7 +34,7 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
 </script>
 
 <template>
-    <div class="mb-2" :data-lint-status="isOkay ? 'ok' : 'warning'">
+    <GCard :data-lint-status="isOkay ? 'ok' : 'warning'">
         <div v-if="isOkay">
             <FontAwesomeIcon :icon="faCheck" class="text-success" />
             <span v-localize>{{ props.successMessage }}</span>
@@ -49,23 +52,30 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                     @mouseover="emit('onMouseOver', item)"
                     @focusout="emit('onMouseLeave', item)"
                     @mouseleave="emit('onMouseLeave', item)">
-                    <a
-                        href="#"
+                    <GLink
                         class="scrolls"
+                        thin
                         :data-item-index="idx"
                         v-bind="dataAttributes(item)"
                         @click="emit('onClick', item)">
                         <FontAwesomeIcon v-if="item.autofix" :icon="faMagic" class="mr-1" />
                         <FontAwesomeIcon v-else :icon="faSearch" class="mr-1" />
+                        <strong>Step {{ item.stepId + 1 }}</strong>
                         {{ item.stepLabel }}: {{ item.warningLabel }}
-                    </a>
+                    </GLink>
                 </div>
             </div>
-            <p v-else class="mt-2 ml-2">
-                <a href="#" @click="emit('onClickAttribute')">
+            <p v-else class="mt-2 ml-1 my-0">
+                <GLink thin @click="emit('onClickAttribute')">
                     <FontAwesomeIcon :icon="faPencilAlt" class="mr-1" />{{ props.attributeLink }}
-                </a>
+                </GLink>
             </p>
         </div>
-    </div>
+    </GCard>
 </template>
+
+<style scoped lang="scss">
+.g-link {
+    text-align: initial;
+}
+</style>

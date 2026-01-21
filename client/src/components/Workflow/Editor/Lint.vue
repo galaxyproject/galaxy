@@ -24,6 +24,7 @@ import {
 import type { useLintData } from "./modules/useLinting";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GCard from "@/components/Common/GCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 
@@ -214,9 +215,11 @@ function onRefactor() {
             @onMouseOver="onHighlight"
             @onMouseLeave="onUnhighlight"
             @onClick="onFixUnlabeledOutputs" />
-        <div v-if="!hasActiveOutputs">
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
-            <span>This workflow has no labeled outputs, please select and label at least one output.</span>
-        </div>
+        <GCard v-if="!hasActiveOutputs">
+            <div>
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
+                <span>This workflow has no labeled outputs, please select and label at least one output.</span>
+            </div>
+        </GCard>
     </ActivityPanel>
 </template>
