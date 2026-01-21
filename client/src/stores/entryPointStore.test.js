@@ -1,27 +1,31 @@
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import testInteractiveToolsResponse from "../components/InteractiveTools/testData/testInteractiveToolsResponse";
 import { useEntryPointStore } from "./entryPointStore";
 
+const { server, http } = useServerMock();
+
 describe("stores/EntryPointStore", () => {
-    let axiosMock;
     let store;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
+        server.use(
+            http.untyped.get("/api/entry_points", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("running") === "true") {
+                    return HttpResponse.json(testInteractiveToolsResponse);
+                }
+                return HttpResponse.json([]);
+            }),
+        );
         setActivePinia(createPinia());
-        axiosMock.onGet("/api/entry_points", { params: { running: true } }).reply(200, testInteractiveToolsResponse);
         store = useEntryPointStore();
         await store.fetchEntryPoints();
         await flushPromises();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 
     it("performs a partial update", async () => {
