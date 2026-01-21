@@ -1,27 +1,30 @@
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import { storedWorkflowsProvider } from "./StoredWorkflowsProvider";
 
+const { server, http } = useServerMock();
+
 describe("storedWorkflowsProvider", () => {
-    let axiosMock;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     describe("fetching workflows without an error", () => {
         it("should make an API call and fire callback", async () => {
-            axiosMock
-                .onGet("/prefix/api/workflows", {
-                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "rna" },
-                })
-                .reply(200, [{ model_class: "StoredWorkflow" }], { total_matches: "1" });
+            server.use(
+                http.untyped.get("/prefix/api/workflows", ({ request }) => {
+                    const url = new URL(request.url);
+                    if (
+                        url.searchParams.get("limit") === "50" &&
+                        url.searchParams.get("offset") === "0" &&
+                        url.searchParams.get("skip_step_counts") === "true" &&
+                        url.searchParams.get("search") === "rna"
+                    ) {
+                        return HttpResponse.json([{ model_class: "StoredWorkflow" }], {
+                            headers: { total_matches: "1" },
+                        });
+                    }
+                    return HttpResponse.json([]);
+                }),
+            );
 
             const ctx = {
                 root: "/prefix/",

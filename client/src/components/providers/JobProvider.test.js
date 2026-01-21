@@ -1,27 +1,29 @@
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import { jobsProvider } from "./JobProvider";
 
+const { server, http } = useServerMock();
+
 describe("JobProvider", () => {
-    let axiosMock;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     describe("fetching jobs without an error", () => {
         it("should make an API call and fire callback", async () => {
-            axiosMock
-                .onGet("/prefixj/api/jobs", {
-                    params: { limit: 50, offset: 0, search: "tool_id:'cat1'" },
-                })
-                .reply(200, [{ model_class: "Job" }], { total_matches: "1" });
+            server.use(
+                http.untyped.get("/prefixj/api/jobs", ({ request }) => {
+                    const url = new URL(request.url);
+                    if (
+                        url.searchParams.get("limit") === "50" &&
+                        url.searchParams.get("offset") === "0" &&
+                        url.searchParams.get("search") === "tool_id:'cat1'"
+                    ) {
+                        return HttpResponse.json([{ model_class: "Job" }], {
+                            headers: { total_matches: "1" },
+                        });
+                    }
+                    return HttpResponse.json([]);
+                }),
+            );
 
             const ctx = {
                 root: "/prefixj/",
