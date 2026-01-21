@@ -95,6 +95,10 @@ RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 FROM stage1 AS client_build
 ARG SERVER_DIR
 
+# Workaround for corepack signature verification failure due to pnpm key rotation
+# See: https://github.com/nodejs/corepack/issues/612
+ENV COREPACK_INTEGRITY_KEYS=0
+
 RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client" -e galaxy_virtualenv_command=virtualenv
 
 WORKDIR $SERVER_DIR
