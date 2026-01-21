@@ -6,6 +6,8 @@ import { computed } from "vue";
 import type { ToolSectionLabel } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
+import { PANEL_LABEL_IDS } from "../panelViews";
+
 import ToolPanelLinks from "./ToolPanelLinks.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 
@@ -18,14 +20,15 @@ const emit = defineEmits<{
     (e: "toggle", labelId: string): void;
 }>();
 
-const FAVORITES_RESULTS_LABEL_ID = "favorites_results_label";
-const FAVORITES_LABEL_ID = "favorites_label";
-const RECENT_TOOLS_LABEL_ID = "recent_tools_label";
-const favoritesLabelIds = new Set([FAVORITES_RESULTS_LABEL_ID, FAVORITES_LABEL_ID]);
-const collapsibleLabelIds = new Set([FAVORITES_RESULTS_LABEL_ID, FAVORITES_LABEL_ID, RECENT_TOOLS_LABEL_ID]);
+const favoritesLabelIds = new Set<string>([PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL, PANEL_LABEL_IDS.FAVORITES_LABEL]);
+const collapsibleLabelIds = new Set<string>([
+    PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL,
+    PANEL_LABEL_IDS.FAVORITES_LABEL,
+    PANEL_LABEL_IDS.RECENT_TOOLS_LABEL,
+]);
 const description = computed(() => props.definition.description || undefined);
 const isFavoritesDivider = computed(() => favoritesLabelIds.has(props.definition.id));
-const isRecentLabel = computed(() => props.definition.id === RECENT_TOOLS_LABEL_ID);
+const isRecentLabel = computed(() => props.definition.id === PANEL_LABEL_IDS.RECENT_TOOLS_LABEL);
 const isCollapsible = computed(() => collapsibleLabelIds.has(props.definition.id) && props.collapsed !== undefined);
 const isCollapsed = computed(() => props.collapsed ?? false);
 const toggleIcon = computed(() => (isCollapsed.value ? faChevronRight : faChevronDown));

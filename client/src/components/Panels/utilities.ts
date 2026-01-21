@@ -19,6 +19,50 @@ import levenshteinDistance from "@/utils/levenshtein";
 
 export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
 
+/** Build a ToolSection object */
+export function buildToolSection(id: string, name: string, tools: string[]): ToolSection {
+    return {
+        model_class: "ToolSection",
+        id,
+        name,
+        tools,
+    };
+}
+
+/** Build a ToolSectionLabel object */
+export function buildToolLabel(id: string, text: string): ToolSectionLabel {
+    return {
+        model_class: "ToolSectionLabel",
+        id,
+        text,
+    };
+}
+
+/** Build an array of [toolId, tool] entries from tool IDs and tools by ID map */
+export function buildToolEntries(toolIds: string[], toolsById: Record<string, Tool>): Array<[string, Tool]> {
+    return toolIds.map((id) => [id, toolsById[id]] as [string, Tool]).filter(([, tool]) => tool !== undefined);
+}
+
+/** Filter panel to only include tools matching the provided tool IDs */
+export function filterPanelByToolIds(
+    panel: Record<string, Tool | ToolSection>,
+    toolIds: Set<string>,
+): Record<string, Tool | ToolSection> {
+    const filtered: Record<string, Tool | ToolSection> = {};
+    for (const [key, item] of Object.entries(panel)) {
+        const section = item as ToolSection;
+        if (section.tools) {
+            const tools = section.tools.filter((toolId) => typeof toolId === "string" && toolIds.has(toolId));
+            if (tools.length > 0) {
+                filtered[key] = { ...section, tools };
+            }
+        } else if ((item as Tool).id && toolIds.has((item as Tool).id)) {
+            filtered[key] = item;
+        }
+    }
+    return filtered;
+}
+
 const FILTER_KEYS = {
     id: ["id", "tool_id"],
     panel_section_name: ["section", "panel_section_name"],
