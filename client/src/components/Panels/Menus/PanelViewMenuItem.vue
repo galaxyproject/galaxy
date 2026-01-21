@@ -6,7 +6,6 @@ import { computed } from "vue";
 
 import type { Panel } from "@/stores/toolStore";
 
-import { MY_PANEL_VIEW_ID, MY_PANEL_VIEW_NAME } from "../panelViews";
 import { types_to_icons } from "../utilities";
 
 const props = defineProps<{
@@ -18,21 +17,12 @@ const emit = defineEmits<{
     (e: "onSelect", panelView: Panel): void;
 }>();
 
-const isFavoritesView = computed(() => props.panelView.view_type === "favorites");
-const isMyToolsView = computed(() => props.panelView.id === MY_PANEL_VIEW_ID);
-const showPanelIcon = computed(() => !isMyToolsView.value || props.currentPanelView === props.panelView.id);
-const panelViewName = computed(() =>
-    props.panelView.id === MY_PANEL_VIEW_ID ? MY_PANEL_VIEW_NAME : props.panelView.name,
-);
-
 const icon = computed(() => {
     const viewType = props.panelView.view_type;
-    if (props.currentPanelView === props.panelView.id) {
-        return faCheck;
-    } else {
-        return types_to_icons[viewType] || faEye;
-    }
+    return types_to_icons[viewType] || faEye;
 });
+
+const isSelected = computed(() => props.currentPanelView === props.panelView.id);
 </script>
 
 <template>
@@ -40,20 +30,10 @@ const icon = computed(() => {
         class="ml-1"
         :title="props.panelView.description"
         :data-panel-id="panelView.id"
-        :active="props.currentPanelView === props.panelView.id"
+        :active="isSelected"
         @click="emit('onSelect', props.panelView)">
-        <FontAwesomeIcon
-            v-if="showPanelIcon && !isFavoritesView"
-            :icon="icon"
-            class="mr-1"
-            data-description="panel view item icon"
-            fixed-width />
-        <span v-localize>{{ panelViewName }}</span>
-        <FontAwesomeIcon
-            v-if="showPanelIcon && isFavoritesView"
-            :icon="icon"
-            class="ml-1"
-            data-description="panel view item icon"
-            fixed-width />
+        <FontAwesomeIcon :icon="icon" class="mr-1" fixed-width />
+        <span v-localize>{{ panelView.name }}</span>
+        <FontAwesomeIcon v-if="isSelected" :icon="faCheck" class="ml-1" fixed-width />
     </BDropdownItem>
 </template>
