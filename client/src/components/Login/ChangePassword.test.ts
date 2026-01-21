@@ -1,8 +1,9 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./ChangePassword.vue";
 
@@ -12,13 +13,27 @@ vi.mock("utils/redirect", () => ({
 }));
 
 const localVue = getLocalVue(true);
+const { server, http } = useServerMock();
+
+interface PostRequest {
+    url: string;
+    data: Record<string, unknown>;
+}
+
+let postRequests: PostRequest[] = [];
 
 describe("ChangePassword", () => {
     let wrapper: Wrapper<Vue>;
-    let axiosMock: MockAdapter;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
+        postRequests = [];
+        server.use(
+            http.untyped.post(/.*/, async ({ request }) => {
+                const data = (await request.json()) as Record<string, unknown>;
+                postRequests.push({ url: request.url, data });
+                return HttpResponse.json({});
+            }),
+        );
         wrapper = mount(MountTarget as object, {
             propsData: {
                 messageText: "message_text",
@@ -26,10 +41,6 @@ describe("ChangePassword", () => {
             },
             localVue,
         });
-    });
-
-    afterEach(() => {
-        axiosMock.reset();
     });
 
     it("basics", async () => {
@@ -52,10 +63,11 @@ describe("ChangePassword", () => {
         const submitButton = wrapper.find("button[type='submit']");
 
         await submitButton.trigger("submit");
+        await flushPromises();
 
-        const postedData = JSON.parse(axiosMock.history.post?.[0]?.data);
-        expect(postedData.password).toBe("test_first_pwd");
-        expect(postedData.confirm).toBe("test_second_pwd");
+        expect(postRequests.length).toBe(1);
+        expect(postRequests[0]?.data.password).toBe("test_first_pwd");
+        expect(postRequests[0]?.data.confirm).toBe("test_second_pwd");
     });
 
     it("props", async () => {
@@ -72,11 +84,12 @@ describe("ChangePassword", () => {
         const submitButton = wrapper.find("button[type='submit']");
 
         await submitButton.trigger("submit");
+        await flushPromises();
 
-        const postedData = JSON.parse(axiosMock.history.post?.[0]?.data);
-        expect(postedData.token).toBe("test_token");
-        expect(postedData.id).toBe("expired_user");
-        expect(postedData.current).toBe("current_password");
+        expect(postRequests.length).toBe(1);
+        expect(postRequests[0]?.data.token).toBe("test_token");
+        expect(postRequests[0]?.data.id).toBe("expired_user");
+        expect(postRequests[0]?.data.current).toBe("current_password");
 
         const alert = wrapper.find(".alert");
         expect(alert.text()).toBe("message_text");

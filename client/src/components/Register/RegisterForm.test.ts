@@ -1,25 +1,40 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./RegisterForm.vue";
 
 const localVue = getLocalVue(true);
 const router = injectTestRouter(localVue);
+const { server, http } = useServerMock();
 
 // const SELECTORS = {
 //     LOGIN_TOGGLE: "[id=login-toggle]",
 // };
 
+interface PostRequest {
+    url: string;
+    data: Record<string, unknown>;
+}
+
+let postRequests: PostRequest[] = [];
+
 describe("RegisterForm", () => {
     let wrapper: Wrapper<Vue>;
-    let axiosMock: MockAdapter;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
+        postRequests = [];
+        server.use(
+            http.untyped.post(/.*/, async ({ request }) => {
+                const data = (await request.json()) as Record<string, unknown>;
+                postRequests.push({ url: request.url, data });
+                return HttpResponse.json({});
+            }),
+        );
 
         const pinia = createTestingPinia({ createSpy: vi.fn });
 
@@ -31,10 +46,6 @@ describe("RegisterForm", () => {
             pinia,
             router,
         });
-    });
-
-    afterEach(() => {
-        axiosMock.reset();
     });
 
     it("basics", async () => {
@@ -55,10 +66,11 @@ describe("RegisterForm", () => {
 
         const submitButton = wrapper.find("button[type='submit']");
         await submitButton.trigger("submit");
+        await flushPromises();
 
-        const postedData = JSON.parse(axiosMock.history.post?.[0]?.data);
-        expect(postedData.email).toBe("test_user");
-        expect(postedData.password).toBe("test_pwd");
+        expect(postRequests.length).toBe(1);
+        expect(postRequests[0]?.data.email).toBe("test_user");
+        expect(postRequests[0]?.data.password).toBe("test_pwd");
     });
 
     // TODO: Changing the original `<a>` to a `GLink` has made it so that the link never appears in the wrapper.
