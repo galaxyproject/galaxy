@@ -1,11 +1,6 @@
 """Unit tests for workflow completion detection logic."""
 
 from typing import cast
-from unittest.mock import (
-    MagicMock,
-)
-
-import pytest
 
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
@@ -16,199 +11,172 @@ from galaxy.schema.invocation import (
 )
 from galaxy.schema.schema import JobState
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.workflow.completion import (
-    compute_job_state_summary,
-    is_invocation_complete,
-    is_job_terminal,
-    is_step_complete,
-    TERMINAL_JOB_STATES,
-)
 
 
-class TestIsJobTerminal:
-    """Tests for is_job_terminal function."""
-
-    @pytest.mark.parametrize(
-        "state",
-        [
-            JobState.OK.value,
-            JobState.ERROR.value,
-            JobState.DELETED.value,
-            JobState.SKIPPED.value,
-            JobState.PAUSED.value,
-            JobState.STOPPED.value,
-        ],
-    )
-    def test_terminal_states_return_true(self, state):
-        """All terminal states should return True."""
-        job = MagicMock()
-        job.state = state
-        assert is_job_terminal(job) is True
-
-    @pytest.mark.parametrize(
-        "state",
-        [
-            JobState.NEW.value,
-            JobState.QUEUED.value,
-            JobState.RUNNING.value,
-            JobState.WAITING.value,
-            JobState.UPLOAD.value,
-        ],
-    )
-    def test_non_terminal_states_return_false(self, state):
-        """Non-terminal states should return False."""
-        job = MagicMock()
-        job.state = state
-        assert is_job_terminal(job) is False
-
-
-class TestIsStepComplete:
-    """Tests for is_step_complete function."""
+class TestWorkflowInvocationStepIsComplete:
+    """Tests for WorkflowInvocationStep.is_complete model property."""
 
     def test_step_without_jobs_in_scheduled_state_is_complete(self):
         """Input/parameter steps without jobs are complete when scheduled."""
-        step = MagicMock()
-        step.workflow_step.type = "data_input"
-        step.jobs = []
-        step.state = InvocationStepState.SCHEDULED.value
+        step = model.WorkflowInvocationStep()
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "data_input"
+        step.workflow_step = workflow_step
+        step.state = InvocationStepState.SCHEDULED
 
-        assert is_step_complete(step) is True
+        assert step.is_complete is True
 
     def test_step_without_jobs_in_new_state_is_not_complete(self):
         """Input steps in NEW state are not complete."""
-        step = MagicMock()
-        step.workflow_step.type = "data_input"
-        step.jobs = []
-        step.state = InvocationStepState.NEW.value
+        step = model.WorkflowInvocationStep()
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "data_input"
+        step.workflow_step = workflow_step
+        step.state = InvocationStepState.NEW
 
-        assert is_step_complete(step) is False
+        assert step.is_complete is False
 
     def test_step_with_all_ok_jobs_is_complete(self):
         """Tool step with all OK jobs is complete."""
-        job1 = MagicMock()
-        job1.state = JobState.OK.value
-        job2 = MagicMock()
-        job2.state = JobState.OK.value
+        job = model.Job()
+        job.state = JobState.OK
 
-        step = MagicMock()
-        step.workflow_step.type = "tool"
-        step.jobs = [job1, job2]
+        step = model.WorkflowInvocationStep()
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "tool"
+        step.workflow_step = workflow_step
+        step.job = job
 
-        assert is_step_complete(step) is True
+        assert step.is_complete is True
 
     def test_step_with_running_job_is_not_complete(self):
         """Tool step with a running job is not complete."""
-        job1 = MagicMock()
-        job1.state = JobState.OK.value
-        job2 = MagicMock()
-        job2.state = JobState.RUNNING.value
+        job = model.Job()
+        job.state = JobState.RUNNING
 
-        step = MagicMock()
-        step.workflow_step.type = "tool"
-        step.jobs = [job1, job2]
+        step = model.WorkflowInvocationStep()
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "tool"
+        step.workflow_step = workflow_step
+        step.job = job
 
-        assert is_step_complete(step) is False
+        assert step.is_complete is False
 
     def test_step_with_error_job_is_complete(self):
         """Tool step with error job is still complete (error is terminal)."""
-        job = MagicMock()
-        job.state = JobState.ERROR.value
+        job = model.Job()
+        job.state = JobState.ERROR
 
-        step = MagicMock()
-        step.workflow_step.type = "tool"
-        step.jobs = [job]
+        step = model.WorkflowInvocationStep()
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "tool"
+        step.workflow_step = workflow_step
+        step.job = job
 
-        assert is_step_complete(step) is True
+        assert step.is_complete is True
 
 
-class TestIsInvocationComplete:
-    """Tests for is_invocation_complete function."""
+class TestWorkflowInvocationIsComplete:
+    """Tests for WorkflowInvocation.is_complete model property."""
 
     def test_invocation_not_in_scheduled_state_is_not_complete(self):
         """Invocations not in SCHEDULED state are not complete."""
-        invocation = MagicMock()
-        invocation.state = InvocationState.NEW.value
-        invocation.steps = []
+        invocation = model.WorkflowInvocation()
+        invocation.state = InvocationState.NEW
 
-        assert is_invocation_complete(invocation) is False
+        assert invocation.is_complete is False
 
     def test_scheduled_invocation_with_all_complete_steps_is_complete(self):
         """Scheduled invocation with all steps complete is complete."""
-        job = MagicMock()
-        job.state = JobState.OK.value
+        job = model.Job()
+        job.state = JobState.OK
 
-        step = MagicMock()
-        step.workflow_step.type = "tool"
-        step.jobs = [job]
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "tool"
 
-        invocation = MagicMock()
-        invocation.state = InvocationState.SCHEDULED.value
-        invocation.steps = [step]
+        step = model.WorkflowInvocationStep()
+        step.workflow_step = workflow_step
+        step.job = job
 
-        assert is_invocation_complete(invocation) is True
+        invocation = model.WorkflowInvocation()
+        invocation.state = InvocationState.SCHEDULED
+        invocation.steps.append(step)
+
+        assert invocation.is_complete is True
 
     def test_scheduled_invocation_with_incomplete_step_is_not_complete(self):
         """Scheduled invocation with running job is not complete."""
-        job = MagicMock()
-        job.state = JobState.RUNNING.value
+        job = model.Job()
+        job.state = JobState.RUNNING
 
-        step = MagicMock()
-        step.workflow_step.type = "tool"
-        step.jobs = [job]
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "tool"
 
-        invocation = MagicMock()
-        invocation.state = InvocationState.SCHEDULED.value
-        invocation.steps = [step]
+        step = model.WorkflowInvocationStep()
+        step.workflow_step = workflow_step
+        step.job = job
 
-        assert is_invocation_complete(invocation) is False
+        invocation = model.WorkflowInvocation()
+        invocation.state = InvocationState.SCHEDULED
+        invocation.steps.append(step)
+
+        assert invocation.is_complete is False
 
 
-class TestComputeJobStateSummary:
-    """Tests for compute_job_state_summary function."""
+class TestComputeRecursiveJobStateSummary:
+    """Tests for WorkflowInvocation.compute_recursive_job_state_summary method."""
 
     def test_empty_invocation_returns_empty_dict(self):
         """Invocation with no jobs returns empty summary."""
-        step = MagicMock()
-        step.workflow_step.type = "data_input"
-        step.jobs = []
+        workflow_step = model.WorkflowStep()
+        workflow_step.type = "data_input"
 
-        invocation = MagicMock()
-        invocation.steps = [step]
+        step = model.WorkflowInvocationStep()
+        step.workflow_step = workflow_step
 
-        summary = compute_job_state_summary(invocation)
+        invocation = model.WorkflowInvocation()
+        invocation.state = InvocationState.SCHEDULED
+        invocation.steps.append(step)
+
+        summary = invocation.compute_recursive_job_state_summary()
         assert summary == {}
 
     def test_counts_job_states_correctly(self):
         """Job states are counted correctly."""
-        job1 = MagicMock()
+        job1 = model.Job()
         job1.state = JobState.OK.value
-        job2 = MagicMock()
+        job2 = model.Job()
         job2.state = JobState.OK.value
-        job3 = MagicMock()
+        job3 = model.Job()
         job3.state = JobState.ERROR.value
 
-        step1 = MagicMock()
-        step1.workflow_step.type = "tool"
-        step1.jobs = [job1, job2]
+        workflow_step1 = model.WorkflowStep()
+        workflow_step1.type = "tool"
+        workflow_step2 = model.WorkflowStep()
+        workflow_step2.type = "tool"
+        workflow_step3 = model.WorkflowStep()
+        workflow_step3.type = "tool"
 
-        step2 = MagicMock()
-        step2.workflow_step.type = "tool"
-        step2.jobs = [job3]
+        step1 = model.WorkflowInvocationStep()
+        step1.workflow_step = workflow_step1
+        step1.job = job1
 
-        invocation = MagicMock()
-        invocation.steps = [step1, step2]
+        step2 = model.WorkflowInvocationStep()
+        step2.workflow_step = workflow_step2
+        step2.job = job2
 
-        summary = compute_job_state_summary(invocation)
+        step3 = model.WorkflowInvocationStep()
+        step3.workflow_step = workflow_step3
+        step3.job = job3
+
+        invocation = model.WorkflowInvocation()
+        invocation.state = InvocationState.SCHEDULED
+        invocation.steps.append(step1)
+        invocation.steps.append(step2)
+        invocation.steps.append(step3)
+
+        summary = invocation.compute_recursive_job_state_summary()
         assert summary == {"ok": 2, "error": 1}
-
-
-class TestTerminalStates:
-    """Tests for terminal state constants."""
-
-    def test_terminal_states_are_strings(self):
-        """Terminal states should be string values."""
-        for state in TERMINAL_JOB_STATES:
-            assert isinstance(state, str)
 
 
 class TestWorkflowCompletionManagerHandlerFiltering:

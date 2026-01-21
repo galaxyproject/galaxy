@@ -19,7 +19,6 @@ from galaxy.model import (
 )
 from galaxy.schema.invocation import InvocationState
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.workflow.completion import compute_job_state_summary
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +81,7 @@ class WorkflowCompletionManager:
             return None
 
         # Record completion
-        job_summary = compute_job_state_summary(invocation)
+        job_summary = invocation.compute_recursive_job_state_summary()
         log.debug("Invocation %d job_summary=%s", invocation_id, job_summary)
 
         completion = WorkflowInvocationCompletion(
