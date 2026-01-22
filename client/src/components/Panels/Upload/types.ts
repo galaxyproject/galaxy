@@ -9,7 +9,8 @@ export type UploadMethod =
     | "explore-zip"
     | "data-source-tools"
     | "import-history"
-    | "import-workflow";
+    | "import-workflow"
+    | "rule-based-import";
 
 export interface UploadMethodConfig {
     id: UploadMethod;

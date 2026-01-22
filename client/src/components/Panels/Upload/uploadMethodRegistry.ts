@@ -8,6 +8,7 @@ import {
     faHdd,
     faLink,
     faSitemap,
+    faTable,
 } from "@fortawesome/free-solid-svg-icons";
 import { defineAsyncComponent } from "vue";
 
@@ -95,6 +96,15 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         headerAction: "Import Workflow",
         requiresTargetHistory: false,
         component: defineAsyncComponent(() => import("./methods/ImportWorkflowUpload.vue")),
+    },
+    "rule-based-import": {
+        id: "rule-based-import",
+        name: "Rule-based Data Import",
+        description: "Import datasets or collections using rule-based mappings",
+        icon: faTable,
+        headerAction: "Launch Rule-based Import",
+        requiresTargetHistory: false,
+        component: defineAsyncComponent(() => import("./methods/RuleBasedImportUpload.vue")),
     },
 };
 
