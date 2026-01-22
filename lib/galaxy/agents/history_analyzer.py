@@ -195,9 +195,16 @@ Then synthesize this information into a comprehensive analysis."""
 
         result = await self._run_with_retry(prompt)
 
-        if hasattr(result, "data"):
+        if hasattr(result, "data") and isinstance(result.data, HistoryAnalysis):
             return result.data
-        return result
+        # If structured output failed, return a default analysis
+        log.warning(f"Agent did not return structured HistoryAnalysis, got: {type(result)}")
+        return HistoryAnalysis(
+            title="History Analysis",
+            summary=str(getattr(result, "output", result)) if result else "Unable to analyze history",
+            workflow_description="",
+            tools_used=[],
+        )
 
     async def analyze_with_discovery(self, query: str, focus: str = "summary") -> HistoryAnalysis:
         """
@@ -241,9 +248,16 @@ Synthesize this into a comprehensive analysis."""
 
         result = await self._run_with_retry(prompt)
 
-        if hasattr(result, "data"):
+        if hasattr(result, "data") and isinstance(result.data, HistoryAnalysis):
             return result.data
-        return result
+        # If structured output failed, return a default analysis
+        log.warning(f"Agent did not return structured HistoryAnalysis, got: {type(result)}")
+        return HistoryAnalysis(
+            title="History Analysis",
+            summary=str(getattr(result, "output", result)) if result else "Unable to analyze history",
+            workflow_description="",
+            tools_used=[],
+        )
 
     async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         """
