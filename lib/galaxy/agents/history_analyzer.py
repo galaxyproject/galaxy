@@ -25,6 +25,7 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    extract_structured_output,
     GalaxyAgentDependencies,
 )
 
@@ -195,16 +196,16 @@ Then synthesize this information into a comprehensive analysis."""
 
         result = await self._run_with_retry(prompt)
 
-        if hasattr(result, "data") and isinstance(result.data, HistoryAnalysis):
-            log.debug(f"HistoryAnalyzer returned structured output: {result.data.title}")
-            return result.data
-        # If structured output failed, return a default analysis
+        extracted = extract_structured_output(result, HistoryAnalysis, log)
+        if extracted:
+            return extracted
+
+        # Extraction failed - log details and raise an error
         self._log_result_debug_info(result, "analyze_history")
-        return HistoryAnalysis(
-            title="History Analysis",
-            summary=str(getattr(result, "output", result)) if result else "Unable to analyze history",
-            workflow_description="",
-            tools_used=[],
+        raise ValueError(
+            "The AI model did not return a properly formatted response. "
+            "This may indicate the model doesn't support structured output. "
+            "Check the logs for details about what was returned."
         )
 
     async def analyze_with_discovery(self, query: str, focus: str = "summary") -> HistoryAnalysis:
@@ -249,16 +250,16 @@ Synthesize this into a comprehensive analysis."""
 
         result = await self._run_with_retry(prompt)
 
-        if hasattr(result, "data") and isinstance(result.data, HistoryAnalysis):
-            log.debug(f"HistoryAnalyzer returned structured output: {result.data.title}")
-            return result.data
-        # If structured output failed, return a default analysis
+        extracted = extract_structured_output(result, HistoryAnalysis, log)
+        if extracted:
+            return extracted
+
+        # Extraction failed - log details and raise an error
         self._log_result_debug_info(result, "analyze_with_discovery")
-        return HistoryAnalysis(
-            title="History Analysis",
-            summary=str(getattr(result, "output", result)) if result else "Unable to analyze history",
-            workflow_description="",
-            tools_used=[],
+        raise ValueError(
+            "The AI model did not return a properly formatted response. "
+            "This may indicate the model doesn't support structured output. "
+            "Check the logs for details about what was returned."
         )
 
     def _log_result_debug_info(self, result: Any, method_name: str) -> None:
