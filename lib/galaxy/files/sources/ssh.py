@@ -63,6 +63,7 @@ class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration
             timeout=config.timeout,
             compress=config.compress,
             config_path=config.config_path,
+            keepalive=0,
         )
         if config.path:
             return handle.opendir(config.path)
