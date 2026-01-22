@@ -21,6 +21,21 @@ from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
+# Fields that contain Galaxy database IDs and should be encoded
+ID_FIELDS = {
+    "id",
+    "history_id",
+    "dataset_id",
+    "job_id",
+    "workflow_id",
+    "invocation_id",
+    "user_id",
+    "hda_id",
+    "hdca_id",
+    "collection_id",
+    "creating_job",
+}
+
 
 class AgentOperationsManager:
     """
@@ -53,6 +68,36 @@ class AgentOperationsManager:
         self._invocations_service = None
 
         log.debug("AgentOperationsManager initialized")
+
+    def _encode_id(self, value: int) -> str:
+        """Encode a single integer ID to a string."""
+        return self.trans.security.encode_id(value)
+
+    def _encode_ids_in_response(self, data: Any) -> Any:
+        """
+        Recursively encode Galaxy database IDs in response data.
+
+        The service layer returns unencoded integer IDs, but agents need
+        encoded string IDs to use in subsequent API calls.
+
+        Args:
+            data: Response data (dict, list, or scalar)
+
+        Returns:
+            Data with integer IDs encoded as strings
+        """
+        if isinstance(data, dict):
+            result = {}
+            for key, value in data.items():
+                if key in ID_FIELDS and isinstance(value, int):
+                    result[key] = self._encode_id(value)
+                else:
+                    result[key] = self._encode_ids_in_response(value)
+            return result
+        elif isinstance(data, list):
+            return [self._encode_ids_in_response(item) for item in data]
+        else:
+            return data
 
     @property
     def tools_service(self):
@@ -246,9 +291,12 @@ class AgentOperationsManager:
             all_histories=False,
         )
 
+        # Encode IDs in response for agent consumption
+        encoded_histories = self._encode_ids_in_response(histories)
+
         return {
-            "histories": histories,
-            "count": len(histories),
+            "histories": encoded_histories,
+            "count": len(encoded_histories),
             "pagination": {"limit": limit, "offset": offset},
         }
 
@@ -275,7 +323,8 @@ class AgentOperationsManager:
         # This ensures proper validation, permission checks, and all API safeguards
         result = self.tools_service._create(self.trans, payload)
 
-        return result
+        # Encode IDs in response for agent consumption
+        return self._encode_ids_in_response(result)
 
     def get_job_status(self, job_id: str) -> dict[str, Any]:
         """
@@ -298,7 +347,8 @@ class AgentOperationsManager:
             full=False,
         )
 
-        return {"job": job_details, "job_id": job_id}
+        # Encode IDs in response for agent consumption
+        return {"job": self._encode_ids_in_response(job_details), "job_id": job_id}
 
     def create_history(self, name: str) -> dict[str, Any]:
         """
@@ -321,7 +371,8 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        return history
+        # Encode IDs in response for agent consumption
+        return self._encode_ids_in_response(history)
 
     def get_history_details(self, history_id: str) -> dict[str, Any]:
         """
@@ -345,7 +396,11 @@ class AgentOperationsManager:
             history_id=decoded_history_id,
         )
 
-        return {"history": history, "history_id": history_id}
+        # Encode IDs in response for agent consumption
+        return {
+            "history": self._encode_ids_in_response(history),
+            "history_id": history_id,
+        }
 
     def get_history_contents(
         self,
@@ -383,9 +438,10 @@ class AgentOperationsManager:
         current_page = (offset // limit) + 1 if limit > 0 else 1
         total_pages = ((total_count - 1) // limit) + 1 if limit > 0 and total_count > 0 else 1
 
+        # Encode IDs in response for agent consumption
         return {
             "history_id": history_id,
-            "contents": contents,
+            "contents": self._encode_ids_in_response(contents),
             "pagination": {
                 "total_items": total_count,
                 "returned_items": len(contents),
@@ -420,7 +476,11 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        return {"dataset": dataset, "dataset_id": dataset_id}
+        # Encode IDs in response for agent consumption
+        return {
+            "dataset": self._encode_ids_in_response(dataset),
+            "dataset_id": dataset_id,
+        }
 
     def upload_file_from_url(
         self,
@@ -465,7 +525,8 @@ class AgentOperationsManager:
 
         result = self.tools_service._create(self.trans, payload)
 
-        return result
+        # Encode IDs in response for agent consumption
+        return self._encode_ids_in_response(result)
 
     def list_workflows(
         self,
@@ -504,9 +565,12 @@ class AgentOperationsManager:
             include_total_count=True,
         )
 
+        # Encode IDs in response for agent consumption
+        encoded_workflows = self._encode_ids_in_response(workflows)
+
         return {
-            "workflows": workflows,
-            "count": len(workflows),
+            "workflows": encoded_workflows,
+            "count": len(encoded_workflows),
             "total_count": total_count,
             "pagination": {
                 "limit": limit,
@@ -534,7 +598,11 @@ class AgentOperationsManager:
             version=None,
         )
 
-        return {"workflow": workflow, "workflow_id": workflow_id}
+        # Encode IDs in response for agent consumption
+        return {
+            "workflow": self._encode_ids_in_response(workflow),
+            "workflow_id": workflow_id,
+        }
 
     def invoke_workflow(
         self,
@@ -571,7 +639,8 @@ class AgentOperationsManager:
             payload=payload,
         )
 
-        return result
+        # Encode IDs in response for agent consumption
+        return self._encode_ids_in_response(result)
 
     def get_invocations(
         self,
@@ -619,9 +688,12 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
+        # Encode IDs in response for agent consumption
+        encoded_invocations = self._encode_ids_in_response(invocations)
+
         return {
-            "invocations": invocations,
-            "count": len(invocations),
+            "invocations": encoded_invocations,
+            "count": len(encoded_invocations),
             "total_count": total_count,
             "pagination": {
                 "limit": limit,
@@ -650,7 +722,11 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        return {"invocation": invocation, "invocation_id": invocation_id}
+        # Encode IDs in response for agent consumption
+        return {
+            "invocation": self._encode_ids_in_response(invocation),
+            "invocation_id": invocation_id,
+        }
 
     def cancel_workflow_invocation(self, invocation_id: str) -> dict[str, Any]:
         """
@@ -673,7 +749,12 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        return {"invocation": invocation, "invocation_id": invocation_id, "cancelled": True}
+        # Encode IDs in response for agent consumption
+        return {
+            "invocation": self._encode_ids_in_response(invocation),
+            "invocation_id": invocation_id,
+            "cancelled": True,
+        }
 
     def get_tool_panel(self, view: str | None = None) -> dict[str, Any]:
         """
@@ -989,7 +1070,14 @@ class AgentOperationsManager:
         )
 
         # Return simplified list with just id and name
-        simplified = [{"id": h.id, "name": h.name} for h in histories]
+        # Service returns dicts, encode IDs for agent consumption
+        simplified = [
+            {
+                "id": self._encode_id(h["id"]) if isinstance(h["id"], int) else h["id"],
+                "name": h["name"],
+            }
+            for h in histories
+        ]
 
         return {"histories": simplified, "count": len(simplified)}
 
