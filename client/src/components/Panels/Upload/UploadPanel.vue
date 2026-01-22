@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
+import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 
 import type { UploadMethodConfig } from "./types";
 import { getAllUploadMethods } from "./uploadMethodRegistry";
@@ -16,6 +18,7 @@ import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
 const { config, isConfigLoaded } = useConfig();
 const { hasUploads } = useUploadState();
+const { advancedMode } = useUploadAdvancedMode();
 
 const router = useRouter();
 const query = ref("");
@@ -60,6 +63,17 @@ function showProgressDetails() {
 <template>
     <div class="upload-panel-wrapper">
         <ActivityPanel title="Import Data" data-description="beta upload panel">
+            <template v-slot:header-buttons>
+                <BFormCheckbox
+                    v-model="advancedMode"
+                    v-b-tooltip.hover.noninteractive
+                    size="sm"
+                    switch
+                    class="mr-2"
+                    title="Show advanced upload options">
+                    <span class="small">Advanced</span>
+                </BFormCheckbox>
+            </template>
             <template v-slot:header>
                 <UploadProgressIndicator v-if="hasUploads" @show-details="showProgressDetails" />
                 <DelayedInput :delay="100" class="my-2" placeholder="Search upload methods" @change="query = $event" />
