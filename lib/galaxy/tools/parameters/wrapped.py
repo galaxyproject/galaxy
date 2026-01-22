@@ -1,3 +1,4 @@
+import logging
 from collections import UserDict
 from collections.abc import Sequence
 from typing import (
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from galaxy.tools._types import ToolStateJobInstancePopulatedT
     from galaxy.tools.parameters import ToolInputsT
 
+log = logging.getLogger(__name__)
 PARAMS_UNWRAPPED = object()
 
 
@@ -53,11 +55,13 @@ class LegacyUnprefixedDict(UserDict[str, Any]):
         self._legacy_mapping[old_key] = new_key
 
     def __getitem__(self, key):
+        # log.error(f"__getitem__ {key=} {self.data=} {self._legacy_mapping=}")
         if key not in self.data and key in self._legacy_mapping:
             return super().__getitem__(self._legacy_mapping[key])
         return super().__getitem__(key)
 
     def __contains__(self, key: object) -> bool:
+        log.error(f"__contains__ {key=} {self.data=} {self._legacy_mapping=}")
         if super().__contains__(key):
             return True
         return key in self._legacy_mapping
