@@ -196,9 +196,10 @@ Then synthesize this information into a comprehensive analysis."""
         result = await self._run_with_retry(prompt)
 
         if hasattr(result, "data") and isinstance(result.data, HistoryAnalysis):
+            log.debug(f"HistoryAnalyzer returned structured output: {result.data.title}")
             return result.data
         # If structured output failed, return a default analysis
-        log.warning(f"Agent did not return structured HistoryAnalysis, got: {type(result)}")
+        self._log_result_debug_info(result, "analyze_history")
         return HistoryAnalysis(
             title="History Analysis",
             summary=str(getattr(result, "output", result)) if result else "Unable to analyze history",
@@ -249,15 +250,54 @@ Synthesize this into a comprehensive analysis."""
         result = await self._run_with_retry(prompt)
 
         if hasattr(result, "data") and isinstance(result.data, HistoryAnalysis):
+            log.debug(f"HistoryAnalyzer returned structured output: {result.data.title}")
             return result.data
         # If structured output failed, return a default analysis
-        log.warning(f"Agent did not return structured HistoryAnalysis, got: {type(result)}")
+        self._log_result_debug_info(result, "analyze_with_discovery")
         return HistoryAnalysis(
             title="History Analysis",
             summary=str(getattr(result, "output", result)) if result else "Unable to analyze history",
             workflow_description="",
             tools_used=[],
         )
+
+    def _log_result_debug_info(self, result: Any, method_name: str) -> None:
+        """Log detailed debug information about an agent result for troubleshooting."""
+        log.warning(f"HistoryAnalyzer.{method_name} did not return structured HistoryAnalysis")
+        log.warning(f"  Result type: {type(result).__name__}")
+
+        if result is None:
+            log.warning("  Result is None")
+            return
+
+        # Log available attributes
+        attrs = [attr for attr in dir(result) if not attr.startswith("_")]
+        log.debug(f"  Available attributes: {attrs}")
+
+        # Log .data if present
+        if hasattr(result, "data"):
+            data = result.data
+            log.warning(f"  result.data type: {type(data).__name__ if data is not None else 'None'}")
+            if data is not None:
+                log.debug(f"  result.data value: {str(data)[:500]}")
+
+        # Log .output if present (common in pydantic-ai)
+        if hasattr(result, "output"):
+            output = result.output
+            log.warning(f"  result.output type: {type(output).__name__ if output is not None else 'None'}")
+            if output is not None:
+                log.debug(f"  result.output value: {str(output)[:500]}")
+
+        # Log messages/tool calls if present
+        if hasattr(result, "all_messages"):
+            messages = result.all_messages()
+            log.debug(f"  Message count: {len(messages) if messages else 0}")
+            for i, msg in enumerate(messages or []):
+                log.debug(f"    Message {i}: {type(msg).__name__} - {str(msg)[:200]}")
+
+        if hasattr(result, "new_messages"):
+            new_msgs = result.new_messages()
+            log.debug(f"  New message count: {len(new_msgs) if new_msgs else 0}")
 
     async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         """
