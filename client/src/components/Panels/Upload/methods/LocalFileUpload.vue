@@ -7,6 +7,7 @@ import { computed, ref, watch } from "vue";
 import { useFileDrop } from "@/composables/fileDrop";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
+import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
@@ -38,6 +39,8 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
 }>();
+
+const { advancedMode } = useUploadAdvancedMode();
 
 const uploadQueue = useUploadQueue();
 
@@ -254,6 +257,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             <UploadTableOptionsHeader
                                 :all-space-to-tab="bulk.allSpaceToTab.value"
                                 :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
+                                :show-posix="advancedMode"
                                 :all-to-posix-lines="bulk.allToPosixLines.value"
                                 :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
                                 @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
@@ -263,6 +267,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         <template v-slot:cell(options)="{ item }">
                             <UploadTableOptionsCell
                                 :space-to-tab="item.spaceToTab"
+                                :show-posix="advancedMode"
                                 :to-posix-lines="item.toPosixLines"
                                 @updateSpaceToTab="item.spaceToTab = $event"
                                 @updateToPosixLines="item.toPosixLines = $event" />

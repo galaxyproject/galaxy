@@ -6,6 +6,8 @@ interface Props {
     spaceToTab: boolean;
     /** Whether to convert to POSIX line endings */
     toPosixLines: boolean;
+    /** Whether to show the POSIX checkbox (advanced mode) */
+    showPosix?: boolean;
     /** Whether to defer data fetching (optional, for URLs) */
     deferred?: boolean;
     /** Whether to show the deferred checkbox */
@@ -13,6 +15,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
+    showPosix: true,
     deferred: false,
     showDeferred: false,
 });
@@ -42,12 +45,13 @@ function updateDeferred(value: boolean) {
             v-b-tooltip.hover.noninteractive
             :checked="spaceToTab"
             size="sm"
-            class="mr-2"
+            :class="{ 'mr-2': showPosix || showDeferred }"
             title="Convert spaces to tab characters"
             @change="updateSpaceToTab">
             <span class="small">Spaces→Tabs</span>
         </BFormCheckbox>
         <BFormCheckbox
+            v-if="showPosix"
             v-b-tooltip.hover.noninteractive
             :checked="toPosixLines"
             size="sm"

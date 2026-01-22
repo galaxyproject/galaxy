@@ -10,6 +10,8 @@ interface Props {
     allToPosixLines: boolean;
     /** Some but not all items have toPosixLines enabled */
     toPosixLinesIndeterminate: boolean;
+    /** Whether to show the POSIX checkbox (advanced mode) */
+    showPosix?: boolean;
     /** Whether to show the deferred checkbox (for URL uploads) */
     showDeferred?: boolean;
     /** All items have deferred enabled */
@@ -19,6 +21,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
+    showPosix: true,
     showDeferred: false,
     allDeferred: false,
     deferredIndeterminate: false,
@@ -58,11 +61,12 @@ function handleToggleDeferred() {
                 <span class="small">Spaces→Tabs</span>
             </BFormCheckbox>
             <BFormCheckbox
+                v-if="showPosix"
                 v-b-tooltip.hover.noninteractive
                 :checked="allToPosixLines"
                 :indeterminate="toPosixLinesIndeterminate"
                 size="sm"
-                class="mr-2"
+                :class="{ 'mr-2': showDeferred }"
                 title="Toggle all: Convert line endings to POSIX standard"
                 @change="handleToggleToPosixLines">
                 <span class="small">POSIX</span>
