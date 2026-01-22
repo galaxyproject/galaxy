@@ -1,24 +1,15 @@
 <script setup lang="ts">
-import {
-    faCheck,
-    faChevronDown,
-    faChevronRight,
-    faExclamationTriangle,
-    faLayerGroup,
-    faSpinner,
-    faTimes,
-} from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCollapse } from "bootstrap-vue";
 
-import type { UploadItem } from "@/composables/upload/uploadItemTypes";
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-import { bytesToString } from "@/utils/utils";
 
-import type { BatchStatus, CollectionBatchState } from "./uploadState";
+import { getBatchProgressUi } from "./uploadProgressUi";
 import { useUploadState } from "./uploadState";
 
+import UploadFileRow from "./UploadFileRow.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
@@ -62,73 +53,6 @@ function onClearAll() {
     cleanupExpandedBatches();
 }
 
-function getFileIcon(file: UploadItem) {
-    if (file.status === "completed") {
-        return faCheck;
-    }
-    if (file.status === "error") {
-        return faTimes;
-    }
-    return faSpinner;
-}
-
-function getFileIconSpin(file: UploadItem) {
-    return file.status === "uploading" || file.status === "processing";
-}
-
-function getFileStatusClass(file: UploadItem) {
-    if (file.status === "completed") {
-        return "text-success";
-    }
-    if (file.status === "error") {
-        return "text-danger";
-    }
-    return "text-primary";
-}
-
-function getBatchIcon(batch: CollectionBatchState) {
-    if (batch.status === "completed") {
-        return faCheck;
-    }
-    if (batch.status === "error") {
-        return faExclamationTriangle;
-    }
-    if (getBatchIconSpin(batch)) {
-        return faSpinner;
-    }
-    return faLayerGroup;
-}
-
-function getBatchIconSpin(batch: CollectionBatchState) {
-    return batch.status === "uploading" || batch.status === "creating-collection";
-}
-
-function getBatchStatusClass(status: BatchStatus) {
-    switch (status) {
-        case "completed":
-            return "text-success";
-        case "error":
-            return "text-danger";
-        case "creating-collection":
-            return "text-info";
-        default:
-            return "text-primary";
-    }
-}
-
-function getBatchStatusText(batch: CollectionBatchState & { progress: number }) {
-    if (batch.status === "creating-collection") {
-        return "Creating collection...";
-    }
-    if (batch.status === "completed") {
-        return "Collection created";
-    }
-    if (batch.status === "error") {
-        return "Error";
-    }
-    return `${batch.progress}% uploaded`;
-}
-
 async function retryBatch(batchId: string) {
     await uploadQueue.retryCollectionCreation(batchId);
 }
@@ -167,20 +91,20 @@ async function retryBatch(batchId: string) {
                         <!-- Batch header -->
                         <div
                             class="batch-header"
-                            :class="getBatchStatusClass(batch.status)"
+                            :class="getBatchProgressUi(batch).textClass"
                             role="button"
                             tabindex="0"
                             @click="toggleBatch(batch.id)"
                             @keydown.enter="toggleBatch(batch.id)"
                             @keydown.space.prevent="toggleBatch(batch.id)">
                             <FontAwesomeIcon
-                                :icon="getBatchIcon(batch)"
-                                :spin="getBatchIconSpin(batch)"
+                                :icon="getBatchProgressUi(batch).icon"
+                                :spin="getBatchProgressUi(batch).spin"
                                 class="mr-2"
                                 fixed-width />
                             <span class="batch-name">{{ batch.name }}</span>
                             <span class="batch-type badge badge-secondary ml-2">{{ batch.type }}</span>
-                            <span class="batch-status ml-auto mr-2">{{ getBatchStatusText(batch) }}</span>
+                            <span class="batch-status ml-auto mr-2">{{ getBatchProgressUi(batch).label }}</span>
                             <FontAwesomeIcon
                                 :icon="isExpanded(batch.id) ? faChevronDown : faChevronRight"
                                 class="expand-icon"
@@ -200,10 +124,7 @@ async function retryBatch(batchId: string) {
                             style="height: 4px">
                             <div
                                 class="progress-bar"
-                                :class="{
-                                    'bg-info': batch.status === 'creating-collection',
-                                    'bg-danger': batch.status === 'error',
-                                }"
+                                :class="getBatchProgressUi(batch).barClass"
                                 :style="{ width: `${batch.progress}%` }"
                                 role="progressbar"
                                 :aria-valuenow="batch.progress"
@@ -213,78 +134,16 @@ async function retryBatch(batchId: string) {
 
                         <!-- Collapsible upload items -->
                         <BCollapse :visible="isExpanded(batch.id)" class="batch-uploads mt-2">
-                            <div
-                                v-for="(file, index) in batch.uploads"
-                                :key="index"
-                                class="file-detail-item nested"
-                                :class="{ 'has-error': file.status === 'error' }">
-                                <div class="d-flex align-items-center mb-1">
-                                    <FontAwesomeIcon
-                                        :icon="getFileIcon(file)"
-                                        :class="getFileStatusClass(file)"
-                                        :spin="getFileIconSpin(file)"
-                                        class="mr-2"
-                                        fixed-width
-                                        size="sm" />
-                                    <span class="file-name flex-grow-1" :title="file.name">{{ file.name }}</span>
-                                    <span class="text-muted small ml-2">{{ bytesToString(file.size) }}</span>
-                                    <span class="text-muted small ml-2">{{ file.progress }}%</span>
-                                </div>
-                                <div class="progress" style="height: 3px">
-                                    <div
-                                        class="progress-bar"
-                                        :class="{
-                                            'bg-success': file.status === 'completed',
-                                            'bg-danger': file.status === 'error',
-                                        }"
-                                        :style="{ width: `${file.progress}%` }"
-                                        role="progressbar"
-                                        :aria-valuenow="file.progress"
-                                        aria-valuemin="0"
-                                        aria-valuemax="100"></div>
-                                </div>
-                                <div v-if="file.error" class="error-message text-danger small mt-1">
-                                    {{ file.error }}
-                                </div>
-                            </div>
+                            <UploadFileRow
+                                v-for="file in batch.uploads"
+                                :key="file.id || file.name"
+                                :file="file"
+                                nested />
                         </BCollapse>
                     </div>
 
                     <!-- Standalone uploads (not part of any collection) -->
-                    <div
-                        v-for="(file, index) in standaloneUploads"
-                        :key="index"
-                        class="file-detail-item"
-                        :class="{ 'has-error': file.status === 'error' }">
-                        <div class="d-flex align-items-center mb-1">
-                            <FontAwesomeIcon
-                                :icon="getFileIcon(file)"
-                                :class="getFileStatusClass(file)"
-                                :spin="file.status === 'uploading' || file.status === 'processing'"
-                                class="mr-2"
-                                fixed-width
-                                size="sm" />
-                            <span class="file-name flex-grow-1" :title="file.name">{{ file.name }}</span>
-                            <span class="text-muted small ml-2">{{ bytesToString(file.size) }}</span>
-                            <span class="text-muted small ml-2">{{ file.progress }}%</span>
-                        </div>
-                        <div class="progress" style="height: 3px">
-                            <div
-                                class="progress-bar"
-                                :class="{
-                                    'bg-success': file.status === 'completed',
-                                    'bg-danger': file.status === 'error',
-                                }"
-                                :style="{ width: `${file.progress}%` }"
-                                role="progressbar"
-                                :aria-valuenow="file.progress"
-                                aria-valuemin="0"
-                                aria-valuemax="100"></div>
-                        </div>
-                        <div v-if="file.error" class="error-message text-danger small mt-1">
-                            {{ file.error }}
-                        </div>
-                    </div>
+                    <UploadFileRow v-for="file in standaloneUploads" :key="file.id || file.name" :file="file" />
                 </div>
             </div>
             <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
