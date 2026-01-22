@@ -743,6 +743,16 @@ class GalaxyInteractorApi:
             for key, value in resource_parameters.items():
                 inputs_tree[f"__job_resource|{key}"] = value
 
+        # Build credentials context from test credentials
+        credentials_context = None
+        if testdef.credentials:
+            credentials_context = {}
+            for cred in testdef.credentials:
+                cred_name = cred["name"]
+                variables = {var["name"]: var["value"] for var in cred.get("variables", [])}
+                secrets = {sec["name"]: sec["value"] for sec in cred.get("secrets", [])}
+                credentials_context[cred_name] = {"variables": variables, "secrets": secrets}
+
         submit_response = None
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
@@ -751,6 +761,7 @@ class GalaxyInteractorApi:
                 tool_input=inputs_tree,
                 tool_version=testdef.tool_version,
                 use_legacy_api=submit_with_legacy_api,
+                credentials_context=credentials_context,
             )
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
@@ -983,6 +994,7 @@ class GalaxyInteractorApi:
         files: Optional[dict] = None,
         tool_version: Optional[str] = None,
         use_legacy_api: bool = True,
+        credentials_context: Optional[dict] = None,
     ):
         extra_data = extra_data or {}
         if use_legacy_api:
@@ -993,12 +1005,16 @@ class GalaxyInteractorApi:
                 tool_version=tool_version,
                 **extra_data,
             )
+            if credentials_context:
+                data["credentials_context"] = dumps(credentials_context)
             return self._post("tools", files=files, data=data)
         else:
             assert files is None
             data = dict(
                 history_id=history_id, tool_id=tool_id, inputs=tool_input, tool_version=tool_version, **extra_data
             )
+            if credentials_context:
+                data["credentials_context"] = credentials_context
             submit_tool_request_response = self._post("jobs", data=data, json=True)
             return submit_tool_request_response
 
@@ -2036,6 +2052,7 @@ class ToolTestDescription:
     outputs: ToolSourceTestOutputs
     output_collections: List[TestCollectionOutputDef]
     maxseconds: Optional[int]
+    credentials: Optional[List[Any]]  # List of TestCredential dicts
 
     @staticmethod
     def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
@@ -2066,6 +2083,7 @@ class ToolTestDescription:
         self.tool_id = json_dict["tool_id"]
         self.tool_version = json_dict.get("tool_version")
         self.maxseconds = json_dict.get("maxseconds")
+        self.credentials = json_dict.get("credentials")
 
     def test_data(self):
         """
@@ -2101,6 +2119,8 @@ class ToolTestDescription:
         }
         if self.maxseconds is not None:
             test_description_def["maxseconds"] = self.maxseconds
+        if self.credentials is not None:
+            test_description_def["credentials"] = self.credentials
         return ToolTestDescriptionDict(**test_description_def)
 
 
