@@ -75,7 +75,9 @@ def parse_tool_test_descriptions(
         if validate_on_load:
             try:
                 tool_parameter_bundle = input_models_for_tool_source(tool_source)
-                validated_test_case = case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
+                validated_test_case = case_state(
+                    raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True
+                )
                 request_and_schema = TestRequestAndSchema(
                     validated_test_case.tool_state,
                     tool_parameter_bundle,
@@ -83,7 +85,7 @@ def parse_tool_test_descriptions(
             except Exception as e:
                 validation_exception = e
 
-        if validation_exception and validate_on_load:
+        if validation_exception:
             tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
             test = ToolTestDescription.from_tool_source_dict(
                 InvalidToolTestDict(
