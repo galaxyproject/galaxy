@@ -242,12 +242,9 @@ class TagHandler:
             item_tag_assoc.tag = tag
             item_tag_assoc.user = user
         # Apply attributes to item-tag association. Strip whitespace from user name and tag.
-        lc_value = None
-        if value:
-            lc_value = value.lower()
         item_tag_assoc.user_tname = name
         item_tag_assoc.user_value = value
-        item_tag_assoc.value = lc_value
+        item_tag_assoc.value = value
         if flush:
             self.sa_session.commit()
         return item_tag_assoc
