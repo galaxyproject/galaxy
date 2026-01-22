@@ -1,9 +1,10 @@
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import type { useWorkflowStores } from "@/composables/workflowStores";
-import type { Step, Steps } from "@/stores/workflowStepStore";
+import type { Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
+import { isWorkflowInput } from "../../constants";
 import { terminalFactory } from "./terminals";
 
 export interface LintState {
@@ -55,14 +56,10 @@ export function getDisconnectedInputs(
     return inputs;
 }
 
-function isInput(stepType: Step["type"]) {
-    return stepType == "data_input" || stepType == "data_collection_input" || stepType == "parameter_input";
-}
-
 export function getMissingMetadata(steps: Steps) {
     const inputs: LintState[] = [];
     Object.values(steps).forEach((step) => {
-        if (isInput(step.type)) {
+        if (isWorkflowInput(step.type)) {
             const noAnnotation = !step.annotation;
             const noLabel = !step.label;
             let warningLabel = null;
@@ -103,10 +100,36 @@ export function dataAttributes(action: LintState): Record<string, string> {
     return result;
 }
 
+export function getDuplicateLabels(steps: Steps, stores: ReturnType<typeof useWorkflowStores>) {
+    const duplicates: LintState[] = [];
+
+    const { stepStore } = stores;
+    const labels = stepStore.duplicateLabels;
+
+    labels.forEach((label) => {
+        Object.values(steps).forEach((step) => {
+            const workflowOutputs = step.workflow_outputs || [];
+            workflowOutputs.forEach((workflowOutput) => {
+                if (workflowOutput.label === label) {
+                    duplicates.push({
+                        stepId: step.id,
+                        stepLabel: step.label || step.content_id || step.name,
+                        warningLabel: workflowOutput.output_name,
+                        name: workflowOutput.output_name,
+                        highlightType: "output",
+                    });
+                }
+            });
+        });
+    });
+
+    return duplicates;
+}
+
 export function getUnlabeledOutputs(steps: Steps) {
     const outputs: LintState[] = [];
     Object.values(steps).forEach((step) => {
-        if (isInput(step.type)) {
+        if (isWorkflowInput(step.type)) {
             // For now skip these... maybe should push this logic into linting though
             // since it is fine to have outputs on inputs.
             return;

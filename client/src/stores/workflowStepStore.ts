@@ -1,6 +1,7 @@
 import { computed, del, ref, set } from "vue";
 
 import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
+import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
@@ -184,6 +185,10 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
     const hasActiveOutputs = computed(() =>
         Boolean(Object.values(steps.value).find((step) => step.workflow_outputs?.length)),
+    );
+
+    const hasInputSteps = computed(() =>
+        Boolean(Object.values(steps.value).find((step) => isWorkflowInput(step.type))),
     );
 
     const workflowOutputs = computed(() => {
@@ -403,6 +408,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         getStepExtraInputs,
         getStepIndex,
         hasActiveOutputs,
+        hasInputSteps,
         workflowOutputs,
         duplicateLabels,
         addStep,

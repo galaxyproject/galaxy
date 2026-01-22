@@ -43,10 +43,16 @@ const { confirm } = useConfirmDialog();
 
 const stores = useWorkflowStores();
 const { stepStore, stateStore, searchStore } = stores;
-const { hasActiveOutputs } = storeToRefs(stepStore);
+const { hasActiveOutputs, hasInputSteps } = storeToRefs(stepStore);
 
-const { untypedParameters, unlabeledOutputs, untypedParameterWarnings, disconnectedInputs, missingMetadata } =
-    props.lintData;
+const {
+    untypedParameters,
+    unlabeledOutputs,
+    untypedParameterWarnings,
+    disconnectedInputs,
+    duplicateLabels,
+    missingMetadata,
+} = props.lintData;
 
 const showRefactor = computed(
     () => !untypedParameterWarnings.value.length || !disconnectedInputs.value.length || !unlabeledOutputs.value.length,
@@ -153,6 +159,8 @@ function onRefactor() {
             attribute-link="Describe your Workflow."
             @onClickAttribute="onAttributes('annotation')" />
         <LintSection
+            v-if="checkAnnotation"
+            data-description="linting annotation length"
             :okay="checkAnnotationLength"
             :success-message="annotationLengthSuccessMessage"
             :warning-message="bestPracticeWarningAnnotationLength"
@@ -179,6 +187,7 @@ function onRefactor() {
             attribute-link="Specify a License."
             @onClickAttribute="onAttributes('license')" />
         <LintSection
+            v-if="Object.keys(props.steps).length"
             data-description="linting formal inputs"
             success-message="Workflow parameters are using formal input parameters."
             warning-message="This workflow uses legacy workflow parameters. They should be replaced with
@@ -188,6 +197,7 @@ function onRefactor() {
             @onMouseOver="onHighlight"
             @onClick="onFixUntypedParameter" />
         <LintSection
+            v-if="Object.keys(props.steps).length"
             data-description="linting connected"
             success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
             warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
@@ -196,21 +206,31 @@ function onRefactor() {
             @onMouseOver="onHighlight"
             @onClick="onFixDisconnectedInput" />
         <LintSection
+            v-if="hasInputSteps"
             data-description="linting input metadata"
             success-message="All workflow inputs have labels and annotations."
             warning-message="Some workflow inputs are missing labels and/or annotations:"
             :warning-items="missingMetadata"
             @onMouseOver="onHighlight"
             @onClick="openAndFocus" />
-        <LintSection
-            data-description="linting output labels"
-            success-message="This workflow has outputs and they all have valid labels."
-            warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
+        <template v-if="hasActiveOutputs">
+            <LintSection
+                data-description="linting duplicate output labels"
+                success-message="All workflow output labels are unique."
+                warning-message="Some workflow outputs have duplicate labels. Workflow output labels must be unique:"
+                :warning-items="duplicateLabels"
+                @onMouseOver="onHighlight"
+                @onClick="openAndFocus" />
+            <LintSection
+                data-description="linting unlabeled outputs"
+                success-message="All workflow outputs have valid (populated) labels."
+                warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
-            :warning-items="unlabeledOutputs"
-            @onMouseOver="onHighlight"
-            @onClick="onFixUnlabeledOutputs" />
-        <GCard v-if="!hasActiveOutputs">
+                :warning-items="unlabeledOutputs"
+                @onMouseOver="onHighlight"
+                @onClick="onFixUnlabeledOutputs" />
+        </template>
+        <GCard v-else>
             <div>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>

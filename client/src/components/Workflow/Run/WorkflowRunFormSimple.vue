@@ -22,6 +22,7 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
+import type { Step } from "@/stores/workflowStepStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -336,7 +337,7 @@ async function onExecute() {
         const inputType = inputTypes.value[inputName];
         if (inputType == "replacement_parameter") {
             replacementParams[inputName] = value;
-        } else if (inputType && isWorkflowInput(inputType)) {
+        } else if (inputType && isWorkflowInput(inputType as Step["type"])) {
             inputs[inputName] = value;
         }
     }
