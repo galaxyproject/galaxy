@@ -78,7 +78,7 @@
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
                     :tags="tags"
-                    :highlight="highlightAttribute"
+                    :highlight.sync="highlightAttribute"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"

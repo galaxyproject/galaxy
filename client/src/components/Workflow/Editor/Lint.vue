@@ -70,7 +70,7 @@ const checkLicense = computed(() => Boolean(props.license));
 const checkCreator = computed(() => (props.creator ? props.creator.length > 0 : false));
 
 const emit = defineEmits<{
-    (e: "onAttributes", highlight: { highlight: "highlight" }): void;
+    (e: "onAttributes", highlight: { highlight: string }): void;
     (
         e: "onRefactor",
         action:
@@ -86,7 +86,7 @@ const emit = defineEmits<{
 }>();
 
 function onAttributes(highlight: string) {
-    emit("onAttributes", { highlight: "highlight" });
+    emit("onAttributes", { highlight });
 }
 
 async function onFixUntypedParameter(item: LintState) {
