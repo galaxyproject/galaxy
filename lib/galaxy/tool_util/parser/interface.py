@@ -116,6 +116,21 @@ class ToolSourceTestInput(TypedDict):
     attributes: ToolSourceTestInputAttributes
 
 
+class TestCredentialValue(TypedDict):
+    """Represents a credential value (variable or secret) in a test."""
+
+    name: str
+    value: str
+
+
+class TestCredential(TypedDict):
+    """Represents a credential group with variables and secrets for testing."""
+
+    name: str  # Name of the credentials group
+    variables: List[TestCredentialValue]
+    secrets: List[TestCredentialValue]
+
+
 ToolSourceTestInputs = List[ToolSourceTestInput]
 ToolSourceTestOutputs = List[ToolSourceTestOutput]
 TestSourceTestOutputColllection = Any
@@ -134,6 +149,7 @@ class ToolSourceTest(TypedDict):
     expect_num_outputs: Optional[XmlInt]
     command: AssertionList
     command_version: AssertionList
+    credentials: Optional[List[TestCredential]]
 
 
 class ToolSourceTests(TypedDict):
