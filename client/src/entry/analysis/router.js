@@ -67,8 +67,8 @@ import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUser
 import PageView from "@/components/Page/PageView.vue";
 import PageForm from "@/components/PageDisplay/PageForm.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
-import UploadIndex from "@/components/Panels/Upload/UploadIndex.vue";
 import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
+import UploadPage from "@/components/Panels/Upload/UploadPage.vue";
 import UploadProgress from "@/components/Panels/Upload/UploadProgress.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import ToolReport from "@/components/Tool/ToolReport.vue";
@@ -242,7 +242,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "upload",
-                        component: UploadIndex,
+                        component: UploadPage,
                     },
                     {
                         path: "upload/progress",
