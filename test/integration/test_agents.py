@@ -112,7 +112,10 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert "custom_tool" in agent_types
         assert "error_analysis" in agent_types
 
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
+    @patch(
+        "galaxy.managers.agents.AgentService.create_dependencies",
+        _create_deps_with_mock_model,
+    )
     @patch("galaxy.agents.router.Agent")
     def test_query_agent_auto_routing_mocked(self, mock_router_agent_class):
         """Test automatic agent routing with mocked LLM.
@@ -153,7 +156,10 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert "content" in data["response"]
         assert "BWA" in data["response"]["content"] or len(data["response"]["content"]) > 0
 
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
+    @patch(
+        "galaxy.managers.agents.AgentService.create_dependencies",
+        _create_deps_with_mock_model,
+    )
     @patch("galaxy.agents.custom_tool.Agent")
     def test_query_custom_tool_agent_mocked(self, mock_agent_class):
         """Test the custom tool agent with mocked LLM."""
@@ -207,7 +213,10 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert save_suggestions[0]["parameters"].get("tool_yaml"), "SAVE_TOOL must have tool_yaml"
         assert save_suggestions[0]["parameters"].get("tool_id"), "SAVE_TOOL must have tool_id"
 
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
+    @patch(
+        "galaxy.managers.agents.AgentService.create_dependencies",
+        _create_deps_with_mock_model,
+    )
     @patch("galaxy.agents.error_analysis.Agent")
     def test_query_error_analysis_agent_mocked(self, mock_agent_class):
         """Test the error analysis agent with mocked LLM."""
@@ -368,3 +377,160 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         data = response.json()
         # Should return a list (may be empty)
         assert isinstance(data, list)
+
+
+# ============================================================================
+# AgentOperationsManager ID Encoding Tests
+# ============================================================================
+
+
+class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
+    """Test AgentOperationsManager ID encoding.
+
+    These tests verify that the _encode_ids_in_response helper correctly
+    encodes Galaxy database IDs so agents can use them in subsequent API calls.
+    """
+
+    def test_encode_ids_helper_encodes_nested_ids(self):
+        """Test that _encode_ids_in_response correctly encodes nested IDs."""
+        from galaxy.managers.agent_operations import AgentOperationsManager
+        from galaxy.managers.context import ProvidesUserContext
+
+        # Create a minimal transaction context just for encoding
+        class MinimalTrans(ProvidesUserContext):
+            def __init__(self, app):
+                self._app = app
+
+            @property
+            def app(self):
+                return self._app
+
+            @property
+            def user(self):
+                return None
+
+            @property
+            def security(self):
+                return self._app.security
+
+            @property
+            def user_is_admin(self):
+                return False
+
+        trans = MinimalTrans(self._app)
+        ops = AgentOperationsManager(app=self._app, trans=trans)
+
+        # Test data with nested structure containing integer IDs
+        test_data = {
+            "id": 123,
+            "name": "test",
+            "nested": {"id": 456, "history_id": 789},
+            "list_items": [{"id": 111, "dataset_id": 222}, {"id": 333}],
+        }
+
+        result = ops._encode_ids_in_response(test_data)
+
+        # Top-level id should be encoded
+        assert isinstance(result["id"], str)
+        assert len(result["id"]) >= 16
+
+        # Non-ID field should be unchanged
+        assert result["name"] == "test"
+
+        # Nested IDs should be encoded
+        assert isinstance(result["nested"]["id"], str)
+        assert isinstance(result["nested"]["history_id"], str)
+
+        # List items should have encoded IDs
+        assert isinstance(result["list_items"][0]["id"], str)
+        assert isinstance(result["list_items"][0]["dataset_id"], str)
+        assert isinstance(result["list_items"][1]["id"], str)
+
+    def test_encode_ids_preserves_non_id_fields(self):
+        """Test that encoding preserves non-ID fields unchanged."""
+        from galaxy.managers.agent_operations import AgentOperationsManager
+        from galaxy.managers.context import ProvidesUserContext
+
+        class MinimalTrans(ProvidesUserContext):
+            def __init__(self, app):
+                self._app = app
+
+            @property
+            def app(self):
+                return self._app
+
+            @property
+            def user(self):
+                return None
+
+            @property
+            def security(self):
+                return self._app.security
+
+            @property
+            def user_is_admin(self):
+                return False
+
+        trans = MinimalTrans(self._app)
+        ops = AgentOperationsManager(app=self._app, trans=trans)
+
+        test_data = {
+            "id": 1,
+            "name": "My History",
+            "annotation": "Test annotation",
+            "count": 42,
+            "empty_list": [],
+            "tags": ["tag1", "tag2"],
+        }
+
+        result = ops._encode_ids_in_response(test_data)
+
+        # id should be encoded
+        assert isinstance(result["id"], str)
+
+        # Other fields should be preserved exactly
+        assert result["name"] == "My History"
+        assert result["annotation"] == "Test annotation"
+        assert result["count"] == 42
+        assert result["empty_list"] == []
+        assert result["tags"] == ["tag1", "tag2"]
+
+    def test_encode_ids_handles_already_encoded_ids(self):
+        """Test that string IDs (already encoded) are left unchanged."""
+        from galaxy.managers.agent_operations import AgentOperationsManager
+        from galaxy.managers.context import ProvidesUserContext
+
+        class MinimalTrans(ProvidesUserContext):
+            def __init__(self, app):
+                self._app = app
+
+            @property
+            def app(self):
+                return self._app
+
+            @property
+            def user(self):
+                return None
+
+            @property
+            def security(self):
+                return self._app.security
+
+            @property
+            def user_is_admin(self):
+                return False
+
+        trans = MinimalTrans(self._app)
+        ops = AgentOperationsManager(app=self._app, trans=trans)
+
+        # If IDs are already strings, they should be left unchanged
+        test_data = {
+            "id": "abc123def456",
+            "history_id": "already_encoded_id",
+        }
+
+        result = ops._encode_ids_in_response(test_data)
+
+        # String IDs should remain unchanged
+        assert result["id"] == "abc123def456"
+        assert result["history_id"] == "already_encoded_id"
