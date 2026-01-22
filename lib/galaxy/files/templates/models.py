@@ -159,7 +159,7 @@ class FtpFileSourceConfiguration(StrictModel):
 class SshFileSourceTemplateConfiguration(StrictModel):
     type: Literal["ssh"]
     host: Union[str, TemplateExpansion]
-    user: Optional[Union[str, TemplateExpansion]] = None
+    user: Union[str, TemplateExpansion]
     passwd: Optional[Union[str, TemplateExpansion]] = None
     pkey: Optional[Union[str, TemplateExpansion]] = None
     timeout: Union[int, TemplateExpansion] = 10
@@ -175,7 +175,7 @@ class SshFileSourceTemplateConfiguration(StrictModel):
 class SshFileSourceConfiguration(StrictModel):
     type: Literal["ssh"]
     host: str
-    user: Optional[str] = None
+    user: str
     passwd: Optional[str] = None
     pkey: Optional[str] = None
     timeout: int = 10
