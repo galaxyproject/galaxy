@@ -2,19 +2,24 @@
 import { faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCollapse } from "bootstrap-vue";
+import { computed } from "vue";
 
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useHistoryStore } from "@/stores/historyStore";
 
-import { getBatchProgressUi } from "./uploadProgressUi";
+import type { BatchDisplayInfo, BatchWithProgressAndUploads } from "./uploadProgressUi";
+import { getBatchDisplayInfo, getBatchProgressSummary, getBatchProgressUi } from "./uploadProgressUi";
 import { useUploadState } from "./uploadState";
 
 import UploadFileRow from "./UploadFileRow.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 
 const uploadQueue = useUploadQueue();
 const uploadState = useUploadState();
+const historyStore = useHistoryStore();
 const { batchesWithProgress, standaloneUploads, activeItems, completedCount, errorCount, hasCompleted } = uploadState;
 
 const breadcrumbItems = [{ title: "Import Data", to: "/upload" }, { title: "Upload Progress" }];
@@ -55,6 +60,42 @@ function onClearAll() {
 
 async function retryBatch(batchId: string) {
     await uploadQueue.retryCollectionCreation(batchId);
+}
+
+// Check if batch target history differs from current
+function shouldShowBatchHistoryLink(batchTargetHistoryId?: string): boolean {
+    return !!batchTargetHistoryId && batchTargetHistoryId !== historyStore.currentHistoryId;
+}
+
+function getBatchTargetHistoryId(batch: BatchWithProgressAndUploads): string {
+    return batch.uploads?.[0]?.targetHistoryId || "";
+}
+
+interface BatchDisplayData {
+    displayInfo: BatchDisplayInfo;
+    progressSummary: string;
+}
+
+const batchDisplayInfoMap = computed(() => {
+    const map = new Map<string, BatchDisplayData>();
+    batchesWithProgress.value.forEach((batch) => {
+        map.set(batch.id, {
+            displayInfo: getBatchDisplayInfo(batch),
+            progressSummary: getBatchProgressSummary(batch),
+        });
+    });
+    return map;
+});
+
+function getBatchDisplayData(batch: BatchWithProgressAndUploads): BatchDisplayData {
+    const data = batchDisplayInfoMap.value.get(batch.id);
+    if (!data) {
+        return {
+            displayInfo: getBatchDisplayInfo(batch),
+            progressSummary: getBatchProgressSummary(batch),
+        };
+    }
+    return data;
 }
 </script>
 
@@ -109,6 +150,20 @@ async function retryBatch(batchId: string) {
                                 :icon="isExpanded(batch.id) ? faChevronDown : faChevronRight"
                                 class="expand-icon"
                                 fixed-width />
+                        </div>
+
+                        <!-- Batch metadata row -->
+                        <div class="batch-metadata px-3 py-2 d-flex flex-wrap align-items-center">
+                            <span class="text-muted small mr-3">
+                                {{ getBatchDisplayData(batch).displayInfo.uploadModeSummary }}
+                            </span>
+                            <span class="text-muted small mr-3">
+                                {{ getBatchDisplayData(batch).progressSummary }}
+                            </span>
+                            <div v-if="shouldShowBatchHistoryLink(getBatchTargetHistoryId(batch))" class="small mr-3">
+                                <span class="text-muted mr-1">Target:</span>
+                                <SwitchToHistoryLink :history-id="getBatchTargetHistoryId(batch)" inline thin />
+                            </div>
                         </div>
 
                         <!-- Batch error message with retry button -->
@@ -206,6 +261,12 @@ async function retryBatch(batchId: string) {
         outline: 2px solid $brand-primary;
         outline-offset: -2px;
     }
+}
+
+.batch-metadata {
+    background-color: lighten($gray-100, 3%);
+    border-top: 1px solid $border-color;
+    font-size: 0.85rem;
 }
 
 .batch-name {
