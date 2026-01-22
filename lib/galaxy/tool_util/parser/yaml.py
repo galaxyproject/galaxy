@@ -30,6 +30,8 @@ from .interface import (
     InputSource,
     PageSource,
     PagesSource,
+    TestCredential,
+    TestCredentialValue,
     ToolSource,
     ToolSourceTest,
     ToolSourceTests,
@@ -328,7 +330,65 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
     test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
+    test_dict["credentials"] = __parse_credentials_yaml(test_dict.get("credentials", None))
     return test_dict
+
+
+def __parse_credentials_yaml(credentials_data):
+    """
+    Parse credentials from YAML test definition.
+
+    Supports both list and dict formats:
+    - List: [{name: "cred1", variables: [...], secrets: [...]}]
+    - Dict: {cred1: {variables: [...], secrets: [...]}}
+    """
+
+    if not credentials_data:
+        return None
+
+    credentials_list = []
+
+    # Support both dict and list formats
+    if is_dict(credentials_data):
+        # Convert {name: {variables: [], secrets: []}} to list format
+        items = credentials_data.items()
+    else:
+        # Already a list: [{name: "...", variables: [], secrets: []}]
+        items = [(cred.get("name"), cred) for cred in credentials_data]
+
+    for name, cred_data in items:
+        if not name:
+            raise ValueError("Test credentials must have a 'name'")
+
+        variables = []
+        for var_data in cred_data.get("variables", []):
+            if is_dict(var_data):
+                var_name = var_data.get("name")
+                var_value = var_data.get("value")
+            else:
+                raise ValueError("YAML credential variable must be a dictionary with 'name' and 'value'")
+            if not var_name:
+                raise ValueError("Test credential variable must have a 'name'")
+            if var_value is None:
+                raise ValueError(f"Test credential variable '{var_name}' must have a 'value'")
+            variables.append(TestCredentialValue(name=var_name, value=var_value))
+
+        secrets = []
+        for secret_data in cred_data.get("secrets", []):
+            if is_dict(secret_data):
+                secret_name = secret_data.get("name")
+                secret_value = secret_data.get("value")
+            else:
+                raise ValueError("YAML credential secret must be a dictionary with 'name' and 'value'")
+            if not secret_name:
+                raise ValueError("Test credential secret must have a 'name'")
+            if secret_value is None:
+                raise ValueError(f"Test credential secret '{secret_name}' must have a 'value'")
+            secrets.append(TestCredentialValue(name=secret_name, value=secret_value))
+
+        credentials_list.append(TestCredential(name=name, variables=variables, secrets=secrets))
+
+    return credentials_list if credentials_list else None
 
 
 def to_test_assert_list(assertions) -> AssertionList:
