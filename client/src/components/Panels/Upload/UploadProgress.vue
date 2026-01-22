@@ -2,7 +2,7 @@
 import { faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCollapse } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -24,7 +24,7 @@ const { batchesWithProgress, standaloneUploads, activeItems, completedCount, err
 
 const breadcrumbItems = [{ title: "Import Data", to: "/upload" }, { title: "Upload Progress" }];
 
-// Track expanded batches
+const fileListRef = ref<HTMLElement | null>(null);
 const expandedBatches = useUserLocalStorage<string[]>("uploadPanel.expandedBatches", []);
 
 function cleanupExpandedBatches() {
@@ -62,7 +62,6 @@ async function retryBatch(batchId: string) {
     await uploadQueue.retryCollectionCreation(batchId);
 }
 
-// Check if batch target history differs from current
 function shouldShowBatchHistoryLink(batchTargetHistoryId?: string): boolean {
     return !!batchTargetHistoryId && batchTargetHistoryId !== historyStore.currentHistoryId;
 }
@@ -87,16 +86,28 @@ const batchDisplayInfoMap = computed(() => {
     return map;
 });
 
-function getBatchDisplayData(batch: BatchWithProgressAndUploads): BatchDisplayData {
-    const data = batchDisplayInfoMap.value.get(batch.id);
-    if (!data) {
-        return {
-            displayInfo: getBatchDisplayInfo(batch),
-            progressSummary: getBatchProgressSummary(batch),
-        };
+const uploadItemCount = computed(() => {
+    return batchesWithProgress.value.length + standaloneUploads.value.length;
+});
+
+watch(uploadItemCount, async (newCount, oldCount) => {
+    if (newCount > oldCount) {
+        await nextTick();
+        fileListRef.value?.scrollTo({
+            top: fileListRef.value.scrollHeight,
+            behavior: "smooth",
+        });
     }
-    return data;
-}
+});
+
+onMounted(() => {
+    nextTick(() => {
+        fileListRef.value?.scrollTo({
+            top: fileListRef.value.scrollHeight,
+            behavior: "auto",
+        });
+    });
+});
 </script>
 
 <template>
@@ -122,7 +133,7 @@ function getBatchDisplayData(batch: BatchWithProgressAndUploads): BatchDisplayDa
                     </div>
                 </div>
 
-                <div class="file-details-list flex-grow-1 overflow-auto">
+                <div ref="fileListRef" class="file-details-list flex-grow-1 overflow-auto">
                     <!-- Batch groups (collections) -->
                     <div
                         v-for="batch in batchesWithProgress"
@@ -155,10 +166,10 @@ function getBatchDisplayData(batch: BatchWithProgressAndUploads): BatchDisplayDa
                         <!-- Batch metadata row -->
                         <div class="batch-metadata px-3 py-2 d-flex flex-wrap align-items-center">
                             <span class="text-muted small mr-3">
-                                {{ getBatchDisplayData(batch).displayInfo.uploadModeSummary }}
+                                {{ batchDisplayInfoMap.get(batch.id)?.displayInfo.uploadModeSummary }}
                             </span>
                             <span class="text-muted small mr-3">
-                                {{ getBatchDisplayData(batch).progressSummary }}
+                                {{ batchDisplayInfoMap.get(batch.id)?.progressSummary }}
                             </span>
                             <div v-if="shouldShowBatchHistoryLink(getBatchTargetHistoryId(batch))" class="small mr-3">
                                 <span class="text-muted mr-1">Target:</span>
