@@ -10,7 +10,9 @@ import {
     faSitemap,
     faTable,
 } from "@fortawesome/free-solid-svg-icons";
-import { defineAsyncComponent } from "vue";
+import { computed, type ComputedRef, defineAsyncComponent } from "vue";
+
+import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 
 import type { UploadMethod, UploadMethodConfig } from "./types";
 
@@ -104,6 +106,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faTable,
         headerAction: "Launch Rule-based Import",
         requiresTargetHistory: false,
+        requiresAdvancedMode: true,
         component: defineAsyncComponent(() => import("./methods/RuleBasedImportUpload.vue")),
     },
 };
@@ -112,6 +115,14 @@ export function getUploadMethod(id: UploadMethod): UploadMethodConfig | undefine
     return uploadMethodRegistry[id];
 }
 
-export function getAllUploadMethods(): UploadMethodConfig[] {
-    return Object.values(uploadMethodRegistry);
+/**
+ * Reactive list of all upload methods, automatically filtered based on
+ * whether upload advanced mode is enabled.
+ */
+export function useAllUploadMethods(): ComputedRef<UploadMethodConfig[]> {
+    const { advancedMode } = useUploadAdvancedMode();
+
+    return computed(() =>
+        Object.values(uploadMethodRegistry).filter((method) => !method.requiresAdvancedMode || advancedMode.value),
+    );
 }

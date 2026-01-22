@@ -6,7 +6,7 @@ import { useRouter } from "vue-router/composables";
 import { useConfig } from "@/composables/config";
 
 import type { UploadMethodConfig } from "./types";
-import { getAllUploadMethods } from "./uploadMethodRegistry";
+import { useAllUploadMethods } from "./uploadMethodRegistry";
 
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import ButtonPlain from "@/components/Common/ButtonPlain.vue";
@@ -18,16 +18,16 @@ const { config, isConfigLoaded } = useConfig();
 
 const query = ref("");
 
-const allUploadMethods = getAllUploadMethods();
+const allUploadMethods = useAllUploadMethods();
 
 const breadcrumbItems = [{ title: "Import Data" }];
 
 const availableMethods = computed(() => {
     if (!isConfigLoaded.value) {
-        return allUploadMethods;
+        return allUploadMethods.value;
     }
 
-    return allUploadMethods.filter((method) => {
+    return allUploadMethods.value.filter((method: UploadMethodConfig) => {
         // Filter based on config requirements
         if (method.requiresConfig) {
             return method.requiresConfig.every((configKey) => config.value[configKey]);
@@ -42,7 +42,7 @@ const filteredMethods = computed(() => {
         return availableMethods.value;
     }
     const tokens = rawTokens.map((token) => token.toLowerCase());
-    return availableMethods.value.filter((method) => {
+    return availableMethods.value.filter((method: UploadMethodConfig) => {
         const searchText = `${method.name} ${method.description}`.toLowerCase();
         return tokens.every((token) => searchText.includes(token));
     });

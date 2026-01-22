@@ -7,7 +7,7 @@ import { useConfig } from "@/composables/config";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 
 import type { UploadMethodConfig } from "./types";
-import { getAllUploadMethods } from "./uploadMethodRegistry";
+import { useAllUploadMethods } from "./uploadMethodRegistry";
 import { useUploadState } from "./uploadState";
 
 import UploadProgressIndicator from "./UploadProgressIndicator.vue";
@@ -23,14 +23,14 @@ const { advancedMode } = useUploadAdvancedMode();
 const router = useRouter();
 const query = ref("");
 
-const allUploadMethods = getAllUploadMethods();
+const allUploadMethods = useAllUploadMethods();
 
 const availableMethods = computed(() => {
     if (!isConfigLoaded.value) {
-        return allUploadMethods;
+        return allUploadMethods.value;
     }
 
-    return allUploadMethods.filter((method) => {
+    return allUploadMethods.value.filter((method: UploadMethodConfig) => {
         // Filter based on config requirements
         if (method.requiresConfig) {
             return method.requiresConfig.every((configKey) => config.value[configKey]);
@@ -45,7 +45,7 @@ const filteredMethods = computed(() => {
         return availableMethods.value;
     }
     const tokens = rawTokens.map((token) => token.toLowerCase());
-    return availableMethods.value.filter((method) => {
+    return availableMethods.value.filter((method: UploadMethodConfig) => {
         const searchText = `${method.name} ${method.description}`.toLowerCase();
         return tokens.every((token) => searchText.includes(token));
     });
@@ -85,7 +85,7 @@ function showProgressDetails() {
                 name-plural="upload methods"
                 load-disabled
                 :prop-items="filteredMethods"
-                :prop-total-count="allUploadMethods.length"
+                :prop-total-count="filteredMethods.length"
                 :prop-busy="false">
                 <template v-slot:item="{ item: method }">
                     <GCard
