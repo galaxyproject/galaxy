@@ -340,7 +340,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 </script>
 
 <template>
-    <div :id="`g-table-container-${props.id}`" class="g-table-container" :class="containerClass">
+    <div :id="`g-table-container-${props.id}`" class="w-100" :class="containerClass">
         <!-- Actions toolbar -->
         <div v-if="props.actions.length > 0" :id="getElementId(props.id, 'actions')" class="g-table-actions mb-2">
             <slot name="actions">
@@ -349,11 +349,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
         </div>
 
         <!-- Table wrapper -->
-        <BOverlay :show="overlayLoading" rounded="sm" class="g-table-wrapper-overlay">
-            <div :id="`g-table-wrapper-${props.id}`" class="g-table-wrapper">
+        <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
+            <div :id="`g-table-wrapper-${props.id}`" class="position-relative w-100">
                 <table
                     :id="`g-table-${props.id}`"
-                    class="g-table table"
+                    class="g-table table w-100 mb-0"
                     :class="[
                         { 'table-striped': striped },
                         { 'table-hover': hover },
@@ -363,7 +363,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                     <thead>
                         <tr>
                             <!-- Select all checkbox column -->
-                            <th v-if="selectable && showSelectAll" class="g-table-select-column">
+                            <!-- <th v-if="selectable && showSelectAll" class="g-table-select-column">
                                 <BFormCheckbox
                                     :id="getElementId(props.id, 'select-all')"
                                     v-b-tooltip.hover.noninteractive
@@ -371,8 +371,9 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     :indeterminate="someSelected"
                                     title="Select all"
                                     @change="onSelectAll" />
-                            </th>
-                            <th v-else-if="selectable" class="g-table-select-column"></th>
+                            </th> -->
+                            <!-- <th v-else-if="selectable" class="g-table-select-column"></th> -->
+                            <th lass="g-table-select-column"></th>
 
                             <!-- Field columns -->
                             <th
@@ -467,24 +468,8 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 @import "@/style/scss/theme/blue.scss";
 @import "@/style/scss/_breakpoints.scss";
 
-.g-table-container {
-    width: 100%;
-}
-
-.g-table-wrapper-overlay {
-    position: relative;
-    width: 100%;
-}
-
-.g-table-wrapper {
-    position: relative;
-    width: 100%;
-}
-
+// Essential custom styles that cannot be replaced with utility classes
 .g-table {
-    width: 100%;
-    margin-bottom: 0;
-
     thead th {
         position: sticky;
         top: 0;
@@ -544,14 +529,6 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
             display: none;
         }
     }
-}
-
-.g-table-loading,
-.g-table-empty {
-    min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .g-table-load-more {

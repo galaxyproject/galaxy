@@ -12,6 +12,7 @@ import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 import GTable from "@/components/Common/GTable.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
@@ -33,7 +34,6 @@ const sortDesc = ref(true);
 const sortBy = ref("update_time");
 const rows = ref<HDASummary[]>([]);
 const messageVariant = ref("danger");
-const listHeader = ref<typeof ListHeader | null>(null);
 const selectedItemIds = ref<string[]>([]);
 const hasMoreItems = ref(true);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
@@ -349,7 +349,6 @@ onMounted(() => {
             <DelayedInput class="m-2 mb-3" placeholder="Search Datasets" @change="onQuery" />
 
             <ListHeader
-                ref="listHeader"
                 list-id="datasets"
                 show-sort-options
                 :show-select-all="true"
