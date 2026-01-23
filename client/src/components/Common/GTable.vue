@@ -10,7 +10,6 @@ import type {
     FieldAlignment,
     RowClickEvent,
     RowSelectEvent,
-    SortChangeEvent,
     TableAction,
     TableEmptyState,
     TableField,
@@ -19,117 +18,134 @@ import type {
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
-    /** Unique identifier for the table
+    /**
+     * Unique identifier for the table
      * @default useUid("g-table-").value
      */
     id?: string;
 
-    /** Table field definitions
+    /**
+     * Table field definitions
      * @default []
      */
     fields?: TableField[];
 
-    /** Table data items
+    /**
+     * Table data items
      * @default []
      */
     items?: T[];
 
-    /** Whether to show striped rows
+    /**
+     * Whether to show striped rows
      * @default true
      */
     striped?: boolean;
 
-    /** Whether to show hover effect on rows
+    /**
+     * Whether to show hover effect on rows
      * @default true
      */
     hover?: boolean;
 
-    /** Whether to show borders
+    /**
+     * Whether to show borders
      * @default false
      */
     bordered?: boolean;
 
-    /** Whether rows are clickable
+    /**
+     * Whether rows are clickable
      * @default false
      */
     clickableRows?: boolean;
 
-    /** Whether to show selection checkboxes
+    /**
+     * Whether to show selection checkboxes
      * @default false
      */
     selectable?: boolean;
 
-    /** Array of selected item indices
+    /**
+     * Array of selected item indices
      * @default []
      */
     selectedItems?: number[];
 
-    /** Current sort field key
+    /**
+     * Current sort field key
      * @default ""
      */
     sortBy?: string;
 
-    /** Whether sorting in descending order
+    /**
+     * Whether sorting in descending order
      * @default false
      */
     sortDesc?: boolean;
 
-    /** Whether to disable local sorting (for server-side sorting)
+    /**
+     * Whether to disable local sorting (for server-side sorting)
      * @default false
      */
     noLocalSorting?: boolean;
 
-    /** Whether to reset sort on column click
-     * @default false
-     */
-    noSortReset?: boolean;
-
-    /** Whether the table is in loading state
+    /**
+     * Whether the table is in loading state
      * @default false
      */
     loading?: boolean;
 
-    /** Loading message to display
+    /**
+     * Loading message to display
      * @default "Loading..."
      */
     loadingMessage?: string;
 
-    /** Whether to show overlay loading (for sorting/filtering operations)
+    /**
+     * Whether to show overlay loading (for sorting/filtering operations)
      * @default false
      */
     overlayLoading?: boolean;
 
-    /** Whether to show load-more loading indicator at bottom (for pagination/scroll)
+    /**
+     * Whether to show load-more loading indicator at bottom (for pagination/scroll)
      * @default false
      */
     loadMoreLoading?: boolean;
 
-    /** Load-more loading message
+    /**
+     * Load-more loading message
      * @default "Loading more..."
      */
     loadMoreMessage?: string;
 
-    /** Empty state configuration
+    /**
+     * Empty state configuration
      * @default { message: "No data available" }
      */
     emptyState?: TableEmptyState;
 
-    /** Additional CSS classes for the table container
+    /**
+     * Additional CSS classes for the table container
      * @default ""
      */
     containerClass?: string | string[];
 
-    /** Additional CSS classes for the table element
+    /**
+     * Additional CSS classes for the table element
      * @default ""
      */
     tableClass?: string | string[];
 
-    /** Table actions displayed above the table
+    /**
+     * Table actions displayed above the table
      * @default []
      */
     actions?: TableAction[];
 
-    /** Whether to show select all checkbox in header
+    /**
+     * Whether to show select all checkbox in header
      * @default false
      */
     showSelectAll?: boolean;
@@ -148,7 +164,6 @@ const props = withDefaults(defineProps<Props>(), {
     sortBy: "",
     sortDesc: false,
     noLocalSorting: false,
-    noSortReset: false,
     loading: false,
     loadingMessage: "Loading...",
     overlayLoading: false,
@@ -165,32 +180,29 @@ const props = withDefaults(defineProps<Props>(), {
  * Events emitted by the GTable component
  */
 const emit = defineEmits<{
-    /** Emitted when sort changes
+    /**
+     * Emitted when sort changes
      * @event sort-changed
      */
     (e: "sort-changed", sortBy: string, sortDesc: boolean): void;
 
-    /** Emitted when a row is clicked
-     * @event row-click
-     */
-    (e: "row-click", event: RowClickEvent<T>): void;
-
-    /** Emitted when a row is selected/deselected
+    /**
+     * Emitted when a row is selected/deselected
      * @event row-select
      */
     (e: "row-select", event: RowSelectEvent<T>): void;
 
-    /** Emitted when select all is toggled
-     * @event select-all
+    /**
+     * Emitted when a row is clicked
+     * @event row-click
      */
-    (e: "select-all", selected: boolean): void;
+    (e: "row-click", event: RowClickEvent<T>): void;
 }>();
 
 // Internal state for local sorting
 const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc || true);
 
-// Computed sorted items
 const sortedItems = computed(() => {
     if (props.noLocalSorting || !sortBy.value) {
         return props.items;
@@ -220,16 +232,6 @@ const sortedItems = computed(() => {
     return sorted;
 });
 
-// Check if all items are selected
-const allSelected = computed(() => {
-    return props.items.length > 0 && props.selectedItems.length === props.items.length;
-});
-
-// Check if some items are selected
-const someSelected = computed(() => {
-    return props.selectedItems.length > 0 && props.selectedItems.length < props.items.length;
-});
-
 /**
  * Handle column header click for sorting
  */
@@ -239,16 +241,8 @@ function onHeaderClick(field: TableField) {
     }
 
     if (sortBy.value === field.key) {
-        if (!props.noSortReset && sortDesc.value) {
-            // Reset sort
-            sortBy.value = undefined;
-            sortDesc.value = false;
-        } else {
-            // Toggle sort direction
-            sortDesc.value = !sortDesc.value;
-        }
+        sortDesc.value = !sortDesc.value;
     } else {
-        // New sort field
         sortBy.value = field.key;
         sortDesc.value = false;
     }
@@ -291,13 +285,6 @@ function onRowSelect(item: T, index: number) {
 }
 
 /**
- * Handle select all toggle
- */
-function onSelectAll() {
-    emit("select-all", !allSelected.value);
-}
-
-/**
  * Get cell value with optional formatter
  */
 function getCellValue(item: T, field: TableField) {
@@ -330,7 +317,6 @@ function isRowSelected(index: number) {
 /**
  * Helper functions for generating consistent element IDs
  */
-const getElementId = (tableId: string, element: string) => `g-table-${element}-${tableId}`;
 const getFieldId = (tableId: string, fieldKey: string) => `g-table-field-${fieldKey}-${tableId}`;
 const getRowId = (tableId: string, index: number) => `g-table-row-${index}-${tableId}`;
 const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table-cell-${fieldKey}-${index}-${tableId}`;
