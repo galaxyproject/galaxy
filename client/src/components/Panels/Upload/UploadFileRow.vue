@@ -45,15 +45,6 @@ const contentClasses = computed(() => {
 const cardBadges = computed(() => {
     const badges = [] as any[];
 
-    if (displayInfo.value.icon) {
-        badges.push({
-            id: "upload-type",
-            icon: displayInfo.value.icon,
-            title: displayInfo.value.iconTitle,
-            variant: "secondary",
-        });
-    }
-
     displayInfo.value.badges.forEach((badge) => {
         badges.push(badge);
     });
@@ -66,6 +57,13 @@ const cardBadges = computed(() => {
     <GCard container-class="" :content-class="contentClasses" :badges="cardBadges">
         <template v-slot:title>
             <FontAwesomeIcon :icon="ui.icon" :class="ui.textClass" :spin="ui.spin" class="mr-2" fixed-width size="sm" />
+            <FontAwesomeIcon
+                v-if="displayInfo.icon"
+                :icon="displayInfo.icon"
+                class="mr-2 text-muted"
+                fixed-width
+                size="sm"
+                :title="displayInfo.iconTitle" />
             <span class="file-name" :title="props.file.name">{{ props.file.name }}</span>
             <span v-if="targetHistoryName" class="text-muted small ml-2 text-truncate" :title="targetHistoryName">
                 <template v-if="isDifferentHistory">
