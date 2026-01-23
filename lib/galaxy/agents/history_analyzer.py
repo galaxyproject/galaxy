@@ -119,6 +119,18 @@ class HistoryAnalyzerAgent(BaseGalaxyAgent):
                 return {"error": f"Invalid ID provided: {e}. Please use exact IDs from list_datasets."}
 
         @agent.tool
+        async def get_job_errors(ctx: RunContext[GalaxyAgentDependencies], dataset_id: str) -> dict[str, Any]:
+            """Get error details (stderr, stdout, exit code) for a failed job.
+
+            IMPORTANT: For any dataset with state='error', call this to get the actual error message.
+            This is required to understand WHY a job failed.
+            """
+            try:
+                return self.ops.get_job_errors(dataset_id)
+            except MalformedId:
+                return {"error": f"Invalid dataset_id '{dataset_id}'. Please use an exact ID from list_datasets."}
+
+        @agent.tool
         async def get_tool_citations(ctx: RunContext[GalaxyAgentDependencies], tool_id: str) -> dict[str, Any]:
             """Get citation information for a tool."""
             return self.ops.get_tool_citations(tool_id)
@@ -153,9 +165,10 @@ Once you have identified which history to analyze:
 1. Call get_history_info to get the history metadata (name, annotation, tags)
 2. Call list_datasets to see all datasets in the history
 3. For key output datasets, call get_job_for_dataset to understand what tool created them
-4. Call get_tool_citations for the main tools used
-5. Use get_tool_info if you need more details about a specific tool
-6. Synthesize this into a comprehensive analysis
+4. **IMPORTANT**: For any dataset with state='error', call get_job_errors to get the actual error message (stderr, stdout, exit_code). This is REQUIRED to understand why a job failed.
+5. Call get_tool_citations for the main tools used
+6. Use get_tool_info if you need more details about a specific tool
+7. Synthesize this into a comprehensive analysis
 
 ## Output Guidelines
 
