@@ -213,7 +213,7 @@ class CondorJobRunner(AsynchronousJobRunner):
                 cjs.failed = True
                 self.work_queue.put((self.fail_job, cjs))
                 continue
-            cjs.runnning = job_running
+            cjs.running = job_running
             new_watched.append(cjs)
         # Replace the watch list with the updated version
         self.watched = new_watched
