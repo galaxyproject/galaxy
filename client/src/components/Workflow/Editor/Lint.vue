@@ -22,7 +22,7 @@ import {
     fixUnlabeledOutputs,
     fixUntypedParameter,
 } from "./modules/linting";
-import type { useLintData } from "./modules/useLinting";
+import type { LintData } from "./modules/useLinting";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -30,7 +30,7 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 
 const props = defineProps<{
-    lintData: ReturnType<typeof useLintData>;
+    lintData: LintData;
     steps: Steps; // Adjust the type as needed
     datatypesMapper: DatatypesMapperModel;
     hasChanges: boolean;

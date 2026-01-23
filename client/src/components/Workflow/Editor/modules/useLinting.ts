@@ -17,9 +17,14 @@ import {
 import { getUntypedWorkflowParameters, type UntypedParameters } from "./parameters";
 
 export interface LintData {
+    checkAnnotation: Ref<boolean>;
+    checkAnnotationLength: Ref<boolean>;
+    checkReadme: Ref<boolean>;
+    checkLicense: Ref<boolean>;
+    checkCreator: Ref<boolean>;
     resolvedIssues: Ref<number>;
     totalIssues: Ref<number>;
-    untypedParameters: Ref<LintState[]>;
+    untypedParameters: Ref<UntypedParameters | undefined>;
     untypedParameterWarnings: Ref<LintState[]>;
     disconnectedInputs: Ref<LintState[]>;
     duplicateLabels: Ref<LintState[]>;
@@ -35,7 +40,7 @@ export function useLintData(
     readme?: Ref<string | null>,
     license?: Ref<string | null>,
     creator?: Ref<any>, // TODO: Define creator type
-) {
+): LintData {
     const workflowStores = useWorkflowStores(workflowId);
 
     const untypedParameters = ref<UntypedParameters>();
