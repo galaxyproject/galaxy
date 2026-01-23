@@ -402,6 +402,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                                 :size="ac.size || 'sm'"
                                                 :variant="ac.variant || 'link'"
                                                 :to="ac.to"
+                                                :title="ac.title"
                                                 :href="ac.href"
                                                 :target="ac.externalLink ? '_blank' : undefined"
                                                 @click.stop="ac.handler && ac.handler(item, index)">
