@@ -1097,7 +1097,7 @@ class AgentOperationsManager:
         # Get the HDA to find its creating job
         from galaxy.managers.hdas import HDAManager
 
-        hda_manager = HDAManager(self.app)
+        hda_manager = self.app[HDAManager]
         hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
 
         if not hda:
@@ -1141,7 +1141,7 @@ class AgentOperationsManager:
         # Get the HDA
         from galaxy.managers.hdas import HDAManager
 
-        hda_manager = HDAManager(self.app)
+        hda_manager = self.app[HDAManager]
         hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
 
         if not hda:
