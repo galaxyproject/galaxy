@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
@@ -32,10 +32,6 @@ import LintSection from "@/components/Workflow/Editor/LintSection.vue";
 const props = defineProps<{
     lintData: ReturnType<typeof useLintData>;
     steps: Steps; // Adjust the type as needed
-    annotation?: String | null;
-    readme?: String | null;
-    license?: String | null;
-    creator?: any;
     datatypesMapper: DatatypesMapperModel;
 }>();
 
@@ -46,6 +42,13 @@ const { stepStore, stateStore, searchStore } = stores;
 const { hasActiveOutputs, hasInputSteps } = storeToRefs(stepStore);
 
 const {
+    checkAnnotation,
+    checkAnnotationLength,
+    checkReadme,
+    checkLicense,
+    checkCreator,
+    resolvedIssues,
+    totalIssues,
     untypedParameters,
     unlabeledOutputs,
     untypedParameterWarnings,
@@ -58,16 +61,11 @@ const showRefactor = computed(
     () => !untypedParameterWarnings.value.length || !disconnectedInputs.value.length || !unlabeledOutputs.value.length,
 );
 
-const checkAnnotation = computed(() => Boolean(props.annotation));
-const checkAnnotationLength = computed(() => Boolean(!props.annotation || props.annotation.length <= 250));
 const annotationLengthSuccessMessage = computed(() =>
-    props.annotation
+    checkAnnotation.value
         ? "This workflow has a short description of appropriate length."
         : "This workflow does not have a short description.",
 );
-const checkReadme = computed(() => Boolean(props.readme));
-const checkLicense = computed(() => Boolean(props.license));
-const checkCreator = computed(() => (props.creator ? props.creator.length > 0 : false));
 
 const emit = defineEmits<{
     (e: "onAttributes", highlight: { highlight: string }): void;
@@ -149,6 +147,21 @@ function onRefactor() {
     <ActivityPanel title="Best Practices Review">
         <template v-if="showRefactor" v-slot:header>
             <GLink class="refactor-button" @click="onRefactor"> Try to automatically fix issues. </GLink>
+        </template>
+        <template v-slot:header-buttons>
+            <div class="text-nowrap">
+                <FontAwesomeIcon
+                    v-if="resolvedIssues === totalIssues"
+                    :icon="faCheck"
+                    class="text-success"
+                    title="All best practices issues resolved!" />
+                <FontAwesomeIcon
+                    v-else
+                    :icon="faExclamationTriangle"
+                    class="text-warning"
+                    :title="`${resolvedIssues} out of ${totalIssues} best practice issues resolved`" />
+                {{ resolvedIssues }} / {{ totalIssues }}
+            </div>
         </template>
         <LintSection
             data-description="linting has annotation"

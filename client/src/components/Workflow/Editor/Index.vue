@@ -53,10 +53,6 @@
                 <WorkflowLint
                     v-else-if="isActiveSideBar('workflow-best-practices')"
                     :lint-data="lintData"
-                    :annotation="annotation"
-                    :readme="readme"
-                    :creator="creator"
-                    :license="license"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     @onAttributes="
@@ -586,7 +582,7 @@ export default {
         }
 
         const isNewTempWorkflow = computed(() => !props.workflowId);
-        const lintData = useLintData(id, steps, datatypesMapper);
+        const lintData = useLintData(id, steps, datatypesMapper, annotation, readme, license, creator);
 
         const { specialWorkflowActivities } = useSpecialWorkflowActivities(
             computed(() => ({
