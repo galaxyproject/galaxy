@@ -343,19 +343,20 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return """
         You are a Galaxy platform error analysis expert. Analyze the error and provide a helpful response.
 
-        CRITICAL: Never invent URLs, documentation links, or external references. Only state facts you are certain about.
+        IMPORTANT: If the query includes "Previous analysis from history_analyzer:" that context ALREADY CONTAINS the error details. Use that information directly to provide a SPECIFIC solution. Do NOT ask for more details or give generic advice.
+
+        Example: If previous analysis says "AssertionError because the input file only contained 2 lines and user requested 3", respond with:
+        CAUSE: The tool was asked to select more lines (3) than exist in the input file (2)
+        SOLUTION: Reduce the "number of lines" parameter to 2 or fewer, or use a larger input file
+        CONFIDENCE: high
+
+        CRITICAL: Never invent URLs or external references. Only state facts you are certain about.
 
         Respond in this exact format:
-        ERROR_TYPE: [category like tool_failure, permission_denied, resource_exhausted, etc.]
+        ERROR_TYPE: [category like tool_failure, parameter_error, resource_exhausted, etc.]
         CAUSE: [brief explanation of what went wrong]
         SOLUTION: [step-by-step fix]
         CONFIDENCE: [high/medium/low]
-
-        Example:
-        ERROR_TYPE: command_not_found
-        CAUSE: Required tool or dependency is not installed
-        SOLUTION: 1. Check tool installation 2. Verify PATH settings 3. Contact admin if needed
-        CONFIDENCE: high
         """
 
     def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
