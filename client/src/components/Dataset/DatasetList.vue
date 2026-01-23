@@ -22,29 +22,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-const historyStore = useHistoryStore();
-const { currentHistoryId } = storeToRefs(historyStore);
-
-const query = ref("");
-const limit = ref(50);
-const offset = ref(0);
-const message = ref("");
-const loading = ref(true);
-const overlay = ref(false);
-const loadMoreLoading = ref(false);
-const sortDesc = ref(true);
-const sortBy = ref("update_time");
-const rows = ref<HDASummary[]>([]);
-const messageVariant = ref("danger");
-const selectedItemIds = ref<string[]>([]);
-const hasMoreItems = ref(true);
-const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
-const bulkDeleteLoading = ref(false);
-const showDeleteModal = ref(false);
-const deleteModalPurge = ref(false);
-const deleteModalItem = ref<HDASummary | null>(null);
-const deleteModalBulk = ref(false);
-
 const allFields = [
     {
         key: "name",
@@ -73,10 +50,32 @@ const allFields = [
     },
 ];
 
-const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));
-
 const columnOptions = allFields.map((field) => ({ key: field.key, label: field.label }));
 
+const historyStore = useHistoryStore();
+const { currentHistoryId } = storeToRefs(historyStore);
+
+const query = ref("");
+const limit = ref(50);
+const offset = ref(0);
+const message = ref("");
+const loading = ref(true);
+const overlay = ref(false);
+const loadMoreLoading = ref(false);
+const sortDesc = ref(true);
+const sortBy = ref("update_time");
+const rows = ref<HDASummary[]>([]);
+const messageVariant = ref("danger");
+const selectedItemIds = ref<string[]>([]);
+const hasMoreItems = ref(true);
+const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
+const bulkDeleteLoading = ref(false);
+const showDeleteModal = ref(false);
+const deleteModalPurge = ref(false);
+const deleteModalItem = ref<HDASummary | null>(null);
+const deleteModalBulk = ref(false);
+
+const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));
 const showNotFound = computed(() => {
     return !loading.value && rows.value.length === 0 && query.value;
 });
@@ -146,7 +145,6 @@ async function load(concat = false, showOverlay = false) {
             rows.value = datasets;
         }
 
-        // Check if there are more items to load
         hasMoreItems.value = datasets.length === limit.value;
     } catch (error: any) {
         onError(error);
@@ -253,7 +251,6 @@ function onRowSelect(event: { item: HDASummary; index: number; selected: boolean
 function onToggleColumn(key: string) {
     const index = visibleColumns.value.indexOf(key);
     if (index > -1) {
-        // Don't allow hiding all columns or the name column
         if (visibleColumns.value.length > 1 && key !== "name") {
             visibleColumns.value.splice(index, 1);
         }
@@ -283,7 +280,6 @@ async function confirmDelete() {
         overlay.value = true;
 
         if (deleteModalBulk.value) {
-            // Bulk delete
             const totalSelected = selectedItemIds.value.length;
             const tmpSelected = [...selectedItemIds.value];
             bulkDeleteLoading.value = true;
@@ -304,7 +300,6 @@ async function confirmDelete() {
             selectedItemIds.value = [];
             bulkDeleteLoading.value = false;
         } else if (deleteModalItem.value) {
-            // Single delete
             await deleteDataset(deleteModalItem.value.id, purge);
             Toast.success(`${purge ? "Permanently deleted" : "Deleted"} dataset "${deleteModalItem.value.name}".`);
         }
