@@ -26,10 +26,12 @@ export interface Workflow {
 }
 
 export interface LoadWorkflowOptions {
+    /** if true appends data to current workflow, making sure to create new uuids */
     appendData?: boolean;
     /** if set, overwrites the append data behavior of reassigning IDs */
     reassignIds?: boolean;
     createConnections?: boolean;
+    /** where to position workflow in the editor */
     defaultPosition?: { top: number; left: number };
 }
 
@@ -38,8 +40,7 @@ export interface LoadWorkflowOptions {
  *
  * @param id ID of workflow to load data *into*
  * @param data Workflow data to load from
- * @param appendData if true appends data to current workflow, making sure to create new uuids
- * @param defaultPosition where to position workflow in the editor
+ * @param options Load options
  */
 export async function fromSimple(
     id: string,
