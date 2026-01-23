@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { faEllipsisV, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEye, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BDropdown, BDropdownItem, BFormCheckbox, BModal } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BLink, BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { GalaxyApi, type HDASummary } from "@/api";
 import { copyDataset, deleteDataset } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
+import type { TableAction } from "@/components/Common/GTable.types";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
+import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -330,6 +332,30 @@ async function confirmDelete() {
     }
 }
 
+const datasetTableActions: TableAction[] = [
+    {
+        id: "copy-dataset",
+        label: "Copy to current history",
+        title: "Copy Dataset to current history",
+        icon: faCopy,
+        handler: onCopyDataset,
+    },
+    {
+        id: "show-dataset",
+        label: "Show in history",
+        title: "Show dataset in history panel",
+        icon: faEye,
+        handler: onShowDataset,
+    },
+    {
+        id: "delete-dataset",
+        label: "Delete",
+        title: "Delete dataset",
+        icon: faTrash,
+        handler: onDeleteDataset,
+    },
+];
+
 function resetDeleteModal() {
     deleteModalPurge.value = false;
 }
@@ -393,11 +419,17 @@ onMounted(() => {
                 :overlay-loading="overlay"
                 :load-more-loading="loadMoreLoading"
                 :selected-items="selectedIndices"
+                :actions="datasetTableActions"
                 @sort-changed="onSort"
                 @row-select="onRowSelect"
                 @select-all="onSelectAll">
                 <template v-slot:cell(name)="row">
-                    <span>{{ row.item.name }}</span>
+                    <BLink
+                        v-b-tooltip.hover.noninteractive
+                        :title="localize('Show dataset in history panel')"
+                        @click.stop.prevent="onShowDataset(row.item)">
+                        {{ row.item.name }}
+                    </BLink>
                 </template>
 
                 <template v-slot:cell(history_id)="row">
@@ -420,23 +452,6 @@ onMounted(() => {
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
-
-                <template v-slot:actions="{ item }">
-                    <BDropdown
-                        no-caret
-                        right
-                        variant="link"
-                        size="sm"
-                        toggle-class="text-decoration-none p-0"
-                        @click.stop>
-                        <template v-slot:button-content>
-                            <FontAwesomeIcon :icon="faEllipsisV" />
-                        </template>
-                        <BDropdownItem @click="onCopyDataset(item)">Copy to current history</BDropdownItem>
-                        <BDropdownItem @click="onShowDataset(item)">Show in history</BDropdownItem>
-                        <BDropdownItem @click="onDeleteDataset(item)">Delete</BDropdownItem>
-                    </BDropdown>
-                </template>
             </GTable>
 
             <!-- End of list indicator -->
@@ -446,7 +461,7 @@ onMounted(() => {
         </div>
 
         <!-- Bulk actions footer -->
-        <div v-if="selectedItemIds.length > 0" class="dataset-list-footer d-flex mt-1 align-items-center">
+        <div v-if="selectedItemIds.length > 0" class="d-flex mt-1 align-items-center">
             <div class="d-flex gap-1">
                 <BButton
                     id="dataset-list-footer-bulk-delete-button"
