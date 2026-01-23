@@ -44,6 +44,7 @@ const showDeleteModal = ref(false);
 const deleteModalPurge = ref(false);
 const deleteModalItem = ref<HDASummary | null>(null);
 const deleteModalBulk = ref(false);
+
 const allFields = [
     {
         key: "name",
@@ -76,12 +77,8 @@ const fields = computed(() => allFields.filter((field) => visibleColumns.value.i
 
 const columnOptions = allFields.map((field) => ({ key: field.key, label: field.label }));
 
-const sortOptions = allFields
-    .filter((field) => field.sortable)
-    .map((field) => ({ value: field.key, label: field.label }));
-
 const showNotFound = computed(() => {
-    return !loading.value && rows.value.length === 0 && query;
+    return !loading.value && rows.value.length === 0 && query.value;
 });
 const showNotAvailable = computed(() => {
     return !loading.value && rows.value.length === 0 && !query.value;
@@ -212,12 +209,12 @@ function onQuery(q: string) {
     load();
 }
 
-function onSort(event: { sortBy: string; sortDesc: boolean }) {
+function onSort(sortByValue: string, sortDescValue: boolean) {
     offset.value = 0;
-    sortBy.value = event.sortBy;
-    sortDesc.value = event.sortDesc;
+    sortBy.value = sortByValue;
+    sortDesc.value = sortDescValue;
 
-    load(false, true); // Use overlay loading for sorting
+    load(false, true);
 }
 
 function onScroll(scroll: Event) {
@@ -263,13 +260,6 @@ function onToggleColumn(key: string) {
     } else {
         visibleColumns.value.push(key);
     }
-}
-
-function onSortFromHeader(sortByValue: string, sortDescValue: boolean) {
-    sortBy.value = sortByValue;
-    sortDesc.value = sortDescValue;
-    offset.value = 0;
-    load(false, true); // Use overlay loading for sorting
 }
 
 function onBulkDelete() {
@@ -376,17 +366,14 @@ onMounted(() => {
 
             <ListHeader
                 list-id="datasets"
-                show-sort-options
                 :show-select-all="true"
                 :select-all-disabled="loading || rows.length === 0"
                 :all-selected="allSelected"
                 :indeterminate-selected="indeterminateSelected"
                 :column-options="columnOptions"
                 :visible-columns="visibleColumns"
-                :sort-options="sortOptions"
                 @select-all="onSelectAll"
-                @toggle-column="onToggleColumn"
-                @sort-changed="onSortFromHeader" />
+                @toggle-column="onToggleColumn" />
         </div>
 
         <div v-if="loading" class="dataset-list-content">
