@@ -192,38 +192,10 @@ const emit = defineEmits<{
     (e: "row-click", event: RowClickEvent<T>): void;
 }>();
 
-// Internal state for local sorting
 const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc || true);
 
-const sortedItems = computed(() => {
-    if (props.noLocalSorting || !sortBy.value) {
-        return props.items;
-    }
-
-    const sorted = [...props.items];
-    const sortKey = sortBy.value;
-
-    sorted.sort((a, b) => {
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
-
-        if (aVal === bVal) {
-            return 0;
-        }
-        if (aVal === null || aVal === undefined) {
-            return 1;
-        }
-        if (bVal === null || bVal === undefined) {
-            return -1;
-        }
-
-        const comparison = aVal < bVal ? -1 : 1;
-        return sortDesc.value ? -comparison : comparison;
-    });
-
-    return sorted;
-});
+const localItems = computed(() => props.items || []);
 
 /**
  * Handle column header click for sorting
@@ -367,9 +339,9 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         </tr>
                     </thead>
 
-                    <tbody v-if="sortedItems.length > 0">
+                    <tbody v-if="localItems.length > 0">
                         <tr
-                            v-for="(item, index) in sortedItems"
+                            v-for="(item, index) in localItems"
                             :id="getRowId(props.id, index)"
                             :key="index"
                             :class="{
@@ -445,7 +417,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                 </table>
 
                 <!-- Load more loading indicator -->
-                <div v-if="loadMoreLoading && sortedItems.length > 0" class="g-table-load-more py-3 text-center">
+                <div v-if="loadMoreLoading && localItems.length > 0" class="g-table-load-more py-3 text-center">
                     <LoadingSpan :message="props.loadMoreMessage" />
                 </div>
             </div>
