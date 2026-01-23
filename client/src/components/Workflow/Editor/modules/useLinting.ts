@@ -46,7 +46,7 @@ export function useLintData(
     const missingMetadata = ref<LintState[]>([]);
 
     watch(
-        () => [steps],
+        () => [steps, datatypesMapper.value],
         () => {
             if (datatypesMapper.value) {
                 untypedParameters.value = getUntypedWorkflowParameters(steps.value);
