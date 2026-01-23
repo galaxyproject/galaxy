@@ -19,8 +19,11 @@ Use multiple agents when:
 
 ## Examples
 
-**Query**: "My RNA-seq tool failed, help me understand what happened"
-**Response**: agents=["error_analysis"], sequential=false, reasoning="Debug the job failure"
+**Query**: "What failed in my history?" or "Why did the job in my BRC history fail?"
+**Response**: agents=["history_analyzer", "error_analysis"], sequential=true, reasoning="First find the failed job in the history, then analyze the specific error"
+
+**Query**: "My RNA-seq tool failed, here's the error: [paste]"
+**Response**: agents=["error_analysis"], sequential=false, reasoning="User provided error details, debug directly"
 
 **Query**: "I need a custom wrapper for BWA"
 **Response**: agents=["custom_tool"], sequential=false, reasoning="Create custom tool wrapper"
