@@ -20,6 +20,7 @@ from pydantic import (
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
 
+from galaxy.exceptions import MalformedId
 from galaxy.managers.agent_operations import AgentOperationsManager
 from .base import (
     AgentResponse,
@@ -86,24 +87,36 @@ class HistoryAnalyzerAgent(BaseGalaxyAgent):
         @agent.tool
         async def get_history_info(ctx: RunContext[GalaxyAgentDependencies], history_id: str) -> dict[str, Any]:
             """Get metadata about a Galaxy history including name, annotation, and tags."""
-            return self.ops.get_history_details(history_id)
+            try:
+                return self.ops.get_history_details(history_id)
+            except MalformedId:
+                return {"error": f"Invalid history_id '{history_id}'. Please use an exact ID from list_user_histories."}
 
         @agent.tool
         async def list_datasets(ctx: RunContext[GalaxyAgentDependencies], history_id: str) -> dict[str, Any]:
             """List all datasets in a history with their basic info."""
-            return self.ops.get_history_contents(history_id, limit=500, order="hid-asc")
+            try:
+                return self.ops.get_history_contents(history_id, limit=500, order="hid-asc")
+            except MalformedId:
+                return {"error": f"Invalid history_id '{history_id}'. Please use an exact ID from list_user_histories."}
 
         @agent.tool
         async def get_dataset_info(ctx: RunContext[GalaxyAgentDependencies], dataset_id: str) -> dict[str, Any]:
             """Get detailed information about a specific dataset."""
-            return self.ops.get_dataset_details(dataset_id)
+            try:
+                return self.ops.get_dataset_details(dataset_id)
+            except MalformedId:
+                return {"error": f"Invalid dataset_id '{dataset_id}'. Please use an exact ID from list_datasets."}
 
         @agent.tool
         async def get_job_for_dataset(
             ctx: RunContext[GalaxyAgentDependencies], dataset_id: str, history_id: str
         ) -> dict[str, Any]:
             """Get the job that created a dataset, including tool info and parameters."""
-            return self.ops.get_job_details(dataset_id, history_id)
+            try:
+                return self.ops.get_job_details(dataset_id, history_id)
+            except MalformedId as e:
+                return {"error": f"Invalid ID provided: {e}. Please use exact IDs from list_datasets."}
 
         @agent.tool
         async def get_tool_citations(ctx: RunContext[GalaxyAgentDependencies], tool_id: str) -> dict[str, Any]:
