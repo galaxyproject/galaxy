@@ -25,28 +25,10 @@ interface Props {
     id?: string;
 
     /**
-     * Table field definitions
+     * Table actions displayed above the table
      * @default []
      */
-    fields?: TableField[];
-
-    /**
-     * Table data items
-     * @default []
-     */
-    items?: T[];
-
-    /**
-     * Whether to show striped rows
-     * @default true
-     */
-    striped?: boolean;
-
-    /**
-     * Whether to show hover effect on rows
-     * @default true
-     */
-    hover?: boolean;
+    actions?: TableAction[];
 
     /**
      * Whether to show borders
@@ -59,6 +41,72 @@ interface Props {
      * @default false
      */
     clickableRows?: boolean;
+
+    /**
+     * Additional CSS classes for the table container
+     * @default ""
+     */
+    containerClass?: string | string[];
+
+    /**
+     * Empty state configuration
+     * @default { message: "No data available" }
+     */
+    emptyState?: TableEmptyState;
+
+    /**
+     * Table field definitions
+     * @default []
+     */
+    fields?: TableField[];
+
+    /**
+     * Whether to show hover effect on rows
+     * @default true
+     */
+    hover?: boolean;
+
+    /**
+     * Table data items
+     * @default []
+     */
+    items?: T[];
+
+    /**
+     * Whether the table is in loading state
+     * @default false
+     */
+    loading?: boolean;
+
+    /**
+     * Loading message to display
+     * @default "Loading..."
+     */
+    loadingMessage?: string;
+
+    /**
+     * Whether to show load-more loading indicator at bottom (for pagination/scroll)
+     * @default false
+     */
+    loadMoreLoading?: boolean;
+
+    /**
+     * Load-more loading message
+     * @default "Loading more..."
+     */
+    loadMoreMessage?: string;
+
+    /**
+     * Whether to show overlay loading (for sorting/filtering operations)
+     * @default false
+     */
+    overlayLoading?: boolean;
+
+    /**
+     * Whether to show striped rows
+     * @default true
+     */
+    striped?: boolean;
 
     /**
      * Whether to show selection checkboxes
@@ -85,64 +133,10 @@ interface Props {
     sortDesc?: boolean;
 
     /**
-     * Whether to disable local sorting (for server-side sorting)
-     * @default false
-     */
-    noLocalSorting?: boolean;
-
-    /**
-     * Whether the table is in loading state
-     * @default false
-     */
-    loading?: boolean;
-
-    /**
-     * Loading message to display
-     * @default "Loading..."
-     */
-    loadingMessage?: string;
-
-    /**
-     * Whether to show overlay loading (for sorting/filtering operations)
-     * @default false
-     */
-    overlayLoading?: boolean;
-
-    /**
-     * Whether to show load-more loading indicator at bottom (for pagination/scroll)
-     * @default false
-     */
-    loadMoreLoading?: boolean;
-
-    /**
-     * Load-more loading message
-     * @default "Loading more..."
-     */
-    loadMoreMessage?: string;
-
-    /**
-     * Empty state configuration
-     * @default { message: "No data available" }
-     */
-    emptyState?: TableEmptyState;
-
-    /**
-     * Additional CSS classes for the table container
-     * @default ""
-     */
-    containerClass?: string | string[];
-
-    /**
      * Additional CSS classes for the table element
      * @default ""
      */
     tableClass?: string | string[];
-
-    /**
-     * Table actions displayed above the table
-     * @default []
-     */
-    actions?: TableAction[];
 
     /**
      * Whether to show select all checkbox in header
@@ -153,27 +147,26 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     id: () => useUid("g-table-").value,
-    fields: () => [],
-    items: () => [],
-    striped: true,
-    hover: true,
+    actions: () => [],
     bordered: false,
     clickableRows: false,
-    selectable: false,
-    selectedItems: () => [],
-    sortBy: "",
-    sortDesc: false,
-    noLocalSorting: false,
+    containerClass: "",
+    emptyState: () => ({ message: "No data available" }),
+    fields: () => [],
+    hover: true,
+    items: () => [],
     loading: false,
     loadingMessage: "Loading...",
-    overlayLoading: false,
     loadMoreLoading: false,
     loadMoreMessage: "Loading more...",
-    emptyState: () => ({ message: "No data available" }),
-    containerClass: "",
-    tableClass: "",
-    actions: () => [],
+    overlayLoading: false,
+    selectable: false,
+    selectedItems: () => [],
     showSelectAll: false,
+    sortBy: "",
+    sortDesc: false,
+    striped: true,
+    tableClass: "",
 });
 
 /**
