@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { faCopy, faEye, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormCheckbox, BLink, BModal } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { GalaxyApi, type HDASummary } from "@/api";
-import { copyDataset, deleteDataset } from "@/api/datasets";
+import { deleteDataset } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
-import type { TableAction } from "@/components/Common/GTable.types";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
+
+import { useDatasetTableActions } from "./useDatasetTableActions";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -53,7 +53,6 @@ const allFields = [
 const columnOptions = allFields.map((field) => ({ key: field.key, label: field.label }));
 
 const historyStore = useHistoryStore();
-const { currentHistoryId } = storeToRefs(historyStore);
 
 const query = ref("");
 const limit = ref(50);
@@ -74,6 +73,8 @@ const showDeleteModal = ref(false);
 const deleteModalPurge = ref(false);
 const deleteModalItem = ref<HDASummary | null>(null);
 const deleteModalBulk = ref(false);
+
+const { datasetTableActions } = useDatasetTableActions();
 
 const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));
 const showNotFound = computed(() => {
@@ -152,22 +153,6 @@ async function load(concat = false, showOverlay = false) {
         loading.value = false;
         overlay.value = false;
         loadMoreLoading.value = false;
-    }
-}
-
-async function onCopyDataset(item: HDASummary) {
-    const dataset_id = item.id;
-
-    try {
-        if (!currentHistoryId.value) {
-            throw new Error("No current history found.");
-        }
-
-        await copyDataset(dataset_id, currentHistoryId.value);
-
-        historyStore.loadCurrentHistory();
-    } catch (error: any) {
-        onError(error);
     }
 }
 
@@ -266,13 +251,6 @@ function onBulkDelete() {
     showDeleteModal.value = true;
 }
 
-function onDeleteDataset(item: HDASummary) {
-    deleteModalBulk.value = false;
-    deleteModalItem.value = item;
-    deleteModalPurge.value = false;
-    showDeleteModal.value = true;
-}
-
 async function confirmDelete() {
     const purge = deleteModalPurge.value;
 
@@ -316,30 +294,6 @@ async function confirmDelete() {
         deleteModalBulk.value = false;
     }
 }
-
-const datasetTableActions: TableAction[] = [
-    {
-        id: "copy-dataset",
-        label: "Copy to current history",
-        title: "Copy Dataset to current history",
-        icon: faCopy,
-        handler: onCopyDataset,
-    },
-    {
-        id: "show-dataset",
-        label: "Show in history",
-        title: "Show dataset in history panel",
-        icon: faEye,
-        handler: onShowDataset,
-    },
-    {
-        id: "delete-dataset",
-        label: "Delete",
-        title: "Delete dataset",
-        icon: faTrash,
-        handler: onDeleteDataset,
-    },
-];
 
 function resetDeleteModal() {
     deleteModalPurge.value = false;
