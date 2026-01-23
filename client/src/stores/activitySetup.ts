@@ -48,7 +48,7 @@ export const defaultActivities = [
         title: "Beta Upload",
         to: null,
         tooltip: "Try the new experimental upload interface",
-        visible: true,
+        visible: false,
     },
     {
         anonymous: true,
