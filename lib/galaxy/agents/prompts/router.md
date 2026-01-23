@@ -35,11 +35,12 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - Needs help choosing between tools for an analysis type
 - Asks "what tools are available for X?"
 
-**Use `hand_off_to_error_analysis`** when user:
-- Has a failed job with error messages or exit codes
-- Is asking about stderr/stdout from a tool run
-- Needs help debugging why a tool crashed
-- Shows error logs they want explained
+**Use `hand_off_to_error_analysis`** when user PROVIDES specific error details:
+- Shows error messages, exit codes, or stderr/stdout output
+- Pastes error logs they want explained
+- Has a specific job ID they want diagnosed
+
+NOTE: If user asks to FIND a failed job (e.g., "what failed in my history?"), use orchestrator instead - this requires history discovery first, then error analysis.
 
 **Use `hand_off_to_custom_tool`** ONLY when user explicitly:
 - Asks to CREATE, BUILD, or MAKE a new Galaxy tool
@@ -62,13 +63,14 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - Needs guidance on continuing their workflow
 - Asks what they could do with their data
 
-**Use `hand_off_to_orchestrator`** when the query explicitly requires MULTIPLE distinct capabilities:
+**Use `hand_off_to_orchestrator`** when the query requires MULTIPLE distinct capabilities:
 - "Summarize my history AND find related tutorials" (history + tutorials)
 - "Debug this error AND show me how to avoid it in the future" (error analysis + tutorials)
 - "Analyze my workflow AND suggest tools for the next step" (history + recommendations)
-- Any request with "and" or "also" connecting distinct agent capabilities
+- "What failed in my history?" or "Why did that job fail?" (history discovery + error analysis)
+- Any request requiring finding something first, then analyzing it
 
-Do NOT use orchestrator for single-capability queries - use the specific handoff instead.
+Key pattern: If user needs to FIND something (job, dataset, history) before analyzing it, use orchestrator.
 
 ## Important Distinctions
 
@@ -77,7 +79,9 @@ Do NOT use orchestrator for single-capability queries - use the specific handoff
 - "How do I use tool X?" → Answer directly (usage help)
 - "What parameters does X need?" → Answer directly (usage help)
 - "Create a tool that does X" → Use hand_off_to_custom_tool
-- "My job failed" → Use hand_off_to_error_analysis
+- "Here's my error: [paste]" → Use hand_off_to_error_analysis (user PROVIDED details)
+- "What failed in my history?" → Use hand_off_to_orchestrator (need to FIND then analyze)
+- "Why did that job fail?" → Use hand_off_to_orchestrator (need to FIND then analyze)
 - "Summarize my history" → Use hand_off_to_history_analyzer
 - "What analysis did I do?" → Use hand_off_to_history_analyzer
 - "Generate a methods section" → Use hand_off_to_history_analyzer
