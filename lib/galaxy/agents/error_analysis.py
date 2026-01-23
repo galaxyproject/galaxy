@@ -364,6 +364,13 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         CONFIDENCE: [high/medium/low]
         """
 
+    def _strip_metadata_markers(self, text: str) -> str:
+        """Remove metadata markers from text for clean user-facing output."""
+        cleaned = text
+        for marker in ["ERROR_TYPE:", "CAUSE:", "SOLUTION:", "CONFIDENCE:"]:
+            cleaned = re.sub(rf"{re.escape(marker)}[^\n]*\n?", "", cleaned, flags=re.IGNORECASE)
+        return cleaned.strip()
+
     def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
         """Parse simple text response into structured format."""
         # Normalize text for consistent parsing
@@ -388,7 +395,8 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             content_parts.append(f"**Solution:**\n{solution.group(1).strip()}")
 
         if not content_parts:
-            content_parts = [normalized_text]  # Fallback to full response
+            # Fallback to full response but strip metadata markers
+            content_parts = [self._strip_metadata_markers(response_text)]
 
         conf_str = confidence.group(1).lower() if confidence else "medium"
         confidence_level = ConfidenceLevel(conf_str)

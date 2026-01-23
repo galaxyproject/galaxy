@@ -96,7 +96,9 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         try:
             # Get agent plan from LLM
             plan = await self._get_agent_plan(query)
-            log.info(f"Orchestrator: Plan generated - agents={plan.agents}, sequential={plan.sequential}, reasoning={plan.reasoning[:100]}")
+            log.info(
+                f"Orchestrator: Plan generated - agents={plan.agents}, sequential={plan.sequential}, reasoning={plan.reasoning[:100]}"
+            )
 
             # Force sequential when history_analyzer feeds into error_analysis
             # (finding failed jobs must happen before analyzing them)
@@ -122,7 +124,6 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 agent_data={
                     "agents_used": plan.agents,
                     "execution_type": "sequential" if plan.sequential else "parallel",
-                    "reasoning": plan.reasoning,
                 },
             )
 
@@ -268,23 +269,34 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return dict(results)
 
     def _combine_responses(self, responses: dict[str, AgentResponse], reasoning: str) -> str:
-        """Combine multiple agent responses into a single coherent response."""
+        """Combine responses naturally without exposing internal structure."""
         if not responses:
             return "No agent responses received."
 
         if len(responses) == 1:
             return list(responses.values())[0].content
 
-        # Build combined response
-        sections = [f"## Multi-Agent Analysis\n{reasoning}\n"]
+        # Build combined response conversationally
+        parts = []
+        for i, (agent_name, response) in enumerate(responses.items()):
+            content = response.content.strip()
+            if i == 0:
+                parts.append(content)
+            else:
+                transition = self._get_transition_phrase(agent_name)
+                parts.append(f"\n\n{transition}\n\n{content}")
 
-        for agent_name, response in responses.items():
-            agent_title = agent_name.replace("_", " ").title()
-            sections.append(f"### {agent_title}")
-            sections.append(response.content)
-            sections.append("")  # blank line
+        return "".join(parts)
 
-        return "\n".join(sections)
+    def _get_transition_phrase(self, agent_name: str) -> str:
+        """Natural transition between agent sections."""
+        transitions = {
+            "error_analysis": "Looking at this error more closely:",
+            "history_analyzer": "Based on your history:",
+            "gtn_training": "For learning more:",
+            "custom_tool": "Regarding the tool:",
+        }
+        return transitions.get(agent_name, "Additionally:")
 
     def _get_simple_system_prompt(self) -> str:
         """Simple system prompt for models without structured output."""
