@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
@@ -341,13 +341,6 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 
 <template>
     <div :id="`g-table-container-${props.id}`" class="w-100" :class="containerClass">
-        <!-- Actions toolbar -->
-        <div v-if="props.actions.length > 0" :id="getElementId(props.id, 'actions')" class="g-table-actions mb-2">
-            <slot name="actions">
-                <!-- Custom actions can be added here -->
-            </slot>
-        </div>
-
         <!-- Table wrapper -->
         <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
             <div :id="`g-table-wrapper-${props.id}`" class="position-relative w-100">
@@ -362,18 +355,9 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                     ]">
                     <thead>
                         <tr>
-                            <!-- Select all checkbox column -->
-                            <!-- <th v-if="selectable && showSelectAll" class="g-table-select-column">
-                                <BFormCheckbox
-                                    :id="getElementId(props.id, 'select-all')"
-                                    v-b-tooltip.hover.noninteractive
-                                    :checked="allSelected"
-                                    :indeterminate="someSelected"
-                                    title="Select all"
-                                    @change="onSelectAll" />
-                            </th> -->
-                            <!-- <th v-else-if="selectable" class="g-table-select-column"></th> -->
-                            <th lass="g-table-select-column"></th>
+                            <th v-if="selectable" class="g-table-select-column">
+                                <slot name="head-select" />
+                            </th>
 
                             <!-- Field columns -->
                             <th
@@ -401,9 +385,8 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                 </div>
                             </th>
 
-                            <!-- Actions column header (if slot provided) -->
-                            <th v-if="$slots.actions || $scopedSlots.actions" class="g-table-actions-column">
-                                <slot name="head(actions)">Actions</slot>
+                            <th v-if="props.actions" class="g-table-actions-column">
+                                <slot name="head-actions">Actions</slot>
                             </th>
                         </tr>
                     </thead>
@@ -424,7 +407,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     :id="`${getRowId(props.id, index)}-select`"
                                     v-b-tooltip.hover.noninteractive
                                     :checked="isRowSelected(index)"
-                                    title="Select row"
+                                    title="Select for bulk actions"
                                     @click.stop
                                     @change="onRowSelect(item, index)" />
                             </td>
@@ -441,15 +424,45 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]">
                                 <slot :name="`cell(${field.key})`" :value="item[field.key]" :item="item" :index="index">
-                                    <!-- eslint-disable-next-line vue/no-v-html -->
-                                    <span v-if="field.html" v-html="getCellValue(item, field)"></span>
+                                    <span v-if="field.html" v-html="getCellValue(item, field)" />
                                     <span v-else>{{ getCellValue(item, field) }}</span>
                                 </slot>
                             </td>
 
                             <!-- Actions column -->
-                            <td v-if="$slots.actions || $scopedSlots.actions" class="g-table-actions-column">
-                                <slot name="actions" :item="item" :index="index"></slot>
+                            <td v-if="props.actions" class="g-table-actions-column">
+                                <slot name="actions" :item="item" :index="index">
+                                    <BDropdown
+                                        v-b-tooltip.hover.noninteractive
+                                        no-caret
+                                        right
+                                        title="More actions"
+                                        variant="link"
+                                        size="sm"
+                                        toggle-class="text-decoration-none p-0"
+                                        @click.stop>
+                                        <template v-slot:button-content>
+                                            <FontAwesomeIcon :icon="faCaretDown" />
+                                        </template>
+
+                                        <template v-for="ac in props.actions">
+                                            <BDropdownItem
+                                                v-if="ac.visible ?? true"
+                                                :id="ac.id"
+                                                :key="ac.id"
+                                                :disabled="ac.disabled"
+                                                :size="ac.size || 'sm'"
+                                                :variant="ac.variant || 'link'"
+                                                :to="ac.to"
+                                                :href="ac.href"
+                                                :target="ac.externalLink ? '_blank' : undefined"
+                                                @click.stop="ac.handler && ac.handler(item, index)">
+                                                <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
+                                                {{ ac.label }}
+                                            </BDropdownItem>
+                                        </template>
+                                    </BDropdown>
+                                </slot>
                             </td>
                         </tr>
                     </tbody>
@@ -502,6 +515,8 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                     background-color: lighten($brand-light, 0.5);
                 }
             }
+
+            box-shadow: inset 0 -1px 0 0 rgba($brand-primary, 0.2);
 
             &.g-table-row-selected {
                 background-color: $brand-light;
