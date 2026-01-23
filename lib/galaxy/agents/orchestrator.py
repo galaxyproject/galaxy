@@ -200,13 +200,18 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
 
         for agent_name in agents:
             try:
+                log.debug(f"Orchestrator: Starting agent '{agent_name}' with query length {len(current_query)}")
                 agent = agent_registry.get_agent(agent_name, self.deps)
                 # Execute with timeout protection
                 response = await asyncio.wait_for(agent.process(current_query, context or {}), timeout=timeout)
                 responses[agent_name] = response
 
+                log.debug(f"Orchestrator: Agent '{agent_name}' completed. Response length: {len(response.content)}")
+                log.debug(f"Orchestrator: Agent '{agent_name}' response preview: {response.content[:500]}...")
+
                 # For sequential execution, enrich query with this agent's findings for subsequent agents
                 current_query = f"{query}\n\nPrevious analysis from {agent_name}: {response.content}"
+                log.debug(f"Orchestrator: Updated query for next agent, total length: {len(current_query)}")
 
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
