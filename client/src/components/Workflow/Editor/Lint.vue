@@ -68,19 +68,6 @@ const annotationLengthSuccessMessage = computed(() =>
         : "This workflow does not have a short description.",
 );
 
-/** Checks if the step indices in the workflow are consistent (i.e., sequential starting from 0). */
-const stepIndicesConsistent = computed(() => {
-    const stepIds = Object.keys(props.steps)
-        .map((id) => parseInt(id, 10))
-        .sort((a, b) => a - b);
-    for (let i = 0; i < stepIds.length; i++) {
-        if (stepIds[i] !== i) {
-            return false;
-        }
-    }
-    return true;
-});
-
 const emit = defineEmits<{
     (e: "onAttributes", highlight: { highlight: string }): void;
     (
@@ -145,8 +132,7 @@ async function onFixDisconnectedInput(item: LintState) {
     // to be consistent in the parent (`Index.vue`), and then the user can try fixing the issue again.
 
     // Note that this assumes that the parent component (`Index.vue`) updates step indices on save.
-    // And then we have an additional check to see if the step indices are consistent.
-    if (props.hasChanges || !stepIndicesConsistent.value) {
+    if (props.hasChanges) {
         await saveChanges(false);
         return;
     }
@@ -272,7 +258,7 @@ async function onRefactor() {
             warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
             :warning-items="disconnectedInputs"
-            :requires-save="props.hasChanges || !stepIndicesConsistent"
+            :requires-save="props.hasChanges"
             @onMouseOver="onHighlight"
             @onClick="onFixDisconnectedInput"
             @onSaveRequested="saveChanges(false)" />
