@@ -342,8 +342,15 @@ class QueryRouterAgent(BaseGalaxyAgent):
         specialist agents when their specific expertise is needed.
         """
         try:
+            # Log conversation context
+            has_history = context and "conversation_history" in context and context["conversation_history"]
+            log.info(f"Router: Processing query with conversation_history={has_history}")
+            if has_history:
+                log.info(f"Router: Conversation has {len(context['conversation_history'])} messages")
+
             # Build the full query with conversation history if available
             full_query = self._build_query_with_context(query, context)
+            log.info(f"Router: Full query length={len(full_query)} (original={len(query)})")
 
             # Run the agent - it will either answer directly or use a handoff function
             result = await self._run_with_retry(full_query)
