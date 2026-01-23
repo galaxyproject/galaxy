@@ -20,7 +20,15 @@ import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 const uploadQueue = useUploadQueue();
 const uploadState = useUploadState();
 const historyStore = useHistoryStore();
-const { batchesWithProgress, standaloneUploads, activeItems, completedCount, errorCount, hasCompleted } = uploadState;
+const {
+    orderedUploadItems,
+    batchesWithProgress,
+    standaloneUploads,
+    activeItems,
+    completedCount,
+    errorCount,
+    hasCompleted,
+} = uploadState;
 
 const breadcrumbItems = [{ title: "Import Data", to: "/upload" }, { title: "Upload Progress" }];
 
@@ -134,82 +142,90 @@ onMounted(() => {
                 </div>
 
                 <div ref="fileListRef" class="file-details-list flex-grow-1 overflow-auto">
-                    <!-- Batch groups (collections) -->
                     <div
-                        v-for="batch in batchesWithProgress"
-                        :key="batch.id"
-                        class="batch-group mb-3"
-                        :class="{ 'has-error': batch.status === 'error' }">
-                        <!-- Batch header -->
+                        v-for="item in orderedUploadItems"
+                        :key="item.type === 'batch' ? item.batch.id : item.upload.id">
                         <div
-                            class="batch-header"
-                            :class="getBatchProgressUi(batch).textClass"
-                            role="button"
-                            tabindex="0"
-                            @click="toggleBatch(batch.id)"
-                            @keydown.enter="toggleBatch(batch.id)"
-                            @keydown.space.prevent="toggleBatch(batch.id)">
-                            <FontAwesomeIcon
-                                :icon="getBatchProgressUi(batch).icon"
-                                :spin="getBatchProgressUi(batch).spin"
-                                class="mr-2"
-                                fixed-width />
-                            <span class="batch-name">{{ batch.name }}</span>
-                            <span class="batch-type badge badge-secondary ml-2">{{ batch.type }}</span>
-                            <span class="batch-status ml-auto mr-2">{{ getBatchProgressUi(batch).label }}</span>
-                            <FontAwesomeIcon
-                                :icon="isExpanded(batch.id) ? faChevronDown : faChevronRight"
-                                class="expand-icon"
-                                fixed-width />
-                        </div>
-
-                        <!-- Batch metadata row -->
-                        <div class="batch-metadata px-3 py-2 d-flex flex-wrap align-items-center">
-                            <span class="text-muted small mr-3">
-                                {{ batchDisplayInfoMap.get(batch.id)?.displayInfo.uploadModeSummary }}
-                            </span>
-                            <span class="text-muted small mr-3">
-                                {{ batchDisplayInfoMap.get(batch.id)?.progressSummary }}
-                            </span>
-                            <div v-if="shouldShowBatchHistoryLink(getBatchTargetHistoryId(batch))" class="small mr-3">
-                                <span class="text-muted mr-1">Target:</span>
-                                <SwitchToHistoryLink :history-id="getBatchTargetHistoryId(batch)" inline thin />
-                            </div>
-                        </div>
-
-                        <!-- Batch error message with retry button -->
-                        <div v-if="batch.error" class="batch-error mt-2 p-2">
-                            <span class="text-danger">{{ batch.error }}</span>
-                            <GButton size="small" class="ml-2" @click="retryBatch(batch.id)"> Retry </GButton>
-                        </div>
-
-                        <!-- Batch progress bar -->
-                        <div
-                            v-if="batch.status !== 'completed'"
-                            class="progress batch-progress mt-2"
-                            style="height: 4px">
+                            v-if="item.type === 'batch'"
+                            class="batch-group mb-3"
+                            :class="{ 'has-error': item.batch.status === 'error' }">
+                            <!-- Batch header -->
                             <div
-                                class="progress-bar"
-                                :class="getBatchProgressUi(batch).barClass"
-                                :style="{ width: `${batch.progress}%` }"
-                                role="progressbar"
-                                :aria-valuenow="batch.progress"
-                                aria-valuemin="0"
-                                aria-valuemax="100"></div>
+                                class="batch-header"
+                                :class="getBatchProgressUi(item.batch).textClass"
+                                role="button"
+                                tabindex="0"
+                                @click="toggleBatch(item.batch.id)"
+                                @keydown.enter="toggleBatch(item.batch.id)"
+                                @keydown.space.prevent="toggleBatch(item.batch.id)">
+                                <FontAwesomeIcon
+                                    :icon="getBatchProgressUi(item.batch).icon"
+                                    :spin="getBatchProgressUi(item.batch).spin"
+                                    class="mr-2"
+                                    fixed-width />
+                                <span class="batch-name">{{ item.batch.name }}</span>
+                                <span class="batch-type badge badge-secondary ml-2">{{ item.batch.type }}</span>
+                                <span class="batch-status ml-auto mr-2">{{
+                                    getBatchProgressUi(item.batch).label
+                                }}</span>
+                                <FontAwesomeIcon
+                                    :icon="isExpanded(item.batch.id) ? faChevronDown : faChevronRight"
+                                    class="expand-icon"
+                                    fixed-width />
+                            </div>
+
+                            <!-- Batch metadata row -->
+                            <div class="batch-metadata px-3 py-2 d-flex flex-wrap align-items-center">
+                                <span class="text-muted small mr-3">
+                                    {{ batchDisplayInfoMap.get(item.batch.id)?.displayInfo.uploadModeSummary }}
+                                </span>
+                                <span class="text-muted small mr-3">
+                                    {{ batchDisplayInfoMap.get(item.batch.id)?.progressSummary }}
+                                </span>
+                                <div
+                                    v-if="shouldShowBatchHistoryLink(getBatchTargetHistoryId(item.batch))"
+                                    class="small mr-3">
+                                    <span class="text-muted mr-1">Target:</span>
+                                    <SwitchToHistoryLink
+                                        :history-id="getBatchTargetHistoryId(item.batch)"
+                                        inline
+                                        thin />
+                                </div>
+                            </div>
+
+                            <!-- Batch error message with retry button -->
+                            <div v-if="item.batch.error" class="batch-error mt-2 p-2">
+                                <span class="text-danger">{{ item.batch.error }}</span>
+                                <GButton size="small" class="ml-2" @click="retryBatch(item.batch.id)"> Retry </GButton>
+                            </div>
+
+                            <!-- Batch progress bar -->
+                            <div
+                                v-if="item.batch.status !== 'completed'"
+                                class="progress batch-progress mt-2"
+                                style="height: 4px">
+                                <div
+                                    class="progress-bar"
+                                    :class="getBatchProgressUi(item.batch).barClass"
+                                    :style="{ width: `${item.batch.progress}%` }"
+                                    role="progressbar"
+                                    :aria-valuenow="item.batch.progress"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"></div>
+                            </div>
+
+                            <!-- Collapsible upload items -->
+                            <BCollapse :visible="isExpanded(item.batch.id)" class="batch-uploads mt-2">
+                                <UploadFileRow
+                                    v-for="file in item.batch.uploads"
+                                    :key="file.id || file.name"
+                                    :file="file"
+                                    nested />
+                            </BCollapse>
                         </div>
 
-                        <!-- Collapsible upload items -->
-                        <BCollapse :visible="isExpanded(batch.id)" class="batch-uploads mt-2">
-                            <UploadFileRow
-                                v-for="file in batch.uploads"
-                                :key="file.id || file.name"
-                                :file="file"
-                                nested />
-                        </BCollapse>
+                        <UploadFileRow v-else :file="item.upload" />
                     </div>
-
-                    <!-- Standalone uploads (not part of any collection) -->
-                    <UploadFileRow v-for="file in standaloneUploads" :key="file.id || file.name" :file="file" />
                 </div>
             </div>
             <div v-else class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">

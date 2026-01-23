@@ -10,6 +10,42 @@ const BATCHES_STORAGE_KEY = "uploadPanel.activeBatches";
 /** Collection batch lifecycle status */
 export type BatchStatus = "uploading" | "creating-collection" | "completed" | "error";
 
+/**
+ * UI-facing batch model including aggregated progress and uploads.
+ * Derived from CollectionBatchState and UploadItem state.
+ */
+export interface BatchWithProgress extends CollectionBatchState {
+    uploads: UploadItem[];
+    progress: number;
+    allCompleted: boolean;
+    hasError: boolean;
+}
+
+/**
+ * Base interface for ordered upload list items used in progress views.
+ */
+export interface UploadListItemBase {
+    /** Discriminator for rendering */
+    type: "batch" | "upload";
+    /** Creation timestamp used for ordering */
+    createdAt: number;
+}
+
+/** UI model for a collection batch item */
+export interface UploadBatchListItem extends UploadListItemBase {
+    type: "batch";
+    batch: BatchWithProgress;
+}
+
+/** UI model for a standalone upload item */
+export interface UploadFileListItem extends UploadListItemBase {
+    type: "upload";
+    upload: UploadItem;
+}
+
+/** Union of all upload list UI items */
+export type UploadListItem = UploadBatchListItem | UploadFileListItem;
+
 /** Collection batch state tracking */
 export interface CollectionBatchState {
     /** Unique batch identifier */
@@ -96,7 +132,7 @@ export function useUploadState() {
      * Batches with aggregated upload progress and status.
      */
     const batchesWithProgress = computed(() => {
-        return batches.value.map((batch) => {
+        return batches.value.map<BatchWithProgress>((batch) => {
             const batchUploads = batch.uploadIds
                 .map((id) => items.value.find((item) => item.id === id))
                 .filter((item): item is UploadItem => item !== undefined);
@@ -124,6 +160,28 @@ export function useUploadState() {
      */
     const standaloneUploads = computed(() => {
         return items.value.filter((item) => !item.batchId);
+    });
+
+    /**
+     * Ordered list of upload-related items (batches and standalone uploads)
+     * sorted by creation time for progress display.
+     */
+    const orderedUploadItems = computed<UploadListItem[]>(() => {
+        const batchItems: UploadBatchListItem[] = batchesWithProgress.value.map((batch) => ({
+            type: "batch",
+            createdAt: batch.createdAt,
+            batch,
+        }));
+
+        const standaloneItems: UploadFileListItem[] = items.value
+            .filter((item) => !item.batchId)
+            .map((upload) => ({
+                type: "upload",
+                createdAt: upload.createdAt,
+                upload,
+            }));
+
+        return [...batchItems, ...standaloneItems].sort((a, b) => a.createdAt - b.createdAt);
     });
 
     /**
@@ -308,6 +366,7 @@ export function useUploadState() {
         hasCompleted,
         batchesWithProgress,
         standaloneUploads,
+        orderedUploadItems,
         addUploadItem,
         addBatch,
         updateBatchStatus,
