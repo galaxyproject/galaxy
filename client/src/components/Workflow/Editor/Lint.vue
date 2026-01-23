@@ -180,6 +180,7 @@ function onRefactor() {
             attribute-link="Shorten your Workflow Description."
             @onClickAttribute="onAttributes('annotation')" />
         <LintSection
+            data-description="linting has readme"
             :okay="checkReadme"
             success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
             :warning-message="bestPracticeWarningReadme"
@@ -243,7 +244,7 @@ function onRefactor() {
                 @onMouseOver="onHighlight"
                 @onClick="onFixUnlabeledOutputs" />
         </template>
-        <GCard v-else>
+        <GCard v-else data-description="linting no outputs">
             <div>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
