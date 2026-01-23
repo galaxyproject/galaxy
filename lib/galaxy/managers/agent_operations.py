@@ -1123,6 +1123,53 @@ class AgentOperationsManager:
             },
         }
 
+    def get_job_errors(self, dataset_id: str) -> dict[str, Any]:
+        """
+        Get error details for a failed job.
+
+        Args:
+            dataset_id: Galaxy dataset ID (encoded) of the failed output
+
+        Returns:
+            Error details including stderr, stdout, exit_code, and info message
+        """
+        decoded_dataset_id = self.trans.security.decode_id(dataset_id)
+
+        from galaxy.managers.hdas import HDAManager
+
+        hda_manager = self.app[HDAManager]
+        hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
+
+        if not hda:
+            raise ValueError(f"Dataset '{dataset_id}' not found or not accessible")
+
+        job = hda.creating_job
+        if not job:
+            return {
+                "dataset_id": dataset_id,
+                "error": "No creating job found for this dataset",
+            }
+
+        # Truncate large outputs to avoid overwhelming the LLM
+        max_output_length = 4000
+
+        stderr = job.stderr or ""
+        stdout = job.stdout or ""
+        info = job.info or ""
+
+        return {
+            "dataset_id": dataset_id,
+            "job_id": self.trans.security.encode_id(job.id),
+            "tool_id": job.tool_id,
+            "tool_version": job.tool_version,
+            "state": job.state,
+            "exit_code": job.exit_code,
+            "info": info[:max_output_length] if info else None,
+            "stderr": stderr[:max_output_length] if stderr else None,
+            "stdout": stdout[:max_output_length] if stdout else None,
+            "truncated": len(stderr) > max_output_length or len(stdout) > max_output_length,
+        }
+
     def download_dataset(self, dataset_id: str) -> dict[str, Any]:
         """
         Get download information for a dataset.
