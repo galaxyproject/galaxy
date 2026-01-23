@@ -202,17 +202,21 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
             return "Save this workflow, then exit the workflow editor";
         }
     });
-    const disconnectedCount = computed(() => {
-        const disconnectedCount = options.value.lintData.disconnectedInputs.value.length;
-        if (disconnectedCount > 0) {
-            return disconnectedCount;
-        } else {
-            return undefined;
+
+    /** How many best practice issues remain unresolved */
+    const bestPracticesIssueCount = computed(() => {
+        const { resolvedIssues, totalIssues } = options.value.lintData;
+        if (totalIssues.value > resolvedIssues.value) {
+            return totalIssues.value - resolvedIssues.value;
         }
+        return undefined;
     });
+
+    /** Tooltip for best practices activity */
     const bestPracticeHover = computed(() => {
-        if (disconnectedCount.value) {
-            return `${disconnectedCount.value} required inputs are not connected`;
+        const { resolvedIssues, totalIssues } = options.value.lintData;
+        if (totalIssues.value > resolvedIssues.value) {
+            return `${totalIssues.value - resolvedIssues.value} best practice issues remain`;
         } else {
             return "Test workflow for best practices";
         }
@@ -234,7 +238,7 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
             id: "workflow-best-practices",
             description: "Show and test for the best practices in this workflow.",
             tooltip: bestPracticeHover.value,
-            indicator: disconnectedCount.value,
+            indicator: bestPracticesIssueCount.value,
             icon: faMagic,
             panel: true,
             visible: true,
