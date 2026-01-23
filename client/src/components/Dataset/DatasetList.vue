@@ -14,6 +14,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { useDatasetTableActions } from "./useDatasetTableActions";
 
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import GTable from "@/components/Common/GTable.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
@@ -21,6 +22,8 @@ import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
+
+const breadcrumbItems = [{ title: "Datasets", to: "/datasets/list" }];
 
 const allFields = [
     {
@@ -306,6 +309,7 @@ onMounted(() => {
 
 <template>
     <div class="dataset-list-container h-100 d-flex flex-column">
+        <BreadcrumbHeading :items="breadcrumbItems" />
         <div class="dataset-list-header">
             <BAlert v-if="message" :variant="messageVariant" show class="m-2">
                 {{ message }}
