@@ -179,25 +179,21 @@ export function getUntypedParameters(untypedParameters: UntypedParameters) {
 }
 
 export function fixAllIssues(
-    steps: Steps,
-    parameters: UntypedParameters,
-    datatypesMapper: DatatypesMapperModel,
-    stores: ReturnType<typeof useWorkflowStores>,
+    untypedParameters: LintState[],
+    disconnectedInputs: LintState[],
+    unlabeledOutputs: LintState[],
 ) {
     const actions = [];
-    const untypedParameters = getUntypedParameters(parameters);
     for (const untypedParameter of untypedParameters) {
         if (untypedParameter.autofix) {
             actions.push(fixUntypedParameter(untypedParameter));
         }
     }
-    const disconnectedInputs = getDisconnectedInputs(steps, datatypesMapper, stores);
     for (const disconnectedInput of disconnectedInputs) {
         if (disconnectedInput.autofix) {
             actions.push(fixDisconnectedInput(disconnectedInput));
         }
     }
-    const unlabeledOutputs = getUnlabeledOutputs(steps);
     if (unlabeledOutputs.length > 0) {
         actions.push(fixUnlabeledOutputs());
     }

@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useConfirmDialog } from "@/composables/confirmDialog";
+import { type ConfirmDialogOptions, useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
@@ -33,6 +33,8 @@ const props = defineProps<{
     lintData: ReturnType<typeof useLintData>;
     steps: Steps; // Adjust the type as needed
     datatypesMapper: DatatypesMapperModel;
+    hasChanges: boolean;
+    onSave?: () => Promise<boolean>;
 }>();
 
 const { confirm } = useConfirmDialog();
@@ -49,7 +51,6 @@ const {
     checkCreator,
     resolvedIssues,
     totalIssues,
-    untypedParameters,
     unlabeledOutputs,
     untypedParameterWarnings,
     disconnectedInputs,
@@ -58,7 +59,7 @@ const {
 } = props.lintData;
 
 const showRefactor = computed(
-    () => !untypedParameterWarnings.value.length || !disconnectedInputs.value.length || !unlabeledOutputs.value.length,
+    () => untypedParameterWarnings.value.length || disconnectedInputs.value.length || unlabeledOutputs.value.length,
 );
 
 const annotationLengthSuccessMessage = computed(() =>
@@ -66,6 +67,19 @@ const annotationLengthSuccessMessage = computed(() =>
         ? "This workflow has a short description of appropriate length."
         : "This workflow does not have a short description.",
 );
+
+/** Checks if the step indices in the workflow are consistent (i.e., sequential starting from 0). */
+const stepIndicesConsistent = computed(() => {
+    const stepIds = Object.keys(props.steps)
+        .map((id) => parseInt(id, 10))
+        .sort((a, b) => a - b);
+    for (let i = 0; i < stepIds.length; i++) {
+        if (stepIds[i] !== i) {
+            return false;
+        }
+    }
+    return true;
+});
 
 const emit = defineEmits<{
     (e: "onAttributes", highlight: { highlight: string }): void;
@@ -87,6 +101,31 @@ function onAttributes(highlight: string) {
     emit("onAttributes", { highlight });
 }
 
+/** Prompts the user to save changes.
+ * @param canProceed - If `true`, the user is informed that by confirming, they will save the workflow
+ *                     and then proceed to apply automatic fixes.
+ *                     If `false`, the user is informed that they need to save and try fixing the issue again.
+ * @returns A promise that resolves to true if the user saved changes, false otherwise.
+ */
+async function saveChanges(canProceed = true) {
+    const confirmationMessageHead = "You have unsaved changes in the workflow editor. Please save your changes ";
+
+    const confirmationMessage = canProceed
+        ? confirmationMessageHead +
+          "and there will be an attempt to automatically fix the issues. Do you want to save your changes and apply fixes now?"
+        : confirmationMessageHead + "to enable automatic fixing of this issue. Do you want to save your changes now?";
+    const confirmationOptions: ConfirmDialogOptions = canProceed
+        ? { title: "Unsaved Changes", okTitle: "Save Changes and Fix Issues" }
+        : { title: "Save Workflow and Check Issues Again", okTitle: "Save Changes" };
+
+    const proceed = await confirm(confirmationMessage, confirmationOptions);
+    if (proceed && props.onSave) {
+        await props.onSave();
+        return true;
+    }
+    return false;
+}
+
 async function onFixUntypedParameter(item: LintState) {
     const confirmed = await confirm(
         "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?",
@@ -101,6 +140,17 @@ async function onFixUntypedParameter(item: LintState) {
 }
 
 async function onFixDisconnectedInput(item: LintState) {
+    // Since users can move around/delete steps, the step indices can be inconsistent (e.g.: 0,3,4 vs 0,1,2).
+    // Therefore, for disconnected inputs, we first ask the user to save changes, which updates the step indices
+    // to be consistent in the parent (`Index.vue`), and then the user can try fixing the issue again.
+
+    // Note that this assumes that the parent component (`Index.vue`) updates step indices on save.
+    // And then we have an additional check to see if the step indices are consistent.
+    if (props.hasChanges || !stepIndicesConsistent.value) {
+        await saveChanges(false);
+        return;
+    }
+
     const confirmed = await confirm(
         "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?",
         "Fix Disconnected Input",
@@ -136,9 +186,14 @@ function onHighlight(item: LintState) {
     }
 }
 
-function onRefactor() {
-    if (untypedParameters.value) {
-        const actions = fixAllIssues(props.steps, untypedParameters.value, props.datatypesMapper, stores);
+async function onRefactor() {
+    if (showRefactor.value) {
+        // If there are unsaved changes, the user can choose to save and proceed to automatically fix issues.
+        if (props.hasChanges && !(await saveChanges())) {
+            return;
+        }
+
+        const actions = fixAllIssues(untypedParameterWarnings.value, disconnectedInputs.value, unlabeledOutputs.value);
         emit("onRefactor", actions);
     }
 }

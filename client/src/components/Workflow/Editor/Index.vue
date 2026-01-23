@@ -55,6 +55,8 @@
                     :lint-data="lintData"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
+                    :has-changes="hasChanges"
+                    :on-save="onSave"
                     @onAttributes="
                         (e) => {
                             showAttributes(e);
@@ -800,7 +802,7 @@ export default {
         onUpdateStepPosition(stepId, position) {
             this.stepActions.setPosition(this.steps[stepId], position);
         },
-        onAttemptRefactor(actions) {
+        async onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?",
@@ -808,18 +810,10 @@ export default {
                 if (r == false) {
                     return;
                 }
-                this.onWorkflowMessage("Saving workflow...", "progress");
-                return saveWorkflow(this)
-                    .then((data) => {
-                        this.refactorActions = actions;
-                    })
-                    .catch((response) => {
-                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...", response, {
-                            Ok: () => {
-                                this.hideModal();
-                            },
-                        });
-                    });
+
+                if (await this.onSave()) {
+                    this.refactorActions = actions;
+                }
             } else {
                 this.refactorActions = actions;
             }
@@ -1003,9 +997,10 @@ export default {
             addScopePointer(id, this.id);
 
             this.id = id;
-            await this.onSave();
-            this.hasChanges = false;
-            this.$router.replace({ query: { id } });
+            if (await this.onSave()) {
+                this.hasChanges = false;
+                this.$router.replace({ query: { id } });
+            }
         },
         async onCreate() {
             if (!this.nameValidate()) {
@@ -1068,16 +1063,20 @@ export default {
             this.onNavigate(`/workflows/run?id=${this.id}`, false, false, true);
         },
         async onNavigate(url, forceSave = false, ignoreChanges = false, appendVersion = false) {
+            let proceed = false;
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
+                proceed = true;
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
                 this.showSaveChangesModal = true;
-                return;
             } else if (forceSave) {
                 // when forceSave is true, save the workflow before navigating
-                await this.onSave();
+                proceed = await this.onSave();
+            }
+            if (!proceed) {
+                return;
             }
 
             if (appendVersion && this.version !== undefined) {
@@ -1087,25 +1086,34 @@ export default {
             await nextTick();
             this.$router.push(url);
         },
-        onSave(hideProgress = false) {
+        /** Saves the workflow, and loads it onto the editor by calling `_loadCurrent`.
+         * @returns true if save was successful, false otherwise
+         */
+        async onSave(hideProgress = false) {
             if (!this.nameValidate()) {
-                return;
+                return false;
             }
-            !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
-            return saveWorkflow(this)
-                .then((data) => {
-                    getVersions(this.id).then((versions) => {
-                        this.versions = versions;
+
+            if (!hideProgress) {
+                this.onWorkflowMessage("Saving workflow...", "progress");
+            }
+            try {
+                const data = await saveWorkflow(this);
+
+                const versions = await getVersions(this.id);
+                this.versions = versions;
+
+                await this._loadCurrent(this.id, data.version);
+            } catch (response) {
+                this.onWorkflowError("Saving workflow failed...", response, {
+                    Ok: () => {
                         this.hideModal();
-                    });
-                })
-                .catch((response) => {
-                    this.onWorkflowError("Saving workflow failed...", response, {
-                        Ok: () => {
-                            this.hideModal();
-                        },
-                    });
+                    },
                 });
+                return false;
+            }
+            this.hideModal();
+            return true;
         },
         onVersion(version) {
             if (version != this.version) {
