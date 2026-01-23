@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { faCheck, faExclamationTriangle, faMagic, faPencilAlt, faSearch } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCheck,
+    faExclamationTriangle,
+    faMagic,
+    faPencilAlt,
+    faSave,
+    faSearch,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import { dataAttributes, type LintState } from "./modules/linting";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GCard from "@/components/Common/GCard.vue";
 
@@ -14,12 +22,14 @@ interface Props {
     okay?: boolean;
     attributeLink?: string;
     warningItems?: LintState[] | null;
+    requiresSave?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     okay: true,
     attributeLink: "Edit Workflow Attributes",
     warningItems: null,
+    requiresSave: false,
 });
 
 const emit = defineEmits<{
@@ -27,6 +37,7 @@ const emit = defineEmits<{
     (e: "onMouseOver", item: LintState): void;
     (e: "onMouseLeave", item: LintState): void;
     (e: "onClickAttribute"): void;
+    (e: "onSaveRequested"): void;
 }>();
 
 const hasWarningItems = computed(() => props.warningItems && props.warningItems.length > 0);
@@ -42,6 +53,7 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
         <div v-else>
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
             <span v-localize>{{ props.warningMessage }}</span>
+
             <div v-if="hasWarningItems" class="mt-2">
                 <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
                 <div
@@ -55,6 +67,8 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                     <GLink
                         class="scrolls"
                         thin
+                        :disabled="props.requiresSave"
+                        disabled-title="Fix disabled. Save workflow to enable this fix."
                         :data-item-index="idx"
                         v-bind="dataAttributes(item)"
                         @click="emit('onClick', item)">
@@ -70,6 +84,15 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                     <FontAwesomeIcon :icon="faPencilAlt" class="mr-1" />{{ props.attributeLink }}
                 </GLink>
             </p>
+
+            <GButton
+                v-if="props.requiresSave"
+                color="blue"
+                class="d-flex w-100 justify-content-center my-2"
+                @click="emit('onSaveRequested')">
+                <FontAwesomeIcon :icon="faSave" class="mr-1" />
+                Enable Fixes by Saving
+            </GButton>
         </div>
     </GCard>
 </template>

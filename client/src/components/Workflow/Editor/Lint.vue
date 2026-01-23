@@ -272,8 +272,10 @@ async function onRefactor() {
             warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
             :warning-items="disconnectedInputs"
+            :requires-save="props.hasChanges || !stepIndicesConsistent"
             @onMouseOver="onHighlight"
-            @onClick="onFixDisconnectedInput" />
+            @onClick="onFixDisconnectedInput"
+            @onSaveRequested="saveChanges(false)" />
         <LintSection
             v-if="hasInputSteps"
             data-description="linting input metadata"
