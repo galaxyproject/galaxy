@@ -1,10 +1,10 @@
-<tool id="Grep1" name="Select" version="1.0.4" profile="20.05">
+<tool id="Grep1" name="Select" version="1.0.5" profile="24.2">
   <description>lines that match an expression</description>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
   <requirements>
-    <requirement type="package" version="3.4">grep</requirement>
+    <requirement type="package" version="3.11">grep</requirement>
   </requirements>
   <stdio>
     <exit_code range="2:" level="warning" description="Select failed" />
@@ -29,10 +29,7 @@
       <option value="-v">NOT Matching</option>
     </param>
     <param name="pattern" type="text" value="^chr([0-9A-Za-z])+" label="the pattern" help="here you can enter text or regular expression (for syntax check lower part of this frame)">
-      <sanitizer>
-        <valid initial="string.printable">
-        </valid>
-      </sanitizer>
+      <sanitizer sanitize="false"/>
     </param>
     <param name="keep_header" type="boolean" truevalue="true" falsevalue="false" label="Keep header line" help="i.e. the first line is kept independent of the regular expression"/>
   </inputs>
@@ -100,6 +97,26 @@
         <assert_contents>
           <has_text text="chrX"/>
           <not_has_text text="chr1"/>
+        </assert_contents>
+      </output>
+    </test>
+    <!-- tests of non-ASCII character support -->
+    <test>
+      <param name="input" value="asian_chars_1.txt"/>
+      <param name="pattern" value=":制癌性物質"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_n_lines n="1"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="asian_chars_1.txt"/>
+      <param name="invert" value="-v"/>
+      <param name="pattern" value=":制癌性物質"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_n_lines n="0"/>
         </assert_contents>
       </output>
     </test>
