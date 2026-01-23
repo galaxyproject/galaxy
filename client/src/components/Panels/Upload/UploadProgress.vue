@@ -4,6 +4,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
+import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
 import { useUploadState } from "./uploadState";
 
 import BatchUploadGroup from "./BatchUploadGroup.vue";
@@ -15,7 +16,7 @@ const uploadQueue = useUploadQueue();
 const uploadState = useUploadState();
 const { orderedUploadItems, batchesWithProgress, standaloneUploads, activeItems, hasCompleted } = uploadState;
 
-const breadcrumbItems = [{ title: "Import Data", to: "/upload" }, { title: "Upload Progress" }];
+const breadcrumbItems = [getUploadRootBreadcrumb("/upload"), { title: "Upload Progress" }];
 
 const fileListRef = ref<HTMLElement | null>(null);
 const expandedBatches = useUserLocalStorage<string[]>("uploadPanel.expandedBatches", []);

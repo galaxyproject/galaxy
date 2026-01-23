@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
+
 import UploadMethodList from "./UploadMethodList.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
-const breadcrumbItems = [{ title: "Import Data" }];
+const breadcrumbItems = [getUploadRootBreadcrumb()];
 </script>
 
 <template>

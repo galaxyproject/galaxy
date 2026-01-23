@@ -7,6 +7,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import type { UploadMethod, UploadMethodComponent } from "./types";
+import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
 import { getUploadMethod } from "./uploadMethodRegistry";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -53,9 +54,9 @@ const method = computed(() => {
 
 const breadcrumbItems = computed(() => {
     if (!method.value) {
-        return [{ title: "Import Data" }];
+        return [getUploadRootBreadcrumb()];
     }
-    return [{ title: "Import Data", to: "/upload" }, { title: method.value.name }];
+    return [getUploadRootBreadcrumb("/upload"), { title: method.value.name }];
 });
 
 function openHistorySelector() {
