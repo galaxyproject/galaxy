@@ -168,7 +168,7 @@ const emit = defineEmits<{
     /** Emitted when sort changes
      * @event sort-changed
      */
-    (e: "sort-changed", event: SortChangeEvent): void;
+    (e: "sort-changed", sortBy: string, sortDesc: boolean): void;
 
     /** Emitted when a row is clicked
      * @event row-click
@@ -187,17 +187,17 @@ const emit = defineEmits<{
 }>();
 
 // Internal state for local sorting
-const localSortBy = ref<string | undefined>(props.sortBy);
-const localSortDesc = ref(props.sortDesc);
+const sortBy = ref<string>(props.sortBy || "update_time");
+const sortDesc = ref<boolean>(props.sortDesc || true);
 
 // Computed sorted items
 const sortedItems = computed(() => {
-    if (props.noLocalSorting || !localSortBy.value) {
+    if (props.noLocalSorting || !sortBy.value) {
         return props.items;
     }
 
     const sorted = [...props.items];
-    const sortKey = localSortBy.value;
+    const sortKey = sortBy.value;
 
     sorted.sort((a, b) => {
         const aVal = a[sortKey];
@@ -214,7 +214,7 @@ const sortedItems = computed(() => {
         }
 
         const comparison = aVal < bVal ? -1 : 1;
-        return localSortDesc.value ? -comparison : comparison;
+        return sortDesc.value ? -comparison : comparison;
     });
 
     return sorted;
@@ -238,25 +238,22 @@ function onHeaderClick(field: TableField) {
         return;
     }
 
-    if (localSortBy.value === field.key) {
-        if (!props.noSortReset && localSortDesc.value) {
+    if (sortBy.value === field.key) {
+        if (!props.noSortReset && sortDesc.value) {
             // Reset sort
-            localSortBy.value = undefined;
-            localSortDesc.value = false;
+            sortBy.value = undefined;
+            sortDesc.value = false;
         } else {
             // Toggle sort direction
-            localSortDesc.value = !localSortDesc.value;
+            sortDesc.value = !sortDesc.value;
         }
     } else {
         // New sort field
-        localSortBy.value = field.key;
-        localSortDesc.value = false;
+        sortBy.value = field.key;
+        sortDesc.value = false;
     }
 
-    emit("sort-changed", {
-        sortBy: localSortBy.value || "",
-        sortDesc: localSortDesc.value,
-    });
+    emit("sort-changed", sortBy.value || "", sortDesc.value);
 }
 
 /**
@@ -267,11 +264,11 @@ function getSortIcon(field: TableField) {
         return null;
     }
 
-    if (localSortBy.value !== field.key) {
+    if (sortBy.value !== field.key) {
         return faSort;
     }
 
-    return localSortDesc.value ? faSortDown : faSortUp;
+    return sortDesc.value ? faSortDown : faSortUp;
 }
 
 /**
@@ -368,7 +365,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     field.headerClass,
                                     getAlignmentClass(field.align),
                                     { 'g-table-sortable': field.sortable },
-                                    { 'g-table-sorted': localSortBy === field.key },
+                                    { 'g-table-sorted': sortBy === field.key },
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]"
                                 :style="field.width ? { width: field.width } : undefined"
@@ -380,7 +377,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     <FontAwesomeIcon
                                         v-if="field.sortable && getSortIcon(field)"
                                         :icon="getSortIcon(field)"
-                                        :class="{ 'text-muted': localSortBy !== field.key }"
+                                        :class="{ 'text-muted': sortBy !== field.key }"
                                         class="ml-1" />
                                 </div>
                             </th>
