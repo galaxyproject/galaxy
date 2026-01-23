@@ -22,7 +22,7 @@
  *   :service-definition="serviceDefinition" />
  */
 
-import { BButton, BFormGroup, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BFormGroup, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type {
@@ -32,6 +32,8 @@ import type {
     ServiceParameterDefinition,
 } from "@/api/userCredentials";
 import { SECRET_PLACEHOLDER } from "@/stores/userToolsServiceCredentialsStore";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 type SecretField = ServiceCredentialGroupPayload["secrets"][number];
 
@@ -341,17 +343,16 @@ watch(
                         @focus="onSecretFocus(secret)"
                         @blur="onSecretBlur(secret)" />
                     <BInputGroupAppend>
-                        <BButton
-                            v-b-tooltip.hover
-                            :disabled="!secret.value"
-                            variant="outline-primary"
-                            size="sm"
-                            :aria-label="`Clear ${getVariableTitle(secret.name, 'secret')}`"
+                        <GButton
+                            outline
+                            tooltip
+                            color="blue"
+                            size="small"
+                            tooltip-placement="top"
                             title="Clear value"
-                            type="button"
                             @click="clearSecret(secret)">
                             Clear
-                        </BButton>
+                        </GButton>
                     </BInputGroupAppend>
                 </BInputGroup>
             </BFormGroup>
