@@ -81,8 +81,18 @@ export interface TableAction {
     disabled?: boolean;
     /** Whether the action is visible */
     visible?: boolean;
+    /** Bootstrap component size */
+    size?: BootstrapSize;
+    /** Vue Router route to navigate to */
+    to?: string;
+    /** Hyperlink reference */
+    href?: string;
+    /** Link target attribute */
+    target?: string;
+    /** Whether link opens in new tab/window */
+    externalLink?: boolean;
     /** Click handler function */
-    handler?: () => void;
+    handler?: (item: any, index: number) => void;
 }
 
 /** Empty state configuration */
