@@ -96,6 +96,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         try:
             # Get agent plan from LLM
             plan = await self._get_agent_plan(query)
+            log.info(f"Orchestrator: Plan generated - agents={plan.agents}, sequential={plan.sequential}, reasoning={plan.reasoning[:100]}")
 
             # Execute agents
             if plan.sequential:
@@ -196,6 +197,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         current_query = query
         timeout = self._get_agent_timeout()
 
+        log.info(f"Orchestrator: Running agents in SEQUENTIAL mode: {agents}")
         for agent_name in agents:
             try:
                 log.info(f"Orchestrator: Starting agent '{agent_name}' with query length {len(current_query)}")
@@ -228,6 +230,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
     ) -> dict[str, AgentResponse]:
         """Execute agents in parallel with timeout protection."""
+        log.info(f"Orchestrator: Running agents in PARALLEL mode: {agents}")
         timeout = self._get_agent_timeout()
 
         async def call_agent(agent_name: str):
