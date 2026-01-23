@@ -210,6 +210,11 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             Structured error analysis response
         """
         try:
+            log.info(f"ErrorAnalysis: Received query (length={len(query)})")
+            log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")
+            if "Previous analysis" in query:
+                log.info("ErrorAnalysis: Query contains previous analysis context")
+
             # Enhance query with context if available
             enhanced_query = query
             if context and context.get("job_id"):
