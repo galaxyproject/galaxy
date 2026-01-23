@@ -98,6 +98,13 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             plan = await self._get_agent_plan(query)
             log.info(f"Orchestrator: Plan generated - agents={plan.agents}, sequential={plan.sequential}, reasoning={plan.reasoning[:100]}")
 
+            # Force sequential when history_analyzer feeds into error_analysis
+            # (finding failed jobs must happen before analyzing them)
+            if "history_analyzer" in plan.agents and "error_analysis" in plan.agents:
+                if not plan.sequential:
+                    log.info("Orchestrator: Forcing sequential=true for history_analyzer + error_analysis combination")
+                    plan.sequential = True
+
             # Execute agents
             if plan.sequential:
                 responses = await self._execute_sequential(plan.agents, query, context)
