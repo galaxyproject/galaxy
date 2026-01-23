@@ -40,14 +40,7 @@ const queryParams = computed(() => ({
 
 const services = new Services();
 services.getTrsServers().then((res) => {
-    // trsServers.value = res;
-    trsServers.value = [
-        { id: "dockstore", label: "Dockstore", link_url: "", doc: "" },
-        { id: "workflowhub", label: "WorkflowHub", link_url: "", doc: "" },
-        { id: "github", label: "GitHub", link_url: "", doc: "" },
-        { id: "gitlab", label: "GitLab", link_url: "", doc: "" },
-        { id: "bitbucket", label: "Bitbucket", link_url: "", doc: "" },
-    ];
+    trsServers.value = res;
 });
 
 const trsServersString = computed(() => {
@@ -208,7 +201,7 @@ function onTrsIdValid(e: boolean) {
             @submit="onSubmit">
             <div v-if="wizard.isCurrent('select-method')" class="method-selection">
                 <div class="row">
-                    <div class="col-xl-4 mb-3">
+                    <div class="col-xl-4 my-5">
                         <GCard
                             class="h-100 workflow-import-file-link text-center"
                             :class="{ selected: selectedMethod === 'upload' }"
@@ -222,7 +215,7 @@ function onTrsIdValid(e: boolean) {
                         </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3">
+                    <div class="col-xl-4 my-5">
                         <GCard
                             class="h-100 workflow-import-url-link text-center"
                             :class="{ selected: selectedMethod === 'fetch' }"
@@ -236,7 +229,7 @@ function onTrsIdValid(e: boolean) {
                         </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3">
+                    <div class="col-xl-4 my-5">
                         <GCard
                             class="h-100 workflow-import-trs-link text-center"
                             :class="{ selected: selectedMethod === 'repository' }"
@@ -267,7 +260,7 @@ function onTrsIdValid(e: boolean) {
 
             <div v-else-if="wizard.isCurrent('select-trs-method')" class="method-selection">
                 <div class="row">
-                    <div class="col-xl-4 mb-3">
+                    <div class="col-xl-4 my-5">
                         <GCard
                             class="h-100 workflow-import-trs-search-link text-center"
                             :class="{ selected: selectedTrsMethod === 'search' }"
@@ -278,7 +271,7 @@ function onTrsIdValid(e: boolean) {
                         </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3">
+                    <div class="col-xl-4 my-5">
                         <GCard
                             class="h-100 workflow-import-trs-url-link text-center"
                             :class="{ selected: selectedTrsMethod === 'url' }"
@@ -289,7 +282,7 @@ function onTrsIdValid(e: boolean) {
                         </GCard>
                     </div>
 
-                    <div class="col-xl-4 mb-3">
+                    <div class="col-xl-4 my-5">
                         <GCard
                             class="h-100 workflow-import-trs-id-link text-center"
                             :class="{ selected: selectedTrsMethod === 'id' }"
