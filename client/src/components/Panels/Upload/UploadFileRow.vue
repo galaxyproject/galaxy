@@ -10,6 +10,7 @@ import { getFileProgressUi, getUploadItemDisplayInfo } from "./uploadProgressUi"
 
 import GCard from "@/components/Common/GCard.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
     file: UploadItem;
@@ -22,6 +23,7 @@ const historyStore = useHistoryStore();
 
 const ui = computed(() => getFileProgressUi(props.file));
 const displayInfo = computed(() => getUploadItemDisplayInfo(props.file));
+const uploadedAtIso = computed(() => new Date(props.file.createdAt).toISOString());
 
 const targetHistoryName = computed(() =>
     props.file.targetHistoryId ? historyStore.getHistoryNameById(props.file.targetHistoryId) : undefined,
@@ -76,6 +78,9 @@ const cardBadges = computed(() => {
 
         <template v-slot:indicators>
             <span class="text-muted small mr-2">{{ bytesToString(props.file.size) }}</span>
+            <span class="text-muted small mr-2">
+                <UtcDate :date="uploadedAtIso" mode="elapsed" />
+            </span>
             <span class="text-muted small mr-2">{{ props.file.progress }}%</span>
         </template>
 
