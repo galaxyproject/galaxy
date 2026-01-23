@@ -86,14 +86,15 @@ const BATCH_PROGRESS_UI: Record<BatchStatus, (batch: BatchWithProgress) => Batch
     }),
     "creating-collection": () => ({
         icon: faSpinner,
-        textClass: "text-info",
-        barClass: "bg-info",
+        textClass: "text-primary",
+        barClass: "bg-primary",
         spin: true,
         label: "Creating collection...",
     }),
     completed: () => ({
         icon: faCheck,
         textClass: "text-success",
+        barClass: "bg-success",
         spin: false,
         label: "Collection created",
     }),

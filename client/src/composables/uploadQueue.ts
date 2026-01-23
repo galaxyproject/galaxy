@@ -329,7 +329,7 @@ export function useUploadQueue() {
             batchForError?.uploadIds.forEach((id) => {
                 const item = findUploadItem(id);
                 if (item && !item.error) {
-                    item.error = `Uploaded successfully, but collection creation failed: ${errorMsg}`;
+                    item.error = `Uploaded successfully, but collection creation failed`;
                 }
             });
         }

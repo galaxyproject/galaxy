@@ -8,7 +8,7 @@ import { bytesToString } from "@/utils/utils";
 
 import { getFileProgressUi, getUploadItemDisplayInfo } from "./uploadProgressUi";
 
-import GCard from "@/components/Common/GCard.vue";
+import UploadItemCard from "./UploadItemCard.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -33,16 +33,7 @@ const isDifferentHistory = computed(
     () => props.file.targetHistoryId && props.file.targetHistoryId !== historyStore.currentHistoryId,
 );
 
-const contentClasses = computed(() => {
-    const classes: string[] = [];
-    if (props.nested) {
-        classes.push("nested");
-    }
-    if (props.file.status === "error") {
-        classes.push("has-error");
-    }
-    return classes;
-});
+const hasError = computed(() => props.file.status === "error");
 
 const cardBadges = computed(() => {
     const badges = [] as any[];
@@ -56,7 +47,7 @@ const cardBadges = computed(() => {
 </script>
 
 <template>
-    <GCard container-class="" :content-class="contentClasses" :badges="cardBadges">
+    <UploadItemCard :nested="nested" :has-error="hasError" :badges="cardBadges" clickable>
         <template v-slot:title>
             <FontAwesomeIcon :icon="ui.icon" :class="ui.textClass" :spin="ui.spin" class="mr-2" fixed-width size="sm" />
             <FontAwesomeIcon
@@ -99,5 +90,5 @@ const cardBadges = computed(() => {
                 {{ props.file.error }}
             </div>
         </template>
-    </GCard>
+    </UploadItemCard>
 </template>
