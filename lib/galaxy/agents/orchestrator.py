@@ -205,9 +205,8 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 response = await asyncio.wait_for(agent.process(current_query, context or {}), timeout=timeout)
                 responses[agent_name] = response
 
-                # For sequential execution, next agent can see previous results
-                if len(responses) > 1:
-                    current_query = f"{query}\n\nPrevious analysis: {response.content}"
+                # For sequential execution, enrich query with this agent's findings for subsequent agents
+                current_query = f"{query}\n\nPrevious analysis from {agent_name}: {response.content}"
 
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
