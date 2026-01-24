@@ -204,6 +204,12 @@ async function onRefactor() {
                 {{ resolvedIssues }} / {{ totalIssues }}
             </div>
         </template>
+        <div
+            class="success-reaction"
+            :class="{ 'success-reaction--show': resolvedIssues === totalIssues && totalIssues > 0 }">
+            🎉
+        </div>
+
         <LintSection
             data-description="linting has annotation"
             :okay="checkAnnotation"
@@ -295,3 +301,51 @@ async function onRefactor() {
         </GCard>
     </ActivityPanel>
 </template>
+
+<style scoped>
+.success-reaction {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 0.3s ease-in-out,
+        visibility 0.3s ease-in-out;
+    z-index: 1000;
+    border-radius: 0.5rem;
+    backdrop-filter: blur(4px);
+}
+
+.success-reaction--show {
+    opacity: 1;
+    visibility: visible;
+    animation: celebration 2s ease-in-out forwards;
+}
+
+@keyframes celebration {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    20% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    80% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+</style>
