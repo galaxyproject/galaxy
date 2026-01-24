@@ -685,12 +685,13 @@ workflows:
     workflows_list: '#workflows-list'
     workflows_list_empty: '#workflow-list-empty'
     workflow_not_found_message: '#no-workflow-found'
+    workflow_cards: '.workflow-card-list'
     workflow_card: '.g-card.workflow-card'
     workflow_card_title: '[id^="g-card-title-"] a'
     workflow_card_button: '[id^="g-card-action-"] button[title="${title}"]'
     workflow_copy_steps: '[id^="g-card-action-workflow-copy-steps-"]'
     workflow_insert_sub_workflow: '[id^="g-card-action-workflow-insert-sub-workflow-"]'
-    workflow_cards: '#workflow-cards'
+    workflow_trs_import: '.workflow-import-trs'
     external_link: '[id^="g-card-indicator-workflow-source-url-"]'
     trs_icon: '[id^="g-card-indicator-workflow-source-trs-"]'
     dropdown: '[id="g-card-extra-actions-${id}"]'
@@ -717,6 +718,7 @@ workflows:
     import_trs_search_link: '.workflow-import-trs-search-link'
     import_trs_id_link: '.workflow-import-trs-id-link'
     import_trs_url_link: '.workflow-import-trs-url-link'
+    import_next_button: '.go-next-btn'
 
     workflow_with_name:
       type: xpath

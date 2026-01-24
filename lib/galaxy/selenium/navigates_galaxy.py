@@ -368,7 +368,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
         # The wizard auto-navigates to TRS method selection on mount
-        # Click the "Search workflow registries" card
+        # Click the "Search workflow registries" card to navigate to search form
         self.components.workflows.import_trs_search_link.wait_for_and_click()
 
     def go_to_trs_by_id(self) -> None:
@@ -384,6 +384,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         # The wizard auto-navigates to TRS method selection on mount
         # Click the TRS URL sub-card to show the TRS URL import form
         self.components.workflows.import_trs_url_link.wait_for_and_click()
+        # Wait for the URL input to be visible after wizard navigates to the form
+        self.components.trs_import.url_input.wait_for_visible()
 
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
         self.navigate_to(self.build_url(f"workflows/sharing?id={workflow_id}"))
