@@ -8,6 +8,7 @@ import { useRouter } from "vue-router/composables";
 
 import type { BatchOperation, FieldEntry, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
+import LoadingOverlay from "../Common/LoadingOverlay.vue";
 import HelpText from "../Help/HelpText.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import GridBoolean from "./GridElements/GridBoolean.vue";
@@ -18,7 +19,6 @@ import GridText from "./GridElements/GridText.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
-import GalaxyLoader from "@/components/GalaxyLoader.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -355,9 +355,8 @@ watch(operationMessage, () => {
                 :show-advanced.sync="showAdvanced"
                 view="compact" />
         </div>
-        <div v-if="initDataLoading" class="grid-initial-loading">
-            <GalaxyLoader />
-            <div class="mt-2 text-muted">Loading...</div>
+        <div v-if="initDataLoading" class="position-relative h-100">
+            <LoadingOverlay />
         </div>
         <span v-else-if="!isAvailable || hasInvalidFilters">
             <BAlert v-if="!hasInvalidFilters" variant="info" show>
@@ -391,11 +390,7 @@ watch(operationMessage, () => {
         </span>
         <template v-else>
             <div class="position-relative">
-                <div v-if="resultsLoading" class="grid-loading-shade">
-                    <div class="grid-loading-spinner">
-                        <GalaxyLoader />
-                    </div>
-                </div>
+                <LoadingOverlay v-if="resultsLoading" />
                 <table class="grid-table">
                     <thead>
                         <th v-if="!!gridConfig.batch">
@@ -570,29 +565,5 @@ watch(operationMessage, () => {
 }
 .grid-dark-row {
     background: $gray-200;
-}
-.grid-loading-shade {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.85);
-    z-index: 10;
-    border-radius: 0.2rem;
-}
-.grid-loading-spinner {
-    position: sticky;
-    top: 50%;
-    display: flex;
-    justify-content: center;
-    transform: translateY(-50%);
-}
-.grid-initial-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem;
 }
 </style>

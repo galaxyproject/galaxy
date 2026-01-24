@@ -209,6 +209,7 @@
                     :datatypes-mapper="datatypesMapper"
                     :scroll-to-id="scrollToId"
                     :initial-position="{ x: 50, y: 50 }"
+                    :loading="loadingWorkflow || initialLoading"
                     @scrollTo="scrollToId = null"
                     @transform="(value) => (transform = value)"
                     @graph-offset="(value) => (graphOffset = value)"
@@ -714,6 +715,7 @@ export default {
         return {
             versions: [],
             labels: {},
+            loadingWorkflow: false,
             services: null,
             stateMessages: [],
             insertedStateMessages: [],
@@ -1089,15 +1091,14 @@ export default {
         /** Saves the workflow, and loads it onto the editor by calling `_loadCurrent`.
          * @returns true if save was successful, false otherwise
          */
-        async onSave(hideProgress = false) {
+        async onSave() {
             if (!this.nameValidate()) {
                 return false;
             }
 
-            if (!hideProgress) {
-                this.onWorkflowMessage("Saving workflow...", "progress");
-            }
             try {
+                this.loadingWorkflow = true;
+
                 const data = await saveWorkflow(this);
 
                 const versions = await getVersions(this.id);
@@ -1111,8 +1112,9 @@ export default {
                     },
                 });
                 return false;
+            } finally {
+                this.loadingWorkflow = false;
             }
-            this.hideModal();
             return true;
         },
         onVersion(version) {
@@ -1203,8 +1205,8 @@ export default {
          */
         async _loadCurrent(id, version) {
             if (!this.isNewTempWorkflow) {
+                this.loadingWorkflow = true;
                 await this.resetStores();
-                this.onWorkflowMessage("Loading workflow...", "progress");
 
                 try {
                     const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
@@ -1218,6 +1220,8 @@ export default {
                 await nextTick();
 
                 this.workflowGraph.fitWorkflow();
+
+                this.loadingWorkflow = false;
             }
         },
         onLicense(license) {

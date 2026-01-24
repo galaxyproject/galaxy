@@ -21,6 +21,7 @@ import WorkflowComment from "./Comments/WorkflowComment.vue";
 import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
 import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
@@ -39,6 +40,7 @@ const props = defineProps({
     showZoomControls: { type: Boolean, default: true },
     fixedHeight: { type: Number, default: undefined },
     populatedInputs: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -183,6 +185,7 @@ defineExpose({
 
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
+        <LoadingOverlay v-if="props.loading" />
         <ZoomControl
             v-if="props.showZoomControls"
             :zoom-level="scale"
