@@ -3,7 +3,7 @@
 a2wsgi==1.10.10
 adal==1.2.7
 ag-ui-protocol==0.1.10
-aiobotocore==3.1.0
+aiobotocore==3.1.1
 aiofiles==25.1.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.3
@@ -36,8 +36,8 @@ bioblend==1.7.0
 bleach==6.3.0
 boltons==25.0.0
 boto==2.49.0
-boto3==1.42.19
-botocore==1.42.19
+boto3==1.42.30
+botocore==1.42.30
 bx-python==0.14.0
 cachecontrol==0.14.4
 cachetools==6.2.4
@@ -53,7 +53,7 @@ click-repl==0.3.0
 cloudauthz==0.6.0
 cloudbridge==3.2.0
 cloudpickle==3.1.2
-cohere==5.20.1 ; sys_platform != 'emscripten'
+cohere==5.20.2 ; sys_platform != 'emscripten'
 colorama==0.4.6
 coloredlogs==15.0.1
 conda-package-streaming==0.12.0
@@ -84,7 +84,7 @@ executing==2.2.1
 fakeredis==2.33.0
 fastapi==0.128.0
 fastavro==1.12.1 ; sys_platform != 'emscripten'
-fastmcp==2.14.3
+fastmcp==2.14.4
 filelock==3.20.3
 fissix==24.4.24
 frozenlist==1.8.0
@@ -95,15 +95,15 @@ genai-prices==0.0.51
 google-api-core==2.29.0
 google-auth==2.47.0
 google-cloud-batch==0.20.0
-google-genai==1.59.0
+google-genai==1.60.0
 googleapis-common-protos==1.72.0
 gravity==1.2.0
-greenlet==3.3.0 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
+greenlet==3.3.1 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
 griffe==1.15.0
 groq==1.0.0
 grpcio==1.76.0
 grpcio-status==1.76.0
-gunicorn==23.0.0
+gunicorn==24.1.1
 gxformat2==0.21.0
 h11==0.16.0
 h5grove==2.3.0
@@ -128,7 +128,7 @@ jaraco-functools==4.4.0
 jeepney==0.9.0 ; sys_platform == 'linux'
 jinja2==3.1.6
 jiter==0.12.0
-jmespath==1.0.1
+jmespath==1.1.0
 jsonref==1.1.0
 jsonschema==4.26.0
 jsonschema-path==0.3.4
@@ -143,7 +143,7 @@ logfire-api==4.19.0
 lupa==2.6
 lxml==6.0.2
 mako==1.3.10
-markdown==3.10
+markdown==3.10.1
 markdown-it-py==3.0.0 ; python_full_version < '3.11'
 markdown-it-py==4.0.0 ; python_full_version >= '3.11'
 markupsafe==3.0.3
@@ -182,7 +182,7 @@ opentelemetry-semantic-conventions==0.60b1
 opentelemetry-util-http==0.60b1
 orjson==3.11.5
 oyaml==1.0
-packaging==25.0
+packaging==26.0
 paramiko==4.0.0
 parsley==1.3
 paste==3.10.1
@@ -204,7 +204,7 @@ py-key-value-aio==0.3.0
 py-key-value-shared==0.3.0
 pyasn1==0.6.2
 pyasn1-modules==0.4.2
-pycparser==2.23 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
+pycparser==3.0 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
 pycryptodome==3.23.0
 pydantic==2.12.5
 pydantic-ai==1.44.0
@@ -214,9 +214,8 @@ pydantic-evals==1.44.0
 pydantic-graph==1.44.0
 pydantic-settings==2.12.0
 pydantic-tes==0.2.0
+pydicom==3.0.1
 pydocket==0.16.6
-pydicom==2.4.4 ; python_full_version < '3.10'
-pydicom==3.0.1 ; python_full_version >= '3.10'
 pydot==4.0.1
 pyeventsystem==0.1.0
 pyfaidx==0.9.0.3
@@ -225,7 +224,7 @@ pyjwt==2.10.1
 pykwalify==1.8.0
 pylibmagic==0.5.0
 pynacl==1.6.2
-pyparsing==3.3.1
+pyparsing==3.3.2
 pyperclip==1.11.0
 pypng==0.20220715.0
 pyreadline3==3.5.4 ; sys_platform == 'win32'
@@ -265,7 +264,7 @@ s3fs==2026.1.0
 s3transfer==0.16.0
 schema-salad==8.9.20251102115403
 secretstorage==3.5.0 ; sys_platform == 'linux'
-setuptools==80.9.0
+setuptools==80.10.1
 shellingham==1.5.4
 six==1.17.0
 slowapi==0.1.9
@@ -273,7 +272,7 @@ sniffio==1.3.1
 social-auth-core==4.8.3
 sortedcontainers==2.4.0
 spython==0.3.14
-sqlalchemy==2.0.45
+sqlalchemy==2.0.46
 sqlparse==0.5.5
 sse-starlette==3.2.0
 starlette==0.50.0
@@ -305,7 +304,7 @@ urllib3==2.6.3
 uvicorn==0.40.0
 uvloop==0.22.1
 vine==5.1.0
-wcwidth==0.2.14
+wcwidth==0.3.2
 webencodings==0.5.1
 webob==1.8.9
 websockets==15.0.1
