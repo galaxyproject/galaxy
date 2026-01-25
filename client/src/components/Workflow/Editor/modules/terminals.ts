@@ -3,14 +3,15 @@ import EventEmitter from "events";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { useWorkflowStores } from "@/composables/workflowStores";
 import { getConnectionId } from "@/stores/workflowConnectionStore";
-import type {
-    CollectionOutput,
-    DataCollectionStepInput,
-    DataOutput,
-    DataStepInput,
-    ParameterOutput,
-    ParameterStepInput,
-    TerminalSource,
+import {
+    type CollectionOutput,
+    type DataCollectionStepInput,
+    type DataOutput,
+    type DataStepInput,
+    getCombinedStepInputs,
+    type ParameterOutput,
+    type ParameterStepInput,
+    type TerminalSource,
 } from "@/stores/workflowStepStore";
 import type { Connection, ConnectionId } from "@/stores/workflowStoreTypes";
 import { assertDefined } from "@/utils/assertions";
@@ -695,10 +696,8 @@ class BaseOutputTerminal extends Terminal {
             const inputStep = this.stores.stepStore.getStep(connection.input.stepId);
             assertDefined(inputStep, `Invalid step. Could not find step with id ${connection.input.stepId} in store.`);
 
-            const extraStepInput = this.stores.stepStore.getStepExtraInputs(inputStep.id);
-            const terminalSource = [...extraStepInput, ...inputStep.inputs].find(
-                (input) => input.name === connection.input.name,
-            );
+            const allInputs = getCombinedStepInputs(inputStep, this.stores.stepStore);
+            const terminalSource = allInputs.find((input) => input.name === connection.input.name);
             if (!terminalSource) {
                 return new InvalidInputTerminal({
                     valid: false,

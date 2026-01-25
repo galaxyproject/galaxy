@@ -173,7 +173,12 @@ import type { GraphStep } from "@/composables/useInvocationGraph";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
-import type { InputTerminalSource, OutputTerminalSource, Step } from "@/stores/workflowStepStore";
+import {
+    getCombinedStepInputs,
+    type InputTerminalSource,
+    type OutputTerminalSource,
+    type Step,
+} from "@/stores/workflowStepStore";
 import { composedPartialPath, isClickable } from "@/utils/dom";
 
 import { isWorkflowInput } from "../constants";
@@ -290,8 +295,9 @@ const headerClass = computed(() => {
 
 const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
-    const extraStepInputs = stepStore.getStepExtraInputs(props.id);
-    const stepInputs = [...extraStepInputs, ...(props.step.inputs || [])];
+    // Use getCombinedStepInputs for Step objects, fall back to direct access for GraphStep
+    const step = stepStore.getStep(props.id);
+    const stepInputs = step ? getCombinedStepInputs(step, stepStore) : [...(props.step.inputs || [])];
     const unknownInputs: string[] = [];
     connections.forEach((connection) => {
         if (connection.input.stepId == props.id && !stepInputs.find((input) => input.name === connection.input.name)) {

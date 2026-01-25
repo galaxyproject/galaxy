@@ -150,6 +150,15 @@ interface StepInputMapOver {
 
 export type WorkflowStepStore = ReturnType<typeof useWorkflowStepStore>;
 
+/**
+ * Returns combined step inputs: extra inputs (e.g., "when" conditionals) followed by regular inputs.
+ * This is the single source of truth for all step inputs.
+ */
+export function getCombinedStepInputs(step: Step, stepStore: WorkflowStepStore): InputTerminalSource[] {
+    const extraInputs = stepStore.getStepExtraInputs(step.id);
+    return [...extraInputs, ...step.inputs];
+}
+
 export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (workflowId) => {
     const steps = ref<Steps>({});
     const stepMapOver = ref<{ [index: number]: CollectionTypeDescriptor }>({});
