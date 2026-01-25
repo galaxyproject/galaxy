@@ -2242,13 +2242,27 @@ class MinimalJobWrapper(HasResourceParameters):
                     if self.app.config.enable_celery_tasks:
                         from galaxy.celery.tasks import compute_dataset_hash
 
-                        extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
                         request = ComputeDatasetHashTaskRequest(
                             dataset_id=dataset.id,
-                            extra_files_path=extra_files_path,
+                            extra_files_path=None,
                             hash_function=self.app.config.hash_function,
                         )
                         compute_dataset_hash.delay(request=request)
+
+                        # For composite datasets with extra files, hash each extra file individually
+                        if dataset.extra_files_path_exists():
+                            for root, _, files in os.walk(dataset.extra_files_path):
+                                for file in files:
+                                    file_path = os.path.join(root, file)
+                                    if os.path.exists(file_path):
+                                        # Calculate relative path from extra_files_path
+                                        relative_path = os.path.relpath(file_path, dataset.extra_files_path)
+                                        request = ComputeDatasetHashTaskRequest(
+                                            dataset_id=dataset.id,
+                                            extra_files_path=relative_path,
+                                            hash_function=self.app.config.hash_function,
+                                        )
+                                        compute_dataset_hash.delay(request=request)
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:

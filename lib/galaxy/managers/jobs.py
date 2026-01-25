@@ -177,6 +177,8 @@ def has_same_hash(
 ) -> "Select[tuple[int]]":
     a_hash = aliased(model.DatasetHash)
     b_hash = aliased(model.DatasetHash)
+    b_hash_total = aliased(model.DatasetHash)
+
     # Join b directly, checking for either direct dataset match or hash match
     # The hash match uses a correlated subquery to avoid the expensive cartesian product
     stmt = stmt.join(
@@ -184,7 +186,9 @@ def has_same_hash(
         or_(
             # Direct dataset match
             b.dataset_id == a.dataset_id,
-            # Hash match: b's dataset has a hash that matches any of a's hashes
+            # Hash match: b's dataset has hashes that match all of a's hashes
+            # For composite datasets, this means matching the primary file hash AND all extra file hashes
+            # For regular datasets, this means matching the single primary file hash
             b.dataset_id.in_(
                 select(b_hash.dataset_id)
                 .select_from(a_hash)
@@ -193,9 +197,37 @@ def has_same_hash(
                     and_(
                         a_hash.hash_function == b_hash.hash_function,
                         a_hash.hash_value == b_hash.hash_value,
+                        # Match extra_files_path: both NULL or both the same path
+                        or_(
+                            and_(
+                                a_hash.extra_files_path.is_(None),
+                                b_hash.extra_files_path.is_(None),
+                            ),
+                            a_hash.extra_files_path == b_hash.extra_files_path,
+                        ),
                     ),
                 )
                 .where(a_hash.dataset_id == a.dataset_id)
+                # Group by b's dataset_id and ensure all of a's hashes are matched
+                .group_by(b_hash.dataset_id)
+                .having(
+                    and_(
+                        # Number of matched hashes equals total hashes in A
+                        func.count(b_hash.id)
+                        == select(func.count(model.DatasetHash.id))
+                        .where(model.DatasetHash.dataset_id == a.dataset_id)
+                        .correlate(a)
+                        .scalar_subquery(),
+                        # Total hashes in B equals total hashes in A (ensures no extra hashes in B)
+                        select(func.count(b_hash_total.id))
+                        .where(b_hash_total.dataset_id == b_hash.dataset_id)
+                        .scalar_subquery()
+                        == select(func.count(model.DatasetHash.id))
+                        .where(model.DatasetHash.dataset_id == a.dataset_id)
+                        .correlate(a)
+                        .scalar_subquery(),
+                    )
+                )
             ),
         ),
     )
