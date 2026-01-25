@@ -87,13 +87,24 @@ if [ -d "${nfs_mount_path}" ]; then
         # Check CVMFS availability and trigger autofs mount
         echo "=== CVMFS Verification ==="
         if ls /cvmfs/data.galaxyproject.org/ >/dev/null 2>&1; then
-            echo "✓ CVMFS data is accessible at /cvmfs/data.galaxyproject.org"
-            echo "CVMFS contents (first 5 entries):"
+            echo "✓ CVMFS data repository is accessible at /cvmfs/data.galaxyproject.org"
+            echo "CVMFS data contents (first 5 entries):"
             ls -la /cvmfs/data.galaxyproject.org/ | head -5
         else
-            echo "✗ CVMFS data not accessible at /cvmfs/data.galaxyproject.org"
+            echo "✗ CVMFS data repository not accessible at /cvmfs/data.galaxyproject.org"
             echo "This may indicate CVMFS is not configured or the repository is unavailable"
             echo "Jobs requiring reference data may fail"
+        fi
+        echo ""
+
+        if ls /cvmfs/cloud.galaxyproject.org/ >/dev/null 2>&1; then
+            echo "✓ CVMFS cloud repository is accessible at /cvmfs/cloud.galaxyproject.org"
+            echo "CVMFS cloud contents (first 5 entries):"
+            ls -la /cvmfs/cloud.galaxyproject.org/ | head -5
+        else
+            echo "✗ CVMFS cloud repository not accessible at /cvmfs/cloud.galaxyproject.org"
+            echo "This may indicate CVMFS is not configured or the repository is unavailable"
+            echo "Jobs requiring Tool Shed tools from CVMFS may fail"
         fi
         echo ""
 
