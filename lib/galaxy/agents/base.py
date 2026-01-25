@@ -166,6 +166,7 @@ class AgentType:
     ERROR_ANALYSIS = "error_analysis"
     CUSTOM_TOOL = "custom_tool"
     ORCHESTRATOR = "orchestrator"
+    TOOL_RECOMMENDATION = "tool_recommendation"
 
 
 # Internal agent response model (simplified for internal use)
