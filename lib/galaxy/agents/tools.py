@@ -98,6 +98,44 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 )
             return f"Found {len(results)} tools:\n" + "\n".join(formatted)
 
+        @agent.tool
+        async def get_galaxy_tool_details(ctx: RunContext[GalaxyAgentDependencies], tool_id: str) -> str:
+            """Get detailed information about a specific Galaxy tool.
+
+            Use this after searching to get more details about a tool you want to recommend,
+            including input/output formats, version, and requirements.
+            """
+            details = await self.get_tool_details(tool_id)
+            if "error" in details:
+                return f"Error: {details['error']}"
+
+            lines = [
+                f"Tool: {details['name']} (ID: {details['id']})",
+                f"Version: {details.get('version', 'unknown')}",
+                f"Description: {details.get('description', 'No description')}",
+                f"Category: {details.get('category', 'Uncategorized')}",
+            ]
+            if details.get("requirements"):
+                lines.append(f"Requirements: {', '.join(details['requirements'])}")
+            if details.get("inputs"):
+                input_strs = [f"{i['name']} ({i['type']})" for i in details["inputs"][:5]]
+                lines.append(f"Inputs: {', '.join(input_strs)}")
+            if details.get("outputs"):
+                output_strs = [f"{o['name']} ({o['format']})" for o in details["outputs"][:5]]
+                lines.append(f"Outputs: {', '.join(output_strs)}")
+            return "\n".join(lines)
+
+        @agent.tool
+        async def get_galaxy_tool_categories(ctx: RunContext[GalaxyAgentDependencies]) -> str:
+            """Get list of tool categories available on this Galaxy server.
+
+            Use this to understand what kinds of tools are available before searching.
+            """
+            categories = await self.get_tool_categories()
+            if not categories:
+                return "No tool categories found"
+            return f"Available tool categories:\n" + "\n".join(f"- {cat}" for cat in categories)
+
         return agent
 
     def get_system_prompt(self) -> str:
@@ -105,7 +143,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "tool_recommendation.md"
         return prompt_path.read_text()
 
-    async def search_tools(self, query: str, category: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def search_tools(self, query: str) -> List[Dict[str, Any]]:
         """Search for tools in the Galaxy toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available in agent dependencies")
@@ -188,6 +226,24 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         except (AttributeError, KeyError, TypeError) as e:
             log.warning(f"Error getting tool details for {tool_id}: {e}")
             return {"id": tool_id, "error": str(e)}
+
+    async def get_tool_categories(self) -> List[str]:
+        """Get list of tool categories/sections from the toolbox."""
+        if not self.deps.toolbox:
+            log.warning("Toolbox not available in agent dependencies")
+            return []
+
+        try:
+            categories = set()
+            # Get panel sections from the integrated tool panel
+            panel = self.deps.toolbox.get_integrated_panel_for_view("default")
+            for key, item in panel.items():
+                if hasattr(item, "name") and item.name:
+                    categories.add(item.name)
+            return sorted(categories)
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error getting tool categories: {e}")
+            return []
 
     async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         """
