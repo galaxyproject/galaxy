@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BLink, BModal } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BLink, BModal, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import { GalaxyApi, type HDASummary } from "@/api";
-import { deleteDataset } from "@/api/datasets";
+import type { HDASummary } from "@/api";
+import { deleteDataset, loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
-import { rethrowSimple } from "@/utils/simple-error";
 
 import { useDatasetTableActions } from "./useDatasetTableActions";
 
@@ -58,20 +57,19 @@ const columnOptions = allFields.map((field) => ({ key: field.key, label: field.l
 const historyStore = useHistoryStore();
 
 const query = ref("");
-const limit = ref(50);
+const limit = ref(24);
 const offset = ref(0);
 const message = ref("");
 const loading = ref(true);
 const overlay = ref(false);
-const loadMoreLoading = ref(false);
 const sortDesc = ref(true);
 const sortBy = ref("update_time");
 const rows = ref<HDASummary[]>([]);
 const messageVariant = ref("danger");
 const selectedItemIds = ref<string[]>([]);
-const hasMoreItems = ref(true);
+const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
-const bulkDeleteLoading = ref(false);
+const bulkDeleteOrRestoreLoading = ref(false);
 const showDeleteModal = ref(false);
 const deleteModalPurge = ref(false);
 const deleteModalItem = ref<HDASummary | null>(null);
@@ -79,6 +77,7 @@ const deleteModalBulk = ref(false);
 
 const { datasetTableActions } = useDatasetTableActions();
 
+const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));
 const showNotFound = computed(() => {
     return !loading.value && rows.value.length === 0 && query.value;
@@ -114,48 +113,29 @@ const deleteModalMessage = computed(() => {
     return "Are you sure you want to delete this dataset?";
 });
 
-async function load(concat = false, showOverlay = false) {
+async function load(showOverlay = false) {
     if (showOverlay) {
         overlay.value = true;
-    } else if (concat) {
-        loadMoreLoading.value = true;
     } else {
         loading.value = true;
     }
 
     try {
-        const { data, error } = await GalaxyApi().GET("/api/datasets", {
-            params: {
-                query: {
-                    q: ["name-contains"],
-                    qv: [query.value],
-                    limit: limit.value,
-                    offset: offset.value,
-                    order: `${sortBy.value}${sortDesc.value ? "-dsc" : "-asc"}`,
-                    view: "summary",
-                },
-            },
+        const { data, totalMatches } = await loadDatasets({
+            limit: limit.value,
+            offset: offset.value,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+            search: query.value,
         });
 
-        if (error) {
-            rethrowSimple(error);
-        }
-
-        const datasets = data as HDASummary[];
-
-        if (concat) {
-            rows.value = rows.value.concat(datasets);
-        } else {
-            rows.value = datasets;
-        }
-
-        hasMoreItems.value = datasets.length === limit.value;
+        rows.value = data;
+        totalDatasets.value = totalMatches;
     } catch (error: any) {
         onError(error);
     } finally {
         loading.value = false;
         overlay.value = false;
-        loadMoreLoading.value = false;
     }
 }
 
@@ -191,7 +171,7 @@ async function onTags(tags: string[], index: number) {
 function onQuery(q: string) {
     query.value = q;
     offset.value = 0;
-
+    selectedItemIds.value = [];
     load();
 }
 
@@ -199,20 +179,14 @@ function onSort(sortByValue: string, sortDescValue: boolean) {
     offset.value = 0;
     sortBy.value = sortByValue;
     sortDesc.value = sortDescValue;
-
-    load(false, true);
+    selectedItemIds.value = [];
+    load(true);
 }
 
-function onScroll(scroll: Event) {
-    const { scrollTop, clientHeight, scrollHeight } = scroll.target as HTMLElement;
-
-    if (scrollTop + clientHeight >= scrollHeight) {
-        if (offset.value + limit.value <= rows.value.length) {
-            offset.value += limit.value;
-
-            load(true);
-        }
-    }
+async function onPageChange(page: number) {
+    offset.value = (page - 1) * limit.value;
+    selectedItemIds.value = [];
+    await load(true);
 }
 
 function onError(msg: string) {
@@ -263,7 +237,7 @@ async function confirmDelete() {
         if (deleteModalBulk.value) {
             const totalSelected = selectedItemIds.value.length;
             const tmpSelected = [...selectedItemIds.value];
-            bulkDeleteLoading.value = true;
+            bulkDeleteOrRestoreLoading.value = true;
 
             for (const id of selectedItemIds.value) {
                 await deleteDataset(id, purge);
@@ -279,13 +253,13 @@ async function confirmDelete() {
             );
 
             selectedItemIds.value = [];
-            bulkDeleteLoading.value = false;
+            bulkDeleteOrRestoreLoading.value = false;
         } else if (deleteModalItem.value) {
             await deleteDataset(deleteModalItem.value.id, purge);
             Toast.success(`${purge ? "Permanently deleted" : "Deleted"} dataset "${deleteModalItem.value.name}".`);
         }
 
-        await load(true);
+        await load();
     } catch (error: any) {
         Toast.error(`Failed to delete dataset${deleteModalBulk.value ? "s" : ""}.`);
         onError(error);
@@ -343,7 +317,7 @@ onMounted(() => {
                 No matching entries found for: <span class="font-weight-bold">{{ query }}</span>
             </BAlert>
         </div>
-        <div v-else class="dataset-list-content overflow-auto" @scroll="onScroll">
+        <div v-else class="dataset-list-content overflow-auto">
             <GTable
                 id="dataset-table"
                 striped
@@ -356,7 +330,6 @@ onMounted(() => {
                 :sort-by="sortBy"
                 :sort-desc="sortDesc"
                 :overlay-loading="overlay"
-                :load-more-loading="loadMoreLoading"
                 :selected-items="selectedIndices"
                 :actions="datasetTableActions"
                 @sort-changed="onSort"
@@ -392,31 +365,32 @@ onMounted(() => {
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
             </GTable>
-
-            <!-- End of list indicator -->
-            <div v-if="!loadMoreLoading && rows.length > 0 && !hasMoreItems" class="text-center py-3 text-muted">
-                - End of list -
-            </div>
         </div>
 
-        <!-- Bulk actions footer -->
-        <div v-if="selectedItemIds.length > 0" class="d-flex mt-1 align-items-center">
-            <div class="d-flex gap-1">
+        <div class="d-flex mt-1 align-items-center mt-2">
+            <div v-if="selectedItemIds.length > 0" class="d-flex gap-1 w-100 position-absolute">
                 <BButton
-                    id="dataset-list-footer-bulk-delete-button"
                     v-b-tooltip.hover
-                    :title="bulkDeleteLoading ? 'Deleting datasets' : 'Delete selected datasets'"
-                    :disabled="bulkDeleteLoading"
                     size="sm"
                     variant="primary"
+                    :disabled="bulkDeleteOrRestoreLoading"
+                    :title="bulkDeleteOrRestoreLoading ? 'Deleting datasets' : 'Delete selected datasets'"
                     @click="onBulkDelete">
-                    <span v-if="!bulkDeleteLoading">
-                        <FontAwesomeIcon :icon="faTrash" fixed-width />
-                        Delete ({{ selectedItemIds.length }})
-                    </span>
-                    <LoadingSpan v-else message="Deleting" />
+                    <FontAwesomeIcon :icon="faTrash" />
+                    {{ localize("Delete Selected") }} ({{ selectedItemIds.length }})
                 </BButton>
             </div>
+
+            <BPagination
+                class="mx-0 my-auto w-100"
+                :value="currentPage"
+                :total-rows="totalDatasets"
+                :per-page="limit"
+                align="right"
+                size="sm"
+                first-number
+                last-number
+                @change="onPageChange" />
         </div>
 
         <!-- Delete confirmation modal -->
