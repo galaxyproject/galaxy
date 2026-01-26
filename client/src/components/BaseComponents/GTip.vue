@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from "vue";
 
+import type { ColorVariant } from "@/components/Common";
 import { useMarkdown } from "@/composables/markdown";
 
 interface Props {
     /** List of tip messages. Supports markdown formatting. Must contain at least one entry. */
     tips: string[];
-    /** Visual variant of the tip box */
-    variant?: "info" | "warning" | "success" | "danger";
-    /** Automatically rotate tips every N milliseconds (0 = disabled). Default is 20000 (20 seconds) */
+
+    /**
+     * Automatically rotate tips every N milliseconds (0 = disabled).
+     * @default 20000
+     */
     autoRotateMs?: number;
+
+    /**
+     * Visual variant of the tip box
+     * @default "info"
+     */
+    variant?: ColorVariant;
 }
 
 const props = withDefaults(defineProps<Props>(), {
