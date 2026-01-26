@@ -3,16 +3,15 @@
 from string import Template
 
 from galaxy.util.resources import resource_string
-
 from .helpers import (
+    compute_machine_type,
+    convert_cpu_to_milli,
+    convert_memory_to_mib,
     DEFAULT_CPU_MILLI,
     DEFAULT_CVMFS_DOCKER_VOLUME,
     DEFAULT_MEMORY_MIB,
     DEFAULT_NFS_MOUNT_PATH,
     DEFAULT_NFS_PATH,
-    compute_machine_type,
-    convert_cpu_to_milli,
-    convert_memory_to_mib,
     parse_docker_volumes_param,
     parse_volume_spec,
     parse_volumes_param,

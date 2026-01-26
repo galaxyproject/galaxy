@@ -197,9 +197,9 @@ def compute_machine_type(cpu_milli, memory_mib, machine_type_family="n2"):
 
     # Memory per vCPU for each variant (in GB)
     variants = {
-        "highcpu": 0.9,    # ~0.9 GB per vCPU
-        "standard": 4.0,   # 4 GB per vCPU
-        "highmem": 8.0,    # 8 GB per vCPU
+        "highcpu": 0.9,  # ~0.9 GB per vCPU
+        "standard": 4.0,  # 4 GB per vCPU
+        "highmem": 8.0,  # 8 GB per vCPU
     }
 
     # Calculate minimum vCPUs needed for CPU requirement

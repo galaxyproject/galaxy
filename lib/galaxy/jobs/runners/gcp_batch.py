@@ -24,15 +24,15 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
 )
 from galaxy.jobs.runners.util.gcp_batch import (
+    compute_machine_type,
     CONTAINER_SCRIPT_TEMPLATE,
+    convert_cpu_to_milli,
+    convert_memory_to_mib,
     DEFAULT_CVMFS_DOCKER_VOLUME,
     DEFAULT_MEMORY_MIB,
     DEFAULT_NFS_MOUNT_PATH,
     DEFAULT_NFS_PATH,
     DIRECT_SCRIPT_TEMPLATE,
-    compute_machine_type,
-    convert_cpu_to_milli,
-    convert_memory_to_mib,
     parse_docker_volumes_param,
     parse_volumes_param,
     sanitize_label_value,
