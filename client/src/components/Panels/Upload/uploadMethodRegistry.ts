@@ -70,6 +70,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faFileArchive,
         headerAction: "Extract from Archive",
         requiresTargetHistory: true,
+        showStartButton: false,
         component: defineAsyncComponent(() => import("./methods/ExploreZipUpload.vue")),
     },
     "data-source-tools": {
@@ -79,6 +80,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faCloudDownloadAlt,
         headerAction: "Use Data Source Tools",
         requiresTargetHistory: false,
+        showStartButton: false,
         component: defineAsyncComponent(() => import("./methods/DataSourceToolsUpload.vue")),
     },
     "import-history": {
@@ -88,6 +90,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faHdd,
         headerAction: "Import History",
         requiresTargetHistory: false,
+        showStartButton: false,
         component: defineAsyncComponent(() => import("./methods/ImportHistoryUpload.vue")),
     },
     "import-workflow": {
@@ -97,6 +100,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         icon: faSitemap,
         headerAction: "Import Workflow",
         requiresTargetHistory: false,
+        showStartButton: false,
         component: defineAsyncComponent(() => import("./methods/ImportWorkflowUpload.vue")),
     },
     "rule-based-import": {
@@ -107,6 +111,7 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         headerAction: "Launch Rule-based Import",
         requiresTargetHistory: false,
         requiresAdvancedMode: true,
+        showStartButton: false,
         component: defineAsyncComponent(() => import("./methods/RuleBasedImportUpload.vue")),
     },
 };

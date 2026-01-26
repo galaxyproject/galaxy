@@ -77,6 +77,16 @@ export interface UploadMethodConfig {
      * while remaining fully configurable and reactive.
      */
     requiresAdvancedMode?: boolean;
+
+    /**
+     * When true, the Start button in the footer will be shown.
+     *
+     * Set this to false for upload methods that handle their own submission
+     * internally (e.g., wizards, embedded forms with their own submit buttons).
+     *
+     * @default true
+     */
+    showStartButton?: boolean;
 }
 
 export interface UploadMethodComponent {

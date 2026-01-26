@@ -128,6 +128,7 @@ function handleReadyStateChange(ready: boolean) {
                     <span v-localize>Cancel</span>
                 </GButton>
                 <GButton
+                    v-if="method.showStartButton !== false"
                     color="blue"
                     :disabled="!canUpload"
                     :title="canUpload ? 'Start uploading to Galaxy' : 'Configure upload options first'"
