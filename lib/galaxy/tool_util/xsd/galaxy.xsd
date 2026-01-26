@@ -780,7 +780,7 @@ Security considerations:
   and starts the tool script which contains the generated command line). The job script may be
   accessible by the Galaxy admins during the execution of the job (and depending on the configuration
   of the Galaxy also after the execution).
-- Credentials are not available as cheetah variables, because they could be used in the ``command``
+- Credentials are not available as Cheetah variables, because they could be used in the ``command``
   block which would expose their content in the generated command line which is stored in the
   the job's metadata (which is stored plain text in Galaxy's DB and can be shared with other users).
 - Also as environment variables credentials should not be used on the command line:
@@ -789,7 +789,7 @@ Security considerations:
   - Values of credentials are not sanitized, i.e. users could abuse them for code injection.
 - If values/secrets can be supplied via a file, then a helper script that takes the variables from the
   environment and writes them to a file can be used.
-- For transparency it would be good to document in the tool help / credential help to which extend
+- For transparency it would be good to document in the tool help / credential help to which extent
   they are exposed.
 
 ### Example
