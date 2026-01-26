@@ -1,43 +1,59 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
 
 interface Props {
-    /** Single tip message or array of tip messages. Supports markdown formatting. */
-    tips?: string | string[];
+    /** List of tip messages. Supports markdown formatting. Must contain at least one entry. */
+    tips: string[];
     /** Visual variant of the tip box */
     variant?: "info" | "warning" | "success" | "danger";
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    tips: undefined,
     variant: "info",
 });
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const tipList = computed(() => {
-    if (!props.tips) {
-        return [];
-    }
-    const tips = Array.isArray(props.tips) ? props.tips : [props.tips];
-    return tips.map((tip) => renderMarkdown(tip));
+    return props.tips.map((tip) => renderMarkdown(tip));
 });
 
+const currentIndex = ref(0);
+
+const hasMultipleTips = computed(() => tipList.value.length > 1);
+
+function nextTip() {
+    currentIndex.value = (currentIndex.value + 1) % tipList.value.length;
+}
+
+function prevTip() {
+    currentIndex.value = (currentIndex.value - 1 + tipList.value.length) % tipList.value.length;
+}
+
 const variantClass = computed(() => `tip-${props.variant}`);
+
+if (!props.tips.length) {
+    console.warn("GTip component rendered with empty tips array");
+}
 </script>
 
 <template>
     <div v-if="tipList.length > 0" class="g-tip" :class="variantClass">
-        <small class="text-muted">
-            <span v-for="(tip, index) in tipList" :key="index" class="tip-item">
+        <small class="text-muted tip-content" :class="{ 'has-controls': hasMultipleTips }">
+            <span class="tip-item">
                 <strong>Tip:</strong>
-                <!-- This is rendered markdown safe to use in Vue templates. -->
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="tip"></span>
+                <span v-html="tipList[currentIndex]"></span>
             </span>
         </small>
+
+        <div v-if="hasMultipleTips" class="tip-controls">
+            <button type="button" class="tip-nav" aria-label="Previous tip" @click="prevTip">‹</button>
+            <span class="tip-counter">{{ currentIndex + 1 }} / {{ tipList.length }}</span>
+            <button type="button" class="tip-nav" aria-label="Next tip" @click="nextTip">›</button>
+        </div>
     </div>
 </template>
 
@@ -45,6 +61,7 @@ const variantClass = computed(() => `tip-${props.variant}`);
 @import "@/style/scss/theme/blue.scss";
 
 .g-tip {
+    position: relative;
     padding: 0.5rem 0.75rem;
     background-color: $gray-100;
     border-radius: $border-radius-base;
@@ -75,12 +92,39 @@ const variantClass = computed(() => `tip-${props.variant}`);
     strong {
         margin-right: 0.25rem;
     }
+}
 
-    &:not(:last-child)::after {
-        content: " ";
-        display: block;
-        margin-bottom: 0.25rem;
+.tip-content {
+    display: block;
+
+    &.has-controls {
+        padding-right: 3.5rem; // reserve space for controls
     }
+}
+
+.tip-controls {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.tip-nav {
+    background: none;
+    border: none;
+    padding: 0 0.25rem;
+    cursor: pointer;
+    color: inherit;
+}
+
+.tip-nav:hover {
+    text-decoration: underline;
+}
+
+.tip-counter {
+    font-size: 0.85em;
 }
 
 .tip-item :deep(p) {
