@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faAngleDown, faAngleUp, faBars, faGripVertical } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDown, faAngleUp, faBars, faCog, faGripVertical } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BDropdown, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
@@ -136,8 +136,18 @@ defineExpose({
                 </GButtonGroup>
             </div>
 
-            <div v-if="columnOptions.length > 0">
-                <BDropdown text="Columns" size="sm" variant="outline-primary" right>
+            <BDropdown
+                v-if="columnOptions.length > 0"
+                text="Columns"
+                size="sm"
+                variant="outline-primary"
+                right
+                no-caret>
+                <template v-slot:button-content>
+                    <FontAwesomeIcon :icon="faCog" fixed-width />
+                </template>
+
+                <BDropdownGroup header="Show/Hide Columns">
                     <BDropdownItem
                         v-for="column in columnOptions"
                         :key="column.key"
@@ -150,8 +160,8 @@ defineExpose({
                             {{ column.label }}
                         </BFormCheckbox>
                     </BDropdownItem>
-                </BDropdown>
-            </div>
+                </BDropdownGroup>
+            </BDropdown>
 
             <slot name="extra-filter" />
         </div>
