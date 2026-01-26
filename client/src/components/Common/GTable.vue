@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { faCaretDown, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
+import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { computed, ref } from "vue";
@@ -180,6 +180,12 @@ const emit = defineEmits<{
     (e: "sort-changed", sortBy: string, sortDesc: boolean): void;
 
     /**
+     * Emitted when select all checkbox is toggled
+     * @event select-all
+     */
+    (e: "select-all"): void;
+
+    /**
      * Emitted when a row is selected/deselected
      * @event row-select
      */
@@ -196,6 +202,15 @@ const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc || true);
 
 const localItems = computed(() => props.items || []);
+const selectAllDisabled = computed(() => {
+    return props.selectable && localItems.value.length === 0;
+});
+const indeterminateSelected = computed(() => {
+    return props.selectable && props.selectedItems.length > 0 && props.selectedItems.length < localItems.value.length;
+});
+const allSelected = computed(() => {
+    return props.selectable && localItems.value.length > 0 && props.selectedItems.length === localItems.value.length;
+});
 
 /**
  * Handle column header click for sorting
@@ -239,6 +254,10 @@ function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
     }
 
     emit("row-click", { item, index, event });
+}
+
+function onSelectAll(selected: boolean) {
+    emit("select-all");
 }
 
 /**
@@ -304,7 +323,18 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                     <thead>
                         <tr>
                             <th v-if="selectable" class="g-table-select-column">
-                                <slot name="head-select" />
+                                <slot name="head-select">
+                                    <BFormCheckbox
+                                        v-if="showSelectAll"
+                                        :id="`g-table-select-all-${props.id}`"
+                                        v-b-tooltip.hover.noninteractive
+                                        :disabled="selectAllDisabled"
+                                        :checked="allSelected"
+                                        :indeterminate="indeterminateSelected"
+                                        title="Select all for bulk actions"
+                                        @click.stop
+                                        @change="onSelectAll($event)" />
+                                </slot>
                             </th>
 
                             <!-- Field columns -->
@@ -386,11 +416,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                         right
                                         title="More actions"
                                         variant="link"
-                                        size="sm"
+                                        size="lg"
                                         toggle-class="text-decoration-none p-0"
                                         @click.stop>
                                         <template v-slot:button-content>
-                                            <FontAwesomeIcon :icon="faCaretDown" />
+                                            <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
                                         </template>
 
                                         <template v-for="ac in props.actions">

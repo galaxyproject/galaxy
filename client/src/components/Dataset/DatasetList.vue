@@ -319,7 +319,6 @@ onMounted(() => {
 
             <ListHeader
                 list-id="datasets"
-                :show-select-all="true"
                 :select-all-disabled="loading || rows.length === 0"
                 :all-selected="allSelected"
                 :indeterminate-selected="indeterminateSelected"
