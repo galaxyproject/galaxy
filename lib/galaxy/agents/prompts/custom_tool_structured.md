@@ -74,3 +74,11 @@ outputs:
 - Keep shell_command focused and simple
 - Provide sensible defaults for optional parameters
 - Use descriptive labels for inputs and outputs
+
+## CRITICAL: Accuracy Requirements
+
+- Only use container images you are certain exist (e.g., verified biocontainers)
+- If you don't know the correct container image for a tool, say so rather than guessing
+- Never fabricate command-line arguments or tool capabilities
+- If the user's request is unclear or you're uncertain how to implement it, ask for clarification
+- It's better to generate a simpler, correct tool than a complex, incorrect one

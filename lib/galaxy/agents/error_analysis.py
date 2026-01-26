@@ -20,7 +20,10 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    extract_result_content,
+    extract_structured_output,
     GalaxyAgentDependencies,
+    normalize_llm_text,
 )
 
 log = logging.getLogger(__name__)
@@ -218,13 +221,19 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
             # Handle different response formats based on model capabilities
             if self._supports_structured_output():
-                # Handle structured output
-                if hasattr(result, "data"):
-                    analysis_result = result.data
-                elif hasattr(result, "output"):
-                    analysis_result = result.output
-                else:
-                    analysis_result = result
+                # Try to extract structured output
+                analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
+
+                if analysis_result is None:
+                    # Model returned text instead of structured output
+                    content = extract_result_content(result)
+                    return AgentResponse(
+                        content=content,
+                        confidence="medium",
+                        agent_type=self.agent_type,
+                        suggestions=[],
+                        metadata={"method": "text_fallback"},
+                    )
 
                 content = self._format_analysis_response(analysis_result)
                 suggestions = self._create_suggestions(analysis_result)
@@ -243,7 +252,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 )
             else:
                 # Handle simple text output from DeepSeek
-                response_text = str(result.data) if hasattr(result, "data") else str(result)
+                response_text = extract_result_content(result)
                 parsed_result = self._parse_simple_response(response_text)
 
                 return AgentResponse(
@@ -369,15 +378,18 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
     def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
         """Parse simple text response into structured format."""
+        # Normalize text for consistent parsing
+        normalized_text = normalize_llm_text(response_text)
+
         # Extract structured information from text
-        error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", response_text, re.IGNORECASE)
-        cause = re.search(r"CAUSE:\s*([^\n]+)", response_text, re.IGNORECASE)
+        error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
+        cause = re.search(r"CAUSE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
         solution = re.search(
             r"SOLUTION:\s*([^\n]+(?:\n\s*\d+\..*)?)",
-            response_text,
+            normalized_text,
             re.IGNORECASE | re.DOTALL,
         )
-        confidence = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
+        confidence = re.search(r"CONFIDENCE:\s*(\w+)", normalized_text, re.IGNORECASE)
 
         # Build content
         content_parts = []
@@ -388,7 +400,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             content_parts.append(f"**Solution:**\n{solution.group(1).strip()}")
 
         if not content_parts:
-            content_parts = [response_text]  # Fallback to full response
+            content_parts = [normalized_text]  # Fallback to full response
 
         return {
             "content": "\n\n".join(content_parts),

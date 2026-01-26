@@ -24,6 +24,8 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    extract_result_content,
+    extract_structured_output,
     GalaxyAgentDependencies,
 )
 
@@ -84,7 +86,18 @@ class CustomToolAgent(BaseGalaxyAgent):
         try:
             # Run the agent to generate a UserToolSource
             result = await self._run_with_retry(query)
-            tool = result.output if hasattr(result, "output") else result.data
+            tool = extract_structured_output(result, UserToolSource, log)
+
+            if tool is None:
+                # Model returned text instead of structured output
+                content = extract_result_content(result)
+                return AgentResponse(
+                    content=f"The model did not generate a valid tool definition. Response:\n\n{content}",
+                    confidence=ConfidenceLevel.LOW,
+                    agent_type=self.agent_type,
+                    suggestions=[],
+                    metadata={"method": "text_fallback", "error": "invalid_structured_output"},
+                )
 
             # Convert UserToolSource to YAML
             tool_dict = tool.model_dump(by_alias=True, exclude_none=True)

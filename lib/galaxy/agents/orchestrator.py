@@ -19,6 +19,7 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    extract_result_content,
     GalaxyAgentDependencies,
 )
 
@@ -133,15 +134,15 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             result = await self._run_with_retry(query)
 
             if self._supports_structured_output():
-                if hasattr(result, "data"):
-                    return result.data
-                elif hasattr(result, "output"):
+                if hasattr(result, "output"):
                     return result.output
+                elif hasattr(result, "data"):
+                    return result.data
                 else:
                     return result
             else:
                 # Parse simple text response for models without structured output
-                response_text = str(result.data) if hasattr(result, "data") else str(result)
+                response_text = extract_result_content(result)
                 return self._parse_simple_plan(response_text)
 
         except OSError as e:
