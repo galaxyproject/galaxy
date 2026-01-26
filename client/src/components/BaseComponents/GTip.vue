@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
 
@@ -8,10 +8,13 @@ interface Props {
     tips: string[];
     /** Visual variant of the tip box */
     variant?: "info" | "warning" | "success" | "danger";
+    /** Automatically rotate tips every N milliseconds (0 = disabled). Default is 20000 (20 seconds) */
+    autoRotateMs?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     variant: "info",
+    autoRotateMs: 20000,
 });
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
@@ -20,9 +23,11 @@ const tipList = computed(() => {
     return props.tips.map((tip) => renderMarkdown(tip));
 });
 
-const currentIndex = ref(0);
+// Start with a random tip
+const currentIndex = ref(Math.floor(Math.random() * Math.max(props.tips.length, 1)));
 
 const hasMultipleTips = computed(() => tipList.value.length > 1);
+let rotateTimer: number | undefined;
 
 function nextTip() {
     currentIndex.value = (currentIndex.value + 1) % tipList.value.length;
@@ -37,6 +42,19 @@ const variantClass = computed(() => `tip-${props.variant}`);
 if (!props.tips.length) {
     console.warn("GTip component rendered with empty tips array");
 }
+
+// Auto-rotate tips if enabled
+if (props.autoRotateMs > 0 && hasMultipleTips.value) {
+    rotateTimer = window.setInterval(() => {
+        nextTip();
+    }, props.autoRotateMs);
+}
+
+onUnmounted(() => {
+    if (rotateTimer) {
+        clearInterval(rotateTimer);
+    }
+});
 </script>
 
 <template>
