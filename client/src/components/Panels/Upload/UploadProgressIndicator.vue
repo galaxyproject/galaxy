@@ -3,26 +3,13 @@ import { faCheck, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { bytesToString } from "@/utils/utils";
-
 import { useUploadState } from "./uploadState";
 
-const {
-    activeItems: uploads,
-    completedCount,
-    errorCount,
-    uploadingCount,
-    totalProgress,
-    totalSizeBytes,
-    uploadedSizeBytes,
-} = useUploadState();
+const { activeItems: uploads, completedCount, errorCount, uploadingCount, totalProgress } = useUploadState();
 
 const emit = defineEmits<{
     (e: "show-details"): void;
 }>();
-
-const totalSize = computed(() => bytesToString(totalSizeBytes.value));
-const uploadedSize = computed(() => bytesToString(uploadedSizeBytes.value));
 
 const statusIcon = computed(() => {
     if (errorCount.value > 0) {
@@ -78,9 +65,6 @@ function showDetails() {
                         <span class="font-weight-bold status-text">{{ statusText }}</span>
                         <span class="text-muted small ml-2 file-info">
                             {{ completedCount }}/{{ uploads.length }} files
-                        </span>
-                        <span class="text-muted small ml-2 size-info" :class="{ invisible: uploadingCount === 0 }">
-                            • {{ uploadedSize }} / {{ totalSize }}
                         </span>
                     </div>
                 </div>
@@ -144,15 +128,6 @@ function showDetails() {
 
 .file-info {
     white-space: nowrap;
-}
-
-.size-info {
-    white-space: nowrap;
-    min-width: 120px;
-
-    &.invisible {
-        visibility: hidden;
-    }
 }
 
 .progress-bar-container {
