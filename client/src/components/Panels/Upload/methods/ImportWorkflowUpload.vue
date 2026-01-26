@@ -1,7 +1,9 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import WorkflowImport from "@/components/Workflow/WorkflowImport.vue";
+</script>
 
 <template>
     <div class="import-workflow-upload">
-        <div class="text-center m-4">TODO</div>
+        <WorkflowImport />
     </div>
 </template>
