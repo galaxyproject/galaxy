@@ -175,6 +175,97 @@ def convert_memory_to_mib(memory_str):
         return int(value)
 
 
+def compute_machine_type(cpu_milli, memory_mib, machine_type_family="n2"):
+    """
+    Compute an appropriate GCP machine type based on resource requirements.
+
+    Selects the appropriate machine type variant based on CPU-to-memory ratio:
+    - highcpu: ~0.9 GB per vCPU (CPU-intensive workloads)
+    - standard: 4 GB per vCPU (balanced workloads)
+    - highmem: 8 GB per vCPU (memory-intensive workloads)
+
+    Args:
+        cpu_milli: CPU requirement in milli-cores (1000 = 1 vCPU)
+        memory_mib: Memory requirement in MiB
+        machine_type_family: Machine family prefix (default: n2)
+
+    Returns:
+        Machine type string (e.g., "n2-standard-8", "n2-highmem-16")
+    """
+    # Valid sizes for n2 machine types
+    valid_sizes = [2, 4, 8, 16, 32, 48, 64, 80, 96, 128]
+
+    # Memory per vCPU for each variant (in GB)
+    variants = {
+        "highcpu": 0.9,    # ~0.9 GB per vCPU
+        "standard": 4.0,   # 4 GB per vCPU
+        "highmem": 8.0,    # 8 GB per vCPU
+    }
+
+    # Calculate minimum vCPUs needed for CPU requirement
+    cpu_vcpus = max(1, (cpu_milli + 999) // 1000)  # Round up, minimum 1
+
+    # Convert memory to GB
+    memory_gb = memory_mib / 1024.0
+
+    # Calculate memory per vCPU ratio based on request
+    if cpu_vcpus > 0:
+        requested_mem_per_vcpu = memory_gb / cpu_vcpus
+    else:
+        requested_mem_per_vcpu = memory_gb
+
+    # Select variant based on memory-per-vCPU ratio
+    # Use highcpu if ratio <= 2 GB/vCPU
+    # Use standard if ratio <= 6 GB/vCPU
+    # Use highmem if ratio > 6 GB/vCPU
+    if requested_mem_per_vcpu <= 2.0:
+        variant = "highcpu"
+        mem_per_vcpu = variants["highcpu"]
+    elif requested_mem_per_vcpu <= 6.0:
+        variant = "standard"
+        mem_per_vcpu = variants["standard"]
+    else:
+        variant = "highmem"
+        mem_per_vcpu = variants["highmem"]
+
+    # Calculate minimum vCPUs needed for memory with selected variant
+    memory_vcpus = max(1, int((memory_gb + mem_per_vcpu - 0.001) // mem_per_vcpu))
+
+    # Take the larger of CPU and memory requirements
+    min_vcpus = max(cpu_vcpus, memory_vcpus)
+
+    # Find the smallest valid size that meets the requirement
+    selected_size = None
+    for size in valid_sizes:
+        if size >= min_vcpus:
+            selected_size = size
+            break
+
+    # If requirements exceed largest size, use the largest
+    if selected_size is None:
+        selected_size = valid_sizes[-1]
+        log.warning(
+            "Resource requirements (CPU: %d mCPU, Memory: %d MiB) exceed largest %s-%s size, using %s-%s-%d",
+            cpu_milli,
+            memory_mib,
+            machine_type_family,
+            variant,
+            machine_type_family,
+            variant,
+            selected_size,
+        )
+
+    machine_type = f"{machine_type_family}-{variant}-{selected_size}"
+    log.debug(
+        "Computed machine type %s for resources: %d mCPU, %d MiB (%.1f GB/vCPU ratio)",
+        machine_type,
+        cpu_milli,
+        memory_mib,
+        requested_mem_per_vcpu,
+    )
+    return machine_type
+
+
 def sanitize_label_value(value, max_length=63):
     """Sanitize a value to be used as a GCP label value."""
     if not value:

@@ -30,6 +30,7 @@ from galaxy.jobs.runners.util.gcp_batch import (
     DEFAULT_NFS_MOUNT_PATH,
     DEFAULT_NFS_PATH,
     DIRECT_SCRIPT_TEMPLATE,
+    compute_machine_type,
     convert_cpu_to_milli,
     convert_memory_to_mib,
     parse_docker_volumes_param,
@@ -347,7 +348,17 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Configure instance
         instance_template = batch_v1.AllocationPolicy.InstancePolicyOrTemplate()
         instance_policy = batch_v1.AllocationPolicy.InstancePolicy()
-        instance_policy.machine_type = params["machine_type"]
+
+        # Compute appropriate machine type based on resource requirements
+        machine_type = compute_machine_type(cpu_milli, memory_mib)
+        instance_policy.machine_type = machine_type
+        log.debug(
+            "Selected machine type %s for job %s (requested: %d mCPU, %d MiB)",
+            machine_type,
+            job_wrapper.get_id_tag(),
+            cpu_milli,
+            memory_mib,
+        )
 
         # Use custom VM image if specified
         if params.get("custom_vm_image"):
@@ -428,11 +439,14 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Get job destination parameters
         job_destination = job_wrapper.job_destination
 
+        # Get job resource parameters (from user selection in tool form)
+        resource_params = job_wrapper.get_resource_parameters()
+
         # Determine CPU requirements (in milli-cores)
-        cpu_milli = self._get_cpu_milli(job_destination, params)
+        cpu_milli = self._get_cpu_milli(job_destination, params, resource_params)
 
         # Determine memory requirements (in MiB)
-        memory_mib = self._get_memory_mib(job_destination, params)
+        memory_mib = self._get_memory_mib(job_destination, params, resource_params)
 
         log.debug(
             "Job %s resource requirements: %.1f CPU cores (%d mCPU), %d MiB memory",
@@ -444,7 +458,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
         return cpu_milli, memory_mib
 
-    def _get_cpu_milli(self, job_destination, params):
+    def _get_cpu_milli(self, job_destination, params, resource_params):
         """Get CPU requirements in milli-cores (1000 = 1 vCPU)."""
         # Check for job-specific CPU requests (highest priority)
         if "requests_cpu" in job_destination.params:
@@ -456,11 +470,21 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             cpu_str = job_destination.params["limits_cpu"]
             return convert_cpu_to_milli(cpu_str)
 
+        # Check for Galaxy job resource parameter 'processors'
+        if resource_params.get("processors"):
+            cpu_str = str(resource_params["processors"])
+            return convert_cpu_to_milli(cpu_str)
+
+        # Check for TPV-style 'cores' in destination params
+        if "cores" in job_destination.params:
+            cpu_str = job_destination.params["cores"]
+            return convert_cpu_to_milli(cpu_str)
+
         # Fall back to configured default
         default_vcpu = float(params.get("vcpu", 1.0))
         return int(default_vcpu * 1000)
 
-    def _get_memory_mib(self, job_destination, params):
+    def _get_memory_mib(self, job_destination, params, resource_params):
         """Get memory requirements in MiB."""
         # Check for job-specific memory requests (highest priority)
         if "requests_memory" in job_destination.params:
@@ -471,6 +495,16 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         if "limits_memory" in job_destination.params:
             memory_str = job_destination.params["limits_memory"]
             return convert_memory_to_mib(memory_str)
+
+        # Check for Galaxy job resource parameter 'mem' (in GB, convert to MiB)
+        if resource_params.get("mem"):
+            mem_gb = int(resource_params["mem"])
+            return mem_gb * 1024  # Convert GB to MiB
+
+        # Check for TPV-style 'mem' in destination params (in GB)
+        if "mem" in job_destination.params:
+            mem_gb = int(job_destination.params["mem"])
+            return mem_gb * 1024  # Convert GB to MiB
 
         # Fall back to configured default
         return int(params.get("memory_mib", DEFAULT_MEMORY_MIB))
