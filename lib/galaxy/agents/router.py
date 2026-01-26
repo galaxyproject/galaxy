@@ -202,9 +202,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 return result.content
             except Exception as e:
                 log.error(f"Tool recommendation handoff failed: {e}")
-                return (
-                    f"I encountered an issue while searching for tools. Please try again or browse the tool panel directly. Error: {e}"
-                )
+                return f"I encountered an issue while searching for tools. Please try again or browse the tool panel directly. Error: {e}"
 
         return hand_off_to_tool_recommendation
 

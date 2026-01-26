@@ -7,8 +7,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
     Optional,
 )
@@ -43,13 +41,13 @@ class SimplifiedToolRecommendationResult(BaseModel):
     """Simplified result for local LLMs - avoids nested models and enums."""
 
     # Instead of nested ToolMatch objects, we'll use simple dictionaries
-    primary_tools: List[Dict[str, Any]]  # Each dict has tool_id, tool_name, description, etc.
-    alternative_tools: List[Dict[str, Any]] = []
+    primary_tools: list[dict[str, Any]]  # Each dict has tool_id, tool_name, description, etc.
+    alternative_tools: list[dict[str, Any]] = []
     workflow_suggestion: Optional[str] = None
-    parameter_guidance: Dict[str, Any] = {}
+    parameter_guidance: dict[str, Any] = {}
     confidence: ConfidenceLiteral
     reasoning: str
-    search_keywords: List[str] = []
+    search_keywords: list[str] = []
 
 
 class ToolRecommendationAgent(BaseGalaxyAgent):
@@ -62,7 +60,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
     agent_type = AgentType.TOOL_RECOMMENDATION
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create the tool recommendation agent with conditional structured output."""
         if self._supports_structured_output():
             agent = Agent(
@@ -134,7 +132,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             categories = await self.get_tool_categories()
             if not categories:
                 return "No tool categories found"
-            return f"Available tool categories:\n" + "\n".join(f"- {cat}" for cat in categories)
+            return "Available tool categories:\n" + "\n".join(f"- {cat}" for cat in categories)
 
         return agent
 
@@ -143,7 +141,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "tool_recommendation.md"
         return prompt_path.read_text()
 
-    async def search_tools(self, query: str) -> List[Dict[str, Any]]:
+    async def search_tools(self, query: str) -> list[dict[str, Any]]:
         """Search for tools in the Galaxy toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available in agent dependencies")
@@ -177,7 +175,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.warning(f"Error searching tools: {e}")
             return []
 
-    async def get_tool_details(self, tool_id: str) -> Dict[str, Any]:
+    async def get_tool_details(self, tool_id: str) -> dict[str, Any]:
         """Get detailed information about a specific tool."""
         if not self.deps.toolbox:
             return {"id": tool_id, "error": "Toolbox not available"}
@@ -188,7 +186,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 return {"id": tool_id, "error": "Tool not found"}
 
             # Build tool details
-            details: Dict[str, Any] = {
+            details: dict[str, Any] = {
                 "id": tool.id,
                 "name": tool.name,
                 "version": tool.version,
@@ -227,25 +225,26 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.warning(f"Error getting tool details for {tool_id}: {e}")
             return {"id": tool_id, "error": str(e)}
 
-    async def get_tool_categories(self) -> List[str]:
+    async def get_tool_categories(self) -> list[str]:
         """Get list of tool categories/sections from the toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available in agent dependencies")
             return []
 
         try:
-            categories = set()
-            # Get panel sections from the integrated tool panel
-            panel = self.deps.toolbox.get_integrated_panel_for_view("default")
-            for key, item in panel.items():
-                if hasattr(item, "name") and item.name:
-                    categories.add(item.name)
+            categories: set[str] = set()
+            # Iterate through all tools and collect unique panel sections
+            for _tool_id, tool in self.deps.toolbox.tools():
+                if tool and not tool.hidden:
+                    section_name = tool.get_panel_section()[1]
+                    if section_name:
+                        categories.add(section_name)
             return sorted(categories)
         except (AttributeError, KeyError, TypeError) as e:
             log.warning(f"Error getting tool categories: {e}")
             return []
 
-    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
         Process a tool recommendation request.
 
@@ -308,9 +307,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             # Handle different response formats based on model capabilities
             if self._supports_structured_output():
                 # Try to extract structured output
-                recommendation = extract_structured_output(
-                    result, SimplifiedToolRecommendationResult, log
-                )
+                recommendation = extract_structured_output(result, SimplifiedToolRecommendationResult, log)
 
                 if recommendation is None:
                     # Model returned text instead of structured output (e.g., clarifying question)
@@ -425,7 +422,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
         return "\n".join(parts)
 
-    def _create_suggestions(self, recommendation: SimplifiedToolRecommendationResult) -> List[ActionSuggestion]:
+    def _create_suggestions(self, recommendation: SimplifiedToolRecommendationResult) -> list[ActionSuggestion]:
         """Create action suggestions from recommendation."""
         suggestions = []
 
@@ -497,7 +494,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         CONFIDENCE: high
         """
 
-    def _parse_simple_response(self, response_text: str) -> Dict[str, Any]:
+    def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
         """Parse simple text response into structured format."""
         # Normalize text for consistent parsing
         normalized_text = normalize_llm_text(response_text)
