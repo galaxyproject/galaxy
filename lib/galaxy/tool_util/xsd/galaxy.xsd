@@ -778,19 +778,18 @@ Security considerations:
 
 - Credentials are stored in the jobs "job script" (the script that sets up the job's environment
   and starts the tool script which contains the generated command line). The job script may be
-  accessible by the Galaxy admins during the execution of the job (and depending on the configuration
-  of the Galaxy also after the execution).
+  accessible to Galaxy admins during execution of the job (and depending on the configuration
+  of Galaxy, after execution too).
 - Credentials are not available as Cheetah variables, because they could be used in the ``command``
   block which would expose their content in the generated command line which is stored in the
-  the job's metadata (which is stored plain text in Galaxy's DB and can be shared with other users).
-- Also as environment variables credentials should not be used on the command line:
-  - They will be expanded by the executing shell before execution, i.e. it will be visible on the
+ job's metadata (which is stored plain text in Galaxy's DB and can be shared with other users).
+- Also, credentials should not be passed to the command line through environment variables:
+  - They will be expanded by the executing shell before execution, i.e. they will be visible on the
     process list which can be a problem when jobs are executed on shared systems.
   - Values of credentials are not sanitized, i.e. users could abuse them for code injection.
 - If values/secrets can be supplied via a file, then a helper script that takes the variables from the
   environment and writes them to a file can be used.
-- For transparency it would be good to document in the tool help / credential help to which extent
-  they are exposed.
+- For transparency,  it is good to document the extent to which credentials are exposed in the tool help / credential help.
 
 ### Example
 
@@ -821,11 +820,11 @@ aws s3 ls s3://my-bucket --region "\$AWS_REGION" --access-key "\$AWS_ACCESS_KEY_
 psql -U myuser -d mydb
 ```
 
-In the ``aws`` example the content of the environment variables would be exposed in the process list of the
-machine that is executing the job also users could supply characters that are harmful on the CLI (see security considerations).
-In modern versions of the ``aws`` interface credentials can only supplied via a file.
+In the ``aws`` example, the content of the environment variables would be exposed in the process list of the
+machine that is executing the job. Additionally, users could supply characters that are harmful on the CLI (see security considerations).
+In modern versions of the ``aws`` interface credentials can only be supplied via a file.
 
-In the postgres example we delibelately used environment variables that are picked up automatically by ``psql``,
+In the postgres example we deliberately used environment variables that are picked up automatically by ``psql``,
 i.e. we do not need to set it on the command line (which would expose them on the process list). 
 ]]></xs:documentation>
     </xs:annotation>
