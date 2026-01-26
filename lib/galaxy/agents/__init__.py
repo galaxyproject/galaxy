@@ -11,6 +11,7 @@ from .base import (
 )
 from .custom_tool import CustomToolAgent
 from .error_analysis import ErrorAnalysisAgent
+from .gtn_training import GTNTrainingAgent
 from .history import HistoryAgent
 from .orchestrator import WorkflowOrchestratorAgent
 from .registry import (
@@ -32,4 +33,5 @@ __all__ = [
     "WorkflowOrchestratorAgent",
     "ToolRecommendationAgent",
     "HistoryAgent",
+    "GTNTrainingAgent",
 ]
