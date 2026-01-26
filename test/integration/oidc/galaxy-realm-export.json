@@ -484,6 +484,40 @@
       "groups": []
     },
     {
+      "id": "f5e8b2c4-9a1d-4e3f-8c6a-7b2d5e4f3c1a",
+      "createdTimestamp": 1694376671733,
+      "username": "rincewind_test",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Rincewind",
+      "lastName": "Ankh-Morpork",
+      "email": "rincewind@galaxy.org",
+      "attributes": {
+        "preferred_username": [
+          "Rincewind (Ankh-Morpork)"
+        ]
+      },
+      "credentials": [
+        {
+          "id": "e5d4c3b2-a1f0-9e8d-7c6b-5a4f3e2d1c0b",
+          "type": "password",
+          "userLabel": "My password",
+          "createdDate": 1694376754826,
+          "secretData": "{\"value\":\"uNBI+UnpCLpXWHhm/tPSnnhuINiNw2MNt1XeDmImJaQ=\",\"salt\":\"fHS/FpnORylnSIco16UHwA==\",\"additionalParameters\":{}}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "galaxy-access-role",
+        "default-roles-gxyrealm"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
       "id": "24ffa3ff-d351-4d5e-b10b-8d615082ec9d",
       "createdTimestamp": 1694376671733,
       "username": "gxyuser_logged_in_once",

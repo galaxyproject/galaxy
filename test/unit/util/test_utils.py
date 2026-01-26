@@ -9,6 +9,7 @@ from typing import Dict
 import pytest
 
 from galaxy import util
+from galaxy.security.validate_user_input import validate_publicname_str
 from galaxy.util.json import safe_loads
 
 SECTION_XML = """<?xml version="1.0" ?>
@@ -177,3 +178,46 @@ def test_validate_doi_fail_too_long():
     doi = f"doi:10.1000/{long_suffix}"
     assert util.validate_doi(doi)
     assert not util.validate_doi(doi + "a")  # Increase length by 1 past max limit
+
+
+@pytest.mark.parametrize(
+    "input_name,expected_output",
+    [
+        # Existing documented behavior
+        ("My Cool Object", "My-Cool-Object"),
+        ("!My Cool Object!", "My-Cool-Object"),
+        ("Hello\u20a9\u25ce\u0491\u029f\u217e", "Hello"),
+        # Additional edge cases
+        ("simple", "simple"),
+        ("UPPERCASE", "UPPERCASE"),  # Note: lowercase applied separately
+        ("with-dash", "with-dash"),
+        ("with spaces", "with-spaces"),
+        ("  multiple   spaces  ", "-multiple-spaces"),
+        ("trailing!", "trailing"),
+        ("!leading", "leading"),
+        ("special@#$chars", "specialchars"),
+        ("parentheses(test)", "parenthesestest"),
+        ("Rincewind (Ankh-Morpork)", "Rincewind-Ankh-Morpork"),
+    ],
+)
+def test_ready_name_for_url(input_name, expected_output):
+    """Test that ready_name_for_url correctly sanitizes names for URL use."""
+    assert util.ready_name_for_url(input_name) == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_name",
+    [
+        "johndoe",
+        "John Doe",
+        "Rincewind (Ankh-Morpork)",
+        "user@example.com",
+        "Hello\u20a9\u25ce\u0491\u029f\u217e",
+        "   spaced   ",
+    ],
+)
+def test_ready_name_for_url_produces_valid_usernames(input_name):
+    """Test that ready_name_for_url().lower() produces valid Galaxy usernames."""
+    sanitized = util.ready_name_for_url(input_name).lower()
+    error = validate_publicname_str(sanitized)
+    assert error == "", f"'{input_name}' -> '{sanitized}' failed validation: {error}"

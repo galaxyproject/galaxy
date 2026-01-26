@@ -261,6 +261,24 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
 
+    def test_oidc_login_username_sanitization(self):
+        """Test that OIDC usernames with special characters are properly sanitized."""
+        _, response = self._login_via_keycloak("rincewind_test", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+
+        response = self._get("users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "rincewind@galaxy.org"
+
+        username = response.json()["username"]
+        from galaxy.security.validate_user_input import validate_publicname_str
+
+        error = validate_publicname_str(username)
+        assert error == "", f"OIDC-created username '{username}' is invalid: {error}"
+        assert "(" not in username, f"Username '{username}' should not contain parentheses"
+        assert ")" not in username, f"Username '{username}' should not contain parentheses"
+        assert " " not in username, f"Username '{username}' should not contain spaces"
+        assert username == username.lower(), f"Username '{username}' should be lowercase"
+
     def test_oidc_login_repeat_no_notification(self):
         """
         Test that repeat logins do NOT show the 'identity has been linked' notification.
