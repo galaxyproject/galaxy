@@ -234,7 +234,6 @@ class CondorJobRunner(AsynchronousJobRunner):
                         new_watch_list.append(tcjs)
                     else:
                         cjs = tcjs
-                        break
                 self.watched = new_watch_list
                 self._stop_container(job_wrapper)
                 # self.watched.append(cjs)
