@@ -11,6 +11,7 @@ import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
 import { getUploadMethod } from "./uploadMethodRegistry";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTip from "@/components/BaseComponents/GTip.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
@@ -87,7 +88,7 @@ function handleReadyStateChange(ready: boolean) {
         <BreadcrumbHeading :items="breadcrumbItems" />
 
         <div v-if="method" class="upload-method-content flex-grow-1 d-flex flex-column overflow-hidden">
-            <p class="text-muted mb-3">{{ method.description }}</p>
+            <GTip v-if="method.tips" :tips="method.tips" variant="info" class="mb-1" />
 
             <!-- Target History Display -->
             <div v-if="method.requiresTargetHistory" class="target-history-banner px-3 py-2">

@@ -87,6 +87,16 @@ export interface UploadMethodConfig {
      * @default true
      */
     showStartButton?: boolean;
+
+    /**
+     * Optional tip messages to display for this upload method.
+     *
+     * Tips provide contextual help, explaining non-obvious features,
+     * common workflows, or best practices. Supports markdown formatting.
+     *
+     * Each string in the array represents a separate tip message.
+     */
+    tips?: string[];
 }
 
 export interface UploadMethodComponent {
