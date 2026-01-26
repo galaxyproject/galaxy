@@ -1,7 +1,9 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import HistoryImport from "@/components/HistoryImport.vue";
+</script>
 
 <template>
     <div class="import-history-upload">
-        <div class="text-center m-4">TODO</div>
+        <HistoryImport />
     </div>
 </template>
