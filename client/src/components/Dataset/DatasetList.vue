@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BLink, BModal, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import type { HDASummary } from "@/api";
 import { deleteDataset, loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
@@ -55,11 +56,11 @@ const allFields = [
 const columnOptions = allFields.map((field) => ({ key: field.key, label: field.label }));
 
 const historyStore = useHistoryStore();
+const { confirm } = useConfirmDialog();
 
 const query = ref("");
 const limit = ref(24);
 const offset = ref(0);
-const message = ref("");
 const loading = ref(true);
 const overlay = ref(false);
 const sortDesc = ref(true);
@@ -70,10 +71,6 @@ const selectedItemIds = ref<string[]>([]);
 const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
 const bulkDeleteOrRestoreLoading = ref(false);
-const showDeleteModal = ref(false);
-const deleteModalPurge = ref(false);
-const deleteModalItem = ref<HDASummary | null>(null);
-const deleteModalBulk = ref(false);
 
 const { datasetTableActions } = useDatasetTableActions();
 
@@ -95,22 +92,6 @@ const selectedIndices = computed(() => {
     return rows.value
         .map((row, index) => (selectedItemIds.value.includes(row.id) ? index : -1))
         .filter((i) => i !== -1);
-});
-const deleteModalTitle = computed(() => {
-    if (deleteModalBulk.value) {
-        return `Delete ${selectedItemIds.value.length} dataset${selectedItemIds.value.length > 1 ? "s" : ""}?`;
-    } else if (deleteModalItem.value) {
-        return `Delete "${deleteModalItem.value.name}"?`;
-    }
-    return "Delete dataset?";
-});
-const deleteModalMessage = computed(() => {
-    if (deleteModalBulk.value) {
-        return `Are you sure you want to delete ${selectedItemIds.value.length} dataset${selectedItemIds.value.length > 1 ? "s" : ""}?`;
-    } else if (deleteModalItem.value) {
-        return `Are you sure you want to delete "${deleteModalItem.value.name}"?`;
-    }
-    return "Are you sure you want to delete this dataset?";
 });
 
 async function load(showOverlay = false) {
@@ -221,26 +202,28 @@ function onToggleColumn(key: string) {
     }
 }
 
-function onBulkDelete() {
-    deleteModalBulk.value = true;
-    deleteModalItem.value = null;
-    deleteModalPurge.value = false;
-    showDeleteModal.value = true;
-}
+async function onBulkDelete() {
+    const totalSelected = selectedItemIds.value.length;
 
-async function confirmDelete() {
-    const purge = deleteModalPurge.value;
+    const confirmed = await confirm(`Are you sure you want to delete ${totalSelected} datasets?`, {
+        id: "bulk-delete-datasets-confirmation",
+        title: "Delete datasets",
+        okTitle: "Delete datasets",
+        okVariant: "danger",
+        cancelVariant: "outline-primary",
+        centered: true,
+    });
 
-    try {
-        overlay.value = true;
-
-        if (deleteModalBulk.value) {
-            const totalSelected = selectedItemIds.value.length;
-            const tmpSelected = [...selectedItemIds.value];
+    if (confirmed) {
+        try {
+            overlay.value = true;
             bulkDeleteOrRestoreLoading.value = true;
 
+            const totalSelected = selectedItemIds.value.length;
+            const tmpSelected = [...selectedItemIds.value];
+
             for (const id of selectedItemIds.value) {
-                await deleteDataset(id, purge);
+                await deleteDataset(id);
 
                 tmpSelected.splice(
                     tmpSelected.findIndex((s) => s === id),
@@ -248,32 +231,18 @@ async function confirmDelete() {
                 );
             }
 
-            Toast.success(
-                `${purge ? "Permanently deleted" : "Deleted"} ${totalSelected} dataset${totalSelected > 1 ? "s" : ""}.`,
-            );
+            Toast.success(`Deleted ${totalSelected} dataset${totalSelected > 1 ? "s" : ""}.`);
 
             selectedItemIds.value = [];
+        } catch (e: any) {
+            Toast.error(`Failed to delete some datasets: ${e}`);
+        } finally {
+            overlay.value = false;
             bulkDeleteOrRestoreLoading.value = false;
-        } else if (deleteModalItem.value) {
-            await deleteDataset(deleteModalItem.value.id, purge);
-            Toast.success(`${purge ? "Permanently deleted" : "Deleted"} dataset "${deleteModalItem.value.name}".`);
+
+            await load(true);
         }
-
-        await load();
-    } catch (error: any) {
-        Toast.error(`Failed to delete dataset${deleteModalBulk.value ? "s" : ""}.`);
-        onError(error);
-    } finally {
-        overlay.value = false;
-        showDeleteModal.value = false;
-        deleteModalPurge.value = false;
-        deleteModalItem.value = null;
-        deleteModalBulk.value = false;
     }
-}
-
-function resetDeleteModal() {
-    deleteModalPurge.value = false;
 }
 
 onMounted(() => {
@@ -392,24 +361,6 @@ onMounted(() => {
                 last-number
                 @change="onPageChange" />
         </div>
-
-        <!-- Delete confirmation modal -->
-        <BModal
-            v-model="showDeleteModal"
-            :title="deleteModalTitle"
-            title-tag="h2"
-            ok-title="Delete"
-            ok-variant="danger"
-            cancel-title="Cancel"
-            cancel-variant="outline-primary"
-            centered
-            @show="resetDeleteModal"
-            @ok="confirmDelete">
-            <p>{{ deleteModalMessage }}</p>
-            <BFormCheckbox id="purge-checkbox" v-model="deleteModalPurge">
-                Permanently delete (cannot be recovered)
-            </BFormCheckbox>
-        </BModal>
     </div>
 </template>
 
