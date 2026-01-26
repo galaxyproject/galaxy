@@ -118,7 +118,7 @@ function showDetails() {
 .progress-summary {
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     min-width: 0;
 }
 
@@ -139,6 +139,4 @@ function showDetails() {
         transition: width 0.3s ease;
     }
 }
-
-/* Upload details modal styles now live in parent panel component */
 </style>
