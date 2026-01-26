@@ -37,6 +37,7 @@ const props = withDefaults(
         defaultActivities?: Activity[];
         activityBarId?: string;
         specialActivities?: Activity[];
+        exitActivity?: Activity;
         showAdmin?: boolean;
         optionsTitle?: string;
         optionsTooltip?: string;
@@ -50,6 +51,7 @@ const props = withDefaults(
         defaultActivities: undefined,
         activityBarId: "default",
         specialActivities: () => [],
+        exitActivity: undefined,
         showAdmin: true,
         optionsTitle: "More",
         optionsHeading: "Additional Activities",
@@ -307,32 +309,6 @@ defineExpose({
                 </draggable>
             </b-nav>
             <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
-                <NotificationItem
-                    v-if="isConfigLoaded && config.enable_notification_system"
-                    id="notifications"
-                    :activity-bar-id="props.activityBarId"
-                    :icon="faBell"
-                    :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
-                    title="Notifications"
-                    @click="toggleSidebar('notifications')" />
-                <ActivityItem
-                    id="settings"
-                    :activity-bar-id="props.activityBarId"
-                    :icon="props.optionsIcon"
-                    :is-active="isActiveSideBar('settings')"
-                    :title="props.optionsTitle"
-                    :tooltip="props.optionsTooltip"
-                    @click="toggleSidebar('settings')" />
-                <ActivityItem
-                    v-if="isAdmin && showAdmin"
-                    id="admin"
-                    :activity-bar-id="props.activityBarId"
-                    :icon="faUserCog"
-                    :is-active="isActiveSideBar('admin')"
-                    title="Admin"
-                    tooltip="Administer this Galaxy"
-                    variant="danger"
-                    @click="toggleSidebar('admin')" />
                 <template v-for="activity in props.specialActivities">
                     <ActivityItem
                         v-if="activity.panel"
@@ -361,6 +337,42 @@ defineExpose({
                         :variant="activity.variant"
                         @click="onActivityClicked(activity)" />
                 </template>
+                <NotificationItem
+                    v-if="isConfigLoaded && config.enable_notification_system"
+                    id="notifications"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="faBell"
+                    :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
+                    title="Notifications"
+                    @click="toggleSidebar('notifications')" />
+                <ActivityItem
+                    id="settings"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.optionsIcon"
+                    :is-active="isActiveSideBar('settings')"
+                    :title="props.optionsTitle"
+                    :tooltip="props.optionsTooltip"
+                    @click="toggleSidebar('settings')" />
+                <ActivityItem
+                    v-if="isAdmin && showAdmin"
+                    id="admin"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="faUserCog"
+                    :is-active="isActiveSideBar('admin')"
+                    title="Admin"
+                    tooltip="Administer this Galaxy"
+                    variant="danger"
+                    @click="toggleSidebar('admin')" />
+                <ActivityItem
+                    v-if="props.exitActivity"
+                    :id="`${props.exitActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.exitActivity.icon"
+                    :indicator="props.exitActivity.indicator"
+                    :title="props.exitActivity.title"
+                    :tooltip="props.exitActivity.tooltip"
+                    :variant="props.exitActivity.variant"
+                    @click="onActivityClicked(props.exitActivity)" />
             </b-nav>
         </div>
         <FlexPanel

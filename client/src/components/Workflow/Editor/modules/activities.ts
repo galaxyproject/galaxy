@@ -224,16 +224,6 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
 
     const specialWorkflowActivities = computed<Activity[]>(() => [
         {
-            description: "",
-            icon: faSave,
-            id: "save-and-exit",
-            title: "Save + Exit",
-            tooltip: saveHover.value,
-            visible: false,
-            click: true,
-            mutable: false,
-        },
-        {
             title: "Best Practices",
             id: "workflow-best-practices",
             description: "Show and test for the best practices in this workflow.",
@@ -246,7 +236,19 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
         },
     ]);
 
+    const exitWorkflowActivity = computed<Activity>(() => ({
+        description: "",
+        icon: faSave,
+        id: "save-and-exit",
+        title: "Save + Exit",
+        tooltip: saveHover.value,
+        visible: false,
+        click: true,
+        mutable: false,
+    }));
+
     return {
         specialWorkflowActivities,
+        exitWorkflowActivity,
     };
 }
