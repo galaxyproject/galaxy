@@ -14,13 +14,18 @@ from typing import (
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
-from galaxy.schema.agents import ConfidenceLevel
+from galaxy.schema.agents import (
+    ActionSuggestion,
+    ActionType,
+    ConfidenceLevel,
+)
 from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
 )
+from .visualization_context import is_visualization_query
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +98,11 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             Comprehensive response from multiple coordinated agents
         """
         try:
+            # Check if this is a visualization query - handle directly without sub-agents
+            visualizations = (context or {}).get("visualizations", [])
+            if visualizations and is_visualization_query(query, visualizations):
+                return await self._handle_visualization_query(query, context or {})
+
             # Get agent plan from LLM
             plan = await self._get_agent_plan(query)
 
@@ -105,11 +115,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             # Combine responses
             combined_content = self._combine_responses(responses, plan.reasoning)
 
+            # Extract visualization suggestions from content
+            suggestions = self._extract_visualization_suggestions(combined_content, context or {})
+
             return AgentResponse(
                 content=combined_content,
                 confidence=ConfidenceLevel.HIGH,
                 agent_type=self.agent_type,
-                suggestions=[],
+                suggestions=suggestions,
                 metadata={
                     "agents_used": plan.agents,
                     "execution_type": "sequential" if plan.sequential else "parallel",
@@ -126,6 +139,87 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         except Exception as e:
             log.error(f"Unexpected error during orchestration: {e}")
             return self._get_fallback_response(query, str(e))
+
+    async def _handle_visualization_query(
+        self, query: str, context: dict[str, Any]
+    ) -> AgentResponse:
+        """Handle visualization queries directly using available plugins."""
+        visualizations = context.get("visualizations", [])
+
+        # Use LLM to generate a helpful response about visualizations
+        viz_prompt = self._build_visualization_prompt(query, visualizations)
+
+        try:
+            result = await self._run_with_retry(viz_prompt)
+            response_text = str(result.data) if hasattr(result, "data") else str(result)
+        except Exception as e:
+            log.warning(f"LLM call failed for visualization query, using fallback: {e}")
+            response_text = self._build_visualization_fallback(query, visualizations)
+
+        # Extract visualization suggestions from the response
+        suggestions = self._extract_visualization_suggestions(response_text, context)
+
+        return AgentResponse(
+            content=response_text,
+            confidence=ConfidenceLevel.HIGH,
+            agent_type=self.agent_type,
+            suggestions=suggestions,
+            metadata={
+                "handled_directly": True,
+                "query_type": "visualization",
+                "available_visualizations": len(visualizations),
+            },
+        )
+
+    def _build_visualization_prompt(self, query: str, visualizations: list[dict]) -> str:
+        """Build a prompt for answering visualization questions."""
+        viz_list = "\n".join(
+            f"- **{v['title']}** (`{v['name']}`): {v.get('description', 'No description')} "
+            f"- URL: /visualizations/create/{v['name']}"
+            for v in visualizations
+        )
+
+        return f"""You are a Galaxy assistant helping users visualize their data.
+
+IMPORTANT: Only recommend visualizations from this list. Do NOT make up or hallucinate information about plugins not listed here. If a plugin the user asks about is not in this list, say "I don't have information about that visualization plugin" or suggest alternatives from the list.
+
+Available visualization plugins in this Galaxy instance:
+{viz_list}
+
+User question: {query}
+
+Instructions:
+- Only describe plugins that are in the list above
+- If the user asks about a specific plugin, look for it in the list and provide its actual description
+- If the plugin is not in the list, say so honestly
+- Include visualization URLs in markdown link format: [Plugin Name](/visualizations/create/plugin_name)
+- Be concise and accurate."""
+
+    def _build_visualization_fallback(self, query: str, visualizations: list[dict]) -> str:
+        """Build a fallback response when LLM is unavailable."""
+        query_lower = query.lower()
+
+        # Try to match relevant visualizations based on keywords
+        relevant = []
+        for viz in visualizations:
+            viz_text = f"{viz.get('title', '')} {viz.get('description', '')} {' '.join(viz.get('keywords', []))}".lower()
+            if any(word in viz_text for word in query_lower.split()):
+                relevant.append(viz)
+
+        if not relevant:
+            relevant = visualizations[:5]  # Show first 5 if no matches
+
+        if not relevant:
+            return "No visualization plugins are currently available. Please contact your Galaxy administrator."
+
+        response = "Here are some visualization options that might help:\n\n"
+        for viz in relevant[:5]:
+            response += f"- [{viz['title']}](/visualizations/create/{viz['name']})"
+            if viz.get("description"):
+                response += f": {viz['description']}"
+            response += "\n"
+
+        return response
 
     async def _get_agent_plan(self, query: str) -> AgentPlan:
         """Get plan for which agents to call."""
@@ -287,3 +381,44 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         SEQUENTIAL: true
         REASONING: Analyze error first, then suggest creating a tool
         """
+
+    def _extract_visualization_suggestions(
+        self, content: str, context: dict[str, Any]
+    ) -> list[ActionSuggestion]:
+        """
+        Extract visualization suggestions from response content.
+
+        Finds visualization links in the format /visualizations/create/PLUGINNAME
+        and creates ActionSuggestion objects for each valid visualization.
+
+        Args:
+            content: Response content to search for visualization links
+            context: Context dictionary containing visualizations metadata
+
+        Returns:
+            List of ActionSuggestion objects for found visualizations
+        """
+        suggestions = []
+        visualizations = context.get("visualizations", [])
+
+        # Build lookup map from visualization name to metadata
+        viz_map = {v["name"]: v for v in visualizations}
+
+        # Find visualization links in response
+        seen = set()
+        for match in re.finditer(r"/visualizations/create/(\w+)", content):
+            viz_name = match.group(1)
+            if viz_name in viz_map and viz_name not in seen:
+                seen.add(viz_name)
+                viz = viz_map[viz_name]
+                suggestions.append(
+                    ActionSuggestion(
+                        action_type=ActionType.VIEW_VISUALIZATION,
+                        description=f"Open {viz['title']} visualization",
+                        parameters={"url": viz["url"], "plugin_name": viz_name},
+                        confidence=ConfidenceLevel.HIGH,
+                        priority=1,
+                    )
+                )
+
+        return suggestions

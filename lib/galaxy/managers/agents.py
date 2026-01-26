@@ -122,6 +122,12 @@ class AgentService:
         if context is None:
             context = {}
 
+        # Inject visualization context if not already present
+        if "visualizations" not in context:
+            from galaxy.agents.visualization_context import get_visualization_summaries
+
+            context["visualizations"] = get_visualization_summaries(trans)
+
         # Route to appropriate agent
         actual_agent_type = agent_type
         routing_reasoning = None

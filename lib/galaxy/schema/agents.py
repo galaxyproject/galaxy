@@ -29,6 +29,7 @@ class ActionType(str, Enum):
     DOCUMENTATION = "documentation"
     CONTACT_SUPPORT = "contact_support"
     VIEW_EXTERNAL = "view_external"
+    VIEW_VISUALIZATION = "view_visualization"
     SAVE_TOOL = "save_tool"
     REFINE_QUERY = "refine_query"
 
