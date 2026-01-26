@@ -38,7 +38,7 @@ function showProgressDetails() {
                 v-b-tooltip.hover.noninteractive
                 size="sm"
                 switch
-                class="mr-2"
+                class="mx-2"
                 title="Show advanced upload options">
                 <span class="small">Advanced</span>
             </BFormCheckbox>
