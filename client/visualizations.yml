@@ -53,7 +53,7 @@ kepler:
     version: 0.0.3
 locuszoom:
     package: "@galaxyproject/locuszoom"
-    version: 0.0.7
+    version: 0.0.8
 molstar:
     package: "@galaxyproject/molstar"
     version: 0.0.4
