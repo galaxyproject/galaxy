@@ -27,7 +27,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     okay: true,
-    attributeLink: "Edit Workflow Attributes",
+    attributeLink: undefined,
     warningItems: null,
     requiresSave: false,
 });
@@ -79,7 +79,7 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                     </GLink>
                 </div>
             </div>
-            <p v-else class="mt-2 ml-1 my-0">
+            <p v-else-if="props.attributeLink" class="mt-2 ml-1 my-0">
                 <GLink thin @click="emit('onClickAttribute')">
                     <FontAwesomeIcon :icon="faPencilAlt" class="mr-1" />{{ props.attributeLink }}
                 </GLink>
