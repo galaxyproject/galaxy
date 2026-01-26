@@ -66,7 +66,6 @@ const overlay = ref(false);
 const sortDesc = ref(true);
 const sortBy = ref("update_time");
 const rows = ref<HDASummary[]>([]);
-const messageVariant = ref("danger");
 const selectedItemIds = ref<string[]>([]);
 const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
@@ -112,8 +111,8 @@ async function load(showOverlay = false) {
 
         rows.value = data;
         totalDatasets.value = totalMatches;
-    } catch (error: any) {
-        onError(error);
+    } catch (e: any) {
+        Toast.error(`Failed to load datasets: ${e}`);
     } finally {
         loading.value = false;
         overlay.value = false;
@@ -130,8 +129,8 @@ async function onShowDataset(item: HDASummary) {
 
     try {
         await historyStore.applyFilters(history_id, filters);
-    } catch (error: any) {
-        onError(error);
+    } catch (e: any) {
+        Toast.error(`Failed to switch to history: ${e}`);
     }
 }
 
@@ -144,8 +143,8 @@ async function onTags(tags: string[], index: number) {
 
     try {
         await updateTags(item?.id as string, "HistoryDatasetAssociation", tags);
-    } catch (error: any) {
-        onError(error);
+    } catch (e: any) {
+        Toast.error(`Failed to update tags: ${e}`);
     }
 }
 
@@ -168,10 +167,6 @@ async function onPageChange(page: number) {
     offset.value = (page - 1) * limit.value;
     selectedItemIds.value = [];
     await load(true);
-}
-
-function onError(msg: string) {
-    message.value = msg;
 }
 
 function onSelectAll() {
@@ -254,10 +249,6 @@ onMounted(() => {
     <div class="dataset-list-container h-100 d-flex flex-column">
         <BreadcrumbHeading :items="breadcrumbItems" />
         <div class="dataset-list-header">
-            <BAlert v-if="message" :variant="messageVariant" show class="m-2">
-                {{ message }}
-            </BAlert>
-
             <DelayedInput class="m-2 mb-3" placeholder="Search Datasets" @change="onQuery" />
 
             <ListHeader
