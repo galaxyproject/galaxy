@@ -23,8 +23,6 @@ from hashlib import md5
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -46,7 +44,7 @@ class FAQ:
     content: str = ""
     content_hash: str = ""
     last_modified: str = ""
-    contributors: List[str] = field(default_factory=list)
+    contributors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -65,14 +63,14 @@ class Tutorial:
     questions: str = ""
     objectives: str = ""
     key_points: str = ""
-    tools: List[str] = field(default_factory=list)
-    requirements: List[str] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
+    tools: list[str] = field(default_factory=list)
+    requirements: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     content_hash: str = ""
     last_modified: str = ""
     gtn_commit: str = ""
     zenodo_link: str = ""
-    workflows: List[str] = field(default_factory=list)
+    workflows: list[str] = field(default_factory=list)
 
 
 class GTNDatabaseBuilder:
@@ -88,8 +86,8 @@ class GTNDatabaseBuilder:
         """
         self.gtn_path = gtn_path
         self.output_path = output_path or Path("gtn_search.db")
-        self.tutorials: List[Tutorial] = []
-        self.faqs: List[FAQ] = []
+        self.tutorials: list[Tutorial] = []
+        self.faqs: list[FAQ] = []
 
     def build(self):
         """Build the complete database."""
@@ -327,15 +325,15 @@ class GTNDatabaseBuilder:
             log.warning(f"Error parsing tutorial {tutorial_file}: {e}")
             return None
 
-    def parse_yaml_simple(self, yaml_content: str) -> Dict[str, Any]:
+    def parse_yaml_simple(self, yaml_content: str) -> dict[str, Any]:
         """
         Simple YAML parser for frontmatter.
 
         This is a basic parser that handles common YAML structures
         without requiring external dependencies.
         """
-        result: Dict[str, Any] = {}
-        current_list: Optional[List[str]] = None
+        result: dict[str, Any] = {}
+        current_list: Optional[list[str]] = None
 
         for line in yaml_content.split("\n"):
             line = line.rstrip()
@@ -365,7 +363,7 @@ class GTNDatabaseBuilder:
                     str_value = str_value[1:-1]
 
                 # Check for boolean values
-                parsed_value: Union[str, bool, List[str]]
+                parsed_value: Union[str, bool, list[str]]
                 if str_value.lower() == "true":
                     parsed_value = True
                 elif str_value.lower() == "false":
@@ -404,7 +402,7 @@ class GTNDatabaseBuilder:
 
         return ""
 
-    def extract_list(self, value: Any) -> List[str]:
+    def extract_list(self, value: Any) -> list[str]:
         """Extract a list from various input formats."""
         if isinstance(value, list):
             return [str(item) for item in value]

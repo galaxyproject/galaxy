@@ -12,8 +12,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -101,7 +99,7 @@ class SearchResult:
     description: str = ""
     result_type: str = "tutorial"  # "tutorial" or "faq"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "id": self.id,
@@ -132,7 +130,7 @@ class FAQResult:
     snippet: str
     score: float
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "id": self.id,
@@ -189,7 +187,7 @@ class GTNSearchDB:
         topic: Optional[str] = None,
         difficulty: Optional[str] = None,
         hands_on_only: bool = False,
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """
         Search tutorials using FTS5.
 
@@ -233,7 +231,7 @@ class GTNSearchDB:
                     WHERE tutorials_fts MATCH ?
                 """
 
-                params: List[Any] = [fts_query]
+                params: list[Any] = [fts_query]
 
                 # Add filters
                 conditions = []
@@ -289,7 +287,7 @@ class GTNSearchDB:
         limit: int = 5,
         category: Optional[str] = None,
         area: Optional[str] = None,
-    ) -> List[FAQResult]:
+    ) -> list[FAQResult]:
         """
         Search FAQs using FTS5.
 
@@ -328,7 +326,7 @@ class GTNSearchDB:
                     WHERE faqs_fts MATCH ?
                 """
 
-                params: List[Any] = [fts_query]
+                params: list[Any] = [fts_query]
 
                 # Add filters
                 conditions = []
@@ -406,7 +404,7 @@ class GTNSearchDB:
             log.warning(f"Failed to get tutorial content for {topic}/{tutorial}: {e}")
             return None
 
-    def get_topics(self) -> List[str]:
+    def get_topics(self) -> list[str]:
         """
         List all available topics.
 
@@ -425,7 +423,7 @@ class GTNSearchDB:
             log.warning(f"Failed to get topics: {e}")
             return []
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """
         Get database version and build information.
 
@@ -448,7 +446,7 @@ class GTNSearchDB:
             log.warning(f"Failed to get metadata: {e}")
             return {}
 
-    def suggest_queries(self, partial: str) -> List[str]:
+    def suggest_queries(self, partial: str) -> list[str]:
         """
         Suggest queries based on partial input.
 
@@ -493,7 +491,7 @@ class GTNSearchDB:
             log.warning(f"Failed to get query suggestions: {e}")
             return []
 
-    def get_tutorial_by_id(self, tutorial_id: int) -> Optional[Dict[str, Any]]:
+    def get_tutorial_by_id(self, tutorial_id: int) -> Optional[dict[str, Any]]:
         """
         Get complete tutorial information by ID.
 
@@ -530,7 +528,7 @@ class GTNSearchDB:
             log.warning(f"Failed to get tutorial by ID {tutorial_id}: {e}")
             return None
 
-    def search_by_tools(self, tool_names: List[str], limit: int = 5) -> List[SearchResult]:
+    def search_by_tools(self, tool_names: list[str], limit: int = 5) -> list[SearchResult]:
         """
         Search for tutorials that use specific tools.
 
@@ -550,7 +548,7 @@ class GTNSearchDB:
 
                 # Build query to search in tools_json field
                 tool_conditions = []
-                params: List[Any] = []
+                params: list[Any] = []
                 for tool in tool_names:
                     tool_conditions.append("tools_json LIKE ?")
                     params.append(f"%{tool}%")

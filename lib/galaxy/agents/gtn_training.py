@@ -12,8 +12,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -53,10 +51,10 @@ class GTNSearchRequest(BaseModel):
 class GTNSearchResponse(BaseModel):
     """Structured response from GTN training agent."""
 
-    tutorials: List[Dict[str, Any]] = Field(default_factory=list, description="List of matching tutorials")
+    tutorials: list[dict[str, Any]] = Field(default_factory=list, description="List of matching tutorials")
     summary: str = Field(..., description="Natural language summary of findings")
     learning_path: Optional[str] = Field(None, description="Suggested learning progression")
-    prerequisites: List[str] = Field(default_factory=list, description="Recommended prerequisites")
+    prerequisites: list[str] = Field(default_factory=list, description="Recommended prerequisites")
     total_time: Optional[str] = Field(None, description="Estimated total time for suggested tutorials")
 
 
@@ -86,7 +84,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             log.error(f"Failed to initialize GTN database: {e}")
             self.gtn_db = None
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create the pydantic-ai agent with GTN search capabilities."""
         if self._supports_structured_output():
             agent = Agent(
@@ -199,7 +197,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             @agent.tool
             async def search_tutorials_by_tools(
                 ctx: RunContext[GalaxyAgentDependencies],
-                tool_names: List[str],
+                tool_names: list[str],
                 limit: int = 5,
             ) -> str:
                 """
@@ -230,7 +228,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         return agent
 
-    def _prepare_prompt(self, query: str, context: Dict[str, Any]) -> str:
+    def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         """
         Prepare the prompt for GTN agent.
 
@@ -255,7 +253,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
-    async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
         Process a training-related query.
 
@@ -403,7 +401,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         return "\n".join(parts)
 
-    def _create_suggestions(self, response_data: GTNSearchResponse) -> List[ActionSuggestion]:
+    def _create_suggestions(self, response_data: GTNSearchResponse) -> list[ActionSuggestion]:
         """Create action suggestions based on found tutorials."""
         suggestions = []
 
@@ -466,7 +464,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         Always recommend actual GTN tutorials and provide helpful guidance.
         """
 
-    def _parse_simple_response(self, response_text: str) -> Dict[str, Any]:
+    def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
         """Parse simple text response into structured format."""
 
         # Extract structured information from text
