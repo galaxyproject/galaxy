@@ -181,7 +181,7 @@ def _execute(
     tool_request: Optional[ToolRequest],
     rerun_remap_job_id: Optional[int],
     preferred_object_store_id: Optional[str],
-    credentials_context: Optional[CredentialsContext],
+    credentials_context: Optional[CredentialsContext | TestCredentialsContext],
     collection_info: Optional[MatchingCollections],
     workflow_invocation_uuid: Optional[str],
     invocation_step: Optional[model.WorkflowInvocationStep],
