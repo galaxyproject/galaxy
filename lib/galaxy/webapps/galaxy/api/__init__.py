@@ -53,7 +53,10 @@ from routes import (
     Mapper,
     request_config,
 )
-from starlette.datastructures import Headers
+from starlette.datastructures import (
+    Headers,
+    URL,
+)
 from starlette.routing import (
     Match,
     NoMatchFound,
@@ -254,6 +257,10 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         if root_path := scope.get("root_path"):
             url = urljoin(url, root_path)
         return url
+
+    @property
+    def url(self) -> URL:
+        return self.__request.url
 
     @property
     def host(self) -> str:

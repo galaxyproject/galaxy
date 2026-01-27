@@ -22,6 +22,7 @@ from fastapi import (
     Path,
     Query,
 )
+from fastapi.responses import PlainTextResponse
 from pydantic import Field
 
 from galaxy import exceptions
@@ -613,6 +614,36 @@ class FastAPIJobs:
             return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
         else:
             return EncodedJobDetails(**self.service.show(trans, job_id, bool(full)))
+
+    @router.get(
+        "/api/jobs/{job_id}/stdout",
+        name="get_job_stdout",
+        summary="Return stdout from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stdout(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stdout as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stdout or ""
+
+    @router.get(
+        "/api/jobs/{job_id}/stderr",
+        name="get_job_stderr",
+        summary="Return stderr from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stderr(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stderr as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stderr or ""
 
     @router.delete(
         "/api/jobs/{job_id}",

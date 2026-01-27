@@ -517,8 +517,11 @@ class BaseDatasetPopulator(BasePopulator):
         return run_response
 
     def new_bam_dataset(self, history_id: str, test_data_resolver):
+        return self.new_dataset_from_test_data(history_id, test_data_resolver, "1.bam", "bam")
+
+    def new_dataset_from_test_data(self, history_id: str, test_data_resolver, filename: str, file_type: str):
         return self.new_dataset(
-            history_id, content=open(test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
+            history_id, content=open(test_data_resolver.get_filename(filename), "rb"), file_type=file_type, wait=True
         )
 
     def new_directory_dataset(
@@ -2665,7 +2668,7 @@ class BaseWorkflowPopulator(BasePopulator):
         return jobs
 
     def wait_for_invocation_and_jobs(
-        self, history_id: str, workflow_id: str, invocation_id: str, assert_ok: bool = True
+        self, history_id: str, workflow_id: Optional[str], invocation_id: str, assert_ok: bool = True
     ) -> None:
         """Wait for invocation to be scheduled and all jobs to complete.
 

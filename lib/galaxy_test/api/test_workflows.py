@@ -248,6 +248,17 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         assert "__class__" in tool_state_value
         assert tool_state_value["__class__"] == "RuntimeValue"
 
+    def _show_workflow(self, workflow_id):
+        show_response = self._get(f"workflows/{workflow_id}")
+        self._assert_status_code_is(show_response, 200)
+        return show_response.json()
+
+    def _latest_instance_id(self, workflow_id: str, history_id: Optional[str] = None) -> str:
+        # Get latest version, to get latest instance id and confirm the name has changed
+        latest_download = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        latest_instance_id = latest_download["workflow_id"]
+        return latest_instance_id
+
 
 class ChangeDatatypeTests:
     dataset_populator: DatasetPopulator
@@ -9006,11 +9017,6 @@ outer_input:
                 shared_workflow_id=workflow_id,
             )
         return self._post(route, import_data)
-
-    def _show_workflow(self, workflow_id):
-        show_response = self._get(f"workflows/{workflow_id}")
-        self._assert_status_code_is(show_response, 200)
-        return show_response.json()
 
     def _assert_looks_like_instance_workflow_representation(self, workflow):
         self._assert_has_keys(workflow, "url", "owner", "inputs", "annotation", "steps")
