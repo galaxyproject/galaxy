@@ -63,7 +63,7 @@ from galaxy.work.context import SessionRequestContext
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=["jobs"])
+router = Router(tags=["plugins"])
 
 GALAXY_PROMPT = """
 You are a Galaxy agent.
