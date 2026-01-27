@@ -4305,6 +4305,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plugins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Index
+         * @description List available visualization plugins.
+         */
+        get: operations["index_api_plugins_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plugins/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show
+         * @description Get details of a specific visualization plugin.
+         */
+        get: operations["show_api_plugins__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/plugins/{plugin_name}/chat/completions": {
         parameters: {
             query?: never;
@@ -20158,6 +20198,20 @@ export interface components {
              * @enum {string}
              */
             state: "ok" | "not_ok" | "unknown";
+        };
+        /** PluginDatasetEntry */
+        PluginDatasetEntry: {
+            /** Hid */
+            hid: number;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** PluginDatasetsResponse */
+        PluginDatasetsResponse: {
+            /** Hdas */
+            hdas: components["schemas"]["PluginDatasetEntry"][];
         };
         /**
          * PluginKind
@@ -39532,6 +39586,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_plugins_get: {
+        parameters: {
+            query?: {
+                /** @description Filter to visualizations compatible with this dataset. */
+                dataset_id?: string | null;
+                /** @description Filter to embeddable visualizations only. */
+                embeddable?: boolean | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_plugins__id__get: {
+        parameters: {
+            query?: {
+                /** @description Filter datasets compatible with this plugin from the specified history. */
+                history_id?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The visualization plugin identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json":
+                        | components["schemas"]["PluginDatasetsResponse"]
+                        | components["schemas"]["VisualizationPluginResponse"];
                 };
             };
             /** @description Request Error */

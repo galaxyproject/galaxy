@@ -13,9 +13,7 @@ Subpackages
    :maxdepth: 4
 
    galaxy.visualization.data_providers
-   galaxy.visualization.genome
    galaxy.visualization.plugins
-   galaxy.visualization.tracks
 
 Submodules
 ----------

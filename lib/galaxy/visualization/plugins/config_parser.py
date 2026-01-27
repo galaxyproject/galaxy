@@ -14,26 +14,23 @@ log = logging.getLogger(__name__)
 
 class ParsingException(ValueError):
     """
-    An exception class for errors that occur during parsing of the visualizations
+    An exception class for errors that occur during parsing of the plugin
     framework configuration XML file.
     """
 
 
-class VisualizationsConfigParser:
+class PluginConfigParser:
     """
-    Class that parses a visualizations configuration XML file.
+    Class that parses a plugin configuration XML file.
 
-    Each visualization will get the following info:
-        - how to load a visualization:
+    Each plugin will get the following info:
+        - how to load a plugin:
             -- how to find the proper template
             -- how to convert query string into DB models
-        - when/how to generate a link to the visualization
+        - when/how to generate a link to the plugin
             -- what provides the data
             -- what information needs to be added to the query string
     """
-
-    #: what are the allowed href targets when clicking on a visualization anchor
-    VALID_RENDER_TARGETS = ["galaxy_main", "_top", "_blank"]
 
     def __init__(self):
         # what parsers should be used for sub-components
@@ -42,31 +39,28 @@ class VisualizationsConfigParser:
 
     def parse_file(self, xml_filepath):
         """
-        Parse the given XML file for visualizations data.
-        :returns: visualization config dictionary
+        Parse the given XML file for plugin data.
+        :returns: plugin config dictionary
         """
         xml_tree = load(xml_filepath)
-        visualization = self.parse_visualization(xml_tree.getroot())
-        return visualization
+        plugin = self.parse_plugin(xml_tree.getroot())
+        return plugin
 
-    def parse_visualization(self, xml_tree):
+    def parse_plugin(self, xml_tree):
         """
         Parse the template, name, and any data_sources and params from the
-        given `xml_tree` for a visualization.
+        given `xml_tree` for a plugin.
         """
         returned = {}
-
-        # main tag specifies plugin type (visualization or other).
-        returned["plugin_type"] = xml_tree.tag
 
         # a text display name for end user links
         returned["name"] = xml_tree.attrib.get("name", None)
         if not returned["name"]:
-            raise ParsingException("Visualization needs a name attribute.")
+            raise ParsingException("Plugin needs a name attribute.")
 
-        # allow manually turning off a vis by checking for a disabled property
+        # allow manually turning off a plugin by checking for a disabled property
         if "disabled" in xml_tree.attrib:
-            log.info("Visualizations plugin disabled: %s. Skipping...", returned["name"])
+            log.info("Plugin disabled: %s. Skipping...", returned["name"])
             return None
 
         # record boolean flags - defaults to False
@@ -75,16 +69,16 @@ class VisualizationsConfigParser:
             if keyword in xml_tree.attrib:
                 returned[keyword] = asbool(xml_tree.attrib.get(keyword))
 
-        # a (for now) text description of what the visualization does
+        # a (for now) text description of what the plugin does
         description = xml_tree.find("description")
         returned["description"] = description.text.strip() if description is not None else None
 
-        # help text of what the visualization does
+        # help text of what the plugin does
         help = xml_tree.find("help")
         returned["help"] = help.text if help is not None else None
 
-        # data_sources are the kinds of objects/data associated with the visualization
-        #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
+        # data_sources are the kinds of objects/data associated with the plugin
+        #   e.g. views on HDAs can use this to find out what plugins are applicable to them
         data_sources = []
         data_sources_confs = xml_tree.find("data_sources")
         for data_source_conf in data_sources_confs.findall("data_source"):
@@ -93,10 +87,10 @@ class VisualizationsConfigParser:
                 data_sources.append(data_source)
         # data_sources are not required
         if not data_sources:
-            raise ParsingException("No valid data_sources for visualization")
+            raise ParsingException("No valid data_sources for plugin")
         returned["data_sources"] = data_sources
 
-        # parameters specify which values are required for the visualization
+        # parameters specify which values are required for the plugin
         params = {}
         param_confs = xml_tree.find("params")
         param_elements = param_confs.findall("param") if param_confs is not None else []
@@ -110,20 +104,6 @@ class VisualizationsConfigParser:
         # entry_point: how will this plugin render/load? mako, script tag, or static html file?
         returned["entry_point"] = self.parse_entry_point(xml_tree)
 
-        # link_text: the string to use for the text of any links/anchors to this visualization
-        link_text = xml_tree.find("link_text")
-        if link_text is not None and link_text.text:
-            returned["link_text"] = link_text
-
-        # render_target: where in the browser to open the rendered visualization
-        # defaults to: galaxy_main
-        render_target = xml_tree.find("render_target")
-        if (render_target is not None and render_target.text) and (render_target.text in self.VALID_RENDER_TARGETS):
-            returned["render_target"] = render_target.text
-        else:
-            returned["render_target"] = "galaxy_main"
-        # consider unifying the above into its own element and parsing method
-
         # load optional custom configuration specifiers
         if (specs_section := xml_tree.find("specs")) is not None:
             returned["specs"] = DictParser(specs_section)
@@ -133,7 +113,7 @@ class VisualizationsConfigParser:
             returned["tags"] = ListParser(tag_section)
 
         # load tracks specifiers (allow 'groups' section for backward compatibility)
-        if (tracks_section := xml_tree.find("tracks") or xml_tree.find("groups")) is not None:
+        if (tracks_section := xml_tree.find("tracks")) is not None:
             returned["tracks"] = ListParser(tracks_section)
 
         # load settings specifiers
@@ -163,24 +143,21 @@ class VisualizationsConfigParser:
 # -------------------------------------------------------------------
 class DataSourceParser:
     """
-    Component class of VisualizationsConfigParser that parses data_source elements
-    within visualization elements.
+    Component class of PluginConfigParser that parses data_source elements
+    within plugin elements.
 
     data_sources are (in the extreme) any object that can be used to produce
-    data for the visualization to consume (e.g. HDAs, LDDAs, Jobs, Users, etc.).
-    There can be more than one data_source associated with a visualization.
+    data for the plugin to consume (e.g. HDAs, LDDAs, Jobs, Users, etc.).
+    There can be more than one data_source associated with a plugin.
     """
 
-    # these are the allowed classes to associate visualizations with (as strings)
+    # these are the allowed classes to associate plugins with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
     ALLOWED_MODEL_CLASSES = ["Visualization", "HistoryDatasetAssociation", "LibraryDatasetDatasetAssociation"]
-    # these are the allowed object attributes to use in data source tests
-    #   any attribute element not in this list will throw a parsing ParsingExcepion
-    ALLOWED_DATA_SOURCE_ATTRIBUTES = ["datatype"]
 
     def parse(self, xml_tree):
         """
-        Return a visualization data_source dictionary parsed from the given
+        Return a plugin data_source dictionary parsed from the given
         XML element.
         """
         returned = {}
@@ -190,14 +167,9 @@ class DataSourceParser:
             raise ParsingException("data_source needs a model class")
         returned["model_class"] = model_class
 
-        # tests (optional, 0 or more) - data for boolean test: 'is the visualization usable by this object?'
+        # tests (optional, 0 or more) - data for boolean test: 'is the plugin usable by this object?'
         # when no tests are given, default to isinstance( object, model_class )
         returned["tests"] = self.parse_tests(xml_tree.findall("test"))
-
-        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_class, tests
-        returned["to_params"] = {}
-        if to_params := self.parse_to_params(xml_tree.findall("to_param")):
-            returned["to_params"] = to_params
 
         return returned
 
@@ -220,11 +192,11 @@ class DataSourceParser:
     def parse_tests(self, xml_tree_list):
         """
         Returns a list of test dictionaries that the registry can use
-        against a given object to determine if the visualization can be
+        against a given object to determine if the plugin can be
         used with the object.
         """
         # tests should NOT include expensive operations: reading file data, running jobs, etc.
-        # do as much here as possible to reduce the overhead of seeing if a visualization is applicable
+        # do as much here as possible to reduce the overhead of seeing if a plugin is applicable
         # currently tests are or'd only (could be and'd or made into compound boolean tests)
         tests: list[dict[str, Any]] = []
         if not xml_tree_list:
@@ -247,12 +219,9 @@ class DataSourceParser:
             # collect expected test result
             test_result = test_result.strip()
 
-            # result type should tell the registry how to convert the result before the test
-            test_result_type = test_elem.get("result_type", "string")
-
-            # allow_uri_if_protocol indicates that the visualization can work with deferred data_sources which source URI
-            # matches any of the given protocols in this list. This is useful for visualizations that can work with URIs.
-            # Can only be used with isinstance tests. By default, an empty list means that the visualization doesn't support
+            # allow_uri_if_protocol indicates that the plugin can work with deferred data_sources which source URI
+            # matches any of the given protocols in this list. This is useful for plugins that can work with URIs.
+            # Can only be used with isinstance tests. By default, an empty list means that the plugin doesn't support
             # deferred data_sources.
             allow_uri_if_protocol = listify(test_elem.get("allow_uri_if_protocol"))
 
@@ -262,43 +231,11 @@ class DataSourceParser:
                     "attr": test_attr,
                     "type": test_type,
                     "result": test_result,
-                    "result_type": test_result_type,
                     "allow_uri_if_protocol": allow_uri_if_protocol,
                 }
             )
 
         return tests
-
-    def parse_to_params(self, xml_tree_list):
-        """
-        Given a list of `to_param` elements, returns a dictionary that allows
-        the registry to convert the data_source into one or more appropriate
-        params for the visualization.
-        """
-        to_param_dict: dict[str, Any] = {}
-        if not xml_tree_list:
-            return to_param_dict
-
-        for element in xml_tree_list:
-            # param_name required
-            param_name = element.text
-            if not param_name:
-                raise ParsingException("to_param requires text (the param name)")
-
-            param = {}
-            # assign is a shortcut param_attr that assigns a value to a param (as text)
-            assign = element.get("assign")
-            if assign is not None:
-                param["assign"] = assign
-
-            # param_attr is the attribute of the object that the visualization will be applied to
-            param_attr = element.get("param_attr")
-            if param_attr is not None:
-                param["param_attr"] = param_attr
-            if param:
-                to_param_dict[param_name] = param
-
-        return to_param_dict
 
 
 class ListParser(list):
@@ -348,18 +285,18 @@ class DictParser(dict):
 
 class ParamParser:
     """
-    Component class of VisualizationsConfigParser that parses param elements
-    within visualization elements.
+    Component class of PluginConfigParser that parses param elements
+    within plugin elements.
 
     params are parameters that will be parsed (based on their `type`, etc.)
-    and sent to the visualization template by controllers.visualization.render.
+    and sent to the plugin template by controllers.
     """
 
     DEFAULT_PARAM_TYPE = "str"
 
     def parse(self, xml_tree):
         """
-        Parse a visualization parameter from the given `xml_tree`.
+        Parse a plugin parameter from the given `xml_tree`.
         """
         returned = {}
 
