@@ -19,9 +19,9 @@
                     :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
                     collapsed-enable-text="Edit"
-                    collapsed-enable-icon="fa fa-edit"
+                    :collapsed-enable-icon="faEdit"
                     collapsed-disable-text="Undo"
-                    collapsed-disable-icon="fa fa-undo"
+                    :collapsed-disable-icon="faUndo"
                     @onChange="onChange"
                     @onValidation="onValidation" />
             </template>
@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import { faKey } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faKey, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { mapState } from "pinia";
 
@@ -73,7 +73,9 @@ export default {
     },
     data() {
         return {
+            faEdit,
             faKey,
+            faUndo,
             expanded: this.model.expanded,
             errorText: null,
             modelData: {},

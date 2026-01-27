@@ -1252,6 +1252,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get recent exports for the current user.
+         * @description Returns a list of recent exports (to remote file sources) for the current user.
+         */
+        get: operations["index_api_exports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/file_landings": {
         parameters: {
             query?: never;
@@ -2992,6 +3012,30 @@ export interface paths {
         post?: never;
         /** Cancel the specified workflow invocation. */
         delete: operations["cancel_invocation_api_invocations__invocation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invocations/{invocation_id}/completion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get workflow invocation completion details.
+         * @description Get completion details for a workflow invocation.
+         *
+         *     Returns None if the invocation has not completed yet.
+         *     Completion occurs when all jobs have reached terminal states
+         *     (ok, error, deleted, skipped, paused, stopped).
+         */
+        get: operations["show_invocation_completion_api_invocations__invocation_id__completion_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -16287,7 +16331,8 @@ export interface components {
             | "scheduled"
             | "cancelled"
             | "cancelling"
-            | "failed";
+            | "failed"
+            | "completed";
         /**
          * InvocationStep
          * @description Information about workflow invocation step
@@ -16609,6 +16654,15 @@ export interface components {
              * @default false
              */
             no_add_to_history: boolean | null;
+            /**
+             * On Complete Actions
+             * @description List of actions to execute when the workflow invocation completes. Each action is an object with the action name as key and configuration as value. Available actions: 'send_notification' (notify user, no config required), 'export_to_file_source' (export results, requires target_uri). Example: [{'send_notification': {}}, {'export_to_file_source': {'target_uri': 'gxfiles://my_storage/exports/', 'format': 'rocrate.zip'}}]
+             */
+            on_complete?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Legacy Step Parameters
              * @description Parameters specified per-step for the workflow invocation, this is legacy and you should generally use inputs and only specify the formal parameters of a workflow instead.
@@ -24603,6 +24657,15 @@ export interface components {
              */
             model_class: "WorkflowInvocation";
             /**
+             * On Complete Actions
+             * @description Actions to be executed when the workflow invocation completes.
+             */
+            on_complete?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+            /**
              * Invocation state
              * @description State of workflow invocation.
              */
@@ -24624,6 +24687,30 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             workflow_id: string;
+        };
+        /**
+         * WorkflowInvocationCompletionResponse
+         * @description Response model for workflow invocation completion details.
+         */
+        WorkflowInvocationCompletionResponse: {
+            /**
+             * Completion Time
+             * Format: date-time
+             * @description The time when the workflow invocation completed.
+             */
+            completion_time: string;
+            /**
+             * Hooks Executed
+             * @description List of completion hook names that have been executed.
+             */
+            hooks_executed?: string[];
+            /**
+             * Job State Summary
+             * @description Summary of job states, mapping state names to counts.
+             */
+            job_state_summary: {
+                [key: string]: number;
+            };
         };
         /** WorkflowInvocationElementView */
         WorkflowInvocationElementView: {
@@ -24675,6 +24762,15 @@ export interface components {
              * @constant
              */
             model_class: "WorkflowInvocation";
+            /**
+             * On Complete Actions
+             * @description Actions to be executed when the workflow invocation completes.
+             */
+            on_complete?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Output collections
              * @description Output dataset collections of the workflow invocation.
@@ -28380,6 +28476,52 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_exports_get: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of exports to return. */
+                limit?: number | null;
+                /** @description Number of days to look back. */
+                days?: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportTaskListResponse"];
                 };
             };
             /** @description Request Error */
@@ -34709,6 +34851,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_invocation_completion_api_invocations__invocation_id__completion_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the Invocation. */
+                invocation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationCompletionResponse"] | null;
                 };
             };
             /** @description Request Error */

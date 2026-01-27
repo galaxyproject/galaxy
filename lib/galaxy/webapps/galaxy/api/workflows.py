@@ -25,6 +25,7 @@ from pydantic import (
     UUID1,
     UUID4,
 )
+from sqlalchemy import select
 from starlette.responses import StreamingResponse
 
 from galaxy import (
@@ -48,6 +49,7 @@ from galaxy.managers.workflows import (
     WorkflowCreateOptions,
     WorkflowUpdateOptions,
 )
+from galaxy.model import WorkflowInvocationCompletion
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
@@ -62,6 +64,7 @@ from galaxy.schema.invocation import (
     InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
     ReportInvocationErrorPayload,
+    WorkflowInvocationCompletionResponse,
     WorkflowInvocationRequestModel,
     WorkflowInvocationResponse,
 )
@@ -1791,3 +1794,37 @@ class FastAPIInvocations:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> list[WorkflowJobMetric]:
         return self.invocations_service.show_invocation_metrics(trans=trans, invocation_id=invocation_id)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/completion",
+        summary="Get workflow invocation completion details.",
+    )
+    def show_invocation_completion(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> Optional[WorkflowInvocationCompletionResponse]:
+        """
+        Get completion details for a workflow invocation.
+
+        Returns None if the invocation has not completed yet.
+        Completion occurs when all jobs have reached terminal states
+        (ok, error, deleted, skipped, paused, stopped).
+        """
+        # Verify invocation exists and is accessible
+        invocation = self.invocations_service.get_invocation(trans, invocation_id)
+
+        # Query completion
+        stmt = select(WorkflowInvocationCompletion).where(
+            WorkflowInvocationCompletion.workflow_invocation_id == invocation.id
+        )
+        completion = trans.sa_session.execute(stmt).scalar_one_or_none()
+
+        if completion is None:
+            return None
+
+        return WorkflowInvocationCompletionResponse(
+            completion_time=completion.completion_time,
+            job_state_summary=completion.job_state_summary or {},
+            hooks_executed=completion.hooks_executed or [],
+        )

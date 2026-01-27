@@ -1742,8 +1742,7 @@ steps:
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request).json()[
             "id"
         ]
-        invocation = self._invocation_details(workflow_id, invocation_id)
-        assert invocation["state"] == "scheduled", invocation
+        self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
         invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation_id)
         for job in invocation_jobs:
             assert job["state"] == "ok"
@@ -1826,7 +1825,7 @@ steps:
     def test_run_workflow_with_url_collection(self):
         with self.dataset_populator.test_history() as history_id:
             invocation = self._run_multi_data_workflow(history_id)
-            assert invocation["state"] == "scheduled", invocation
+            assert invocation["state"] == "completed", invocation
             invocation_jobs = self.workflow_populator.get_invocation_jobs(invocation["id"])
             assert len(invocation_jobs) == 1
             job = invocation_jobs[0]
@@ -1891,7 +1890,9 @@ steps:
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(
             workflow_id, request=workflow_request, assert_ok=not invalid_hash
         ).json()["id"]
-        return self._invocation_details(workflow_id, invocation_id)
+        if invalid_hash:
+            return self._invocation_details(workflow_id, invocation_id)
+        return self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
 
     @skip_without_tool("collection_paired_default")
     def test_run_workflow_with_url_paired_collection(self):
@@ -1952,8 +1953,7 @@ steps:
             invocation_id = self.workflow_populator.invoke_workflow_and_wait(
                 workflow_id, request=workflow_request
             ).json()["id"]
-            invocation = self._invocation_details(workflow_id, invocation_id)
-            assert invocation["state"] == "scheduled", invocation
+            invocation = self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
             assert invocation["inputs"]["0"]["src"] == "hdca"
             input_hdca = self.dataset_populator.get_history_collection_details(
                 history_id=history_id, content_id=invocation["inputs"]["0"]["id"]
@@ -2105,8 +2105,7 @@ steps:
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request).json()[
             "id"
         ]
-        invocation = self._invocation_details(workflow_id, invocation_id)
-        assert invocation["state"] == "scheduled", invocation
+        self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
 
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collections(self) -> None:
@@ -2257,7 +2256,7 @@ test_data:
         type: File
 """,
                 history_id=history_id,
-                assert_ok=False,
+                assert_ok=True,
                 wait=True,
             )
             history_contents = self.dataset_populator._get_contents_request(history_id=history_id).json()
@@ -2315,7 +2314,7 @@ test_data:
     collection_type: "list:list:paired"
 """,
                 history_id=history_id,
-                assert_ok=False,
+                assert_ok=True,
                 wait=True,
             )
             invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
@@ -3430,10 +3429,9 @@ test_data:
             # Review the paused steps to allow the workflow to continue.
             self.__review_paused_steps(uploaded_workflow_id, invocation_id, order_index=1, action=True)
 
-            # Wait for the workflow to finish scheduling and ensure both the invocation
+            # Wait for the workflow to finish and ensure both the invocation
             # and the history are in valid states.
-            invocation_scheduled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, "scheduled")
-            assert invocation_scheduled, "Workflow state is not scheduled..."
+            self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
@@ -5100,10 +5098,9 @@ input1:
             # Review the paused steps to allow the workflow to continue.
             self.__review_paused_steps(uploaded_workflow_id, invocation_id, order_index=2, action=True)
 
-            # Wait for the workflow to finish scheduling and ensure both the invocation
+            # Wait for the workflow to finish and ensure both the invocation
             # and the history are in valid states.
-            invocation_scheduled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, "scheduled")
-            assert invocation_scheduled, "Workflow state is not scheduled..."
+            self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_tool("cat")
@@ -5161,9 +5158,7 @@ input1:
             self._assert_invocation_non_terminal(uploaded_workflow_id, invocation_id)
 
             self.__review_paused_steps(uploaded_workflow_id, invocation_id, order_index=4, action=True)
-            self.workflow_populator.wait_for_invocation_and_jobs(history_id, uploaded_workflow_id, invocation_id)
-            invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
-            assert invocation["state"] == "scheduled"
+            self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
             assert "reviewed\n1\nreviewed\n4\n" == self.dataset_populator.get_history_dataset_content(history_id)
 
     @skip_without_tool("cat")
@@ -5241,9 +5236,8 @@ test_data:
                 wait=False,
             )
             # wait_for_invocation just waits until scheduling complete, not jobs or subworkflow invocations
-            self.workflow_populator.wait_for_invocation("null", summary.invocation_id, assert_ok=True)
+            self.workflow_populator.wait_for_invocation(summary.history_id, summary.invocation_id, assert_ok=True)
             invocation_before_cancellation = self.workflow_populator.get_invocation(summary.invocation_id)
-            assert invocation_before_cancellation["state"] == "scheduled"
             subworkflow_invocation_id = invocation_before_cancellation["steps"][2]["subworkflow_invocation_id"]
             self.workflow_populator.cancel_invocation(summary.invocation_id)
             self.workflow_populator.wait_for_invocation_and_jobs(
@@ -5314,8 +5308,7 @@ outputs:
             assert_ok=False,
             wait=True,
         )
-        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
-        assert invocation["state"] == "scheduled"
+        invocation = self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id)
         assert len(invocation["messages"]) == 1
         message = invocation["messages"][0]
         assert message["reason"] == "workflow_output_not_found"
@@ -5768,7 +5761,7 @@ steps:
             wait_on(lambda: len(self._history_jobs(history_id)) >= 2 or None, "history jobs")
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             invocation = self._invocation_details(workflow_id, invocation_id)
-            assert invocation["state"] != "scheduled", invocation
+            assert invocation["state"] not in ("scheduled", "completed"), invocation
             # Expect two jobs - the upload and first cat. randomlines shouldn't run
             # it is implicitly dependent on second cat.
             self._assert_history_job_count(history_id, 2)
@@ -5917,12 +5910,6 @@ test_data:
 
             subworkflow_invocation_id = subworkflow_step["subworkflow_invocation_id"]
             subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
-
-            # The subworkflow should have succeeded
-            assert (
-                subworkflow_invocation["state"] == "scheduled"
-            ), f"Expected subworkflow to succeed, got state: {subworkflow_invocation['state']}"
-
             # Should not have error messages
             messages = subworkflow_invocation.get("messages", [])
             assert len(messages) == 0, f"Expected no error messages, got: {messages}"
@@ -5980,8 +5967,8 @@ test_data:
             summary = self._run_workflow(workflow, history_id=history_id, wait=True, assert_ok=True)
 
             # Verify parent workflow executed successfully
+            self.workflow_populator.wait_for_invocation_and_completion(summary.invocation_id)
             parent_invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
-            assert parent_invocation["state"] == "scheduled"
 
             # Find the subworkflow step and get its invocation
             subworkflow_step = None
@@ -5998,7 +5985,7 @@ test_data:
 
             # The subworkflow should have succeeded
             assert (
-                subworkflow_invocation["state"] == "scheduled"
+                subworkflow_invocation["state"] == "completed"
             ), f"Expected subworkflow to succeed, got state: {subworkflow_invocation['state']}"
 
             # Should not have error messages (previously failed with "when_not_boolean")
@@ -8920,10 +8907,11 @@ outer_input:
         assert invocation["state"] in ["ready", "new"], invocation
 
     def _wait_for_invocation_state(self, workflow_id, invocation_id, target_state):
+        target_states = (target_state,) if isinstance(target_state, str) else target_state
         target_state_reached = False
         for _ in range(25):
             invocation = self._invocation_details(workflow_id, invocation_id)
-            if invocation["state"] == target_state:
+            if invocation["state"] in target_states:
                 target_state_reached = True
                 break
 

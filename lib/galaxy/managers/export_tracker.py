@@ -1,3 +1,7 @@
+from datetime import (
+    datetime,
+    timedelta,
+)
 from typing import (
     Optional,
 )
@@ -12,6 +16,7 @@ from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model import StoreExportAssociation
+from galaxy.schema.fields import Security
 from galaxy.schema.schema import ExportObjectType
 from galaxy.structured_app import MinimalManagerApp
 
@@ -41,7 +46,7 @@ class StoreExportTracker:
             export_association: StoreExportAssociation = self.session.execute(stmt).scalars().one()
         except NoResultFound:
             raise ObjectNotFound("Cannot set export metadata. Reason: Export association not found")
-        export_association.export_metadata = export_metadata.model_dump_json()  # type: ignore[assignment]
+        export_association.export_metadata = export_metadata.model_dump(mode="json")
         self.session.commit()
 
     def get_export_association(self, export_association_id: int) -> StoreExportAssociation:
@@ -73,3 +78,51 @@ class StoreExportTracker:
         if limit:
             stmt = stmt.limit(limit)
         return self.session.execute(stmt).scalars()  # type: ignore[return-value]
+
+    def get_user_exports(
+        self,
+        user_id: int,
+        limit: Optional[int] = None,
+        days: int = 30,
+    ) -> list[StoreExportAssociation]:
+        """
+        Get all exports initiated by a user within a time window.
+
+        Args:
+            user_id: The user ID to filter by.
+            limit: Maximum number of exports to return.
+            days: Number of days to look back (default 30).
+
+        Returns:
+            List of export associations for the user.
+        """
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        stmt = (
+            select(StoreExportAssociation)
+            .where(
+                and_(
+                    StoreExportAssociation.task_uuid.is_not(None),
+                    StoreExportAssociation.create_time >= cutoff_date,
+                )
+            )
+            .order_by(StoreExportAssociation.create_time.desc())
+        )
+
+        # Get all recent exports and filter by user_id from metadata
+        all_exports = self.session.execute(stmt).scalars().all()
+
+        # Encode the user_id to match the format stored in metadata
+        # (EncodedDatabaseIdField stores as encoded string)
+        encoded_user_id = Security.security.encode_id(user_id)
+
+        user_exports = []
+        for export in all_exports:
+            if export.export_metadata:
+                # Access dict directly - JSONType handles deserialization
+                stored_user_id = export.export_metadata.get("request_data", {}).get("user_id")
+                if stored_user_id == encoded_user_id:
+                    user_exports.append(export)
+                    if limit and len(user_exports) >= limit:
+                        break
+
+        return user_exports

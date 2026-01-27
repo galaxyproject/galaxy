@@ -78,7 +78,7 @@ class PosixFileSourceSetup:
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        temp_dir = cls._test_driver.mkdtemp()
+        temp_dir = os.path.realpath(cls._test_driver.mkdtemp())
         cls.root_dir = os.path.join(temp_dir, "root")
 
         file_sources_config_file = create_file_source_config_file_on(

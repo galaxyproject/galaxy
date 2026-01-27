@@ -573,7 +573,7 @@ history_export_tasks:
     next_button: '.go-next-btn'
     back_button: '.go-back-btn'
     export_button: '.go-next-btn.btn-primary'
-    select_format: '[data-history-export-format="${format}"]'
+    select_format: '[data-export-format="${format}"]'
     select_destination: '[data-history-export-destination="${destination}"]'
     exported_file_name: '#exported-file-name'
 
@@ -843,7 +843,7 @@ workflow_run:
     new_history_badge: '[data-description="new history badge"]'
     history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
-    runtime_setting_target: '.workflow-run-settings-target'
+    runtime_setting_target: '[data-test-id="send-to-new-history-label"]'
     simplified_input:
       type: xpath
       selector: //div[@data-label="${label}"]//input
@@ -1076,7 +1076,7 @@ invocations:
     step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details .info_data_table #galaxy-tool-id'
     export_tab: '.invocation-export-tab'
     export_tab_disabled: '.invocation-export-tab .nav-link[aria-disabled="true"]'
-    export_output_format: '[data-invocation-export-type="${type}"] .card-body'
+    export_output_format: '[data-export-format="${type}"]'
     export_destination: '[data-invocation-export-destination="${destination}"] .card-body'
     wizard_next_button: '.wizard-actions .go-next-btn'
     wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'

@@ -63,9 +63,13 @@ from galaxy.schema.fields import Security
 from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
     ExportObjectMetadata,
+    ExportObjectRequestMetadata,
+    ExportObjectResultMetadata,
     ExportObjectType,
     HDABasicInfo,
     ShareHistoryExtra,
+    ShortTermStoreExportPayload,
+    WriteStoreToPayload,
 )
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -679,9 +683,38 @@ class HistoryExportManager:
         return self.export_tracker.create_export_association(object_id=history_id, object_type=self.export_object_type)
 
     def get_record_metadata(self, export: model.StoreExportAssociation) -> Optional[ExportObjectMetadata]:
-        json_metadata = export.export_metadata
-        export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
-        return export_metadata
+        metadata = export.export_metadata
+        if not metadata:
+            return None
+        # Use model_construct to skip validation and avoid double-encoding of ID fields
+        request_data_raw = metadata.get("request_data", {})
+        result_data_raw = metadata.get("result_data")
+        payload_raw = request_data_raw.get("payload")
+        if not payload_raw:
+            raise MessageException("Export metadata is missing payload information")
+        # Construct the appropriate payload model based on whether target_uri is present
+        payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload]
+        if "target_uri" in payload_raw:
+            payload = WriteStoreToPayload.model_construct(**payload_raw)
+        else:
+            payload = ShortTermStoreExportPayload.model_construct(**payload_raw)
+        request_data = ExportObjectRequestMetadata.model_construct(
+            object_id=request_data_raw.get("object_id"),
+            object_type=request_data_raw.get("object_type"),
+            user_id=request_data_raw.get("user_id"),
+            payload=payload,
+        )
+        result_data = None
+        if result_data_raw:
+            result_data = ExportObjectResultMetadata.model_construct(
+                success=result_data_raw.get("success"),
+                uri=result_data_raw.get("uri"),
+                error=result_data_raw.get("error"),
+            )
+        return ExportObjectMetadata.model_construct(
+            request_data=request_data,
+            result_data=result_data,
+        )
 
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid

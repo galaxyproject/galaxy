@@ -1732,6 +1732,22 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def finished(self):
         return self.state in self.finished_states
 
+    @property
+    def is_terminal(self) -> bool:
+        """Check if job is in a terminal state for workflow completion purposes.
+
+        Terminal states are those where the job will not change further without
+        external intervention. This includes ok, error, deleted, skipped, paused, and stopped.
+        """
+        return self.state in (
+            self.states.OK,
+            self.states.ERROR,
+            self.states.DELETED,
+            self.states.SKIPPED,
+            self.states.PAUSED,
+            self.states.STOPPED,
+        )
+
     def copy_from_job(self, job: "Job", copy_outputs: bool = False):
         self.copied_from_job_id = job.id
         for metric in job.numeric_metrics + job.text_metrics:
@@ -3114,7 +3130,7 @@ class StoreExportAssociation(Base, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     object_type: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
     object_id: Mapped[Optional[int]]
-    export_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    export_metadata: Mapped[Optional[dict]] = mapped_column(JSONType)
 
 
 class JobContainerAssociation(Base, RepresentById):
@@ -9304,6 +9320,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     uuid: Mapped[Optional[Union[UUID]]] = mapped_column(UUIDType())
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    on_complete: Mapped[Optional[list]] = mapped_column(JSONType)
 
     history = relationship("History", back_populates="workflow_invocations")
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
@@ -9339,6 +9356,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     messages = relationship("WorkflowInvocationMessage", back_populates="workflow_invocation")
     landing_request: Mapped[Optional["LandingRequestToWorkflowInvocationAssociation"]] = relationship(
         "LandingRequestToWorkflowInvocationAssociation",
+        back_populates="workflow_invocation",
+        uselist=False,
+    )
+    completion: Mapped[Optional["WorkflowInvocationCompletion"]] = relationship(
+        "WorkflowInvocationCompletion",
         back_populates="workflow_invocation",
         uselist=False,
     )
@@ -9415,6 +9437,50 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         """
         states = WorkflowInvocation.states
         return self.state in [states.NEW, states.READY]
+
+    @property
+    def is_complete(self) -> bool:
+        """Check if all jobs in this workflow invocation have reached terminal states.
+
+        This property checks whether the workflow has finished executing, meaning all steps
+        have completed (jobs are in terminal states like ok, error, deleted, skipped, paused, or stopped).
+        """
+        # Must be in SCHEDULED state first (all steps have been scheduled)
+        if self.state != InvocationState.SCHEDULED.value:
+            return False
+
+        return all(step.is_complete for step in self.steps)
+
+    def compute_recursive_job_state_summary(self) -> dict[str, int]:
+        """
+        Compute summary of job states for this invocation, including subworkflows.
+
+        Recursively collects job states from all steps, including nested subworkflows.
+
+        Returns:
+            A dictionary mapping job state strings to counts.
+            Example: {"ok": 5, "error": 1, "skipped": 2}
+        """
+        summary: dict[str, int] = {}
+
+        def collect_jobs(inv: "WorkflowInvocation") -> None:
+            for step in inv.steps:
+                if step.workflow_step.type == "subworkflow":
+                    # Recursively collect from subworkflow
+                    subworkflow_assoc = next(
+                        (s for s in inv.subworkflow_invocations if s.workflow_step_id == step.workflow_step_id),
+                        None,
+                    )
+                    if subworkflow_assoc:
+                        collect_jobs(subworkflow_assoc.subworkflow_invocation)
+                else:
+                    # Collect job states from this step
+                    for job in step.jobs:
+                        state = str(job.state)
+                        summary[state] = summary.get(state, 0) + 1
+
+        collect_jobs(self)
+        return summary
 
     def set_state(self, state: InvocationState):
         session = object_session(self)
@@ -9721,6 +9787,10 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             rval["landing_uuid"] = str(self.landing_request.landing_request.uuid)
         else:
             rval["landing_uuid"] = None
+
+        # Add on_complete actions
+        rval["on_complete"] = self.on_complete
+
         if view == "element":
             steps = []
             for step in self.steps:
@@ -10005,6 +10075,22 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
         return self.workflow_invocation.history_id
 
 
+class WorkflowInvocationCompletion(Base, RepresentById):
+    """Records workflow invocation completion details."""
+
+    __tablename__ = "workflow_invocation_completion"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True, unique=True)
+    completion_time: Mapped[datetime] = mapped_column(default=now)
+    # Summary of final job states: {"ok": 5, "error": 1, "skipped": 2}
+    job_state_summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
+    # Hooks that have been executed (for idempotency)
+    hooks_executed: Mapped[Optional[list[str]]] = mapped_column(JSON)
+
+    workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="completion")
+
+
 class EffectiveOutput(TypedDict):
     """An output for the sake or determining full workflow outputs.
 
@@ -10151,6 +10237,51 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
             return self.implicit_collection_jobs.job_list
         else:
             return []
+
+    @property
+    def is_complete(self) -> bool:
+        """Check if this step is complete for workflow completion purposes.
+
+        For subworkflow steps, checks the subworkflow's completion state.
+        For tool steps, checks that all associated jobs are in terminal states.
+        """
+        # Subworkflow step - check subworkflow's completion state
+        if self.workflow_step.type == "subworkflow":
+            return self._is_subworkflow_step_complete()
+
+        # Tool/module step - check job states
+        jobs = self.jobs
+        if not jobs:
+            # Steps without jobs (e.g., input steps, pause steps, parameter steps)
+            # are considered complete once they're in SCHEDULED state
+            return self.state == self.states.SCHEDULED
+
+        return all(job.is_terminal for job in jobs)
+
+    def _is_subworkflow_step_complete(self) -> bool:
+        """Check if a subworkflow step is complete."""
+        # Find the subworkflow invocation associated with this step
+        subworkflow_assoc = next(
+            (
+                s
+                for s in self.workflow_invocation.subworkflow_invocations
+                if s.workflow_step_id == self.workflow_step_id
+            ),
+            None,
+        )
+
+        if not subworkflow_assoc:
+            # No subworkflow invocation found - step may not have been executed yet
+            return False
+
+        sub_invocation = subworkflow_assoc.subworkflow_invocation
+
+        # Leverage subworkflow's completion state if available
+        if sub_invocation.state == InvocationState.COMPLETED.value:
+            return True
+
+        # Otherwise check the subworkflow
+        return sub_invocation.is_complete
 
     @property
     def preferred_object_stores(self) -> WorkflowInvocationStepObjectStores:

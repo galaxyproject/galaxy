@@ -1711,7 +1711,7 @@ def summarize_invocation_jobs(
     invocation_id, job_summaries, implicit_collection_job_summaries, invocation_state, invocation_step_states
 ):
     states = {}
-    if invocation_state == "scheduled":
+    if invocation_state in ("scheduled", "completed"):
         all_scheduled = True
         for invocation_step_state in invocation_step_states:
             all_scheduled = all_scheduled and invocation_step_state == "scheduled"

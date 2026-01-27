@@ -261,7 +261,7 @@ outputs:
         assert len(response) == 1
         invocation = response[0]
         assert "state" in invocation
-        assert invocation["state"] == "scheduled"
+        assert invocation["state"] in ("scheduled", "completed")
         imported_invocation_id = invocation["id"]
 
         invocation_details = self.workflow_populator.get_invocation(imported_invocation_id, step_details="true")

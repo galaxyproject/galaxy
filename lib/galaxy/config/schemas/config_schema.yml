@@ -3569,6 +3569,16 @@ mapping:
           decreased if extremely high job throughput is necessary, but doing so can increase CPU
           usage of handler processes. Float values are allowed.
 
+      workflow_completion_monitor_sleep:
+        type: float
+        default: 5.0
+        required: false
+        desc: |
+          Time in seconds between workflow completion monitor iterations.
+          The completion monitor checks for workflows that have all jobs completed
+          and triggers completion hooks (e.g., exports, notifications).
+          Float values are allowed.
+
       calculate_dataset_hash:
         type: str
         default: upload

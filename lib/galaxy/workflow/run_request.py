@@ -91,6 +91,7 @@ class WorkflowRunConfig:
         preferred_outputs_object_store_id: Optional[str] = None,
         preferred_intermediate_object_store_id: Optional[str] = None,
         effective_outputs: Optional[list[EffectiveOutput]] = None,
+        on_complete: Optional[list[dict[str, Any]]] = None,
     ) -> None:
         self.target_history = target_history
         self.replacement_dict = replacement_dict or {}
@@ -105,6 +106,7 @@ class WorkflowRunConfig:
         self.preferred_outputs_object_store_id = preferred_outputs_object_store_id
         self.preferred_intermediate_object_store_id = preferred_intermediate_object_store_id
         self.effective_outputs = effective_outputs
+        self.on_complete = on_complete
 
 
 def _normalize_inputs(
@@ -507,6 +509,7 @@ def build_workflow_run_configs(
                 preferred_object_store_id=preferred_object_store_id,
                 preferred_outputs_object_store_id=preferred_outputs_object_store_id,
                 preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,
+                on_complete=payload.get("on_complete"),
             )
         )
 
@@ -522,6 +525,7 @@ def workflow_run_config_to_request(
     workflow_invocation.uuid = uuid.uuid1()
     workflow_invocation.history = run_config.target_history
     workflow_invocation.state = WorkflowInvocation.states.NEW
+    workflow_invocation.on_complete = run_config.on_complete
     ensure_object_added_to_session(workflow_invocation, object_in_session=run_config.target_history)
 
     def add_parameter(name: str, value: str, type: WorkflowRequestInputParameter.types) -> None:

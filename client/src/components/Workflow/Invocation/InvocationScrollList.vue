@@ -37,6 +37,7 @@ const emit = defineEmits(["invocation-clicked"]);
 const stateClasses: Record<string, string> = {
     ready: "waiting",
     scheduled: "ok",
+    completed: "ok",
     failed: "error",
 };
 

@@ -104,7 +104,8 @@ const invocationSchedulingTerminal = computed(() => {
     return (
         invocationState.value == "scheduled" ||
         invocationState.value == "cancelled" ||
-        invocationState.value == "failed"
+        invocationState.value == "failed" ||
+        invocationState.value == "completed"
     );
 });
 const jobStatesTerminal = computed(() => {
@@ -129,7 +130,9 @@ const stepsJobsSummary = computed(() => {
 
 const invocationStateSuccess = computed(() => {
     return (
-        invocationState.value == "scheduled" && stateCounts.value?.runningCount === 0 && invocationAndJobTerminal.value
+        (invocationState.value == "scheduled" || invocationState.value == "completed") &&
+        stateCounts.value?.runningCount === 0 &&
+        invocationAndJobTerminal.value
     );
 });
 
