@@ -553,7 +553,10 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
                 "group": {
                     "name": group_name,
                     "variables": [{"name": "server", "value": "http://localhost:8080"}],
-                    "secrets": [{"name": "username", "value": "user"}, {"name": "password", "value": "pass"}],
+                    "secrets": [
+                        {"name": "username", "value": "user"},
+                        {"name": "password", "value": "pass"},
+                    ],
                 },
             },
         }
@@ -566,7 +569,12 @@ class TestCredentialsApi(integration_util.IntegrationTestCase, integration_util.
         self._assert_status_code_is(response, status_code)
         return response.json()
 
-    def _build_update_credentials_payload(self, group_name=None, variables=None, secrets=None):
+    def _build_update_credentials_payload(
+        self,
+        group_name=None,
+        variables=None,
+        secrets=None,
+    ):
         update_payload = self._build_credentials_payload()["service_credential"]["group"]
         if group_name is not None:
             update_payload["name"] = group_name

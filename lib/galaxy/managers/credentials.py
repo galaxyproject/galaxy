@@ -48,7 +48,8 @@ def build_credentials_context_response(
             name=association.service_name,
             version=association.service_version,
             selected_group=SelectedGroupResponse(
-                id=association.selected_group_id, name=association.selected_group_name
+                id=association.selected_group_id,
+                name=association.selected_group_name,
             ),
         )
         service_credentials_list.append(service_credential)
@@ -189,27 +190,47 @@ class CredentialsManager:
         self.session.flush()
         return user_credentials.id
 
-    def update_group(self, credentials_group: CredentialsGroup, group_name: str) -> None:
+    def update_group(
+        self,
+        credentials_group: CredentialsGroup,
+        group_name: str,
+    ) -> None:
         credentials_group.name = group_name
         self.session.add(credentials_group)
 
-    def set_group_last_updated(self, credentials_group: CredentialsGroup) -> None:
+    def set_group_last_updated(
+        self,
+        credentials_group: CredentialsGroup,
+    ) -> None:
         credentials_group.update_time = now()
         self.session.add(credentials_group)
 
-    def add_group(self, user_credentials_id: DecodedDatabaseIdField, group_name: str) -> DecodedDatabaseIdField:
+    def add_group(
+        self,
+        user_credentials_id: DecodedDatabaseIdField,
+        group_name: str,
+    ) -> DecodedDatabaseIdField:
         credentials_group = CredentialsGroup(name=group_name, user_credentials_id=user_credentials_id)
         self.session.add(credentials_group)
         self.session.flush()
         return credentials_group.id
 
-    def update_credential(self, credential: Credential, value: Optional[str] = None, is_secret: bool = False) -> None:
+    def update_credential(
+        self,
+        credential: Credential,
+        value: Optional[str] = None,
+        is_secret: bool = False,
+    ) -> None:
         credential.is_set = bool(value)
         credential.value = value if not is_secret else None
         self.session.add(credential)
 
     def add_credential(
-        self, group_id: DecodedDatabaseIdField, name: str, value: Optional[str] = None, is_secret: bool = False
+        self,
+        group_id: DecodedDatabaseIdField,
+        name: str,
+        value: Optional[str] = None,
+        is_secret: bool = False,
     ) -> None:
         credential = Credential(
             group_id=group_id,
@@ -222,12 +243,17 @@ class CredentialsManager:
         self.session.flush()
 
     def update_current_group(
-        self, user_credentials: UserCredentials, group_id: Optional[DecodedDatabaseIdField] = None
+        self,
+        user_credentials: UserCredentials,
+        group_id: Optional[DecodedDatabaseIdField] = None,
     ) -> None:
         user_credentials.current_group_id = group_id
         self.session.add(user_credentials)
 
-    def delete_rows(self, rows_to_delete: CredentialsModelsSet) -> None:
+    def delete_rows(
+        self,
+        rows_to_delete: CredentialsModelsSet,
+    ) -> None:
         for row in rows_to_delete:
             self.session.delete(row)
         self.session.commit()

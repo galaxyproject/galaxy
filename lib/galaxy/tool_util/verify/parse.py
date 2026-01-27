@@ -78,7 +78,10 @@ def parse_tool_test_descriptions(
                 validated_test_case = case_state(
                     raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True
                 )
-                request_and_schema = TestRequestAndSchema(validated_test_case.tool_state, tool_parameter_bundle)
+                request_and_schema = TestRequestAndSchema(
+                    validated_test_case.tool_state,
+                    tool_parameter_bundle,
+                )
             except Exception as e:
                 validation_exception = e
 

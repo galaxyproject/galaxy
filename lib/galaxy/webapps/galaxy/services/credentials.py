@@ -53,11 +53,15 @@ GetToolCredentialsDefinition = Callable[[User, str, str, str, str], Optional[Cre
 class CredentialsService:
     """Service object shared by controllers for interacting with credentials."""
 
-    def __init__(self, app: StructuredApp, credentials_manager: CredentialsManager) -> None:
+    def __init__(
+        self,
+        app: StructuredApp,
+        credentials_manager: CredentialsManager,
+    ) -> None:
         self.app = app
         self.credentials_manager = credentials_manager
         self.source_type_credentials: dict[SOURCE_TYPE, GetToolCredentialsDefinition] = {
-            "tool": self._get_tool_credentials_definition
+            "tool": self._get_tool_credentials_definition,
         }
 
     def list_user_credentials(
@@ -74,7 +78,10 @@ class CredentialsService:
         return self._list_user_credentials(user, source_type, source_id, source_version, include_definition)
 
     def provide_credential(
-        self, trans: ProvidesUserContext, user_id: FlexibleUserIdType, payload: CreateSourceCredentialsPayload
+        self,
+        trans: ProvidesUserContext,
+        user_id: FlexibleUserIdType,
+        payload: CreateSourceCredentialsPayload,
     ) -> ServiceCredentialGroupResponse:
         """Allows users to provide credentials for a group of secrets and variables."""
         user = self._ensure_user_access(trans, user_id)
@@ -94,7 +101,10 @@ class CredentialsService:
         return self._update_credentials(trans.sa_session, user, user_credentials_id, group_id, payload)
 
     def update_user_credentials_group(
-        self, trans: ProvidesUserContext, user_id: FlexibleUserIdType, payload: SelectServiceCredentialPayload
+        self,
+        trans: ProvidesUserContext,
+        user_id: FlexibleUserIdType,
+        payload: SelectServiceCredentialPayload,
     ) -> None:
         """Updates user credentials for a specific group."""
         user = self._ensure_user_access(trans, user_id)
@@ -224,7 +234,12 @@ class CredentialsService:
         return definition
 
     def _get_tool_credentials_definition(
-        self, user: User, tool_id: str, tool_version: str, service_name: str, service_version: str
+        self,
+        user: User,
+        tool_id: str,
+        tool_version: str,
+        service_name: str,
+        service_version: str,
     ) -> Optional[CredentialsRequirement]:
         tool = self.app.toolbox.get_tool(tool_id, tool_version)
         if not tool:
@@ -320,9 +335,15 @@ class CredentialsService:
             )
 
             if credential.is_secret:
-                entry = {"name": credential.name, "is_set": credential.is_set}
+                entry = {
+                    "name": credential.name,
+                    "is_set": credential.is_set,
+                }
             else:
-                entry = {"name": credential.name, "value": credential.value}
+                entry = {
+                    "name": credential.name,
+                    "value": credential.value,
+                }
             target_list = "secrets" if credential.is_secret else "variables"
             groups_dict[group_key][target_list].append(entry)
 
@@ -351,7 +372,7 @@ class CredentialsService:
         group_id: DecodedDatabaseIdField,
         payload: ServiceCredentialGroupPayload,
     ) -> ServiceCredentialGroupResponse:
-        group_name, variables, secrets = (payload.name, payload.variables, payload.secrets)
+        group_name, variables, secrets = payload.name, payload.variables, payload.secrets
         existing_user_credentials = self.credentials_manager.get_user_credentials(
             user.id, user_credentials_id=user_credentials_id, group_id=group_id
         )
@@ -382,7 +403,7 @@ class CredentialsService:
         )
 
         for variable_payload in variables:
-            variable_name, variable_value = (variable_payload.name, variable_payload.value)
+            variable_name, variable_value = variable_payload.name, variable_payload.value
             variable = existing_credentials_map.get((variable_name, False))
             if variable:
                 self.credentials_manager.update_credential(variable, variable_value)
@@ -407,7 +428,10 @@ class CredentialsService:
         return self._construct_credential_group_response(group_id, group_name, updated_credentials)
 
     def _create_credentials(
-        self, session: scoped_session, user: User, payload: CreateSourceCredentialsPayload
+        self,
+        session: scoped_session,
+        user: User,
+        payload: CreateSourceCredentialsPayload,
     ) -> ServiceCredentialGroupResponse:
         source_type, source_id, source_version, service = (
             payload.source_type,
@@ -415,8 +439,8 @@ class CredentialsService:
             payload.source_version,
             payload.service_credential,
         )
-        service_name, service_version, service_group = (service.name, service.version, service.group)
-        group_name, variables, secrets = (service_group.name, service_group.variables, service_group.secrets)
+        service_name, service_version, service_group = service.name, service.version, service.group
+        group_name, variables, secrets = service_group.name, service_group.variables, service_group.secrets
 
         source_credentials = self._get_credentials_definition(
             user, source_type, source_id, source_version, service_name, service_version
@@ -433,7 +457,12 @@ class CredentialsService:
             user_credentials_id = user_credentials.id
         else:
             user_credentials_id = self.credentials_manager.add_user_credentials(
-                user.id, source_type, source_id, source_version, service_name, service_version
+                user.id,
+                source_type,
+                source_id,
+                source_version,
+                service_name,
+                service_version,
             )
 
         if (user_credentials_id, group_name) in group_map:
@@ -441,7 +470,7 @@ class CredentialsService:
         user_credential_group_id = self.credentials_manager.add_group(user_credentials_id, group_name)
 
         for variable_payload in variables:
-            variable_name, variable_value = (variable_payload.name, variable_payload.value)
+            variable_name, variable_value = variable_payload.name, variable_payload.value
 
             if (user_credential_group_id, variable_name, False) in cred_map:
                 raise Conflict(f"Variable '{variable_name}' already exists in group '{group_name}'.")
@@ -458,25 +487,47 @@ class CredentialsService:
                     source_type, source_id, service_name, service_version, user_credential_group_id, secret_name
                 )
                 user_vault.write_secret(vault_ref, secret_value)
-            self.credentials_manager.add_credential(user_credential_group_id, secret_name, secret_value, is_secret=True)
+            self.credentials_manager.add_credential(
+                user_credential_group_id,
+                secret_name,
+                secret_value,
+                is_secret=True,
+            )
 
         session.commit()
 
         updated_credentials = self.credentials_manager.get_user_credentials(
             user.id, user_credentials_id=user_credentials_id, group_id=user_credential_group_id
         )
-        return self._construct_credential_group_response(user_credential_group_id, group_name, updated_credentials)
+        return self._construct_credential_group_response(
+            user_credential_group_id,
+            group_name,
+            updated_credentials,
+        )
 
     def _construct_credential_group_response(
-        self, group_id: int, group_name: str, group_credentials: CredentialsAssociation
+        self,
+        group_id: int,
+        group_name: str,
+        group_credentials: CredentialsAssociation,
     ) -> ServiceCredentialGroupResponse:
         updated_variables = []
         updated_secrets = []
         for *_, credential in group_credentials:
             if credential.is_secret:
-                updated_secrets.append({"name": credential.name, "is_set": credential.is_set})
+                updated_secrets.append(
+                    {
+                        "name": credential.name,
+                        "is_set": credential.is_set,
+                    }
+                )
             else:
-                updated_variables.append({"name": credential.name, "value": credential.value})
+                updated_variables.append(
+                    {
+                        "name": credential.name,
+                        "value": credential.value,
+                    }
+                )
 
         group_data = {
             "id": group_id,
@@ -534,7 +585,11 @@ class CredentialsService:
                     f"Required secret '{required_secret.name}' is not provided for service '{service_name}'."
                 )
 
-    def _ensure_user_access(self, trans: ProvidesUserContext, user_id: FlexibleUserIdType) -> User:
+    def _ensure_user_access(
+        self,
+        trans: ProvidesUserContext,
+        user_id: FlexibleUserIdType,
+    ) -> User:
         if trans.anonymous:
             raise AuthenticationRequired("You need to be logged in to access your credentials.")
         assert trans.user is not None
