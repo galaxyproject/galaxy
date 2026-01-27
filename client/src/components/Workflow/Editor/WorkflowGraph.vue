@@ -49,14 +49,13 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useD3Zoom(
-    scale.value,
-    minZoom,
-    maxZoom,
-    canvas,
-    scroll,
-    props.initialPosition,
-);
+const {
+    transform,
+    panBy,
+    setZoom,
+    moveTo,
+    setTransform: d3SetTransform,
+} = useD3Zoom(scale.value, minZoom, maxZoom, canvas, scroll, props.initialPosition);
 
 watch(
     () => transform.value,
@@ -180,6 +179,7 @@ defineExpose({
     setZoom,
     moveTo,
     highlightGraphRegion,
+    setTransform: d3SetTransform,
 });
 </script>
 

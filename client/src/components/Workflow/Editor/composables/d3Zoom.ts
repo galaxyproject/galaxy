@@ -80,5 +80,14 @@ export function useD3Zoom(
         }
     }
 
-    return { transform, setZoom, panBy, moveTo };
+    function setTransform(newTransform: { x: number; y: number; k: number }) {
+        if (targetRef.value) {
+            const d3Selection = select(targetRef.value).call(d3Zoom);
+            const updatedTransform = zoomIdentity.translate(newTransform.x, newTransform.y).scale(newTransform.k);
+            d3Zoom.transform(d3Selection, updatedTransform);
+            transform.value = newTransform;
+        }
+    }
+
+    return { transform, setZoom, panBy, moveTo, setTransform };
 }

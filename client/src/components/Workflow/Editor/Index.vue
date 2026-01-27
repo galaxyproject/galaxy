@@ -265,6 +265,7 @@ import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
+import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
 import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
@@ -338,6 +339,8 @@ export default {
         const id = ref(props.workflowId || uid);
 
         const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id);
+
+        const { getWorkflowBoundingBox } = useWorkflowBoundingBox(id);
 
         const { undo, redo } = undoRedoStore;
         const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
@@ -711,6 +714,7 @@ export default {
             onHighlightRegion,
             onScrollTo,
             scrollToId,
+            getWorkflowBoundingBox,
         };
     },
     data() {
@@ -753,7 +757,7 @@ export default {
     watch: {
         id(newId, oldId) {
             if (oldId) {
-                this._loadCurrent(newId);
+                this._loadCurrent(newId, undefined, true);
             }
         },
         annotation(newAnnotation, oldAnnotation) {
@@ -793,7 +797,7 @@ export default {
     async created() {
         this.services = new Services();
         this.lastQueue = new LastQueue();
-        await this._loadCurrent(this.id, this.version);
+        await this._loadCurrent(this.id, this.version, true);
         this.initialLoading = false;
     },
     methods: {
@@ -1204,14 +1208,22 @@ export default {
          * Fetches and loads the workflow data for the given id and version into the editor.
          * @param {string} id - The workflow ID
          * @param {number|undefined} version - The workflow version number
+         * @param {boolean|undefined} fitGraph - Whether to reset the workflow transform and positioning to the default fit
          */
-        async _loadCurrent(id, version) {
+        async _loadCurrent(id, version = undefined, fitGraph = false) {
             if (!this.isNewTempWorkflow) {
                 this.loadingWorkflow = true;
-                await this.resetStores();
 
+                // Store the current transform and bounding box before loading; to adjust for coordinate shifts
+                const transformBefore = { ...this.transform };
+                const boundingBoxBefore = this.getWorkflowBoundingBox();
+                const boundsBefore = { minX: boundingBoxBefore.x, minY: boundingBoxBefore.y };
                 try {
+                    // Load editor view workflow data
                     const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
+
+                    // Reset stores and load new data onto editor
+                    await this.resetStores();
                     await fromSimple(id, data);
                     await this._loadEditorData(data);
                 } catch (e) {
@@ -1221,10 +1233,42 @@ export default {
                 await until(() => this.datatypesMapperLoading).toBe(false);
                 await nextTick();
 
-                this.workflowGraph.fitWorkflow();
-
+                if (fitGraph) {
+                    this.workflowGraph.fitWorkflow();
+                } else {
+                    // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
+                    this.adjustForCoordinateShift(transformBefore, boundsBefore);
+                }
                 this.loadingWorkflow = false;
             }
+        },
+        /**
+         * Adjusts the workflow graph transform to account for coordinate shifts that may be
+         * computed by the backend when a workflow step order/positioning changes.
+         * @param transformBefore The transform we had before refetching the workflow
+         * @param boundsBefore The bounding box min coordinates we had before refetching the workflow
+         */
+        adjustForCoordinateShift(transformBefore, boundsBefore) {
+            // Calculate new bounds after loading
+            const newBoundingBox = this.getWorkflowBoundingBox();
+            const newBounds = { minX: newBoundingBox.x, minY: newBoundingBox.y };
+
+            const offsetX = boundsBefore.minX - newBounds.minX;
+            const offsetY = boundsBefore.minY - newBounds.minY;
+
+            // Scale the offset by the current zoom level since transform is in viewport coordinates
+            const scaledOffsetX = offsetX * transformBefore.k;
+            const scaledOffsetY = offsetY * transformBefore.k;
+
+            this.workflowGraph.setTransform({
+                x: transformBefore.x + scaledOffsetX,
+                y: transformBefore.y + scaledOffsetY,
+                k: transformBefore.k,
+            });
+
+            // TODO: Verify if setting scale is still needed after setting full transform
+            //       I still needed to set scale separately otherwise it would reset to 1
+            this.stateStore.scale = transformBefore.k;
         },
         onLicense(license) {
             if (this.license != license) {
