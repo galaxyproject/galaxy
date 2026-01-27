@@ -408,6 +408,39 @@ class CredentialsContext(RootModel):
     root: list[ServiceCredentialsContext]
 
 
+class TestCredentialValue(Model):
+    """Represents a credential value (variable or secret) in a test."""
+
+    name: Annotated[str, Field(description="The name of the credential variable or secret.")]
+    value: Annotated[str, Field(description="The value of the credential variable or secret.")]
+
+
+class TestServiceCredentialsContext(Model):
+    """Context for test credentials to be used during tool testing.
+
+    Contains embedded credential values instead of database references.
+    """
+
+    name: Annotated[str, Field(description="The name of the service (credentials requirement name).")]
+    variables: Annotated[
+        list[TestCredentialValue],
+        Field(default_factory=list, description="List of credential variables with embedded values."),
+    ]
+    secrets: Annotated[
+        list[TestCredentialValue],
+        Field(default_factory=list, description="List of credential secrets with embedded values."),
+    ]
+
+
+class TestCredentialsContext(RootModel):
+    """Context for test credentials to be used during tool testing.
+
+    Contains embedded credential values for testing without vault access.
+    """
+
+    root: list[TestServiceCredentialsContext]
+
+
 class CredentialsContextResponse(RootModel):
     """Response model for credentials context used during tool execution.
 
