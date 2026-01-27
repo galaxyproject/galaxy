@@ -19,13 +19,71 @@ openai = pytest.importorskip("openai")
 TEST_VISUALIZATION_PLUGINS_DIR = os.path.join(os.path.dirname(__file__), "test_visualization_plugins")
 
 
-class TestAiApi(IntegrationTestCase):
+class TestVisualizationPluginsApi(IntegrationTestCase):
+    """Tests for the visualization plugins API endpoints."""
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         config["ai_api_key"] = "ai_api_key"
         config["ai_api_base_url"] = "ai_api_base_url"
         config["ai_model"] = "ai_model"
         config["visualization_plugins_directory"] = TEST_VISUALIZATION_PLUGINS_DIR
+
+    def test_index(self):
+        """Test that GET /api/plugins returns a list of plugins."""
+        response = self._get("plugins")
+        self._assert_status_code_is(response, 200)
+        plugins = response.json()
+        assert isinstance(plugins, list)
+
+    def test_show_returns_all_fields(self):
+        """Test that GET /api/plugins/{id} returns all expected fields including params, tags, tests, help, data_sources."""
+        response = self._get("plugins/jupyterlite")
+        self._assert_status_code_is(response, 200)
+        plugin = response.json()
+
+        # Verify required fields
+        assert plugin["name"] == "jupyterlite"
+        assert plugin["html"] == "JupyterLite Test"
+        assert plugin["description"] == "Test fixture for visualization plugin integration tests"
+        assert plugin["embeddable"] is False
+        assert "entry_point" in plugin
+        assert "href" in plugin
+
+        # Verify params are returned correctly
+        assert "params" in plugin
+        params = plugin["params"]
+        assert "dataset_id" in params
+        assert params["dataset_id"]["required"] is True
+        assert params["dataset_id"]["type"] == "str"
+        assert "limit" in params
+        assert params["limit"]["required"] is False
+        assert params["limit"]["type"] == "int"
+        assert params["limit"]["default"] == "10"
+
+        # Verify data_sources are returned
+        assert "data_sources" in plugin
+        data_sources = plugin["data_sources"]
+        assert len(data_sources) >= 1
+        assert data_sources[0]["model_class"] == "HistoryDatasetAssociation"
+
+        # Verify specs are returned
+        assert "specs" in plugin
+        assert plugin["specs"]["custom_setting"] == "test_value"
+
+        # Verify tags are returned
+        assert "tags" in plugin
+        tags = plugin["tags"]
+        assert "Test" in tags
+        assert "Integration" in tags
+
+        # Verify help is returned
+        assert "help" in plugin
+        assert "test help text" in plugin["help"]
+
+        # Verify tests are returned
+        assert "tests" in plugin
+        assert len(plugin["tests"]) >= 1
 
     def _create_payload(self, extra=None):
         payload = {
