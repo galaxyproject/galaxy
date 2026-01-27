@@ -4161,9 +4161,8 @@ class RequiredTool:
         self._tool_id = tool_id
         self._default_history_id = default_history_id
 
-    @property
-    def execute(self) -> "DescribeToolExecution":
-        execution = DescribeToolExecution(self._dataset_populator, self._tool_id)
+    def execute(self, use_cached_job: bool = False) -> "DescribeToolExecution":
+        execution = DescribeToolExecution(self._dataset_populator, self._tool_id, use_cached_job=use_cached_job)
         if self._default_history_id:
             execution.in_history(self._default_history_id)
         return execution
@@ -4213,9 +4212,10 @@ class DescribeToolExecution:
     _inputs: dict[str, Any]
     _tool_request_id: Optional[str] = None  # if input_format == "request" request ID
 
-    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str):
+    def __init__(self, dataset_populator: BaseDatasetPopulator, tool_id: str, use_cached_job: bool = False) -> None:
         self._dataset_populator = dataset_populator
         self._tool_id = tool_id
+        self.use_cached_job = use_cached_job
         self._inputs = {}
 
     def in_history(self, has_history_id: Union[str, "TargetHistory"]) -> Self:
@@ -4245,7 +4245,9 @@ class DescribeToolExecution:
         return self
 
     def _execute(self):
-        kwds: dict[str, Any] = {}
+        kwds: dict[str, Any] = {
+            "use_cached_job": self.use_cached_job,
+        }
         if self._input_format is not None:
             kwds["input_format"] = self._input_format
         history_id = self._ensure_history_id
