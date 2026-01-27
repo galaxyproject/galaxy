@@ -323,11 +323,13 @@ class FastAPIPlugins:
             for item in history.contents_iter(types=["dataset"], deleted=False, visible=True):
                 hda = cast(HistoryDatasetAssociation, item)
                 if hda.hid is not None and registry.get_visualization(trans, id, hda):
-                    hdas.append(PluginDatasetEntry(
-                        id=trans.security.encode_id(hda.id),
-                        hid=hda.hid,
-                        name=hda.name,
-                    ))
+                    hdas.append(
+                        PluginDatasetEntry(
+                            id=trans.security.encode_id(hda.id),
+                            hid=hda.hid,
+                            name=hda.name,
+                        )
+                    )
             hdas.sort(key=lambda h: h.hid, reverse=True)
             return PluginDatasetsResponse(hdas=hdas)
         else:

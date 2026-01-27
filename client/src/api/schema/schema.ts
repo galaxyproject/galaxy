@@ -19868,6 +19868,20 @@ export interface components {
              */
             state: "ok" | "not_ok" | "unknown";
         };
+        /** PluginDatasetEntry */
+        PluginDatasetEntry: {
+            /** Hid */
+            hid: number;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** PluginDatasetsResponse */
+        PluginDatasetsResponse: {
+            /** Hdas */
+            hdas: components["schemas"]["PluginDatasetEntry"][];
+        };
         /**
          * PluginKind
          * @description Enum to distinguish between different kinds or categories of plugins.
@@ -38838,9 +38852,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json":
+                        | components["schemas"]["PluginDatasetsResponse"]
+                        | components["schemas"]["VisualizationPluginResponse"];
                 };
             };
             /** @description Request Error */
