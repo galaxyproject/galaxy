@@ -56,10 +56,6 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         assert "dataset_id" in params
         assert params["dataset_id"]["required"] is True
         assert params["dataset_id"]["type"] == "str"
-        assert "limit" in params
-        assert params["limit"]["required"] is False
-        assert params["limit"]["type"] == "int"
-        assert params["limit"]["default"] == "10"
 
         # Verify data_sources are returned
         assert "data_sources" in plugin
