@@ -24897,6 +24897,15 @@ export interface components {
         /** VisualizationPluginResponse */
         VisualizationPluginResponse: {
             /**
+             * Data Sources
+             * @description The data sources of the plugin.
+             */
+            data_sources?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+            /**
              * Description
              * @description The description of the plugin.
              */
@@ -24913,6 +24922,11 @@ export interface components {
             entry_point: {
                 [key: string]: unknown;
             };
+            /**
+             * Help
+             * @description The help text of the plugin.
+             */
+            help?: string | null;
             /**
              * Href
              * @description The href of the plugin.
@@ -24934,6 +24948,13 @@ export interface components {
              */
             name: string;
             /**
+             * Params
+             * @description The parameters of the plugin.
+             */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Settings
              * @description The settings of the plugin.
              */
@@ -24949,6 +24970,20 @@ export interface components {
             specs?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Tags
+             * @description The tags of the plugin.
+             */
+            tags?: string[] | null;
+            /**
+             * Tests
+             * @description The tests of the plugin.
+             */
+            tests?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /**
              * Title
              * @description The title of the plugin.
