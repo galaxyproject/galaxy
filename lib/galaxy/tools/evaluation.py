@@ -477,7 +477,7 @@ class ToolEvaluator:
         def wrap_input(input_values, input):
             value = input_values[input.name]
             if isinstance(input, DataToolParameter) and input.multiple:
-                dataset_instances = DatasetListWrapper.to_dataset_instances(value)
+                dataset_instances = DatasetListWrapper.to_dataset_instances(value, self.tool.profile)
                 input_values[input.name] = DatasetListWrapper(
                     job_working_directory,
                     dataset_instances,
@@ -521,9 +521,7 @@ class ToolEvaluator:
                     input, value, other_values=param_dict, compute_environment=self.compute_environment
                 )
             else:
-                input_values[input.name] = InputValueWrapper(
-                    input, value, param_dict, profile=self.tool and self.tool.profile or None
-                )
+                input_values[input.name] = InputValueWrapper(input, value, param_dict)
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These

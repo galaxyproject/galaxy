@@ -19,6 +19,7 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
 from typing_extensions import (
     Self,
 )
@@ -129,7 +130,6 @@ class InputValueWrapper(ToolParameterValueWrapper):
         input: "ToolParameter",
         value: Optional[str],
         other_values: Optional[dict[str, str]] = None,
-        profile: Optional[float] = None,
     ) -> None:
         self.input = input
         if value is None and input.type == "text":
@@ -283,6 +283,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         if not self.input.multiple:
             raise Exception("Tried to iterate over a non-multiple parameter.")
         return self.value.__iter__()
+
+    def __len__(self) -> int:
+        if not self.input.multiple:
+            raise Exception("Non-multiple parameter has no len().")
+        return self.value.__len__()
 
 
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
@@ -593,13 +598,15 @@ class DatasetListWrapper(list[DatasetFilenameWrapper], ToolParameterValueWrapper
     @staticmethod
     def to_dataset_instances(
         dataset_instance_sources: Any,
+        profile: Optional[float],
     ) -> list[Union[None, DatasetInstance]]:
         dataset_instances: list[Optional[DatasetInstance]] = []
         if not isinstance(dataset_instance_sources, list):
             dataset_instance_sources = [dataset_instance_sources]
         for dataset_instance_source in dataset_instance_sources:
             if dataset_instance_source is None:
-                dataset_instances.append(dataset_instance_source)
+                if profile is None or Version(str(profile)) < Version("26.0"):
+                    dataset_instances.append(dataset_instance_source)
             elif getattr(dataset_instance_source, "history_content_type", None) == "dataset":
                 dataset_instances.append(dataset_instance_source)
             elif getattr(dataset_instance_source, "hda", None):
