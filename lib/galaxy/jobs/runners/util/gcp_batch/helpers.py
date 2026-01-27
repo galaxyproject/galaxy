@@ -11,8 +11,8 @@ DEFAULT_NFS_PATH = "/"
 DEFAULT_MEMORY_MIB = 2048
 DEFAULT_CPU_MILLI = 1000
 DEFAULT_CVMFS_DOCKER_VOLUME = (
-'-v "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro" '
-'-v "/cvmfs/cloud.galaxyproject.org:/cvmfs/cloud.galaxyproject.org:ro"'
+    '-v "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro" '
+    '-v "/cvmfs/cloud.galaxyproject.org:/cvmfs/cloud.galaxyproject.org:ro"'
 )
 
 
