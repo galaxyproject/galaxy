@@ -64,6 +64,12 @@ from cleanup_datasets import CleanupDatasetsApplication
 
 import galaxy.config
 import galaxy.util
+from galaxy.model import (
+    Dataset,
+    History,
+    HistoryDatasetAssociation,
+    User,
+)
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -200,20 +206,14 @@ def administrative_delete_datasets(
     start = time.time()
     session = app.sa_session
 
-    # Aliases for ORM‑mapped classes
-    HDA = aliased(app.model.HistoryDatasetAssociation)
-    Hist = aliased(app.model.History)
-    User = aliased(app.model.User)
-    Dataset = aliased(app.model.Dataset)
-
     # Get HDAs older than cutoff time (ignore tool_id at this point)
     hda_ids_query = (
-        select(HDA.id)
-        .join(Dataset, Dataset.id == HDA.dataset_id, isouter=True)
+        select(HistoryDatasetAssociation.id)
+        .join(Dataset, Dataset.id == HistoryDatasetAssociation.dataset_id, isouter=True)
         .where(and_(
             Dataset.deleted == false(),
-            HDA.update_time < cutoff_time,
-            HDA.deleted == false()))
+            HistoryDatasetAssociation.update_time < cutoff_time,
+            HistoryDatasetAssociation.deleted == false()))
     )
 
     # Add all datasets associated with Histories to our list
@@ -235,10 +235,10 @@ def administrative_delete_datasets(
     for hda_id in hda_ids:
         # Bind hda_id for current iteration
         rows = session.execute(
-            select(User.email, HDA.name, Hist.name)
-            .join(Hist, Hist.user_id == User.id)
-            .join(HDA, HDA.history_id == Hist.id)
-            .where(HDA.id == hda_id)
+            select(User.email, HistoryDatasetAssociation.name, History.name)
+            .join(History, History.user_id == User.id)
+            .join(HistoryDatasetAssociation, HistoryDatasetAssociation.history_id == History.id)
+            .where(HistoryDatasetAssociation.id == hda_id)
         ).all()
 
         for email, dataset_name, history_name in rows:
@@ -247,7 +247,7 @@ def administrative_delete_datasets(
 
             if not info_only and not email_only:
                 # Get the HistoryDatasetAssociation objects
-                hda = session.get(app.model.HistoryDatasetAssociation, hda_id)
+                hda = session.get(HistoryDatasetAssociation, hda_id)
                 if not hda.deleted:
                     # Mark the HistoryDatasetAssociation as deleted
                     hda.deleted = True
@@ -299,7 +299,7 @@ def _get_tool_id_for_hda(app, hda_id):
     if tool_id is not None:
         return tool_id
 
-    hda = session.get(app.model.HistoryDatasetAssociation, hda_id)
+    hda = session.get(HistoryDatasetAssociation, hda_id)
     if hda is None:
         return None
 
