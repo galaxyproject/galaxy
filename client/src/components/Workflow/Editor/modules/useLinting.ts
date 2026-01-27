@@ -87,8 +87,8 @@ export function useLintData(
         },
         {
             name: "annotationLength",
-            exists: checkAnnotation.value,
-            resolved: checkAnnotationLength.value,
+            exists: checkAnnotation.value && !checkAnnotationLength.value,
+            resolved: false,
         },
         {
             name: "readme",

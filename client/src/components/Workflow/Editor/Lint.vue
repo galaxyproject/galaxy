@@ -61,12 +61,6 @@ const showRefactor = computed(
     () => untypedParameterWarnings.value.length || disconnectedInputs.value.length || unlabeledOutputs.value.length,
 );
 
-const annotationLengthSuccessMessage = computed(() =>
-    checkAnnotation.value
-        ? "This workflow has a short description of appropriate length."
-        : "This workflow does not have a short description.",
-);
-
 const emit = defineEmits<{
     (e: "onAttributes", highlight: { highlight: string }): void;
     (
@@ -212,23 +206,22 @@ async function onRefactor() {
         <LintSection
             data-description="linting has annotation"
             :okay="checkAnnotation"
-            success-message="This workflow has a short description. Ideally, this helps the executors of the workflow
-                    understand the purpose and usage of the workflow."
+            success-message="This workflow has a short description."
             :warning-message="bestPracticeWarningAnnotation"
             attribute-link="Describe your Workflow."
             @onClickAttribute="onAttributes('annotation')" />
         <LintSection
-            v-if="checkAnnotation"
+            v-if="checkAnnotation && !checkAnnotationLength"
             data-description="linting annotation length"
-            :okay="checkAnnotationLength"
-            :success-message="annotationLengthSuccessMessage"
+            :okay="false"
+            success-message="This workflow has a short description of appropriate length."
             :warning-message="bestPracticeWarningAnnotationLength"
             attribute-link="Shorten your Workflow Description."
             @onClickAttribute="onAttributes('annotation')" />
         <LintSection
             data-description="linting has readme"
             :okay="checkReadme"
-            success-message="This workflow has a readme. Ideally, this helps the researchers understand the purpose, limitations, and usage of the workflow."
+            success-message="This workflow has a readme."
             :warning-message="bestPracticeWarningReadme"
             attribute-link="Provide Readme for your Workflow."
             @onClickAttribute="onAttributes('readme')" />
