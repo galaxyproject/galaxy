@@ -11,7 +11,6 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
-from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import upload_common
 from galaxy.tools.execute import (
