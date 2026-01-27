@@ -63,10 +63,6 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
-from galaxy.schema.credentials import (
-    CredentialsContext,
-    TestCredentialsContext,
-)
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (
@@ -138,6 +134,7 @@ from galaxy.tool_util_models.tool_source import (
 )
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
+    CredentialsContextT,
     DefaultToolAction,
     ToolAction,
 )
@@ -2299,7 +2296,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
         rerun_remap_job_id: Optional[int] = None,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         input_format: str = "legacy",
     ):
         """The tool request API+tasks version of handle_input."""
@@ -2332,7 +2329,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         history: Optional[History] = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         input_format: InputFormatT = "legacy",
         tags: Optional[list[str]] = None,
     ):
@@ -2428,7 +2425,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         collection_info: Optional[MatchingCollections],
         job_callback: Optional[JobCallbackT],
         preferred_object_store_id: Optional[str],
-        credentials_context: Optional[CredentialsContext | TestCredentialsContext],
+        credentials_context: CredentialsContextT,
         flush_job: bool,
         skip: bool,
     ):
@@ -2565,7 +2562,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,

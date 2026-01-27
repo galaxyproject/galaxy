@@ -28,10 +28,7 @@ from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
 )
-from galaxy.schema.credentials import (
-    CredentialsContext,
-    TestCredentialsContext,
-)
+from galaxy.tools.actions import CredentialsContextT
 from galaxy.tool_util.parameters.state import (
     JobInternalToolState,
     RequestInternalDereferencedToolState,
@@ -99,7 +96,7 @@ def execute_async(
     completed_jobs: Optional[CompletedJobsT] = None,
     rerun_remap_job_id: Optional[int] = None,
     preferred_object_store_id: Optional[str] = None,
-    credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None,
+    credentials_context: CredentialsContextT = None,
     collection_info: Optional[MatchingCollections] = None,
     workflow_invocation_uuid: Optional[str] = None,
     invocation_step: Optional[model.WorkflowInvocationStep] = None,
@@ -138,7 +135,7 @@ def execute(
     history: model.History,
     rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
     preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-    credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None,
+    credentials_context: CredentialsContextT = None,
     collection_info: Optional[MatchingCollections] = None,
     workflow_invocation_uuid: Optional[str] = None,
     invocation_step: Optional[model.WorkflowInvocationStep] = None,
@@ -181,7 +178,7 @@ def _execute(
     tool_request: Optional[ToolRequest],
     rerun_remap_job_id: Optional[int],
     preferred_object_store_id: Optional[str],
-    credentials_context: Optional[CredentialsContext | TestCredentialsContext],
+    credentials_context: CredentialsContextT,
     collection_info: Optional[MatchingCollections],
     workflow_invocation_uuid: Optional[str],
     invocation_step: Optional[model.WorkflowInvocationStep],
