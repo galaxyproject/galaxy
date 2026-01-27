@@ -54,6 +54,7 @@ from time import strftime
 from mako.template import Template
 from sqlalchemy import (
     and_,
+    false,
     select,
 )
 from sqlalchemy.orm import aliased
