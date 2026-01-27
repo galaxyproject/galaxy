@@ -605,7 +605,7 @@ class BaseDatasetPopulator(BasePopulator):
         assert len(hdas) == 1
         return hdas[0]
 
-    def create_deferred_hda(self, history_id, uri: str, ext: Optional[str] = None) -> dict[str, Any]:
+    def create_deferred_hda(self, history_id: str, uri: str, ext: Optional[str] = None) -> dict[str, Any]:
         item = {
             "src": "url",
             "url": uri,
@@ -4245,7 +4245,7 @@ class DescribeToolExecution:
         return self
 
     def _execute(self):
-        kwds = {}
+        kwds: dict[str, Any] = {}
         if self._input_format is not None:
             kwds["input_format"] = self._input_format
         history_id = self._ensure_history_id
