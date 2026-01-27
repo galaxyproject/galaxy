@@ -977,23 +977,41 @@ class ToolEvaluator:
     def _inject_credentials(self):
         """Inject credentials as environment variables if the tool has any service credentials defined.
 
-        Prerequisites:
-        - The tool must have credentials defined.
-        - The app must have a vault set up.
+        Uses a CredentialsResolver to resolve credentials from the appropriate source
+        (test mode or vault) into environment variables.
         """
         if not self.tool.credentials:
             return
+
+        resolver = self._get_credentials_resolver()
+        if resolver:
+            env_vars = resolver.resolve(self.tool.credentials)
+            self.environment_variables.extend(env_vars)
+
+    def _get_credentials_resolver(self) -> Optional[CredentialsResolver]:
+        """Get the appropriate credentials resolver based on the execution context.
+
+        Returns:
+            TestCredentialsResolver if test credentials are present in job parameters,
+            VaultCredentialsResolver for production mode with vault access,
+            or None if credentials cannot be resolved.
+        """
+        # Check for test credentials in job parameters (test mode from planemo)
+        for param in self.job.parameters:
+            if param.name == "__test_credentials__":
+                test_credentials = json.loads(param.value)
+                return TestCredentialsResolver(test_credentials)
+
+        # Production mode: use database associations
         if not isinstance(self.app, StructuredApp):
             log.warning("Tool credentials specified but app is not a StructuredApp, cannot set environment variables")
-            return
+            return None
 
         if self._user is not None:
-            user_credential_env_vars = UserCredentialsEnvironmentBuilder(
-                self.app.vault, self.app.model.session, self._user
-            ).build_from_job_context(
-                requirements=self.tool.credentials, context=self.job.credentials_context_associations
+            return VaultCredentialsResolver(
+                self.app.vault, self.app.model.session, self._user, self.job.credentials_context_associations
             )
-            self.environment_variables.extend(user_credential_env_vars)
+        return None
 
     @property
     def _history(self):
