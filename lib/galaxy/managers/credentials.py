@@ -1,4 +1,5 @@
 import logging
+import warnings
 from typing import (
     Optional,
     Union,
@@ -29,6 +30,7 @@ from galaxy.security.vault import (
     Vault,
 )
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
+from galaxy.tool_util.verify.credentials import CredentialsResolver
 
 log = logging.getLogger(__name__)
 

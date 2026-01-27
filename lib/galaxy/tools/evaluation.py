@@ -22,7 +22,7 @@ from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
-from galaxy.managers.credentials import UserCredentialsEnvironmentBuilder
+from galaxy.managers.credentials import VaultCredentialsResolver
 from galaxy.model import (
     InpDataDictT,
     OutCollectionsDictT,
@@ -42,6 +42,10 @@ from galaxy.structured_app import (
 )
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.verify.credentials import (
+    CredentialsResolver,
+    TestCredentialsResolver,
+)
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
     InputConfigFile,

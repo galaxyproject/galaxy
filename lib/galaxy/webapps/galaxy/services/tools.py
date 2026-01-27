@@ -35,7 +35,12 @@ from galaxy.model import (
     PostJobAction,
     User,
 )
-from galaxy.schema.credentials import CredentialsContext
+from galaxy.schema.credentials import (
+    CredentialsContext,
+    TestCredentialsContext,
+    TestCredentialValue,
+    TestServiceCredentialsContext,
+)
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
     CreateFileLandingPayload,
