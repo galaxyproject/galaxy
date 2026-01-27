@@ -210,10 +210,13 @@ def administrative_delete_datasets(
     hda_ids_query = (
         select(HistoryDatasetAssociation.id)
         .join(Dataset, isouter=True)
-        .where(and_(
-            Dataset.deleted == false(),
-            HistoryDatasetAssociation.update_time < cutoff_time,
-            HistoryDatasetAssociation.deleted == false()))
+        .where(
+            and_(
+                Dataset.deleted == false(),
+                HistoryDatasetAssociation.update_time < cutoff_time,
+                HistoryDatasetAssociation.deleted == false(),
+            )
+        )
     )
 
     # Add all datasets associated with Histories to our list
@@ -290,11 +293,7 @@ def _get_tool_id_for_hda(app, hda_id):
 
     session = app.sa_session
 
-    job_query = (
-        select(Job.tool_id)
-        .join(JTODA)
-        .where(JTODA.dataset_id == hda_id)
-    )
+    job_query = select(Job.tool_id).join(JTODA).where(JTODA.dataset_id == hda_id)
 
     tool_id = session.execute(job_query).scalars().first()
     if tool_id is not None:
