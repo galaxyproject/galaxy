@@ -243,53 +243,58 @@ class CredentialsManager:
         self.session.flush()
 
     def update_current_group(
-        self,
-        user_credentials: UserCredentials,
-        group_id: Optional[DecodedDatabaseIdField] = None,
+        self, user_credentials: UserCredentials, group_id: Optional[DecodedDatabaseIdField] = None
     ) -> None:
         user_credentials.current_group_id = group_id
         self.session.add(user_credentials)
 
-    def delete_rows(
-        self,
-        rows_to_delete: CredentialsModelsSet,
-    ) -> None:
+    def delete_rows(self, rows_to_delete: CredentialsModelsSet) -> None:
         for row in rows_to_delete:
             self.session.delete(row)
         self.session.commit()
 
 
-class UserCredentialsEnvironmentBuilder:
+class VaultCredentialsResolver(CredentialsResolver):
+    """Resolver for production mode credentials using vault storage.
+
+    Queries the database for credential associations and reads secrets
+    from the vault to build environment variables for tool execution.
+    """
+
     def __init__(
-        self,
-        vault: Vault,
-        session: scoped_session,
-        user: User,
+        self, vault: Vault, session: scoped_session, user: User, job_context: list[JobCredentialsContextAssociation]
     ):
+        """Initialize with vault and job context.
+
+        Args:
+            vault: The vault instance for reading secrets.
+            session: Database session for credential queries.
+            user: The user whose credentials are being resolved.
+            job_context: List of job credential context associations.
+        """
         self.vault = vault
         self.session = session
         self.user = user
+        self.job_context = job_context
 
-    def build_from_job_context(
-        self, requirements: list[CredentialsRequirement], context: list[JobCredentialsContextAssociation]
-    ) -> list[dict[str, str]]:
-        """
-        Build environment variables for a given job credentials context.
+    def resolve(self, requirements: list[CredentialsRequirement]) -> list[dict[str, str]]:
+        """Resolve credentials from vault to environment variables.
 
-        Job credentials context contains specific user-selected credentials for multiple services
-        that were used when a job was created.
+        Args:
+            requirements: List of credential requirements from the tool definition.
 
-        Returns a list of environment variable dictionaries.
+        Returns:
+            List of environment variable dictionaries with 'name' and 'value' keys.
         """
         env_variables: list[dict[str, str]] = []
         user_vault = UserVaultWrapper(self.vault, self.user)
         user_id = self.user.id
 
-        if not context:
+        if not self.job_context:
             return env_variables
 
         # Create a mapping of (service_name, service_version) -> job credentials context for quick lookup
-        context_map = {(ctx.service_name, ctx.service_version): ctx for ctx in context}
+        context_map = {(ctx.service_name, ctx.service_version): ctx for ctx in self.job_context}
 
         for service in requirements:
             # Check if we have context for this service requirement
@@ -333,12 +338,7 @@ class UserCredentialsEnvironmentBuilder:
                 # Only read from vault if the secret has been set by the user
                 if secret.name in set_secret_names:
                     vault_ref = build_vault_credential_reference(
-                        source_type,
-                        source_id,
-                        service.name,
-                        service.version,
-                        current_group_id,
-                        secret.name,
+                        source_type, source_id, service.name, service.version, current_group_id, secret.name
                     )
                     secret_value = user_vault.read_secret(vault_ref) or ""
                     env_variables.append({"name": secret.inject_as_env, "value": secret_value})
@@ -348,3 +348,61 @@ class UserCredentialsEnvironmentBuilder:
                 env_variables.append({"name": variable.inject_as_env, "value": variable_value})
 
         return env_variables
+
+    def build_from_job_context(
+        self, requirements: list[CredentialsRequirement], context: list[JobCredentialsContextAssociation]
+    ) -> list[dict[str, str]]:
+        """Legacy method for backwards compatibility.
+
+        Deprecated: Use resolve() instead. This method is kept for backwards
+        compatibility with existing code that may call build_from_job_context.
+
+        Args:
+            requirements: List of credential requirements from the tool definition.
+            context: List of job credential context associations (ignored, uses self.job_context).
+
+        Returns:
+            List of environment variable dictionaries with 'name' and 'value' keys.
+        """
+        warnings.warn("build_from_job_context is deprecated, use resolve() instead", DeprecationWarning, stacklevel=2)
+        # Update job_context if different context is provided
+        if context != self.job_context:
+            self.job_context = context
+        return self.resolve(requirements)
+
+
+class UserCredentialsEnvironmentBuilder(VaultCredentialsResolver):
+    """Deprecated: Use VaultCredentialsResolver instead.
+
+    This class is maintained for backwards compatibility only.
+    """
+
+    def __init__(self, vault: Vault, session: scoped_session, user: User):
+        """Initialize with vault (job_context will be set via build_from_job_context).
+
+        Args:
+            vault: The vault instance for reading secrets.
+            session: Database session for credential queries.
+            user: The user whose credentials are being resolved.
+        """
+        warnings.warn(
+            "UserCredentialsEnvironmentBuilder is deprecated, use VaultCredentialsResolver instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(vault, session, user, job_context=[])
+
+    def build_from_job_context(
+        self, requirements: list[CredentialsRequirement], context: list[JobCredentialsContextAssociation]
+    ) -> list[dict[str, str]]:
+        """Build environment variables for a given job credentials context.
+
+        Args:
+            requirements: List of credential requirements from the tool definition.
+            context: List of job credential context associations.
+
+        Returns:
+            List of environment variable dictionaries with 'name' and 'value' keys.
+        """
+        self.job_context = context
+        return self.resolve(requirements)
