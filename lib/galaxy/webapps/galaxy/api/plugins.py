@@ -9,6 +9,7 @@ from typing import (
     cast,
     Literal,
     Optional,
+    Union,
 )
 
 from fastapi import (
@@ -43,7 +44,12 @@ from galaxy.managers import (
     hdas,
     histories,
 )
-from galaxy.model import User
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    User,
+)
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.visualization import VisualizationPluginResponse
 from galaxy.structured_app import StructuredApp
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -100,6 +106,16 @@ class ChatCompletionRequest(BaseModel):
     stream: Optional[bool] = False
     max_tokens: Optional[int] = None
     model_config = dict(extra="allow")
+
+
+class PluginDatasetEntry(BaseModel):
+    id: str
+    hid: int
+    name: str
+
+
+class PluginDatasetsResponse(BaseModel):
+    hdas: list[PluginDatasetEntry]
 
 
 @router.cbv
@@ -266,7 +282,7 @@ class FastAPIPlugins:
     def index(
         self,
         trans: SessionRequestContext = DependsOnTrans,
-        dataset_id: Optional[str] = Query(
+        dataset_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
             title="Dataset ID",
             description="Filter to visualizations compatible with this dataset.",
@@ -281,8 +297,7 @@ class FastAPIPlugins:
         registry = self._get_registry()
         target_object = None
         if dataset_id is not None:
-            decoded_id = trans.security.decode_id(dataset_id)
-            target_object = self.hda_manager.get_accessible(decoded_id, trans.user)
+            target_object = self.hda_manager.get_accessible(dataset_id, trans.user)
         return registry.get_visualizations(trans, target_object=target_object, embeddable=embeddable or False)
 
     @router.get("/api/plugins/{id}")
@@ -294,31 +309,29 @@ class FastAPIPlugins:
             title="Plugin ID",
             description="The visualization plugin identifier.",
         ),
-        history_id: Optional[str] = Query(
+        history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
             title="History ID",
             description="Filter datasets compatible with this plugin from the specified history.",
         ),
-    ) -> dict[str, Any]:
+    ) -> Union[PluginDatasetsResponse, VisualizationPluginResponse]:
         """Get details of a specific visualization plugin."""
         registry = self._get_registry()
         if history_id is not None:
-            decoded_history_id = trans.security.decode_id(history_id)
-            history = self.history_manager.get_owned(decoded_history_id, trans.user, current_history=trans.history)
-            result: dict[str, Any] = {"hdas": []}
-            for hda in history.contents_iter(types=["dataset"], deleted=False, visible=True):
-                if registry.get_visualization(trans, id, hda):
-                    result["hdas"].append(
-                        {
-                            "id": trans.security.encode_id(hda.id),
-                            "hid": hda.hid,
-                            "name": hda.name,
-                        }
-                    )
-            result["hdas"].sort(key=lambda h: h["hid"], reverse=True)
-            return result
+            history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+            hdas: list[PluginDatasetEntry] = []
+            for item in history.contents_iter(types=["dataset"], deleted=False, visible=True):
+                hda = cast(HistoryDatasetAssociation, item)
+                if hda.hid is not None and registry.get_visualization(trans, id, hda):
+                    hdas.append(PluginDatasetEntry(
+                        id=trans.security.encode_id(hda.id),
+                        hid=hda.hid,
+                        name=hda.name,
+                    ))
+            hdas.sort(key=lambda h: h.hid, reverse=True)
+            return PluginDatasetsResponse(hdas=hdas)
         else:
-            return registry.get_plugin(id).to_dict()
+            return VisualizationPluginResponse(**registry.get_plugin(id).to_dict())
 
     def _get_registry(self):
         """Get the visualizations registry or raise an error if not configured."""
