@@ -353,7 +353,7 @@ class ToolsService(ServiceBase):
             inputs.get("use_cached_job", "false")
         )
         preferred_object_store_id = payload.get("preferred_object_store_id")
-        credentials_context = payload.get("credentials_context")
+        credentials_context_raw = payload.get("credentials_context")
         input_format = str(payload.get("input_format", "legacy"))
         if input_format not in get_args(InputFormatT):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
@@ -361,6 +361,39 @@ class ToolsService(ServiceBase):
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         tags = payload.get("__tags")
+
+        # Handle credentials_context - can be either:
+        # - JSON string (legacy API from planemo)
+        # - dict (test mode with embedded values from planemo)
+        # - list (production mode Pydantic model structure)
+        credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None
+        if credentials_context_raw:
+            # Parse JSON string if needed
+            if isinstance(credentials_context_raw, str):
+                import json
+
+                credentials_context_raw = json.loads(credentials_context_raw)
+
+            if isinstance(credentials_context_raw, dict):
+                # Test mode from planemo - convert dict to TestCredentialsContext
+                # Expected format: {service_name: {variables: {name: value}, secrets: {name: value}}}
+                test_services = []
+                for service_name, creds in credentials_context_raw.items():
+                    variables = [
+                        TestCredentialValue(name=name, value=value)
+                        for name, value in creds.get("variables", {}).items()
+                    ]
+                    secrets = [
+                        TestCredentialValue(name=name, value=value) for name, value in creds.get("secrets", {}).items()
+                    ]
+                    test_services.append(
+                        TestServiceCredentialsContext(name=service_name, variables=variables, secrets=secrets)
+                    )
+                credentials_context = TestCredentialsContext(root=test_services)
+            else:
+                # Production mode - wrap in Pydantic model
+                credentials_context = CredentialsContext(root=credentials_context_raw)
+
         vars = tool.handle_input(
             trans,
             incoming,
@@ -368,7 +401,7 @@ class ToolsService(ServiceBase):
             use_cached_job=use_cached_job,
             input_format=input_format,
             preferred_object_store_id=preferred_object_store_id,
-            credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
+            credentials_context=credentials_context,
             tags=tags,
         )
 
