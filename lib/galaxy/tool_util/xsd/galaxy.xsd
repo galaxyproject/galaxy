@@ -5663,7 +5663,7 @@ For use with validator ``dataset_metadata_in_file``</xs:documentation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 See
-[/tools/filters/grep.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/filters/grep.xml)
+[/tools/stats/filtering.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/stats/filtering.xml)
 for a typical example of how to use this tag set. This tag set is used to
 replace the basic parameter sanitization with custom directives. This tag set is
 contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
