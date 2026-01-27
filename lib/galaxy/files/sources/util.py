@@ -2,10 +2,7 @@ import json
 import logging
 import time
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 from urllib.parse import quote
 
@@ -117,11 +114,11 @@ def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict]
     try:
         # If the URL has query parameters (signed URL), use requests directly
         if "?" in s3_url and ("X-Amz-Algorithm" in s3_url or "Signature" in s3_url):
-            log.debug(f"Using requests for signed S3 URL")
+            log.debug("Using requests for signed S3 URL")
             response = requests.get(s3_url, headers=headers or {}, timeout=DEFAULT_SOCKET_TIMEOUT, stream=True)
             response.raise_for_status()
 
-            with open(target_path, 'wb') as f:
+            with open(target_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
                     f.write(chunk)
             return
@@ -129,6 +126,7 @@ def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict]
         # For raw S3 URLs, try s3fs with different access patterns
         log.debug(f"Using s3fs for S3 URL: {s3_url}")
         import s3fs
+
         s3_path = s3_url[5:]  # Remove 's3://' prefix
 
         # Try different S3 access methods in order of preference
@@ -142,8 +140,8 @@ def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict]
         for method_name, fs_factory in access_methods:
             try:
                 fs = fs_factory()
-                with fs.open(s3_path, 'rb') as s3_file:
-                    with open(target_path, 'wb') as local_file:
+                with fs.open(s3_path, "rb") as s3_file:
+                    with open(target_path, "wb") as local_file:
                         while True:
                             chunk = s3_file.read(CHUNK_SIZE)
                             if not chunk:
@@ -182,7 +180,7 @@ class CompactIdentifierResolver:
     def __init__(self, cache_ttl: int = 86400):
         # Prevent re-initialization of singleton
         if not self._initialized:
-            self._cache: Dict[str, Dict] = {}
+            self._cache: dict[str, dict] = {}
             self._cache_ttl = cache_ttl
             self._initialized = True
 
@@ -259,7 +257,7 @@ class CompactIdentifierResolver:
         return url_pattern
 
 
-def parse_compact_identifier(drs_uri: str) -> Tuple[str, str]:
+def parse_compact_identifier(drs_uri: str) -> tuple[str, str]:
     if not drs_uri.startswith("drs://"):
         raise ValueError(f"Not a valid DRS URI: {drs_uri}")
 
