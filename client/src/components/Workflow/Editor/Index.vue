@@ -204,7 +204,8 @@
                     @update:readmeCurrent="setReadme" />
 
                 <WorkflowGraph
-                    v-else-if="!datatypesMapperLoading"
+                    v-if="!datatypesMapperLoading"
+                    v-show="!readmeActive"
                     ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
