@@ -211,9 +211,9 @@ def administrative_delete_datasets(
         select(HDA.id)
         .join(Dataset, Dataset.id == HDA.dataset_id, isouter=True)
         .where(and_(
-            Dataset.deleted.is_(False),
+            Dataset.deleted == false(),
             HDA.update_time < cutoff_time,
-            HDA.deleted.is_(False)))
+            HDA.deleted == false()))
     )
 
     # Add all datasets associated with Histories to our list
