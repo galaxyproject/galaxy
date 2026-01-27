@@ -395,7 +395,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
         # Configure logging
         job.logs_policy = batch_v1.LogsPolicy()
-        job.logs_policy.destination = batch_v1.LogsPolicy.Destination.CLOUD_LOGGING
+        job.logs_policy.destination = batch_v1.LogsPolicy.Destination.CLOUD_LOGGING  # type: ignore[assignment]
 
         # Set labels for tracking
         job.labels = {
