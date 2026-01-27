@@ -17,6 +17,10 @@
       label: SSH Host
       type: string
       help: Host of SSH Server to connect to.
+      validators:
+        - type: length
+          min: 1
+          message: "Path must not be empty"
     user:
       label: SSH User
       type: string
@@ -27,6 +31,10 @@
       type: string
       help: |
         A path that is readable / writable by the user
+      validators:
+        - type: length
+          min: 1
+          message: "Path must not be empty"
     writable:
       label: Writable?
       type: boolean
