@@ -737,13 +737,12 @@ class TabularToolDataTable(ToolDataTable):
             filename = tool_data_file_path
             if os.path.realpath(filename) not in [os.path.realpath(n) for n in self.filenames]:
                 raise MessageException(f"Path '{tool_data_file_path}' is not a known data table file path.")
-        else:
+        elif not bundle_mode:
             filename = self.get_filename_for_source(entry_source)
-            # If no filename was found, and we are in bundle mode, select the first filename from self.filenames
-            if filename is None and bundle_mode:
-                for name in self.filenames:
-                    filename = name
-                    break
+        else:
+            for name in self.filenames:
+                filename = name
+                break
         return filename
 
     def _remove_entry(self, values):
