@@ -117,12 +117,14 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
                 openfs.download(source_path, write_file)
 
     def _write_from(self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[TResolvedConfig]):
-        with open(native_path, "rb") as read_file:
-            with self._open_fs(context) as openfs:
-                dirname = fs.path.dirname(target_path)
-                if not openfs.isdir(dirname):
-                    openfs.makedirs(dirname)
-                openfs.upload(target_path, read_file)
+        with (
+            open(native_path, "rb") as read_file,
+            self._open_fs(context) as openfs,
+        ):
+            dirname = fs.path.dirname(target_path)
+            if not openfs.isdir(dirname):
+                openfs.makedirs(dirname)
+            openfs.upload(target_path, read_file)
 
     def _resource_info_to_dict(self, dir_path, resource_info) -> AnyRemoteEntry:
         name = str(resource_info.name)
