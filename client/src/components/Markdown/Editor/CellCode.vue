@@ -4,8 +4,23 @@
 
 <script setup>
 import ace from "ace-builds";
+// Static imports for ace modes and themes - Vite requires static analysis for ?url imports
+import modeJsonUrl from "ace-builds/src-noconflict/mode-json?url";
+import modeMarkdownUrl from "ace-builds/src-noconflict/mode-markdown?url";
+import modePythonUrl from "ace-builds/src-noconflict/mode-python?url";
+import themeGithubLightUrl from "ace-builds/src-noconflict/theme-github_light_default?url";
 import { debounce } from "lodash";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+
+const modeUrls = {
+    json: modeJsonUrl,
+    markdown: modeMarkdownUrl,
+    python: modePythonUrl,
+};
+
+const themeUrls = {
+    github_light_default: themeGithubLightUrl,
+};
 
 const DELAY = 300;
 
@@ -38,11 +53,11 @@ const emitChange = debounce((newValue) => {
     emit("change", newValue);
 }, DELAY);
 
-async function buildEditor() {
+function buildEditor() {
     const modePath = `ace/mode/${props.mode}`;
     const themePath = `ace/theme/${props.theme}`;
-    const modeUrl = await import(`ace-builds/src-noconflict/mode-${props.mode}?url`);
-    const themeUrl = await import(`ace-builds/src-noconflict/theme-${props.theme}?url`);
+    const modeUrl = modeUrls[props.mode];
+    const themeUrl = themeUrls[props.theme];
     ace.config.setModuleUrl(modePath, modeUrl);
     ace.config.setModuleUrl(themePath, themeUrl);
     aceEditor = ace.edit(editor.value, {
