@@ -2428,7 +2428,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         collection_info: Optional[MatchingCollections],
         job_callback: Optional[JobCallbackT],
         preferred_object_store_id: Optional[str],
-        credentials_context: Optional[CredentialsContext],
+        credentials_context: Optional[CredentialsContext | TestCredentialsContext],
         flush_job: bool,
         skip: bool,
     ):
