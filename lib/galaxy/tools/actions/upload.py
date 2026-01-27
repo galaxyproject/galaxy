@@ -27,6 +27,7 @@ from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
 from . import (
+    CredentialsContextT,
     ToolAction,
     ToolActionExecuteResult,
 )
@@ -51,7 +52,7 @@ class BaseUploadToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,

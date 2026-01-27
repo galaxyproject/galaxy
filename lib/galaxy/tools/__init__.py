@@ -2329,7 +2329,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         history: Optional[History] = None,
         use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None,
         input_format: InputFormatT = "legacy",
         tags: Optional[list[str]] = None,
     ):
