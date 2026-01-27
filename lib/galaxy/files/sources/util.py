@@ -87,14 +87,14 @@ def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[d
 
 def _get_access_info(obj_url: str, access_method: dict, headers: Optional[dict] = None) -> tuple[str, dict]:
     # Prefer access_id resolution to get signed/authenticated URLs
-    if "access_id" in access_method:
+    if access_method.get("access_id"):
         access_id = access_method["access_id"]
         access_get_url = f"{obj_url}/access/{access_id}"
         access_response = requests.get(access_get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
         access_response.raise_for_status()
         access_response_object = access_response.json()
         access_url = access_response_object
-    elif "access_url" in access_method:
+    elif access_method.get("access_url"):
         access_url = access_method["access_url"]
     else:
         raise ValueError("Access method must contain either 'access_id' or 'access_url'")
