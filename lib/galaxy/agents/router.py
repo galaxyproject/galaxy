@@ -5,6 +5,7 @@ Uses pydantic-ai output functions to either:
 - Answer general Galaxy questions directly (returns str)
 - Hand off to error_analysis for job debugging
 - Hand off to custom_tool for explicit tool creation requests
+- Hand off to tool_recommendation for tool discovery
 """
 
 import logging
@@ -58,6 +59,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         # Create output functions for specialist handoff
         error_handoff = self._create_error_analysis_handoff()
         tool_handoff = self._create_custom_tool_handoff()
+        tool_rec_handoff = self._create_tool_recommendation_handoff()
 
         return Agent(
             self._get_model(),
@@ -65,6 +67,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             output_type=[
                 error_handoff,
                 tool_handoff,
+                tool_rec_handoff,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
@@ -165,6 +168,43 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 )
 
         return hand_off_to_custom_tool
+
+    def _create_tool_recommendation_handoff(self):
+        """Create output function for tool recommendation handoff."""
+
+        async def hand_off_to_tool_recommendation(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+        ) -> str:
+            """Route to tool recommendation agent for finding Galaxy tools.
+
+            Use this when the user:
+            - Asks what tool to use for a task ("what tool aligns reads?")
+            - Wants to find tools for a specific analysis type
+            - Needs help discovering available tools
+            - Asks "is there a tool that does X?"
+
+            Do NOT use for:
+            - How to USE a specific tool (answer directly)
+            - Creating NEW tools (use hand_off_to_custom_tool)
+            - Job errors (use hand_off_to_error_analysis)
+
+            Args:
+                query: The tool discovery question
+            """
+            from .tools import ToolRecommendationAgent
+
+            log.info(f"Router handing off to tool_recommendation: '{query[:100]}...'")
+
+            try:
+                agent = ToolRecommendationAgent(ctx.deps)
+                result = await agent.process(query)
+                return result.content
+            except Exception as e:
+                log.error(f"Tool recommendation handoff failed: {e}")
+                return f"I encountered an issue while searching for tools. Please try again or browse the tool panel directly. Error: {e}"
+
+        return hand_off_to_tool_recommendation
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
