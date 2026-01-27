@@ -65,8 +65,7 @@ class WorkflowCompletionManager:
             return None
 
         # Check if complete
-        complete = invocation.is_complete
-        if not complete:
+        if not invocation.is_complete:
             return None
 
         # Record completion
