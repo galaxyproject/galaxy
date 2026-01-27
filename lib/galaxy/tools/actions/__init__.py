@@ -112,7 +112,7 @@ class ToolAction:
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -452,7 +452,7 @@ class DefaultToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -963,11 +963,24 @@ class DefaultToolAction(ToolAction):
         return job, galaxy_session
 
     def _handle_credentials_context(
-        self, sa_session: galaxy_scoped_session, job: Job, credentials_context: Optional[CredentialsContext]
+        self, sa_session: galaxy_scoped_session, job: Job, credentials_context: CredentialsContextT
     ) -> None:
         if credentials_context is None:
             return
 
+        if isinstance(credentials_context, TestCredentialsContext):
+            # Test mode: store embedded values as job parameter for resolver to use
+            test_creds_dict = {
+                service.name: {
+                    "variables": {v.name: v.value for v in service.variables},
+                    "secrets": {s.name: s.value for s in service.secrets},
+                }
+                for service in credentials_context.root
+            }
+            job.add_parameter("__test_credentials__", json.dumps(test_creds_dict))
+            return
+
+        # Production mode: create database associations
         for service_context in credentials_context.root:
             association = JobCredentialsContextAssociation(
                 job=job,
