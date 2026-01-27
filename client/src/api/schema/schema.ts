@@ -36659,7 +36659,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "text/plain": string;
                 };
             };
             /** @description Request Error */
@@ -36668,7 +36668,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
+                    "text/plain": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
@@ -36677,7 +36677,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
+                    "text/plain": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -36703,7 +36703,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "text/plain": string;
                 };
             };
             /** @description Request Error */
@@ -36712,7 +36712,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
+                    "text/plain": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
@@ -36721,7 +36721,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
+                    "text/plain": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
