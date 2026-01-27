@@ -202,6 +202,68 @@ async function onRefactor() {
             :class="{ 'success-reaction--show': resolvedIssues === totalIssues && totalIssues > 0 }">
             🎉
         </div>
+        <LintSection
+            v-if="Object.keys(props.steps).length"
+            data-description="linting formal inputs"
+            high-priority
+            success-message="Workflow parameters are using formal input parameters."
+            warning-message="This workflow uses legacy workflow parameters. They should be replaced with
+                formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
+                and executing the workflow via the API more robust:"
+            :warning-items="untypedParameterWarnings"
+            @onMouseOver="onHighlight"
+            @onClick="onFixUntypedParameter" />
+        <LintSection
+            v-if="Object.keys(props.steps).length"
+            data-description="linting connected"
+            high-priority
+            success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
+            warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
+                make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
+            :warning-items="disconnectedInputs"
+            :requires-save="props.hasChanges"
+            @onMouseOver="onHighlight"
+            @onClick="onFixDisconnectedInput"
+            @onSaveRequested="saveChanges(false)" />
+        <LintSection
+            v-if="hasInputSteps"
+            data-description="linting input metadata"
+            high-priority
+            success-message="All workflow inputs have labels and annotations."
+            warning-message="Some workflow inputs are missing labels and/or annotations:"
+            :warning-items="missingMetadata"
+            @onMouseOver="onHighlight"
+            @onClick="openAndFocus" />
+        <template v-if="hasActiveOutputs">
+            <LintSection
+                data-description="linting duplicate output labels"
+                high-priority
+                success-message="All workflow output labels are unique."
+                warning-message="Some workflow outputs have duplicate labels. Workflow output labels must be unique:"
+                :warning-items="duplicateLabels"
+                @onMouseOver="onHighlight"
+                @onClick="openAndFocus" />
+            <LintSection
+                data-description="linting unlabeled outputs"
+                high-priority
+                success-message="All workflow outputs have valid (populated) labels."
+                warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
+                    unchecked in the workflow editor to mark them as no longer being a workflow output:"
+                :warning-items="unlabeledOutputs"
+                @onMouseOver="onHighlight"
+                @onClick="onFixUnlabeledOutputs" />
+        </template>
+        <LintSection
+            v-else
+            data-description="linting no outputs"
+            high-priority
+            :okay="false"
+            success-message="This workflow has labeled outputs."
+            warning-message="This workflow has no labeled outputs, please select and label at least one output." />
+
+        <!-- TODO: Ideally we want to use the same thing as the `.tool-panel-divider from 
+         https://github.com/bgruening/galaxy/commit/4b65bde448a1cc7d2f612ad0658f98b0fc64a0bc -->
+        <div class="best-practices-lint-separator mb-2">Attributes Best Practices</div>
 
         <LintSection
             data-description="linting has annotation"
@@ -239,62 +301,26 @@ async function onRefactor() {
             :warning-message="bestPracticeWarningLicense"
             attribute-link="Specify a License."
             @onClickAttribute="onAttributes('license')" />
-        <LintSection
-            v-if="Object.keys(props.steps).length"
-            data-description="linting formal inputs"
-            success-message="Workflow parameters are using formal input parameters."
-            warning-message="This workflow uses legacy workflow parameters. They should be replaced with
-                formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
-                and executing the workflow via the API more robust:"
-            :warning-items="untypedParameterWarnings"
-            @onMouseOver="onHighlight"
-            @onClick="onFixUntypedParameter" />
-        <LintSection
-            v-if="Object.keys(props.steps).length"
-            data-description="linting connected"
-            success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
-            warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
-                make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
-            :warning-items="disconnectedInputs"
-            :requires-save="props.hasChanges"
-            @onMouseOver="onHighlight"
-            @onClick="onFixDisconnectedInput"
-            @onSaveRequested="saveChanges(false)" />
-        <LintSection
-            v-if="hasInputSteps"
-            data-description="linting input metadata"
-            success-message="All workflow inputs have labels and annotations."
-            warning-message="Some workflow inputs are missing labels and/or annotations:"
-            :warning-items="missingMetadata"
-            @onMouseOver="onHighlight"
-            @onClick="openAndFocus" />
-        <template v-if="hasActiveOutputs">
-            <LintSection
-                data-description="linting duplicate output labels"
-                success-message="All workflow output labels are unique."
-                warning-message="Some workflow outputs have duplicate labels. Workflow output labels must be unique:"
-                :warning-items="duplicateLabels"
-                @onMouseOver="onHighlight"
-                @onClick="openAndFocus" />
-            <LintSection
-                data-description="linting unlabeled outputs"
-                success-message="All workflow outputs have valid (populated) labels."
-                warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
-                    unchecked in the workflow editor to mark them as no longer being a workflow output:"
-                :warning-items="unlabeledOutputs"
-                @onMouseOver="onHighlight"
-                @onClick="onFixUnlabeledOutputs" />
-        </template>
-        <LintSection
-            v-else
-            data-description="linting no outputs"
-            :okay="false"
-            success-message="This workflow has labeled outputs."
-            warning-message="This workflow has no labeled outputs, please select and label at least one output." />
     </ActivityPanel>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.best-practices-lint-separator {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    font-weight: 600;
+    padding: 0.375rem 0.75rem;
+
+    &::before,
+    &::after {
+        border-bottom: 1px solid currentColor;
+        content: "";
+        flex: 1;
+        opacity: 0.35;
+    }
+}
+
 .success-reaction {
     position: absolute;
     top: 0;

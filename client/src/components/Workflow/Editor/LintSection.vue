@@ -23,6 +23,7 @@ interface Props {
     attributeLink?: string;
     warningItems?: LintState[] | null;
     requiresSave?: boolean;
+    highPriority?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
     attributeLink: undefined,
     warningItems: null,
     requiresSave: false,
+    highPriority: false,
 });
 
 const emit = defineEmits<{
@@ -51,7 +53,9 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
             <span v-localize>{{ props.successMessage }}</span>
         </div>
         <div v-else>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning" />
+            <FontAwesomeIcon
+                :icon="faExclamationTriangle"
+                :class="props.highPriority ? 'text-danger' : 'text-warning'" />
             <span v-localize>{{ props.warningMessage }}</span>
 
             <div v-if="hasWarningItems" class="mt-2">
