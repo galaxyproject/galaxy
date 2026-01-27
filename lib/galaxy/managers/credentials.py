@@ -267,7 +267,11 @@ class VaultCredentialsResolver(CredentialsResolver):
     """
 
     def __init__(
-        self, vault: Vault, session: scoped_session, user: User, job_context: list[JobCredentialsContextAssociation]
+        self,
+        vault: Vault,
+        session: scoped_session,
+        user: User,
+        job_context: list[JobCredentialsContextAssociation],
     ):
         """Initialize with vault and job context.
 
@@ -343,7 +347,12 @@ class VaultCredentialsResolver(CredentialsResolver):
                 # Only read from vault if the secret has been set by the user
                 if secret.name in set_secret_names:
                     vault_ref = build_vault_credential_reference(
-                        source_type, source_id, service.name, service.version, current_group_id, secret.name
+                        source_type,
+                        source_id,
+                        service.name,
+                        service.version,
+                        current_group_id,
+                        secret.name,
                     )
                     secret_value = user_vault.read_secret(vault_ref) or ""
                     env_variables.append({"name": secret.inject_as_env, "value": secret_value})
