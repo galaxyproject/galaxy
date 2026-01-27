@@ -2565,7 +2565,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
