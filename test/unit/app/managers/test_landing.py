@@ -76,6 +76,7 @@ class TestLanding(BaseTestCase):
             self.app.security,
             self.workflow_contents_manager,
             cast(MinimalManagerApp, MockApp()),
+            self.app.config,
         )
         self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration(override_tempdir=False))
 

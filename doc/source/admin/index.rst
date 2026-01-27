@@ -18,6 +18,7 @@ Galaxy Deployment & Administration
    jobs
    job_metrics
    authentication
+   enable_headers_in_fetch_requests
    tool_panel
    data_tables
    mq

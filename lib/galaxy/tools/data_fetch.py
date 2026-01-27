@@ -19,6 +19,10 @@ from galaxy.datatypes.upload_util import (
     handle_upload,
     UploadProblemException,
 )
+from galaxy.files.models import (
+    FilesSourceOptions,
+    PartialFilesSourceProperties,
+)
 from galaxy.files.uris import (
     ensure_file_sources,
     stream_to_file,
@@ -540,8 +544,19 @@ def _has_src_to_path(
                 is_link = True
                 return name, path, is_link
 
+        headers = item.get("headers")
+        file_source_options: Optional[FilesSourceOptions] = None
+        if headers:
+            extra_props = PartialFilesSourceProperties(**{"http_headers": headers})
+            file_source_options = FilesSourceOptions(extra_props=extra_props)
+
         try:
-            path = stream_url_to_file(url, file_sources=upload_config.file_sources, dir=upload_config.working_directory)
+            path = stream_url_to_file(
+                url,
+                file_sources=upload_config.file_sources,
+                dir=upload_config.working_directory,
+                file_source_opts=file_source_options,
+            )
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
 

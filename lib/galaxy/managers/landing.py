@@ -1,3 +1,4 @@
+import logging
 from typing import (
     Optional,
     Union,
@@ -10,6 +11,8 @@ from pydantic import (
 )
 from sqlalchemy import select
 
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.config.url_headers import UrlHeadersConfigFactory
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     ItemAlreadyClaimedException,
@@ -37,6 +40,10 @@ from galaxy.schema.schema import (
     WorkflowLandingRequest,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import (
+    InvalidVaultConfigException,
+    Vault,
+)
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -52,12 +59,21 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
+from .headers_encryption import (
+    decrypt_headers_in_data,
+    encrypt_headers_in_data,
+    has_sensitive_headers,
+)
 from .tools import (
     get_tool_from_toolbox,
     ToolRunReference,
 )
 
 LandingRequestModel = Union[ToolLandingRequestModel, WorkflowLandingRequestModel]
+
+FETCH_TOOL_ID = "__DATA_FETCH__"
+
+log = logging.getLogger(__name__)
 
 
 class LandingRequestManager:
@@ -68,11 +84,15 @@ class LandingRequestManager:
         security: IdEncodingHelper,
         workflow_contents_manager: WorkflowContentsManager,
         app: MinimalManagerApp,
+        config: GalaxyAppConfiguration,
+        vault: Optional[Vault] = None,
     ):
         self.sa_session = sa_session
         self.security = security
         self.workflow_contents_manager = workflow_contents_manager
         self.app = app
+        self.vault = vault
+        self.url_headers_config = UrlHeadersConfigFactory.from_app_config(config)
 
     def create_tool_landing_request(self, payload: CreateToolLandingRequestPayload, user_id=None) -> ToolLandingRequest:
         tool_id = payload.tool_id
@@ -87,7 +107,7 @@ class LandingRequestManager:
         if hasattr(tool, "parameters"):
             internal_landing_request_state = landing_decode(landing_request_state, tool, self.security.decode_id)
         else:
-            assert tool.id == "__DATA_FETCH__"
+            assert tool.id == FETCH_TOOL_ID
             # we have validated the payload as part of the API request
             # nothing else to decode ideally so just swap to internal model state object
             internal_landing_request_state = LandingRequestInternalToolState(
@@ -129,13 +149,18 @@ class LandingRequestManager:
         model = ToolLandingRequestModel()
         model.tool_id = tool_id
         model.tool_version = tool_version
-        model.request_state = internal_landing_request_state.input_state
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
         model.public = payload.public
         model.origin = str(payload.origin) if payload.origin else None
         if user_id:
             model.user_id = user_id
+
+        request_state = self._encrypt_headers_in_request_state(
+            internal_landing_request_state.input_state, str(model.uuid)
+        )
+        model.request_state = request_state
+
         self._save(model)
         return self._tool_response(model)
 
@@ -154,7 +179,11 @@ class LandingRequestManager:
             model.workflow_source = payload.workflow_id
         model.uuid = uuid4()
         model.client_secret = payload.client_secret
-        model.request_state = self.validate_workflow_request_state(payload.request_state)
+
+        validated_request_state = self.validate_workflow_request_state(payload.request_state)
+        request_state = self._encrypt_headers_in_request_state(validated_request_state, str(model.uuid))
+        model.request_state = request_state
+
         model.public = payload.public
         self._save(model)
         return self._workflow_response(model)
@@ -283,10 +312,12 @@ class LandingRequestManager:
         return request
 
     def _tool_response(self, model: ToolLandingRequestModel) -> ToolLandingRequest:
+        request_state = self._decrypt_headers_in_request_state(model.request_state, str(model.uuid))
+
         response_model = ToolLandingRequest(
             tool_id=model.tool_id,
             tool_version=model.tool_version,
-            request_state=model.request_state,
+            request_state=request_state,
             uuid=model.uuid,
             state=self._state(model),
             origin=model.origin,
@@ -306,10 +337,13 @@ class LandingRequestManager:
             target_type = model.workflow_source_type
             workflow_id = model.workflow_source
         assert workflow_id
+
+        request_state = self._decrypt_headers_in_request_state(model.request_state, str(model.uuid))
+
         response_model = WorkflowLandingRequest(
             workflow_id=self.security.encode_id(workflow_id) if isinstance(workflow_id, int) else workflow_id,
             workflow_target_type=target_type,
-            request_state=model.request_state,
+            request_state=request_state,
             uuid=model.uuid,
             state=self._state(model),
             origin=model.origin,
@@ -329,3 +363,31 @@ class LandingRequestManager:
         sa_session = self.sa_session
         sa_session.add(model)
         sa_session.commit()
+
+    def _encrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str) -> Optional[dict]:
+        if request_state is not None:
+            if has_sensitive_headers(request_state, self.url_headers_config):
+                if not self.vault:
+                    raise InvalidVaultConfigException(
+                        "Sensitive headers detected in landing request but no vault is configured. "
+                        "Configure a vault to securely store sensitive header information."
+                    )
+                return encrypt_headers_in_data(
+                    request_state,
+                    landing_uuid,
+                    self.vault,
+                    key_prefix="landing_request/headers",
+                    url_headers_config=self.url_headers_config,
+                )
+        return request_state
+
+    def _decrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str):
+        if request_state is not None and self.vault:
+            return decrypt_headers_in_data(
+                request_state,
+                landing_uuid,
+                self.vault,
+                key_prefix="landing_request/headers",
+                url_headers_config=self.url_headers_config,
+            )
+        return request_state
