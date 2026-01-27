@@ -4,14 +4,22 @@ on:
     paths:
       - '**.py'
       - '.github/workflows/lint.yaml'
+      - .flake8
+      - .isort.cfg
       - lib/galaxy/dependencies/**
       - mypy.ini
+      - pyproject.toml
+      - tox.ini
   pull_request:
     paths:
       - '**.py'
       - '.github/workflows/lint.yaml'
+      - .flake8
+      - .isort.cfg
       - lib/galaxy/dependencies/**
       - mypy.ini
+      - pyproject.toml
+      - tox.ini
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
