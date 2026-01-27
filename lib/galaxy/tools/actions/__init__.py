@@ -339,8 +339,7 @@ class DefaultToolAction(ToolAction):
                     )
                     collection_builder = CollectionBuilder(collection_type_description)
                     collection_builder.replace_elements_in_collection(
-                        template_collection=collection,
-                        replacement_dict=processed_dataset_dict,
+                        template_collection=collection, replacement_dict=processed_dataset_dict
                     )
                     new_collection = collection_builder.build()
                     if child_collection:
@@ -436,7 +435,7 @@ class DefaultToolAction(ToolAction):
                     for tag in collection.auto_propagated_tags:
                         preserved_hdca_tags[tag.value] = tag
         preserved_tags.update(preserved_hdca_tags)
-        return history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions
+        return (history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions)
 
     def execute(
         self,
@@ -469,14 +468,9 @@ class DefaultToolAction(ToolAction):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        (
-            history,
-            inp_data,
-            inp_dataset_collections,
-            preserved_tags,
-            preserved_hdca_tags,
-            all_permissions,
-        ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions = (
+            self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        )
         assert history  # tell type system we've set history and it is no longer optional
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data, inp_dataset_collections)
@@ -680,12 +674,7 @@ class DefaultToolAction(ToolAction):
                                 else:
                                     index = name_to_index[parent_id]
                             current_element_identifiers = cast(
-                                list[
-                                    dict[
-                                        str,
-                                        Union[str, list[dict[str, Union[str, list[Any]]]]],
-                                    ]
-                                ],
+                                list[dict[str, Union[str, list[dict[str, Union[str, list[Any]]]]]]],
                                 current_element_identifiers[index]["element_identifiers"],
                             )
 
@@ -699,20 +688,14 @@ class DefaultToolAction(ToolAction):
                         # Following hack causes dataset to no be added to history...
                         trans.sa_session.add(element)
                         current_element_identifiers.append(
-                            {
-                                "__object__": element,
-                                "name": output_part_def.element_identifier,
-                            }
+                            {"__object__": element, "name": output_part_def.element_identifier}
                         )
 
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
                     else:
-                        element_kwds = dict(
-                            element_identifiers=element_identifiers,
-                            fields=output.structure.fields,
-                        )
+                        element_kwds = dict(element_identifiers=element_identifiers, fields=output.structure.fields)
                     output_collections.create_collection(
                         output=output, name=name, completed_job=completed_job, **element_kwds
                     )
@@ -722,8 +705,7 @@ class DefaultToolAction(ToolAction):
                     log.info(f"Handled output named {name} for tool {tool.id} {handle_output_timer}")
 
         add_datasets_timer = tool.app.execution_timer_factory.get_timer(
-            "internals.galaxy.tools.actions.add_datasets",
-            "Added output datasets to history",
+            "internals.galaxy.tools.actions.add_datasets", "Added output datasets to history"
         )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name, data in out_data.items():

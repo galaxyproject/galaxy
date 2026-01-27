@@ -117,7 +117,6 @@ global_tool_errors = ToolErrorLog()
 
 
 class ToolTemplatingException(Exception):
-
     def __init__(self, *args: object, tool_id: Optional[str], tool_version: str, is_latest: bool) -> None:
         super().__init__(*args)
         self.tool_id = tool_id
@@ -209,21 +208,11 @@ class ToolEvaluator:
             incoming.update(model.User.user_template_environment(self._user))
 
             # Build params, done before hook so hook can use
-            self.param_dict = self.build_param_dict(
-                incoming,
-                inp_data,
-                out_data,
-                output_collections=out_collections,
-            )
+            self.param_dict = self.build_param_dict(incoming, inp_data, out_data, output_collections=out_collections)
             self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
         else:
-            self.param_dict = self.build_param_dict(
-                incoming,
-                inp_data,
-                out_data,
-                output_collections=out_collections,
-            )
+            self.param_dict = self.build_param_dict(incoming, inp_data, out_data, output_collections=out_collections)
 
     def execute_tool_hooks(self, inp_data: InpDataDictT, out_data: OutDataDictT, incoming):
         # Certain tools require tasks to be completed prior to job execution
@@ -387,11 +376,7 @@ class ToolEvaluator:
 
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
-    def _deferred_objects(
-        self,
-        input_datasets: InpDataDictT,
-        incoming: dict,
-    ) -> dict[str, DeferrableObjectsT]:
+    def _deferred_objects(self, input_datasets: InpDataDictT, incoming: dict) -> dict[str, DeferrableObjectsT]:
         """Collect deferred objects required for execution.
 
         Walk input datasets and collections and find inputs that need to be materialized.
@@ -475,7 +460,6 @@ class ToolEvaluator:
         do_walk(inputs, input_values)
 
     def __populate_wrappers(self, param_dict, input_datasets, job_working_directory):
-
         element_identifier_mapper = ElementIdentifierMapper(input_datasets)
 
         def wrap_input(input_values, input):
@@ -725,12 +709,7 @@ class ToolEvaluator:
         global_tool_logs(
             self._create_interactivetools_entry_points, config_file, "Building Interactive Tool Entry Points", self.tool
         )
-        global_tool_logs(
-            self._build_config_files,
-            config_file,
-            "Building Config Files",
-            self.tool,
-        )
+        global_tool_logs(self._build_config_files, config_file, "Building Config Files", self.tool)
         global_tool_logs(self._build_param_file, config_file, "Building Param File", self.tool)
         global_tool_logs(self._build_command_line, config_file, "Building Command Line", self.tool)
         global_tool_logs(self._build_version_command, config_file, "Building Version Command Line", self.tool)
@@ -1045,7 +1024,6 @@ class PartialToolEvaluator(ToolEvaluator):
 
 
 class UserToolEvaluator(ToolEvaluator):
-
     param_dict_style = "json"
 
     def _build_config_files(self):

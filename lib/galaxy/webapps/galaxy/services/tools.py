@@ -86,11 +86,7 @@ def get_tool(trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> Tool:
         tool_id = tool_ref.tool_id
         tool_uuid = tool_ref.tool_uuid
         tool_version = tool_ref.tool_version
-        tool = trans.app.toolbox.get_tool(
-            tool_id=tool_id,
-            tool_uuid=tool_uuid,
-            tool_version=tool_version,
-        )
+        tool = trans.app.toolbox.get_tool(tool_id=tool_id, tool_uuid=tool_uuid, tool_version=tool_version)
     if not tool:
         log.debug(f"Not found tool with kwds [{tool_ref}]")
         raise exceptions.ToolMissingException("Tool not found.")
@@ -145,12 +141,7 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
                 created_from_basename=request_item.created_from_basename,
             )
 
-            targets.append(
-                DataElementsTarget(
-                    destination=HdaDestination(type="hdas"),
-                    elements=[element],
-                )
-            )
+            targets.append(DataElementsTarget(destination=HdaDestination(type="hdas"), elements=[element]))
 
         elif isinstance(request_item, DataRequestCollectionUri):
             # Convert collection request to HdcaDataItemsTarget
@@ -176,9 +167,7 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
                     # Recursively convert its elements
                     nested_elements = [convert_collection_element(nested_elem) for nested_elem in elem.elements]
                     return NestedElement(
-                        name=elem.identifier,
-                        elements=nested_elements,
-                        collection_type=elem.collection_type,
+                        name=elem.identifier, elements=nested_elements, collection_type=elem.collection_type
                     )
                 else:
                     raise ValueError(f"Unknown collection element type: {type(elem)}")
@@ -213,18 +202,14 @@ class ToolsService(ServiceBase):
         self.history_manager = history_manager
 
     def file_landing_to_tool_landing(
-        self,
-        trans: ProvidesUserContext,
-        file_landing_payload: CreateFileLandingPayload,
+        self, trans: ProvidesUserContext, file_landing_payload: CreateFileLandingPayload
     ) -> CreateToolLandingRequestPayload:
         request_version = "1"
         payload = {"targets": file_landing_payload_to_fetch_targets(file_landing_payload)}
         validate_and_normalize_targets(trans, payload, set_internal_fields=False)
         request_state = {
             "request_version": request_version,
-            "request_json": {
-                "targets": payload["targets"],
-            },
+            "request_json": {"targets": payload["targets"]},
             "file_count": "0",
         }
         return CreateToolLandingRequestPayload(
@@ -236,9 +221,7 @@ class ToolsService(ServiceBase):
         )
 
     def data_landing_to_tool_landing(
-        self,
-        trans: ProvidesUserContext,
-        data_landing_payload: CreateDataLandingPayload,
+        self, trans: ProvidesUserContext, data_landing_payload: CreateDataLandingPayload
     ) -> CreateToolLandingRequestPayload:
         request_version = "1"
         payload = data_landing_payload.model_dump(exclude_unset=True)["request_state"]
@@ -257,11 +240,7 @@ class ToolsService(ServiceBase):
             public=data_landing_payload.public,
         )
 
-    def inputs(
-        self,
-        trans: ProvidesHistoryContext,
-        tool_ref: ToolRunReference,
-    ) -> list[ToolParameterT]:
+    def inputs(self, trans: ProvidesHistoryContext, tool_ref: ToolRunReference) -> list[ToolParameterT]:
         tool = get_tool(trans, tool_ref)
         return tool.parameters
 
@@ -457,10 +436,7 @@ class ToolsService(ServiceBase):
         for output_name, collection_instance in vars.get("output_collections", []):
             history = target_history or trans.history
             output_dict = dictify_dataset_collection_instance(
-                collection_instance,
-                security=trans.security,
-                url_builder=trans.url_builder,
-                parent=history,
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history
             )
             output_dict["output_name"] = output_name
             rval["output_collections"].append(output_dict)
@@ -468,10 +444,7 @@ class ToolsService(ServiceBase):
         for output_name, collection_instance in vars.get("implicit_collections", {}).items():
             history = target_history or trans.history
             output_dict = dictify_dataset_collection_instance(
-                collection_instance,
-                security=trans.security,
-                url_builder=trans.url_builder,
-                parent=history,
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history
             )
             output_dict["output_name"] = output_name
             rval["implicit_collections"].append(output_dict)
@@ -492,11 +465,7 @@ class ToolsService(ServiceBase):
         """
         panel_view = view or self.config.default_panel_view
 
-        results = self.toolbox_search.search(
-            q=q,
-            panel_view=panel_view,
-            config=self.config,
-        )
+        results = self.toolbox_search.search(q=q, panel_view=panel_view, config=self.config)
         return results
 
     def _patch_library_inputs(self, trans: ProvidesHistoryContext, inputs, target_history):

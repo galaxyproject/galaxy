@@ -185,11 +185,7 @@ def stage_data_in_history(
         job[test_data["fname"]] = test_dict
     resolve_data = test_data_resolver.get_filename if test_data_resolver else None
     staging_interface.stage(
-        "tool",
-        history_id=history,
-        job=job,
-        use_path_paste=force_path_paste,
-        resolve_data=resolve_data,
+        "tool", history_id=history, job=job, use_path_paste=force_path_paste, resolve_data=resolve_data
     )
     staging_interface.handle_jobs()
     galaxy_interactor.uploads = job
@@ -204,7 +200,6 @@ class RunToolResponse(NamedTuple):
 
 
 class InteractorStagingInterface(StagingInterface):
-
     def __init__(self, galaxy_interactor: "GalaxyInteractorApi", maxseconds: Optional[int], upload_async: bool) -> None:
         super().__init__()
         self.galaxy_interactor = galaxy_interactor
@@ -802,10 +797,7 @@ class GalaxyInteractorApi:
             jobs = submit_response_object["jobs"]
         try:
             return RunToolResponse(
-                inputs=inputs_tree,
-                outputs=outputs,
-                output_collections=output_collections,
-                jobs=jobs,
+                inputs=inputs_tree, outputs=outputs, output_collections=output_collections, jobs=jobs
             )
         except KeyError:
             message = (
@@ -1037,12 +1029,7 @@ class GalaxyInteractorApi:
             # If remote user middleware is enabled - this endpoint consumes
             # ``remote_user_email`` otherwise it requires ``email``, ``password``
             # and ``username``.
-            data = dict(
-                remote_user_email=email,
-                email=email,
-                password=password,
-                username=username,
-            )
+            data = dict(remote_user_email=email, email=email, password=password, username=username)
             test_user = self._post("users", data, key=admin_key, json=True).json()
         return test_user
 
@@ -1258,9 +1245,7 @@ def prepare_request_params(
                 new_items[key] = dumps(val)
         data.update(new_items)
 
-    kwd: Dict[str, Any] = {
-        "files": files,
-    }
+    kwd: Dict[str, Any] = {"files": files}
     if headers:
         kwd["headers"] = headers
     if as_json:
@@ -1581,11 +1566,7 @@ def verify_tool(
     if tool_version is None and "tool_version" in tool_test_dict:
         tool_version = tool_test_dict.get("tool_version")
 
-    job_data: JobDataT = {
-        "tool_id": tool_id,
-        "tool_version": tool_version,
-        "test_index": test_index,
-    }
+    job_data: JobDataT = {"tool_id": tool_id, "tool_version": tool_version, "test_index": test_index}
     client_config = client_test_config.get_test_config(job_data)
     skip_message = None
     if client_config is not None:
