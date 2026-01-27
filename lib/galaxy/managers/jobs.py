@@ -12,6 +12,7 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 
@@ -118,7 +119,11 @@ from galaxy.util.search import (
 from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.expression import Select
+    from sqlalchemy.sql.expression import (
+        ColumnElement,
+        Label,
+        Select,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +139,7 @@ class JobLock(BaseModel):
     active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
 
 
-def get_path_key(path_tuple):
+def get_path_key(path_tuple: tuple):
     path_key = ""
     tuple_elements = len(path_tuple)
     for i, p in enumerate(path_tuple):
@@ -154,12 +159,15 @@ def get_path_key(path_tuple):
 
 
 def safe_label_or_none(label: str) -> Optional[str]:
-    if label and len(label) > 63:
+    if len(label) > 63:
         return None
     return label
 
 
-def safe_aliased(model_class, name=None):
+T = TypeVar("T")
+
+
+def safe_aliased(model_class: type[T], name: str) -> type[T]:
     """Create an aliased model class with a unique name."""
     return aliased(model_class, name=safe_label_or_none(name))
 
@@ -447,11 +455,11 @@ class JobSearch:
         job_state: Optional[JobStatesT] = (Job.states.OK,),
         history_id: Union[int, None] = None,
         require_name_match: bool = True,
-    ):
+    ) -> Union[Job, None]:
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
-        input_data = defaultdict(list)
+        input_data: dict[Any, list[dict[str, Any]]] = defaultdict(list)
 
-        def populate_input_data_input_id(path, key, value):
+        def populate_input_data_input_id(path: tuple, key, value) -> tuple[Any, Any]:
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
             if key == "id":
                 path_key = get_path_key(path[:-2])
@@ -499,13 +507,13 @@ class JobSearch:
         tool_id: str,
         tool_version: Optional[str],
         user: model.User,
-        input_data,
+        input_data: dict[Any, list[dict[str, Any]]],
         job_state: Optional[JobStatesT],
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
         history_id: Union[int, None] = None,
         require_name_match: bool = True,
-    ):
+    ) -> Union[Job, None]:
         search_timer = ExecutionTimer()
 
         def replace_dataset_ids(path, key, value):
@@ -525,7 +533,7 @@ class JobSearch:
 
         stmt = select(model.Job.id.label("job_id"))
 
-        data_conditions: list = []
+        data_conditions: list[ColumnElement[bool]] = []
 
         # We now build the stmt filters that relate to the input datasets
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
@@ -533,7 +541,7 @@ class JobSearch:
         # and the ids that have been used in the job that has already been run in `used_ids`.
         requested_ids = []
         data_types = []
-        used_ids: list = []
+        used_ids: list[Label[int]] = []
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whether
             # the input is in a repeat, or not (section and conditional)
@@ -722,7 +730,7 @@ class JobSearch:
 
         return stmt
 
-    def _exclude_jobs_with_deleted_outputs(self, stmt):
+    def _exclude_jobs_with_deleted_outputs(self, stmt: "Select[tuple[int]]") -> "Select":
         subquery_alias = stmt.subquery("filtered_jobs_subquery")
         outer_select_columns = [subquery_alias.c[col.name] for col in stmt.selected_columns]
         outer_stmt = select(*outer_select_columns).select_from(subquery_alias)
@@ -767,14 +775,14 @@ class JobSearch:
     def _build_stmt_for_hda(
         self,
         stmt: "Select[tuple[int]]",
-        data_conditions: list,
-        used_ids: list,
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
         k,
         v,
         identifier,
         value_index: int,
         require_name_match: bool = True,
-    ):
+    ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
         c = aliased(model.HistoryDatasetAssociation)
@@ -831,7 +839,15 @@ class JobSearch:
         )
         return stmt
 
-    def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v, value_index):
+    def _build_stmt_for_ldda(
+        self,
+        stmt: "Select[tuple[int]]",
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
+        k,
+        v,
+        value_index: int,
+    ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputLibraryDatasetAssociation)
         label = safe_label_or_none(f"{k}_{value_index}")
         labeled_col = a.ldda_id.label(label)
@@ -848,8 +864,15 @@ class JobSearch:
             return func.array_agg(column, order_by=column)
 
     def _build_stmt_for_hdca(
-        self, stmt, data_conditions, used_ids, k, v, user_id, value_index, require_name_match=True
-    ):
+        self,
+        stmt: "Select[tuple[int]]",
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
+        k,
+        v,
+        user_id: int,
+        value_index: int,
+    ) -> "Select[tuple[int]]":
         # Strategy for efficiently finding equivalent HDCAs:
         # 1. Determine the structural depth of the target HDCA by its collection_type.
         # 2. For the target HDCA (identified by 'v'):
@@ -1088,7 +1111,16 @@ class JobSearch:
         data_conditions.append(a.name == k)
         return stmt
 
-    def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v, user_id, value_index):
+    def _build_stmt_for_dce(
+        self,
+        stmt: "Select[tuple[int]]",
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
+        k,
+        v,
+        user_id: int,
+        value_index: int,
+    ) -> "Select[tuple[int]]":
         dce_root_target = self.sa_session.get_one(model.DatasetCollectionElement, v)
 
         # Determine if the target DCE points to an HDA or a child collection
