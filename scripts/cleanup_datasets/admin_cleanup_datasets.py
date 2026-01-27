@@ -209,7 +209,7 @@ def administrative_delete_datasets(
     # Get HDAs older than cutoff time (ignore tool_id at this point)
     hda_ids_query = (
         select(HistoryDatasetAssociation.id)
-        .join(Dataset, Dataset.id == HistoryDatasetAssociation.dataset_id, isouter=True)
+        .join(Dataset, isouter=True)
         .where(and_(
             Dataset.deleted == false(),
             HistoryDatasetAssociation.update_time < cutoff_time,
@@ -236,8 +236,8 @@ def administrative_delete_datasets(
         # Bind hda_id for current iteration
         rows = session.execute(
             select(User.email, HistoryDatasetAssociation.name, History.name)
-            .join(History, History.user_id == User.id)
-            .join(HistoryDatasetAssociation, HistoryDatasetAssociation.history_id == History.id)
+            .join(History)
+            .join(HistoryDatasetAssociation)
             .where(HistoryDatasetAssociation.id == hda_id)
         ).all()
 
@@ -292,7 +292,7 @@ def _get_tool_id_for_hda(app, hda_id):
 
     job_query = (
         select(Job.tool_id)
-        .join(JTODA, JTODA.job_id == Job.id)
+        .join(JTODA)
         .where(JTODA.dataset_id == hda_id)
     )
 
