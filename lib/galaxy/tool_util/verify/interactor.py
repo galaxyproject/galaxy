@@ -137,6 +137,7 @@ class ValidToolTestDict(TypedDict):
     required_files: NotRequired[RequiredFilesT]
     required_data_tables: NotRequired[RequiredDataTablesT]
     required_loc_files: NotRequired[RequiredLocFileT]
+    credentials: NotRequired[Optional[List[Any]]]
     error: Literal[False]
     tool_id: str
     tool_version: str
@@ -1933,6 +1934,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
     maxseconds: Optional[int] = None
     request: Optional[Dict[str, Any]] = None
     request_schema: Optional[Dict[str, Any]] = None
+    credentials: Optional[List[Any]] = None
 
     if not error_in_test_definition:
         processed_test_dict = cast(ValidToolTestDict, processed_dict)
@@ -1960,6 +1962,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         inputs = processed_test_dict.get("inputs", {})
         request = processed_test_dict.get("request", None)
         request_schema = processed_test_dict.get("request_schema", None)
+        credentials = processed_test_dict.get("credentials", None)
     else:
         invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
         maxseconds = DEFAULT_TOOL_TEST_WAIT
@@ -1989,6 +1992,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         inputs=inputs,
         request=request,
         request_schema=request_schema,
+        credentials=credentials,
     )
 
 
