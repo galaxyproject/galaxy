@@ -7,11 +7,9 @@ This runner submits Galaxy jobs to Google Cloud Batch for execution.
 import json
 import logging
 import os
-import re
 import time
 from typing import (
     Any,
-    Dict,
 )
 
 from google.api_core import exceptions as gcp_exceptions
@@ -222,7 +220,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             log.error("Failed to create Batch job: %s", e)
             raise
 
-    def _get_job_params(self, job_destination) -> Dict[str, Any]:
+    def _get_job_params(self, job_destination) -> dict[str, Any]:
         """Extract job parameters from destination and runner configuration."""
         log.debug("Starting _get_job_params")
         params = {}
