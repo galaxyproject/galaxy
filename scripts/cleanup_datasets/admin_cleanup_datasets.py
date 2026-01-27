@@ -280,6 +280,7 @@ def administrative_delete_datasets(
 
 
 def _get_tool_id_for_hda(app, hda_id):
+    # TODO Some datasets don't seem to have an entry in jtod or a copied_from
     if hda_id is None:
         return None
 
