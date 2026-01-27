@@ -206,6 +206,7 @@ isort = true
 exclude = [
     "lib/tool_shed/test/test_data/repos"
 ]
+src = ["lib"]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
@@ -225,9 +226,13 @@ ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004", "UP007", "UP045"
 allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.isort]
-# We are not selecting "I" rules in ruff yet because support for all the isort
-# options we need is not complete, but these are the one currently implemented.
+# We are not selecting "I" rules in ruff yet because the isort option
+# force_grid_wrap=2 is not currently supported:
+# https://github.com/astral-sh/ruff/issues/2601
+case-sensitive = false
 combine-as-imports = true
+no-lines-before = ["local-folder"]
+order-by-type = false
 relative-imports-order = "closest-to-furthest"
 
 [tool.ruff.lint.pyupgrade]
