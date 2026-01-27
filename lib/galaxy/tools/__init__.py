@@ -63,7 +63,10 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
-from galaxy.schema.credentials import CredentialsContext
+from galaxy.schema.credentials import (
+    CredentialsContext,
+    TestCredentialsContext,
+)
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.tool_util.deps import (

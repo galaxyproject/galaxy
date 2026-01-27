@@ -30,7 +30,10 @@ from galaxy.tools.execute import (
 )
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import asbool
-from . import ToolAction
+from . import (
+    CredentialsContextT,
+    ToolAction,
+)
 
 log = logging.getLogger(__name__)
 

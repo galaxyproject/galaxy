@@ -15,6 +15,7 @@ from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
+    CredentialsContextT,
     ToolAction,
     ToolActionExecuteResult,
 )

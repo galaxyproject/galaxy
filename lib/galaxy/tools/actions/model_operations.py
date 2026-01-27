@@ -13,6 +13,7 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
+    CredentialsContextT,
     DefaultToolAction,
     OutputCollections,
     OutputDatasetsT,
