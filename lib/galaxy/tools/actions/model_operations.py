@@ -10,9 +10,9 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.schema.credentials import CredentialsContextT
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
-    CredentialsContextT,
     DefaultToolAction,
     OutputCollections,
     OutputDatasetsT,

@@ -12,9 +12,9 @@ from galaxy.model import (
     JobImportHistoryArchive,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.schema.credentials import CredentialsContextT
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
-    CredentialsContextT,
     ToolAction,
     ToolActionExecuteResult,
 )

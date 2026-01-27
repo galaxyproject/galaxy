@@ -28,7 +28,7 @@ from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
 )
-from galaxy.tools.actions import CredentialsContextT
+from galaxy.schema.credentials import CredentialsContextT
 from galaxy.tool_util.parameters.state import (
     JobInternalToolState,
     RequestInternalDereferencedToolState,

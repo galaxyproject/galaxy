@@ -11,6 +11,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
+from galaxy.schema.credentials import CredentialsContextT
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import upload_common
 from galaxy.tools.execute import (
@@ -26,7 +27,6 @@ from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
 from . import (
-    CredentialsContextT,
     ToolAction,
     ToolActionExecuteResult,
 )

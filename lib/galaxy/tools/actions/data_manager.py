@@ -7,6 +7,7 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.schema.credentials import CredentialsContextT
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
@@ -19,7 +20,6 @@ from galaxy.tools.execute import (
 )
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from . import (
-    CredentialsContextT,
     DefaultToolAction,
     ToolActionExecuteResult,
 )

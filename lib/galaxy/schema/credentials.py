@@ -448,3 +448,7 @@ class CredentialsContextResponse(RootModel):
     """
 
     root: list[ServiceCredentialsContextResponse]
+
+
+# Type alias for credentials context that can be either production or test mode
+CredentialsContextT = Optional[CredentialsContext | TestCredentialsContext]

@@ -42,7 +42,7 @@ from galaxy.model.none_like import NoneDataset
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import (
-    CredentialsContext,
+    CredentialsContextT,
     TestCredentialsContext,
 )
 from galaxy.tool_util.parser.output_objects import tool_output_is_collection
@@ -88,7 +88,6 @@ log = logging.getLogger(__name__)
 
 OutputDatasetsT = dict[str, "DatasetInstance"]
 ToolActionExecuteResult = Union[tuple[Job, OutputDatasetsT, Optional[History]], tuple[Job, OutputDatasetsT]]
-CredentialsContextT = Optional[CredentialsContext | TestCredentialsContext]
 
 
 class ToolAction:
