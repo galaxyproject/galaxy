@@ -301,9 +301,6 @@ def _get_tool_id_for_hda(app, hda_id):
         return tool_id
 
     hda = session.get(HistoryDatasetAssociation, hda_id)
-    if hda is None:
-        return None
-
     return _get_tool_id_for_hda(app, hda.copied_from_history_dataset_association_id)
 
 
