@@ -1,0 +1,383 @@
+import { computed } from "vue";
+
+import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
+import type { NewUploadItem, UploadItem, UploadStatus } from "@/composables/upload/uploadItemTypes";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
+
+const LOCAL_STORAGE_KEY = "uploadPanel.activeUploads";
+const BATCHES_STORAGE_KEY = "uploadPanel.activeBatches";
+
+/** Collection batch lifecycle status */
+export type BatchStatus = "uploading" | "creating-collection" | "completed" | "error";
+
+/**
+ * UI-facing batch model including aggregated progress and uploads.
+ * Derived from CollectionBatchState and UploadItem state.
+ */
+export interface BatchWithProgress extends CollectionBatchState {
+    uploads: UploadItem[];
+    progress: number;
+    allCompleted: boolean;
+    hasError: boolean;
+}
+
+/**
+ * Base interface for ordered upload list items used in progress views.
+ */
+export interface UploadListItemBase {
+    /** Discriminator for rendering */
+    type: "batch" | "upload";
+    /** Creation timestamp used for ordering */
+    createdAt: number;
+}
+
+/** UI model for a collection batch item */
+export interface UploadBatchListItem extends UploadListItemBase {
+    type: "batch";
+    batch: BatchWithProgress;
+}
+
+/** UI model for a standalone upload item */
+export interface UploadFileListItem extends UploadListItemBase {
+    type: "upload";
+    upload: UploadItem;
+}
+
+/** Union of all upload list UI items */
+export type UploadListItem = UploadBatchListItem | UploadFileListItem;
+
+/** Collection batch state tracking */
+export interface CollectionBatchState {
+    /** Unique batch identifier */
+    id: string;
+    /** Collection name */
+    name: string;
+    /** Collection type */
+    type: SupportedCollectionType;
+    /** Whether to hide source datasets after collection creation */
+    hideSourceItems: boolean;
+    /** Target history ID */
+    historyId: string;
+    /** Upload item IDs belonging to this batch */
+    uploadIds: string[];
+    /** Dataset IDs created from uploads (needed for collection creation) */
+    datasetIds: string[];
+    /** Batch processing status */
+    status: BatchStatus;
+    /** Created collection ID (set after successful creation) */
+    collectionId?: string;
+    /** Error message for batch-level failures */
+    error?: string;
+    /** Timestamp when batch was created */
+    createdAt: number;
+}
+
+function generateId() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Shared state - initialized lazily on first use
+let activeItems: ReturnType<typeof useUserLocalStorage<UploadItem[]>> | null = null;
+let activeBatches: ReturnType<typeof useUserLocalStorage<CollectionBatchState[]>> | null = null;
+
+function getActiveItems() {
+    if (!activeItems) {
+        activeItems = useUserLocalStorage<UploadItem[]>(LOCAL_STORAGE_KEY, []);
+    }
+    return activeItems;
+}
+
+function getActiveBatches() {
+    if (!activeBatches) {
+        activeBatches = useUserLocalStorage<CollectionBatchState[]>(BATCHES_STORAGE_KEY, []);
+    }
+    return activeBatches;
+}
+
+/**
+ * Composable for managing upload state and progress tracking.
+ * Persists upload items to user-specific localStorage and provides
+ * reactive state for upload monitoring.
+ */
+export function useUploadState() {
+    const items = getActiveItems();
+    const batches = getActiveBatches();
+
+    const hasUploads = computed(() => items.value.length > 0);
+
+    const completedCount = computed(() => items.value.filter((i) => i.status === "completed").length);
+    const errorCount = computed(() => items.value.filter((i) => i.status === "error").length);
+    const uploadingCount = computed(
+        () => items.value.filter((i) => i.status === "uploading" || i.status === "processing").length,
+    );
+    const isUploading = computed(() => items.value.some((i) => i.status === "uploading" || i.status === "processing"));
+
+    const totalProgress = computed(() => {
+        if (items.value.length === 0) {
+            return 0;
+        }
+        const sum = items.value.reduce((acc, file) => acc + file.progress, 0);
+        return Math.round(sum / items.value.length);
+    });
+
+    const totalSizeBytes = computed(() => items.value.reduce((sum, file) => sum + file.size, 0));
+
+    const uploadedSizeBytes = computed(() =>
+        items.value.reduce((sum, file) => sum + (file.size * file.progress) / 100, 0),
+    );
+
+    const hasCompleted = computed(() => items.value.some((u) => u.status === "completed"));
+
+    /**
+     * Batches with aggregated upload progress and status.
+     */
+    const batchesWithProgress = computed(() => {
+        return batches.value.map<BatchWithProgress>((batch) => {
+            const batchUploads = batch.uploadIds
+                .map((id) => items.value.find((item) => item.id === id))
+                .filter((item): item is UploadItem => item !== undefined);
+
+            const totalProgress =
+                batchUploads.length > 0
+                    ? Math.round(batchUploads.reduce((sum, u) => sum + u.progress, 0) / batchUploads.length)
+                    : 0;
+
+            const allCompleted = batchUploads.every((u) => u.status === "completed");
+            const hasError = batchUploads.some((u) => u.status === "error");
+
+            return {
+                ...batch,
+                uploads: batchUploads,
+                progress: totalProgress,
+                allCompleted,
+                hasError,
+            };
+        });
+    });
+
+    /**
+     * Upload items that are not part of any batch.
+     */
+    const standaloneUploads = computed(() => {
+        return items.value.filter((item) => !item.batchId);
+    });
+
+    /**
+     * Ordered list of upload-related items (batches and standalone uploads)
+     * sorted by creation time for progress display.
+     */
+    const orderedUploadItems = computed<UploadListItem[]>(() => {
+        const batchItems: UploadBatchListItem[] = batchesWithProgress.value.map((batch) => ({
+            type: "batch",
+            createdAt: batch.createdAt,
+            batch,
+        }));
+
+        const standaloneItems: UploadFileListItem[] = items.value
+            .filter((item) => !item.batchId)
+            .map((upload) => ({
+                type: "upload",
+                createdAt: upload.createdAt,
+                upload,
+            }));
+
+        return [...batchItems, ...standaloneItems].sort((a, b) => a.createdAt - b.createdAt);
+    });
+
+    /**
+     * Adds a new upload item to the queue.
+     * @param item - Upload configuration (file, URL, or pasted content)
+     * @param batchId - Optional batch ID to associate this upload with
+     * @returns Unique identifier for the upload
+     */
+    function addUploadItem(item: NewUploadItem, batchId?: string) {
+        const entry = {
+            ...item,
+            id: generateId(),
+            createdAt: Date.now(),
+            progress: 0,
+            status: "queued",
+            error: undefined,
+            batchId,
+        } satisfies UploadItem;
+
+        items.value.push(entry);
+        return entry.id;
+    }
+
+    /**
+     * Creates a new collection batch.
+     * @param config - Collection configuration
+     * @param uploadIds - Upload IDs belonging to this batch
+     * @returns Unique batch identifier
+     */
+    function addBatch(
+        config: { name: string; type: SupportedCollectionType; hideSourceItems: boolean; historyId: string },
+        uploadIds: string[],
+    ): string {
+        const batch: CollectionBatchState = {
+            id: generateId(),
+            ...config,
+            uploadIds,
+            datasetIds: [],
+            status: "uploading",
+            createdAt: Date.now(),
+        };
+
+        batches.value.push(batch);
+        return batch.id;
+    }
+
+    /**
+     * Updates the status of a collection batch.
+     * @param batchId - Batch identifier
+     * @param status - New status to set
+     */
+    function updateBatchStatus(batchId: string, status: BatchStatus) {
+        const batch = batches.value.find((b) => b.id === batchId);
+        if (batch) {
+            batch.status = status;
+        }
+    }
+
+    /**
+     * Sets the created collection ID for a batch.
+     * @param batchId - Batch identifier
+     * @param collectionId - Created collection ID
+     */
+    function setBatchCollectionId(batchId: string, collectionId: string) {
+        const batch = batches.value.find((b) => b.id === batchId);
+        if (batch) {
+            batch.collectionId = collectionId;
+        }
+    }
+
+    /**
+     * Sets an error message for a batch.
+     * @param batchId - Batch identifier
+     * @param error - Error message
+     */
+    function setBatchError(batchId: string, error: string) {
+        const batch = batches.value.find((b) => b.id === batchId);
+        if (batch) {
+            batch.error = error;
+            batch.status = "error";
+        }
+        console.error(error);
+    }
+
+    /**
+     * Gets a batch by ID.
+     * @param batchId - Batch identifier
+     * @returns Batch state or undefined
+     */
+    function getBatch(batchId: string): CollectionBatchState | undefined {
+        return batches.value.find((b) => b.id === batchId);
+    }
+
+    /**
+     * Adds a dataset ID to a batch's datasetIds array.
+     * @param batchId - Batch identifier
+     * @param datasetId - Dataset ID to add
+     */
+    function addBatchDatasetId(batchId: string, datasetId: string) {
+        const batch = batches.value.find((b) => b.id === batchId);
+        if (batch) {
+            batch.datasetIds.push(datasetId);
+        }
+    }
+
+    /**
+     * Updates upload progress for a specific item.
+     * Automatically marks as completed when progress reaches 100%.
+     * @param id - Upload item identifier
+     * @param progress - Progress percentage (0-100)
+     */
+    function updateProgress(id: string, progress: number) {
+        const item = items.value.find((u) => u.id === id);
+        if (item) {
+            item.progress = Math.max(0, Math.min(100, Math.round(progress)));
+            if (item.progress >= 100 && item.status !== "error") {
+                item.status = "completed";
+            }
+        }
+    }
+
+    /**
+     * Updates the status of an upload item.
+     * @param id - Upload item identifier
+     * @param status - New status to set
+     */
+    function setStatus(id: string, status: UploadStatus) {
+        const item = items.value.find((u) => u.id === id);
+        if (item) {
+            item.status = status;
+        }
+    }
+
+    /**
+     * Marks an upload as failed with an error message.
+     * @param id - Upload item identifier
+     * @param error - Error message describing the failure
+     */
+    function setError(id: string, error: string) {
+        const item = items.value.find((u) => u.id === id);
+        if (item) {
+            item.status = "error";
+            item.error = error;
+        }
+    }
+
+    /**
+     * Removes all completed uploads from the list.
+     */
+    function clearCompleted() {
+        items.value = items.value.filter((u) => u.status !== "completed");
+        // Remove batches that have no remaining upload items or are completed
+        batches.value = batches.value.filter((b) => {
+            if (b.status === "completed") {
+                return false;
+            }
+            // Remove batch if none of its upload items remain
+            const hasRemainingItems = b.uploadIds.some((uploadId) => items.value.some((item) => item.id === uploadId));
+            return hasRemainingItems;
+        });
+    }
+
+    /**
+     * Clears all upload items from the list.
+     */
+    function clearAll() {
+        items.value = [];
+        batches.value = [];
+    }
+
+    return {
+        activeItems: items,
+        activeBatches: batches,
+        hasUploads,
+        completedCount,
+        errorCount,
+        uploadingCount,
+        isUploading,
+        totalProgress,
+        totalSizeBytes,
+        uploadedSizeBytes,
+        hasCompleted,
+        batchesWithProgress,
+        standaloneUploads,
+        orderedUploadItems,
+        addUploadItem,
+        addBatch,
+        updateBatchStatus,
+        setBatchCollectionId,
+        setBatchError,
+        getBatch,
+        addBatchDatasetId,
+        updateProgress,
+        setStatus,
+        setError,
+        clearCompleted,
+        clearAll,
+    };
+}

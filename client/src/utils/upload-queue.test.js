@@ -1,11 +1,20 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { sendPayload } from "@/utils/upload-submit.js";
+import { fetchDatasets } from "@/utils/upload";
 
 import { UploadQueue } from "./upload-queue.js";
 
-vi.mock("@/utils/upload-submit.js");
-sendPayload.mockImplementation(() => vi.fn());
+vi.mock("@/utils/upload", async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        fetchDatasets: vi.fn(),
+        submitUpload: vi.fn((config) => {
+            // Simulate calling success callback
+            config.success?.();
+        }),
+    };
+});
 
 function StubFile(name = null, size = 0, mode = "local") {
     return { name, size, mode };
@@ -78,6 +87,7 @@ describe("UploadQueue", () => {
                     fileName: file.name,
                     fileSize: file.size,
                     fileContent: "fileContent",
+                    fileData: new File(["test content"], file.name || "test.txt", { type: "text/plain" }),
                     targetHistoryId: "mockhistoryid",
                 };
             },
@@ -205,15 +215,17 @@ describe("UploadQueue", () => {
         q.add([StubFile("a"), StubFile("b"), StubFile("c")]);
         expect(q.size).toEqual(3);
         q.start();
-        expect(sendPayload.mock.calls[0][0]).toEqual({
+        expect(fetchDatasets.mock.calls[0][0]).toEqual({
             auto_decompress: true,
             files: [],
             history_id: "historyId",
             targets: [
                 {
+                    auto_decompress: false,
                     destination: { type: "hdas" },
                     elements: [
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -224,6 +236,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.0",
                         },
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -234,6 +247,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.1",
                         },
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",

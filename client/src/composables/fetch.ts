@@ -1,7 +1,7 @@
 import { computed, type Ref, ref, watch } from "vue";
 
 import { ERROR_STATES, TERMINAL_STATES } from "@/api/jobs";
-import { fetch, type FetchDataPayload, fetchJobErrorMessage } from "@/api/tools";
+import { type FetchDataPayload, fetchDatasetsToJobId, fetchJobErrorMessage } from "@/api/tools";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useJobStore } from "@/stores/jobStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -72,7 +72,7 @@ export function useFetchJobMonitor() {
     async function fetchAndWatch(payload: FetchDataPayload) {
         waitingOnFetch.value = true;
         try {
-            const jobId = await fetch(payload);
+            const jobId = await fetchDatasetsToJobId(payload);
             fetchJobId.value = jobId;
         } catch (e) {
             fetchRequestError.value = `Error importing data: ${errorMessageAsString(e)}`;

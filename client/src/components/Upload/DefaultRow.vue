@@ -19,7 +19,8 @@ import { type ArchiveSource, isLocalZipFile, isRemoteZipFile } from "@/composabl
 import { useUserStore } from "@/stores/userStore";
 import { bytesToString } from "@/utils/utils";
 
-import { isLocalFile, type UploadItem } from "./model";
+import type { UploadRowModel } from "./model";
+import { isLocalFile } from "./model";
 
 import GButton from "../BaseComponents/GButton.vue";
 import UploadExtension from "./UploadExtension.vue";
@@ -58,7 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", index: string, value: Partial<UploadItem>): void;
+    (e: "input", index: string, value: Partial<UploadRowModel>): void;
     (e: "remove", index: string): void;
     (e: "explore", archiveSource: ArchiveSource): void;
 }>();

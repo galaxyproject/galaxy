@@ -14,7 +14,7 @@ import {
 } from "@/components/Upload/utils";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
-import { uploadPayload } from "@/utils/upload-payload.js";
+import { buildLegacyPayload } from "@/utils/upload";
 
 import CompositeBox from "./CompositeBox.vue";
 import DefaultBox from "./DefaultBox.vue";
@@ -126,7 +126,7 @@ function immediateUpload(files) {
 }
 
 function toData(items, history_id, composite = false) {
-    return uploadPayload(items, history_id, composite);
+    return buildLegacyPayload(items, history_id, composite);
 }
 
 async function loadExtensions() {
