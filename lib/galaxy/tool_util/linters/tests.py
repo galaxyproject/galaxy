@@ -426,9 +426,14 @@ class TestsOutputCheckDiscovered(Linter):
                 discover_datasets = corresponding_output.find(".//discover_datasets")
                 if discover_datasets is None:
                     continue
-                if "count" not in output.attrib and output.find("./discovered_dataset") is None:
+                if (
+                    "count" not in output.attrib
+                    and "min" not in output.attrib
+                    and "max" not in output.attrib
+                    and output.find("./discovered_dataset") is None
+                ):
                     lint_ctx.error(
-                        f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_dataset' children",
+                        f"Test {test_idx}: test output '{name}' must have a 'count/min/max' attribute and/or 'discovered_dataset' children",
                         linter=cls.name(),
                         node=output,
                     )
@@ -456,12 +461,16 @@ class TestsOutputCollectionCheckDiscovered(Linter):
                     continue
                 # - test/collection to outputs/output_collection
                 corresponding_output = output_data_or_collection[name]
-                discover_datasets = corresponding_output.find(".//discover_datasets")
-                if discover_datasets is None:
+                if corresponding_output.find(".//discover_datasets") is None:
                     continue
-                if "count" not in output.attrib and output.find("./element") is None:
+                if (
+                    "count" not in output.attrib
+                    and "min" not in output.attrib
+                    and "max" not in output.attrib
+                    and output.find("./element") is None
+                ):
                     lint_ctx.error(
-                        f"Test {test_idx}: test collection '{name}' must have a 'count' attribute or 'element' children",
+                        f"Test {test_idx}: test collection '{name}' must have a 'count/min/max' attribute or 'element' children",
                         linter=cls.name(),
                         node=output,
                     )
@@ -491,10 +500,10 @@ class TestsOutputCollectionCheckDiscoveredNested(Linter):
                     continue
                 if corresponding_output.get("type", "") in ["list:list", "list:paired"]:
                     nested_elements = output.find("./element/element")
-                    element_with_count = output.find("./element[@count]")
-                    if nested_elements is None and element_with_count is None:
+                    elements_with_count = output.xpath("./element[@count or @min or @max]")
+                    if nested_elements is None and not elements_with_count:
                         lint_ctx.error(
-                            f"Test {test_idx}: test collection '{name}' must contain nested 'element' tags and/or element children with a 'count' attribute",
+                            f"Test {test_idx}: test collection '{name}' must contain nested 'element' tags and/or element children with a 'count/min/max' attribute",
                             linter=cls.name(),
                             node=output,
                         )
