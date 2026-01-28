@@ -32,6 +32,7 @@ from .base import (
     AgentType,
     BaseGalaxyAgent,
     GalaxyAgentDependencies,
+    normalize_llm_text,
 )
 from .gtn import GTNSearchDB
 
@@ -465,12 +466,14 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
     def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
         """Parse simple text response into structured format."""
+        # Normalize text to handle literal \n from LLM responses
+        normalized_text = normalize_llm_text(response_text)
 
         # Extract structured information from text
-        tutorials = re.search(r"TUTORIALS:\s*([^\n]+)", response_text, re.IGNORECASE)
-        topics = re.search(r"TOPICS:\s*([^\n]+)", response_text, re.IGNORECASE)
-        summary = re.search(r"SUMMARY:\s*([^\n]+)", response_text, re.IGNORECASE)
-        confidence_match = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
+        tutorials = re.search(r"TUTORIALS:\s*([^\n]+)", normalized_text, re.IGNORECASE)
+        topics = re.search(r"TOPICS:\s*([^\n]+)", normalized_text, re.IGNORECASE)
+        summary = re.search(r"SUMMARY:\s*([^\n]+)", normalized_text, re.IGNORECASE)
+        confidence_match = re.search(r"CONFIDENCE:\s*(\w+)", normalized_text, re.IGNORECASE)
 
         # Parse confidence level
         confidence_level = ConfidenceLevel.MEDIUM
@@ -502,9 +505,27 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if not content_parts:
             content_parts = [response_text]  # Fallback to full response
 
-        # Create suggestions
+        # Create suggestions by looking up mentioned tutorials in the database
         suggestions = []
-        if tutorials and tutorials.group(1).strip():
+        if tutorials and tutorials.group(1).strip() and self.gtn_db:
+            tutorial_names = [t.strip() for t in tutorials.group(1).split(";")]
+            for tutorial_name in tutorial_names[:3]:  # Top 3 tutorials
+                # Search for this specific tutorial in the database
+                results = self.gtn_db.search(tutorial_name, limit=1)
+                if results:
+                    result = results[0]
+                    suggestions.append(
+                        ActionSuggestion(
+                            action_type=ActionType.VIEW_EXTERNAL,
+                            description=f"Open tutorial: {result.title}",
+                            parameters={"url": result.url},
+                            confidence=confidence_level,
+                            priority=1,
+                        )
+                    )
+
+        # Fallback to generic GTN link if no specific tutorials found
+        if not suggestions:
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,
@@ -518,7 +539,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return {
             "content": "\n".join(content_parts),
             "confidence": confidence_level,
-            "tutorial_count": len(tutorials.group(1).split(",")) if tutorials and tutorials.group(1).strip() else 0,
+            "tutorial_count": len(tutorials.group(1).split(";")) if tutorials and tutorials.group(1).strip() else 0,
             "suggestions": suggestions,
         }
 
