@@ -22,6 +22,7 @@ Optional Arguments:
     -i --info_only - Print results, but don't email or delete anything
     -e --email_only - Email notifications, but don't delete anything
         Useful for notifying users of pending deletion
+    --no-send - Do no send email (Default: false)
 
     --smtp - Specify smtp server
         If not specified, use smtp settings specified in config file
@@ -50,12 +51,13 @@ from datetime import (
 )
 from time import strftime
 
-import sqlalchemy as sa
 from mako.template import Template
 from sqlalchemy import (
     and_,
     false,
+    select,
 )
+from sqlalchemy.orm import aliased
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
@@ -63,7 +65,12 @@ from cleanup_datasets import CleanupDatasetsApplication
 
 import galaxy.config
 import galaxy.util
-from galaxy import model
+from galaxy.model import (
+    Dataset,
+    History,
+    HistoryDatasetAssociation,
+    User,
+)
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -119,6 +126,7 @@ def main():
         help="Send emails only, don't delete",
         default=False,
     )
+    parser.add_argument("--no-send", action="store_true", help="Do not send email", default=False)
     parser.add_argument(
         "--smtp", default=None, help="SMTP Server to use to send email. Default: [read from galaxy config file]"
     )
@@ -186,34 +194,34 @@ def main():
         config=config,
         email_only=args.email_only,
         info_only=args.info_only,
+        no_send=args.no_send,
     )
     app.shutdown()
     sys.exit(0)
 
 
 def administrative_delete_datasets(
-    app, cutoff_time, cutoff_days, tool_id, template_file, config, email_only=False, info_only=False
+    app, cutoff_time, cutoff_days, tool_id, template_file, config, email_only=False, info_only=False, no_send=False
 ):
     # Marks dataset history association deleted and email users
     start = time.time()
+    session = app.sa_session
+
     # Get HDAs older than cutoff time (ignore tool_id at this point)
-    # We really only need the id column here, but sqlalchemy barfs when
-    # trying to select only 1 column
     hda_ids_query = (
-        sa.select(model.HistoryDatasetAssociation.__table__.c.id, model.HistoryDatasetAssociation.__table__.c.deleted)
+        select(HistoryDatasetAssociation.id)
+        .join(Dataset, isouter=True)
         .where(
             and_(
-                model.Dataset.__table__.c.deleted == false(),
-                model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-                model.HistoryDatasetAssociation.__table__.c.deleted == false(),
+                Dataset.deleted == false(),
+                HistoryDatasetAssociation.update_time < cutoff_time,
+                HistoryDatasetAssociation.deleted == false(),
             )
         )
-        .select_from(sa.outerjoin(model.Dataset.__table__, model.HistoryDatasetAssociation.__table__))
     )
 
     # Add all datasets associated with Histories to our list
-    hda_ids = []
-    hda_ids.extend([row.id for row in app.sa_session.execute(hda_ids_query)])
+    hda_ids = session.execute(hda_ids_query).scalars().all()
 
     # Now find the tool_id that generated the dataset (even if it was copied)
     tool_matched_ids = []
@@ -229,37 +237,35 @@ def administrative_delete_datasets(
 
     # Process each of the Dataset objects
     for hda_id in hda_ids:
-        user_query = (
-            sa.select(model.HistoryDatasetAssociation.__table__, model.History.__table__, model.User.__table__)
-            .where(and_(model.HistoryDatasetAssociation.__table__.c.id == hda_id))
-            .select_from(
-                sa.join(model.User.__table__, model.History.__table__).join(model.HistoryDatasetAssociation.__table__)
-            )
-            .set_label_style()
-        )
+        # Bind hda_id for current iteration
+        rows = session.execute(
+            select(User.email, HistoryDatasetAssociation.name, History.name)
+            .join(History)
+            .join(HistoryDatasetAssociation)
+            .where(HistoryDatasetAssociation.id == hda_id)
+        ).all()
 
-        for result in app.sa_session.execute(user_query):
-            user_notifications[result[model.User.__table__.c.email]].append(
-                (
-                    result[model.HistoryDatasetAssociation.__table__.c.name],
-                    result[model.History.__table__.c.name],
-                )
-            )
+        for email, dataset_name, history_name in rows:
+            user_notifications[email].append((dataset_name, history_name))
             deleted_instance_count += 1
+
             if not info_only and not email_only:
                 # Get the HistoryDatasetAssociation objects
-                hda = app.sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
+                hda = session.get(HistoryDatasetAssociation, hda_id)
                 if not hda.deleted:
                     # Mark the HistoryDatasetAssociation as deleted
                     hda.deleted = True
-                    app.sa_session.add(hda)
+                    session.add(hda)
                     print(f"Marked HistoryDatasetAssociation id {hda.id} as deleted")
-                app.sa_session().commit()
+
+        if not info_only and not email_only:
+            session.commit()
 
     emailtemplate = Template(filename=template_file)
     for email, dataset_list in user_notifications.items():
         msgtext = emailtemplate.render(email=email, datasets=dataset_list, cutoff=cutoff_days)
-        subject = f"Galaxy Server Cleanup - {len(dataset_list)} datasets DELETED"
+        state = "" if info_only or email_only else " DELETED"
+        subject = f"Galaxy Server Cleanup - {len(dataset_list)} datasets{state}"
         fromaddr = config.email_from
         print()
         print(f"From: {fromaddr}")
@@ -267,13 +273,13 @@ def administrative_delete_datasets(
         print(f"Subject: {subject}")
         print("----------")
         print(msgtext)
-        if not info_only:
+        if not no_send and not info_only:
             galaxy.util.send_mail(fromaddr, email, subject, msgtext, config)
 
     stop = time.time()
     print()
     print(f"Marked {deleted_instance_count} dataset instances as deleted")
-    print("Total elapsed time: ", stop - start)
+    print(f"Total elapsed time: {stop - start:.3f} seconds")
     print("##########################################")
 
 
@@ -281,17 +287,21 @@ def _get_tool_id_for_hda(app, hda_id):
     # TODO Some datasets don't seem to have an entry in jtod or a copied_from
     if hda_id is None:
         return None
-    job = (
-        app.sa_session.query(model.Job)
-        .join(model.JobToOutputDatasetAssociation)
-        .filter(model.JobToOutputDatasetAssociation.__table__.c.dataset_id == hda_id)
-        .first()
-    )
-    if job is not None:
-        return job.tool_id
-    else:
-        hda = app.sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
-        return _get_tool_id_for_hda(app, hda.copied_from_history_dataset_association_id)
+
+    # Aliases for ORM‑mapped classes
+    Job = aliased(app.model.Job)
+    JTODA = aliased(app.model.JobToOutputDatasetAssociation)
+
+    session = app.sa_session
+
+    job_query = select(Job.tool_id).join(JTODA).where(JTODA.dataset_id == hda_id)
+
+    tool_id = session.execute(job_query).scalars().first()
+    if tool_id is not None:
+        return tool_id
+
+    hda = session.get(HistoryDatasetAssociation, hda_id)
+    return _get_tool_id_for_hda(app, hda.copied_from_history_dataset_association_id)
 
 
 if __name__ == "__main__":
