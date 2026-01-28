@@ -22,6 +22,8 @@ export function fileSourcePluginToItem(plugin: BrowsableFilesSourcePlugin): Sele
         isLeaf: false,
         url: plugin.uri_root,
         entry: plugin,
+        update_time: "",
     };
+
     return result;
 }
