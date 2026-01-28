@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faBurn, faCheckCircle, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
@@ -7,6 +7,8 @@ import { computed, onMounted, ref } from "vue";
 import type { HDASummary } from "@/api";
 import { deleteDataset, loadDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
+import type { RowIcon } from "@/components/Common/GTable.types";
+import { STATES } from "@/components/History/Content/model/states";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -240,6 +242,28 @@ async function onBulkDelete() {
     }
 }
 
+function getDatasetStatusIcon(item: HDASummary): RowIcon | undefined {
+    if (item.purged) {
+        return { icon: faBurn, class: "text-danger", title: "Purged" };
+    }
+    if (item.deleted) {
+        return { icon: faTrash, class: "text-muted", title: "Deleted" };
+    }
+    if (item.state === "ok") {
+        return { icon: faCheckCircle, class: "text-success", title: "Success" };
+    }
+    const state = item.state && STATES[item.state];
+    if (state?.icon) {
+        return {
+            icon: state.icon,
+            class: `text-${state.status}`,
+            title: state.displayName,
+            spin: state.spin,
+        };
+    }
+    return undefined;
+}
+
 onMounted(() => {
     load();
 });
@@ -292,6 +316,7 @@ onMounted(() => {
                 :overlay-loading="overlay"
                 :selected-items="selectedIndices"
                 :actions="datasetTableActions"
+                :status-icon="getDatasetStatusIcon"
                 @sort-changed="onSort"
                 @row-select="onRowSelect"
                 @select-all="onSelectAll">
