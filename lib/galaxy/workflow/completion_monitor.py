@@ -85,12 +85,6 @@ class WorkflowCompletionMonitor(Monitors):
             handler = self.app.config.server_name
             pending_ids = self.completion_manager.poll_pending_completions(handler=handler)
 
-            if pending_ids:
-                log.debug(
-                    "Workflow completion monitor checking %d invocations",
-                    len(pending_ids),
-                )
-
             for invocation_id in pending_ids:
                 if not self.monitor_running:
                     return

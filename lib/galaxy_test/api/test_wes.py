@@ -365,11 +365,11 @@ steps:
                 history_id=history_id,
             )
 
-            self.workflow_populator.wait_for_invocation_and_jobs(history_id, None, invocation_id, assert_ok=True)
+            self.workflow_populator.wait_for_invocation_and_completion(invocation_id, assert_ok=True)
 
             # Verify workflow is complete
             invocation = self.workflow_populator.get_invocation(invocation_id)
-            assert invocation["state"] == "scheduled"
+            assert invocation["state"] == "completed"
 
             # Try to cancel (should succeed but workflow already complete)
             response = self._wes_post(f"ga4gh/wes/v1/runs/{invocation_id}/cancel")

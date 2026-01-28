@@ -52,38 +52,24 @@ class WorkflowCompletionManager:
             The WorkflowInvocationCompletion record if newly completed,
             None if already completed or not yet complete.
         """
-        log.debug("Checking completion for invocation %d", invocation_id)
         session = self.sa_session
 
         # Use select to get fresh data from database
         stmt = select(WorkflowInvocation).where(WorkflowInvocation.id == invocation_id)
         invocation = session.execute(stmt).scalar_one_or_none()
         if not invocation:
-            log.debug("Invocation %d not found", invocation_id)
             return None
-
-        log.debug(
-            "Invocation %d state=%s, has_completion=%s",
-            invocation_id,
-            invocation.state,
-            invocation.completion is not None,
-        )
 
         # Already completed - don't create duplicate record
         if invocation.completion is not None:
-            log.debug("Invocation %d already has completion record", invocation_id)
             return None
 
         # Check if complete
-        complete = invocation.is_complete
-        log.debug("Invocation %d is_complete=%s", invocation_id, complete)
-        if not complete:
+        if not invocation.is_complete:
             return None
 
         # Record completion
         job_summary = invocation.compute_recursive_job_state_summary()
-        log.debug("Invocation %d job_summary=%s", invocation_id, job_summary)
-
         completion = WorkflowInvocationCompletion(
             workflow_invocation_id=invocation.id,
             job_state_summary=job_summary,
@@ -95,7 +81,7 @@ class WorkflowCompletionManager:
 
         session.add(completion)
         session.commit()
-        log.info("Recorded completion for invocation %d", invocation_id)
+        log.info("Recorded completion for invocation %d, job_summary=%s", invocation_id, job_summary)
 
         return completion
 
@@ -126,10 +112,7 @@ class WorkflowCompletionManager:
             stmt = stmt.where(WorkflowInvocation.handler == handler)
         stmt = stmt.limit(limit)
         session = self.sa_session
-        result = list(session.execute(stmt).scalars())
-        if result:
-            log.debug("Found %d pending completions: %s", len(result), result)
-        return result
+        return list(session.execute(stmt).scalars())
 
     def get_completion(self, invocation_id: int) -> Optional[WorkflowInvocationCompletion]:
         """
