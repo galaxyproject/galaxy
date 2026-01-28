@@ -19,6 +19,7 @@ from galaxy.tool_util.parameters import (
     test_case_state as case_state,
     TestCaseToolState,
     ToolParameterBundleModel,
+    ToolParameterT,
 )
 from galaxy.tool_util.parser.interface import (
     InputSource,
@@ -59,7 +60,7 @@ AnyParamContext = Union["ParamContext", "RootParamContext"]
 
 
 def parse_tool_test_descriptions(
-    tool_source: ToolSource, tool_guid: Optional[str] = None
+    tool_source: ToolSource, tool_guid: Optional[str] = None, parameters: Optional[list[ToolParameterT]] = None
 ) -> Iterable[ToolTestDescription]:
     """
     Build ToolTestDescription objects for each test description.
@@ -72,15 +73,18 @@ def parse_tool_test_descriptions(
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         validation_exception: Optional[Exception] = None
         request_and_schema: Optional[TestRequestAndSchema] = None
+        tool_parameter_bundle: Optional[ToolParameterBundleModel] = None
         if validate_on_load:
             try:
-                tool_parameter_bundle = input_models_for_tool_source(tool_source)
+                if parameters is None:
+                    tool_parameter_bundle = input_models_for_tool_source(tool_source)
+                    parameters = tool_parameter_bundle.parameters
                 validated_test_case = case_state(
-                    raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True
+                    raw_test_dict, parameters, profile, validate=True
                 )
                 request_and_schema = TestRequestAndSchema(
                     validated_test_case.tool_state,
-                    tool_parameter_bundle,
+                    tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
                 )
             except Exception as e:
                 validation_exception = e
