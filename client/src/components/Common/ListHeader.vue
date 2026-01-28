@@ -63,11 +63,11 @@ const defaultSortOptions: SortOption[] = [
 ];
 
 // Use provided sortOptions or fall back to defaults
-const effectiveSortOptions = computed(() => {
-    return props.sortOptions.length > 0 ? props.sortOptions : defaultSortOptions;
-});
+const effectiveSortOptions = computed(() => (props.sortOptions.length > 0 ? props.sortOptions : defaultSortOptions));
 
-const sortBy = ref<SortBy>(effectiveSortOptions.value[0]?.value || "update_time");
+const sortBy = ref<SortBy>(
+    props.sortOptions.length > 0 ? (effectiveSortOptions.value[0]?.value ?? "update_time") : "update_time",
+);
 const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
 function onSort(newSortBy: SortBy) {
