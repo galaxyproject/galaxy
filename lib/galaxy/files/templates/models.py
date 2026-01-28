@@ -186,7 +186,6 @@ class SshFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-
 class AzureFileSourceTemplateConfiguration(StrictModel):
     type: Literal["azure"]
     account_name: Union[str, TemplateExpansion]
