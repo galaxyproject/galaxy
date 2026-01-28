@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faBurn, faCheckCircle, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import type { HDASummary } from "@/api";
@@ -11,7 +11,6 @@ import type { RowIcon } from "@/components/Common/GTable.types";
 import { STATES } from "@/components/History/Content/model/states";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
-import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import { useDatasetTableActions } from "./useDatasetTableActions";
@@ -57,7 +56,6 @@ const allFields = [
 
 const columnOptions = allFields.map((field) => ({ key: field.key, label: field.label }));
 
-const historyStore = useHistoryStore();
 const { confirm } = useConfirmDialog();
 
 const query = ref("");
@@ -118,21 +116,6 @@ async function load(showOverlay = false) {
     } finally {
         loading.value = false;
         overlay.value = false;
-    }
-}
-
-async function onShowDataset(item: HDASummary) {
-    const { history_id } = item;
-    const filters = {
-        deleted: item.deleted,
-        visible: item.visible,
-        hid: item.hid,
-    };
-
-    try {
-        await historyStore.applyFilters(history_id, filters);
-    } catch (e: any) {
-        Toast.error(`Failed to switch to history: ${e}`);
     }
 }
 
@@ -321,12 +304,7 @@ onMounted(() => {
                 @row-select="onRowSelect"
                 @select-all="onSelectAll">
                 <template v-slot:cell(name)="row">
-                    <BLink
-                        v-b-tooltip.hover.noninteractive
-                        :title="localize('Show dataset in history panel')"
-                        @click.stop.prevent="onShowDataset(row.item)">
-                        {{ row.item.name }}
-                    </BLink>
+                    <span>{{ row.item.name }}</span>
                 </template>
 
                 <template v-slot:cell(history_id)="row">
