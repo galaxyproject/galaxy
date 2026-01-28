@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faAngleDown, faAngleUp, faBars, faCog, faGripVertical } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDown, faAngleUp, faBars, faCog, faGripVertical, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BDropdown, BDropdownGroup, BDropdownHeader, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
@@ -50,6 +50,7 @@ const emit = defineEmits<{
     (e: "select-all"): void;
     (e: "toggle-column", key: string): void;
     (e: "sort-changed", sortBy: string, sortDesc: boolean): void;
+    (e: "reset-columns"): void;
 }>();
 
 const userStore = useUserStore();
@@ -70,6 +71,10 @@ const sortBy = ref<SortBy>(
 );
 const currentListViewMode = computed(() => userStore.currentListViewPreferences[props.listId] || "grid");
 
+const isAColumnNotVisible = computed(() => {
+    return props.columnOptions.some((column) => !props.visibleColumns.includes(column.key));
+});
+
 function onSort(newSortBy: SortBy) {
     if (sortBy.value === newSortBy) {
         sortDesc.value = !sortDesc.value;
@@ -78,6 +83,10 @@ function onSort(newSortBy: SortBy) {
         sortDesc.value = true; // Reset to descending when changing sort field
     }
     emit("sort-changed", sortBy.value, sortDesc.value);
+}
+
+function onResetColumns() {
+    emit("reset-columns");
 }
 
 function isColumnVisible(key: string) {
@@ -147,7 +156,19 @@ defineExpose({
                     <FontAwesomeIcon :icon="faCog" fixed-width />
                 </template>
 
-                <BDropdownGroup header="Show/Hide Columns">
+                <BDropdownGroup>
+                    <BDropdownHeader>
+                        Show/Hide Columns
+                        <GButton
+                            v-if="isAColumnNotVisible"
+                            transparent
+                            tooltip
+                            title="Reset columns to default"
+                            @click="onResetColumns">
+                            <FontAwesomeIcon :icon="faUndo" fixed-width />
+                        </GButton>
+                    </BDropdownHeader>
+
                     <BDropdownItem
                         v-for="column in columnOptions"
                         :key="column.key"
