@@ -421,8 +421,7 @@ class GTNDatabaseBuilder:
         cursor = conn.cursor()
 
         # Create main tutorials table
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE tutorials (
                 id INTEGER PRIMARY KEY,
                 topic TEXT NOT NULL,
@@ -447,12 +446,10 @@ class GTNDatabaseBuilder:
                 workflows_json TEXT,
                 UNIQUE(topic, tutorial)
             )
-        """
-        )
+        """)
 
         # Create FTS5 virtual table for search (simpler version)
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE VIRTUAL TABLE tutorials_fts USING fts5(
                 title,
                 description,
@@ -460,34 +457,28 @@ class GTNDatabaseBuilder:
                 topic,
                 tokenize='porter unicode61'
             )
-        """
-        )
+        """)
 
         # Create metadata table
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE metadata (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             )
-        """
-        )
+        """)
 
         # Create example queries table
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE example_queries (
                 id INTEGER PRIMARY KEY,
                 query TEXT NOT NULL,
                 description TEXT,
                 category TEXT
             )
-        """
-        )
+        """)
 
         # Create FAQs table
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE faqs (
                 id INTEGER PRIMARY KEY,
                 category TEXT NOT NULL,
@@ -501,12 +492,10 @@ class GTNDatabaseBuilder:
                 contributors_json TEXT,
                 UNIQUE(category, filename)
             )
-        """
-        )
+        """)
 
         # Create FTS5 virtual table for FAQ search
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE VIRTUAL TABLE faqs_fts USING fts5(
                 title,
                 content,
@@ -514,8 +503,7 @@ class GTNDatabaseBuilder:
                 area,
                 tokenize='porter unicode61'
             )
-        """
-        )
+        """)
 
         # Create indexes
         cursor.execute("CREATE INDEX idx_topic_difficulty ON tutorials(topic, difficulty)")
