@@ -188,6 +188,31 @@ class VisualizationPluginResponse(Model):
         title="Specs",
         description="The specs of the plugin.",
     )
+    params: Optional[dict] = Field(
+        None,
+        title="Params",
+        description="The parameters of the plugin.",
+    )
+    data_sources: Optional[list[dict]] = Field(
+        None,
+        title="Data Sources",
+        description="The data sources of the plugin.",
+    )
+    help: Optional[str] = Field(
+        None,
+        title="Help",
+        description="The help text of the plugin.",
+    )
+    tags: Optional[list[str]] = Field(
+        None,
+        title="Tags",
+        description="The tags of the plugin.",
+    )
+    tests: Optional[list[dict]] = Field(
+        None,
+        title="Tests",
+        description="The tests of the plugin.",
+    )
     href: str = Field(
         ...,
         title="Href",
