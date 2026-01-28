@@ -171,6 +171,10 @@ function onRowSelect(event: { item: HDASummary; index: number; selected: boolean
     }
 }
 
+function onResetColumns() {
+    visibleColumns.value = allFields.map((field) => field.key);
+}
+
 function onToggleColumn(key: string) {
     const index = visibleColumns.value.indexOf(key);
     if (index > -1) {
@@ -266,6 +270,7 @@ onMounted(() => {
                 :column-options="columnOptions"
                 :visible-columns="visibleColumns"
                 @select-all="onSelectAll"
+                @reset-columns="onResetColumns"
                 @toggle-column="onToggleColumn" />
         </div>
 
