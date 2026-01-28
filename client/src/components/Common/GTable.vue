@@ -435,7 +435,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     getAlignmentClass(field.align),
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]">
-                                <template v-if="fieldIndex === 0 && statusIcon">
+                                <template v-if="fieldIndex === 0 && getStatusIcon(item, index)">
                                     <FontAwesomeIcon
                                         v-if="getStatusIcon(item, index)"
                                         v-b-tooltip.hover.noninteractive
