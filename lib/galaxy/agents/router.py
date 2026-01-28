@@ -6,6 +6,7 @@ Uses pydantic-ai output functions to either:
 - Hand off to error_analysis for job debugging
 - Hand off to custom_tool for explicit tool creation requests
 - Hand off to tool_recommendation for tool discovery
+- Hand off to gtn_training for tutorial and learning requests
 """
 
 import json
@@ -40,7 +41,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
     This agent serves as Galaxy's primary AI assistant, handling most queries
     directly and only delegating to specialist agents when their specific
-    expertise is needed (error debugging, tool creation).
+    expertise is needed (error debugging, tool creation, training).
     """
 
     agent_type = AgentType.ROUTER
@@ -62,6 +63,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         error_handoff = self._create_error_analysis_handoff()
         tool_handoff = self._create_custom_tool_handoff()
         tool_rec_handoff = self._create_tool_recommendation_handoff()
+        gtn_handoff = self._create_gtn_training_handoff()
 
         return Agent(
             self._get_model(),
@@ -70,6 +72,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 error_handoff,
                 tool_handoff,
                 tool_rec_handoff,
+                gtn_handoff,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
@@ -211,6 +214,43 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 return f"I encountered an issue while searching for tools. Please try again or browse the tool panel directly. Error: {e}"
 
         return hand_off_to_tool_recommendation
+
+    def _create_gtn_training_handoff(self):
+        """Create output function for GTN training handoff."""
+
+        async def hand_off_to_gtn_training(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+        ) -> str:
+            """Route to GTN training agent for tutorial searches and learning guidance.
+
+            Use this when the user:
+            - Asks how to perform a specific type of analysis (RNA-seq, variant calling, etc.)
+            - Wants to learn how to use Galaxy or specific tools
+            - Is looking for tutorials, training materials, or learning resources
+            - Asks about best practices for an analysis workflow
+            - Wants step-by-step guidance for a bioinformatics task
+
+            Args:
+                query: The user's question about training, tutorials, or how to do analysis
+            """
+            from .gtn_training import GTNTrainingAgent
+
+            log.info(f"Router handing off to gtn_training: '{query[:100]}...'")
+
+            try:
+                agent = GTNTrainingAgent(ctx.deps)
+                response = await agent.process(query)
+                return self._serialize_handoff(response, "gtn_training")
+            except Exception as e:
+                log.error(f"GTN training handoff failed: {e}")
+                return (
+                    f"I encountered an issue while searching training materials. "
+                    f"You can browse tutorials directly at: https://training.galaxyproject.org/training-material/\n"
+                    f"Error: {e}"
+                )
+
+        return hand_off_to_gtn_training
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """
@@ -406,12 +446,12 @@ For job failures or errors: Explain what might have gone wrong and suggest solut
 
 For tool creation requests: Explain that you can help design Galaxy tools and provide guidance.
 
+For training/tutorial requests: Search the Galaxy Training Network for relevant tutorials.
+
 For off-topic questions: Politely explain you can only help with Galaxy and scientific analysis.
 
 When uncertain, suggest the user check Galaxy documentation or the Galaxy Training Network (https://training.galaxyproject.org/)."""
 
     def _get_fallback_content(self) -> str:
         """Get fallback content for router failures."""
-        return (
-            "I'm having trouble processing your request. Please try again or check the Galaxy documentation for help."
-        )
+        return "I'm having trouble processing your request. Please try again or check the Galaxy documentation for help."
