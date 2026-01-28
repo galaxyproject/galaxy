@@ -292,6 +292,7 @@
        best until they are out of beta. -->
   <tool file="parameters/gx_data_user.yml" />
   <tool file="parameters/gx_data_multiple_user.yml" />
+  <tool file="parameters/gx_select_multiple_one_default_user.yml" />
 
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />
