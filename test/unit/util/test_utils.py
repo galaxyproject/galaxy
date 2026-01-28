@@ -177,3 +177,28 @@ def test_validate_doi_fail_too_long():
     doi = f"doi:10.1000/{long_suffix}"
     assert util.validate_doi(doi)
     assert not util.validate_doi(doi + "a")  # Increase length by 1 past max limit
+
+
+@pytest.mark.parametrize(
+    "input_name,expected_output",
+    [
+        # Existing documented behavior
+        ("My Cool Object", "My-Cool-Object"),
+        ("!My Cool Object!", "My-Cool-Object"),
+        ("Hello\u20a9\u25ce\u0491\u029f\u217e", "Hello"),
+        # Additional edge cases
+        ("simple", "simple"),
+        ("UPPERCASE", "UPPERCASE"),  # Note: lowercase applied separately
+        ("with-dash", "with-dash"),
+        ("with spaces", "with-spaces"),
+        ("  multiple   spaces  ", "-multiple-spaces"),
+        ("trailing!", "trailing"),
+        ("!leading", "leading"),
+        ("special@#$chars", "specialchars"),
+        ("parentheses(test)", "parenthesestest"),
+        ("Rincewind (Ankh-Morpork)", "Rincewind-Ankh-Morpork"),
+    ],
+)
+def test_ready_name_for_url(input_name, expected_output):
+    """Test that ready_name_for_url correctly sanitizes names for URL use."""
+    assert util.ready_name_for_url(input_name) == expected_output
