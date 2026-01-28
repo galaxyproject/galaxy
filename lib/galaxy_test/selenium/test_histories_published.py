@@ -23,8 +23,8 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_published_histories()
 
-        self.wait_for_and_click_selector('[data-title="Sort by name ascending"]')
-        self.wait_for_and_click_selector('[data-title="Sort by name ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
         sorted_histories = self.get_published_history_names_from_server(sort_by="name")
@@ -36,7 +36,7 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_published_histories()
 
-        self.wait_for_and_click_selector('[data-title="Sort by update time ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Update time ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
         expected_history_names = self.get_published_history_names_from_server(sort_by="update_time")
