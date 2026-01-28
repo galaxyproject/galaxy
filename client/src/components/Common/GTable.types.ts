@@ -1,3 +1,4 @@
+import type { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
 import type { BootstrapVariant } from "@/components/Common";
@@ -33,8 +34,6 @@ export interface TableField {
     hideOnSmall?: boolean;
     /** Custom formatter function for cell values */
     formatter?: (value: any, key: string, item: any) => string;
-    /** Whether to render as HTML (use with caution) */
-    html?: boolean;
 }
 
 /** Sort change event payload */
@@ -103,4 +102,18 @@ export interface TableEmptyState {
     icon?: IconDefinition;
     /** Bootstrap variant for styling */
     variant?: BootstrapVariant;
+}
+
+/** Row status icon configuration */
+export interface RowIcon {
+    /** FontAwesome icon (required) */
+    icon: IconDefinition;
+    /** Additional CSS classes */
+    class?: string;
+    /** Icon size (FontAwesome SizeProp) */
+    size?: SizeProp;
+    /** Tooltip text */
+    title?: string;
+    /** Whether icon should spin (loading state) */
+    spin?: boolean;
 }

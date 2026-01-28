@@ -402,8 +402,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]">
                                 <slot :name="`cell(${field.key})`" :value="item[field.key]" :item="item" :index="index">
-                                    <span v-if="field.html" v-html="getCellValue(item, field)" />
-                                    <span v-else>{{ getCellValue(item, field) }}</span>
+                                    <span>{{ getCellValue(item, field) }}</span>
                                 </slot>
                             </td>
 
