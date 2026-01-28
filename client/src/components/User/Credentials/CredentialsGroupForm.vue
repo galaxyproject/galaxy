@@ -22,8 +22,8 @@
  *   :service-definition="serviceDefinition" />
  */
 
-import { BFormGroup, BFormInput } from "bootstrap-vue";
-import { computed } from "vue";
+import { BFormGroup, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
 import type {
     CredentialType,
@@ -31,6 +31,11 @@ import type {
     ServiceCredentialsDefinition,
     ServiceParameterDefinition,
 } from "@/api/userCredentials";
+import { SECRET_PLACEHOLDER } from "@/stores/userToolsServiceCredentialsStore";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+type SecretField = ServiceCredentialGroupPayload["secrets"][number];
 
 /**
  * Edit group structure for form data
@@ -60,6 +65,14 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+/** Secrets that were initially set and represented by the placeholder. */
+const placeholderSecretNames = ref<Set<string>>(new Set());
+/** Tracks whether a field has been interacted with to drive neutral initial state. */
+const touchedFields = ref<{ variables: Set<string>; secrets: Set<string> }>({
+    variables: new Set(),
+    secrets: new Set(),
+});
 
 /**
  * Computed property for group name with getter/setter
@@ -186,11 +199,90 @@ function isVariableOptional(name: string, type: CredentialType): boolean {
  * @returns {boolean | null} Validation state - true if valid, false if invalid, null if neutral
  */
 function getFieldState(value: string | null | undefined, name: string, type: CredentialType): boolean | null {
+    const isTouched = touchedFields.value.secrets.has(name);
+    if (!isTouched) {
+        return null;
+    }
     if (!value) {
         return isVariableOptional(name, type) ? null : false;
     }
     return true;
 }
+
+/**
+ * Marks a field as interacted with.
+ * @param {string} name - Name of the field
+ * @param {CredentialType} type - Type of credential (variable or secret)
+ * @returns {void}
+ */
+function markTouched(name: string, type: CredentialType): void {
+    const key = type === "secret" ? "secrets" : "variables";
+    const focusedFields = touchedFields.value[key];
+
+    if (focusedFields.has(name)) {
+        return;
+    }
+
+    const updated = new Set(focusedFields);
+    updated.add(name);
+
+    touchedFields.value = {
+        ...touchedFields.value,
+        [key]: updated,
+    };
+}
+
+/**
+ * Clears placeholder when user starts editing a secret.
+ * @param {SecretField} secret - The secret field being focused
+ * @returns {void}
+ */
+function onSecretFocus(secret: SecretField): void {
+    if (secret.value === SECRET_PLACEHOLDER) {
+        secret.value = "";
+    }
+}
+
+/**
+ * Restores placeholder if a placeholder-backed secret was left untouched.
+ * @param {SecretField} secret - The secret field being blurred
+ * @returns {void}
+ */
+function onSecretBlur(secret: SecretField): void {
+    markTouched(secret.name, "secret");
+    if ((secret.value === null || secret.value === "") && placeholderSecretNames.value.has(secret.name)) {
+        secret.value = SECRET_PLACEHOLDER;
+    }
+}
+
+/**
+ * Marks variable input as touched on blur.
+ * @param {string} name - The variable name
+ * @returns {void}
+ */
+function onVariableBlur(name: string): void {
+    markTouched(name, "variable");
+}
+
+/**
+ * Clears a secret input and prevents placeholder restore on blur.
+ * @param {SecretField} secret - The secret field to clear
+ * @returns {void}
+ */
+function clearSecret(secret: SecretField): void {
+    markTouched(secret.name, "secret");
+    placeholderSecretNames.value.delete(secret.name);
+    secret.value = "";
+}
+
+watch(
+    () => props.groupData.groupPayload.secrets,
+    (newSecrets) => {
+        const filtered = newSecrets.filter((s) => s.value === SECRET_PLACEHOLDER).map((s) => s.name);
+        placeholderSecretNames.value = new Set(filtered);
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
@@ -226,7 +318,8 @@ function getFieldState(value: string | null | undefined, name: string, type: Cre
                     :aria-label="getVariableTitle(variable.name, 'variable')"
                     :required="!isVariableOptional(variable.name, 'variable')"
                     :readonly="false"
-                    class="mb-2" />
+                    class="mb-2"
+                    @blur="onVariableBlur(variable.name)" />
             </BFormGroup>
         </div>
 
@@ -235,18 +328,33 @@ function getFieldState(value: string | null | undefined, name: string, type: Cre
                 :id="getFieldId(secret.name, 'secret')"
                 :label="getVariableTitle(secret.name, 'secret')"
                 :description="getVariableDescription(secret.name, 'secret')">
-                <BFormInput
-                    :id="getInputId(secret.name, 'secret')"
-                    v-model="secret.value"
-                    type="password"
-                    autocomplete="off"
-                    :state="getFieldState(secret.value, secret.name, 'secret')"
-                    :placeholder="getVariableTitle(secret.name, 'secret')"
-                    :title="getVariableTitle(secret.name, 'secret')"
-                    :aria-label="getVariableTitle(secret.name, 'secret')"
-                    :required="!isVariableOptional(secret.name, 'secret')"
-                    :readonly="false"
-                    class="mb-2" />
+                <BInputGroup class="mb-2">
+                    <BFormInput
+                        :id="getInputId(secret.name, 'secret')"
+                        v-model="secret.value"
+                        type="password"
+                        autocomplete="off"
+                        :state="getFieldState(secret.value, secret.name, 'secret')"
+                        :placeholder="getVariableTitle(secret.name, 'secret')"
+                        :title="getVariableTitle(secret.name, 'secret')"
+                        :aria-label="getVariableTitle(secret.name, 'secret')"
+                        :required="!isVariableOptional(secret.name, 'secret')"
+                        :readonly="false"
+                        @focus="onSecretFocus(secret)"
+                        @blur="onSecretBlur(secret)" />
+                    <BInputGroupAppend>
+                        <GButton
+                            outline
+                            tooltip
+                            color="blue"
+                            size="small"
+                            tooltip-placement="top"
+                            title="Clear value"
+                            @click="clearSecret(secret)">
+                            Clear
+                        </GButton>
+                    </BInputGroupAppend>
+                </BInputGroup>
             </BFormGroup>
         </div>
     </div>

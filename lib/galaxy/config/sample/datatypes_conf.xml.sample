@@ -15,6 +15,7 @@
     <datatype extension="a2m" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true" description="A multiple sequence alignment in A2M format. Each sequence has a single-line description starting with '>', followed by aligned sequence lines. Dots ('.') represent matches to a reference, and hyphens ('-') represent deletions relative to the reference." subclass="true" />
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
     <datatype extension="agp" type="galaxy.datatypes.goldenpath:GoldenPath" display_in_upload="true" description="UCSC GoldenPath assembly"/>
+    <datatype extension="alto" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" description="Analyzed Layout and Text Object" description_url="https://github.com/altoxml/documentation/wiki/Versions"/>
     <datatype extension="anvio_cog_profile" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" subclass="true" />
     <datatype extension="anvio_composite" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" />
     <datatype extension="anvio_classifier" type="galaxy.datatypes.data:Data" display_in_upload="false" subclass="true" />
@@ -608,6 +609,10 @@
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="odgi" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs self index used by odgi." display_in_upload="true"/>
     <datatype extension="vg" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" description="Genomic variation graphs." display_in_upload="true"/>
+    <datatype extension="vg.loci" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG loci index mapping graph positions to locus identifiers." description_url="https://github.com/vgteam/vg/wiki/File-Types#sample-information-formats" display_in_upload="true"/>
+    <datatype extension="vg.dist" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG distance index storing minimum distances between graph positions." description_url="https://github.com/vgteam/vg/wiki/File-Types#miscellaneous-formats" display_in_upload="true"/>
+    <datatype extension="vg.snarls" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG snarl decomposition index defining nested variation sites in a graph." description_url="https://github.com/vgteam/vg/wiki/File-Types#miscellaneous-formats" display_in_upload="true"/>
+    <datatype extension="vg.gamp" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG GAM position index enabling random access to graph alignments." description_url="https://github.com/vgteam/vg/wiki/File-Types#read-and-alignment-formats" display_in_upload="true"/>
     <datatype extension="hal" type="galaxy.datatypes.binary:Binary" subclass="true" description="Hierarchical Alignment Format" display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/hal"/>
     <datatype extension="hal.pg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Pairwise genome alignment graph." display_in_upload="true"/>
     <datatype extension="hal.hg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Hierarchical multi-genome alignment graph." display_in_upload="true"/>
